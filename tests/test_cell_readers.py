@@ -267,25 +267,26 @@ def test_sget_timestamp(dataset):
 
 
 @pytest.mark.parametrize(
-    "cycle, in_minutes, full, expected",
-    [
-        (3, False, True, 248277.107),
-        (3, True, True, 248277.107 / 60),
-        (None, False, True, 300.010),
-        pytest.param(3, False, True, 1.0, marks=pytest.mark.xfail),
-    ],
+    "cycle, units, expected", [
+        (1, "seconds", 300.01048193),
+        (1, "minutes", 5.00017469),
+        (1, "hours", 0.08333624),
+    ]
 )
-def test_get_timestamp(dataset, cycle, in_minutes, full, expected):
-    x = dataset.get_timestamp(cycle=cycle, in_minutes=in_minutes, full=full)
-    assert x.iloc[0] == pytest.approx(expected, 0.001)
+def test_get_timestamp(dataset, cycle, units, expected):
+    from pprint import pprint
+    x = dataset.get_timestamp(cycle=cycle, units=units)
+    pprint(x)
+    assert x.iloc[0, -1] == pytest.approx(expected, 0.001)
 
 
 @pytest.mark.parametrize(
-    "cycle, in_minutes, full, expected", [(None, False, False, 248277.107)]
+    "cycle, units, as_frame, expected", [(None, "seconds", False, 300.01048193)]
 )
-def test_get_timestamp_list(dataset, cycle, in_minutes, full, expected):
-    x = dataset.get_timestamp(cycle=cycle, in_minutes=in_minutes, full=full)
-    assert x[2].iloc[0] == pytest.approx(expected, 0.001)
+def test_get_timestamp_list(dataset, cycle, units, as_frame, expected):
+    from pprint import pprint
+    x = dataset.get_timestamp(cycle=cycle, units=units, as_frame=as_frame)
+    assert x[0][0] == pytest.approx(expected, 0.001)
 
 
 def test_get_number_of_cycles(dataset):

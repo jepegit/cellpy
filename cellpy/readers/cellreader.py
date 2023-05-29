@@ -114,13 +114,9 @@ class CellpyCell:
     """
 
     def __repr__(self):
-        txt = f"CellpyCell-object (id={hex(id(self))})"
+        txt = f"<CellpyCell> (id={hex(id(self))})"
         if self.session_name:
-            txt += f"\nname: {self.session_name}"
-        if self.table_names:
-            txt += f"\ntable_names: {self.table_names}"
-        if self.tester:
-            txt += f"\ntester: {self.tester}"
+            txt += f" [name={self.session_name}]"
         return txt
 
     def _repr_html_(self):
@@ -128,7 +124,6 @@ class CellpyCell:
             <h2>CellpyCell-object</h2>
             <b>id</b>: {hex(id(self))} <br>
             <b>name</b>: {self.session_name} <br>
-            <b>table names</b>: {self.table_names} <br>
             <b>tester</b>: {self.tester} <br>
             <b>cycle_mode</b>: {self.cycle_mode} <br>
             <b>sep</b>: {self.sep} <br>
@@ -148,7 +143,6 @@ class CellpyCell:
             <b>cellpy_units</b>: {self.cellpy_units} <br>
             <b>select_minimal</b>: {self.select_minimal} <br>
             <b>selected_scans</b>: {self.selected_scans} <br>
-            <b>summary_exists (deprecated)</b>: {self.summary_exists} <br>
         """
         all_vars += "</p>"
 
@@ -158,7 +152,8 @@ class CellpyCell:
         return header + all_vars + cell_txt
 
     def __str__(self):
-        txt = "<CellpyCell>\n"
+        txt = "CellpyCell\n"
+        txt += "----------\n"
         if self.session_name:
             txt += f"session name: {self.session_name}\n"
         if self.table_names:
@@ -234,7 +229,6 @@ class CellpyCell:
         self.minimum_selection = {}
         self.filestatuschecker = filestatuschecker or prms.Reader.filestatuschecker
         self.forced_errors = 0
-        self.summary_exists = False
 
         self.file_names = filenames or []
         if not self._is_listtype(self.file_names):
@@ -1026,8 +1020,7 @@ class CellpyCell:
             >>> ... cell_data.loadcell(raw_files=rawfiles,
             >>> ...                    cellpy_file=cellpyfiles)
             >>> ... cell_data.set_mass(mass)
-            >>> ... if not cell_data.summary_exists:
-            >>> ...     cell_data.make_summary() # etc. etc.
+            >>> ... cell_data.make_summary() # etc. etc.
             >>> ... cell_datas.append(cell_data)
             >>>
         """
@@ -3827,43 +3820,31 @@ class CellpyCell:
             c = [x[y_header].values for x in c]
         return c
 
-    def get_voltage(self, cycle=None, full=True):
-        """Returns voltage (in V).
+    def get_voltage(self, cycle=None, with_index=True, with_time=False, as_frame=True):
+        """Returns voltage (in raw units).
 
         Args:
-            cycle: cycle number (all cycles if None)
-            full: valid only for cycle=None (i.e. all cycles), returns the full
-               pandas.Series if True, else a list of pandas.Series
+            cycle: cycle number (all cycles if None).
+            with_index: if True, includes the cycle index as a column in the returned pandas.DataFrame.
+            with_time: if True, includes the time as a column in the returned pandas.DataFrame.
+            as_frame: if not True, returns a list of current values as numpy arrays (one for each cycle).
+                Remark that with_time and with_index will be False if as_frame is set to False.
 
         Returns:
-            pandas.Series (or list of pandas.Series if cycle=None og full=False)
+            pandas.DataFrame (or list of pandas.Series if cycle=None and as_frame=False)
         """
 
-        cycle_index_header = self.headers_normal.cycle_index_txt
-        voltage_header = self.headers_normal.voltage_txt
-        # step_index_header  = self.headers_normal.step_index_txt
-
-        data = self.data.raw
-        if cycle:
-            logging.debug("getting voltage curve for cycle")
-            c = data[(data[cycle_index_header] == cycle)]
-            if not self._is_empty_array(c):
-                v = c[voltage_header]
-                return v
-        else:
-            if not full:
-                logging.debug("getting list of voltage-curves for all cycles")
-                v = []
-                no_cycles = np.amax(data[cycle_index_header])
-                for j in range(1, no_cycles + 1):
-                    txt = "Cycle  %i:  " % j
-                    logging.debug(txt)
-                    c = data[(data[cycle_index_header] == j)]
-                    v.append(c[voltage_header])
-            else:
-                logging.debug("getting frame of all voltage-curves")
-                v = data[voltage_header]
-            return v
+        y_header = self.headers_normal.voltage_txt
+        return self.get_raw(
+            y_header,
+            cycle=cycle,
+            with_index=with_index,
+            with_time=with_time,
+            as_frame=as_frame,
+            with_step=False,
+            additional_headers=None,
+            scaler=None,
+        )
 
     def get_current(self, cycle=None, with_index=True, with_time=False, as_frame=True):
         """Returns current (in raw units).
@@ -3889,6 +3870,69 @@ class CellpyCell:
             with_step=False,
             additional_headers=None,
             scaler=None,
+        )
+
+    def get_datetime(self, cycle=None, with_index=True, with_time=False, as_frame=True):
+        """Returns datetime (in raw units).
+
+        Args:
+            cycle: cycle number (all cycles if None).
+            with_index: if True, includes the cycle index as a column in the returned pandas.DataFrame.
+            with_time: if True, includes the time as a column in the returned pandas.DataFrame.
+            as_frame: if not True, returns a list of current values as numpy arrays (one for each cycle).
+                Remark that with_time and with_index will be False if as_frame is set to False.
+
+        Returns:
+            pandas.DataFrame (or list of pandas.Series if cycle=None and as_frame=False)
+        """
+
+        y_header = self.headers_normal.datetime_txt
+        return self.get_raw(
+            y_header,
+            cycle=cycle,
+            with_index=with_index,
+            with_time=with_time,
+            as_frame=as_frame,
+            with_step=False,
+            additional_headers=None,
+            scaler=None,
+        )
+
+    def get_timestamp(self, cycle=None, with_index=True, as_frame=True, in_minutes=False, units="raw"):
+        """Returns timestamp.
+
+        Args:
+            cycle: cycle number (all cycles if None).
+            with_index: if True, includes the cycle index as a column in the returned pandas.DataFrame.
+            as_frame: if not True, returns a list of current values as numpy arrays (one for each cycle).
+                Remark that with_time and with_index will be False if as_frame is set to False.
+            in_minutes: (deprecated, use units="minutes" instead) return values in minutes
+                instead of seconds if True.
+            units: return values in given time unit ("raw", "seconds", "minutes", "hours").
+
+        Returns:
+            pandas.DataFrame (or list of pandas.Series if cycle=None and as_frame=False)
+        """
+
+        y_header = self.headers_normal.test_time_txt
+
+        if in_minutes:
+            units = "minutes"
+
+        if units == "raw":
+            scaler = None
+        else:
+            scaler = self.unit_scaler_from_raw(units, "time")
+
+        return self.get_raw(
+            y_header,
+            cycle=cycle,
+            with_index=with_index,
+            with_time=False,
+            as_frame=as_frame,
+            with_step=False,
+            additional_headers=None,
+            scaler=scaler,
         )
 
     def sget_steptime(self, cycle, step):
@@ -3972,74 +4016,6 @@ class CellpyCell:
 
         header = self.headers_normal.step_index_txt
         return self._sget(cycle, step, header, usteps=False)
-
-    def get_datetime(self, cycle=None, full=True):
-        cycle_index_header = self.headers_normal.cycle_index_txt
-        datetime_header = self.headers_normal.datetime_txt
-
-        v = pd.Series()
-        test = self.data.raw
-        if cycle:
-            c = test[(test[cycle_index_header] == cycle)]
-            if not self._is_empty_array(c):
-                v = c[datetime_header]
-
-        else:
-            if not full:
-                logging.debug("getting datetime for all cycles")
-                v = []
-                cycles = self.get_cycle_numbers()
-                for j in cycles:
-                    txt = "Cycle  %i:  " % j
-                    logging.debug(txt)
-                    c = test[(test[cycle_index_header] == j)]
-                    v.append(c[datetime_header])
-            else:
-                logging.debug("returning full datetime col")
-                v = test[datetime_header]
-        return v
-
-    def get_timestamp(self, cycle=None, in_minutes=False, full=True, as_frame=True):
-        """Returns timestamps (in sec or minutes (if in_minutes==True)).
-
-        Args:
-            cycle: cycle number (all if None)
-            in_minutes: return values in minutes instead of seconds if True
-            full: valid only for cycle=None (i.e. all cycles), returns the full
-               pandas.Series if True, else a list of pandas.Series
-
-        Returns:
-            pandas.Series (or list of pandas.Series if cycle=None og full=False)
-        """
-
-        cycle_index_header = self.headers_normal.cycle_index_txt
-        timestamp_header = self.headers_normal.test_time_txt
-
-        v = pd.Series()
-        test = self.data.raw
-        if cycle:
-            c = test[(test[cycle_index_header] == cycle)]
-            if not self._is_empty_array(c):
-                v = c[timestamp_header]
-
-        else:
-            if not full:
-                logging.debug("getting timestapm for all cycles")
-                v = []
-                cycles = self.get_cycle_numbers()
-                for j in cycles:
-                    txt = "Cycle  %i:  " % j
-                    logging.debug(txt)
-                    c = test[(test[cycle_index_header] == j)]
-                    v.append(c[timestamp_header])
-            else:
-                logging.debug("returning full timestamp col")
-                v = test[timestamp_header]
-                if in_minutes and v is not None:
-                    v /= 60.0
-        if in_minutes and v is not None:
-            v /= 60.0
-        return v
 
     def get_dcap(
         self,
@@ -4561,18 +4537,6 @@ class CellpyCell:
             no_cycles = np.amax(steptable[self.headers_step_table.cycle])
         return no_cycles
 
-    def get_cycle_numbers_old(self, steptable=None):
-        """Get a list containing all the cycle numbers in the test."""
-        logging.debug("getting cycle numbers")
-        if steptable is None:
-            d = self.data.raw
-            cycles = d[self.headers_normal.cycle_index_txt].dropna().unique()
-        else:
-            logging.debug("steptable is not none")
-            cycles = steptable[self.headers_step_table.cycle].dropna().unique()
-        logging.debug(f"got {len(cycles)} cycle numbers")
-        return cycles
-
     def get_cycle_numbers(
         self,
         steptable=None,
@@ -4814,6 +4778,26 @@ class CellpyCell:
 
         value = value.to(self.cellpy_units[physical_property])
 
+        return value.m
+
+    def unit_scaler_from_raw(self, unit, physical_property):
+        """Get the conversion factor going from raw to given unit.
+
+        Args:
+            unit (str): what you want to convert to
+            physical_property (str): what this value is a measure of
+                (must correspond to one of the keys in the CellpyUnits class).
+
+        Returns (numeric):
+            conversion factor (scaler)
+        """
+        logging.debug(
+            f"value {unit} is a pint quantity? {isinstance(unit, Quantity)}"
+        )
+
+        old_unit = self.data.raw_units[physical_property]
+        value = Q(1, old_unit)
+        value = value.to(unit)
         return value.m
 
     def get_converter_to_specific(
@@ -6393,18 +6377,37 @@ def check_new_dot_get_methods():
         debug=True,
     )
     # pprint(c.headers_normal)
-    cycles_a = None
+    cycles_a = [1, 2, 3]
     cycles_b = np.array([1, 2, 3])
     cycles_c = [1, 2, 3]
-    a = c.get_current(cycles_a, with_time=True)
-    print(f"{cycles_a=}".center(80, "-"))
+    a = c.get_timestamp(cycles_a, with_index=True, units="raw")
+    print(f"{cycles_a=} raw".center(80, "-"))
     pprint(a)
-    print(f"{cycles_b=}".center(80, "-"))
-    b = c.get_current(cycles_b)
-    pprint(b)
-    print(f"{cycles_c=}".center(80, "-"))
-    c = c.get_current(cycles_c, with_time=True, with_index=False, as_frame=False)
-    pprint(c)
+
+    a = c.get_timestamp(cycles_a, units="seconds")
+    print(f"{cycles_a=} seconds".center(80, "-"))
+    pprint(a)
+
+    a = c.get_timestamp(cycles_a, units="minutes")
+    print(f"{cycles_a=} minutes".center(80, "-"))
+    pprint(a)
+
+    a = c.get_timestamp(cycles_a, units="hours")
+    print(f"{cycles_a=} hours".center(80, "-"))
+    pprint(a)
+
+    a = c.get_timestamp(cycles_a, in_minutes=True, units="hours")
+    print(f"{cycles_a=} hours".center(80, "-"))
+    pprint(a)
+
+    #
+    #
+    # print(f"{cycles_b=}".center(80, "-"))
+    # b = c.get_timestamp(cycles_b)
+    # pprint(b)
+    # print(f"{cycles_c=}".center(80, "-"))
+    # c = c.get_timestamp(cycles_c, with_index=False, as_frame=False)
+    # pprint(c)
 
 
 if __name__ == "__main__":

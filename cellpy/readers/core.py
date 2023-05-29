@@ -495,8 +495,7 @@ class Data:
 
         txt += self._header_str("RAW UNITS")
         try:
-            txt += str(self.raw.describe())
-            txt += str(self.raw.head())
+            txt += str(self.raw_units)
         except (AttributeError, ValueError):
             txt += "EMPTY (Not processed yet)\n"
         return txt
