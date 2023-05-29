@@ -356,7 +356,7 @@ class Data:
         self.steps = pd.DataFrame()
 
         self.meta_common = CellpyMetaCommon()
-        # TODO: v2.0 consider making this a list of CellpyMetaIndividualTest
+        # TODO: v2.0 consider making this a list of several CellpyMetaIndividualTest
         self.meta_test_dependent = CellpyMetaIndividualTest()
 
         # custom meta-data

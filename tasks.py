@@ -386,7 +386,7 @@ def _get_bump_tag(bump):
     elif bump not in ["p", "patch", "m", "minor", "major", "t", "tag"]:
         bumper = bump_tags.get(bump, default_bumper)
     else:
-        bumper = bump
+        bumper = bumpn
     return bumper
 
 
@@ -435,7 +435,9 @@ def bump(c, bumper=None):
 
 
     """
+
     bumper = _get_bump_tag(bumper)
+
     if not bumper:
         regex_current = re.compile("Current Version: (.*)")
         print("only checking current version (no bumping)")
