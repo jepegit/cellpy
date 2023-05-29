@@ -187,6 +187,8 @@ class LabJournal(BaseJournal, ABC):
         if self.db_reader is not None:
             if isinstance(self.db_reader, dbreader.Reader):  # Simple excel-db
                 id_keys = self.db_reader.select_batch(name, batch_col)
+                logging.debug(f"id_keys: {id_keys}")
+
                 self.pages = self.engine(self.db_reader, id_keys, **kwargs)
             else:
                 logging.debug(
@@ -216,15 +218,17 @@ class LabJournal(BaseJournal, ABC):
 
     @staticmethod
     def _fix_cellpy_paths(p):
-        if platform.system() != "Windows":
-            if p.find("\\") >= 0:
-                # convert from win to posix
-                p = pathlib.PureWindowsPath(p)
-        else:
-            if p.find("/") >= 0:
-                # convert from posix to win
-                p = pathlib.PurePosixPath(p)
-        return pathlib.Path(p)
+        logging.debug("_fix_cellpy_paths does not work with OtherPaths yet")
+        # if platform.system() != "Windows":
+        #     if p.find("\\") >= 0:
+        #         # convert from win to posix
+        #         p = pathlib.PureWindowsPath(p)
+        # else:
+        #     if p.find("/") >= 0:
+        #         # convert from posix to win
+        #         p = pathlib.PurePosixPath(p)
+        # p = pathlib.Path(p)
+        return p
 
     @classmethod
     def read_journal_jason_file(cls, file_name, **kwargs):

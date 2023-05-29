@@ -14,16 +14,99 @@ from cellpy.parameters import prms
 from cellpy.internals.core import OtherPath
 
 
+# TODO: @jepe - add function for dumping the raw-file directory to a file,
+#   for example an sqlite db or a json file,
+#   and add function for reading and searching in the dumped file
+
+# TODO: @jepe - add function for searching in cloud storage (dropbox, google drive etc)
+# TODO: @jepe - add function for searching in database (sqlite, postgresql etc)
+
+
+def list_raw_file_directory(
+    raw_file_dir: Union[OtherPath, pathlib.Path, str, None] = None,
+    project_dir: Union[OtherPath, pathlib.Path, str, None] = None,
+    extension: Optional[str] = None,
+    levels: Optional[int] = 1,
+    only_filename: Optional[bool] = False,
+    with_prefix: Optional[bool] = True,
+):
+    """Dumps the raw-file directory to a list.
+
+    Args:
+        raw_file_dir(path): optional, directory where to look for run-files
+            (default: read prm-file)
+        project_dir(path): optional, subdirectory in raw_file_dir to look for run-files
+        extension (str): optional, extension of run-files (without the '.'). If
+            not given, all files will be listed.
+        levels (int, optional): How many sublevels to list. Defaults to 1.
+            If you want to list all sublevels, use `listdir(levels=-1)`.
+            If you want to list only the current level (no subdirectories),
+            use `listdir(levels=0)`.
+        only_filename (bool, optional): If True, only the file names will be
+            returned. Defaults to False.
+        with_prefix (bool, optional): If True, the full path to the files including
+            the prefix and the location (e.g. 'scp://user@server.com/...')
+            will be returned. Defaults to True.
+
+    Returns:
+        list of str: list of file paths (only the actual file names).
+
+    Notes:
+        This function might be rather slow and memory consuming if you have
+        a lot of files in your raw-file directory. If you have a lot of files,
+        you might want to consider running this function in a separate process
+        (e.g. in a separate python script or using multiprocessing).
+
+        The function currently returns the full path to the files from the
+        root directory. It does not include the prefix (e.g. ssh://).
+        Future versions might change this to either include the prefix or
+        return the files relative to the ``raw_file_dir`` directory.
+    """
+
+    file_list = []
+
+    if raw_file_dir is None:
+        raw_file_dir = prms.Paths.rawdatadir
+
+    # 'dressing' the raw_file_dir in a list in case we want to
+    # search in several folders (not implemented yet):
+    if not isinstance(raw_file_dir, (list, tuple)):
+        raw_file_dir = [OtherPath(raw_file_dir)]
+    else:
+        raw_file_dir = [OtherPath(d) for d in raw_file_dir]
+
+    if project_dir is not None:
+        raw_file_dir = [r / project_dir for r in raw_file_dir]
+
+    for d in raw_file_dir:
+        _file_list = d.listdir(levels=levels)
+        if extension is not None:
+            logging.debug(f"filtering for extension: {extension}")
+            _file_list = fnmatch.filter(_file_list, f"*.{extension}")
+        if only_filename:
+            logging.debug("only returning the file names")
+            _file_list = [f.name for f in _file_list]
+        elif with_prefix:
+            logging.debug("adding prefix to file names")
+            logging.debug(f"{d.pathlike_location=}")
+            _file_list = [d.pathlike_location / f for f in _file_list]
+
+        file_list.extend(_file_list)
+
+    return file_list
+
+
 def search_for_files(
     run_name: str,
     raw_extension: Optional[str] = None,
     cellpy_file_extension: Optional[str] = None,
     raw_file_dir: Union[OtherPath, pathlib.Path, str, None] = None,
+    project_dir: Union[OtherPath, pathlib.Path, str, None] = None,
     cellpy_file_dir: Union[OtherPath, pathlib.Path, str, None] = None,
     prm_filename: Union[pathlib.Path, str, None] = None,
     file_name_format: Optional[str] = None,
     reg_exp: Optional[str] = None,
-    sub_folders: bool = False,
+    sub_folders: Optional[bool] = True,
     file_list: Optional[List[str]] = None,
     pre_path: Union[OtherPath, pathlib.Path, str, None] = None,
 ) -> Tuple[List[str], str]:
@@ -36,6 +119,8 @@ def search_for_files(
         cellpy_file_extension(str): optional, extension for cellpy files
             (without the '.').
         raw_file_dir(path): optional, directory where to look for run-files
+            (default: read prm-file)
+        project_dir(path): optional, subdirectory in raw_file_dir to look for run-files
             (default: read prm-file)
         cellpy_file_dir(path): optional, directory where to look for
             cellpy-files (default: read prm-file)
@@ -63,8 +148,8 @@ def search_for_files(
     # TODO: update prms and conf file to allow for setting if search should be done in
     #  sub-folders, several folders, db, cloud etc
     # TODO: @jepe - find a way to implement automatic file_list creation in a top level func.
-
-    version = 0.3
+    logging.debug(f"searching for {run_name}")
+    version = 0.4
     t0 = time.time()
 
     if reg_exp is None:
@@ -79,13 +164,12 @@ def search_for_files(
     if cellpy_file_extension is None:
         cellpy_file_extension = prms.FileNames.cellpy_file_extension
 
-    # backward compatibility check
+    # backward compatibility check:
     if cellpy_file_extension.startswith("."):
         warnings.warn(
             "Deprecation warning: cellpy_file_extension should not include the '.'"
         )
         cellpy_file_extension = cellpy_file_extension[1:]
-        warnings.warn(f"Removing it -> {cellpy_file_extension}")
 
     if raw_file_dir is None:
         raw_file_dir = prms.Paths.rawdatadir
@@ -93,10 +177,15 @@ def search_for_files(
     if file_name_format is None:
         file_name_format = prms.FileNames.file_name_format
 
+    # 'dressing' the raw_file_dir in a list in case we want to
+    # search in several folders (not implemented yet):
     if not isinstance(raw_file_dir, (list, tuple)):
         raw_file_dir = [OtherPath(raw_file_dir)]
     else:
         raw_file_dir = [OtherPath(d) for d in raw_file_dir]
+
+    if project_dir is not None:
+        raw_file_dir = [r / project_dir for r in raw_file_dir]
 
     if reg_exp:
         logging.warning(f"Got reg_exp: {reg_exp}")
@@ -160,7 +249,7 @@ def search_for_files(
                 _run_files = []
             else:
                 logging.debug(f"checking in folder {d}")
-
+                logging.debug(f"{sub_folders=}")
                 if sub_folders:
                     _run_files = d.rglob(glob_text_raw)
 
@@ -249,5 +338,19 @@ def check_02():
             print(f"file: {f} of type {type(f)}")
 
 
+def check_03():
+    from cellpy import prms
+    from pprint import pprint
+
+    prms.Paths.rawdatadir = r"C:\scripting\processing_cellpy\raw"
+    file_list = list_raw_file_directory(
+        raw_file_dir=None,
+        project_dir=None,
+        extension="hei",
+    )
+    for f in file_list:
+        print(f"{f} type: {type(f)} path: {f.full_path}")
+
+
 if __name__ == "__main__":
-    check_01()
+    check_03()

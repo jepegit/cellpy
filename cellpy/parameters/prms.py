@@ -105,6 +105,7 @@ class FileNamesClass(CellPyConfig):
     file_name_format: str = "YYYYMMDD_[NAME]EEE_CC_TT_RR"
     raw_extension: str = "res"
     reg_exp: str = None
+    sub_folders: bool = True
     file_list_location: str = None
     file_list_type: str = None
     file_list_name: str = None
@@ -130,7 +131,9 @@ class ReaderClass(CellPyConfig):
     time_interpolation_step: float = 10.0
     capacity_interpolation_step: float = 2.0
     use_cellpy_stat_file: bool = False
-    auto_dirs: bool = True  # search in prm-file for res and hdf5 dirs in cellpy.get()
+    auto_dirs: bool = (
+        True  # v2.0 search in prm-file for res and hdf5 dirs in cellpy.get()
+    )
 
 
 @dataclass

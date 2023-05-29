@@ -39,6 +39,7 @@ HEADERS_STEP_TABLE = get_headers_step_table()  # TODO @jepe refactor this (not n
 
 # pint (https://pint.readthedocs.io/en/stable/)
 ureg = pint.UnitRegistry()
+ureg.default_format = "~P"
 Q = ureg.Quantity
 
 
@@ -355,6 +356,7 @@ class Data:
         self.steps = pd.DataFrame()
 
         self.meta_common = CellpyMetaCommon()
+        # TODO: v2.0 consider making this a list of several CellpyMetaIndividualTest
         self.meta_test_dependent = CellpyMetaIndividualTest()
 
         # custom meta-data
@@ -425,9 +427,9 @@ class Data:
 
     @nom_cap.setter
     def nom_cap(self, value):
-        if value < 1.0:
+        if value < 0.1:
             warnings.warn(
-                f"POSSIBLE BUG: NOMINAL CAPACITY LESS THAN 1.0 ({value}).",
+                f"POSSIBLE BUG: NOMINAL CAPACITY LESS THAN 0.1 ({value}).",
                 DeprecationWarning,
                 stacklevel=2,
             )
@@ -493,8 +495,7 @@ class Data:
 
         txt += self._header_str("RAW UNITS")
         try:
-            txt += str(self.raw.describe())
-            txt += str(self.raw.head())
+            txt += str(self.raw_units)
         except (AttributeError, ValueError):
             txt += "EMPTY (Not processed yet)\n"
         return txt
@@ -852,6 +853,7 @@ def collect_capacity_curves(
                     trim_taper_steps=trim_taper_steps,
                     steps_to_skip=steps_to_skip,
                     steptable=steptable,
+                    as_frame=False,
                 )
             else:
                 q, v = cell.get_dcap(
@@ -859,6 +861,7 @@ def collect_capacity_curves(
                     trim_taper_steps=trim_taper_steps,
                     steps_to_skip=steps_to_skip,
                     steptable=steptable,
+                    as_frame=False,
                 )
 
         except NullData as e:

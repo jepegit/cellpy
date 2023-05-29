@@ -89,7 +89,7 @@ class Batch:
         """
         # TODO: add option for setting max cycle number
         #   use self.experiment.last_cycle = xxx
-        default_log_level = kwargs.pop("log_level", None)
+        default_log_level = kwargs.pop("default_log_level", None)
         custom_log_dir = kwargs.pop("custom_log_dir", None)
         if default_log_level is not None or custom_log_dir is not None:
             log.setup_logging(
@@ -836,6 +836,9 @@ class Batch:
             cell_specs (dict of dicts): individual arguments pr. cell. The `cellspecs` key-word argument
                 dictionary will override the **kwargs and the parameters from the journal pages
                 for the indicated cell.
+            logging_mode (str): sets the logging mode for the loader(s).
+            accept_errors (bool): if True, the loader will continue even if it encounters errors.
+
 
         Additional kwargs:
             transferred all the way to the instrument loader, if not

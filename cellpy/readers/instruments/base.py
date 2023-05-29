@@ -178,6 +178,7 @@ class AtomicLoad:
     _fid = None
     _is_db: bool = False
     _copy_also_local: bool = True
+    _refuse_copying: bool = False
 
     @property
     def is_db(self):
@@ -188,6 +189,16 @@ class AtomicLoad:
     def is_db(self, value: bool):
         """Is the file stored in the database"""
         self._is_db = value
+
+    @property
+    def refuse_copying(self):
+        """Should the file be copied to a temporary file"""
+        return self._refuse_copying
+
+    @refuse_copying.setter
+    def refuse_copying(self, value: bool):
+        """Should the file be copied to a temporary file"""
+        self._refuse_copying = value
 
     @property
     def name(self):
@@ -239,6 +250,11 @@ class AtomicLoad:
         if self.name is None:
             raise ValueError("no file name given to loader class (self.name is None)")
 
+        if self._refuse_copying:
+            logging.debug("refusing copying")
+            self._temp_file_path = self.name
+            return
+
         if not self._copy_also_local and not self.name.is_external:
             self._temp_file_path = self.name
             return
@@ -248,6 +264,7 @@ class AtomicLoad:
     def loader_executor(self, *args, **kwargs):
         """Load the file"""
         name = args[0]
+        self.refuse_copying = kwargs.pop("refuse_copying", False)
         self.name = name
         if not self.is_db:
             self.copy_to_temporary()

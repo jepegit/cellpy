@@ -20,14 +20,17 @@ import numbers
 import os
 import sys
 import time
+import datetime
 import warnings
 from pathlib import Path
-from typing import Union, Sequence, List
+from typing import Union, Sequence, List, Optional, Iterable
 from dataclasses import asdict
 
 import numpy as np
+import openpyxl
 import pandas as pd
 from pandas.errors import PerformanceWarning
+from pint.errors import DimensionalityError
 from pint import Quantity
 from scipy import interpolate
 
@@ -76,6 +79,8 @@ from cellpy.readers.core import (
 )
 from cellpy.internals.core import OtherPath
 
+DIGITS_C_RATE = 5
+
 HEADERS_NORMAL = get_headers_normal()  # TODO @jepe refactor this (not needed)
 HEADERS_SUMMARY = get_headers_summary()  # TODO @jepe refactor this (not needed)
 HEADERS_STEP_TABLE = get_headers_step_table()  # TODO @jepe refactor this (not needed)
@@ -87,10 +92,8 @@ HEADERS_STEP_TABLE = get_headers_step_table()  # TODO @jepe refactor this (not n
 #   a method for "splitting that up"
 
 # TODO: @jepe - performance warnings - mixed types within cols (pytables)
-performance_warning_level = "ignore"  # "ignore", "error"
-warnings.filterwarnings(
-    performance_warning_level, category=pd.io.pytables.PerformanceWarning
-)
+
+warnings.filterwarnings("ignore", category=pd.io.pytables.PerformanceWarning)
 pd.set_option("mode.chained_assignment", None)  # "raise", "warn", None
 
 module_logger = logging.getLogger(__name__)
@@ -108,24 +111,36 @@ class CellpyCell:
     Attributes:
         # TODO v.1.0.1: update this
         data: cellpy.Data object
+        cellpy_units: cellpy.units object
+        cellpy_datadir: path to cellpy data directory
+        raw_datadir: path to raw data directory
+        filestatuschecker: filestatuschecker object
+        force_step_table_creation: force step table creation
+        ensure_step_table: ensure step table
+        limit_loaded_cycles: limit loaded cycles
+        profile: profile
+        select_minimal: select minimal
+        empty: empty
+        forced_errors: forced errors
+        capacity_modifiers: capacity modifiers
+        sep: separator
+        cycle_mode: cycle mode
+        tester: tester
+        cell_name: cell name
+        cellpy_file_version: cellpy file version
     """
 
     def __repr__(self):
-        txt = f"CellpyCell-object (id={hex(id(self))})"
-        if self.session_name:
-            txt += f"\nname: {self.session_name}"
-        if self.table_names:
-            txt += f"\ntable_names: {self.table_names}"
-        if self.tester:
-            txt += f"\ntester: {self.tester}"
+        txt = f"<CellpyCell> (id={hex(id(self))})"
+        if self.cell_name:
+            txt += f" [name={self.cell_name}]"
         return txt
 
     def _repr_html_(self):
         header = f"""
             <h2>CellpyCell-object</h2>
             <b>id</b>: {hex(id(self))} <br>
-            <b>name</b>: {self.session_name} <br>
-            <b>table names</b>: {self.table_names} <br>
+            <b>name</b>: {self.cell_name} <br>
             <b>tester</b>: {self.tester} <br>
             <b>cycle_mode</b>: {self.cycle_mode} <br>
             <b>sep</b>: {self.sep} <br>
@@ -145,7 +160,6 @@ class CellpyCell:
             <b>cellpy_units</b>: {self.cellpy_units} <br>
             <b>select_minimal</b>: {self.select_minimal} <br>
             <b>selected_scans</b>: {self.selected_scans} <br>
-            <b>summary_exists (deprecated)</b>: {self.summary_exists} <br>
         """
         all_vars += "</p>"
 
@@ -155,11 +169,10 @@ class CellpyCell:
         return header + all_vars + cell_txt
 
     def __str__(self):
-        txt = "<CellpyCell>\n"
-        if self.session_name:
-            txt += f"session name: {self.session_name}\n"
-        if self.table_names:
-            txt += f"table names: {self.table_names}\n"
+        txt = "CellpyCell\n"
+        txt += "----------\n"
+        if self.cell_name:
+            txt += f"session name: {self.cell_name}\n"
         if self.tester:
             txt += f"tester: {self.tester}\n"
         if self.data:
@@ -196,6 +209,7 @@ class CellpyCell:
         initialize=False,
         cellpy_units=None,
         output_units=None,
+        debug=False,
     ):
         """CellpyCell object
 
@@ -210,6 +224,7 @@ class CellpyCell:
             initialize: create a dummy (empty) dataset; defaults to False.
             cellpy_units (dict): sent to cellpy.parameters.internal_settings.get_cellpy_units
             output_units (dict): sent to cellpy.parameters.internal_settings.get_default_output_units
+            debug (bool): set to True if you want to see debug messages.
         """
 
         # TODO v 1.1: move to data (allow for multiple testers for same cell)
@@ -220,15 +235,15 @@ class CellpyCell:
             self.tester = tester
 
         self.loader = None  # this will be set in the function set_instrument
+        self.debug = debug
         logging.debug("created CellpyCell instance")
 
-        self._session_name = None
+        self._cell_name = None
         self.profile = profile
 
         self.minimum_selection = {}
         self.filestatuschecker = filestatuschecker or prms.Reader.filestatuschecker
         self.forced_errors = 0
-        self.summary_exists = False
 
         self.file_names = filenames or []
         if not self._is_listtype(self.file_names):
@@ -270,59 +285,132 @@ class CellpyCell:
         self.ensure_summary_table = prms.Reader.ensure_summary_table
         self.raw_datadir = OtherPath(prms.Paths.rawdatadir)
         self.cellpy_datadir = OtherPath(prms.Paths.cellpydatadir)
-        self.auto_dirs = prms.Reader.auto_dirs
+        self.auto_dirs = prms.Reader.auto_dirs  # v2.0
 
         # - headers and instruments
         self.headers_normal = headers_normal
         self.headers_summary = headers_summary
         self.headers_step_table = headers_step_table
-
-        self.table_names = None  # dictionary defined in set_instruments
         self.instrument_factory = None
         self.register_instrument_readers()
         self.set_instrument()
         # - units used by cellpy
         self.cellpy_units = get_cellpy_units(cellpy_units)
-        self.output_units = get_default_output_units(output_units)
+        self.output_units = get_default_output_units(output_units)  # v2.0
 
         if initialize:
             self.initialize()
 
     def initialize(self):
-        """Initialize the cellpycell object."""
+        """Initialize the CellpyCell object with empty Data instance."""
 
         logging.debug("Initializing...")
-        # TODO: v.1.0.0: replace this
         self._data = Data()
 
     # the batch utility might be using session name
     # the cycle and ica collector are using session name
     # improvement suggestion: use data.cell_name instead
     @property
-    def session_name(self):
+    def cell_name(self):
         """returns the session name"""
 
-        if not self._session_name:
+        if not self._cell_name:
             return self.data.cell_name
         else:
-            return self._session_name
+            return self._cell_name
 
-    @session_name.setter
-    def session_name(self, n):
+    @cell_name.setter
+    def cell_name(self, n):
         """sets the session name"""
 
-        self._session_name = n
+        self._cell_name = n
         if not self.data.cell_name:
             self.data.cell_name = n
 
-    def _invent_a_session_name(self, filename=None, override=False):
+    def _invent_a_cell_name(self, filename=None, override=False):
         if filename is None:
-            self.session_name = "nameless"
+            self.cell_name = "nameless"
             return
-        if self.session_name and not override:
+        if self.cell_name and not override:
             return
-        path = Path(filename)
-        self.session_name = path.with_suffix("").name
+        if isinstance(filename, (list, tuple)):
+            names = [Path(n).with_suffix("").name for n in filename]
+            names = [
+                n.replace(" ", "_").replace("-", "_").replace(".", "_") for n in names
+            ]
+            names = list(set(names))
+            if len(names) == 1:
+                self.cell_name = names[0]
+            else:
+                self.cell_name = "-".join(names)
+        else:
+            self.cell_name = Path(filename).with_suffix("").name
+
+    @property
+    def mass(self):
+        """returns the mass"""
+        return self.data.mass
+
+    @mass.setter
+    def mass(self, m):
+        self.data.mass = self._dump_cellpy_unit(m, "mass")
+
+    @property
+    def active_electrode_area(self):
+        """returns the area"""
+        return self.data.active_electrode_area
+
+    @active_electrode_area.setter
+    def active_electrode_area(self, a):
+        self.data.active_electrode_area = self._dump_cellpy_unit(a, "area")
+
+    @property
+    def nom_cap(self):
+        """returns the nominal capacity"""
+        return self.data.nom_cap
+
+    @nom_cap.setter
+    def nom_cap(self, c):
+        self.data.nom_cap = self._dump_cellpy_unit(c, "nominal_capacity")
+
+    def _dump_cellpy_unit(self, value, parameter):
+        """Parse for unit, update cellpy_units class, and return magnitude."""
+        if isinstance(value, numbers.Number):
+            return value
+        logging.debug(f"Parsing {parameter} ({value})")
+        try:
+            c = Q(value)
+            c_unit = c.units
+            self.cellpy_units[parameter] = f"{c_unit}"
+            c = c.magnitude
+        except ValueError:
+            logging.debug(f"Could not parse {value}")
+            return
+        return c
+
+    @property
+    def nom_cap_specifics(self):
+        """returns the nominal capacity specific"""
+        return self.data.meta_common.nom_cap_specifics
+
+    @nom_cap_specifics.setter
+    def nom_cap_specifics(self, c):
+        if c.lower() == "areal":
+            self.cellpy_units.nominal_capacity = (
+                f"{self.cellpy_units.charge}/{self.cellpy_units.specific_areal}"
+            )
+        elif c.lower() == "gravimetric":
+            self.cellpy_units.nominal_capacity = (
+                f"{self.cellpy_units.charge}/{self.cellpy_units.specific_gravimetric}"
+            )
+        elif c.lower() == "volumetric":
+            self.cellpy_units.nominal_capacity = (
+                f"{self.cellpy_units.charge}/{self.cellpy_units.specific_volumetric}"
+            )
+        else:
+            logging.warning(f"Unknown nominal capacity specific: {c}")
+            return
+        self.data.meta_common.nom_cap_specifics = c
 
     @property
     def raw_units(self):
@@ -650,20 +738,20 @@ class CellpyCell:
 
     @property
     def cycle_mode(self):
-        # TODO: edit this from scalar to list
+        # TODO: v2.0 edit this from scalar to list
         try:
             data = self.data
-            return data.meta_test_dependent.cycle_mode[0]
+            return data.meta_test_dependent.cycle_mode
         except NoDataFound:
             return self._cycle_mode
 
     @cycle_mode.setter
     def cycle_mode(self, cycle_mode):
-        # TODO: edit this from scalar to list
+        # TODO: v2.0 edit this from scalar to list
         logging.debug(f"-> cycle_mode: {cycle_mode}")
         try:
             data = self.data
-            data.meta_test_dependent.cycle_mode = [cycle_mode]
+            data.meta_test_dependent.cycle_mode = cycle_mode
             self._cycle_mode = cycle_mode
         except NoDataFound:
             self._cycle_mode = cycle_mode
@@ -945,8 +1033,7 @@ class CellpyCell:
             >>> ... cell_data.loadcell(raw_files=rawfiles,
             >>> ...                    cellpy_file=cellpyfiles)
             >>> ... cell_data.set_mass(mass)
-            >>> ... if not cell_data.summary_exists:
-            >>> ...     cell_data.make_summary() # etc. etc.
+            >>> ... cell_data.make_summary() # etc. etc.
             >>> ... cell_datas.append(cell_data)
             >>>
         """
@@ -1040,6 +1127,7 @@ class CellpyCell:
         pre_processor_hook=None,
         post_processor_hook=None,
         is_a_file=True,
+        refuse_copying=False,
         **kwargs,
     ):
         """Load a raw data-file.
@@ -1051,7 +1139,8 @@ class CellpyCell:
             pre_processor_hook (callable): function that will be applied to the data within the loader.
             post_processor_hook (callable): function that will be applied to the
                 cellpy.Dataset object after initial loading.
-            is_a_file (bool): performs an is_file check if set to True.
+            is_a_file (bool): set this to False if it is a not a file-like object.
+            refuse_copying (bool): if set to True, the raw-file will not be copied before loading.
 
         Keyword Args for merging:
             recalc (bool): set to false if you don't want cellpy to automatically shift cycle number
@@ -1109,7 +1198,10 @@ class CellpyCell:
                     raise NoDataFound(f"Could not find the file {file_name}")
 
             new_data = raw_file_loader(
-                file_name, pre_processor_hook=pre_processor_hook, **kwargs
+                file_name,
+                pre_processor_hook=pre_processor_hook,
+                refuse_copying=refuse_copying,
+                **kwargs,
             )  # list of tests
 
             if new_data is None:
@@ -1151,7 +1243,7 @@ class CellpyCell:
             data.raw_units = self._set_raw_units()
 
         self.data = data
-        self._invent_a_session_name()  # TODO (v1.0.0): fix me
+        self._invent_a_cell_name(self.file_names)  # TODO (v1.0.0): fix me
         return self
 
     def _validate_cell(self, level=0):
@@ -1242,7 +1334,7 @@ class CellpyCell:
             logging.warning("Could not load")
             logging.warning(str(cellpy_file))
 
-        self._invent_a_session_name(cellpy_file)
+        self._invent_a_cell_name(cellpy_file)
         if return_cls:
             return self
 
@@ -2547,7 +2639,7 @@ class CellpyCell:
         time_00 = time.time()
 
         if nom_cap_specifics is None:
-            nom_cap_specifics = prms.Materials.default_nom_cap_specifics
+            nom_cap_specifics = self.nom_cap_specifics
 
         if profiling:
             print("PROFILING MAKE_STEP_TABLE".center(80, "="))
@@ -2663,7 +2755,7 @@ class CellpyCell:
             df_steps[shdr.rate_avr] = abs(
                 round(
                     df_steps.loc[:, (shdr.current, "avr")] / nom_cap,
-                    3,
+                    DIGITS_C_RATE,
                 )
             )
         df_steps[shdr.type] = np.nan
@@ -3089,6 +3181,7 @@ class CellpyCell:
         logging.debug(f"(dt: {(time.time() - time_00):4.2f}s)")
 
     def _export_steptable(self, data, setname=None, sep=None, outname=None):
+        # TODO 259: rename to _export_steps_csv
         time_00 = time.time()
         lastname = "_steps.csv"
         if sep is None:
@@ -3105,6 +3198,138 @@ class CellpyCell:
             warnings.warn(f"Unhandled exception raised: {e}")
         logging.info(txt)
         logging.debug(f"(dt: {(time.time() - time_00):4.2f}s)")
+
+    def to_excel(
+        self,
+        filename=None,
+        cycles=None,
+        raw=False,
+        steps=True,
+        nice=True,
+        get_cap_kwargs=None,
+        to_excel_kwargs=None,
+    ):
+        """Saves the data as .xlsx file(s).
+
+        Args:
+            filename: name of the Excel file.
+            cycles: (None, bool, or list of ints) export voltage-capacity curves if given.
+            raw: (bool) export raw-data if True.
+            steps: (bool) export steps if True.
+            nice: (bool) use nice formatting if True.
+            get_cap_kwargs: (dict) kwargs for CellpyCell.get_cap method.
+            to_excel_kwargs: (dict) kwargs for pandas.DataFrame.to_excel method.
+        """
+        to_excel_method_kwargs = {"index": True, "header": True}
+        get_cap_method_kwargs = {
+            "method": "forth-and-forth",
+            "label_cycle_number": True,
+            "categorical_column": True,
+            "interpolated": True,
+            "number_of_points": 1000,
+            "capacity_then_voltage": True,
+        }
+        if to_excel_kwargs is not None:
+            to_excel_method_kwargs.update(to_excel_kwargs)
+        if get_cap_kwargs is not None:
+            get_cap_method_kwargs.update(get_cap_kwargs)
+
+        border = openpyxl.styles.Border()
+        face_color = "00EEEEEE"
+        meta_alignment_left = openpyxl.styles.Alignment(
+            horizontal="left", vertical="bottom"
+        )
+        meta_width = 34
+        meta_alignment_right = openpyxl.styles.Alignment(
+            horizontal="right", vertical="bottom"
+        )
+        fill = openpyxl.styles.PatternFill(
+            start_color=face_color, end_color=face_color, fill_type="solid"
+        )
+
+        if filename is None:
+            pre = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"{pre}_cellpy.xlsx"
+            filename = Path(filename).resolve()
+            logging.critical(f"generating filename: {filename}")
+
+        summary_frame = self.data.summary
+        meta_common_frame = self.data.meta_common.to_frame()
+        meta_test_dependent_frame = self.data.meta_test_dependent.to_frame()
+        cellpy_units = self.cellpy_units.to_frame()
+        cellpy_units.index = "cellpy_units_" + cellpy_units.index
+        raw_units = self.raw_units.to_frame()
+        raw_units.index = "raw_units_" + raw_units.index
+
+        meta_common_frame = pd.concat([meta_common_frame, cellpy_units, raw_units])
+
+        with pd.ExcelWriter(filename, engine="openpyxl") as writer:
+            meta_common_frame.to_excel(
+                writer, sheet_name="meta_common", **to_excel_method_kwargs
+            )
+            meta_test_dependent_frame.to_excel(
+                writer, sheet_name="meta_test_dependent", **to_excel_method_kwargs
+            )
+            summary_frame.to_excel(
+                writer, sheet_name="summary", **to_excel_method_kwargs
+            )
+
+            if raw:
+                # TODO: raw-table has two columns called "data_point" at the moment,
+                #  so this should be fixed (probably the .set_index("data_point") should be checked)
+                logging.debug("exporting raw data")
+                raw = self.data.raw
+                max_len = 1_048_576
+                if len(raw) < max_len:
+                    raw.to_excel(writer, sheet_name="raw", **to_excel_method_kwargs)
+                else:
+                    logging.warning(
+                        "Raw data is too large to fit in one sheet. "
+                        "Splitting raw data into chunks. This is not tested yet"
+                    )
+                    n_chunks = len(raw) // max_len + 1
+                    for i in range(n_chunks):
+                        raw.iloc[i * max_len : (i + 1) * max_len].to_excel(
+                            writer, sheet_name=f"raw_{i:02}", **to_excel_method_kwargs
+                        )
+
+            if steps:
+                logging.debug("exporting steps")
+                # TODO: step-table has a columns called "index" at the moment,
+                #  so setting index=False for dataframe.to_excel
+                #  Maybe best to make sure that step table does not have a column called "index" in the future?
+                self.data.steps.to_excel(
+                    writer, sheet_name="steps", index=False, header=True
+                )
+            if cycles:
+                logging.debug("exporting cycles")
+                if cycles is True:
+                    cycles = self.get_cycle_numbers()
+                for cycle in cycles:
+                    _curves = self.get_cap(cycle=cycle, **get_cap_method_kwargs)
+                    _curves.to_excel(
+                        writer,
+                        sheet_name=f"cycle_{cycle:03}",
+                        index=False,
+                        header=True,
+                    )
+            if nice:
+                for sheet in writer.sheets.values():
+                    if sheet.title.startswith("meta"):
+                        sheet.column_dimensions["A"].width = meta_width
+                        for xl_cell in sheet["A"]:
+                            xl_cell.alignment = meta_alignment_left
+                            xl_cell.border = border
+                        for xl_cell in sheet["B"]:
+                            xl_cell.alignment = meta_alignment_right
+                            xl_cell.border = border
+                    else:
+                        for xl_cell in sheet["A"]:
+                            xl_cell.border = border
+
+                    for xl_cell in sheet["1"]:
+                        xl_cell.border = border
+                        xl_cell.fill = fill
 
     def to_csv(
         self,
@@ -3538,81 +3763,192 @@ class CellpyCell:
         header = self.headers_normal.current_txt
         return self._sget(cycle, step, header, usteps=False)
 
-    def get_voltage(self, cycle=None, full=True):
-        """Returns voltage (in V).
+    def get_raw(
+        self,
+        header,
+        cycle: Optional[Union[Iterable, int]] = None,
+        with_index: bool = True,
+        with_step: bool = False,
+        with_time: bool = False,
+        additional_headers: Optional[list] = None,
+        as_frame: bool = True,
+        scaler: Optional[float] = None,
+    ) -> Union[pd.DataFrame, List[np.array]]:
+        """Returns the values for column with given header (in raw units).
 
         Args:
-            cycle: cycle number (all cycles if None)
-            full: valid only for cycle=None (i.e. all cycles), returns the full
-               pandas.Series if True, else a list of pandas.Series
+            header: header name.
+            cycle: cycle number (all cycles if None).
+            with_index: if True, includes the cycle index as a column in the returned pandas.DataFrame.
+            with_step: if True, includes the step index as a column in the returned pandas.DataFrame.
+            with_time: if True, includes the time as a column in the returned pandas.DataFrame.
+            additional_headers (list): additional headers to include in the returned pandas.DataFrame.
+            as_frame: if not True, returns a list of current values as numpy arrays (one for each cycle).
+                Remark that with_time and with_index will be False if as_frame is set to False.
+            scaler: if not None, the returned values are scaled by this value.
 
         Returns:
-            pandas.Series (or list of pandas.Series if cycle=None og full=False)
+            pandas.DataFrame (or list of numpy arrays if as_frame=False)
         """
-
+        y_header = header  # Consider including some lookup handling here
         cycle_index_header = self.headers_normal.cycle_index_txt
-        voltage_header = self.headers_normal.voltage_txt
-        # step_index_header  = self.headers_normal.step_index_txt
+        time_header = self.headers_normal.test_time_txt
+        step_index_header = self.headers_normal.step_index_txt
+
+        if not as_frame:
+            with_time = False
+            with_index = True
+            with_step = False
+            additional_headers = None
+
+        y_headers = [y_header]
+        if with_time:
+            y_headers.append(time_header)
+        if with_step:
+            y_headers.append(step_index_header)
+        if with_index:
+            y_headers.append(cycle_index_header)
+
+        y_headers = reversed(y_headers)
+        if additional_headers is not None:
+            y_headers.extend(additional_headers)
 
         data = self.data.raw
-        if cycle:
-            logging.debug("getting voltage curve for cycle")
-            c = data[(data[cycle_index_header] == cycle)]
-            if not self._is_empty_array(c):
-                v = c[voltage_header]
-                return v
-        else:
-            if not full:
-                logging.debug("getting list of voltage-curves for all cycles")
-                v = []
-                no_cycles = np.amax(data[cycle_index_header])
-                for j in range(1, no_cycles + 1):
-                    txt = "Cycle  %i:  " % j
-                    logging.debug(txt)
-                    c = data[(data[cycle_index_header] == j)]
-                    v.append(c[voltage_header])
-            else:
-                logging.debug("getting frame of all voltage-curves")
-                v = data[voltage_header]
-            return v
 
-    def get_current(self, cycle=None, full=True):
-        """Returns current (in mA).
+        if cycle is None:
+            cycle = self.get_cycle_numbers()
+        else:
+            if not isinstance(cycle, collections.abc.Iterable):
+                cycle = [cycle]
+
+        logging.debug(f"getting current for cycles {cycle}")
+        c = data.loc[(data[cycle_index_header].isin(cycle)), y_headers]
+
+        if scaler is not None:
+            c[y_header] = c[y_header] * scaler
+
+        if not as_frame:
+            gb = c.groupby(cycle_index_header)
+            c = [gb.get_group(x) for x in gb.groups]
+            c = [x[y_header].values for x in c]
+        return c
+
+    def get_voltage(self, cycle=None, with_index=True, with_time=False, as_frame=True):
+        """Returns voltage (in raw units).
 
         Args:
-            cycle: cycle number (all cycles if None)
-            full: valid only for cycle=None (i.e. all cycles), returns the full
-               pandas.Series if True, else a list of pandas.Series
+            cycle: cycle number (all cycles if None).
+            with_index: if True, includes the cycle index as a column in the returned pandas.DataFrame.
+            with_time: if True, includes the time as a column in the returned pandas.DataFrame.
+            as_frame: if not True, returns a list of current values as numpy arrays (one for each cycle).
+                Remark that with_time and with_index will be False if as_frame is set to False.
 
         Returns:
-            pandas.Series (or list of pandas.Series if cycle=None og full=False)
+            pandas.DataFrame (or list of pandas.Series if cycle=None and as_frame=False)
         """
 
-        cycle_index_header = self.headers_normal.cycle_index_txt
-        current_header = self.headers_normal.current_txt
-        # step_index_header  = self.headers_normal.step_index_txt
+        y_header = self.headers_normal.voltage_txt
+        return self.get_raw(
+            y_header,
+            cycle=cycle,
+            with_index=with_index,
+            with_time=with_time,
+            as_frame=as_frame,
+            with_step=False,
+            additional_headers=None,
+            scaler=None,
+        )
 
-        data = self.data.raw
-        if cycle:
-            logging.debug(f"getting current for cycle {cycle}")
-            c = data[(data[cycle_index_header] == cycle)]
-            if not self._is_empty_array(c):
-                v = c[current_header]
-                return v
+    def get_current(self, cycle=None, with_index=True, with_time=False, as_frame=True):
+        """Returns current (in raw units).
+
+        Args:
+            cycle: cycle number (all cycles if None).
+            with_index: if True, includes the cycle index as a column in the returned pandas.DataFrame.
+            with_time: if True, includes the time as a column in the returned pandas.DataFrame.
+            as_frame: if not True, returns a list of current values as numpy arrays (one for each cycle).
+                Remark that with_time and with_index will be False if as_frame is set to False.
+
+        Returns:
+            pandas.DataFrame (or list of pandas.Series if cycle=None and as_frame=False)
+        """
+
+        y_header = self.headers_normal.current_txt
+        return self.get_raw(
+            y_header,
+            cycle=cycle,
+            with_index=with_index,
+            with_time=with_time,
+            as_frame=as_frame,
+            with_step=False,
+            additional_headers=None,
+            scaler=None,
+        )
+
+    def get_datetime(self, cycle=None, with_index=True, with_time=False, as_frame=True):
+        """Returns datetime (in raw units).
+
+        Args:
+            cycle: cycle number (all cycles if None).
+            with_index: if True, includes the cycle index as a column in the returned pandas.DataFrame.
+            with_time: if True, includes the time as a column in the returned pandas.DataFrame.
+            as_frame: if not True, returns a list of current values as numpy arrays (one for each cycle).
+                Remark that with_time and with_index will be False if as_frame is set to False.
+
+        Returns:
+            pandas.DataFrame (or list of pandas.Series if cycle=None and as_frame=False)
+        """
+
+        y_header = self.headers_normal.datetime_txt
+        return self.get_raw(
+            y_header,
+            cycle=cycle,
+            with_index=with_index,
+            with_time=with_time,
+            as_frame=as_frame,
+            with_step=False,
+            additional_headers=None,
+            scaler=None,
+        )
+
+    def get_timestamp(
+        self, cycle=None, with_index=True, as_frame=True, in_minutes=False, units="raw"
+    ):
+        """Returns timestamp.
+
+        Args:
+            cycle: cycle number (all cycles if None).
+            with_index: if True, includes the cycle index as a column in the returned pandas.DataFrame.
+            as_frame: if not True, returns a list of current values as numpy arrays (one for each cycle).
+                Remark that with_time and with_index will be False if as_frame is set to False.
+            in_minutes: (deprecated, use units="minutes" instead) return values in minutes
+                instead of seconds if True.
+            units: return values in given time unit ("raw", "seconds", "minutes", "hours").
+
+        Returns:
+            pandas.DataFrame (or list of pandas.Series if cycle=None and as_frame=False)
+        """
+
+        y_header = self.headers_normal.test_time_txt
+
+        if in_minutes:
+            units = "minutes"
+
+        if units == "raw":
+            scaler = None
         else:
-            if not full:
-                logging.debug("getting a list of current-curves for all cycles")
-                v = []
-                no_cycles = np.amax(data[cycle_index_header])
-                for j in range(1, no_cycles + 1):
-                    txt = "Cycle  %i:  " % j
-                    logging.debug(txt)
-                    c = data[(data[cycle_index_header] == j)]
-                    v.append(c[current_header])
-            else:
-                logging.debug("getting all current-curves ")
-                v = data[current_header]
-            return v
+            scaler = self.unit_scaler_from_raw(units, "time")
+
+        return self.get_raw(
+            y_header,
+            cycle=cycle,
+            with_index=with_index,
+            with_time=False,
+            as_frame=as_frame,
+            with_step=False,
+            additional_headers=None,
+            scaler=scaler,
+        )
 
     def sget_steptime(self, cycle, step):
         """Returns step time for cycle, step.
@@ -3696,101 +4032,34 @@ class CellpyCell:
         header = self.headers_normal.step_index_txt
         return self._sget(cycle, step, header, usteps=False)
 
-    def get_datetime(self, cycle=None, full=True):
-        cycle_index_header = self.headers_normal.cycle_index_txt
-        datetime_header = self.headers_normal.datetime_txt
-
-        v = pd.Series()
-        test = self.data.raw
-        if cycle:
-            c = test[(test[cycle_index_header] == cycle)]
-            if not self._is_empty_array(c):
-                v = c[datetime_header]
-
-        else:
-            if not full:
-                logging.debug("getting datetime for all cycles")
-                v = []
-                cycles = self.get_cycle_numbers()
-                for j in cycles:
-                    txt = "Cycle  %i:  " % j
-                    logging.debug(txt)
-                    c = test[(test[cycle_index_header] == j)]
-                    v.append(c[datetime_header])
-            else:
-                logging.debug("returning full datetime col")
-                v = test[datetime_header]
-        return v
-
-    def get_timestamp(self, cycle=None, in_minutes=False, full=True):
-        """Returns timestamps (in sec or minutes (if in_minutes==True)).
-
-        Args:
-            cycle: cycle number (all if None)
-            in_minutes: return values in minutes instead of seconds if True
-            full: valid only for cycle=None (i.e. all cycles), returns the full
-               pandas.Series if True, else a list of pandas.Series
-
-        Returns:
-            pandas.Series (or list of pandas.Series if cycle=None og full=False)
-        """
-
-        cycle_index_header = self.headers_normal.cycle_index_txt
-        timestamp_header = self.headers_normal.test_time_txt
-
-        v = pd.Series()
-        test = self.data.raw
-        if cycle:
-            c = test[(test[cycle_index_header] == cycle)]
-            if not self._is_empty_array(c):
-                v = c[timestamp_header]
-
-        else:
-            if not full:
-                logging.debug("getting timestapm for all cycles")
-                v = []
-                cycles = self.get_cycle_numbers()
-                for j in cycles:
-                    txt = "Cycle  %i:  " % j
-                    logging.debug(txt)
-                    c = test[(test[cycle_index_header] == j)]
-                    v.append(c[timestamp_header])
-            else:
-                logging.debug("returning full timestamp col")
-                v = test[timestamp_header]
-                if in_minutes and v is not None:
-                    v /= 60.0
-        if in_minutes and v is not None:
-            v /= 60.0
-        return v
-
     def get_dcap(
         self,
         cycle=None,
         converter=None,
         mode="gravimetric",
-        return_dataframe=False,
+        as_frame=True,
         **kwargs,
     ):
-        """Returns discharge_capacity and voltage for the selected cycle
+        """Returns discharge-capacity and voltage for the selected cycle
         Args:
             cycle (int): cycle number.
-            converter (string): defaults to None.
-            mode (string): defaults to "gravimetric".
-            return_dataframe (bool): if True: returns pd.DataFrame instead of capacity, voltage series.
+            converter (float): a multiplication factor that converts the values to specific values (i.e.
+                from Ah to mAh/g). If not provided (or None), the factor is obtained from the
+                self.get_converter_to_specific() method.
+            mode (string): 'gravimetric', 'areal' or 'absolute'. Defaults to 'gravimetric'.
+                Used if converter is not provided (or None).
+            as_frame (bool): if True: returns pd.DataFrame instead of capacity, voltage series.
+            **kwargs:
         Returns:
-            discharge_capacity, voltage (pd.Series).
+            discharge_capacity, voltage (pd.Series or pd.DataFrame if return_dataframe is True).
 
         """
-        # TODO: update docstring on purpose of "converter" and "mode"
-        #  TODO - jepe: should return a DataFrame as default
-        #   but remark that we then have to update e.g. batch_helpers.py
 
         if converter is None:
             converter = self.get_converter_to_specific(mode=mode)
 
         dc, v = self._get_cap(cycle, "discharge", converter=converter, **kwargs)
-        if return_dataframe:
+        if as_frame:
             cycle_df = pd.concat([v, dc], axis=1)
             return cycle_df
         else:
@@ -3801,28 +4070,28 @@ class CellpyCell:
         cycle=None,
         converter=None,
         mode="gravimetric",
-        return_dataframe=False,
+        as_frame=True,
         **kwargs,
     ):
-        """Returns charge_capacity and voltage for the selected cycle.
+        """Returns charge-capacity and voltage for the selected cycle.
         Args:
             cycle (int): cycle number.
-            converter (string): defaults to None.
-            mode (string): defaults to "gravimetric".
-            return_dataframe (bool): if True: returns pd.DataFrame instead of capacity, voltage series.
+            converter (float): a multiplication factor that converts the values to specific values (i.e.
+                from Ah to mAh/g). If not provided (or None), the factor is obtained from the
+                self.get_converter_to_specific() method.
+            mode (string): 'gravimetric', 'areal' or 'absolute'. Defaults to 'gravimetric'.
+                Used if converter is not provided (or None).
+            as_frame (bool): if True: returns pd.DataFrame instead of capacity, voltage series.
         Returns:
-            charge_capacity, voltage (pd.Series).
+            charge_capacity, voltage (pandas.Series or pandas.DataFrame if return_dataframe is True).
 
         """
-        # TODO: update docstring on purpose of "converter" and "mode"
-        # TODO - jepe: should return a DataFrame as default
-        #   (but remark that we then have to update e.g. batch_helpers.py)
 
         if converter is None:
             converter = self.get_converter_to_specific(mode=mode)
         cc, v = self._get_cap(cycle, "charge", converter=converter, **kwargs)
 
-        if return_dataframe:
+        if as_frame:
             cycle_df = pd.concat([v, cc], axis=1)
             return cycle_df
         else:
@@ -3844,6 +4113,7 @@ class CellpyCell:
         dynamic=False,
         inter_cycle_shift=True,
         interpolate_along_cap=False,
+        capacity_then_voltage=False,
         **kwargs,
     ):
         """Gets the capacity for the run.
@@ -3882,11 +4152,13 @@ class CellpyCell:
                 cycles. Defaults to True.
             interpolate_along_cap (bool): interpolate along capacity axis instead
                 of along the voltage axis. Defaults to False.
+            capacity_then_voltage (bool): return capacity and voltage instead of
+                voltage and capacity. Defaults to False.
 
         Returns:
             pandas.DataFrame ((cycle) voltage, capacity, (direction (-1, 1)))
             unless split is explicitly set to True. Then it returns a tuple
-            with capacity (mAh/g) and voltage.
+            with capacity and voltage.
         """
 
         # TODO: allow for fixing the interpolation range (so that it is possible
@@ -3931,11 +4203,13 @@ class CellpyCell:
                 cc, cv = self.get_ccap(
                     current_cycle,
                     converter=specific_converter,
+                    as_frame=False,
                     **kwargs,
                 )
                 dc, dv = self.get_dcap(
                     current_cycle,
                     converter=specific_converter,
+                    as_frame=False,
                     **kwargs,
                 )
 
@@ -4091,7 +4365,14 @@ class CellpyCell:
                             cycle_df = c
                         else:
                             cycle_df = pd.concat([cycle_df, c], axis=0)
-
+                    if capacity_then_voltage:
+                        cols = cycle_df.columns.to_list()
+                        new_cols = [
+                            cols.pop(cols.index("capacity")),
+                            cols.pop(cols.index("voltage")),
+                        ]
+                        new_cols.extend(cols)
+                        cycle_df = cycle_df[new_cols]
                 else:
                     logging.warning("returning non-dataframe")
                     c = pd.concat([_first_step_c, _last_step_c], axis=0)
@@ -4177,7 +4458,7 @@ class CellpyCell:
         interpolated=False,
         dx=None,
         number_of_points=None,
-    ):
+    ) -> pd.DataFrame:
         """get the open circuit voltage relaxation curves.
 
         Args:
@@ -4271,18 +4552,6 @@ class CellpyCell:
             no_cycles = np.amax(steptable[self.headers_step_table.cycle])
         return no_cycles
 
-    def get_cycle_numbers_old(self, steptable=None):
-        """Get a list containing all the cycle numbers in the test."""
-        logging.debug("getting cycle numbers")
-        if steptable is None:
-            d = self.data.raw
-            cycles = d[self.headers_normal.cycle_index_txt].dropna().unique()
-        else:
-            logging.debug("steptable is not none")
-            cycles = steptable[self.headers_step_table.cycle].dropna().unique()
-        logging.debug(f"got {len(cycles)} cycle numbers")
-        return cycles
-
     def get_cycle_numbers(
         self,
         steptable=None,
@@ -4369,7 +4638,16 @@ class CellpyCell:
         nom_cap_specifics=None,
         convert_charge_units=False,
     ):
+        """Get the nominal capacity as absolute value."""
+
         # TODO: implement handling of edge-cases (i.e. the raw capacity is not in absolute values)
+        if self.debug:
+            print("nominal_capacity_as_absolute".center(80, "="))
+            print(f"{value=}")
+            print(f"{specific=}")
+            print(f"{nom_cap_specifics=}")
+            print(f"{convert_charge_units=}")
+            print(80 * "-")
         if nom_cap_specifics is None:
             nom_cap_specifics = "gravimetric"
 
@@ -4381,6 +4659,7 @@ class CellpyCell:
 
         if value is None:
             value = self.data.nom_cap
+
         value = Q(value, self.cellpy_units["nominal_capacity"])
 
         if nom_cap_specifics == "gravimetric":
@@ -4395,9 +4674,56 @@ class CellpyCell:
         else:
             conversion_factor_charge = 1.0
 
-        absolute_value = (
-            (value * conversion_factor_charge * specific).to_reduced_units().to("Ah")
-        )
+        try:
+            absolute_value = (
+                (value * conversion_factor_charge * specific)
+                .to_reduced_units()
+                .to("Ah")
+            )
+        except DimensionalityError as e:
+            print(" DimensionalityError ".center(80, "="))
+            print("Could not convert nominal capacity to absolute value!")
+            print(
+                "This is probably because the nominal capacity is given in "
+                "different unit than the given specifics."
+            )
+            print(
+                " - Maybe you have given nominal capacity in mAh/cm**2 and your "
+                "specifics is set to 'gravimetric'?"
+            )
+            print(
+                " - Maybe you have given nominal capacity in mAh/g and your "
+                "specifics is set to 'areal'?"
+            )
+            print("Please check your input parameters!")
+            print(
+                "\n[hint 1] try to set the parameter 'nom_cap_specifics' in the get function:\n"
+            )
+            print(
+                "    c = cellpy.get(filename, area=1.55, nom_cap='1.2 mAh/cm**2', nom_cap_specifics='areal')"
+            )
+            print(
+                "\n[hint 2] try to set it on the cellpy object directly after loading, "
+                "\n  but before processing (making the step-table etc):\n"
+            )
+            print("    c = cellpy.get(filename, auto_summary=False)")
+            print("    c.nom_cap_specifics = 'areal'")
+            print("    ... # set other stuff if needed")
+            print("    c.make_step_table()")
+            print("    c.make_summary()")
+            print("\nRe-raising the exception.")
+            print(80 * "=")
+            raise e
+
+        if self.debug:
+            print(f"{self.mass=}")
+            print(f"{self.active_electrode_area=}")
+            print(f"{self.nom_cap=}")
+            print(f"{self.cellpy_units=}")
+            print(
+                f"nominal capacity: {value} [{self.cellpy_units.nominal_capacity}] -> {absolute_value:.3f} [Ah]"
+            )
+            print(80 * "=")
         return absolute_value.m
 
     def with_cellpy_unit(self, parameter, as_str=False):
@@ -4467,6 +4793,24 @@ class CellpyCell:
 
         value = value.to(self.cellpy_units[physical_property])
 
+        return value.m
+
+    def unit_scaler_from_raw(self, unit, physical_property):
+        """Get the conversion factor going from raw to given unit.
+
+        Args:
+            unit (str): what you want to convert to
+            physical_property (str): what this value is a measure of
+                (must correspond to one of the keys in the CellpyUnits class).
+
+        Returns (numeric):
+            conversion factor (scaler)
+        """
+        logging.debug(f"value {unit} is a pint quantity? {isinstance(unit, Quantity)}")
+
+        old_unit = self.data.raw_units[physical_property]
+        value = Q(1, old_unit)
+        value = value.to(unit)
         return value.m
 
     def get_converter_to_specific(
@@ -4593,7 +4937,7 @@ class CellpyCell:
         """Sets the mass (masses) for the test (datasets)."""
 
         warnings.warn(
-            "This function is deprecated. " "Use the setter instead (mass = value).",
+            "This function is deprecated. Use the setter instead (mass = value).",
             DeprecationWarning,
             stacklevel=2,
         )
@@ -4601,8 +4945,7 @@ class CellpyCell:
 
     def set_tot_mass(self, mass, validated=None):
         warnings.warn(
-            "This function is deprecated. "
-            "Use the setter instead (tot_mass = value).",
+            "This function is deprecated. Use the setter instead (tot_mass = value).",
             DeprecationWarning,
             stacklevel=2,
         )
@@ -4611,7 +4954,7 @@ class CellpyCell:
 
     def set_nom_cap(self, nom_cap, validated=None):
         warnings.warn(
-            "This function is deprecated. " "Use the setter instead (nom_cap = value).",
+            "This function is deprecated. Use the setter instead (nom_cap = value).",
             DeprecationWarning,
             stacklevel=2,
         )
@@ -4757,7 +5100,7 @@ class CellpyCell:
         # add_c_rate=True,
         normalization_cycles=None,
         nom_cap=None,
-        nom_cap_specifics="gravimetric",
+        nom_cap_specifics=None,
         # from_cycle=None,
     ):
         """Convenience function that makes a summary of the cycling data."""
@@ -4875,6 +5218,8 @@ class CellpyCell:
         #   as it is recommended (but this will likely increase memory usage)
 
         # TODO: add this to arguments and possible prms:
+        if nom_cap_specifics is None:
+            nom_cap_specifics = self.nom_cap_specifics
         specifics = ["gravimetric", "areal"]
         cycle_index_as_index = True
         time_00 = time.time()
@@ -5567,7 +5912,7 @@ class CellpyCell:
         # cell[set_number].raw_units = self._set_raw_units()
         # self.cells.append(cell[set_number])
         # self.status_dataset = self._validate_cell()
-        # self._invent_a_session_name()
+        # self._invent_a_cell_name()
         return self
 
 
@@ -5577,10 +5922,11 @@ def get(
     instrument_file=None,
     cellpy_file=None,
     cycle_mode=None,
-    mass=None,
-    nominal_capacity=None,
+    mass: Union[str, numbers.Number] = None,
+    nominal_capacity: Union[str, numbers.Number] = None,
+    nom_cap_specifics=None,
     loading=None,
-    area=None,
+    area: Union[str, numbers.Number] = None,
     estimate_area=True,
     logging_mode=None,
     auto_pick_cellpy_format=True,
@@ -5590,6 +5936,9 @@ def get(
     summary_kwargs=None,
     selector=None,
     testing=False,
+    refuse_copying=False,
+    initialize=False,
+    debug=False,
     **kwargs,
 ):
     """Create a CellpyCell object
@@ -5606,6 +5955,7 @@ def get(
         cycle_mode (str): the cycle mode (e.g. "anode" or "full_cell")
         mass (float): mass of active material (mg) (defaults to mass given in cellpy-file or 1.0)
         nominal_capacity (float): nominal capacity for the cell (e.g. used for finding C-rates)
+        nom_cap_specifics (str): either "gravimetric" (pr mass), "areal" (per area), or "volumetric" (per volume)
         loading (float): loading in units [mass] / [area]
         area (float): active electrode area (e.g. used for finding the areal capacity)
         estimate_area (bool): calculate area from loading if given (defaults to True)
@@ -5616,6 +5966,10 @@ def get(
         summary_kwargs (dict): sent to make_summary
         selector (dict): passed to load (when loading cellpy-files).
         testing (bool): set to True if testing (will for example prevent making .log files)
+        refuse_copying (bool): set to True if you do not want to copy the raw-file before loading.
+        initialize (bool): set to True if you want to initialize the CellpyCell object (probably only
+            useful if you want to return a cellpy-file with no data in it)
+        debug (bool): set to True if you want to debug the loader.
         **kwargs: sent to the loader
 
     Returns:
@@ -5645,11 +5999,14 @@ def get(
         >>> # load a data set and get the summary charge and discharge capacities
         >>> # in Ah/g:
         >>> c = cellpy.get("my_data.res", units=dict(capacity="Ah"))
+        >>>
+        >>> # get an empty CellpyCell instance:
+        >>> c = cellpy.get()  # or c = cellpy.get(initialize=True) if you want to initialize it.
 
     """
     from cellpy import log
 
-    db_readers = ["arbin_sql"]
+    db_readers = ["arbin_sql", "arbin_sql_7"]
     instruments_with_colliding_file_suffix = ["arbin_sql_h5"]
 
     step_kwargs = step_kwargs or {}
@@ -5658,12 +6015,13 @@ def get(
     logging_mode = "DEBUG" if testing else logging_mode
     log.setup_logging(default_level=logging_mode, testing=testing)
     logging.debug("-------running-get--------")
-    cellpy_instance = CellpyCell()
+    cellpy_instance = CellpyCell(debug=debug, initialize=initialize)
     logging.debug(f"created CellpyCell instance")
 
     logging.debug(f"{cellpy_file=}")
     logging.debug(f"{filename=}")
 
+    # used if all you want is an empty CellpyCell object
     if filename is None:
         if cellpy_file is None:
             logging.info("Running cellpy.get without a filename")
@@ -5673,6 +6031,7 @@ def get(
                 cycle_mode=cycle_mode,
                 mass=mass,
                 nominal_capacity=nominal_capacity,
+                nom_cap_specifics=nom_cap_specifics,
                 area=area,
                 loading=loading,
                 estimate_area=estimate_area,
@@ -5732,22 +6091,31 @@ def get(
         cellpy_instance.set_instrument(instrument=instrument, model=model, **kwargs)
 
     is_a_file = True
-    if cellpy_instance.tester not in db_readers:
+    if cellpy_instance.tester in db_readers:
         is_a_file = False
 
     logging.info(f"Loading raw-file: {filename}")
-    cellpy_instance.from_raw(filename, is_a_file=is_a_file, **kwargs)
+    cellpy_instance.from_raw(
+        filename, is_a_file=is_a_file, refuse_copying=refuse_copying, **kwargs
+    )
 
     if not cellpy_instance:
         print("Could not load file: check log!")
         print("Returning None")
         return
 
+    # fix for allowing for setting nom_cap_specifics the "old" way:
+    if nom_cap_specifics is None:
+        nom_cap_specifics = summary_kwargs.pop("nom_cap_specifics", None)
+        if nom_cap_specifics is None:
+            nom_cap_specifics = step_kwargs.pop("nom_cap_specifics", None)
+
     cellpy_instance = _update_meta(
         cellpy_instance,
         cycle_mode=cycle_mode,
         mass=mass,
         nominal_capacity=nominal_capacity,
+        nom_cap_specifics=nom_cap_specifics,
         area=area,
         loading=loading,
         estimate_area=estimate_area,
@@ -5769,15 +6137,26 @@ def _update_meta(
     cycle_mode=None,
     mass=None,
     nominal_capacity=None,
+    nom_cap_specifics=None,
     area=None,
     loading=None,
     estimate_area=None,
     units=None,
 ):
-    # TODO: make this a method on CellpyCell
+    """Used by get to update metadata in the CellpyCell object."""
+    # Note: this is a bit messy, but it is a quick fix for now.
+    #       I will clean it up later.
+    # Note: if you want to add more metadata or similar for use by the get function,
+    #       please also add a property to the CellpyCell class (e.g. don't update
+    #       the data object directly, especially if handling units).
+
     if cycle_mode is not None:
         logging.debug("Setting cycle mode")
         cellpy_instance.cycle_mode = cycle_mode
+
+    if nom_cap_specifics is not None:
+        logging.debug("Setting nom_cap_specifics as given")
+        cellpy_instance.nom_cap_specifics = nom_cap_specifics
 
     if units is not None:
         logging.debug(f"Updating units: {units}")
@@ -5785,15 +6164,21 @@ def _update_meta(
 
     if mass is not None:
         logging.info(f"Setting mass: {mass}")
-        cellpy_instance.data.mass = mass
+        cellpy_instance.mass = mass
 
     if nominal_capacity is not None:
         logging.info(f"Setting nominal capacity: {nominal_capacity}")
-        cellpy_instance.data.nom_cap = nominal_capacity
+        if nom_cap_specifics is not None and not isinstance(
+            nominal_capacity, numbers.Number
+        ):
+            logging.info(
+                "Providing nominal capacity as string might override the given nom_cap_specifics"
+            )
+        cellpy_instance.nom_cap = nominal_capacity
 
     if area is not None:
         logging.debug(f"got area: {area}")
-        cellpy_instance.data.meta_common.active_electrode_area = area
+        cellpy_instance.active_electrode_area = area
 
     elif loading and estimate_area:
         logging.debug("-------------AREA-CALC----------------")
@@ -5802,7 +6187,7 @@ def _update_meta(
         logging.debug(
             f"calculating area from loading ({loading}) and mass ({cellpy_instance.data.mass}): {area}"
         )
-        cellpy_instance.data.meta_common.active_electrode_area = area
+        cellpy_instance.active_electrode_area = area
     else:
         logging.debug("using default area")
 
@@ -5918,5 +6303,125 @@ def save_and_load_cellpy_file():
     # print(c.data.raw.columns)
 
 
+def load_and_save_to_excel():
+    from pathlib import Path
+    from pprint import pprint
+
+    print(" loading cellpy file and saving to excel ".center(80, "="))
+
+    raw_file = Path("../../testdata/data/20160805_test001_45_cc_01.res")
+    cellpy_file = Path("../../tmp/20160805_test001_45_cc.h5")
+    # excel_file1 = Path("../../tmp/01_gravimetric_old_20160805_test001_45_cc.xlsx")
+    excel_file2 = Path("../../tmp/02_gravimetric_20160805_test001_45_cc.xlsx")
+    # excel_file3 = Path("../../tmp/03_areal_20160805_test001_45_cc.xlsx")
+    # excel_file4 = Path("../../tmp/04_areal_20160805_test001_45_cc.xlsx")
+    # excel_file5 = Path("../../tmp/05_areal_20160805_test001_45_cc.xlsx")
+
+    # c = get(raw_file, area=1.55, cycle_mode="anode", nominal_capacity=2.0, summary_kwargs={"nom_cap_specifics": "areal"}, debug=True)
+    # c.to_excel(excel_file1, cycles=True)
+    c = get(
+        raw_file,
+        mass=1.55,
+        cycle_mode="anode",
+        nominal_capacity="3579 mAh/g",
+        debug=True,
+    )
+    c.to_excel(excel_file2, cycles=True)
+    # c = get(raw_file, area=1.55, cycle_mode="anode", nominal_capacity=2.0, nom_cap_specifics="areal", debug=True)
+    # c.to_excel(excel_file3, cycles=True)
+    # c = get(raw_file, area="1.55 cm**2", cycle_mode="anode", nominal_capacity="2.0 mAh/cm**2", nom_cap_specifics="areal", debug=True)
+    # c.to_excel(excel_file4, cycles=True)
+    # print("saved ...")
+    #
+    # c.save(cellpy_file)
+    # c2 = get(cellpy_file)
+    # pprint(c2.cellpy_units)
+    # pprint(c2.data.meta_common)
+    # print("loaded again ...")
+    # c2.to_excel(excel_file5, raw=True, cycles=True)
+    # print("saved again ...")
+
+
+def check_excel():
+    import openpyxl
+    from openpyxl.styles import Border, Side
+    import pandas as pd
+
+    from pathlib import Path
+
+    print(" checking excel ".center(80, "="))
+    excel_file = Path("../../tmp/nothing.xlsx")
+    to_excel_method_kwargs = {"index": True, "header": True}
+
+    df = pd.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6]})
+    n_rows, n_cols = df.shape
+    with pd.ExcelWriter(excel_file, engine="openpyxl") as writer:
+        df.to_excel(writer, sheet_name="first", **to_excel_method_kwargs)
+        ws = writer.sheets["first"]
+        border = Border()
+        face_color = "00EEEEEE"
+        fill = openpyxl.styles.PatternFill(
+            start_color=face_color, end_color=face_color, fill_type="solid"
+        )
+
+        for cell in ws["A"]:
+            print(cell)
+            cell.border = border
+        for cell in ws[1]:
+            print(cell)
+            cell.border = border
+            cell.fill = fill
+
+    print("done")
+
+
+def check_new_dot_get_methods():
+    from pathlib import Path
+    from pprint import pprint
+    import numpy as np
+
+    print(" loading file and checking the .get methods ".center(80, "="))
+    raw_file = Path("../../testdata/data/20160805_test001_45_cc_01.res")
+    c = get(
+        raw_file,
+        mass=1.55,
+        cycle_mode="anode",
+        nominal_capacity="3579 mAh/g",
+        debug=True,
+    )
+    # pprint(c.headers_normal)
+    cycles_a = [1, 2, 3]
+    cycles_b = np.array([1, 2, 3])
+    cycles_c = [1, 2, 3]
+    a = c.get_timestamp(cycles_a, with_index=True, units="raw")
+    print(f"{cycles_a=} raw".center(80, "-"))
+    pprint(a)
+
+    a = c.get_timestamp(cycles_a, units="seconds")
+    print(f"{cycles_a=} seconds".center(80, "-"))
+    pprint(a)
+
+    a = c.get_timestamp(cycles_a, units="minutes")
+    print(f"{cycles_a=} minutes".center(80, "-"))
+    pprint(a)
+
+    a = c.get_timestamp(cycles_a, units="hours")
+    print(f"{cycles_a=} hours".center(80, "-"))
+    pprint(a)
+
+    a = c.get_timestamp(cycles_a, in_minutes=True, units="hours")
+    print(f"{cycles_a=} hours".center(80, "-"))
+    pprint(a)
+
+    #
+    #
+    # print(f"{cycles_b=}".center(80, "-"))
+    # b = c.get_timestamp(cycles_b)
+    # pprint(b)
+    # print(f"{cycles_c=}".center(80, "-"))
+    # c = c.get_timestamp(cycles_c, with_index=False, as_frame=False)
+    # pprint(c)
+
+
 if __name__ == "__main__":
-    save_and_load_cellpy_file()
+    check_new_dot_get_methods()

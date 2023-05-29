@@ -601,7 +601,7 @@ def cycles_collector(
             number_of_points=number_of_points,
             method=method,
         )
-        logging.debug(f"processing {n} (session name: {c.session_name})")
+        logging.debug(f"processing {n} (cell name: {c.cell_name})")
         if not curves.empty:
             curves = curves.assign(group=g, sub_group=sg)
             all_curves.append(curves)
@@ -609,7 +609,7 @@ def cycles_collector(
         else:
             if abort_on_missing:
                 raise ValueError(f"{n} is empty - aborting!")
-            logging.critical(f"[{n} (session name: {c.session_name}) empty]")
+            logging.critical(f"[{n} (cell name: {c.cell_name}) empty]")
     collected_curves = pd.concat(
         all_curves, keys=keys, axis=0, names=["cell", "point"]
     ).reset_index(level="cell")
@@ -934,7 +934,7 @@ def ica_collector(
             number_of_points=number_of_points,
             **kwargs,
         )
-        logging.debug(f"processing {n} (session name: {c.session_name})")
+        logging.debug(f"processing {n} (session name: {c.cell_name})")
         if not curves.empty:
             curves = curves.assign(group=g, sub_group=sg)
             all_curves.append(curves)
@@ -942,7 +942,7 @@ def ica_collector(
         else:
             if abort_on_missing:
                 raise ValueError(f"{n} is empty - aborting!")
-            logging.critical(f"[{n} (session name: {c.session_name}) empty]")
+            logging.critical(f"[{n} (session name: {c.cell_name}) empty]")
     collected_curves = pd.concat(
         all_curves, keys=keys, axis=0, names=["cell", "point"]
     ).reset_index(level="cell")

@@ -98,13 +98,14 @@ def create_factory():
     return instrument_factory
 
 
-def find_files(info_dict, file_list=None, pre_path=None, **kwargs):
+def find_files(info_dict, file_list=None, pre_path=None, sub_folders=None, **kwargs):
     """Find files using cellpy.filefinder.
 
     Args:
         info_dict: journal pages.
         file_list: list of files names to search through.
         pre_path: path to prepend found files from file_list (if file_list is given).
+        sub_folders (bool): perform search also in sub-folders.
 
     **kwargs (filefinder.search_for_files):
         run_name(str): run-file identification.
@@ -119,7 +120,6 @@ def find_files(info_dict, file_list=None, pre_path=None, **kwargs):
         file_name_format(str): format of raw-file names or a glob pattern
             (default: YYYYMMDD_[name]EEE_CC_TT_RR).
         reg_exp(str): use regular expression instead (defaults to None).
-        sub_folders (bool): perform search also in sub-folders.
         file_list (list of str): perform the search within a given list
             of filenames instead of searching the folder(s). The list should
             not contain the full filepath (only the actual file names). If
@@ -131,6 +131,7 @@ def find_files(info_dict, file_list=None, pre_path=None, **kwargs):
     Returns:
         info_dict
     """
+    sub_folders = sub_folders or prms.FileNames.sub_folders
     instrument_factory = create_factory()
     # searches for the raw data files and the cellpyfile-name
     # TODO: implement faster file searching
@@ -146,7 +147,11 @@ def find_files(info_dict, file_list=None, pre_path=None, **kwargs):
 
         logging.debug(f"checking for {run_name}")
         raw_files, cellpyfile = filefinder.search_for_files(
-            run_name, file_list=file_list, pre_path=pre_path, **kwargs
+            run_name,
+            file_list=file_list,
+            pre_path=pre_path,
+            sub_folders=sub_folders,
+            **kwargs,
         )
         if not raw_files:
             raw_files = None
@@ -308,7 +313,7 @@ def _extract_dqdv(cell_data, extract_func, last_cycle):
     out_data = []
     for cycle in list_of_cycles:
         try:
-            c, v = extract_func(cycle)
+            c, v = extract_func(cycle, return_dataframe=False)
             v, dq = dqdv(v, c)
             v = v.tolist()
             dq = dq.tolist()

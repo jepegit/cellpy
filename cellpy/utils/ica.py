@@ -987,7 +987,7 @@ def _check_class_ica():
 
     # ---------- processing and plotting ----------------
     fig, (ax1, ax2) = plt.subplots(2, 1)
-    capacity, voltage = cell.get_ccap(cycle)
+    capacity, voltage = cell.get_ccap(cycle, as_frame=False)
     ax1.plot(capacity, voltage, "b.-", label="raw")
     converter = Converter()
     converter.set_data(capacity, voltage)

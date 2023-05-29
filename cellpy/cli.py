@@ -3,6 +3,7 @@ import getpass
 import logging
 import os
 import pathlib
+import platform
 from pprint import pprint
 import re
 import subprocess
@@ -25,6 +26,8 @@ VERSION = cellpy._version.__version__
 REPO = "jepegit/cellpy"
 USER = "jepegit"
 GITHUB_PWD_VAR_NAME = "GD_PWD"
+DEFAULT_EDITOR = "vim"
+EDITORS = {"Windows": "notepad"}
 
 
 def save_prm_file(prm_filename):
@@ -554,16 +557,14 @@ def _check_config_file():
             value = prm_paths.get(k, None)
             click.echo(f"{k}: {value}")
             # splitting this into two if-statements to make it easier to debug if OtherPath changes
-            if value in OTHERPATHS:
-                logging.debug(
-                    "skipping check for external rawdatadir and cellpydatadir (for now)"
-                )
-                if not OtherPath(
-                    value
-                ).is_dir():  # Assuming OtherPath returns True if it is external.
-                    missing += 1
-                    click.echo("COULD NOT CONNECT!")
-                    click.echo(f"({value} is not a directory)")
+            if k in OTHERPATHS:
+                print(f"skipping check for external {k} (for now)")
+                # if not OtherPath(
+                #     value
+                # ).is_dir():  # Assuming OtherPath returns True if it is external.
+                #     missing += 1
+                #     click.echo("COULD NOT CONNECT!")
+                #     click.echo(f"({value} is not a directory)")
             elif value and not pathlib.Path(value).is_dir():
                 missing += 1
                 click.echo("COULD NOT CONNECT!")
@@ -674,6 +675,18 @@ def _write_config_file(user_dir, dst_file, init_filename, dry_run):
         )
 
 
+def _get_default_editor():
+    """
+    Return the default text editor.
+
+    This code is based on the `editor` library by @rec.
+    """
+
+    return os.environ.get("VISUAL") or (
+        os.environ.get("EDITOR") or EDITORS.get(platform.system(), DEFAULT_EDITOR)
+    )
+
+
 # ----------------------- edit ---------------------------------------
 @click.command()
 @click.option(
@@ -681,45 +694,77 @@ def _write_config_file(user_dir, dst_file, init_filename, dry_run):
     "-e",
     default=None,
     type=str,
-    help="try to use this editor instead (e.g. notepad.exe)",
+    help="try to use this editor instead",
 )
-def edit(default_editor):
-    """Edit your cellpy config file."""
+@click.option("--debug", "-d", is_flag=True, help="Run in debug mode.")
+@click.option("--silent", "-s", is_flag=True, help="Run in silent mode.")
+@click.argument(
+    "name",
+    type=str,
+    default=None,
+    required=False,
+)
+def edit(name, default_editor, debug, silent):
+    """Edit your cellpy config or database files.
 
-    config_file = _configloc()
-    if config_file:
-        config_file_str = str(config_file.resolve())
+    You can use this to edit the configuration file, the database file, or the
+    environment file. If you do not specify which file to edit, the configuration
+    file will be opened.
 
-        if default_editor is not None:
-            args = [default_editor, config_file_str]
-            click.echo(f"[cellpy] (edit) Calling '{default_editor}'")
-            try:
-                subprocess.call(args)
-            except:
-                click.echo(f"[cellpy] (edit) Failed!")
-                click.echo(
-                    "[cellpy] (edit) Try 'cellpy edit -e notepad.exe' if you are on Windows"
-                )
+    Examples:
 
-        if default_editor is None:
-            try:
-                import editor
+        edit your cellpy configuration file
 
-                editor.edit(filename=config_file_str)
-            except ImportError:
-                click.echo(f"[cellpy] (edit) Failed!")
-                click.echo(
-                    f"[cellpy] (edit) Searching for editors uses the python-editor package"
-                )
-                click.echo(f"[cellpy] (edit) Possible fixes:")
-                click.echo(
-                    f"[cellpy] (edit) - provide a default editor "
-                    f"using the -e option (e.g. cellpy edit -e notepad.exe)"
-                )
-                click.echo(
-                    f"[cellpy] (edit) - install teh python-editor package "
-                    f"(pip install python-editor)"
-                )
+            cellpy edit config
+
+        or just
+
+            cellpy edit
+
+        edit your cellpy database file
+
+            cellpy edit db
+
+        edit your cellpy environment file using notepad.exe (on Windows)
+
+            cellpy edit env -e notepad.exe
+
+    """
+
+    if name.lower() == "db":
+        _run_db(debug, silent)
+        return
+
+    elif name.lower() not in ["env", "config"] and name is not None:
+        click.echo("unknown file")
+        return
+
+    if name is None or name.lower() == "config":
+        config_file = _configloc()
+        filename = str(config_file.resolve())
+        if config_file is None:
+            print("could not find the config file")
+            return
+    elif name.lower() == "env":
+        filename = _envloc()
+        if filename is None:
+            print("could not find the env file")
+            return
+    else:
+        filename = name
+
+    if default_editor is None:
+        default_editor = _get_default_editor()
+
+    args = [default_editor, filename]
+    click.echo(f"[cellpy] (edit) Calling '{default_editor}'")
+    try:
+        subprocess.call(args)
+    except:
+        click.echo(f"[cellpy] (edit) Failed!")
+        click.echo(
+            "[cellpy] (edit) Try 'cellpy edit -e notepad.exe' if you are on Windows"
+        )
 
 
 # ----------------------- info ---------------------------------------
@@ -826,15 +871,11 @@ def run(
     list_,
     name,
 ):
-    """Run a cellpy process (batch-job, edit db, ...).
+    """Run a cellpy process (e.g. a batch-job).
 
     You can use this to launch specific applications.
 
     Examples:
-
-        edit your cellpy database
-
-           cellpy run db
 
         run a batch job described in a journal file
 
@@ -882,9 +923,6 @@ def run(
             batch_col,
             project,
         )
-
-    elif name.lower() == "db":
-        _run_db(debug, silent)
 
     else:
         _run(name, debug, silent)
@@ -1059,6 +1097,7 @@ def _run(name, debug, silent):
     click.echo(f"running {name}")
     click.echo(f" --debug [{debug}]")
     click.echo(f" --silent [{silent}]")
+    click.echo("[cellpy]: sorry, I am not allowed to run this on my own")
 
 
 def _run_db(debug, silent):
@@ -1173,6 +1212,14 @@ def _configloc():
         click.echo("[cellpy] File does not exist!")
     else:
         return config_file_name
+
+
+def _envloc():
+    click.echo(f"[cellpy] ->{prmreader.get_env_file_name()}")
+    if not os.path.isfile(prmreader.get_env_file_name()):
+        click.echo("[cellpy] File does not exist!")
+    else:
+        return prmreader.get_env_file_name()
 
 
 def _dump_params():

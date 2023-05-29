@@ -54,11 +54,7 @@ class ExternalStatResult:
 
 
 def _clean_up_original_path_string(path_string):
-    logging.debug(f"cleaning up path: {path_string}")
     if not isinstance(path_string, str):
-        logging.debug(f"path is not a string: {path_string}")
-        logging.debug(f"path is of type: {type(path_string)}")
-
         if isinstance(path_string, OtherPath):
             logging.debug(f"path is an OtherPath object")
             if hasattr(path_string, "original"):
@@ -77,9 +73,8 @@ def _clean_up_original_path_string(path_string):
             parts[0] = parts[0].replace("\\", "")
             path_string = "/".join(parts)
         else:
+            logging.debug(f"unknown path type: {type(path_string)}")
             path_string = str(path_string)
-    else:
-        logging.debug(f"path is a string: {path_string}")
     return path_string
 
 
@@ -127,9 +122,6 @@ class OtherPath(pathlib.Path):
     )  # noqa
 
     def __new__(cls, *args, **kwargs):
-        logging.debug("Running __new__ for OtherPath")
-        logging.debug(f"args: {args}")
-        logging.debug(f"kwargs: {kwargs}")
         if args:
             path, *args = args
         else:
@@ -138,12 +130,13 @@ class OtherPath(pathlib.Path):
         if not path:
             logging.debug("initiating OtherPath with empty path")
             path = "."
-        logging.debug(f"path: {path}")
         if isinstance(path, OtherPath) and hasattr(path, "_original"):
             logging.debug(f"path is OtherPath")
             path = path._original
         logging.debug(f"checked if path is OtherPath")
+
         path = _clean_up_original_path_string(path)
+        assert isinstance(path, str), "path must be a string"
         cls.__original = path
         cls._pathlib_doc = super().__doc__
         path = _check_external(path)[0]
@@ -192,21 +185,18 @@ class OtherPath(pathlib.Path):
 
     def _wrap_and_morph_method(self, method):
         if self.is_external:
-            print(f"Cannot run {method.__name__} for external paths!")
             return lambda *args, **kwargs: self
         else:
             return lambda *args, **kwargs: OtherPath(*args, **kwargs)
 
     def _wrap_callable_method(self, method, default_return_value=True):
         if self.is_external:
-            print(f"Cannot run {method.__name__} for external paths!")
             return lambda *args, **kwargs: default_return_value
         else:
             return method
 
     def _wrap_non_callable(self, attr, default_return_value=None):
         if self.is_external:
-            print(f"Cannot get {attr} for external paths!")
             return default_return_value
         else:
             return attr
@@ -227,14 +217,14 @@ class OtherPath(pathlib.Path):
 
     def __div__(self, other: Union[str, S]) -> S:
         if self.is_external:
-            path = self._original + "/" + other
+            path = f"{self._original}/{other}"
             return OtherPath(path)
         path = pathlib.Path(self._original).__truediv__(other)
         return OtherPath(path)
 
     def __truediv__(self, other: Union[str, S]) -> S:
         if self.is_external:
-            path = self._original + "/" + other
+            path = f"{self._original}/{other}"
             return OtherPath(path)
         path = pathlib.Path(self._original).__truediv__(other)
         return OtherPath(path)
@@ -247,9 +237,17 @@ class OtherPath(pathlib.Path):
 
     def __str__(self: S) -> str:
         if hasattr(self, "_original") and self.is_external:
+            logging.debug("external path, returning _original")
             return self._original
+        return super().__str__()
+
+    def __repr__(self: S) -> str:
+        if hasattr(self, "_original"):
+            if self.is_external:
+                logging.debug("external path, returning _original")
+            return f"OtherPath('{self._original}')"
         else:
-            return super().__str__()
+            return super().__repr__()
 
     def _glob(self, glob_str: str, **kwargs) -> Generator:
         testing = kwargs.pop("testing", False)
@@ -269,10 +267,38 @@ class OtherPath(pathlib.Path):
     def rglob(self, glob_str: str, *args, **kwargs) -> Generator:
         return self._glob(glob_str, search_in_sub_dirs=True, **kwargs)
 
-    def resolve(self: S, *args, **kwargs) -> S:
+    def _listdir(self, levels: int, **kwargs) -> Generator:
         if self.is_external:
-            # logging.warning(f"Cannot resolve external paths. Returning self. ({self})")
-            return self
+            testing = kwargs.pop("testing", False)
+            connect_kwargs, host = self._get_connection_info(testing)
+            paths = self._listdir_with_fabric(host, connect_kwargs, levels)
+            return (OtherPath(p) for p in paths)
+
+        if self.is_dir():
+            return (
+                OtherPath(f"{self.full_path}/{p}") for p in os.listdir(self._original)
+            )
+
+    def listdir(self: S, levels: int = 1, **kwargs) -> Generator:
+        """List the contents of the directory.
+
+        Args:
+            levels (int, optional): How many sublevels to list. Defaults to 1.
+                If you want to list all sublevels, use `listdir(levels=-1)`.
+                If you want to list only the current level (no subdirectories),
+                use `listdir(levels=0)`.
+
+        Returns:
+            Generator: Generator of OtherPath objects.
+
+        """
+        return self._listdir(levels, **kwargs)
+
+    def resolve(self: S, *args, **kwargs) -> S:
+        """Resolve the path."""
+        if self.is_external:
+            logging.debug(f"Cannot resolve external paths. Returning self. ({self})")
+            return OtherPath(self._original)
         resolved_path = pathlib.Path(self._original).resolve(*args, **kwargs)
         return OtherPath(resolved_path)
 
@@ -362,7 +388,7 @@ class OtherPath(pathlib.Path):
             logging.warning(
                 "This method (`absolute`) is not implemented yet for external paths! Returning self."
             )
-            return self
+            return OtherPath(self._original)
         return OtherPath(super().absolute())
 
     def samefile(self: S, other_path: Union[str, pathlib.Path, S]) -> bool:
@@ -413,7 +439,7 @@ class OtherPath(pathlib.Path):
 
     def joinpath(self, *args, **kwargs):
         logging.warning(f"Cannot run 'joinpath' for OtherPath!")
-        return self
+        return OtherPath(self._original)
 
     def readlink(self, *args, **kwargs):
         logging.warning(f"Cannot run 'readlink' for OtherPath!")
@@ -438,7 +464,7 @@ class OtherPath(pathlib.Path):
 
     def lchmod(self, *args, **kwargs):
         logging.warning(f"Cannot run 'lchmod' for OtherPath!")
-        return self
+        return OtherPath(self._original)
 
     @property
     def original(self: S) -> str:
@@ -454,6 +480,14 @@ class OtherPath(pathlib.Path):
         if self.is_external:
             return f"{self._uri_prefix}{self._location}{self._raw_other_path}"
         return self._original
+
+    @property
+    def pathlike_location(self: S) -> S:
+        """Return the location of the external path as a pathlike object."""
+
+        if self.is_external:
+            return OtherPath(f"{self._uri_prefix}{self._location}")
+        return OtherPath(super().drive)
 
     @property
     def is_external(self: S) -> bool:
@@ -492,17 +526,6 @@ class OtherPath(pathlib.Path):
             destination = pathlib.Path(tempfile.gettempdir())
         else:
             destination = pathlib.Path(destination)
-        print(80 * "=")
-        print(f"Copying {self} to {destination}...")
-        print(f"Is external: {self.is_external}")
-        print(f"URI prefix: {self.uri_prefix}")
-        print(f"Location: {self.location}")
-        print(f"Raw path: {self.raw_path}")
-        print(f"Full path: {self.full_path}")
-        print(f"Original: {self.original}")
-        print(f"Is absolute: {self.is_absolute()}")
-        print(f"{self.name=}")
-        print(80 * "=")
         path_of_copied_file = destination / self.name
 
         if not self.is_external:
@@ -530,7 +553,8 @@ class OtherPath(pathlib.Path):
                 f"or {ENV_VAR_CELLPY_KEY_FILENAME} environment variables."
             )
         if key_filename is not None:
-            connect_kwargs = {"key_filename": key_filename}
+            key_filename = pathlib.Path(key_filename).expanduser().resolve()
+            connect_kwargs = {"key_filename": str(key_filename)}
             logging.debug(f"got key_filename")
             if not testing:
                 if not pathlib.Path(key_filename).is_file():
@@ -569,6 +593,66 @@ class OtherPath(pathlib.Path):
                     f"Could not find file {self.raw_path} on {host}"
                 ) from e
 
+    def _listdir_with_fabric(
+        self: S,
+        host: str,
+        connect_kwargs: dict,
+        levels: int = 1,
+    ) -> List[str]:
+        """List the contents of a directory through sftp."""
+
+        path_separator = "/"  # only supports unix-like systems
+        t1 = time.time()
+        with fabric.Connection(host, connect_kwargs=connect_kwargs) as conn:
+            try:
+                t1 = time.time()
+                sftp_conn = conn.sftp()
+                sftp_conn.chdir(self.raw_path)
+                sub_dirs = [
+                    f"{self.raw_path}{path_separator}{f}"
+                    for f in sftp_conn.listdir()
+                    if stat.S_ISDIR(sftp_conn.stat(f).st_mode)
+                ]
+                files = [
+                    f"{self.raw_path}{path_separator}{f}"
+                    for f in sftp_conn.listdir()
+                    if not stat.S_ISDIR(sftp_conn.stat(f).st_mode)
+                ]
+                while levels != 0:
+                    new_sub_dirs = []
+                    for sub_dir in sub_dirs:
+                        try:
+                            sftp_conn.chdir(sub_dir)
+                            _new_sub_dirs = [
+                                f"{sub_dir}{path_separator}{f}"
+                                for f in sftp_conn.listdir()
+                                if stat.S_ISDIR(sftp_conn.stat(f).st_mode)
+                            ]
+                            new_files = [
+                                f"{sub_dir}{path_separator}{f}"
+                                for f in sftp_conn.listdir()
+                                if not stat.S_ISDIR(sftp_conn.stat(f).st_mode)
+                            ]
+                            files += new_files
+                            new_sub_dirs += _new_sub_dirs
+                            sftp_conn.chdir(self.raw_path)
+                        except FileNotFoundError:
+                            logging.debug(
+                                f"Could not look in {sub_dir}: FileNotFoundError"
+                            )
+                        pass
+                    sub_dirs = new_sub_dirs
+                    if len(sub_dirs) == 0:
+                        break
+                    levels -= 1
+
+                logging.debug(f"globbing took {time.time() - t1:.2f} seconds")
+                return files
+            except FileNotFoundError as e:
+                raise FileNotFoundError(
+                    f"Could not find file {self.raw_path} on {host}"
+                ) from e
+
     def _glob_with_fabric(
         self: S,
         host: str,
@@ -576,6 +660,7 @@ class OtherPath(pathlib.Path):
         glob_str: str,
         search_in_sub_dirs: bool = False,
     ) -> List[str]:
+        # TODO: update this so that it works faster (need some linux magic)
         path_separator = "/"
         with fabric.Connection(host, connect_kwargs=connect_kwargs) as conn:
             try:
@@ -595,18 +680,25 @@ class OtherPath(pathlib.Path):
                     ]
                     filtered_files = fnmatch.filter(files, glob_str)
                     for sub_dir in sub_dirs:
-                        sftp_conn.chdir(sub_dir)
-                        new_files = [
-                            f
-                            for f in sftp_conn.listdir()
-                            if not stat.S_ISDIR(sftp_conn.stat(f).st_mode)
-                        ]
-                        new_filtered_files = fnmatch.filter(new_files, glob_str)
-                        new_filtered_files = [
-                            f"{sub_dir}{path_separator}{f}" for f in new_filtered_files
-                        ]
-                        filtered_files += new_filtered_files
-                        sftp_conn.chdir("..")
+                        try:
+                            sftp_conn.chdir(sub_dir)
+                            new_files = [
+                                f
+                                for f in sftp_conn.listdir()
+                                if not stat.S_ISDIR(sftp_conn.stat(f).st_mode)
+                            ]
+                            new_filtered_files = fnmatch.filter(new_files, glob_str)
+                            new_filtered_files = [
+                                f"{sub_dir}{path_separator}{f}"
+                                for f in new_filtered_files
+                            ]
+                            filtered_files += new_filtered_files
+                            sftp_conn.chdir("..")
+                        except FileNotFoundError:
+                            logging.debug(
+                                f"Could not look in {sub_dir}: FileNotFoundError"
+                            )
+                            pass
                 else:
                     files = sftp_conn.listdir()
                     filtered_files = fnmatch.filter(files, glob_str)

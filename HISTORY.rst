@@ -6,18 +6,24 @@ History
 1.0.0 (2023) [under development]
 ================================
 
+* Unit handling: new unit handling (using pint)
 * Unit handling: renaming summary headers
 * Unit handling: new cellpy-file-format version
 * Unit handling: tool for converting old to new format
+* Unit handling: parsing input parameters for units
 * Templates: using one repository with sub-folders
 * Templates: adding more documentation
 * File handling: allow for external raw files (ssh)
 * Readers: neware.txt (one version/model)
 * Readers: arbin_sql7 (experimental, @jtgibson91)
 * Batch plotting: collectors for both data collection, plotting and saving
+* OCV-rlx: improvements of the OCV-rlx tools
 * Internals: rename main classes (CellpyData -> CellpyCell, Cell -> Data)
 * Internals: rename .cell property to .data
 * Internals: allow for only one Data-object pr CellpyCell object
+* CLI: general improvements and bug fixes
+* CLI: move editing of db-file to the edit sub-command
+
 
 
 0.4.3 (2023)

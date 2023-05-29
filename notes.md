@@ -99,6 +99,19 @@ Steps:
 ### release 1.0.0
 
 Add token to .env (for uploading to PyPI)
-Build and upload to PyPI
-Bumped to version 1.0.0a2
-Made new branch called v1.0.0 since then Read the Docs understands that this is the latest version.
+
+#### warnings during building
+
+Package 'cellpy.utils.data' is absent from the `packages` configuration.
+Package 'cellpy.utils.data.raw' is absent from the `packages` configuration
+
+### 260-check-cycle_mode etc
+
+Could be an error in the cycle_mode handling in get(). Need to check this.
+Also, need to make sure that cellpy handles the specifics correctly (gravimetric, areal, etc).
+Update: Did not work for areal for John.
+* Implemented nom_cap_specifics and conversion of units wrt input.
+* Added automatic conversion of units if giving mass, area, or nominal capacity as
+strings with units (e.g. "0.1 mg", "12 cm2", "100.2 mAh").
+Damned! It seems that updating the nom_cap_specifics in the cellpyfile does not work properly yet. It still
+said gravimetric for the one that should be areal!!!!!!!!!!!!!! NEED TO FIX THIS ASAP!!!!!!!!!!!!!!!!!!!!!

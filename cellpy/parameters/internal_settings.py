@@ -2,8 +2,10 @@
 import logging
 import warnings
 from collections import UserDict
-from dataclasses import dataclass, fields
+from dataclasses import dataclass, fields, asdict
 from typing import List, Optional
+
+import pandas as pd
 
 from cellpy import prms
 
@@ -114,6 +116,19 @@ class CellpyMeta:
                 logging.debug(f"{k}:{v} ->")
                 not_digested[k] = v
         return not_digested
+
+    def to_frame(self):
+        """Converts to pandas dataframe"""
+        df = pd.DataFrame.from_dict(asdict(self), orient="index")
+        df.index.name = "key"
+        n_rows, n_cols = df.shape
+        if n_cols == 1:
+            columns = ["value"]
+        else:
+            columns = [f"value_{i:02}" for i in range(n_cols)]
+        df.columns = columns
+
+        return df
 
 
 @dataclass
@@ -280,6 +295,19 @@ class BaseSettings(DictLikeClass):
             return
         else:
             return self[key]
+
+    def to_frame(self):
+        """Converts to pandas dataframe"""
+        df = pd.DataFrame.from_dict(asdict(self), orient="index")
+        df.index.name = "key"
+        n_rows, n_cols = df.shape
+        if n_cols == 1:
+            columns = ["value"]
+        else:
+            columns = [f"value_{i:02}" for i in range(n_cols)]
+        df.columns = columns
+
+        return df
 
 
 @dataclass
