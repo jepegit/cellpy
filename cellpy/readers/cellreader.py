@@ -3911,7 +3911,9 @@ class CellpyCell:
             scaler=None,
         )
 
-    def get_timestamp(self, cycle=None, with_index=True, as_frame=True, in_minutes=False, units="raw"):
+    def get_timestamp(
+        self, cycle=None, with_index=True, as_frame=True, in_minutes=False, units="raw"
+    ):
         """Returns timestamp.
 
         Args:
@@ -4804,9 +4806,7 @@ class CellpyCell:
         Returns (numeric):
             conversion factor (scaler)
         """
-        logging.debug(
-            f"value {unit} is a pint quantity? {isinstance(unit, Quantity)}"
-        )
+        logging.debug(f"value {unit} is a pint quantity? {isinstance(unit, Quantity)}")
 
         old_unit = self.data.raw_units[physical_property]
         value = Q(1, old_unit)

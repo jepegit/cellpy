@@ -267,14 +267,16 @@ def test_sget_timestamp(dataset):
 
 
 @pytest.mark.parametrize(
-    "cycle, units, expected", [
+    "cycle, units, expected",
+    [
         (1, "seconds", 300.01048193),
         (1, "minutes", 5.00017469),
         (1, "hours", 0.08333624),
-    ]
+    ],
 )
 def test_get_timestamp(dataset, cycle, units, expected):
     from pprint import pprint
+
     x = dataset.get_timestamp(cycle=cycle, units=units)
     pprint(x)
     assert x.iloc[0, -1] == pytest.approx(expected, 0.001)
@@ -285,6 +287,7 @@ def test_get_timestamp(dataset, cycle, units, expected):
 )
 def test_get_timestamp_list(dataset, cycle, units, as_frame, expected):
     from pprint import pprint
+
     x = dataset.get_timestamp(cycle=cycle, units=units, as_frame=as_frame)
     assert x[0][0] == pytest.approx(expected, 0.001)
 

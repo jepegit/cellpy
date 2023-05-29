@@ -131,7 +131,9 @@ class ReaderClass(CellPyConfig):
     time_interpolation_step: float = 10.0
     capacity_interpolation_step: float = 2.0
     use_cellpy_stat_file: bool = False
-    auto_dirs: bool = True  # v2.0 search in prm-file for res and hdf5 dirs in cellpy.get()
+    auto_dirs: bool = (
+        True  # v2.0 search in prm-file for res and hdf5 dirs in cellpy.get()
+    )
 
 
 @dataclass
