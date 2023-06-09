@@ -845,7 +845,9 @@ class DataLoader(BaseLoader):
 
         new_data = self._post_process(new_data)
         if merge:
-            new_data = self._merge(new_data, increment_cycle_index=increment_cycle_index)
+            new_data = self._merge(
+                new_data, increment_cycle_index=increment_cycle_index
+            )
 
         new_data = self.identify_last_data_point(new_data)
         new_data = self._inspect(new_data)
@@ -1043,22 +1045,36 @@ class DataLoader(BaseLoader):
                 self.arbin_headers_global.test_id_txt
             ].values
         else:
-            if not isinstance(test_no, (tuple,list)):
+            if not isinstance(test_no, (tuple, list)):
                 test_no = [test_no]
 
-            selector = global_data_df[self.arbin_headers_global.test_id_txt].isin(test_no)
+            selector = global_data_df[self.arbin_headers_global.test_id_txt].isin(
+                test_no
+            )
             selected_global_data_df = global_data_df.loc[selector, :]
             if selected_global_data_df.empty:
                 raise NoDataFound(f"Could not find any test with test-ID(s) {test_no}")
             data._internal_test_number = test_no
 
         # only picking the first entry (assuming only one cell pr file and channel)
-        data.channel_index = int(selected_global_data_df[self.arbin_headers_global.channel_index_txt].values[0])
-        data.creator = selected_global_data_df[self.arbin_headers_global.creator_txt].values[0]
+        data.channel_index = int(
+            selected_global_data_df[self.arbin_headers_global.channel_index_txt].values[
+                0
+            ]
+        )
+        data.creator = selected_global_data_df[
+            self.arbin_headers_global.creator_txt
+        ].values[0]
         data.test_ID = global_data_df[self.arbin_headers_global.item_id_txt].values[0]
-        data.schedule_file_name = selected_global_data_df[self.arbin_headers_global.schedule_file_name_txt].values[0]
-        data.start_datetime = selected_global_data_df[self.arbin_headers_global.start_datetime_txt].values[0]
-        data.test_name = selected_global_data_df[self.arbin_headers_global.test_name_txt].values[0]
+        data.schedule_file_name = selected_global_data_df[
+            self.arbin_headers_global.schedule_file_name_txt
+        ].values[0]
+        data.start_datetime = selected_global_data_df[
+            self.arbin_headers_global.start_datetime_txt
+        ].values[0]
+        data.test_name = selected_global_data_df[
+            self.arbin_headers_global.test_name_txt
+        ].values[0]
 
         data.raw_data_files.append(self.fid)
         return data
@@ -1069,9 +1085,11 @@ class DataLoader(BaseLoader):
     def _load_res_summary_table(self, conn, test_ids):
         table_name_stats = TABLE_NAMES["statistic"]
         test_numbers = "(" + ",".join([str(tn) for tn in test_ids]) + ")"
-        sql = f"select * from {table_name_stats} " \
-              f"where {self.arbin_headers_normal.test_id_txt} in {test_numbers} " \
-              f"order by {self.arbin_headers_normal.test_id_txt}, {self.arbin_headers_normal.data_point_txt}"
+        sql = (
+            f"select * from {table_name_stats} "
+            f"where {self.arbin_headers_normal.test_id_txt} in {test_numbers} "
+            f"order by {self.arbin_headers_normal.test_id_txt}, {self.arbin_headers_normal.data_point_txt}"
+        )
         summary_df = self._query_table(table_name_stats, conn, sql=sql)
         return summary_df
 
