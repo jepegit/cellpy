@@ -348,6 +348,7 @@ class Data:
         self.raw_data_files_length = []
         self.loaded_from = None
         self._raw_id = None
+        self._internal_test_number = None
         self.raw_units = get_default_raw_units()
         self.raw_limits = get_default_raw_limits()
 

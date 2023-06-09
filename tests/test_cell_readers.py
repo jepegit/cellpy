@@ -656,7 +656,7 @@ def test_make_step_table_all_steps(cellpy_data_instance, parameters):
     cellpy_data_instance.from_raw(parameters.res_file_path)
     cellpy_data_instance.set_mass(1.0)
     cellpy_data_instance.make_step_table(profiling=True, all_steps=True)
-    assert len(cellpy_data_instance.data.steps) == 103
+    assert len(cellpy_data_instance.data.steps) == 140
 
 
 def test_make_step_table_no_rate(cellpy_data_instance, parameters):

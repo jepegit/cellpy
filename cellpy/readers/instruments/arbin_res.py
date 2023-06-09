@@ -14,6 +14,7 @@ import pandas as pd
 import sqlalchemy as sa
 
 from cellpy import prms
+from cellpy.exceptions import NullData
 from cellpy.parameters.internal_settings import HeaderDict, get_headers_normal
 from cellpy.readers.core import (
     Data,
@@ -473,122 +474,6 @@ class DataLoader(BaseLoader):
                     # data.raw[col] = np.nan
             return run_data
 
-    def _iterdump(self, file_name, headers=None):  # Deprecated - use on own risk
-        """
-        Function for dumping values from a file.
-
-        Should only be used by developers.
-
-        Args:
-            file_name: name of the file
-            headers: list of headers to pick
-                default:
-                ["Discharge_Capacity", "Charge_Capacity"]
-
-        Returns: pandas.DataFrame
-
-        """
-        if headers is None:
-            headers = ["Discharge_Capacity", "Charge_Capacity"]
-
-        step_txt = self.arbin_headers_normal.step_index_txt
-        point_txt = self.arbin_headers_normal.data_point_txt
-        cycle_txt = self.arbin_headers_normal.cycle_index_txt
-
-        self.logger.debug("iterating through file: %s" % file_name)
-        if not os.path.isfile(file_name):
-            print("Missing file_\n   %s" % file_name)
-
-        filesize = os.path.getsize(file_name)
-        hfilesize = humanize_bytes(filesize)
-        txt = "Filesize: %i (%s)" % (filesize, hfilesize)
-        self.logger.info(txt)
-
-        table_name_global = TABLE_NAMES["global"]
-        table_name_stats = TABLE_NAMES["statistic"]
-        table_name_normal = TABLE_NAMES["normal"]
-
-        # creating temporary file and connection
-        self.copy_to_temporary()
-
-        constr = self._get_res_connector(self._temp_file_path)
-        conn = dbloader.connect(constr, autocommit=True)
-
-        self.logger.debug("tmp file: %s" % self._temp_file_path)
-        self.logger.debug("constr str: %s" % constr)
-
-        # --------- read global-data ------------------------------------
-        self.logger.debug("reading global data table")
-        sql = "select * from %s" % table_name_global
-
-        global_data_df = pd.read_sql_query(sql=sa.text(sql), con=conn.connect())
-        # col_names = list(global_data_df.columns.values)
-        self.logger.debug("sql statement: %s" % sql)
-
-        tests = global_data_df[self.arbin_headers_normal.test_id_txt]
-        number_of_sets = len(tests)
-        self.logger.debug("number of datasets: %i" % number_of_sets)
-        self.logger.debug("only selecting first test")
-        test_no = 0
-        self.logger.debug("setting data for test number %i" % test_no)
-        loaded_from = file_name
-        # fid = FileID(file_name)
-        start_datetime = global_data_df[
-            self.arbin_headers_global["start_datetime_txt"]
-        ][test_no]
-        _internal_test_number = int(
-            global_data_df[self.arbin_headers_normal.test_id_txt][test_no]
-        )  # OBS
-        test_name = global_data_df[self.arbin_headers_global["test_name_txt"]][test_no]
-
-        # --------- read raw-data (normal-data) -------------------------
-        self.logger.debug("reading raw-data")
-
-        columns = ["Data_Point", "Step_Index", "Cycle_Index"]
-        columns.extend(headers)
-        columns_txt = ", ".join(["%s"] * len(columns)) % tuple(columns)
-
-        sql_1 = "select %s " % columns_txt
-        sql_2 = "from %s " % table_name_normal
-        sql_3 = "where %s=%s " % (
-            self.arbin_headers_normal.test_id_txt,
-            _internal_test_number,
-        )
-        sql_5 = "order by %s" % self.arbin_headers_normal.data_point_txt
-        import time
-
-        info_list = []
-        info_header = ["cycle", "row_count", "start_point", "end_point"]
-        info_header.extend(headers)
-        self.logger.info(" ".join(info_header))
-        self.logger.info("-------------------------------------------------")
-
-        for cycle_number in range(1, 2000):
-            t1 = time.time()
-            self.logger.debug("picking cycle %i" % cycle_number)
-            sql_4 = "AND %s=%i " % (cycle_txt, cycle_number)
-            sql = sql_1 + sql_2 + sql_3 + sql_4 + sql_5
-            self.logger.debug("sql statement: %s" % sql)
-            normal_df = pd.read_sql_query(sql=sa.text(sql), con=conn.connect())
-            t2 = time.time()
-            dt = t2 - t1
-            self.logger.debug("time: %f" % dt)
-            if normal_df.empty:
-                self.logger.debug("reached the end")
-                break
-            row_count, _ = normal_df.shape
-            start_point = normal_df[point_txt].min()
-            end_point = normal_df[point_txt].max()
-            last = normal_df.iloc[-1, :]
-
-            step_list = [cycle_number, row_count, start_point, end_point]
-            step_list.extend([last[x] for x in headers])
-            info_list.append(step_list)
-
-        self._clean_up_loadres(None, conn, self._temp_file_path)
-        info_dict = pd.DataFrame(info_list, columns=info_header)
-        return info_dict
-
     def repair(self, file_name):
         """try to repair a broken/corrupted file"""
         raise NotImplemented
@@ -634,7 +519,7 @@ class DataLoader(BaseLoader):
         table_name_global = TABLE_NAMES["global"]
         table_name_aux_global = TABLE_NAMES["aux_global"]
         table_name_aux = TABLE_NAMES["aux"]
-        table_name_stats = TABLE_NAMES["statistic"]
+
         table_name_normal = TABLE_NAMES["normal"]
 
         if DEBUG_MODE:
@@ -652,13 +537,17 @@ class DataLoader(BaseLoader):
         if dataset_number is not None:
             self.logger.info(f"Dataset number given: {dataset_number}")
             self.logger.info(f"Available dataset numbers: {tests}")
+            # check if dataset_number is valid
+            #
 
         else:
-            dataset_number = 0
+            dataset_number = None
 
         data = self._init_data(file_name, global_data_df, dataset_number)
-        test_id = data._internal_test_number
         self.logger.debug("reading raw-data")
+        test_id = data._internal_test_number
+
+        # --------- read stats-data (summary-data) ---------------------
 
         # --------- read raw-data (normal-data) ------------------------
         length_of_test, normal_df = self._load_res_normal_table(
@@ -669,15 +558,7 @@ class DataLoader(BaseLoader):
             conn, normal_df, table_name_aux, table_name_aux_global, test_id
         )
 
-        # --------- read stats-data (summary-data) ---------------------
-        sql = "select * from %s where %s=%s order by %s" % (
-            table_name_stats,
-            self.arbin_headers_normal.test_id_txt,
-            data._internal_test_number,
-            self.arbin_headers_normal.data_point_txt,
-        )
-        summary_df = pd.read_sql_query(sql=sa.text(sql), con=conn.connect())
-
+        summary_df = self._load_res_summary_table(conn, test_id)
         if summary_df.empty and prms.Reader.use_cellpy_stat_file:
             txt = "\nCould not find any summary (stats-file)!"
             txt += "\n -> issue make_summary(use_cellpy_stat_file=False)"
@@ -697,8 +578,6 @@ class DataLoader(BaseLoader):
 
         data.raw = normal_df
         data.raw_data_files_length.append(length_of_test)
-        data = self._post_process(data)
-        data = self.identify_last_data_point(data)
         return data
 
     def _load_win_res_auxiliary_table(
@@ -766,9 +645,10 @@ class DataLoader(BaseLoader):
 
     def _get_aux_df(self, conn, test_id, table_name_aux):
         columns_txt = "*"
+        test_numbers = "(" + ",".join([str(tn) for tn in test_id]) + ")"
         sql_1 = "select %s " % columns_txt
         sql_2 = "from %s " % table_name_aux
-        sql_3 = "where %s=%s " % (self.arbin_headers_aux.test_id_txt, test_id)
+        sql_3 = f"where {self.arbin_headers_normal.test_id_txt} in {test_numbers}"
         sql_4 = ""
         sql_aux = sql_1 + sql_2 + sql_3 + sql_4
         aux_df = self._query_table(table_name_aux, conn, sql=sql_aux)
@@ -830,7 +710,7 @@ class DataLoader(BaseLoader):
             self.logger.info(f"Dataset number given: {dataset_number}")
             self.logger.info(f"Available dataset numbers: {tests}")
         else:
-            dataset_number = 0
+            dataset_number = None
 
         data = self._init_data(file_name, global_data_df, dataset_number)
 
@@ -877,8 +757,6 @@ class DataLoader(BaseLoader):
 
         data.raw = normal_df
         data.raw_data_files_length.append(length_of_test)
-        data = self._post_process(data)
-        data = self.identify_last_data_point(data)
         return data
 
     def _check_size(self):
@@ -904,6 +782,7 @@ class DataLoader(BaseLoader):
         bad_steps=None,
         dataset_number=None,
         data_points=None,
+        increment_cycle_index=True,
         **kwargs,
     ):
         """Loads data from arbin .res files.
@@ -912,15 +791,23 @@ class DataLoader(BaseLoader):
             name (str): path to .res file.
             bad_steps (list of tuples): (c, s) tuples of steps s (in cycle c)
                 to skip loading.
-            dataset_number (int): the data set number to select if you are dealing
+            dataset_number (int): the data set number ('Test-ID') to select if you are dealing
                 with arbin files with more than one data-set.
+                Defaults to selecting all data-sets and merging them.
             data_points (tuple of ints): load only data from data_point[0] to
                     data_point[1] (use None for infinite).
+            increment_cycle_index (bool): increment the cycle index if merging several datasets (default True).
 
         Returns:
             new data (Data)
         """
         # TODO: @jepe - insert kwargs - current chunk, only normal data, etc
+        if dataset_number is not None:
+            self.logger.info(f"Dataset number given: {dataset_number}")
+            merge = False
+        else:
+            merge = True
+
         try:
             not_too_big = self._check_size()
             if not not_too_big:
@@ -956,9 +843,42 @@ class DataLoader(BaseLoader):
                 **kwargs,
             )
 
+        new_data = self._post_process(new_data)
+        if merge:
+            new_data = self._merge(new_data, increment_cycle_index=increment_cycle_index)
+
+        new_data = self.identify_last_data_point(new_data)
         new_data = self._inspect(new_data)
 
         return new_data
+
+    def _merge(self, data, increment_cycle_index=True):
+        """Merge data from different data-sets (Test-ID) into one data-set."""
+        test_ids = data._internal_test_number
+        if len(test_ids) == 1:
+            logging.debug("Only one data-set - no need to merge")
+            return data
+        if data.raw.empty:
+            raise ValueError("No data to merge")
+
+        logging.debug("Merging data (only the normal/raw data)")
+        grouped = data.raw.groupby(self.cellpy_headers_normal.test_id_txt)
+        groups = []
+        last_data_point = 0
+        last_test_time = 0.0
+        last_cycle_index = 0
+        for test_id, df in grouped:
+            last = df.iloc[-1]
+            df[self.cellpy_headers_normal.data_point_txt] += last_data_point
+            df[self.cellpy_headers_normal.test_time_txt] += last_test_time
+            if increment_cycle_index:
+                df[self.cellpy_headers_normal.cycle_index_txt] += last_cycle_index
+            last_data_point = last[self.cellpy_headers_normal.data_point_txt]
+            last_test_time = last[self.cellpy_headers_normal.test_time_txt]
+            last_cycle_index = last[self.cellpy_headers_normal.cycle_index_txt]
+            groups.append(df)
+        data.raw = pd.concat(groups, ignore_index=True)
+        return data
 
     @staticmethod
     def _create_tmp_files(
@@ -1034,14 +954,15 @@ class DataLoader(BaseLoader):
 
         """
         # should include a more efficient to load the csv (maybe a loop where
-        #   we load only chuncks and only keep the parts that fullfill the
+        #   we load only chunks and only keep the parts that fulfill the
         #   filters (e.g. bad_steps, data_points,...)
         normal_df = pd.read_csv(temp_csv_filename_normal)
         # filter on test ID
-        normal_df = normal_df[
-            normal_df[self.arbin_headers_normal.test_id_txt]
-            == data._internal_test_number
-        ]
+        if data._internal_test_number is not None:
+            normal_df = normal_df[
+                normal_df[self.arbin_headers_normal.test_id_txt]
+                in data._internal_test_number
+            ]
         # sort on data point
         if prms._sort_if_subprocess:
             normal_df = normal_df.sort_values(self.arbin_headers_normal.data_point_txt)
@@ -1109,43 +1030,54 @@ class DataLoader(BaseLoader):
                     logging.warning(f"could not remove tmp-file\n{f} {e}")
         return length_of_test, normal_df, summary_df, aux_global_df, aux_df
 
-    def _init_data(self, file_name, global_data_df, test_no):
+    def _init_data(self, file_name, global_data_df, test_no=None):
         data = Data()
         data.loaded_from = file_name
         self.generate_fid()
         # name of the .res file it is loaded from:
         # data.parent_filename = os.path.basename(file_name)
-        data.channel_index = int(
-            global_data_df[self.arbin_headers_global["channel_index_txt"]][test_no]
-        )
 
-        data.creator = global_data_df[self.arbin_headers_global["creator_txt"]][test_no]
-        data.test_ID = global_data_df[self.arbin_headers_global["item_id_txt"]][test_no]
-        data.schedule_file_name = global_data_df[
-            self.arbin_headers_global["schedule_file_name_txt"]
-        ][test_no]
-        data.start_datetime = global_data_df[
-            self.arbin_headers_global["start_datetime_txt"]
-        ][test_no]
-        data._internal_test_number = int(
-            global_data_df[self.arbin_headers_normal.test_id_txt][test_no]
-        )
-        data.test_name = global_data_df[self.arbin_headers_global["test_name_txt"]][
-            test_no
-        ]
+        if test_no is None:
+            selected_global_data_df = global_data_df
+            data._internal_test_number = selected_global_data_df[
+                self.arbin_headers_global.test_id_txt
+            ].values
+        else:
+            if not isinstance(test_no, (tuple,list)):
+                test_no = [test_no]
+
+            selector = global_data_df[self.arbin_headers_global.test_id_txt].isin(test_no)
+            selected_global_data_df = global_data_df.loc[selector, :]
+            if selected_global_data_df.empty:
+                raise NoDataFound(f"Could not find any test with test-ID(s) {test_no}")
+            data._internal_test_number = test_no
+
+        # only picking the first entry (assuming only one cell pr file and channel)
+        data.channel_index = int(selected_global_data_df[self.arbin_headers_global.channel_index_txt].values[0])
+        data.creator = selected_global_data_df[self.arbin_headers_global.creator_txt].values[0]
+        data.test_ID = global_data_df[self.arbin_headers_global.item_id_txt].values[0]
+        data.schedule_file_name = selected_global_data_df[self.arbin_headers_global.schedule_file_name_txt].values[0]
+        data.start_datetime = selected_global_data_df[self.arbin_headers_global.start_datetime_txt].values[0]
+        data.test_name = selected_global_data_df[self.arbin_headers_global.test_name_txt].values[0]
+
         data.raw_data_files.append(self.fid)
         return data
 
     def _normal_table_generator(self, **kwargs):
         pass
 
-    def _load_res_normal_table(
-        self, conn, _internal_test_number, bad_steps, data_points
-    ):
+    def _load_res_summary_table(self, conn, test_ids):
+        table_name_stats = TABLE_NAMES["statistic"]
+        test_numbers = "(" + ",".join([str(tn) for tn in test_ids]) + ")"
+        sql = f"select * from {table_name_stats} " \
+              f"where {self.arbin_headers_normal.test_id_txt} in {test_numbers} " \
+              f"order by {self.arbin_headers_normal.test_id_txt}, {self.arbin_headers_normal.data_point_txt}"
+        summary_df = self._query_table(table_name_stats, conn, sql=sql)
+        return summary_df
+
+    def _load_res_normal_table(self, conn, test_ids, bad_steps, data_points):
         self.logger.debug("starting loading raw-data")
-        self.logger.debug(
-            f"connection: {conn} internal test-ID: {_internal_test_number}"
-        )
+        self.logger.debug(f"connection: {conn} internal test-ID: {test_ids}")
         self.logger.debug(f"bad steps:  {bad_steps}")
 
         table_name_normal = TABLE_NAMES["normal"]
@@ -1156,13 +1088,11 @@ class DataLoader(BaseLoader):
         else:
             columns_txt = "*"
 
-        sql_1 = "select %s " % columns_txt
-        sql_2 = "from %s " % table_name_normal
-        sql_3 = "where %s=%s " % (
-            self.arbin_headers_normal.test_id_txt,
-            _internal_test_number,
-        )
-        sql_4 = ""
+        sql_1 = f"select {columns_txt} "
+        sql_2 = f"from {table_name_normal} "
+        test_numbers = "(" + ",".join([str(tn) for tn in test_ids]) + ")"
+        sql_3 = f"where {self.arbin_headers_normal.test_id_txt} in {test_numbers}"
+        sql_4 = " "
 
         if bad_steps is not None:
             if not isinstance(bad_steps, (list, tuple)):
@@ -1171,14 +1101,10 @@ class DataLoader(BaseLoader):
                 bad_steps = [bad_steps]
             for bad_cycle, bad_step in bad_steps:
                 self.logger.debug(f"bad_step def: [c={bad_cycle}, s={bad_step}]")
-                sql_4 += "AND NOT (%s=%i " % (
-                    self.arbin_headers_normal.cycle_index_txt,
-                    bad_cycle,
+                sql_4 += (
+                    f"AND NOT ({self.arbin_headers_normal.cycle_index_txt}={bad_cycle} "
                 )
-                sql_4 += "AND %s=%i) " % (
-                    self.arbin_headers_normal.step_index_txt,
-                    bad_step,
-                )
+                sql_4 += f"AND {self.arbin_headers_normal.step_index_txt}={bad_step}) "
 
         if prms.Reader.limit_loaded_cycles:
             if len(prms.Reader.limit_loaded_cycles) > 1:
@@ -1203,7 +1129,7 @@ class DataLoader(BaseLoader):
             if d2 is not None:
                 sql_4 += "AND %s<=%i " % (self.arbin_headers_normal.data_point_txt, d2)
 
-        sql_5 = "order by %s" % self.arbin_headers_normal.data_point_txt
+        sql_5 = f"order by {self.arbin_headers_normal.datetime_txt}"
         sql = sql_1 + sql_2 + sql_3 + sql_4 + sql_5
 
         self.logger.debug("INFO ABOUT LOAD RES NORMAL")
@@ -1211,6 +1137,7 @@ class DataLoader(BaseLoader):
 
         if DEBUG_MODE:
             current_memory_usage = sys.getsizeof(self)
+            self.logger.debug(f"current memory usage: {current_memory_usage}")
 
         if not prms.Instruments.Arbin.chunk_size:
             self.logger.debug("no chunk-size given")
@@ -1268,7 +1195,8 @@ class DataLoader(BaseLoader):
         self.logger.debug(f"Headers:\n{normal_df.columns}")
 
         if normal_df is None:
-            normal_df = pd.DataFrame(columns=self.arbin_headers_normal.values())
+            default_headers = [v for v in self.arbin_headers_normal.values()]
+            normal_df = pd.DataFrame(columns=default_headers)
         return length_of_test, normal_df
 
 
@@ -1299,7 +1227,18 @@ def check_loader_empty_normal():
     print(df.empty)
 
 
+def check_multi():
+    import pathlib
+    import cellpy
+
+    f = r"C:\scripting\cellpy_dev_resources\dev_data\arbin_multi\20230531_NG27_02_cc_01.res"
+    out = r"C:\scripting\cellpy_dev_resources\dev_data\arbin_multi\20230531_NG27_02_cc_01.xlsx"
+    p = pathlib.Path(f)
+    c = cellpy.get(p)
+    c.to_excel(out, raw=True)
+
+
 if __name__ == "__main__":
     print(" arbin-res-py ".center(80, "="))
-    check_loader_empty_normal()
+    check_multi()
     print(" finished ".center(80, "="))
