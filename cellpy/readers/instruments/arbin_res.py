@@ -962,8 +962,9 @@ class DataLoader(BaseLoader):
         # filter on test ID
         if data._internal_test_number is not None:
             normal_df = normal_df[
-                normal_df[self.arbin_headers_normal.test_id_txt]
-                in data._internal_test_number
+                normal_df[self.arbin_headers_normal.test_id_txt].isin(
+                    data._internal_test_number
+                )
             ]
         # sort on data point
         if prms._sort_if_subprocess:
@@ -1256,7 +1257,21 @@ def check_multi():
     c.to_excel(out, raw=True)
 
 
+def noodle():
+    import pandas as pd
+    df = pd.DataFrame({
+        "a": [1, 2, 3, 4, 5],
+        "b": [1, 2, 3, 4, 5],
+        "c": [1, 1, 1, 1, 2],
+    })
+    print(df)
+
+    df2 = df[df["c"].isin([1])]
+    print(" new ".center(80, "-"))
+    print(df2)
+
+
 if __name__ == "__main__":
     print(" arbin-res-py ".center(80, "="))
-    check_multi()
+    noodle()
     print(" finished ".center(80, "="))
