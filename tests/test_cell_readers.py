@@ -654,7 +654,6 @@ def test_make_new_step_table(cellpy_data_instance, parameters):
 def test_make_step_table_all_steps(cellpy_data_instance, parameters):
     # need a new test data-file for GITT
     cellpy_data_instance.from_raw(parameters.res_file_path)
-    cellpy_data_instance.data.raw.to_clipboard()
     cellpy_data_instance.mass = 1.0
     cellpy_data_instance.make_step_table(profiling=True, all_steps=True)
     assert len(cellpy_data_instance.data.steps) == 103

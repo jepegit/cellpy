@@ -848,7 +848,6 @@ class DataLoader(BaseLoader):
                 **kwargs,
             )
 
-        # new_data.raw.to_clipboard()
         new_data = self._post_process(new_data)
         if merge:
             new_data = self._merge(
