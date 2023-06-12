@@ -2580,8 +2580,8 @@ class CellpyCell:
     def _ustep(self, n):
         un = []
         c = 0
-        n = n.diff()
-        for i in n:
+        dn = n.diff()
+        for i in dn:
             if i != 0:
                 c += 1
             un.append(c)

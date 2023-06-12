@@ -557,7 +557,12 @@ class DataLoader(BaseLoader):
         normal_df = self._load_win_res_auxiliary_table(
             conn, normal_df, table_name_aux, table_name_aux_global, test_id
         )
-
+        # FIX: error in order by since datetime is not accurate enough (also need sorting on test-time)
+        #   sorting dataframe:
+        normal_df = normal_df.sort_values(
+            by=[self.arbin_headers_normal.datetime_txt, self.arbin_headers_normal.test_time_txt], ascending=True
+        )
+        # TODO 216: add order by on test_time as well in sql query
         summary_df = self._load_res_summary_table(conn, test_id)
         if summary_df.empty and prms.Reader.use_cellpy_stat_file:
             txt = "\nCould not find any summary (stats-file)!"
@@ -843,6 +848,7 @@ class DataLoader(BaseLoader):
                 **kwargs,
             )
 
+        # new_data.raw.to_clipboard()
         new_data = self._post_process(new_data)
         if merge:
             new_data = self._merge(
@@ -1212,7 +1218,6 @@ class DataLoader(BaseLoader):
 
         self.logger.debug(f"loaded to normal_df (length =  {length_of_test})")
         self.logger.debug(f"Headers:\n{normal_df.columns}")
-
         if normal_df is None:
             default_headers = [v for v in self.arbin_headers_normal.values()]
             normal_df = pd.DataFrame(columns=default_headers)
