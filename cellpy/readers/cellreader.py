@@ -1184,7 +1184,7 @@ class CellpyCell:
         max_raw_files_to_merge = 20
         if len(self.file_names) > max_raw_files_to_merge:
             logging.debug("ERROR? Too many files to merge")
-            raise ValueError("Too many files to merge - " "could be a p2-p3 zip thing")
+            raise ValueError("Too many files to merge - could be a p2-p3 zip thing")
 
         logging.debug("start iterating through file(s)")
         recalc = kwargs.pop("recalc", True)
