@@ -640,13 +640,13 @@ def test_from_raw_local(cellpy_data_instance, parameters):
 
 def test_make_step_table(cellpy_data_instance, parameters):
     cellpy_data_instance.from_raw(parameters.res_file_path)
-    cellpy_data_instance.set_mass(1.0)
+    cellpy_data_instance.mass = 1.0
     cellpy_data_instance.make_step_table()
 
 
 def test_make_new_step_table(cellpy_data_instance, parameters):
     cellpy_data_instance.from_raw(parameters.res_file_path)
-    cellpy_data_instance.set_mass(1.0)
+    cellpy_data_instance.mass = 1.0
     cellpy_data_instance.make_step_table(profiling=True)
     assert len(cellpy_data_instance.data.steps) == 103
 
@@ -654,21 +654,21 @@ def test_make_new_step_table(cellpy_data_instance, parameters):
 def test_make_step_table_all_steps(cellpy_data_instance, parameters):
     # need a new test data-file for GITT
     cellpy_data_instance.from_raw(parameters.res_file_path)
-    cellpy_data_instance.set_mass(1.0)
+    cellpy_data_instance.mass = 1.0
     cellpy_data_instance.make_step_table(profiling=True, all_steps=True)
     assert len(cellpy_data_instance.data.steps) == 103
 
 
 def test_make_step_table_no_rate(cellpy_data_instance, parameters):
     cellpy_data_instance.from_raw(parameters.res_file_path)
-    cellpy_data_instance.set_mass(1.0)
+    cellpy_data_instance.mass = 1.0
     cellpy_data_instance.make_step_table(profiling=True, add_c_rate=False)
     assert "rate_avr" not in cellpy_data_instance.data.steps.columns
 
 
 def test_make_step_table_skip_steps(cellpy_data_instance, parameters):
     cellpy_data_instance.from_raw(parameters.res_file_path)
-    cellpy_data_instance.set_mass(1.0)
+    cellpy_data_instance.mass = 1.0
     cellpy_data_instance.make_step_table(profiling=True, skip_steps=[1, 10])
     print(cellpy_data_instance.data.steps)
     assert len(cellpy_data_instance.data.steps) == 87
@@ -676,7 +676,7 @@ def test_make_step_table_skip_steps(cellpy_data_instance, parameters):
 
 def test_make_summary(cellpy_data_instance, parameters):
     cellpy_data_instance.from_raw(parameters.res_file_path)
-    cellpy_data_instance.set_mass(1.0)
+    cellpy_data_instance.mass = 1.0
     cellpy_data_instance.make_summary()
     s2 = cellpy_data_instance.data.summary
     s3 = cellpy_data_instance.get_summary()
@@ -687,7 +687,7 @@ def test_make_summary(cellpy_data_instance, parameters):
 def test_make_summary_new_version(parameters):
     c_raw = cellpy.get(logging_mode="DEBUG", testing=True)
     c_raw.from_raw(parameters.res_file_path)
-    c_raw.set_mass(1.0)
+    c_raw.mass = 1.0
     c_raw.make_summary()
 
     s1 = c_raw.data.summary

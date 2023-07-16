@@ -9,20 +9,22 @@ The easies way to get to the DataFrames is by the following procedure:
 
 .. code-block:: python
 
-    # Assumed name of the CellpyCell object: cellpy_data
+    # Assumed name of the CellpyCell object: c
 
     # get the 'test':
-    c = cell_data.data
-    # cellpy_test is now a cellpy Data object (cellpy.readers.cellreader.Data)
+    data = c.data
+    # data is now a cellpy Data object (cellpy.readers.cellreader.Data)
 
     # pandas.DataFrame with data vs cycle number (coulombic efficiency, charge-capacity etc.):
-    summary_data = c.summary
+    summary_data = data.summary
+    # you could also get the summary data by:
+    summary_data = c.data.summary
 
     # pandas.DataFrame with the raw data:
-    raw_data = c.raw
+    raw_data = data.raw
 
     # pandas.DataFrame with statistics on each step and info about step type:
-    step_info = c.steps
+    step_info = data.steps
 
 
 You can then manipulate your data with the standard ``pandas.DataFrame`` methods

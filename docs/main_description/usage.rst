@@ -43,13 +43,13 @@ for specific cycles and steps::
     >>> number_of_cycles = len(list_of_cycles)
     >>> print(f"you have {number_of_cycles} cycles")
     you have 658 cycles
-    >>> current,voltage = c.get_cap(5) # current and voltage for cycle 5
+    >>> current_voltage_df = c.get_cap(5) # current and voltage for cycle 5 (as pandas.DataFrame)
 
 You can also look for open circuit voltage steps::
 
     >>> cycle = 44
-    >>> time1, voltage1 = c.get_ocv(ocv_type='ocvrlx_up', cycle_number=cycle)
-    >>> time2, voltage2 = c.get_ocv(ocv_type='ocvrlx_down', cycle_number=cycle)
+    >>> time_voltage_df1 = c.get_ocv(ocv_type='ocvrlx_up', cycle_number=cycle)
+    >>> time_voltage_df2 = c.get_ocv(ocv_type='ocvrlx_down', cycle_number=cycle)
 
 There are many more methods available, including methods
 for selecting steps and cycles (``get_current``, ``get_voltage``, *etc.*)
@@ -62,8 +62,7 @@ the tutorials (:doc:`tutorials <basics>`) or notebook examples (:doc:`Example no
 2. Convenience methods and tools
 ================================
 
-The easiest way to load a file is to use the ``cellpy.get`` method. It
-interprets the file-type from the file extension and automatically creates
+The ``cellpy.get`` method interprets the file-type from the file extension and automatically creates
 the step table as well as the summary table::
 
     >>> import cellpy
@@ -72,13 +71,19 @@ the step table as well as the summary table::
     >>> # cellpy.get("cellpyfiles/20141030_CELL_6_cc_0.h5")
 
 
-There also exists a method that takes the raw-file name and the cellpy-file name
-as input and only loads the raw-file if the cellpy-file is older than the
+If you provide the raw-file name and the cellpy-file name
+as input, ``cellpy.get`` only loads the raw-file if the cellpy-file is older than the
 raw-file::
 
-    >>> c = cellreader.CellpyCell()
+    >>> c = cellpy.get(raw_file_name, cellpyfile=cellpy_file_name)
+
+Also, if your cell test consists of several raw files, you can provide a list of filenames::
+
     >>> raw_files = [rawfile_01, rawfile_02]
-    >>> c.loadcell(raw_files, cellpy_file)
+    >>> c.get(raw_files, cellpy_file)
+
+``cellpy`` will merge the two files for you and shift the running numbers (such as data-point) into
+one "continuous" file.
 
 ``cellpy`` contains a logger (the logs are saved in the cellpy logging
 directory as defined in the config file). You can set the log level

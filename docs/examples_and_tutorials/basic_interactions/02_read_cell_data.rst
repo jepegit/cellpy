@@ -106,4 +106,5 @@ To export data to csv format,
     ``CellpyCell`` objects store the data (including the summary and step-tables)
     in ``pandas DataFrames``. This means that you can easily export the data to
     other formats, such as Excel, by using the ``to_excel`` method of the
-    DataFrame object.
+    DataFrame object. In addition, ``CellpyCell`` objects have a method called
+    ``to_excel`` that exports the data to an Excel file.

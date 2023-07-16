@@ -318,7 +318,7 @@ def _update_paths(
 def _ask_about_path(q, p):
     click.echo(f"\n[cellpy] (setup) input {q}")
     click.echo(f"[cellpy] (setup) current: {p}")
-    new_path = input("[cellpy] (setup) [KEEP/new value] >>> ").strip()
+    new_path = input("[cellpy] (setup) new value (press enter to keep) >>> ").strip()
     if not new_path:
         new_path = p
     return pathlib.Path(new_path)
@@ -327,7 +327,7 @@ def _ask_about_path(q, p):
 def _ask_about_otherpath(q, p):
     click.echo(f"\n[cellpy] (setup) input {q}")
     click.echo(f"[cellpy] (setup) current: {p}")
-    new_path = input("[cellpy] (setup) [KEEP/new value] >>> ").strip()
+    new_path = input("[cellpy] (setup) new value (press enter to keep) >>> ").strip()
     if not new_path:
         new_path = p
     return OtherPath(new_path)
@@ -336,7 +336,7 @@ def _ask_about_otherpath(q, p):
 def _ask_about_name(q, n):
     click.echo(f"\n[cellpy] (setup) input {q}")
     click.echo(f"[cellpy] (setup) current: {n}")
-    new_name = input("[cellpy] (setup) [KEEP/new value] >>> ").strip()
+    new_name = input("[cellpy] (setup) new value (press enter to keep) >>> ").strip()
     if not new_name:
         new_name = n
     return new_name

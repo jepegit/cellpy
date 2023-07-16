@@ -11,16 +11,17 @@ by issuing the ``cellpy`` command at the shell (or in the cmd window).
     Usage: cellpy [OPTIONS] COMMAND [ARGS]...
 
     Options:
-     --help  Show this message and exit.
+      --help  Show this message and exit.
 
     Commands:
-      edit   Edit your cellpy config file.
+      edit   Edit your cellpy config or database files.
       info   This will give you some valuable information about your cellpy.
       new    Set up a batch experiment (might need git installed).
       pull   Download examples or tests from the big internet (needs git).
-      run    Run a cellpy process (batch-job, edit db, ...).
+      run    Run a cellpy process (e.g.
       serve  Start a Jupyter server.
       setup  This will help you to set up cellpy.
+
 
 The cli is still under development (cli stands for command-line-interface, by the way).
 Both the ``cellpy new`` and the ``cellpy serve`` command worked the last time I tried them.
@@ -40,7 +41,7 @@ A couple of commands are implemented to get some information about your
     [cellpy] version: 0.4.1
 
     $ cellpy info --configloc
-    [cellpy] ->C:\Users\jepe\_cellpy_prms_jepe.conf
+    [cellpy] -> C:\Users\jepe\.cellpy_prms_jepe.conf
 
 
 Setting up ``cellpy`` from the cli
@@ -56,7 +57,7 @@ you will be prompted for your preferred location for the different folders / dir
 
     $ cellpy setup --interactive
 
-The command will create a starting ``cellpy`` configuration file (`_cellpy_prms_yourname.conf`)
+The command will create a starting ``cellpy`` configuration file (`,cellpy_prms_USERNAME.conf`)
 or update it if it exists, and create the following directory structure:
 
 .. code-block:: shell
@@ -177,7 +178,6 @@ database, and for running (processing) files in batches.
     Usage: cellpy run [OPTIONS] [NAME]
 
       Run a cellpy process (batch-job, edit db, ...).
-
       You can use this to launch specific applications.
 
       Examples:

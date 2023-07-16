@@ -10,9 +10,6 @@ cellpy - *a library for assisting in analysing batteries and cells*
 .. image:: https://img.shields.io/pypi/v/cellpy.svg
         :target: https://pypi.python.org/pypi/cellpy
 
-.. image:: https://img.shields.io/travis/jepegit/cellpy.svg
-        :target: https://travis-ci.org/jepegit/cellpy
-
 .. image:: https://readthedocs.org/projects/cellpy/badge/?version=latest
         :target: https://cellpy.readthedocs.io/en/latest/?badge=latest
         :alt: Documentation Status

@@ -1184,7 +1184,7 @@ class CellpyCell:
         max_raw_files_to_merge = 20
         if len(self.file_names) > max_raw_files_to_merge:
             logging.debug("ERROR? Too many files to merge")
-            raise ValueError("Too many files to merge - " "could be a p2-p3 zip thing")
+            raise ValueError("Too many files to merge - could be a p2-p3 zip thing")
 
         logging.debug("start iterating through file(s)")
         recalc = kwargs.pop("recalc", True)
@@ -2580,8 +2580,8 @@ class CellpyCell:
     def _ustep(self, n):
         un = []
         c = 0
-        n = n.diff()
-        for i in n:
+        dn = n.diff()
+        for i in dn:
             if i != 0:
                 c += 1
             un.append(c)
@@ -5971,6 +5971,26 @@ def get(
             useful if you want to return a cellpy-file with no data in it)
         debug (bool): set to True if you want to debug the loader.
         **kwargs: sent to the loader
+
+    Keyword args ("arbin_res"):
+        bad_steps (list of tuples): (c, s) tuples of steps s (in cycle c) to skip loading [arbin_res].
+        dataset_number (int): the data set number ('Test-ID') to select if you are dealing
+            with arbin files with more than one data-set. Defaults to selecting all data-sets and merging them.
+        data_points (tuple of ints): load only data from data_point[0] to
+                data_point[1] (use None for infinite).
+        increment_cycle_index (bool): increment the cycle index if merging several datasets (default True).
+
+    Keyword args ("maccor_txt", "neware_txt", "local_instrument", "custom"):
+        sep (str): separator used in the file.
+        skip_rows (int): number of rows to skip in the beginning of the file.
+        header (int): row number of the header.
+        encoding (str): encoding of the file.
+        decimal (str): decimal separator.
+        thousand (str): thousand separator.
+        pre_processor_hook (callable): pre-processors to use.
+
+    Keyword args ("pec_csv"):
+        bad_steps (list): separator used in the file (not implemented yet).
 
     Returns:
         CellpyCell object (if successful, None if not)
