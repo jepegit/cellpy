@@ -4,10 +4,12 @@ The getting started with ``cellpy`` tutorial (opinionated version)
 ==================================================================
 
 This tutorial will help you getting started with ``cellpy`` and
-tries to give you a step-by-step recipe.
+tries to give you a step-by-step recipe. It starts with installation, and you
+should select the installation method that best suits your needs (or your level).
 
-How to install ``cellpy`` - the minimalistic explanation
---------------------------------------------------------
+
+Minimalistic ``cellpy`` installation,  for intermediate users
+-------------------------------------------------------------
 
 If you know what you are doing, and only need the most basic features
 of ``cellpy``, you should be able to get things up and running by
@@ -15,23 +17,14 @@ issuing a simple
 
 .. code-block:: console
 
-    pip install cellpy
+    python -m pip install cellpy
 
-It is recommended that you use a Python environment (or conda
-environment) and give it an easy-to-remember name *e.g.* ``cellpy``.
+It is recommended that you use a Python environment.
+If you are not familiar with Python environments, you can read more about
+it in the `Python documentation <https://docs.python.org/3/tutorial/venv.html>`__.
 
-To make sure your environment contains the correct packages and
-dependencies, you can create the environment based on the available
-`environment.yml <https://github.com/jepegit/cellpy/blob/master/environment.yml>`_
-file. For further information on dependencies and requirements for setting up
-``cellpy`` to read .res (Arbin) files, have a look at the *Install dependencies*
-part of the next section.
-
-For the installation of specific versions and pre-releases, see
-:ref:`check-cellpy`.
-
-How to install and run ``cellpy`` - the tea spoon explanation
--------------------------------------------------------------
+How to install and run ``cellpy`` - the tea spoon explanation for standard users
+--------------------------------------------------------------------------------
 
 If you are used to installing stuff from the command line (or shell),
 then things might very well run smoothly. However, a considerable
@@ -191,6 +184,199 @@ Your browser should then open and you are ready to write your first cellpy scrip
 There are many good tutorials on how to work with jupyter.
 This one by Real Python is good for beginners:
 `Jupyter Notebook: An Introduction <https://realpython.com/jupyter-notebook-introduction/>`_
+
+
+.. _Cellpy_Setup_Windows:
+
+Setting up ``cellpy`` on Windows for complete beginners
+-------------------------------------------------------
+
+This guide provides step-by-step instructions for installing Cellpy on a Windows system,
+especially tailored for beginners.
+
+
+Installing Python
+.................
+
+1. First, download Python from the `official website <https://www.python.org/downloads/>`_. Choose the latest version for Windows.
+
+2. Run the downloaded installer. On the first screen of the setup, ensure to check the box
+saying "Add Python to PATH" before clicking "Install Now".
+
+3. After installation, you can verify it by opening the Command Prompt (see below) and typing::
+
+      python --version
+
+   This command should return the version of Python that you installed.
+
+Opening Command Prompt
+......................
+
+1. Press the Windows key, usually located at the bottom row of your keyboard, between the Ctrl and Alt keys.
+
+2. Type "Command Prompt" into the search bar that appears at the bottom of the screen when you press the Windows key.
+
+3. Click on the "Command Prompt" application to open it.
+
+Creating a Virtual Environment
+..............................
+
+A virtual environment is a tool that helps to keep dependencies required by different projects separate by creating isolated
+Python environments for them. Here's how to create one:
+
+1. Open Command Prompt.
+
+2. Navigate to the directory where you want to create your virtual environment using the `cd` command. For example::
+
+      cd C:\Users\YourUsername\Documents
+
+3. Type the following command and press enter to create a new virtual environment (replace `envname` with the name you want to give to your virtual environment)::
+
+      python -m venv envname
+
+4. To activate the virtual environment, type the following command and press enter::
+
+      envname\Scripts\activate
+
+   You'll know it worked if you see `(envname)` before the prompt in your Command Prompt window.
+
+Installing Jupyter Notebook and matplotlib (optional)
+.....................................................
+
+Jupyter Notebook is an open-source web application that allows you to create documents containing live code, equations, visualizations,
+and text. It's very useful, especially for beginners. To install Jupyter Notebook:
+
+1. Make sure your virtual environment is activated.
+
+2. Type the following command and press enter::
+
+      python -m pip install jupyter matplotlib
+
+Installing ``cellpy``
+.....................
+
+Next, you need to install ``cellpy``. You can install it via pip (Python's package manager).
+To install ``cellpy``:
+
+1. Make sure your virtual environment is activated.
+
+2. Type the following command and press enter::
+
+      python -m pip install cellpy
+
+Launching Jupyter Notebook (optional)
+-------------------------------------
+
+1. Make sure your virtual environment is activated.
+
+2. Type the following command and press enter::
+
+      jupyter notebook
+
+4. This will open a new tab in your web browser with the Jupyter's interface. From there,
+create a new Python notebook by clicking on "New" > "Python 3".
+
+Using Cellpy
+............
+
+Here's a simple example of how to use Cellpy in a Jupyter notebook:
+
+1. In the first cell of the notebook, import Cellpy by typing::
+
+      import cellpy
+
+   Press `Shift + Enter` to run the cell.
+
+2. In the new cell, load your data file (replace "datafile.res" and "/path/to/your/data" with your actual filename and path)::
+
+      filepath = "/path/to/your/data/datafile.res"
+
+      c = cellpy.get(filepath)  # create a new cellpy object
+
+   Press `Shift + Enter` to run the cell and load the data.
+
+3. To see a summary of the loaded data, create a new cell and type::
+
+      print(c.data.summary.head())
+
+   Press `Shift + Enter` to run the cell and print the summary.
+
+Congratulations! You've successfully set up Cellpy in a virtual environment on your Windows PC and loaded your first data file.
+For more information and examples, check out the `official Cellpy documentation <https://cellpy.readthedocs.io/en/latest/>`_.
+
+Plotting Data
+.............
+
+Cellpy includes convenient functions for accessing the data. Here's a basic example of how to plot voltage vs. capacity.
+
+1. In a new cell in your Jupyter notebook, first, import matplotlib, which is a Python plotting library::
+
+    import matplotlib.pyplot as plt
+
+Press `Shift + Enter` to run the cell.
+
+2. Then, iterate through all cycles numbers, exctract the capacity curves and plot::
+
+        for cycle in c.get_cycle_numbers():
+            d = c.get_cap(cycle)
+            plt.plot(d["capacity"], d["voltage"])
+        plt.show()
+
+    Press `Shift + Enter` to run the cell.
+
+    This will produce a plot for each cycle in the loaded data.
+
+Saving Data
+...........
+
+Once you've loaded your data, you can save it to a hdf5 file for later use::
+
+   c.save("saved_data.h5")
+
+This saves the loaded data to a file named 'saved_data.h5'.
+
+Creating dQ/dV Plots
+....................
+
+dQ/dV is a plot of the change in capacity (Q) with respect to the change in voltage (V). It's often used in battery analysis
+to observe specific electrochemical reactions. Here's how to create one:
+
+1. In a new cell in your Jupyter notebook, first, if you have not imported matplotlib::
+
+       import matplotlib.pyplot as plt
+
+   Press `Shift + Enter` to run the cell.
+
+2. Then, calculate dQ/dV using Cellpy's ica utility::
+
+       import cellpy.utils.ica as ica
+
+       dqdv = ica.dqdv_frames(c, cycle=[1, 10, 100], voltage_resolution=0.01)
+
+   Press `Shift + Enter` to run the cell.
+
+3. Now, you can create a plot of dQ/dV. In a new cell, type::
+
+       plt.figure(figsize=(10, 8))
+       plt.plot(dqdv["v"], dqdv["dq"], label="dQ/dV")
+       plt.xlabel("Voltage (V)")
+       plt.ylabel("dQ/dV (Ah/V)")
+       plt.legend()
+       plt.grid(True)
+       plt.show()
+
+   Press `Shift + Enter` to run the cell.
+
+In the code above, `plt.figure` is used to create a new figure, `plt.plot` plots the data, `plt.xlabel` and `plt.ylabel` set
+the labels for the x and y axes, `plt.legend` adds a legend to the plot, `plt.grid` adds a grid to the plot, and `plt.show` displays the plot.
+
+With this, you should be able to see the dQ/dV plot in your notebook.
+
+Remember that the process of creating a dQ/dV plot can be quite memory-intensive, especially for large datasets,
+so it may take a while for the plot to appear.
+
+For more information and examples, check out the `official Cellpy documentation <https://cellpy.readthedocs.io/en/latest/>`_ and
+the `matplotlib documentation <https://matplotlib.org/stable/contents.html>`_.
 
 
 More about installing and setting up ``cellpy``
