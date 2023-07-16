@@ -14,7 +14,7 @@ This is a short description on how to update the conda-forge recipe for ``cellpy
 
 - Get recent changes
     >>> git fetch upstream
-    >>> git rebase upstream/master
+    >>> git rebase upstream/main
 
     This can also be done (I think) via the web interface by navigating to
     your fork and clicking the button "Sync fork".
