@@ -7,32 +7,15 @@ This tutorial will help you getting started with ``cellpy`` and
 tries to give you a step-by-step recipe. It starts with installation, and you
 should select the installation method that best suits your needs (or your level).
 
-
-Minimalistic ``cellpy`` installation,  for intermediate users
--------------------------------------------------------------
-
-If you know what you are doing, and only need the most basic features
-of ``cellpy``, you should be able to get things up and running by
-issuing a simple
-
-.. code-block:: console
-
-    python -m pip install cellpy
-
-It is recommended that you use a Python environment.
-If you are not familiar with Python environments, you can read more about
-it in the `Python documentation <https://docs.python.org/3/tutorial/venv.html>`__.
+.. _Cellpy_Setup_Standard:
 
 How to install and run ``cellpy`` - the tea spoon explanation for standard users
 --------------------------------------------------------------------------------
 
 If you are used to installing stuff from the command line (or shell),
-then things might very well run smoothly. However, a considerable
-percentage of potential users don’t feel exceedingly comfortable installing
-things by writing commands inside a small black window. Let’s face it; most of us
-belong to the *point-and-click* (or *double-click*) generation, not the
-*write-cryptic-commands* generation. So, hopefully without insulting the
-savvy, here is a “tea-spoon explanation”:
+then things might very well run smoothly. If you are not, then you
+might want to read through the guide for complete beginners first (see below
+:ref:`Cellpy_Setup_Windows`).
 
 1. Install a scientific stack of python 3.x
 ...........................................
@@ -195,8 +178,8 @@ This guide provides step-by-step instructions for installing Cellpy on a Windows
 especially tailored for beginners.
 
 
-Installing Python
-.................
+1. Installing Python
+....................
 
 1. First, download Python from the `official website <https://www.python.org/downloads/>`_. Choose the latest version for Windows.
 
@@ -209,8 +192,8 @@ saying "Add Python to PATH" before clicking "Install Now".
 
    This command should return the version of Python that you installed.
 
-Opening Command Prompt
-......................
+2. Opening Command Prompt
+.........................
 
 1. Press the Windows key, usually located at the bottom row of your keyboard, between the Ctrl and Alt keys.
 
@@ -218,8 +201,8 @@ Opening Command Prompt
 
 3. Click on the "Command Prompt" application to open it.
 
-Creating a Virtual Environment
-..............................
+3. Creating a Virtual Environment
+.................................
 
 A virtual environment is a tool that helps to keep dependencies required by different projects separate by creating isolated
 Python environments for them. Here's how to create one:
@@ -240,8 +223,8 @@ Python environments for them. Here's how to create one:
 
    You'll know it worked if you see `(envname)` before the prompt in your Command Prompt window.
 
-Installing Jupyter Notebook and matplotlib (optional)
-.....................................................
+4. Installing Jupyter Notebook and matplotlib
+.............................................
 
 Jupyter Notebook is an open-source web application that allows you to create documents containing live code, equations, visualizations,
 and text. It's very useful, especially for beginners. To install Jupyter Notebook:
@@ -252,8 +235,8 @@ and text. It's very useful, especially for beginners. To install Jupyter Noteboo
 
       python -m pip install jupyter matplotlib
 
-Installing ``cellpy``
-.....................
+5. Installing ``cellpy``
+........................
 
 Next, you need to install ``cellpy``. You can install it via pip (Python's package manager).
 To install ``cellpy``:
@@ -264,8 +247,8 @@ To install ``cellpy``:
 
       python -m pip install cellpy
 
-Launching Jupyter Notebook (optional)
--------------------------------------
+6. Launching Jupyter Notebook
+.............................
 
 1. Make sure your virtual environment is activated.
 
@@ -276,8 +259,8 @@ Launching Jupyter Notebook (optional)
 4. This will open a new tab in your web browser with the Jupyter's interface. From there,
 create a new Python notebook by clicking on "New" > "Python 3".
 
-Using Cellpy
-............
+7. Trying out ``cellpy``
+........................
 
 Here's a simple example of how to use Cellpy in a Jupyter notebook:
 
@@ -304,9 +287,6 @@ Here's a simple example of how to use Cellpy in a Jupyter notebook:
 Congratulations! You've successfully set up Cellpy in a virtual environment on your Windows PC and loaded your first data file.
 For more information and examples, check out the `official Cellpy documentation <https://cellpy.readthedocs.io/en/latest/>`_.
 
-Plotting Data
-.............
-
 Cellpy includes convenient functions for accessing the data. Here's a basic example of how to plot voltage vs. capacity.
 
 1. In a new cell in your Jupyter notebook, first, import matplotlib, which is a Python plotting library::
@@ -315,7 +295,7 @@ Cellpy includes convenient functions for accessing the data. Here's a basic exam
 
 Press `Shift + Enter` to run the cell.
 
-2. Then, iterate through all cycles numbers, exctract the capacity curves and plot::
+2. Then, iterate through all cycles numbers, extract the capacity curves and plot::
 
         for cycle in c.get_cycle_numbers():
             d = c.get_cap(cycle)
@@ -326,19 +306,14 @@ Press `Shift + Enter` to run the cell.
 
     This will produce a plot for each cycle in the loaded data.
 
-Saving Data
-...........
-
 Once you've loaded your data, you can save it to a hdf5 file for later use::
 
    c.save("saved_data.h5")
 
 This saves the loaded data to a file named 'saved_data.h5'.
 
-Creating dQ/dV Plots
-....................
-
-dQ/dV is a plot of the change in capacity (Q) with respect to the change in voltage (V). It's often used in battery analysis
+Now, lets try to create some dQ/dV plots. dQ/dV is a plot of the change in capacity (Q) with respect to
+the change in voltage (V). It's often used in battery analysis
 to observe specific electrochemical reactions. Here's how to create one:
 
 1. In a new cell in your Jupyter notebook, first, if you have not imported matplotlib::
@@ -378,6 +353,9 @@ so it may take a while for the plot to appear.
 For more information and examples, check out the `official Cellpy documentation <https://cellpy.readthedocs.io/en/latest/>`_ and
 the `matplotlib documentation <https://matplotlib.org/stable/contents.html>`_.
 
+This recipe can only take you a certain distance. If you want to become more efficient with Python and Cellpy, you
+might want to try to install it using the method described in the chapter "Installing and setting up cellpy" in the
+`official Cellpy documentation <https://cellpy.readthedocs.io/en/latest/>`_.
 
 More about installing and setting up ``cellpy``
 -----------------------------------------------
