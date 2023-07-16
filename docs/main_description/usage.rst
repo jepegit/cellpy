@@ -62,8 +62,7 @@ the tutorials (:doc:`tutorials <basics>`) or notebook examples (:doc:`Example no
 2. Convenience methods and tools
 ================================
 
-The easiest way to load a file is to use the ``cellpy.get`` method. It
-interprets the file-type from the file extension and automatically creates
+The ``cellpy.get`` method interprets the file-type from the file extension and automatically creates
 the step table as well as the summary table::
 
     >>> import cellpy

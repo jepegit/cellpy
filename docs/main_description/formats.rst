@@ -42,20 +42,119 @@ The class contains several attributes that can be assigned directly:
     print(CellpyCell.cellpy_datadir)
 
 
-The data for the experiment(s)/runs(s) are stored in the class attribute
-``CellpyCell.cells``
-This attribute is just a list of runs (each run is a
-``cellpy.cellreader.Data`` instance).
-This implies that you can store many runs in one ``CellpyCell`` instance.
-Sometimes this can be necessary, but it is recommended to only store one
-run in one instance. Most of the functions (the class methods) automatically
-selects the 0-th item in ``CellpyCell.cells`` if the ``test_number`` is not
-explicitly given.
 
-You may already have figured it out: in cellpy, data for a given cell
-is usually named a run. And each run is a ``cellpy.cellreader.Data`` instance.
+CellpyCell - methods
+--------------------
 
-Here is a list of other important class attributes in ``CellpyCell``:
+The ``CellpyCell`` object contains lots of methods for manipulating, extracting
+and summarising the data from the run(s). Two methods are typically automatically run when
+you create your ``CellpyCell`` object when running ``cellpy.get(filename)``:
+
+    - ``make_step_table``: creates a statistical summary of all the steps in the run(s) and categorizes
+      the step type from that. It is also possible to give the step types directly (step_specifications).
+
+    - ``make_summary``: create a summary based on cycle number.
+
+Other methods worth mentioning are (based on what I typically use):
+
+    - ``load``: load a cellpy file.
+
+    - ``load_raw``: load raw data file(s) (merges automatically if several filenames are given as a list).
+
+    - ``get_cap``: get the capacity-voltage graph from one or more cycles in three different formats as well
+      as optionally interpolated, normalized and/or scaled.
+
+    - ``get_cycle_numbers``: get the cycle numbers for your run.
+
+    - ``get_ocv``: get the rest steps after each charge and discharge step.
+
+
+Take a look at API section (Module index, ``cellpy.readers.cellreader.CellpyCell``) for more info.
+
+Data
+----
+
+.. graphviz::
+
+   digraph {
+    "CellpyCell" -> "Data";
+        "Data" -> "cell metadata (cell)";
+        "Data" -> "cell metadata (test)";
+        "Data" -> "methods";
+        "Data" -> "raw";
+        "Data" -> "steps";
+        "Data" -> "summary";
+   }
+
+The data for the experiment are stored in the class attribute
+``CellpyCell.data`` (a ``cellpy.cellreader.Data`` instance).
+
+The instance contain general information about
+the run-settings (such as mass etc.).
+The measurement data, information, and summary is stored
+in three ``pandas.DataFrames``:
+
+    - ``raw``: raw data from the run.
+    - ``steps``: stats from each step (and step type), created using the
+      ``CellpyCell.make_step_table`` method.
+    - ``summary``: summary data vs. cycle number (e.g. coulombic coulombic efficiency), created using
+      the ``CellpyCell.make_summary`` method.
+
+The headers (columns) for the different DataFrames were given earlier in this chapter.
+As mentioned above, the ``Data`` object also contains metadata for the run.
+
+metadata
+........
+
+.. code-block:: python
+
+    cell_no = None
+    mass = prms.Materials.default_mass  # active material (in mg)
+    tot_mass = prms.Materials.default_mass  # total material (in mg)
+    no_cycles = 0.0
+    charge_steps = None
+    discharge_steps = None
+    ir_steps = None
+    ocv_steps = None
+    nom_cap = prms.DataSet.nom_cap  # mAh/g (for finding c-rates)
+    mass_given = False
+    material = prms.Materials.default_material
+    merged = False
+    file_errors = None  # not in use at the moment
+    loaded_from = None  # loaded from (can be list if merged)
+    channel_index = None
+    channel_number = None
+    creator = None
+    item_ID = None
+    schedule_file_name = None
+    start_datetime = None
+    test_ID = None
+    name = None
+    cycle_mode = prms.Reader.cycle_mode
+    active_electrode_area = None  # [cm2]
+    active_electrode_thickness = None  # [micron]
+    electrolyte_type = None  #
+    electrolyte_volume = None  # [micro-liter]
+    active_electrode_type = None
+    counter_electrode_type = None
+    reference_electrode_type = None
+    experiment_type = None
+    cell_type = None
+    separator_type = None
+    active_electrode_current_collector = None
+    reference_electrode_current_collector = None
+    comment = None
+
+
+The ``Data`` object can also take custom metadata if provided as keyword arguments (for developers).
+
+FileID
+......
+
+The ``FileID`` object contains information about the raw file(s) and is used when comparing the cellpy-file
+with the raw file(s) (for example to check if it has been updated compared to the cellpy-file).
+Notice that ``FileID`` will contain a list of file identification parameters if the run is from several raw files.
+
 
 Column headings
 ...............
@@ -349,113 +448,3 @@ Maccor .txt
 
 TODO...
 
-
-CellpyCell - methods
---------------------
-
-The ``CellpyCell`` object contains lots of methods for manipulating, extracting
-and summarising the data from the run(s). Two methods are typically automatically run when
-you create your ``CellpyCell`` object when running ``cellpy.get(filename)``:
-
-    - ``make_step_table``: creates a statistical summary of all the steps in the run(s) and categorizes
-      the step type from that. It is also possible to give the step types directly (step_specifications).
-
-    - ``make_summary``: create a summary based on cycle number.
-
-Other methods worth mentioning are (based on what I typically use):
-
-    - ``load``: load a cellpy file.
-
-    - ``load_raw``: load raw data file(s) (merges automatically if several filenames are given as a list).
-
-    - ``get_cap``: get the capacity-voltage graph from one or more cycles in three different formats as well
-      as optionally interpolated, normalized and/or scaled.
-
-    - ``get_cycle_numbers``: get the cycle numbers for your run.
-
-    - ``get_ocv``: get the rest steps after each charge and discharge step.
-
-Take a look at API section (Module index, ``cellpy.readers.cellreader.CellpyCell``) for more info.
-
-Data
-----
-
-.. graphviz::
-
-   digraph {
-    "CellpyCell" -> "Data";
-        "Data" -> "cell metadata (cell)";
-        "Data" -> "cell metadata (test)";
-        "Data" -> "methods";
-        "Data" -> "raw";
-        "Data" -> "steps";
-        "Data" -> "summary";
-   }
-
-
-Each run is a ``cellpy.cellreader.Data`` instance.
-The instance contain general information about
-the run-settings (such as mass etc.).
-The measurement data, information, and summary is stored
-in three ``pandas.DataFrames``:
-
-    - ``raw``: raw data from the run.
-    - ``steps``: stats from each step (and step type), created using the
-      ``CellpyCell.make_step_table`` method.
-    - ``summary``: summary data vs. cycle number (e.g. coulombic coulombic efficiency), created using
-      the ``CellpyCell.make_summary`` method.
-
-The headers (columns) for the different DataFrames were given earlier in this chapter.
-As mentioned above, the ``Data`` object also contains metadata for the run.
-
-metadata
-........
-
-.. code-block:: python
-
-    cell_no = None
-    mass = prms.Materials.default_mass  # active material (in mg)
-    tot_mass = prms.Materials.default_mass  # total material (in mg)
-    no_cycles = 0.0
-    charge_steps = None
-    discharge_steps = None
-    ir_steps = None
-    ocv_steps = None
-    nom_cap = prms.DataSet.nom_cap  # mAh/g (for finding c-rates)
-    mass_given = False
-    material = prms.Materials.default_material
-    merged = False
-    file_errors = None  # not in use at the moment
-    loaded_from = None  # loaded from (can be list if merged)
-    channel_index = None
-    channel_number = None
-    creator = None
-    item_ID = None
-    schedule_file_name = None
-    start_datetime = None
-    test_ID = None
-    name = None
-    cycle_mode = prms.Reader.cycle_mode
-    active_electrode_area = None  # [cm2]
-    active_electrode_thickness = None  # [micron]
-    electrolyte_type = None  #
-    electrolyte_volume = None  # [micro-liter]
-    active_electrode_type = None
-    counter_electrode_type = None
-    reference_electrode_type = None
-    experiment_type = None
-    cell_type = None
-    separator_type = None
-    active_electrode_current_collector = None
-    reference_electrode_current_collector = None
-    comment = None
-
-
-The ``Data`` object can also take custom metadata if provieded as keyword arguments (for developers).
-
-FileID
-------
-
-The ``FileID`` object contains information about the raw file(s) and is used when comparing the cellpy-file
-with the raw file(s) (for example to check if it has been updated compared to the cellpy-file).
-Notice that ``FileID`` will contain a list of file identification parameters if the run is from several raw files.
