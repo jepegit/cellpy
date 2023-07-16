@@ -14,7 +14,7 @@ Stable release
 Conda
 -----
 
-The preferred way to install ``cellpy`` is by using conda:
+Usually, the easiest way to install ``cellpy`` is by using conda:
 
 .. code-block:: console
 
@@ -79,7 +79,7 @@ If you are OK with letting ``cellpy`` select your settings, you can omit
 the `-i` (interactive mode).
 
 .. hint:: Since ``cellpy`` uses several packages that are a bit cumbersome to
-    install on windows, you circumvent this by install one of the ``anaconda``python
+    install on windows, you circumvent this by install one of the ``anaconda`` python
     packages (python 3.9 or above) before installing ``cellpy``.
     Remark, that if you chose ``miniconda``, you need to manually install
     ``scipy``, ``numpy`` and ``pytables`` using ``conda``:
@@ -88,7 +88,7 @@ the `-i` (interactive mode).
 
         $ conda install scipy numpy pytables
 
-.. hint:: It is recommended to run the command also after
+.. hint:: It is recommended to run the ``cellpy setup`` command also after
     each time you upgrade ``cellpy``. It will keep the settings you already
     have in your prms-file and, if the newer version
     has introduced some new parameters, it will add those too.
