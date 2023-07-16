@@ -433,6 +433,10 @@ def bump(c, bumper=None):
     use a 'final'. And then start again with new features by first using an 'alpha' then
     start all over with 'nano'.
 
+    Examples:
+        >>> invoke bump --bumper nano # increment from e.g. 0.4.2b2 to 0.4.2b3
+        >>> invoke bump --bumper final # increment from e.g. 0.4.2b2 to 0.4.2
+
 
     """
 
