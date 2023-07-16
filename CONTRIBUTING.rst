@@ -57,34 +57,39 @@ If you are proposing a feature:
 Get Started!
 ============
 
-Ready to contribute? Here's how to set up `cellpy` for local development.
+Ready to contribute? Here's how to set up ``cellpy`` for local development.
 
-1. Fork the `cellpy` repo on GitHub.
+1. Fork the ``cellpy`` repo on GitHub.
 2. Clone your fork locally::
 
     $ git clone git@github.com:your_name_here/cellpy.git
 
-3. Install your local copy into a virtualenv. Assuming you have virtualenvwrapper installed, this is how you set up your fork for local development::
+3. Create a local python virtual environment and activate it using python's venv utility::
 
-    $ mkvirtualenv cellpy
-    $ cd cellpy/
-    $ python setup.py develop
+    $ python -m venv .venv
+    $ source .venv/bin/activate  # or .venv\Scripts\activate on Windows
 
-Or use ``conda`` environments. And you could also use `pip install . -e` instead of the last command.
+   Or use ``conda`` environments. See the conda documentation for more information.
+   A suitable environment yaml configuration file
+   can be found in the root of the repository (``dev_environment.yml``; to create the environment,
+   run ``conda env create -f dev_environment.yml``).
 
-4. Create a branch for local development::
+4. Install your local copy into your virtualenv::
+
+    $ python -m pip install . -e
+
+5. Create a branch for local development::
 
     $ git checkout -b name-of-your-bugfix-or-feature
 
    Now you can make your changes locally.
 
-5. When you're done making changes, check that your changes pass flake8 (not that my code usually does that....)
-   and the tests::
+6. When you're done making changes, check that your changes pass the tests::
 
-    $ flake8 cellpy tests
     $ pytest
 
-   To get flake8 and pytest, just pip install them into your virtualenv.
+   If there are any libraries missing (it could happen) just pip install them into your virtual environment (or
+   conda install them into your conda environment).
 
 6. Commit your changes and push your branch to GitHub::
 
@@ -92,7 +97,7 @@ Or use ``conda`` environments. And you could also use `pip install . -e` instead
     $ git commit -m "Your detailed description of your changes."
     $ git push origin name-of-your-bugfix-or-feature
 
-7. Submit a pull request through the GitHub website.
+7. Submit a pull request through the GitHub website (or your IDE if that option exists).
 
 
 Pull Request Guidelines
