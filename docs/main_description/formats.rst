@@ -177,7 +177,7 @@ column headings - raw data (or "normal" data)
 .. code-block:: python
 
     @dataclass
-    class HeadersNormal(BaseSettings):
+    class HeadersNormal(BaseHeaders):
         aci_phase_angle_txt: str = "aci_phase_angle"
         ref_aci_phase_angle_txt: str = "ref_aci_phase_angle"
         ac_impedance_txt: str = "ac_impedance"
@@ -191,6 +191,7 @@ column headings - raw data (or "normal" data)
         discharge_capacity_txt: str = "discharge_capacity"
         discharge_energy_txt: str = "discharge_energy"
         internal_resistance_txt: str = "internal_resistance"
+        power_txt: str = "power"
         is_fc_data_txt: str = "is_fc_data"
         step_index_txt: str = "step_index"
         sub_step_index_txt: str = "sub_step_index"
@@ -213,7 +214,13 @@ column headings - summary data
 .. code-block:: python
 
     @dataclass
-    class HeadersSummary(BaseSettings):
+    class HeadersSummary(BaseHeaders):
+        """In addition to the headers defined here, the summary might also contain
+        specific headers (ending in _gravimetric or _areal).
+        """
+
+        postfixes = ["gravimetric", "areal"]
+
         cycle_index: str = "cycle_index"
         data_point: str = "data_point"
         test_time: str = "test_time"
@@ -223,40 +230,46 @@ column headings - summary data
         test_name: str = "test_name"
         data_flag: str = "data_flag"
         channel_id: str = "channel_id"
-        discharge_capacity: str = "discharge_capacity_u_mAh_g"
-        charge_capacity: str = "charge_capacity_u_mAh_g"
-        cumulated_charge_capacity: str = "cumulated_charge_capacity_u_mAh_g"
-        cumulated_discharge_capacity: str = "cumulated_discharge_capacity_u_mAh_g"
-        coulombic_efficiency: str = "coulombic_efficiency_u_percentage"
-        cumulated_coulombic_efficiency: str = "cumulated_coulombic_efficiency_u_percentage"
-        coulombic_difference: str = "coulombic_difference_u_mAh_g"
-        cumulated_coulombic_difference: str = "cumulated_coulombic_difference_u_mAh_g"
-        discharge_capacity_loss: str = "discharge_capacity_loss_u_mAh_g"
-        charge_capacity_loss: str = "charge_capacity_loss_u_mAh_g"
-        cumulated_discharge_capacity_loss: str = "cumulated_discharge_capacity_loss_u_mAh_g"
-        cumulated_charge_capacity_loss: str = "cumulated_charge_capacity_loss_u_mAh_g"
-        ir_discharge: str = "ir_discharge_u_Ohms"
-        ir_charge: str = "ir_charge_u_Ohms"
-        ocv_first_min: str = "ocv_first_min_u_V"
-        ocv_second_min: str = "ocv_second_min_u_V"
-        ocv_first_max: str = "ocv_first_max_u_V"
-        ocv_second_max: str = "ocv_second_max_u_V"
-        end_voltage_discharge: str = "end_voltage_discharge_u_V"
-        end_voltage_charge: str = "end_voltage_charge_u_V"
-        cumulated_ric_disconnect: str = "cumulated_ric_disconnect_u_none"
-        cumulated_ric_sei: str = "cumulated_ric_sei_u_none"
-        cumulated_ric: str = "cumulated_ric_u_none"
-        normalized_cycle_index: str = "normalized_cycle_index"
+
+        coulombic_efficiency: str = "coulombic_efficiency"
+        cumulated_coulombic_efficiency: str = "cumulated_coulombic_efficiency"
+
+        discharge_capacity: str = "discharge_capacity"
+        charge_capacity: str = "charge_capacity"
+        cumulated_charge_capacity: str = "cumulated_charge_capacity"
+        cumulated_discharge_capacity: str = "cumulated_discharge_capacity"
+
+        coulombic_difference: str = "coulombic_difference"
+        cumulated_coulombic_difference: str = "cumulated_coulombic_difference"
+        discharge_capacity_loss: str = "discharge_capacity_loss"
+        charge_capacity_loss: str = "charge_capacity_loss"
+        cumulated_discharge_capacity_loss: str = "cumulated_discharge_capacity_loss"
+        cumulated_charge_capacity_loss: str = "cumulated_charge_capacity_loss"
+
         normalized_charge_capacity: str = "normalized_charge_capacity"
         normalized_discharge_capacity: str = "normalized_discharge_capacity"
-        low_level: str = "low_level_u_percentage"
-        high_level: str = "high_level_u_percentage"
-        shifted_charge_capacity: str = "shifted_charge_capacity_u_mAh_g"
-        shifted_discharge_capacity: str = "shifted_discharge_capacity_u_mAh_g"
-        temperature_last: str = "temperature_last_u_C"
-        temperature_mean: str = "temperature_mean_u_C"
-        areal_charge_capacity: str = "areal_charge_capacity_u_mAh_cm2"
-        areal_discharge_capacity: str = "areal_discharge_capacity_u_mAh_cm2"
+
+        shifted_charge_capacity: str = "shifted_charge_capacity"
+        shifted_discharge_capacity: str = "shifted_discharge_capacity"
+
+        ir_discharge: str = "ir_discharge"
+        ir_charge: str = "ir_charge"
+        ocv_first_min: str = "ocv_first_min"
+        ocv_second_min: str = "ocv_second_min"
+        ocv_first_max: str = "ocv_first_max"
+        ocv_second_max: str = "ocv_second_max"
+        end_voltage_discharge: str = "end_voltage_discharge"
+        end_voltage_charge: str = "end_voltage_charge"
+        cumulated_ric_disconnect: str = "cumulated_ric_disconnect"
+        cumulated_ric_sei: str = "cumulated_ric_sei"
+        cumulated_ric: str = "cumulated_ric"
+        normalized_cycle_index: str = "normalized_cycle_index"
+        low_level: str = "low_level"
+        high_level: str = "high_level"
+
+        temperature_last: str = "temperature_last"
+        temperature_mean: str = "temperature_mean"
+
         charge_c_rate: str = "charge_c_rate"
         discharge_c_rate: str = "discharge_c_rate"
         pre_aux: str = "aux_"
@@ -268,7 +281,7 @@ column headings - step table
 .. code-block:: python
 
     @dataclass
-    class HeadersStepTable(BaseSettings):
+    class HeadersStepTable(BaseHeaders):
         test: str = "test"
         ustep: str = "ustep"
         cycle: str = "cycle"
@@ -294,11 +307,12 @@ column headings - journal pages
 .. code-block:: python
 
     @dataclass
-    class HeadersJournal(BaseSettings):
+    class HeadersJournal(BaseHeaders):
         filename: str = "filename"
         mass: str = "mass"
         total_mass: str = "total_mass"
         loading: str = "loading"
+        area: str = "area"
         nom_cap: str = "nom_cap"
         experiment: str = "experiment"
         fixed: str = "fixed"
@@ -310,6 +324,7 @@ column headings - journal pages
         group: str = "group"
         sub_group: str = "sub_group"
         comment: str = "comment"
+        argument: str = "argument"
 
 
     CellpyCell.keys_journal_session = ["starred", "bad_cells", "bad_cycles", "notes"]
@@ -329,122 +344,12 @@ class attribute list `list_of_step_types` and is written to the "step" column.
                           'rest', 'not_known']
 
 
-For each type of testers that are supported by ``cellpy``,
-a set of column headings and
-other different settings/attributes must be provided. These definitions stored in the
-``cellpy.parameters.internal_settings`` module and are also injected into
-the CellpyCell class upon initiation.
-
-Supported testers are:
-
-* arbin (.res type files)
-
-Testers that are partly supported (but not tested very well) are:
-
-* pec (txt files)
-* arbin (ms sql-server and .csv and .xlsx exports)
-* maccor (txt files)
-
-Testers that is planned supported:
-
-* biologic
-* maccor
-
-In addition, ``cellpy`` can load custom csv-ish files by providing a file description (using the
-``ìnstruments.Custom`` object).
-
-
 Tester dependent attributes
 ---------------------------
 
-arbin .res
-..........
+For each type of testers that are supported by ``cellpy``,
+a set of column headings and other different settings/attributes might also exist.
+These definitions stored in the ``cellpy.parameters.internal_settings`` module and
+are also injected into the ``CellpyCell`` class upon initiation.
 
-Three tables are read from the .res file:
-
-* normal table: contains measurement data.
-* global table: contains overall parametres for the test.
-* stats table: contains statistics (for each cycle).
-
-
-
-table names
-'''''''''''
-
-.. code-block:: python
-
-    tablename_normal = "Channel_Normal_Table"
-    tablename_global = "Global_Table"
-    tablename_statistic = "Channel_Statistic_Table"
-
-column headings - global table
-''''''''''''''''''''''''''''''
-
-.. code-block:: python
-
-    applications_path_txt = 'Applications_Path'
-    channel_index_txt = 'Channel_Index'
-    channel_nuer_txt = 'Channel_Number'
-    channel_type_txt = 'Channel_Type'
-    comments_txt = 'Comments'
-    creator_txt = 'Creator'
-    daq_index_txt = 'DAQ_Index'
-    item_id_txt = 'Item_ID'
-    log_aux_data_flag_txt = 'Log_Aux_Data_Flag'
-    log_chanstat_data_flag_txt = 'Log_ChanStat_Data_Flag'
-    log_event_data_flag_txt = 'Log_Event_Data_Flag'
-    log_smart_battery_data_flag_txt = 'Log_Smart_Battery_Data_Flag'
-    mapped_aux_conc_cnumber_txt = 'Mapped_Aux_Conc_CNumber'
-    mapped_aux_di_cnumber_txt = 'Mapped_Aux_DI_CNumber'
-    mapped_aux_do_cnumber_txt = 'Mapped_Aux_DO_CNumber'
-    mapped_aux_flow_rate_cnumber_txt = 'Mapped_Aux_Flow_Rate_CNumber'
-    mapped_aux_ph_number_txt = 'Mapped_Aux_PH_Number'
-    mapped_aux_pressure_number_txt = 'Mapped_Aux_Pressure_Number'
-    mapped_aux_temperature_number_txt = 'Mapped_Aux_Temperature_Number'
-    mapped_aux_voltage_number_txt = 'Mapped_Aux_Voltage_Number'
-    schedule_file_name_txt = 'Schedule_File_Name'
-    start_datetime_txt = 'Start_DateTime'
-    test_id_txt = 'Test_ID'
-    test_name_txt = 'Test_Name'
-
-column headings - normal table
-''''''''''''''''''''''''''''''
-
-.. code-block:: python
-
-    aci_phase_angle_txt = 'ACI_Phase_Angle'
-    ac_impedance_txt = 'AC_Impedance'
-    charge_capacity_txt = 'Charge_Capacity'
-    charge_energy_txt = 'Charge_Energy'
-    current_txt = 'Current'
-    cycle_index_txt = 'Cycle_Index'
-    data_point_txt = 'Data_Point'
-    datetime_txt = 'DateTime'
-    discharge_capacity_txt = 'Discharge_Capacity'
-    discharge_energy_txt = 'Discharge_Energy'
-    internal_resistance_txt = 'Internal_Resistance'
-    is_fc_data_txt = 'Is_FC_Data'
-    step_index_txt = 'Step_Index'
-    step_time_txt = 'Step_Time'
-    test_id_txt = 'Test_ID'
-    test_time_txt = 'Test_Time'
-    voltage_txt = 'Voltage'
-    dv_dt_txt = 'dV/dt'
-
-arbin MS SQL SERVER
-...................
-
-TODO...
-
-
-PEC .csv
-........
-
-TODO...
-
-
-Maccor .txt
-...........
-
-TODO...
 
