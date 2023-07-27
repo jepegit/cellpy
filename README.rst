@@ -1,6 +1,6 @@
 .. image:: https://github.com/jepegit/cellpy/blob/master/docs/_static/cellpy-icon-long.svg
-  :height: 100
-  :alt: cellpy
+        :height: 100
+        :alt: cellpy
 
 ===================================================================
 cellpy - *a library for assisting in analysing batteries and cells*
