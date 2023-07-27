@@ -3,8 +3,8 @@ History
 =======
 
 
-1.0.0 (2023) [under development]
-================================
+1.0.0 (2023)
+============
 
 * Unit handling: new unit handling (using pint)
 * Unit handling: renaming summary headers
