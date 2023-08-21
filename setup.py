@@ -54,7 +54,7 @@ requirements = [
     "python-dotenv",
     "fabric",
     "dateparser",
-    # 'tables', # not available by pip
+    # 'pytables', # not available by pip
 ]
 
 test_requirements = [
