@@ -13,7 +13,7 @@ cellpy
         :target: https://cellpy.readthedocs.io/en/latest/?badge=latest
         :alt: Documentation Status
 
-.. image:: https://pepy.tech/badge/cellpy
+.. image:: https://static.pepy.tech/badge/cellpy
         :target: https://pepy.tech/project/cellpy
 
 
