@@ -20,3 +20,4 @@ sqlalchemy-access
 pint
 python-dotenv
 fabric
+dateparser

@@ -38,7 +38,7 @@ bl_log_pos_dtype = {
 # }
 
 bl_flags = {
-    1: ["mode", (3, np.uint8)],
+    1: ["mode", (2, np.uint8)],
     2: ["ox/red", (4, np.bool_)],
     3: ["error", (8, np.bool_)],
     21: ["control changes", (16, np.bool_)],
@@ -482,8 +482,8 @@ bl_dtypes = {
     431: ["<f4", "absDiffZ", "Ohm", "|Zwe-ce|/Ohm", ""],
     432: ["<f4", "ReDiffZ", "Ohm", "Re(Zwe-ce)/Ohm", ""],
     433: ["<f4", "NN_433", "", "NAME?", ""],
-    434: ["<f4", "QminusQnull", "C", "", ""],
-    435: ["<f4", "dQ", "C", "", ""],
+    434: ["<f4", "Z", "W", "", ""],
+    435: ["<f4", "QminusQnull", "C", "", ""],
     436: ["<f4", "NN_436", "", "", ""],
     437: ["<f4", "NN_437", "", "", ""],
     438: ["<f4", "NN_438", "", "", ""],

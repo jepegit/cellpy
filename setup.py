@@ -53,6 +53,7 @@ requirements = [
     'sqlalchemy-access;platform_system=="windows"',
     "python-dotenv",
     "fabric",
+    "dateparser",
     # 'tables', # not available by pip
 ]
 

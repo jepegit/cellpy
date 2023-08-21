@@ -53,6 +53,7 @@ dependencies:
   - sphinx-rtd-theme
   - pytest-timeout
   - pytest-benchmark
+  - dateparser
   - pip:
     - sqlalchemy-access
 

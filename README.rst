@@ -15,7 +15,7 @@ cellpy - *a library for assisting in analysing batteries and cells*
         :alt: Documentation Status
 
 .. image:: https://pepy.tech/badge/cellpy
-        :target: https://pepy.tech/project/cellpy
+        :target: https://pepy.tech/badge/cellpy
 
 
 This Python Package was developed to help the

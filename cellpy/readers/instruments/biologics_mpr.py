@@ -2,6 +2,7 @@
 # This is based on the work by Chris Kerr
 # (https://github.com/chatcannon/galvani/blob/master/galvani/BioLogic.py)
 import datetime
+import dateparser
 import shutil
 import tempfile
 import time
@@ -216,7 +217,7 @@ class DataLoader(BaseLoader):
 
         self._load_mpr_data(temp_filename, bad_steps)
         length_of_test = self.mpr_data.shape[0]
-        self.logger.debug(f"length of test: {length_of_test}")
+        logging.debug(f"length of test: {length_of_test}")
 
         self.logger.debug("renaming columns")
         self._rename_headers()
@@ -237,8 +238,21 @@ class DataLoader(BaseLoader):
         return data
 
     def _parse_mpr_log_data(self):
+        if not self.mpr_log:
+            print("no mpr_log")
+            # self.mpr_log["end_date"] = self.mpr_settings["start_date"]
+            # self.mpr_log["length2"] = 0
+            # self.mpr_log["end2"] = 0
+            # self.mpr_log["offset2"] = 0
+            # self.mpr_log["version2"] = 0
+            # self.mpr_log["data"] = None
+            # self.mpr_log["file"] = None
+
         for value in bl_log_pos_dtype:
+            # print(value)
             key, start, end, dtype = value
+            if key not in self.mpr_log:
+                continue
             self.mpr_log[key] = np.frombuffer(  # replaced np.fromstring
                 self.mpr_log["data"][start:], dtype=dtype, count=1
             )[0]
@@ -246,33 +260,44 @@ class DataLoader(BaseLoader):
                 self.mpr_log[key] = self.mpr_log[key].decode("utf8")
 
         # converting dates
-        date_datetime = ole2datetime(self.mpr_log["Acquisition started on"])
+        k = "Acquisition started on"
+        if k in self.mpr_log:
+            date_datetime = ole2datetime(self.mpr_log[k])
+        else:
+            date_datetime = self.mpr_settings["start_date"]
         self.mpr_log["Start"] = date_datetime
 
     def _parse_mpr_settings_data(self, settings_mod):
-        tm = time.strptime(settings_mod["date"].decode(), "%m.%d.%y")
-        startdate = datetime.date(tm.tm_year, tm.tm_mon, tm.tm_mday)
-
+        start_date = dateparser.parse(settings_mod["date"].decode())
         mpr_settings = dict()
-        mpr_settings["start_date"] = startdate
+        mpr_settings["start_date"] = start_date
         mpr_settings["length"] = settings_mod["length"]
         mpr_settings["end"] = settings_mod["end"]
         mpr_settings["offset"] = settings_mod["offset"]
         mpr_settings["version"] = settings_mod["version"]
         mpr_settings["data"] = settings_mod["data"]
+        # print(f"mpr_settings: {mpr_settings}")
         self.mpr_settings = mpr_settings
         return None
 
     def _get_flag(self, flag_name):
+        print(f"flag_name: {flag_name}")
         if flag_name in self.flags_dict:
             mask, dtype = self.flags_dict[flag_name]
-            # print(f"flag: {flag_name}, mask: {mask}, dtype: {dtype}")
-            return np.array(self.mpr_data["flags"] & mask, dtype=dtype)
+            print(f"flag: {flag_name}, mask: {mask}, dtype: {dtype}")
+            bin_str = f"{mask:010b}"
+            print(f"bin_str: {bin_str}")
+            print([int(x) for x in bin_str])
+            print(self.mpr_data["flags"])
+            stuff = np.array(self.mpr_data["flags"] & mask, dtype=dtype)  # need to fix this!
+            print(f"stuff: {stuff}")
+            return np.array(self.mpr_data["flags"] & mask, dtype=dtype)  # need to fix this!
         # elif flag_name in self.flags2_dict:
         #     mask, dtype = self.flags2_dict[flag_name]
         #     return np.array(self.mpr_data['flags2'] & mask, dtype=dtype)
         else:
-            raise AttributeError("Flag '%s' not present" % flag_name)
+            # raise AttributeError("Flag '%s' not present" % flag_name)
+            logging.info(f"Flag {flag_name} not present")
 
     def _load_mpr_data(self, filename, bad_steps):
         if bad_steps is not None:
@@ -284,24 +309,21 @@ class DataLoader(BaseLoader):
         mpr_log = None
         mpr_data = None
         mpr_settings = None
-
-        file_obj = open(filename, mode="rb")
-        label = file_obj.read(len(mpr_label))
-        self.logger.debug(f"label: {label}")
-        counter = 0
-        while True:
-            counter += 1
-            new_module = _read_modules(file_obj)
-            position = int(new_module["end"])
-            mpr_modules.append(new_module)
-            if position >= stats_info.st_size:
-                txt = "-reached end of file"
-                if position == stats_info.st_size:
-                    txt += " --exactly at end of file"
-                self.logger.info(txt)
-                break
-
-        file_obj.close()
+        with open(filename, mode="rb") as file_obj:
+            label = file_obj.read(len(mpr_label))
+            self.logger.debug(f"label: {label}")
+            counter = 0
+            while True:
+                counter += 1
+                new_module = _read_modules(file_obj)
+                position = int(new_module["end"])
+                mpr_modules.append(new_module)
+                if position >= stats_info.st_size:
+                    txt = "-reached end of file"
+                    if position == stats_info.st_size:
+                        txt += " --exactly at end of file"
+                    self.logger.info(txt)
+                    break
 
         # ------------- set -----------------------------------
         settings_mod = None
@@ -316,16 +338,19 @@ class DataLoader(BaseLoader):
 
         # ------------- data -----------------------------------
         data_module = None
-        for m in mpr_modules:
-            if m["shortname"].strip().decode() == "VMP data":
+        for i, m in enumerate(mpr_modules):
+            if m["shortname"].decode().strip() == "VMP data":
                 data_module = m
         if data_module is None:
             raise IOError("No data module!")
 
         data_version = data_module["version"]
-        n_data_points = np.fromstring(data_module["data"][:4], dtype="<u4")[0]
-        n_columns = np.fromstring(data_module["data"][4:5], dtype="u1")[0]
-        logging.debug(f"data (points, cols): {n_data_points}, {n_columns}")
+        n_data_points = np.fromstring(data_module["data"][:4], dtype="<u4")
+        n_data_points = n_data_points[0]
+        n_columns = np.fromstring(data_module["data"][4:5], dtype="u1")
+        n_columns = n_columns[0]
+
+        # print(f"data (points, cols): {n_data_points}, {n_columns}")
 
         if data_version == 0:
             logging.debug("data version 0")
@@ -342,7 +367,7 @@ class DataLoader(BaseLoader):
                 data_module["data"][5:], dtype="<u2", count=n_columns
             )
             main_data = data_module["data"][405:]
-            remaining_headers = data_module["data"][5 + 2 * n_columns : 405]
+            remaining_headers = data_module["data"][5 + 2 * n_columns: 405]
 
         else:
             raise IOError("Unrecognised version for data module: %d" % data_version)
@@ -356,6 +381,7 @@ class DataLoader(BaseLoader):
         flags_dict = OrderedDict()
 
         for col in column_types:
+            print(f"{col=}")
             if col in bl_flags.keys():
                 flags_dict[bl_flags[col][0]] = bl_flags[col][1]
 
@@ -374,9 +400,14 @@ class DataLoader(BaseLoader):
             )
         bulk = main_data
         bulk_data = np.fromstring(bulk, dtype=dtype)
+        print(bulk_data)
         mpr_data = pd.DataFrame(bulk_data)
-
-        self.logger.debug(mpr_data.columns)
+        print(mpr_data.head())
+        print(self.flags_dict)
+        print(mpr_data.columns)
+        print(mpr_data["flags"].unique())
+        print(mpr_data["flags2"].unique())
+        logging.debug(mpr_data.columns)
         self.logger.debug(mpr_data.head())
 
         # ------------- log  -----------------------------------
@@ -384,22 +415,21 @@ class DataLoader(BaseLoader):
         for m in mpr_modules:
             if m["shortname"].strip().decode() == "VMP LOG":
                 log_module = m
-        if log_module is None:
-            txt = "error - no log module"
-            raise IOError(txt)
-
-        tm = time.strptime(log_module["date"].decode(), "%m.%d.%y")
-        enddate = datetime.date(tm.tm_year, tm.tm_mon, tm.tm_mday)
 
         mpr_log = dict()
-        mpr_log["end_date"] = enddate
-        mpr_log["length2"] = log_module["length"]
-        mpr_log["end2"] = log_module["end"]
-        mpr_log["offset2"] = log_module["offset"]
-        mpr_log["version2"] = log_module["version"]
-        mpr_log["data"] = log_module[
-            "data"
-        ]  # Not sure if I will ever need it, but just in case....
+        if log_module is None:
+            txt = "WARNING - no log module found!"
+            logging.info(txt)
+        else:
+            end_date = dateparser.parse(log_module["date"].decode())
+            mpr_log["end_date"] = end_date
+            mpr_log["length2"] = log_module["length"]
+            mpr_log["end2"] = log_module["end"]
+            mpr_log["offset2"] = log_module["offset"]
+            mpr_log["version2"] = log_module["version"]
+            mpr_log["data"] = log_module[
+                "data"
+            ]  # Not sure if I will ever need it, but just in case....
         self.mpr_log = mpr_log
         self._parse_mpr_log_data()
         self.mpr_data = mpr_data
@@ -416,6 +446,9 @@ class DataLoader(BaseLoader):
     def _generate_cycle_index(self):
         flag = "Ns changes"
         n = self._get_flag(flag)
+        print(f"n: {n}")
+        if n is None:
+            return
         self.mpr_data[self.cellpy_headers["cycle_index_txt"]] = 1
         ns_changes = self.mpr_data[n].index.values
         for i in ns_changes:
@@ -443,21 +476,28 @@ class DataLoader(BaseLoader):
         self.mpr_data[self.cellpy_headers[cellpy_header_txt]] += 1
 
     def _generate_step_time(self):
-        # TODO: @jepe - fix me
-        self.mpr_data[self.cellpy_headers["step_time_txt"]] = np.nan
+        k = self.cellpy_headers["step_time_txt"]
+        if k in self.mpr_data.columns:
+            self.mpr_data[self.cellpy_headers["step_time_txt"]] = np.nan
 
     def _generate_sub_step_time(self):
         # TODO: @jepe - fix me
-        self.mpr_data[self.cellpy_headers["sub_step_time_txt"]] = np.nan
+        k = self.cellpy_headers["sub_step_time_txt"]
+        if k in self.mpr_data.columns:
+            self.mpr_data[self.cellpy_headers["sub_step_time_txt"]] = np.nan
 
     def _generate_capacities(self):
-        cap_col = self.mpr_data["QChargeDischarge"]
-        self.mpr_data[self.cellpy_headers["discharge_capacity_txt"]] = [
-            0.0 if x < 0 else x for x in cap_col
-        ]
-        self.mpr_data[self.cellpy_headers["charge_capacity_txt"]] = [
-            0.0 if x >= 0 else x for x in cap_col
-        ]
+        cap_col = self.mpr_data.get("QChargeDischarge")
+        if cap_col is None:
+            return
+        k = self.cellpy_headers["charge_capacity_txt"]
+        if k in self.mpr_data.columns:
+            self.mpr_data[self.cellpy_headers["discharge_capacity_txt"]] = [
+                0.0 if x < 0 else x for x in cap_col
+            ]
+            self.mpr_data[self.cellpy_headers["charge_capacity_txt"]] = [
+                0.0 if x >= 0 else x for x in cap_col
+            ]
 
     def _rename_headers(self):
         # should ideally use the info from bl_dtypes, will do that later

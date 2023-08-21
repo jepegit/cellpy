@@ -41,3 +41,4 @@ nox
 rich
 pandoc
 bumpver
+dateparser

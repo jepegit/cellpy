@@ -35,6 +35,7 @@ dependencies:
     - python-dotenv
     - fabric
     - rich
+    - dateparser
     - pip:
         - sqlalchemy-access
 
