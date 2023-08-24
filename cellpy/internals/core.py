@@ -661,12 +661,18 @@ class OtherPath(pathlib.Path):
         search_in_sub_dirs: bool = False,
     ) -> List[str]:
         # TODO: update this so that it works faster (need some linux magic)
+        # TODO: update OtherPath with a find method (maybe call it match or search)
+        #  that takes a list of glob strings and returns a list of list of OtherPath objects
         path_separator = "/"
+        logging.info(f"glob_str: {glob_str}")
+        logging.info("using fabric to glob")
         with fabric.Connection(host, connect_kwargs=connect_kwargs) as conn:
             try:
                 t1 = time.time()
                 sftp_conn = conn.sftp()
                 sftp_conn.chdir(self.raw_path)
+                logging.info(f"raw-path: {self.raw_path}")
+                logging.info(f"search in sub dirs: {search_in_sub_dirs}")
                 if search_in_sub_dirs:  # recursive globbing one level down
                     sub_dirs = [
                         f
@@ -682,6 +688,7 @@ class OtherPath(pathlib.Path):
                     for sub_dir in sub_dirs:
                         try:
                             sftp_conn.chdir(sub_dir)
+                            logging.info(f"looking in {sub_dir}")
                             new_files = [
                                 f
                                 for f in sftp_conn.listdir()

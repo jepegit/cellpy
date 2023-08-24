@@ -541,6 +541,7 @@ class Batch:
                     (without the '.').
                 raw_file_dir(path): optional, directory where to look for run-files
                     (default: read prm-file)
+                project_dir(path): subdirectory in raw_file_dir to look for run-files
                 cellpy_file_dir(path): optional, directory where to look for
                     cellpy-files (default: read prm-file)
                 prm_filename(path): optional parameter file can be given.
@@ -952,6 +953,7 @@ def init(*args, **kwargs) -> Batch:
         >>> normal_init_of_batch = Batch.init()
     """
     # TODO: add option for setting max cycle number (experiment.last_cycle)
+    # TODO: promote most used kwargs to named arguments
     # set up cellpy logger
     default_log_level = kwargs.pop("default_log_level", None)
     testing = kwargs.pop("testing", False)

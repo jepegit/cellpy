@@ -121,7 +121,6 @@ def search_for_files(
         raw_file_dir(path): optional, directory where to look for run-files
             (default: read prm-file)
         project_dir(path): optional, subdirectory in raw_file_dir to look for run-files
-            (default: read prm-file)
         cellpy_file_dir(path): optional, directory where to look for
             cellpy-files (default: read prm-file)
         prm_filename(path): optional parameter file can be given.
