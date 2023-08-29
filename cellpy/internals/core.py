@@ -673,6 +673,18 @@ class OtherPath(pathlib.Path):
                 sftp_conn.chdir(self.raw_path)
                 logging.info(f"raw-path: {self.raw_path}")
                 logging.info(f"search in sub dirs: {search_in_sub_dirs}")
+
+                # checking if the glob string contains a parent directory
+                # if it does, we need to change to that directory
+                # and then glob
+                parent = str(pathlib.Path(glob_str).parent)
+                logging.debug(f"parent: {parent}")
+                if parent:
+                    logging.debug(f"changing to {parent}")
+                    glob_str = str(pathlib.Path(glob_str).name)
+                    logging.debug(f"updated glob_str: {glob_str}")
+                    sftp_conn.chdir(parent)
+
                 if search_in_sub_dirs:  # recursive globbing one level down
                     sub_dirs = [
                         f
@@ -685,29 +697,27 @@ class OtherPath(pathlib.Path):
                         if not stat.S_ISDIR(sftp_conn.stat(f).st_mode)
                     ]
                     filtered_files = fnmatch.filter(files, glob_str)
+                    glob_str = f"*{path_separator}{glob_str}"
+                    if len(sub_dirs) > 3:
+                        logging.warning(f"WARNING! Searching in {len(sub_dirs)} sub directories - this might take a while")
                     for sub_dir in sub_dirs:
                         try:
-                            sftp_conn.chdir(sub_dir)
-                            logging.info(f"looking in {sub_dir}")
-                            new_files = [
-                                f
-                                for f in sftp_conn.listdir()
-                                if not stat.S_ISDIR(sftp_conn.stat(f).st_mode)
-                            ]
-                            new_filtered_files = fnmatch.filter(new_files, glob_str)
-                            new_filtered_files = [
+                            logging.debug(f"looking in {sub_dir}")
+                            files += [
                                 f"{sub_dir}{path_separator}{f}"
-                                for f in new_filtered_files
+                                for f in sftp_conn.listdir(sub_dir)
+                                if not stat.S_ISDIR(sftp_conn.stat(f"{sub_dir}{path_separator}{f}").st_mode)
                             ]
-                            filtered_files += new_filtered_files
-                            sftp_conn.chdir("..")
                         except FileNotFoundError:
                             logging.debug(
                                 f"Could not look in {sub_dir}: FileNotFoundError"
                             )
                             pass
+                    filtered_files += fnmatch.filter(files, glob_str)
                 else:
+                    logging.debug("**** NOT SEARCHING IN SUB DIRS ****")
                     files = sftp_conn.listdir()
+                    logging.debug(f"files: {files}")
                     filtered_files = fnmatch.filter(files, glob_str)
                 logging.debug(f"globbing took {time.time() - t1:.2f} seconds")
                 return filtered_files
