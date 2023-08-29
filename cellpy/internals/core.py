@@ -536,6 +536,13 @@ class OtherPath(pathlib.Path):
 
         return path_of_copied_file
 
+    def connection_info(self, testing: bool = False) -> Tuple[Dict, str]:
+        """Return a dictionary with connection information."""
+        if self.is_external:
+            return self._get_connection_info(testing)
+        logging.debug(f"not external path! returning empty dict and empty string")
+        return {}, ""
+
     def _get_connection_info(self, testing: bool = False) -> Tuple[Dict, str]:
         host = self.location
         uri_prefix = self.uri_prefix.replace("//", "")

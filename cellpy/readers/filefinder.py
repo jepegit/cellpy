@@ -9,6 +9,8 @@ import time
 from typing import Optional, Union, List, Tuple
 import warnings
 
+import fabric
+
 import cellpy.exceptions
 from cellpy.parameters import prms
 from cellpy.internals.core import OtherPath
@@ -20,6 +22,82 @@ from cellpy.internals.core import OtherPath
 
 # TODO: @jepe - add function for searching in cloud storage (dropbox, google drive etc)
 # TODO: @jepe - add function for searching in database (sqlite, postgresql etc)
+
+def list_raw_file_directory2(
+    raw_file_dir: Union[OtherPath, pathlib.Path, str, None] = None,
+    project_dir: Union[OtherPath, pathlib.Path, str, None] = None,
+    extension: Optional[str] = None,
+    levels: Optional[int] = 1,
+    only_filename: Optional[bool] = False,
+    with_prefix: Optional[bool] = True,
+
+):
+    """Dumps the raw-file directory to a list.
+
+    Args:
+        raw_file_dir(path): optional, directory where to look for run-files
+            (default: read prm-file)
+        project_dir(path): optional, subdirectory in raw_file_dir to look for run-files
+        extension (str): optional, extension of run-files (without the '.'). If
+            not given, all files will be listed.
+        levels (int, optional): How many sublevels to list. Defaults to 1.
+            If you want to list all sublevels, use `listdir(levels=-1)`.
+            If you want to list only the current level (no subdirectories),
+            use `listdir(levels=0)`.
+        only_filename (bool, optional): If True, only the file names will be
+            returned. Defaults to False.
+        with_prefix (bool, optional): If True, the full path to the files including
+            the prefix and the location (e.g. 'scp://user@server.com/...')
+            will be returned. Defaults to True.
+
+    Returns:
+        list of str: list of file paths (only the actual file names).
+
+    Notes:
+        This function might be rather slow and memory consuming if you have
+        a lot of files in your raw-file directory. If you have a lot of files,
+        you might want to consider running this function in a separate process
+        (e.g. in a separate python script or using multiprocessing).
+
+        The function currently returns the full path to the files from the
+        root directory. It does not include the prefix (e.g. ssh://).
+        Future versions might change this to either include the prefix or
+        return the files relative to the ``raw_file_dir`` directory.
+    """
+
+    print("EXPERIMENTAL")
+    print("This function uses 'find' and 'ssh' to search for files.")
+    print("Not all systems have these commands available.")
+
+    file_list = []
+
+    if raw_file_dir is None:
+        raw_file_dir = prms.Paths.rawdatadir
+
+    # 'dressing' the raw_file_dir in a list in case we want to
+    # search in several folders (not implemented yet):
+    if not isinstance(raw_file_dir, (list, tuple)):
+        raw_file_dir = [OtherPath(raw_file_dir)]
+    else:
+        raw_file_dir = [OtherPath(d) for d in raw_file_dir]
+
+    if project_dir is not None:
+        raw_file_dir = [r / project_dir for r in raw_file_dir]
+
+    if extension is not None:
+        if extension.startswith("."):
+            glob_txt = f"*{extension}"
+        else:
+            glob_txt = f"*.{extension}"
+    else:
+        glob_txt = "*"  # all files
+    for d in raw_file_dir:
+        connect_kwargs, host = d.connection_info()
+
+        with fabric.Connection(host, connect_kwargs=connect_kwargs) as conn:
+            _file_list = conn.run(f'find -L {d.raw_path} -name "{glob_txt}"', hide="stdout").stdout.splitlines()
+        file_list += list(map(lambda x: f"{d.uri_prefix}//{host}"+x, _file_list))
+    return file_list
 
 
 def list_raw_file_directory(
@@ -237,6 +315,7 @@ def search_for_files(
         if pre_path is not None:
             pre_path = OtherPath(pre_path)
             run_files = list(map(lambda x: pre_path / x, run_files))
+
     else:
         run_files = []
         for d in raw_file_dir:
@@ -345,7 +424,7 @@ def check_03():
     file_list = list_raw_file_directory(
         raw_file_dir=None,
         project_dir=None,
-        extension="hei",
+        extension="res",
     )
     for f in file_list:
         print(f"{f} type: {type(f)} path: {f.full_path}")
