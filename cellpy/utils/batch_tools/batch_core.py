@@ -289,7 +289,7 @@ class BaseExperiment(metaclass=abc.ABCMeta):
     def __len__(self):
         try:
             length = len(self.journal.pages.index)
-        except TypeError:
+        except (TypeError, AttributeError):
             length = 0
         return length
 
