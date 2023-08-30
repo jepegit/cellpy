@@ -23,14 +23,11 @@ from cellpy.internals.core import OtherPath
 # TODO: @jepe - add function for searching in cloud storage (dropbox, google drive etc)
 # TODO: @jepe - add function for searching in database (sqlite, postgresql etc)
 
-def list_raw_file_directory2(
+def find_in_raw_file_directory(
     raw_file_dir: Union[OtherPath, pathlib.Path, str, None] = None,
     project_dir: Union[OtherPath, pathlib.Path, str, None] = None,
     extension: Optional[str] = None,
-    levels: Optional[int] = 1,
-    only_filename: Optional[bool] = False,
-    with_prefix: Optional[bool] = True,
-
+    glob_txt: Optional[str] = None,
 ):
     """Dumps the raw-file directory to a list.
 
@@ -40,34 +37,36 @@ def list_raw_file_directory2(
         project_dir(path): optional, subdirectory in raw_file_dir to look for run-files
         extension (str): optional, extension of run-files (without the '.'). If
             not given, all files will be listed.
-        levels (int, optional): How many sublevels to list. Defaults to 1.
-            If you want to list all sublevels, use `listdir(levels=-1)`.
-            If you want to list only the current level (no subdirectories),
-            use `listdir(levels=0)`.
-        only_filename (bool, optional): If True, only the file names will be
-            returned. Defaults to False.
-        with_prefix (bool, optional): If True, the full path to the files including
-            the prefix and the location (e.g. 'scp://user@server.com/...')
-            will be returned. Defaults to True.
+        glob_txt (str, optional): optional, glob pattern to use when searching for files.
 
     Returns:
-        list of str: list of file paths (only the actual file names).
+        list of str: list of file paths.
+
+    Examples:
+        # find all files in your raw-file directory:
+        >>> filelist_1 = filefinder.find_in_raw_file_directory()
+
+        # find all files in your raw-file directory in the subdirectory 'MY-PROJECT':
+        >>> filelist_2 = filefinder.find_in_raw_file_directory(raw_file_dir=rawdatadir/"MY-PROJECT")
+
+        # find all files in your raw-file directory with the extension '.raw' in the subdirectory 'MY-PROJECT':
+        >>> filelist_3 = filefinder.find_in_raw_file_directory(raw_file_dir=rawdatadir/"MY-PROJECT", extension="raw")
+
+        # find all files in your raw-file directory with the extension '.raw' in the subdirectory 'MY-PROJECT'
+        # that contains the string 'good' in the file name:
+        >>> filelist_4 = filefinder.find_in_raw_file_directory(
+        >>>     raw_file_dir=rawdatadir/"MY-PROJECT",
+        >>>     glob_txt="*good*",
+        >>>     extension="raw"
+        >>>)
 
     Notes:
-        This function might be rather slow and memory consuming if you have
-        a lot of files in your raw-file directory. If you have a lot of files,
-        you might want to consider running this function in a separate process
-        (e.g. in a separate python script or using multiprocessing).
-
-        The function currently returns the full path to the files from the
-        root directory. It does not include the prefix (e.g. ssh://).
-        Future versions might change this to either include the prefix or
-        return the files relative to the ``raw_file_dir`` directory.
+        Uses 'find' and 'ssh' to search for files.
     """
 
-    print("EXPERIMENTAL")
-    print("This function uses 'find' and 'ssh' to search for files.")
-    print("Not all systems have these commands available.")
+    logging.info("--- EXPERIMENTAL ---")
+    logging.info("This function uses 'find' and 'ssh' to search for files.")
+    logging.info("Not all systems have these commands available.")
 
     file_list = []
 
@@ -84,19 +83,27 @@ def list_raw_file_directory2(
     if project_dir is not None:
         raw_file_dir = [r / project_dir for r in raw_file_dir]
 
+    if glob_txt is None:
+        glob_txt = "*"  # all files
+
     if extension is not None:
         if extension.startswith("."):
-            glob_txt = f"*{extension}"
+            glob_txt = f"{glob_txt}{extension}"
         else:
-            glob_txt = f"*.{extension}"
-    else:
-        glob_txt = "*"  # all files
+            glob_txt = f"{glob_txt}.{extension}"
+    logging.info(f"Searching for files matching: {glob_txt}")
     for d in raw_file_dir:
         connect_kwargs, host = d.connection_info()
-
         with fabric.Connection(host, connect_kwargs=connect_kwargs) as conn:
-            _file_list = conn.run(f'find -L {d.raw_path} -name "{glob_txt}"', hide="stdout").stdout.splitlines()
-        file_list += list(map(lambda x: f"{d.uri_prefix}//{host}"+x, _file_list))
+            out = conn.run(f'find -L {d.raw_path} -name "{glob_txt}"', hide="both", warn=True)
+        if out.return_code != 0:
+            warnings.warn(f"Could not find any files in {d.raw_path} -> {out.stderr}")
+            warnings.warn(f"Most likely the OS does not have the 'find' command")
+            continue
+        _file_list = out.stdout.splitlines()
+        file_list += list(map(lambda x: f"{d.uri_prefix}{host}"+x, _file_list))
+    number_of_files = len(file_list)
+    logging.info(f"Found {number_of_files} files")
     return file_list
 
 
