@@ -103,7 +103,7 @@ def _write_prm_file(file_name=None):
         raise ConfigFileNotWritten
 
 
-def _update_prms(config_dict):
+def _update_prms(config_dict, resolve_paths=True):
     """updates the prms with the values in the config_dict"""
     # config_dict is your current config
     # _config_attr is the attribute in the prms module (i.e. the defaults)
@@ -126,12 +126,14 @@ def _update_prms(config_dict):
                 elif k.lower() in OTHERPATHS:
                     logging.debug("converting to OtherPath")
                     # special hack because it is possibly an external location
-                    z = OtherPath(
-                        str(z)
-                    ).resolve()  # v1.0.0: this is only resolving local paths
+                    z = OtherPath(str(z))
+                    if resolve_paths:
+                        z = z.resolve()  # v1.0.0: this is only resolving local paths
                 else:
                     logging.debug("converting to pathlib.Path")
-                    z = pathlib.Path(z).resolve()
+                    z = pathlib.Path(z)
+                    if resolve_paths:
+                        z = z.resolve()
                 _txt += f" -> {z}"
 
                 logging.debug(_txt)
@@ -222,7 +224,7 @@ def _pack_prms():
     return config_dict
 
 
-def _read_prm_file(prm_filename):
+def _read_prm_file(prm_filename, resolve_paths=True):
     """read the prm file"""
     logging.debug("Reading config-file: %s" % prm_filename)
     try:
@@ -233,7 +235,7 @@ def _read_prm_file(prm_filename):
         raise ConfigFileNotRead from e
     else:
         if isinstance(prm_dict, dict):
-            _update_prms(prm_dict)
+            _update_prms(prm_dict, resolve_paths=resolve_paths)
         else:
             print(type(prm_dict))
 

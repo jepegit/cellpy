@@ -403,6 +403,16 @@ def create_commit_message_from_output(output, regexp):
 
 
 @task
+def updater(c, config=True):
+    """Update parameters for the parameter files"""
+    from cellpy import prms, prmreader
+    if config:
+        config_file = Path("cellpy/parameters/.cellpy_prms_default.conf")
+        prmreader._read_prm_file(config_file, resolve_paths=False)
+        prmreader._write_prm_file(config_file)
+
+
+@task
 def requirements(c, check=True):
     if check:
         # Should check that all the different requirement files (including the

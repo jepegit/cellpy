@@ -84,6 +84,7 @@ class PathsClass(CellPyConfig):
 
 @dataclass
 class BatchClass(CellPyConfig):
+    auto_use_file_list: bool = False
     template: str = "standard"
     fig_extension: str = "png"
     backend: str = "bokeh"
