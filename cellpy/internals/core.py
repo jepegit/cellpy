@@ -79,6 +79,7 @@ def _clean_up_original_path_string(path_string):
 
 
 def _check_external(path_string: str) -> Tuple[str, bool, str, str]:
+    # t = time.perf_counter()
     # path_sep = "\\" if os.name == "nt" else "/"
     _is_external = False
     _location = ""
@@ -97,6 +98,7 @@ def _check_external(path_string: str) -> Tuple[str, bool, str, str]:
     path_string = path_string.replace("\\", "/")
     # fix for posix paths:
     path_string = path_string.replace("//", "/")
+    # print(f"check external took {(time.perf_counter()-t)/1_000_000} nanoseconds")
     return path_string, _is_external, _uri_prefix, _location
 
 
@@ -122,6 +124,7 @@ class OtherPath(pathlib.Path):
     )  # noqa
 
     def __new__(cls, *args, **kwargs):
+        cls._created = time.time()
         if args:
             path, *args = args
         else:
@@ -209,10 +212,6 @@ class OtherPath(pathlib.Path):
             self._uri_prefix,
             self._location,
         ) = _check_external(path_string)
-        logging.debug(f"self._is_external: {self._is_external}")
-        logging.debug(f"self._uri_prefix: {self._uri_prefix}")
-        logging.debug(f"self._location: {self._location}")
-        logging.debug(f"path_string: {path_string}")
         self._raw_other_path = path_string
 
     def __div__(self, other: Union[str, S]) -> S:
