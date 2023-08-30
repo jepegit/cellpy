@@ -502,7 +502,7 @@ class Batch:
         # except shutil.SameFileError:
         #     logging.debug("same file exception encountered")
 
-    def create_journal(self, description=None, from_db=True, auto_use_file_list=False,
+    def create_journal(self, description=None, from_db=True, auto_use_file_list=None,
                        file_list_kwargs=None, **kwargs):
 
         """Create journal pages.
@@ -579,6 +579,10 @@ class Batch:
         logging.debug(f"from_db: {from_db}")
         logging.info(f"name: {self.experiment.journal.name}")
         logging.info(f"project: {self.experiment.journal.project}")
+
+        if auto_use_file_list is None:
+            auto_use_file_list = prms.Batch.auto_use_file_list
+
         to_project_folder = kwargs.pop("to_project_folder", True)
         duplicate_to_local_folder = kwargs.pop("duplicate_to_local_folder", True)
 
