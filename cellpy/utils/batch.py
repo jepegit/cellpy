@@ -13,6 +13,7 @@ from tqdm.auto import tqdm
 
 import cellpy.exceptions
 from cellpy import log, prms
+from cellpy.readers import filefinder
 from cellpy.parameters.internal_settings import (
     headers_journal,
     headers_step_table,
@@ -501,7 +502,9 @@ class Batch:
         # except shutil.SameFileError:
         #     logging.debug("same file exception encountered")
 
-    def create_journal(self, description=None, from_db=True, **kwargs):
+    def create_journal(self, description=None, from_db=True, auto_use_file_list=False,
+                       file_list_kwargs=None, **kwargs):
+
         """Create journal pages.
 
             This method is a wrapper for the different Journal methods for making
@@ -517,6 +520,10 @@ class Batch:
                 from_db (bool): Deprecation Warning: this parameter will be removed as it is
                     the default anyway. Generate the pages from a db (the default option).
                     This will be over-ridden if description is given.
+
+                auto_use_file_list (bool): Experimental feature. If True, a file list will be generated and used
+                    instead of searching for files in the folders.
+                file_list_kwargs (dict): Experimental feature. Keyword arguments to be sent to the file list generator.
 
                 **kwargs: sent to sub-function(s) (*e.g.* from_db -> simple_db_reader -> find_files ->
                     filefinder.search_for_files).
@@ -585,6 +592,10 @@ class Batch:
                 )
 
         if from_db:
+            if auto_use_file_list:
+                if file_list_kwargs is None:
+                    file_list_kwargs = {}
+                kwargs["file_list"] = filefinder.find_in_raw_file_directory(**file_list_kwargs)
             self.experiment.journal.from_db(**kwargs)
             self.experiment.journal.to_file(
                 duplicate_to_local_folder=duplicate_to_local_folder

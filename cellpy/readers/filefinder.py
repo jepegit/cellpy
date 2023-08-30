@@ -193,6 +193,7 @@ def search_for_files(
     reg_exp: Optional[str] = None,
     sub_folders: Optional[bool] = True,
     file_list: Optional[List[str]] = None,
+    with_prefix: Optional[bool] = True,
     pre_path: Union[OtherPath, pathlib.Path, str, None] = None,
 ) -> Tuple[List[str], str]:
     """Searches for files (raw-data files and cellpy-files).
@@ -218,6 +219,8 @@ def search_for_files(
             not contain the full filepath (only the actual file names). If
             you want to provide the full path, you will have to modify the
             file_name_format or reg_exp accordingly.
+        with_prefix (bool): if True, the file list contains full paths to the
+            files (including the prefix and the location).
         pre_path (path or str): path to prepend the list of files selected
              from the file_list.
 
@@ -318,7 +321,14 @@ def search_for_files(
         if len(raw_file_dir) > 1:
             logging.info("you provided several raw file directories")
         logging.debug("searching within provided list of files")
-        run_files = fnmatch.filter(file_list, glob_text_raw)
+
+        if with_prefix:
+            glob_text_raw_for_list = f"*{glob_text_raw}"
+        else:
+            glob_text_raw_for_list = glob_text_raw
+
+        run_files = fnmatch.filter(file_list, glob_text_raw_for_list)
+
         if pre_path is not None:
             pre_path = OtherPath(pre_path)
             run_files = list(map(lambda x: pre_path / x, run_files))

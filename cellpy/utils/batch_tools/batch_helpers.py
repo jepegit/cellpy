@@ -149,6 +149,7 @@ def find_files(info_dict, file_list=None, pre_path=None, sub_folders=None, **kwa
         raw_files, cellpyfile = filefinder.search_for_files(
             run_name,
             file_list=file_list,
+            with_prefix=True,
             pre_path=pre_path,
             sub_folders=sub_folders,
             **kwargs,
