@@ -1488,7 +1488,7 @@ def _cycles_plotter(
 
     # --- pre-processing ---
     logging.debug("picking kwargs for current level - rest goes to sequence_plotter")
-    title = kwargs.pop("title", default_title)
+    title = kwargs.pop("fig_title", default_title)
     width = kwargs.pop("width", None)
     height = kwargs.pop("height", None)
     palette = kwargs.pop("palette", None)
@@ -1765,7 +1765,7 @@ def ica_plotter(
     if direction not in ["charge", "discharge"]:
         print(f"direction='{direction}' not allowed - setting it to 'charge'")
         direction = "charge"
-    if method in ["fig_pr_cell", "film"]:
+    if method == "film":
         kwargs["range_y"] = kwargs.pop("range_y", None) or (1, max_cycle)
 
     return _cycles_plotter(
@@ -1778,7 +1778,7 @@ def ica_plotter(
         x_unit="V",
         y_label="dQ/dV",
         y_unit="mAh/g/V.",
-        default_title=f"Incremental Analysis Plots ({direction.capitalize()})",
+        default_title=f"Incremental Analysis Plots",
         direction=direction,
         backend=backend,
         method=method,
