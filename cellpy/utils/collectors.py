@@ -593,6 +593,7 @@ class BatchSummaryCollector(BatchCollector):
         marker_size: int = None,
         cmap=None,
         spread: bool = None,
+        fig_title: str = None,
         *args,
         **kwargs,
     ):
@@ -629,6 +630,7 @@ class BatchSummaryCollector(BatchCollector):
             marker_size: size of the markers used
             cmap: color-map to use
             spread (bool): plot error-bands instead of error-bars if True
+            fig_title (str): title of the figure
         """
 
         elevated_data_collector_arguments = dict(
@@ -650,6 +652,7 @@ class BatchSummaryCollector(BatchCollector):
         )
 
         elevated_plotter_arguments = {
+            "fig_title": fig_title,
             "backend": backend,
             "title": title,
             "points": points,
@@ -1598,7 +1601,6 @@ def summary_plotter(collected_curves, cycles_to_plot=None, backend="plotly", **k
         "group",
         "sub_group",
     ]
-
     id_vars = []
     for n in possible_id_vars:
         if n in col_headers:
