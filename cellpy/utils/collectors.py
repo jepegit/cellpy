@@ -30,6 +30,7 @@ DEFAULT_CYCLES = [1, 10, 20]
 CELLPY_MINIMUM_VERSION = "1.0.0"
 PLOTLY_BASE_TEMPLATE = "seaborn"
 IMAGE_TO_FILE_TIMEOUT = 30
+SUPPORTED_BACKENDS = ["plotly"]
 
 px_template_all_axis_shown = dict(
     xaxis=dict(
@@ -1006,8 +1007,7 @@ def pick_named_cell(b, label_mapper=None):
 
 def summary_collector(*args, **kwargs):
     """See concatenate_summaries in helpers (summary_collector runs
-    concatenate_summaries with melt=True and mode='collector')"""
-    kwargs["melt"] = True
+    concatenate_summaries mode='collector')"""
     kwargs["mode"] = "collector"
     return concatenate_summaries(*args, **kwargs)
 
@@ -1221,7 +1221,10 @@ def sequence_plotter(
 
     for k in kwargs:
         logging.debug(f"keyword argument sent to the backend: {k}")
-
+    if backend not in SUPPORTED_BACKENDS:
+        print(f"Backend '{backend}' not supported", end="")
+        print(f" - supported backends: {SUPPORTED_BACKENDS}")
+        return
     curves = None
     seaborn_arguments = dict()
 
@@ -1462,6 +1465,9 @@ def sequence_plotter(
     elif backend == "bokeh":
         print(f"{backend} not implemented yet")
 
+    else:
+        print(f"{backend} not implemented yet")
+
 
 def _cycles_plotter(
     collected_curves,
@@ -1488,7 +1494,6 @@ def _cycles_plotter(
     Returns:
         styled figure object
     """
-
     # --- pre-processing ---
     logging.debug("picking kwargs for current level - rest goes to sequence_plotter")
     title = kwargs.pop("fig_title", default_title)
@@ -1552,7 +1557,7 @@ def _cycles_plotter(
         **kwargs,
     )
     if fig is None:
-        print("Could not create figure")
+        print("Could not create figure!")
         return
 
     # Rendering:
@@ -1687,8 +1692,8 @@ def summary_plotter(collected_curves, cycles_to_plot=None, backend="plotly", **k
         cols=cols,
         **kwargs,
     )
-
-    fig.update_yaxes(matches=None, showticklabels=True)
+    if backend == "plotly":
+        fig.update_yaxes(matches=None, showticklabels=True)
     return fig
 
 

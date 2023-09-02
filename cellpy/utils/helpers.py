@@ -693,8 +693,6 @@ def concatenate_summaries(
     inverse=False,
     inverted=False,
     key_index_bounds=None,
-    melt=False,
-    cell_type_split_position="auto",
     mode="collector",
 ) -> pd.DataFrame:
     """Merge all summaries in a batch into a gigantic summary data frame.
@@ -720,23 +718,10 @@ def concatenate_summaries(
         inverted (bool): select cycles that do not have the steps filtered by given C-rate.
         key_index_bounds (list): used when creating a common label for the cells by splitting and combining from
             key_index_bound[0] to key_index_bound[1].
-        melt (bool): return frame as melted (long format).
-        cell_type_split_position (int | None | "auto"): list item number for creating a cell type identifier
-            after performing a split("_") on the cell names (only valid if melt==True). Set to None to not
-            include a cell_type col.
         mode (str): set to something else than "collector" to get the "old" behaviour of this function.
 
     Returns:
-        Multi-index ``pandas.DataFrame``
-
-    Notes:
-        The returned ``DataFrame`` has the following structure:
-
-        - top-level columns or second col for melted: cell-names (cell_name)
-        - second-level columns or first col for melted: summary headers (summary_headers)
-        - row-index or third col for melted: cycle number (cycle_index)
-        - cell_type on forth col for melted if cell_type_split_position is given
-
+        ``pandas.DataFrame``
     """
 
     if mode != "collector":
@@ -866,6 +851,7 @@ def concatenate_summaries(
                 keys_sub.append(cell_id)
 
         if group_it:
+            cell_id = None
             if custom_group_labels is not None:
                 if isinstance(custom_group_labels, dict):
                     if gno in custom_group_labels:
@@ -880,7 +866,7 @@ def concatenate_summaries(
                         cell_id = f"{custom_group_labels}-group-{gno:02d}"
                     except Exception:
                         cell_id = f"{custom_group_labels}-group-{gno}"
-            else:
+            if cell_id is None:
                 cell_id = list(
                     set(
                         [
@@ -965,33 +951,7 @@ def concatenate_summaries(
         warnings.warn(
             "mode != collectors: This is the old way of doing things. Use the new way instead!"
         )
-        if melt:
-            cdf = cdf.reset_index(drop=False).melt(
-                id_vars=hdr_summary.cycle_index, value_name="value"
-            )
-            melted_column_order = [
-                "summary_header",
-                "cell_name",
-                hdr_summary.cycle_index,
-                "value",
-            ]
 
-            if cell_type_split_position == "auto":
-                cell_type_split_position = 1
-                _pp = cdf.cell_name.str.split("_", expand=True).values[0]
-                for _p in _pp[1:]:
-                    if _p not in reserved_cell_label_names:
-                        break
-                    cell_type_split_position += 1
-
-            if cell_type_split_position is not None:
-                cdf = cdf.assign(
-                    cell_type=cdf.cell_name.str.split("_", expand=True)[
-                        cell_type_split_position
-                    ]
-                )
-                melted_column_order.insert(-2, "cell_type")
-            cdf = cdf.reindex(columns=melted_column_order)
         return cdf
     else:
         logging.info("Empty - nothing to concatenate!")
