@@ -45,6 +45,10 @@ def batch_instance(clean_dir, parameters):
     prms.Paths.filelogdir = clean_dir
     prms.Paths.batchfiledir = clean_dir
     prms.Paths.notebookdir = clean_dir
+    prms.Paths.instrumentdir = parameters.instrument_dir
+    prms.Paths.templatedir = parameters.template_dir
+    prms.Paths.examplesdir = parameters.examples_dir
+    prms.Batch.auto_use_file_list = False
     return batch
 
 

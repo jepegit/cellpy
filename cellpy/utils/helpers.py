@@ -96,13 +96,14 @@ def _make_average_legacy(
 
 def _make_average(
     frames,
-    keys=None,
+    # keys=None,
     columns=None,
     skip_st_dev_for_equivalent_cycle_index=True,
-    key_index_bounds=None,
+    # key_index_bounds=None,
 ):
-    if key_index_bounds is None:
-        key_index_bounds = [1, -2]
+
+    # if key_index_bounds is None:
+    #     key_index_bounds = [1, -2]
     hdr_norm_cycle = hdr_summary["normalized_cycle_index"]
     hdr_cum_charge = hdr_summary["cumulated_charge_capacity"]
     cell_id = ""
@@ -112,20 +113,20 @@ def _make_average(
     if columns is None:
         columns = frames[0].columns
 
-    if keys is not None:
-        if isinstance(keys, (list, tuple)):
-            cell_id = list(
-                set(
-                    [
-                        "_".join(
-                            k.split("_")[key_index_bounds[0] : key_index_bounds[1]]
-                        )
-                        for k in keys
-                    ]
-                )
-            )[0]
-        elif isinstance(keys, str):
-            cell_id = keys
+    # if keys is not None:
+    #     if isinstance(keys, (list, tuple)):
+    #         cell_id = list(
+    #             set(
+    #                 [
+    #                     "_".join(
+    #                         k.split("_")[key_index_bounds[0]:key_index_bounds[1]]
+    #                     )
+    #                     for k in keys
+    #                 ]
+    #             )
+    #         )[0]
+    #     elif isinstance(keys, str):
+    #         cell_id = keys
     new_frame = pd.concat(frames, axis=1)
     normalized_cycle_index_frame = pd.DataFrame(index=new_frame.index)
     for col in columns:
@@ -173,8 +174,8 @@ def _make_average(
             cols.remove(n)
     cols.extend(new_cols)
     final_frame = final_frame.reindex(columns=cols)
-    return final_frame, cell_id
-
+    # return final_frame, cell_id
+    return final_frame
 
 def update_journal_cellpy_data_dir(
     pages, new_path=None, from_path="PureWindowsPath", to_path="Path"
@@ -686,6 +687,7 @@ def concatenate_summaries(
     nom_cap=None,
     normalize_cycles=False,
     group_it=False,
+    custom_group_labels=None,
     rate_std=None,
     rate_column=None,
     inverse=False,
@@ -711,6 +713,7 @@ def concatenate_summaries(
         nom_cap (float): nominal capacity of the cell
         normalize_cycles (bool): perform a normalization of the cycle numbers (also called equivalent cycle index)
         group_it (bool): if True, average pr group.
+        custom_group_labels (dict): dictionary of custom labels (key must be the group number/name).
         rate_std (float): allow for this inaccuracy when selecting cycles based on rate
         rate_column (str): name of the column containing the C-rates.
         inverse (bool): select steps that do not have the given C-rate.
@@ -767,6 +770,7 @@ def concatenate_summaries(
         columns = default_columns
 
     cell_names_nest = []
+    group_nest = []
     output_columns = columns.copy()
     frames = []
     keys = []
@@ -793,12 +797,16 @@ def concatenate_summaries(
 
     if group_it:
         g = b.pages.groupby("group")
+        # this ensures that order is kept and grouping is correct
+        # it is therefore ok to assume from now on that all the cells within a list belongs to the same group
         for gno, b_sub in g:
             cell_names_nest.append(list(b_sub.index))
+            group_nest.append(gno)
     else:
         cell_names_nest.append(list(b.experiment.cell_names))
+        group_nest.append(b.pages.group.to_list())
 
-    for cell_names in cell_names_nest:
+    for gno, cell_names in zip(group_nest, cell_names_nest):
         frames_sub = []
         keys_sub = []
         for cell_id in cell_names:
@@ -858,13 +866,37 @@ def concatenate_summaries(
                 keys_sub.append(cell_id)
 
         if group_it:
+            if custom_group_labels is not None:
+                if isinstance(custom_group_labels, dict):
+                    if gno in custom_group_labels:
+                        cell_id = custom_group_labels[gno]
+                    else:
+                        try:
+                            cell_id = f"group-{gno:02d}"
+                        except Exception:
+                            cell_id = f"group-{gno}"
+                elif isinstance(custom_group_labels, str):
+                    try:
+                        cell_id = f"{custom_group_labels}-group-{gno:02d}"
+                    except Exception:
+                        cell_id = f"{custom_group_labels}-group-{gno}"
+            else:
+                cell_id = list(
+                    set(
+                        [
+                            "_".join(
+                                k.split("_")[key_index_bounds[0]:key_index_bounds[1]]
+                            )
+                            for k in keys_sub
+                        ]
+                    )
+                )[0]
+
             if mode == "collector":
                 try:
-                    s, cell_id = _make_average(
+                    s = _make_average(
                         frames_sub,
-                        keys_sub,
                         output_columns,
-                        key_index_bounds=key_index_bounds,
                     )
                 except ValueError as e:
                     print("could not make average!")
@@ -906,30 +938,33 @@ def concatenate_summaries(
                 used_names.append(name)
             keys = new_keys
 
-        if mode == "collector":
-            old_normalized_cycle_header = hdr_norm_cycle
-            cycle_header = "cycle"
-            normalized_cycle_header = "equivalent_cycle"
-            group_header = "group"
-            sub_group_header = "sub_group"
-            cell_header = "cell"
-            average_header_end = "_mean"
-            std_header_end = "_std"
+        old_normalized_cycle_header = hdr_norm_cycle
+        cycle_header = "cycle"
+        normalized_cycle_header = "equivalent_cycle"
+        group_header = "group"
+        sub_group_header = "sub_group"
+        cell_header = "cell"
+        average_header_end = "_mean"
+        std_header_end = "_std"
 
-            cdf = pd.concat(
-                frames, keys=keys, axis=0, names=[cell_header, cycle_header]
+        cdf = pd.concat(
+            frames, keys=keys, axis=0, names=[cell_header, cycle_header]
+        )
+        cdf = cdf.reset_index(drop=False)
+        id_vars = [cell_header, cycle_header]
+        if not group_it:
+            id_vars.extend([group_header, sub_group_header])
+        if normalize_cycles:
+            cdf = cdf.rename(
+                columns={old_normalized_cycle_header: normalized_cycle_header}
             )
-            cdf = cdf.reset_index(drop=False)
-            id_vars = [cell_header, cycle_header]
-            if not group_it:
-                id_vars.extend([group_header, sub_group_header])
-            if normalize_cycles:
-                cdf = cdf.rename(
-                    columns={old_normalized_cycle_header: normalized_cycle_header}
-                )
+        if mode == "collector":
             return cdf
 
         # if not using through collectors (i.e. using the old methodology instead):
+        warnings.warn(
+            "mode != collectors: This is the old way of doing things. Use the new way instead!"
+        )
         if melt:
             cdf = cdf.reset_index(drop=False).melt(
                 id_vars=hdr_summary.cycle_index, value_name="value"

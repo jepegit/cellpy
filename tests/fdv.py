@@ -39,6 +39,7 @@ batch_file_dir = os.path.join(data_dir, "batchfiles")
 log_dir = os.path.join(data_dir, "log")
 instrument_dir = os.path.join(data_dir, "instruments")
 template_dir = os.path.join(data_dir, "templates")
+examples_dir = os.path.join(data_dir, "examples")
 default_prm_file = os.path.abspath(os.path.join(data_dir, ".cellpy_prms_default.conf"))
 env_file = os.path.abspath(os.path.join(data_dir, ".env_cellpy_test"))
 
