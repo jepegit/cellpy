@@ -530,11 +530,13 @@ def build(
 
 
 @task
-def docs(c, _clean=False, _serve=True, browser=True):
+def docs(c, _clean=False, _api=True, _serve=True, browser=True):
     """Build and view docs"""
 
     if _clean:
         clean(c)
+    if _api:
+        c.run("sphinx-apidoc -f -o docs/source/ cellpy")
     print(" Building docs ".center(80, "-"))
     c.run("sphinx-build docs docs/_build")
 
