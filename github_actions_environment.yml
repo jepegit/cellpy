@@ -37,13 +37,6 @@ dependencies:
     - pytest-timeout
     - pytest-benchmark
     - dateparser
-    - nox
-    - sphinx
-    - nbsphinx
-    - plotly
-    - jupyterlab
-    - jupyter
-    -
     - pip:
         - sqlalchemy-access
 

@@ -22,7 +22,7 @@ jobs:
         with:
           auto-update-conda: true
           activate-environment: cellpy_dev
-          environment-file: dev_environment.yml
+          environment-file: github_actions_environment.yml
           python-version: ${{ matrix.python-version }}
 
       - name: Conda info

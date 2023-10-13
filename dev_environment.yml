@@ -38,7 +38,18 @@ dependencies:
     - pytest-benchmark
     - dateparser
     - nox
+    - black
+    - plotly
+    - holoviz
+    - jupyter
+    - jupyterlab
+    - ipywidgets
+    - seaborn
+    - sphinx
+    - nbsphinx
     - pip:
+        - bumpver
         - sqlalchemy-access
+        - pipdeptree
 
 
