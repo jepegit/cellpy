@@ -597,9 +597,18 @@ class Batch:
 
         if from_db:
             if auto_use_file_list:
+                warnings.warn("auto_use_file_list is True - this is an experimental feature")
                 if file_list_kwargs is None:
                     file_list_kwargs = {}
-                kwargs["file_list"] = filefinder.find_in_raw_file_directory(**file_list_kwargs)
+                try:
+                    kwargs["file_list"] = filefinder.find_in_raw_file_directory(**file_list_kwargs)
+                except Exception as e:
+                    logging.critical("You have set auto_use_file_list to True, but I could not create any file list.")
+                    logging.critical("I recommend that you set auto_use_file_list to False and try again.")
+                    logging.critical("This can be done by setting the correct parameters in "
+                                     "the prms-file or by providing the correct kwargs "
+                                     "(e.g. b.create_journal(auto_use_file_list=False)).")
+                    raise e
             self.experiment.journal.from_db(**kwargs)
             self.experiment.journal.to_file(
                 duplicate_to_local_folder=duplicate_to_local_folder
