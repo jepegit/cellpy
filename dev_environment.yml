@@ -1,60 +1,43 @@
 name: cellpy_dev
 channels:
-  - conda-forge
-  - defaults
+    - conda-forge
+    - defaults
 dependencies:
-  - python >=3.9
-  - pip
-  - numpy
-  - openpyxl
-  - xlrd
-  - matplotlib
-  - cryptography
-  - click
-  - scipy
-  - pandas >=1.4.0
-  - pytables >=3.5.1
-  - setuptools
-  - ruamel.yaml
-  - pyodbc
-  - coverage
-  - wheel
-  - flake8
-  - Sphinx
-  - PyGithub
-  - watchdog
-  - pytest
-  - black
-  - twine
-  - invoke
-  - conda-build
-  - ripgrep
-  - conda-verify
-  - anaconda-client
-  - lmfit
-  - cookiecutter
-  - tqdm
-  - pandoc
-  - ipykernel
-  - ipywidgets
-  - python-box
-  - pint >=0.20.1
-  - seaborn
-  - plotly
-  - sqlalchemy
-  - nbsphinx
-  - requests
-  - build
-  - python-dotenv
-  - nox
-  - rich
-  - coverage
-  - fabric
-  - sphinx-rtd-theme
-  - pytest-timeout
-  - pytest-benchmark
-  - dateparser
-  - pip:
-    - sqlalchemy-access
+    - python >=3.9
+    - pip
+    - numpy
+    - openpyxl
+    - xlrd
+    - matplotlib
+    - cryptography
+    - click
+    - scipy
+    - pandas >=1.5.0
+    - setuptools
+    - ruamel.yaml
+    - pyodbc
+    - PyGithub
+    - cookiecutter
+    - tqdm
+    - ipython
+    - ipywidgets
+    - lmfit
+    - ipykernel
+    - hdf5
+    - pytables >=3.6.1
+    - python-box
+    - pint
+    - sqlalchemy >=2.0.0
+    - python-dotenv
+    - fabric
+    - rich
+    - dateparser
+    - coverage
+    - pytest
+    - pytest-timeout
+    - pytest-benchmark
+    - dateparser
+    - pip:
+        - sqlalchemy-access
 
 
