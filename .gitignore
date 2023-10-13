@@ -115,3 +115,4 @@ settings.json
 /testdata/batch_project/data/raw/*.res
 /testdata/db/cellpy.db
 /testdata/db/excel.db
+/cellpy.svg

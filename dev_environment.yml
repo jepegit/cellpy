@@ -51,5 +51,6 @@ dependencies:
         - bumpver
         - sqlalchemy-access
         - pipdeptree
+        - pydeps
 
 
