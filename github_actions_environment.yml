@@ -23,7 +23,7 @@ dependencies:
     - lmfit
 #    - ipykernel
     - hdf5
-    - pytables >=3.6.1
+    - pytables
     - python-box
     - pint
     - sqlalchemy

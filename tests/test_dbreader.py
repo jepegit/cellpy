@@ -43,6 +43,7 @@ def clean_db_reader():  # remove this?
     return dbreader.Reader()
 
 
+@pytest.mark.skip(reason="experimental - only run locally")
 def test_convert_from_excel_to_sqlite(parameters):
     import cellpy.utils.batch_tools.sqlite_from_excel_db as sfe
     import cellpy.readers.sql_dbreader as sr
