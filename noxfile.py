@@ -24,5 +24,5 @@ def conda_tests(session):
     for package in conda:
         session.conda_install(package)
     for requirement in requirements:
-        session.install(requirement, "--no-deps")
+        session.install(requirement)
         session.run("pytest")
