@@ -8,19 +8,43 @@ from pprint import pprint
 import re
 import subprocess
 import sys
+import time
 from typing import Union
 import urllib
 from pathlib import Path
 
 import click
-import pkg_resources
-from github import Github
 
 import cellpy._version
 from cellpy.exceptions import ConfigFileNotWritten
 from cellpy.parameters import prmreader
 from cellpy.parameters.internal_settings import OTHERPATHS
 from cellpy.internals.core import OtherPath
+
+missing_modules = {}
+
+try:
+    import cookiecutter.exceptions
+    import cookiecutter.main
+    import cookiecutter.prompt
+
+except ModuleNotFoundError:
+    txt = (
+        "Could not import cookiecutter (used by cellpy new). Try installing it, for example by writing: "
+        "\npython -m pip install cookiecutter\n"
+    )
+    missing_modules["cookiecutter"] = txt
+
+try:
+    import github
+    from github import Github
+
+except ModuleNotFoundError:
+    txt = (
+        "Could not import the github library (used by cellpy pull). Try installing it, for example by writing:"
+        " \npython -m pip install github\n"
+    )
+    missing_modules["github"] = txt
 
 VERSION = cellpy._version.__version__
 REPO = "jepegit/cellpy"
@@ -37,8 +61,7 @@ def save_prm_file(prm_filename):
 
 def get_package_prm_dir():
     """gets the folder where the cellpy package lives"""
-    prm_dir = pkg_resources.resource_filename("cellpy", "parameters")
-    return pathlib.Path(prm_dir)
+    return pathlib.Path(cellpy.parameters.__file__).parent
 
 
 def get_default_config_file_path(init_filename=None):
@@ -56,8 +79,10 @@ def get_dst_file(user_dir, init_filename):
     return dst_file
 
 
-def check_if_needed_modules_exists():
-    pass
+def echo_missing_modules():
+    for m in missing_modules:
+        print(f"missing module: {m}")
+        print(f"message: {missing_modules[m]}")
 
 
 def modify_config_file():
@@ -1234,21 +1259,28 @@ def _download_g_blob(name, local_path):
     if not dirs.is_dir():
         click.echo(f"[cellpy] (pull) creating dir: {dirs}")
         dirs.mkdir(parents=True)
-
+    print(f"[cellpy] (pull) downloading blob: {name.download_url}")
     filename, headers = urllib.request.urlretrieve(
         name.download_url, filename=local_path
     )
     click.echo(f"[cellpy] (pull) downloaded blob: {filename}")
 
 
-def _parse_g_dir(repo, gdirpath):
-    """parses a repo directory two-levels deep"""
+def _parse_g_subdir(stuff, repo, gdirpath):
+    """recursive function for parsing repo subdirectories"""
     for f in repo.get_contents(gdirpath):
-        if f.type == "dir":
-            for sf in repo.get_contents(f.path):
-                yield sf
+        if f.type != "dir":
+            stuff.append(f)
         else:
-            yield f
+            _parse_g_subdir(stuff, repo, f.path)
+
+
+def _parse_g_dir(repo, gdirpath):
+    """yields content of repo directory"""
+    stuff = []
+    _parse_g_subdir(stuff, repo, gdirpath)
+    for f in stuff:
+        yield f
 
 
 def _get_user_name():
@@ -1288,7 +1320,18 @@ def _pull(gdirpath="examples", rootpath=None, u=None, pw=None):
                 u = None
 
     g = Github(u, pw)
-    repo = g.get_repo(REPO)
+    try:
+        repo = g.get_repo(REPO)
+    except github.RateLimitExceededException:
+        click.echo("   - rate limit exceeded")
+        click.echo("   - waiting 60 seconds, and trying only once more")
+        click.echo(
+            "   - hint! you can check status directly using the github api, e.g. "
+        )
+        click.echo("     $ curl -i https://api.github.com/users/USERNAME")
+        click.echo("   - press ctrl-c to abort")
+        time.sleep(60)
+        repo = g.get_repo(REPO)
 
     click.echo(f"[cellpy] (pull) pulling {gdirpath}")
     click.echo(f"[cellpy] (pull) -> {ndirpath}")
@@ -1300,8 +1343,14 @@ def _pull(gdirpath="examples", rootpath=None, u=None, pw=None):
     for gfile in _parse_g_dir(repo, gdirpath):
         gfilename = pathlib.Path(gfile.path)
         nfilename = rootpath / gfilename
-
-        _download_g_blob(gfile, nfilename)
+        try:
+            _download_g_blob(gfile, nfilename)
+        except github.RateLimitExceededException:
+            click.echo("   - rate limit exceeded")
+            click.echo("   - waiting 60 seconds, and trying only once more")
+            click.echo("   - press ctrl-c to abort")
+            time.sleep(60)
+            _download_g_blob(gfile, nfilename)
 
 
 def _get_default_template():
@@ -1423,6 +1472,16 @@ def _new(
 
     from cellpy.parameters import prms
 
+    try:
+        import cookiecutter.exceptions
+        import cookiecutter.main
+        import cookiecutter.prompt
+
+    except ModuleNotFoundError:
+        click.echo("Could not import cookiecutter.")
+        click.echo("Try installing it, for example by writing:")
+        click.echo("\npython -m pip install cookiecutter\n")
+
     if list_:
         click.echo(f"\n[cellpy] batch templates")
 
@@ -1454,16 +1513,6 @@ def _new(
         server = "lab"
     else:
         server = "notebook"
-
-    try:
-        import cookiecutter.exceptions
-        import cookiecutter.main
-        import cookiecutter.prompt
-
-    except ModuleNotFoundError:
-        click.echo("Could not import cookiecutter.")
-        click.echo("Try installing it, for example by writing:")
-        click.echo("\npip install cookiecutter\n")
 
     click.echo(f"Template: {template}")
     if local_user_template:
@@ -1555,10 +1604,11 @@ def _new(
         if not cookie_dir:
             cookie_dir = template.lower()
 
+        author_name = _get_author_name()
         cookiecutter.main.cookiecutter(
             selected_template,
             extra_context={
-                "author_name": os.getlogin(),
+                "author_name": author_name,
                 "project_name": project_dir,
                 "cellpy_version": cellpy_version,
                 "session_id": session_id,
@@ -1597,6 +1647,19 @@ def _new(
         our_new_project = selected_project_dir / our_new_projects[0]
 
         _run_project(our_new_project)
+
+
+def _get_author_name():
+    """Get the name of the author."""
+    try:
+        import getpass
+
+        author_name = getpass.getuser()
+    except Exception as e:
+        click.echo("Could not get the author name")
+        click.echo(e)
+        author_name = "unknown"
+    return author_name
 
 
 def _serve(server):
@@ -1725,11 +1788,17 @@ if __name__ == "__main__":
     u1 = os.getlogin()
     u2 = os.path.expanduser("~")
     u3 = os.environ.get("USERNAME")
+    u4 = _get_author_name()
+    u5 = _get_user_name()
 
     print(u1)
     print(u2)
     print(u3)
+    print(u4)
+    print(u5)
+    print(cellpy.parameters.__file__)
+    print(pathlib.Path(cellpy.parameters.__file__).parent)
     # check_it()
     # click.echo("\n\n", " RUNNING MAIN PULL ".center(80, "*"), "\n")
-    # _main_pull()
+    _main_pull()
     # click.echo("ok")
