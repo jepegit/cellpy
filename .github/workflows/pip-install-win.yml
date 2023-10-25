@@ -37,3 +37,6 @@ jobs:
     - name: Test with pytest
       run: |
         pytest tests/test_maccor.py
+    - name: Run cellpy setup
+      run: |
+        cellpy setup
