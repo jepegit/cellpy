@@ -48,14 +48,15 @@ requirements = [
     "PyGithub",
     "tqdm",
     "pint",
-    'pyodbc;platform_system=="windows"',
+    # 'pyodbc;platform_system=="windows"',
+    "pyodbc",
     "sqlalchemy>=2.0.0",
     'sqlalchemy-access;platform_system=="windows"',
     "python-dotenv",
     "fabric",
     "dateparser",
     "cookiecutter",
-    "jina2_time",
+    "jinja2_time",
     # 'tables', # depends on HDF5 that is not available by pip
 ]
 
