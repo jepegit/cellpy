@@ -154,10 +154,10 @@ def cli():
 @click.option(
     "--test_user", "-t", default=None, help="Fake name for fake user (for testing)"
 )
-@click.option(
-    "--silent", "-s", default=False, help="Silent mode (no questions asked)"
-)
-def setup(interactive, not_relative, dry_run, reset, root_dir, folder_name, test_user, silent):
+@click.option("--silent", "-s", is_flag=True, help="Silent mode (no questions asked)")
+def setup(
+    interactive, not_relative, dry_run, reset, root_dir, folder_name, test_user, silent
+):
     """This will help you to set up cellpy."""
 
     click.echo("[cellpy] (setup)")
@@ -208,6 +208,7 @@ def setup(interactive, not_relative, dry_run, reset, root_dir, folder_name, test
             default_dir=folder_name,
             dry_run=dry_run,
             reset=reset,
+            interactive=True
         )
         _write_config_file(user_dir, dst_file, init_filename, dry_run)
         _check(dry_run=dry_run)
@@ -220,7 +221,8 @@ def setup(interactive, not_relative, dry_run, reset, root_dir, folder_name, test
                 default_dir=folder_name,
                 dry_run=dry_run,
                 reset=True,
-                silent=True,
+                interactive=False,
+                silent=silent,
             )
         _write_config_file(user_dir, dst_file, init_filename, dry_run)
         _check(dry_run=dry_run)
@@ -233,6 +235,7 @@ def _update_paths(
     dry_run=False,
     default_dir=None,
     silent=False,
+    interactive=False,
 ):
     # please, refactor me :-(
 
@@ -244,7 +247,7 @@ def _update_paths(
     if dry_run:
         click.echo(f" - default_dir: {default_dir}")
         click.echo(f" - custom_dir: {custom_dir}")
-        click.echo(f" - retalive_home: {relative_home}")
+        click.echo(f" - relative_home: {relative_home}")
 
     if custom_dir:
         reset = True
@@ -292,7 +295,7 @@ def _update_paths(
     if dry_run:
         click.echo(f" - base (h): {h}")
 
-    if not silent:
+    if interactive:
         outdatadir = _ask_about_path(
             "where to output processed data and results", outdatadir
         )
