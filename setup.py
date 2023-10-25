@@ -56,8 +56,7 @@ requirements = [
     "dateparser",
     "cookiecutter",
     "jina2_time",
-    "tables",
-    # 'pytables', # not available by pip
+    # 'tables', # depends on HDF5 that is not available by pip
 ]
 
 test_requirements = [
