@@ -39,4 +39,4 @@ jobs:
         pytest tests/test_maccor.py
     - name: Run cellpy setup
       run: |
-        cellpy setup
+        cellpy setup --silent

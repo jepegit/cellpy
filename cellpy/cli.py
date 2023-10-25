@@ -154,7 +154,10 @@ def cli():
 @click.option(
     "--test_user", "-t", default=None, help="Fake name for fake user (for testing)"
 )
-def setup(interactive, not_relative, dry_run, reset, root_dir, folder_name, test_user):
+@click.option(
+    "--silent", "-s", default=False, help="Silent mode (no questions asked)"
+)
+def setup(interactive, not_relative, dry_run, reset, root_dir, folder_name, test_user, silent):
     """This will help you to set up cellpy."""
 
     click.echo("[cellpy] (setup)")
@@ -322,7 +325,7 @@ def _update_paths(
         instrumentdir,
     ]:
         if not dry_run:
-            _create_dir(d)
+            _create_dir(d, confirm=not silent)
         else:
             click.echo(f"dry run (so I did not create {d})")
 
