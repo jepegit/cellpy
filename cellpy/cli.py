@@ -208,7 +208,7 @@ def setup(
             default_dir=folder_name,
             dry_run=dry_run,
             reset=reset,
-            interactive=True
+            interactive=True,
         )
         _write_config_file(user_dir, dst_file, init_filename, dry_run)
         _check(dry_run=dry_run)
