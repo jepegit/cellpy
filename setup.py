@@ -54,6 +54,9 @@ requirements = [
     "python-dotenv",
     "fabric",
     "dateparser",
+    "cookiecutter",
+    "jina2_time",
+    "tables",
     # 'pytables', # not available by pip
 ]
 
