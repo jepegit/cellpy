@@ -275,8 +275,6 @@ def jupyterlab(c):
 
 @task
 def dependson(c):
-    import pip
-
     print("parsing dependencies")
     print("using 'github_actions_environment.yml' as source of truth")
     truth_file = Path(".").resolve() / "github_actions_environment.yml"
@@ -290,14 +288,22 @@ def dependson(c):
     result = c.run("conda list", hide=True)
     out = result.stdout
     lines = out.split("\n")
+    lines = lines[3:]
+    lines = sorted(lines)
     packages = {}
     print()
     print("  result ".center(80, "-"))
     print()
     print("  dependencies:")
-    for line in lines[2:-1]:
-        name, version, *other = line.split()
-        packages[name] = version
+
+    for line in lines:
+        if line:
+            try:
+                name, version, *other = line.split()
+            except Exception:
+                version = None
+                name = line.split()[0]
+            packages[name] = version
 
     for dep in conda_deps:
         version = packages.get(dep)
