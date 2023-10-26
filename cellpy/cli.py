@@ -71,6 +71,18 @@ except ModuleNotFoundError:
     )
     DIFFICULT_MISSING_MODULES["lmfit"] = txt
 
+
+try:
+    import jinja2_time
+
+except ModuleNotFoundError:
+    txt = (
+        "Could not import the jinja2_time library (used by cellpy new)."
+        "Try installing it, for example by writing:"
+        " \npython -m pip install jinja2_time\n"
+    )
+    DIFFICULT_MISSING_MODULES["jinja2_time"] = txt
+
 VERSION = cellpy._version.__version__
 REPO = "jepegit/cellpy"
 USER = "jepegit"
