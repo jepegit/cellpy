@@ -318,7 +318,7 @@ def dependson(c):
         for d in dep.get("pip"):
             version = packages.get(d)
             if version:
-                print(f"      - {d}> ={version}")
+                print(f"      - {d} >={version}")
             else:
                 print(f"      - {d}")
     print("OK")
