@@ -55,6 +55,10 @@ class LabJournal(BaseJournal, ABC):
         """
 
         super().__init__()
+        self.db_reader = None
+        self.engine = None
+        self.batch_col = None
+
         if db_reader is None:
             return
 

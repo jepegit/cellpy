@@ -502,9 +502,14 @@ class Batch:
         # except shutil.SameFileError:
         #     logging.debug("same file exception encountered")
 
-    def create_journal(self, description=None, from_db=True, auto_use_file_list=None,
-                       file_list_kwargs=None, **kwargs):
-
+    def create_journal(
+        self,
+        description=None,
+        from_db=True,
+        auto_use_file_list=None,
+        file_list_kwargs=None,
+        **kwargs,
+    ):
         """Create journal pages.
 
             This method is a wrapper for the different Journal methods for making
@@ -597,17 +602,27 @@ class Batch:
 
         if from_db:
             if auto_use_file_list:
-                warnings.warn("auto_use_file_list is True - this is an experimental feature")
+                warnings.warn(
+                    "auto_use_file_list is True - this is an experimental feature"
+                )
                 if file_list_kwargs is None:
                     file_list_kwargs = {}
                 try:
-                    kwargs["file_list"] = filefinder.find_in_raw_file_directory(**file_list_kwargs)
+                    kwargs["file_list"] = filefinder.find_in_raw_file_directory(
+                        **file_list_kwargs
+                    )
                 except Exception as e:
-                    logging.critical("You have set auto_use_file_list to True, but I could not create any file list.")
-                    logging.critical("I recommend that you set auto_use_file_list to False and try again.")
-                    logging.critical("This can be done by setting the correct parameters in "
-                                     "the prms-file or by providing the correct kwargs "
-                                     "(e.g. b.create_journal(auto_use_file_list=False)).")
+                    logging.critical(
+                        "You have set auto_use_file_list to True, but I could not create any file list."
+                    )
+                    logging.critical(
+                        "I recommend that you set auto_use_file_list to False and try again."
+                    )
+                    logging.critical(
+                        "This can be done by setting the correct parameters in "
+                        "the prms-file or by providing the correct kwargs "
+                        "(e.g. b.create_journal(auto_use_file_list=False))."
+                    )
                     raise e
             self.experiment.journal.from_db(**kwargs)
             self.experiment.journal.to_file(
@@ -958,10 +973,12 @@ class Batch:
         self.plotter.do(**kwargs)
 
 
-def init(*args, **kwargs) -> Batch:
+def init(*args, empty=False, **kwargs) -> Batch:
     """Returns an initialized instance of the Batch class.
 
     Args:
+        empty (bool): if True, the batch will not be linked to any database and
+            an empty batch is returned
         *args: passed directly to Batch()
             **name**: name of batch;
             **project**: name of project;
@@ -981,11 +998,16 @@ def init(*args, **kwargs) -> Batch:
     # set up cellpy logger
     default_log_level = kwargs.pop("default_log_level", None)
     testing = kwargs.pop("testing", False)
-    file_name = kwargs.pop("file_name", None)
-    frame = kwargs.pop("frame", None)
+
     log.setup_logging(
         default_level=default_log_level, testing=testing, reset_big_log=True
     )
+    if empty:
+        logging.debug("returning naked Batch")
+        return naked(*args, **kwargs)
+
+    file_name = kwargs.pop("file_name", None)
+    frame = kwargs.pop("frame", None)
 
     logging.debug(f"returning Batch(kwargs: {kwargs})")
     if file_name is not None:
@@ -996,6 +1018,22 @@ def init(*args, **kwargs) -> Batch:
         return Batch(*args, file_name=None, db_reader=None, frame=frame, **kwargs)
 
     return Batch(*args, **kwargs)
+
+
+def naked(name=None, project=None) -> Batch:
+    """Returns an empty instance of the Batch class.
+
+    Examples:
+        >>> empty_batch = naked()
+    """
+    b = Batch(db_reader=None)
+    b.pages = b.experiment.journal.create_empty_pages()
+    if name is not None:
+        b.experiment.journal.name = name
+    if project is not None:
+        b.experiment.journal.project = project
+
+    return b
 
 
 def from_journal(journal_file, autolink=True, testing=False) -> Batch:
