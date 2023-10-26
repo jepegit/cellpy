@@ -308,7 +308,7 @@ def dependson(c):
     for dep in conda_deps:
         version = packages.get(dep)
         if version:
-            print(f"    - {dep}>={version}")
+            print(f"    - {dep} >={version}")
         else:
             print(f"    - {dep}")
     if pip_deps:
@@ -318,7 +318,7 @@ def dependson(c):
         for d in dep.get("pip"):
             version = packages.get(d)
             if version:
-                print(f"      - {d}>={version}")
+                print(f"      - {d}> ={version}")
             else:
                 print(f"      - {d}")
     print("OK")
