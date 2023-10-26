@@ -11,6 +11,7 @@ from dotenv import load_dotenv
 
 import requests
 from invoke import task
+from ruamel_yaml import YAML
 
 load_dotenv()
 
@@ -273,6 +274,51 @@ def jupyterlab(c):
 
 
 @task
+def dependson(c):
+    import pip
+
+    print("parsing dependencies")
+    print("using 'github_actions_environment.yml' as source of truth")
+    truth_file = Path(".").resolve() / "github_actions_environment.yml"
+    yaml = YAML()
+    truth = yaml.load(truth_file)
+    deps = truth.get("dependencies")
+
+    conda_deps = sorted([dep for dep in deps if isinstance(dep, str)])
+    pip_deps = [dep for dep in deps if not isinstance(dep, str)]
+    # result = c.run("pip list", hide=True)
+    result = c.run("conda list", hide=True)
+    out = result.stdout
+    lines = out.split("\n")
+    packages = {}
+    print()
+    print("  result ".center(80, "-"))
+    print()
+    print("  dependencies:")
+    for line in lines[2:-1]:
+        name, version, *other = line.split()
+        packages[name] = version
+
+    for dep in conda_deps:
+        version = packages.get(dep)
+        if version:
+            print(f"    - {dep}>={version}")
+        else:
+            print(f"    - {dep}")
+    if pip_deps:
+        print(f"    - pip:")
+        pip_deps = sorted(pip_deps, key=lambda x: x.get("pip"))
+    for dep in pip_deps:
+        for d in dep.get("pip"):
+            version = packages.get(d)
+            if version:
+                print(f"      - {d}>={version}")
+            else:
+                print(f"      - {d}")
+    print("OK")
+
+
+@task
 def man(c):
     print("-----")
     print("CONDA")
@@ -406,6 +452,7 @@ def create_commit_message_from_output(output, regexp):
 def updater(c, config=True):
     """Update parameters for the parameter files"""
     from cellpy import prms, prmreader
+
     if config:
         config_file = Path("cellpy/parameters/.cellpy_prms_default.conf")
         prmreader._read_prm_file(config_file, resolve_paths=False)

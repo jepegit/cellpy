@@ -21,7 +21,7 @@ from cellpy.parameters import prmreader
 from cellpy.parameters.internal_settings import OTHERPATHS
 from cellpy.internals.core import OtherPath
 
-missing_modules = {}
+DIFFICULT_MISSING_MODULES = {}
 
 try:
     import cookiecutter.exceptions
@@ -30,10 +30,10 @@ try:
 
 except ModuleNotFoundError:
     txt = (
-        "Could not import cookiecutter (used by cellpy new). Try installing it, for example by writing: "
+        "Could not import cookiecutter (used by cellpy new). Try installing it, for example by writing:"
         "\npython -m pip install cookiecutter\n"
     )
-    missing_modules["cookiecutter"] = txt
+    DIFFICULT_MISSING_MODULES["cookiecutter"] = txt
 
 try:
     import github
@@ -44,7 +44,32 @@ except ModuleNotFoundError:
         "Could not import the github library (used by cellpy pull). Try installing it, for example by writing:"
         " \npython -m pip install github\n"
     )
-    missing_modules["github"] = txt
+    DIFFICULT_MISSING_MODULES["github"] = txt
+
+
+try:
+    import sqlalchemy_access
+
+except ModuleNotFoundError:
+    txt = (
+        "Could not import the sqlalchemy_access library (usually used by when reading arbin .res files "
+        "on windows)."
+        "If you need it, try installing it by writing:"
+        " \npython -m pip install sqlalchemy-access\n"
+    )
+    DIFFICULT_MISSING_MODULES["sqlalchemy-access"] = txt
+
+
+try:
+    import lmfit
+
+except ModuleNotFoundError:
+    txt = (
+        "Could not import the lmfit library (used when fitting ocv rlx data)."
+        "If you think you will need it, try installing it for example by writing:"
+        " \npython -m pip install sqlalchemy-access\n"
+    )
+    DIFFICULT_MISSING_MODULES["lmfit"] = txt
 
 VERSION = cellpy._version.__version__
 REPO = "jepegit/cellpy"
@@ -80,9 +105,9 @@ def get_dst_file(user_dir, init_filename):
 
 
 def echo_missing_modules():
-    for m in missing_modules:
+    for m in DIFFICULT_MISSING_MODULES:
         print(f"missing module: {m}")
-        print(f"message: {missing_modules[m]}")
+        print(f"message: {DIFFICULT_MISSING_MODULES[m]}")
 
 
 def modify_config_file():
@@ -155,13 +180,38 @@ def cli():
     "--test_user", "-t", default=None, help="Fake name for fake user (for testing)"
 )
 @click.option("--silent", "-s", is_flag=True, help="Silent mode (no questions asked)")
+@click.option(
+    "--no-deps", "-n", is_flag=True, help="Don't install missing dependencies"
+)
 def setup(
-    interactive, not_relative, dry_run, reset, root_dir, folder_name, test_user, silent
+    interactive,
+    not_relative,
+    dry_run,
+    reset,
+    root_dir,
+    folder_name,
+    test_user,
+    silent,
+    no_deps,
 ):
     """This will help you to set up cellpy."""
 
     click.echo("[cellpy] (setup)")
     click.echo(f"[cellpy] root-dir: {root_dir}")
+
+    # notify of missing 'difficult' or optional modules
+    if not no_deps:
+        click.echo("[cellpy] checking dependencies")
+        for m in DIFFICULT_MISSING_MODULES:
+            click.echo(f"*** [cellpy] WARNING! ***")
+            click.echo(f"-------------------------")
+            click.echo("[cellpy] missing dependencies:")
+            click.echo(f"[cellpy] - {m}")
+            click.echo(f"[cellpy] {DIFFICULT_MISSING_MODULES[m]}")
+            click.echo(
+                "[cellpy] (you can skip this check by using the --no-deps option)"
+            )
+            click.echo(f"-------------------------")
 
     # generate variables
     init_filename = prmreader.create_custom_init_filename()
