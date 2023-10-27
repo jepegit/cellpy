@@ -500,6 +500,7 @@ def bump(c, bumper=None):
     Examples:
         >>> invoke bump --bumper nano # increment from e.g. 0.4.2b2 to 0.4.2b3
         >>> invoke bump --bumper final # increment from e.g. 0.4.2b2 to 0.4.2
+        >>> invoke bump --bumper v.1.1.1a # set v.1.1.1a as version (must start with v. and be bigger than current version)
 
 
     """
