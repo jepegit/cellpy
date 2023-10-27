@@ -491,8 +491,9 @@ def bump(c, bumper=None):
         rc: tag rc
         post: tag post
         keep: don't change it
+        v.x.x.xz: set version to x.x.xz (e.g. v.0.5.2a)
 
-    Typically, you would use 'nano' until you are satisfied with your packaage, and then
+    Typically, you would use 'nano' until you are satisfied with your package, and then
     use a 'final'. And then start again with new features by first using an 'alpha' then
     start all over with 'nano'.
 
