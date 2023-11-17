@@ -3,6 +3,12 @@ History
 =======
 
 
+1.0.1 (under development)
+=========================
+
+* Batch: `naked` and `init(empty=True)` easier method for creating batch with empty pages
+
+
 1.0.0 (2023)
 ============
 
