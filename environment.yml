@@ -1,14 +1,12 @@
 name: cellpy
 channels:
     - conda-forge
-    - pyviz
 dependencies:
-    - python >=3.9
+    - python=3.11
     - pip
     - numpy
     - openpyxl
     - xlrd
-    - matplotlib
     - cryptography
     - click
     - scipy
@@ -19,23 +17,21 @@ dependencies:
     - PyGithub
     - cookiecutter
     - tqdm
-    - ipython
-    - ipywidgets
-    - lmfit
-    - ipykernel
-    - holoviz
+    - dateparser
     - hdf5
     - pytables
     - python-box
-    - jupyter
-    - jupyterlab
     - pint
-    - plotly
     - sqlalchemy
     - python-dotenv
     - fabric
+    - lmfit
+    - matplotlib
+    - plotly
+    - ipython
+    - ipywidgets
+    - ipykernel
     - rich
-    - dateparser
     - pip:
         - sqlalchemy-access
 
