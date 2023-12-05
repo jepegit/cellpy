@@ -2727,6 +2727,10 @@ class CellpyCell:
         # TODO: make sure that all columns are numeric
 
         gf = df.groupby(by=by)
+
+        # TODO: FutureWarning: The provided callable <function mean at 0x000002BD4D332840>
+        #  is currently using SeriesGroupBy.mean. In a future version of pandas, the provided
+        #  callable will be used directly. To keep current behavior pass the string "mean" instead.
         df_steps = gf.agg(
             [np.mean, np.std, np.amin, np.amax, first, last, delta]
         ).rename(columns={"amin": "min", "amax": "max", "mean": "avr"})
@@ -2831,6 +2835,10 @@ class CellpyCell:
             # TODO: make an option for only checking unique steps
             #     e.g.
             #     df_x = df_steps.where.steps.are.unique
+
+            # TODO: FutureWarning: Setting an item of incompatible dtype is deprecated and will raise in a future error
+            #  of pandas. Value 'rest' has dtype incompatible with float64, please explicitly cast to a
+            #  compatible dtype first.
 
             df_steps.loc[
                 mask_no_current_hard & mask_voltage_stable, (shdr.type, slice(None))
