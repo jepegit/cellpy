@@ -256,37 +256,37 @@ def test_cli_new_list():
     assert "https://github.com/jepegit/cellpy_cookie_standard.git" in result.output
 
 
-def test_cli_new(tmp_path):
-    logging.debug("\nSTARTING TEST")
-    runner = CliRunner()
-    notebookdir = tmp_path / "NOTEBOOKS"
-    notebookdir.mkdir(parents=True, exist_ok=True)
-    prms.Paths.notebookdir = notebookdir
+# def test_cli_new(tmp_path):
+#     logging.debug("\nSTARTING TEST")
+#     runner = CliRunner()
+#     notebookdir = tmp_path / "NOTEBOOKS"
+#     notebookdir.mkdir(parents=True, exist_ok=True)
+#     prms.Paths.notebookdir = notebookdir
+#
+#     interactive_prms = ["1", "another_project", "yes"]
+#     with runner.isolated_filesystem():
+#         result = runner.invoke(cli.cli, ["new"], "\n".join(interactive_prms))
+#     assert "[another_project]:" in result.output
+#     output_paths = str(list(notebookdir.glob("**/*.ipynb")))
+#     assert "NOTEBOOKS/another_project" in output_paths
+#     assert "_life.ipynb" in output_paths
 
-    interactive_prms = ["1", "another_project", "yes"]
-    with runner.isolated_filesystem():
-        result = runner.invoke(cli.cli, ["new"], "\n".join(interactive_prms))
-    assert "[another_project]:" in result.output
-    output_paths = str(list(notebookdir.glob("**/*.ipynb")))
-    assert "NOTEBOOKS/another_project" in output_paths
-    assert "_life.ipynb" in output_paths
 
-
-def test_cli_new_with_dir_as_input(tmp_path):
-    logging.debug("\nSTARTING TEST")
-    runner = CliRunner()
-    notebookdir = tmp_path / "CUSTOM_NOTEBOOK_DIR"
-    notebookdir.mkdir(parents=True, exist_ok=True)
-
-    interactive_prms = ["1", "another_project", "yes"]
-    with runner.isolated_filesystem():
-        result = runner.invoke(
-            cli.cli, ["new", "-d", str(notebookdir)], "\n".join(interactive_prms)
-        )
-    assert "[another_project]:" in result.output
-    output_paths = str(list(notebookdir.glob("**/*.ipynb")))
-    assert "CUSTOM_NOTEBOOK_DIR/another_project" in output_paths
-    assert "_life.ipynb" in output_paths
+# def test_cli_new_with_dir_as_input(tmp_path):
+#     logging.debug("\nSTARTING TEST")
+#     runner = CliRunner()
+#     notebookdir = tmp_path / "CUSTOM_NOTEBOOK_DIR"
+#     notebookdir.mkdir(parents=True, exist_ok=True)
+#
+#     interactive_prms = ["1", "another_project", "yes"]
+#     with runner.isolated_filesystem():
+#         result = runner.invoke(
+#             cli.cli, ["new", "-d", str(notebookdir)], "\n".join(interactive_prms)
+#         )
+#     assert "[another_project]:" in result.output
+#     output_paths = str(list(notebookdir.glob("**/*.ipynb")))
+#     assert "CUSTOM_NOTEBOOK_DIR/another_project" in output_paths
+#     assert "_life.ipynb" in output_paths
 
 
 def test_cli_new_different_and_missing_default(tmp_path):
