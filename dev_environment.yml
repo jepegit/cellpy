@@ -47,3 +47,4 @@ dependencies:
     - sphinx-rtd-theme
     - build
     - python-dotenv
+    - jinja2_time
