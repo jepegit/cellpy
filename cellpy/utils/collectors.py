@@ -874,9 +874,12 @@ class BatchCyclesCollector(BatchCollector):
             plotter_arguments (dict) - arguments transferred to the plotter
 
         Elevated data collector args:
-            cycles (int): drop all cycles above this value.
-            max_cycle (float): filter on rate (C-rate)
-            label_mapper (str or list of str): only select cycles if based on the rate of this step-type (e.g. on="charge").
+            cycles (list): select these cycles.
+            max_cycle (int): drop all cycles above this value.
+            label_mapper (callable or dict): function (or dict) that changes the cell names.
+                The dictionary must have the cell labels as given in the `journal.pages` index and new label as values.
+                Similarly, if it is a function it takes the cell label as input and returns the new label.
+                Remark! No check are performed to ensure that the new cell labels are unique.
 
         Elevated plotter args:
             backend (str): backend used (defaults to Bokeh)

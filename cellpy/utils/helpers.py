@@ -675,6 +675,22 @@ def yank_outliers(
         return removed_cycles
 
 
+def filter_cells():
+    """Filter cells based on some criteria.
+
+    This is a helper function that can be used to filter cells based on
+    some criteria. It is not very flexible, but it is easy to use.
+
+    Returns:
+        a list of cell names that passed the criteria.
+    """
+
+    # TODO: refactor concatenate_summaries to use this function, then
+    #  allow collectors to use it as well.
+
+    pass
+
+
 def concatenate_summaries(
     b: Batch,
     max_cycle=None,
@@ -729,12 +745,26 @@ def concatenate_summaries(
             "This helper function will be removed shortly", category=DeprecationWarning
         )
 
+    if key_index_bounds is None:
+        key_index_bounds = [1, -2]
+
+    cell_names_nest = []
+    group_nest = []
+
+    if group_it:
+        g = b.pages.groupby("group")
+        # this ensures that order is kept and grouping is correct
+        # it is therefore ok to assume from now on that all the cells within a list belongs to the same group
+        for gno, b_sub in g:
+            cell_names_nest.append(list(b_sub.index))
+            group_nest.append(gno)
+    else:
+        cell_names_nest.append(list(b.experiment.cell_names))
+        group_nest.append(b.pages.group.to_list())
+
     default_columns = [hdr_summary["charge_capacity_gravimetric"]]
     reserved_cell_label_names = ["FC"]
     hdr_norm_cycle = hdr_summary["normalized_cycle_index"]
-
-    if key_index_bounds is None:
-        key_index_bounds = [1, -2]
 
     if columns is None:
         columns = []
@@ -754,8 +784,6 @@ def concatenate_summaries(
     if not columns:
         columns = default_columns
 
-    cell_names_nest = []
-    group_nest = []
     output_columns = columns.copy()
     frames = []
     keys = []
@@ -779,17 +807,6 @@ def concatenate_summaries(
             ]
         ]
         output_columns.extend(normalize_capacity_headers)
-
-    if group_it:
-        g = b.pages.groupby("group")
-        # this ensures that order is kept and grouping is correct
-        # it is therefore ok to assume from now on that all the cells within a list belongs to the same group
-        for gno, b_sub in g:
-            cell_names_nest.append(list(b_sub.index))
-            group_nest.append(gno)
-    else:
-        cell_names_nest.append(list(b.experiment.cell_names))
-        group_nest.append(b.pages.group.to_list())
 
     for gno, cell_names in zip(group_nest, cell_names_nest):
         frames_sub = []
