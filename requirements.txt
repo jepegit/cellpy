@@ -21,3 +21,4 @@ pint
 python-dotenv
 fabric
 dateparser
+ipykernel

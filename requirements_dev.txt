@@ -42,3 +42,4 @@ rich
 pandoc
 bumpver
 dateparser
+ipykernel

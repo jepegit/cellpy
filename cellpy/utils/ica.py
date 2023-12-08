@@ -12,7 +12,6 @@ from scipy.interpolate import interp1d
 from scipy.signal import savgol_filter
 from scipy.integrate import simps
 from scipy.ndimage.filters import gaussian_filter1d
-import pandas as pd
 
 from cellpy.exceptions import NullData
 from cellpy.readers.core import collect_capacity_curves
@@ -364,7 +363,12 @@ class Converter:
         if self.post_smoothing:
             logging.debug(" - post smoothing (gaussian)")
             logging.debug(f"    * using voltage fwhm: {self.voltage_fwhm}")
-            points_fwhm = int(self.voltage_fwhm / voltage_step)
+
+            # suggested change by Vajee:
+            if voltage_step != 0 and not np.isinf(self.voltage_fwhm):
+                points_fwhm = int(self.voltage_fwhm / voltage_step)
+            else:
+                points_fwhm = 0
 
             sigma = np.amax([1, points_fwhm / 2])
 
@@ -379,6 +383,11 @@ class Converter:
 
         if self.normalize:
             logging.debug(" - normalizing")
+            if len(voltage) == 0:
+                raise NullData("voltage is empty")
+            if len(incremental_capacity) == 0:
+                raise NullData("incremental_capacity is empty")
+
             area = simps(incremental_capacity, voltage)
             incremental_capacity = (
                 incremental_capacity * self.normalizing_factor / abs(area)
@@ -497,7 +506,13 @@ def dqdv_cycle(cycle, splitter=True, label_direction=False, **kwargs):
     converter.inspect_data()
     converter.pre_process_data()
     converter.increment_data()
-    converter.post_process_data()
+    try:
+        converter.post_process_data()
+    except ValueError:
+        logging.debug("ValueError - trying again with different settings")
+        converter.post_smoothing = False
+        print(converter)
+        converter.post_process_data()
     voltage_last = converter.voltage_processed[::-1]
     incremental_capacity_last = converter.incremental_capacity[::-1]
 
@@ -587,26 +602,29 @@ def dqdv_cycles(cycles, not_merged=False, label_direction=False, **kwargs):
     keys = list()
     for cycle_number, cycle in cycle_group:
         cycle = cycle.dropna()
-        if label_direction:
-            v, dq, direction = dqdv_cycle(
-                cycle, splitter=True, label_direction=True, **kwargs
-            )
-            _d = {"voltage": v, "dq": dq, "direction": direction}
-            _cols = ["voltage", "dq", "direction"]
-        else:
-            v, dq = dqdv_cycle(cycle, splitter=True, label_direction=False, **kwargs)
-            _d = {"voltage": v, "dq": dq}
-            _cols = ["voltage", "dq"]
+        try:
+            if label_direction:
+                v, dq, direction = dqdv_cycle(
+                    cycle, splitter=True, label_direction=True, **kwargs
+                )
+                _d = {"voltage": v, "dq": dq, "direction": direction}
+                _cols = ["voltage", "dq", "direction"]
+            else:
+                v, dq = dqdv_cycle(cycle, splitter=True, label_direction=False, **kwargs)
+                _d = {"voltage": v, "dq": dq}
+                _cols = ["voltage", "dq"]
 
-        _ica_df = pd.DataFrame(_d)
-        if not not_merged:
-            _cols.insert(0, "cycle")
-            _ica_df["cycle"] = cycle_number
-            _ica_df = _ica_df[_cols]
-        else:
-            keys.append(cycle_number)
-            _ica_df = _ica_df[_cols]
-        ica_dfs.append(_ica_df)
+            _ica_df = pd.DataFrame(_d)
+            if not not_merged:
+                _cols.insert(0, "cycle")
+                _ica_df["cycle"] = cycle_number
+                _ica_df = _ica_df[_cols]
+            else:
+                keys.append(cycle_number)
+                _ica_df = _ica_df[_cols]
+            ica_dfs.append(_ica_df)
+        except NullData:
+            logging.debug(f"Could not calculate data for cycle {cycle_number}")
 
     if not_merged:
         return keys, ica_dfs

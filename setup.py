@@ -58,6 +58,7 @@ requirements = [
     "cookiecutter",
     "jinja2_time",
     "tables",  # depends on HDF5 that is not available by pip
+    "ipykernel",
 ]
 
 test_requirements = [
