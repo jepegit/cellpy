@@ -5,6 +5,7 @@ import glob
 import logging
 import os
 import pathlib
+import sys
 import time
 from typing import Optional, Union, List, Tuple
 import warnings
@@ -91,18 +92,28 @@ def find_in_raw_file_directory(
             glob_txt = f"{glob_txt}{extension}"
         else:
             glob_txt = f"{glob_txt}.{extension}"
+
+    platform = sys.platform
     logging.info(f"Searching for files matching: {glob_txt}")
     for d in raw_file_dir:
         connect_kwargs, host = d.connection_info()
-        with fabric.Connection(host, connect_kwargs=connect_kwargs) as conn:
-            out = conn.run(f'find -L {d.raw_path} -name "{glob_txt}"', hide="both", warn=True)
-        if out.return_code != 0:
-            warnings.warn(f"Could not find any files in {d.raw_path} -> {out.stderr}")
-            warnings.warn(f"Most likely the OS does not have the 'find' command")
-            continue
-        _file_list = out.stdout.splitlines()
+        if not host and platform == "win32":
+            logging.info("Windows platform detected - assuming 'find' is not available")
+            _file_list = glob.glob(f"{d.raw_path}/**/{glob_txt}", recursive=True)
+            f = _file_list[0]
+        else:
+            with fabric.Connection(host, connect_kwargs=connect_kwargs) as conn:
+                out = conn.run(f'find -L {d.raw_path} -name "{glob_txt}"', hide="both", warn=True)
+            if out.return_code != 0:
+                logging.critical(f"Searching in: {d}")
+                warnings.warn(f"Could not find any files in {d.raw_path} -> {out.stderr}")
+                warnings.warn(f"Most likely the OS does not have the 'find' command")
+                continue
+            _file_list = out.stdout.splitlines()
         file_list += list(map(lambda x: f"{d.uri_prefix}{host}"+x, _file_list))
     number_of_files = len(file_list)
+    if number_of_files == 0:
+        logging.critical("No files found")
     logging.info(f"Found {number_of_files} files")
     return file_list
 

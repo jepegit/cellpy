@@ -937,6 +937,38 @@ class Batch:
         else:
             self.summary_collector.do(**kwargs)
 
+    def plot(self, output_filename=None, backend=None, reload_data=False, **kwargs):
+        """Plot the summaries (new version)"""
+
+        if reload_data or ("summary_engine" not in self.experiment.memory_dumped):
+            logging.debug("running summary_collector")
+            self.summary_collector.do(reset=True)
+
+        if backend is None:
+            backend = prms.Batch.backend
+
+        if backend in ["bokeh", "matplotlib", "plotly"]:
+            prms.Batch.backend = backend
+
+        if backend == "bokeh":
+            print("...Using old plotter - this will soon change")
+            self.plot_summaries(
+                output_filename=output_filename,
+                backend="bokeh",
+                reload_data=reload_data,
+                **kwargs)
+
+        if backend == "matplotlib":
+            print("...Using old plotter - this will soon change")
+            self.plot_summaries(
+                output_filename=output_filename,
+                backend="matplotlib",
+                reload_data=reload_data,
+                **kwargs)
+
+        else:
+            print(f"backend {backend} not supported yet")
+
     def plot_summaries(
         self, output_filename=None, backend=None, reload_data=False, **kwargs
     ) -> None:
