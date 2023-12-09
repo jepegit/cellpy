@@ -289,9 +289,13 @@ class DataLoader(BaseLoader):
             print(f"bin_str: {bin_str}")
             print([int(x) for x in bin_str])
             print(self.mpr_data["flags"])
-            stuff = np.array(self.mpr_data["flags"] & mask, dtype=dtype)  # need to fix this!
+            stuff = np.array(
+                self.mpr_data["flags"] & mask, dtype=dtype
+            )  # need to fix this!
             print(f"stuff: {stuff}")
-            return np.array(self.mpr_data["flags"] & mask, dtype=dtype)  # need to fix this!
+            return np.array(
+                self.mpr_data["flags"] & mask, dtype=dtype
+            )  # need to fix this!
         # elif flag_name in self.flags2_dict:
         #     mask, dtype = self.flags2_dict[flag_name]
         #     return np.array(self.mpr_data['flags2'] & mask, dtype=dtype)
@@ -367,7 +371,7 @@ class DataLoader(BaseLoader):
                 data_module["data"][5:], dtype="<u2", count=n_columns
             )
             main_data = data_module["data"][405:]
-            remaining_headers = data_module["data"][5 + 2 * n_columns: 405]
+            remaining_headers = data_module["data"][5 + 2 * n_columns : 405]
 
         else:
             raise IOError("Unrecognised version for data module: %d" % data_version)

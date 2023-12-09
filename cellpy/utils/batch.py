@@ -956,7 +956,8 @@ class Batch:
                 output_filename=output_filename,
                 backend="bokeh",
                 reload_data=reload_data,
-                **kwargs)
+                **kwargs,
+            )
 
         if backend == "matplotlib":
             print("...Using old plotter - this will soon change")
@@ -964,7 +965,8 @@ class Batch:
                 output_filename=output_filename,
                 backend="matplotlib",
                 reload_data=reload_data,
-                **kwargs)
+                **kwargs,
+            )
 
         else:
             print(f"backend {backend} not supported yet")

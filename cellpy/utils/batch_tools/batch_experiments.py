@@ -213,7 +213,6 @@ class CyclingExperiment(BaseExperiment):
             >>> b.update(cell_specs=cell_specs_cell_01)
 
         """
-
         # TODO: implement experiment.last_cycle
         accept_errors = accept_errors or self.accept_errors
 
@@ -341,7 +340,7 @@ class CyclingExperiment(BaseExperiment):
                     cellpy_file=_cellpy_file,
                     cycle_mode=cycle_mode,
                     mass=mass,
-                    nom_cap=nom_cap,
+                    nominal_capacity=nom_cap,
                     loading=loading,
                     area=area,
                     step_kwargs=step_kwargs,

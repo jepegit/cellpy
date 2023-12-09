@@ -705,14 +705,20 @@ class OtherPath(pathlib.Path):
                     filtered_files = fnmatch.filter(files, glob_str)
                     glob_str = f"*{path_separator}{glob_str}"
                     if len(sub_dirs) > 3:
-                        logging.warning(f"WARNING! Searching in {len(sub_dirs)} sub directories - this might take a while")
+                        logging.warning(
+                            f"WARNING! Searching in {len(sub_dirs)} sub directories - this might take a while"
+                        )
                     for sub_dir in sub_dirs:
                         try:
                             logging.debug(f"looking in {sub_dir}")
                             files += [
                                 f"{sub_dir}{path_separator}{f}"
                                 for f in sftp_conn.listdir(sub_dir)
-                                if not stat.S_ISDIR(sftp_conn.stat(f"{sub_dir}{path_separator}{f}").st_mode)
+                                if not stat.S_ISDIR(
+                                    sftp_conn.stat(
+                                        f"{sub_dir}{path_separator}{f}"
+                                    ).st_mode
+                                )
                             ]
                         except FileNotFoundError:
                             logging.debug(

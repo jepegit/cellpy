@@ -24,6 +24,7 @@ from cellpy.internals.core import OtherPath
 # TODO: @jepe - add function for searching in cloud storage (dropbox, google drive etc)
 # TODO: @jepe - add function for searching in database (sqlite, postgresql etc)
 
+
 def find_in_raw_file_directory(
     raw_file_dir: Union[OtherPath, pathlib.Path, str, None] = None,
     project_dir: Union[OtherPath, pathlib.Path, str, None] = None,
@@ -103,14 +104,18 @@ def find_in_raw_file_directory(
             f = _file_list[0]
         else:
             with fabric.Connection(host, connect_kwargs=connect_kwargs) as conn:
-                out = conn.run(f'find -L {d.raw_path} -name "{glob_txt}"', hide="both", warn=True)
+                out = conn.run(
+                    f'find -L {d.raw_path} -name "{glob_txt}"', hide="both", warn=True
+                )
             if out.return_code != 0:
                 logging.critical(f"Searching in: {d}")
-                warnings.warn(f"Could not find any files in {d.raw_path} -> {out.stderr}")
+                warnings.warn(
+                    f"Could not find any files in {d.raw_path} -> {out.stderr}"
+                )
                 warnings.warn(f"Most likely the OS does not have the 'find' command")
                 continue
             _file_list = out.stdout.splitlines()
-        file_list += list(map(lambda x: f"{d.uri_prefix}{host}"+x, _file_list))
+        file_list += list(map(lambda x: f"{d.uri_prefix}{host}" + x, _file_list))
     number_of_files = len(file_list)
     if number_of_files == 0:
         logging.critical("No files found")

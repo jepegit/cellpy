@@ -610,7 +610,9 @@ def dqdv_cycles(cycles, not_merged=False, label_direction=False, **kwargs):
                 _d = {"voltage": v, "dq": dq, "direction": direction}
                 _cols = ["voltage", "dq", "direction"]
             else:
-                v, dq = dqdv_cycle(cycle, splitter=True, label_direction=False, **kwargs)
+                v, dq = dqdv_cycle(
+                    cycle, splitter=True, label_direction=False, **kwargs
+                )
                 _d = {"voltage": v, "dq": dq}
                 _cols = ["voltage", "dq"]
 

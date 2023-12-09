@@ -373,6 +373,15 @@ class CellpyCell:
     def nom_cap(self, c):
         self.data.nom_cap = self._dump_cellpy_unit(c, "nominal_capacity")
 
+    @property
+    def nominal_capacity(self):
+        """returns the nominal capacity"""
+        return self.data.nom_cap
+
+    @nominal_capacity.setter
+    def nominal_capacity(self, c):
+        self.data.nom_cap = self._dump_cellpy_unit(c, "nominal_capacity")
+
     def _dump_cellpy_unit(self, value, parameter):
         """Parse for unit, update cellpy_units class, and return magnitude."""
         if isinstance(value, numbers.Number):
@@ -4560,32 +4569,76 @@ class CellpyCell:
             no_cycles = np.amax(steptable[self.headers_step_table.cycle])
         return no_cycles
 
+    def get_rates(self, steptable=None, agg="first", direction=None):
+        """
+        Get the rates in the test (only valid for constant current).
+        Args:
+            steptable: provide custom steptable (if None, the steptable from the cellpydata object will be used).
+            agg (str): perform an aggregation if more than one step of charge or discharge is found
+                (e.g. "mean", "first", "max"). For example, if agg='mean', the average rate for each cycle
+                will be returned. Set to None if you want to keep all the rates.
+            direction (str or list of str): only select rates for this direction (e.g. "charge" or "discharge").
+
+        Returns:
+            pandas.DataFrame with cycle, type, and rate_avr (i.e. C-rate) columns.
+        """
+
+        if steptable is None:
+            steptable = self.data.steps
+        rates = steptable[
+            [
+                self.headers_step_table.cycle,
+                self.headers_step_table.type,
+                self.headers_step_table.rate_avr,
+            ]
+        ].dropna()
+
+        if agg:
+            rates = rates.groupby(
+                [self.headers_step_table.cycle, self.headers_step_table.type]
+            ).agg(agg).reset_index()
+
+        if direction is not None:
+            if not isinstance(direction, (list, tuple)):
+                direction = [direction]
+            rates = rates.loc[rates[self.headers_step_table.type].isin(direction), :]
+
+        return rates
+
     def get_cycle_numbers(
         self,
         steptable=None,
         rate=None,
         rate_on=None,
         rate_std=None,
-        rate_column=None,
+        rate_agg="first",
         inverse=False,
     ):
-        """Get a list containing all the cycle numbers in the test.
+        """Get a array containing the cycle numbers in the test.
 
         Parameters:
+            steptable (pandas.DataFrame): the step-table to use (if None, the step-table
+                from the cellpydata object will be used).
             rate (float): the rate to filter on. Remark that it should be given
                 as a float, i.e. you will have to convert from C-rate to
                 the actual numeric value. For example, use rate=0.05 if you want
                 to filter on cycles that has a C/20 rate.
-            rate_on (str): only select cycles if based on the rate of this step-type (e.g. on="charge").
+            rate_on (str): only select cycles if based on the rate of this step-type (e.g. on="discharge").
             rate_std (float): allow for this inaccuracy in C-rate when selecting cycles
-            rate_column (str): column header name of the rate column,
+            rate_agg (str): perform an aggregation on rate if more than one step of charge or discharge is found
+                (e.g. "mean", "first", "max"). For example, if agg='mean', the average rate for each cycle
+                will be returned. Set to None if you want to keep all the rates.
             inverse (bool): select steps that does not have the given C-rate.
 
         Returns:
             numpy.ndarray of cycle numbers.
         """
 
+        # TODO: add support for selecting cycles based on other criteria (for example, based on the
+        #   existence of particular step-types, or max, min values of current, voltage, etc)
+
         logging.debug("getting cycle numbers")
+
         if steptable is None:
             d = self.data.raw
             cycles = d[self.headers_normal.cycle_index_txt].dropna().unique()
@@ -4598,17 +4651,6 @@ class CellpyCell:
             return cycles
 
         logging.debug("filtering on rate")
-        if rate_on is None:
-            rate_on = ["charge"]
-        else:
-            if not isinstance(rate_on, (list, tuple)):
-                rate_on = [rate_on]
-
-        if rate_column is None:
-            rate_column = self.headers_step_table["rate_avr"]
-
-        if rate_on:
-            on_column = self.headers_step_table["type"]
 
         if rate is None:
             rate = 0.05
@@ -4616,22 +4658,19 @@ class CellpyCell:
         if rate_std is None:
             rate_std = 0.1 * rate
 
-        if rate_on:
-            cycles_mask = (
-                (steptable[rate_column] < (rate + rate_std))
-                & (steptable[rate_column] > (rate - rate_std))
-                & (steptable[on_column].isin(rate_on))
-            )
-        else:
-            cycles_mask = (steptable[rate_column] < (rate + rate_std)) & (
-                steptable[rate_column] > (rate - rate_std)
+        if rate_on is None:
+            rate_on = ["charge", "discharge"]
+        rates = self.get_rates(steptable=steptable, agg=rate_agg, direction=rate_on)
+        rate_column = self.headers_step_table.rate_avr
+        cycles_mask = (rates[rate_column] < (rate + rate_std)) & (
+                rates[rate_column] > (rate - rate_std)
             )
 
         if inverse:
             cycles_mask = ~cycles_mask
 
-        filtered_step_table = steptable[cycles_mask]
-        filtered_cycles = filtered_step_table[self.headers_step_table["cycle"]].unique()
+        filtered_rates = rates[cycles_mask]
+        filtered_cycles = filtered_rates[self.headers_step_table["cycle"]].unique()
 
         return filtered_cycles
 

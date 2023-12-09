@@ -101,7 +101,6 @@ def _make_average(
     skip_st_dev_for_equivalent_cycle_index=True,
     # key_index_bounds=None,
 ):
-
     # if key_index_bounds is None:
     #     key_index_bounds = [1, -2]
     hdr_norm_cycle = hdr_summary["normalized_cycle_index"]
@@ -176,6 +175,7 @@ def _make_average(
     final_frame = final_frame.reindex(columns=cols)
     # return final_frame, cell_id
     return final_frame
+
 
 def update_journal_cellpy_data_dir(
     pages, new_path=None, from_path="PureWindowsPath", to_path="Path"
@@ -888,7 +888,7 @@ def concatenate_summaries(
                     set(
                         [
                             "_".join(
-                                k.split("_")[key_index_bounds[0]:key_index_bounds[1]]
+                                k.split("_")[key_index_bounds[0] : key_index_bounds[1]]
                             )
                             for k in keys_sub
                         ]
@@ -950,9 +950,7 @@ def concatenate_summaries(
         average_header_end = "_mean"
         std_header_end = "_std"
 
-        cdf = pd.concat(
-            frames, keys=keys, axis=0, names=[cell_header, cycle_header]
-        )
+        cdf = pd.concat(frames, keys=keys, axis=0, names=[cell_header, cycle_header])
         cdf = cdf.reset_index(drop=False)
         id_vars = [cell_header, cycle_header]
         if not group_it:

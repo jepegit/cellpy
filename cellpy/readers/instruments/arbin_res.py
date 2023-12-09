@@ -560,7 +560,11 @@ class DataLoader(BaseLoader):
         # FIX: error in order by since datetime is not accurate enough (also need sorting on test-time)
         #   sorting dataframe:
         normal_df = normal_df.sort_values(
-            by=[self.arbin_headers_normal.datetime_txt, self.arbin_headers_normal.test_time_txt], ascending=True
+            by=[
+                self.arbin_headers_normal.datetime_txt,
+                self.arbin_headers_normal.test_time_txt,
+            ],
+            ascending=True,
         )
         # TODO 216: add order by on test_time as well in sql query
         summary_df = self._load_res_summary_table(conn, test_id)
@@ -1263,11 +1267,14 @@ def check_multi():
 
 def noodle():
     import pandas as pd
-    df = pd.DataFrame({
-        "a": [1, 2, 3, 4, 5],
-        "b": [1, 2, 3, 4, 5],
-        "c": [1, 1, 1, 1, 2],
-    })
+
+    df = pd.DataFrame(
+        {
+            "a": [1, 2, 3, 4, 5],
+            "b": [1, 2, 3, 4, 5],
+            "c": [1, 1, 1, 1, 2],
+        }
+    )
     print(df)
 
     df2 = df[df["c"].isin([1])]
