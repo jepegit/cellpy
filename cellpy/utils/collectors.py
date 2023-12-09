@@ -21,7 +21,7 @@ import numpy as np
 import cellpy
 from cellpy.readers.core import group_by_interpolate
 from cellpy.utils.batch import Batch
-from cellpy.utils.helpers import concatenate_summaries
+from cellpy.utils.helpers import concat_summaries
 from cellpy.utils.plotutils import plot_concatenated
 from cellpy.utils import ica
 
@@ -767,6 +767,11 @@ class BatchICACollector(BatchCollector):
         plot_type="fig_pr_cell",
         cycles=None,
         max_cycle=None,
+        rate=None,
+        rate_on=None,
+        rate_std=None,
+        rate_agg=None,
+        inverse=False,
         label_mapper=None,
         backend=None,
         cycles_to_plot=None,
@@ -788,6 +793,11 @@ class BatchICACollector(BatchCollector):
         elevated_data_collector_arguments = dict(
             cycles=cycles,
             max_cycle=max_cycle,
+            rate=rate,
+            rate_on=rate_on,
+            rate_std=rate_std,
+            rate_agg=rate_agg,
+            inverse=inverse,
             label_mapper=label_mapper,
         )
         elevated_plotter_arguments = dict(
@@ -847,6 +857,11 @@ class BatchCyclesCollector(BatchCollector):
         collector_type="back-and-forth",
         cycles=None,
         max_cycle=None,
+        rate=None,
+        rate_on=None,
+        rate_std=None,
+        rate_agg=None,
+        inverse=False,
         label_mapper=None,
         backend=None,
         cycles_to_plot=None,
@@ -876,6 +891,11 @@ class BatchCyclesCollector(BatchCollector):
         Elevated data collector args:
             cycles (list): select these cycles.
             max_cycle (int): drop all cycles above this value.
+            rate (float): filter on rate (C-rate)
+            rate_on (str or list of str): only select cycles if based on the rate of this step-type (e.g. on="charge").
+            rate_std (float): allow for this inaccuracy when selecting cycles based on rate
+            rate_agg (str): how to aggregate the rate (e.g. "mean", "max", "min", "first", "last")
+            inverse (bool): select steps that do not have the given C-rate.
             label_mapper (callable or dict): function (or dict) that changes the cell names.
                 The dictionary must have the cell labels as given in the `journal.pages` index and new label as values.
                 Similarly, if it is a function it takes the cell label as input and returns the new label.
@@ -896,6 +916,11 @@ class BatchCyclesCollector(BatchCollector):
             cycles=cycles,
             max_cycle=max_cycle,
             label_mapper=label_mapper,
+            rate=rate,
+            rate_on=rate_on,
+            rate_std=rate_std,
+            rate_agg=rate_agg,
+            inverse=inverse
         )
         elevated_plotter_arguments = dict(
             backend=backend,
@@ -1009,15 +1034,18 @@ def pick_named_cell(b, label_mapper=None):
 
 
 def summary_collector(*args, **kwargs):
-    """See concatenate_summaries in helpers (summary_collector runs
-    concatenate_summaries mode='collector')"""
-    kwargs["mode"] = "collector"
-    return concatenate_summaries(*args, **kwargs)
+    """Collects summaries using cellpy.utils.helpers.concat_summaries."""
+    return concat_summaries(*args, **kwargs)
 
 
 def cycles_collector(
     b,
     cycles=None,
+    rate=None,
+    rate_on=None,
+    rate_std=None,
+    rate_agg="first",
+    inverse=False,
     interpolated=True,
     number_of_points=100,
     max_cycle=50,
@@ -1025,11 +1053,17 @@ def cycles_collector(
     method="back-and-forth",
     label_mapper=None,
 ):
+
     if cycles is None:
         cycles = list(range(1, max_cycle + 1))
     all_curves = []
     keys = []
     for n, g, sg, c in pick_named_cell(b, label_mapper):
+        if rate is not None:
+            filtered_cycles = c.get_cycle_numbers(
+                rate=rate, rate_on=rate_on, rate_std=rate_std, rate_agg=rate_agg, inverse=inverse
+            )
+            cycles = list(set(filtered_cycles).intersection(set(cycles)))
         curves = c.get_cap(
             cycle=cycles,
             label_cycle_number=True,
@@ -1055,6 +1089,11 @@ def cycles_collector(
 def ica_collector(
     b,
     cycles=None,
+    rate=None,
+    rate_on=None,
+    rate_std=None,
+    rate_agg="first",
+    inverse=False,
     voltage_resolution=0.005,
     max_cycle=50,
     abort_on_missing=False,
@@ -1068,6 +1107,11 @@ def ica_collector(
     all_curves = []
     keys = []
     for n, g, sg, c in pick_named_cell(b, label_mapper):
+        if rate is not None:
+            filtered_cycles = c.get_cycle_numbers(
+                rate=rate, rate_on=rate_on, rate_std=rate_std, rate_agg=rate_agg, inverse=inverse
+            )
+            cycles = list(set(filtered_cycles).intersection(set(cycles)))
         curves = ica.dqdv_frames(
             c,
             cycle=cycles,
