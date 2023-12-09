@@ -47,5 +47,7 @@ dependencies:
         - sqlalchemy-access
         - pipdeptree
         - pydeps
+        - twine
+        - build
 
 

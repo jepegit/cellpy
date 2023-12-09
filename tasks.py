@@ -11,7 +11,6 @@ from dotenv import load_dotenv
 
 import requests
 from invoke import task
-from ruamel_yaml import YAML
 
 load_dotenv()
 
@@ -190,7 +189,7 @@ def clean(c, docs=False, bytecode=False, extra=""):
             cmd = delete_stuff(pattern)
             c.run(cmd)
         except Exception:
-            print(f"(could not remove {pattern}", end="")
+            print(f"(could not remove {pattern})", end="")
     print()
     print(f"Cleaned {patterns}")
 
@@ -206,6 +205,7 @@ def delete_stuff(pattern):
     platform = get_platform()
     if platform == "Windows":
         cmd = f'rd /s /q "{pattern}"'
+
     else:
         cmd = "rm -rf {}".format(pattern)
     return cmd
@@ -270,57 +270,6 @@ def jupyterlab(c):
     for extension in extensions:
         print(f"installing {extension}")
         c.run(f"jupyter labextension install {extension}")
-    print("OK")
-
-
-@task
-def dependson(c):
-    print("parsing dependencies")
-    print("using 'github_actions_environment.yml' as source of truth")
-    truth_file = Path(".").resolve() / "github_actions_environment.yml"
-    yaml = YAML()
-    truth = yaml.load(truth_file)
-    deps = truth.get("dependencies")
-
-    conda_deps = sorted([dep for dep in deps if isinstance(dep, str)])
-    pip_deps = [dep for dep in deps if not isinstance(dep, str)]
-    # result = c.run("pip list", hide=True)
-    result = c.run("conda list", hide=True)
-    out = result.stdout
-    lines = out.split("\n")
-    lines = lines[3:]
-    lines = sorted(lines)
-    packages = {}
-    print()
-    print("  result ".center(80, "-"))
-    print()
-    print("  dependencies:")
-
-    for line in lines:
-        if line:
-            try:
-                name, version, *other = line.split()
-            except Exception:
-                version = None
-                name = line.split()[0]
-            packages[name] = version
-
-    for dep in conda_deps:
-        version = packages.get(dep)
-        if version:
-            print(f"    - {dep} >={version}")
-        else:
-            print(f"    - {dep}")
-    if pip_deps:
-        print(f"    - pip:")
-        pip_deps = sorted(pip_deps, key=lambda x: x.get("pip"))
-    for dep in pip_deps:
-        for d in dep.get("pip"):
-            version = packages.get(d)
-            if version:
-                print(f"      - {d} >={version}")
-            else:
-                print(f"      - {d}")
     print("OK")
 
 
@@ -544,7 +493,7 @@ def build(
 
     if dist:
         print(" Creating distribution ".center(80, "="))
-        print("Running python setup.py sdist")
+        print("Running python -m build")
         c.run("python -m build")
     if docs:
         print(" Building docs ".center(80, "-"))
