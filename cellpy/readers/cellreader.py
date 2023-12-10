@@ -4711,10 +4711,15 @@ class CellpyCell:
             v = self.data.raw[[date_time_hdr, cycle_index_hdr, voltage_hdr]].copy()
 
         # make sure data_time is datetime64[ns] (not sure if this works for all tester formats/loaders):
-        if not is_datetime(v[date_time_hdr]):
+        col_has_date_time_dtype = is_datetime(v[date_time_hdr])
+        duplicated = v[date_time_hdr].duplicated().any()
+        if not col_has_date_time_dtype:
+            logging.debug("converting date_time to datetime64[ns]")
             v[date_time_hdr] = pd.to_datetime(v[date_time_hdr], format=date_time_format)
-
-        v.set_index(date_time_hdr, inplace=True)
+        if duplicated:
+            logging.debug("removing duplicated date_time values")
+            v = v.loc[~v[date_time_hdr].duplicated(), :]
+        v = v.set_index(date_time_hdr, drop=True)
         v = v.resample(sampling_unit).ffill().bfill()
         v["is_at_target"] = 0
         v.loc[v[voltage_hdr] < voltage_limit, "is_at_target"] = 1
