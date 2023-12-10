@@ -37,7 +37,7 @@ SQL_SERVER = prms.Instruments.Arbin["SQL_server"]
 SQL_UID = prms.Instruments.Arbin["SQL_UID"]
 SQL_PWD = prms.Instruments.Arbin["SQL_PWD"]
 SQL_DRIVER = prms.Instruments.Arbin["SQL_Driver"]
-
+DATE_TIME_FORMAT = prms._date_time_format
 
 # Names of the tables in the SQL Server db that is used by cellpy
 
@@ -120,7 +120,7 @@ def from_arbin_to_datetime(n):
     date_time_component = n[:-7]
     temp = f"{date_time_component}.{ms_component}"
     datetime_object = datetime.datetime.fromtimestamp(float(temp))
-    time_in_str = datetime_object.strftime("%y-%m-%d %H:%M:%S:%f")
+    time_in_str = datetime_object.strftime(DATE_TIME_FORMAT)
     return time_in_str
 
 
@@ -292,6 +292,7 @@ class DataLoader(BaseLoader):
         set_index = kwargs.pop("set_index", True)
         rename_headers = kwargs.pop("rename_headers", True)
         extract_start_datetime = kwargs.pop("extract_start_datetime", True)
+        set_dtypes = kwargs.pop("set_dtypes", True)
 
         # TODO:  insert post-processing and div tests here
         #    - check dtypes
@@ -326,11 +327,8 @@ class DataLoader(BaseLoader):
 
         if fix_datetime:
             h_datetime = self.cellpy_headers_normal.datetime_txt
-            logging.debug("converting to datetime format")
-
             data.raw[h_datetime] = data.raw[h_datetime].apply(from_arbin_to_datetime)
 
-            h_datetime = h_datetime
             if h_datetime in data.summary:
                 data.summary[h_datetime] = data.summary[h_datetime].apply(
                     from_arbin_to_datetime
@@ -343,7 +341,20 @@ class DataLoader(BaseLoader):
 
         if extract_start_datetime:
             hdr_date_time = self.arbin_headers_normal.datetime_txt
-            data.start_datetime = parse("20" + data.raw[hdr_date_time].iat[0][:-7])
+            data.start_datetime = parse(data.raw[hdr_date_time].iat[0][:-7])
+
+        if set_dtypes:
+            logging.debug("setting data types")
+            # test_time_txt = self.cellpy_headers_normal.test_time_txt
+            # step_time_txt = self.cellpy_headers_normal.step_time_txt
+            date_time_txt = self.cellpy_headers_normal.datetime_txt
+            logging.debug("converting to datetime format")
+            try:
+                # data.raw[test_time_txt] = pd.to_timedelta(data.raw[test_time_txt])  # cellpy is not ready for this
+                # data.raw[step_time_txt] = pd.to_timedelta(data.raw[step_time_txt])  # cellpy is not ready for this
+                data.raw[date_time_txt] = pd.to_datetime(data.raw[date_time_txt], format=DATE_TIME_FORMAT)
+            except ValueError:
+                logging.debug("could not convert to datetime format")
 
         return data
 

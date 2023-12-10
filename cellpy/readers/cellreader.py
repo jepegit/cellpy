@@ -2660,6 +2660,7 @@ class CellpyCell:
             return x.iloc[-1]
 
         def delta(x):
+            # Remark! this will not work if x is a TimeDelta object
             if x.iloc[0] == 0.0:
                 # starts from a zero value
                 difference = 100.0 * x.iloc[-1]
@@ -4677,6 +4678,50 @@ class CellpyCell:
     def get_ir(self):
         """Get the IR data (Deprecated)."""
         raise DeprecatedFeature
+
+    def total_time_at_low_voltage(self, cycles=None, voltage_limit=0.5, sampling_unit="S"):
+        """ Experimental method for getting the total time spent at low voltage.
+
+        Args:
+            cycles: cycle number (all cycles if None).
+            voltage_limit: voltage limit (default 0.5 V)
+            sampling_unit: sampling unit (default "S")
+                    H: hourly frequency
+                    T, min: minutely frequency
+                    S: secondly frequency
+                    L, ms:  milliseconds
+                    U, us: microseconds
+                    N: nanoseconds
+        """
+
+        from pandas.api.types import is_datetime64_any_dtype as is_datetime
+
+        date_time_hdr = "date_time"
+        cycle_index_hdr = "cycle_index"
+        voltage_hdr = "voltage"
+        date_time_format = "%Y-%m-%d %H:%M:%S:%f"
+        sampling_unit = "S"  # S: seconds
+
+        if cycles is not None:
+            if not isinstance(cycles, (list, tuple)):
+                cycles = [cycles]
+            v = self.data.raw.loc[
+                self.data.raw[cycle_index_hdr].isin(cycles), [date_time_hdr, cycle_index_hdr, voltage_hdr]
+            ].copy()
+        else:
+            v = self.data.raw[[date_time_hdr, cycle_index_hdr, voltage_hdr]].copy()
+
+        # make sure data_time is datetime64[ns]:
+        if not is_datetime(v[date_time_hdr]):
+            v[date_time_hdr] = pd.to_datetime(v[date_time_hdr], format=date_time_format)
+
+        v.set_index(date_time_hdr, inplace=True)
+        v = v.resample(sampling_unit).ffill().bfill()
+        v["is_at_target"] = 0
+        v.loc[v[voltage_hdr] < voltage_limit, "is_at_target"] = 1
+
+        # missing - convert to seconds
+        return v.is_at_target.sum()
 
     def nominal_capacity_as_absolute(
         self,

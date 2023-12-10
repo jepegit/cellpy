@@ -371,6 +371,8 @@ _cellpyfile_stepdata_format = "table"
 _cellpyfile_infotable_format = "fixed"
 _cellpyfile_fidtable_format = "fixed"
 
+_date_time_format = "%Y-%m-%d %H:%M:%S:%f"
+
 # templates
 _standard_template_uri = "https://github.com/jepegit/cellpy_cookies.git"
 

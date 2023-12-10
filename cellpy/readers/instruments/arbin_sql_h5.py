@@ -1,4 +1,5 @@
 """arbin MS SQL Server exported h5 data"""
+import datetime
 import logging
 import pathlib
 import sys
@@ -16,6 +17,7 @@ from pathlib import Path
 
 DEBUG_MODE = prms.Reader.diagnostics  # not used
 ALLOW_MULTI_TEST_FILE = prms._allow_multi_test_file  # not used
+DATE_TIME_FORMAT = prms._date_time_format  # not used
 
 normal_headers_renaming_dict = {
     "test_id_txt": "Test_ID",
@@ -35,6 +37,17 @@ normal_headers_renaming_dict = {
     "internal_resistance_txt": "Internal_Resistance",
     "ref_voltage_txt": "Aux_Voltage_1",
 }
+
+
+def from_arbin_to_datetime(n):
+    if isinstance(n, int):
+        n = str(n)
+    ms_component = n[-7:]
+    date_time_component = n[:-7]
+    temp = f"{date_time_component}.{ms_component}"
+    datetime_object = datetime.datetime.fromtimestamp(float(temp))
+    time_in_str = datetime_object.strftime(DATE_TIME_FORMAT)
+    return time_in_str
 
 
 class DataLoader(BaseLoader):
@@ -142,6 +155,8 @@ class DataLoader(BaseLoader):
         rename_headers = True
         forward_fill_ir = True
         backward_fill_ir = True
+        fix_datetime = True
+        set_dtypes = True
 
         if rename_headers:
             columns = {}
@@ -153,6 +168,27 @@ class DataLoader(BaseLoader):
             data.raw.rename(index=str, columns=columns, inplace=True)
             new_aux_headers = self.get_headers_aux(data.raw)
             data.raw.rename(index=str, columns=new_aux_headers, inplace=True)
+
+        if fix_datetime:
+            h_datetime = self.cellpy_headers_normal.datetime_txt
+            data.raw[h_datetime] = data.raw[h_datetime].apply(from_arbin_to_datetime)
+            if h_datetime in data.summary:
+                data.summary[h_datetime] = data.summary[h_datetime].apply(
+                    from_arbin_to_datetime
+                )
+
+        if set_dtypes:
+            logging.debug("setting data types")
+            # test_time_txt = self.cellpy_headers_normal.test_time_txt
+            # step_time_txt = self.cellpy_headers_normal.step_time_txt
+            date_time_txt = self.cellpy_headers_normal.datetime_txt
+            logging.debug("converting to datetime format")
+            try:
+                # data.raw[test_time_txt] = pd.to_timedelta(data.raw[test_time_txt])  # cellpy is not ready for this
+                # data.raw[step_time_txt] = pd.to_timedelta(data.raw[step_time_txt])  # cellpy is not ready for this
+                data.raw[date_time_txt] = pd.to_datetime(data.raw[date_time_txt], format=DATE_TIME_FORMAT)
+            except ValueError:
+                logging.debug("could not convert to datetime format")
 
         if set_index:
             hdr_data_point = self.cellpy_headers_normal.data_point_txt
