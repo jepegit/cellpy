@@ -4699,8 +4699,7 @@ class CellpyCell:
         date_time_hdr = "date_time"
         cycle_index_hdr = "cycle_index"
         voltage_hdr = "voltage"
-        date_time_format = "%Y-%m-%d %H:%M:%S:%f"
-        sampling_unit = "S"  # S: seconds
+        date_time_format = prms._date_time_format
 
         if cycles is not None:
             if not isinstance(cycles, (list, tuple)):
@@ -4711,7 +4710,7 @@ class CellpyCell:
         else:
             v = self.data.raw[[date_time_hdr, cycle_index_hdr, voltage_hdr]].copy()
 
-        # make sure data_time is datetime64[ns]:
+        # make sure data_time is datetime64[ns] (not sure if this works for all tester formats/loaders):
         if not is_datetime(v[date_time_hdr]):
             v[date_time_hdr] = pd.to_datetime(v[date_time_hdr], format=date_time_format)
 
