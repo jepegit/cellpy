@@ -154,7 +154,7 @@ def create_summary_plot_bokeh(
     legend_location="bottom_right",
     x_range=None,
     y_range=None,
-    tools="hover",
+    tools=None,
 ):
     # TODO: include max cycle (bokeh struggles when there is to much to plot)
     #   could also consider interpolating
@@ -164,6 +164,10 @@ def create_summary_plot_bokeh(
         "This utility function will be seriously removed and replaced with a plotly version soon.",
         category=DeprecationWarning,
     )
+
+    if tools is None:
+        tools = "pan,box_zoom,reset,save"
+
     logging.debug(f"    - creating summary (bokeh) plot for {label}")
     discharge_capacity = None
     if isinstance(data, (list, tuple)):
@@ -173,16 +177,20 @@ def create_summary_plot_bokeh(
     else:
         charge_capacity = data
 
-    p = bokeh.plotting.figure(
+    figure_kwargs = dict(
         title=title,
         width=width,
         height=height,
-        # tools = tools,
-        x_range=x_range,
-        y_range=y_range,
+        tools=tools,
         x_axis_label=x_axis_label,
         y_axis_label=y_axis_label,
     )
+    if x_range is not None:
+        figure_kwargs["x_range"] = x_range
+    if y_range is not None:
+        figure_kwargs["y_range"] = y_range
+
+    p = bokeh.plotting.figure(**figure_kwargs)
 
     sub_cols_charge = None
     sub_cols_discharge = None
@@ -319,9 +327,8 @@ def plot_cycle_life_summary_bokeh(
     all_legend_items = []
 
     warnings.warn(
-        "This utility function will be removed shortly", category=DeprecationWarning
+        "This utility function might be removed shortly", category=DeprecationWarning
     )
-
     if add_rate:
         try:
             discharge_capacity = summaries.loc[
@@ -374,7 +381,6 @@ def plot_cycle_life_summary_bokeh(
                 ir_charge = summaries.loc[
                     :, idx[[hdr_summary.ir_charge, hdr_summary.charge_c_rate], :]
                 ]
-
             except AttributeError:
                 warnings.warn(
                     "No charge rate columns available - consider re-creating summary!"
@@ -391,7 +397,6 @@ def plot_cycle_life_summary_bokeh(
     h_eff = int(height_fractions[0] * height)
     h_cap = int(height_fractions[1] * height)
     h_ir = int(height_fractions[2] * height)
-
     group_styles, sub_group_styles = create_plot_option_dicts(info)
 
     p_eff, legends_eff = create_summary_plot_bokeh(
@@ -401,12 +406,13 @@ def plot_cycle_life_summary_bokeh(
         sub_group_styles,
         label="c.e.",
         legend_option=legend_option,
-        title=None,
-        x_axis_label=None,
+        title="",
+        x_axis_label="",
         y_axis_label="Coulombic efficiency (%)",
         width=width,
         height=h_eff,
     )
+
     all_legend_items.extend(legends_eff)
 
     if not ir_charge.empty:
@@ -420,7 +426,7 @@ def plot_cycle_life_summary_bokeh(
         sub_group_styles,
         legend_option=legend_option,
         label="charge and discharge cap.",
-        title=None,
+        title="",
         x_axis_label=cap_x_axis,
         height=h_cap,
         width=width,
@@ -435,7 +441,7 @@ def plot_cycle_life_summary_bokeh(
             sub_group_styles,
             label="ir charge",
             legend_option=legend_option,
-            title=None,
+            title="",
             x_axis_label="Cycle number",
             y_axis_label="IR Charge (Ohm)",
             width=width,
@@ -479,15 +485,28 @@ def plot_cycle_life_summary_bokeh(
 
     legend_title = "Legends"
 
-    dummy_figure_for_legend = bokeh.plotting.figure(
-        plot_width=300,
-        plot_height=height,
+    legend_figure_kwargs = dict(
         outline_line_alpha=0,
         toolbar_location=None,
         width_policy="min",
         min_width=300,
         title=legend_title,
     )
+
+    frame_width = 350
+
+    if bokeh.__version__.split(".") >= ["3", "0", "0"]:
+        legend_figure_kwargs["frame_width"] = frame_width
+        legend_figure_kwargs["frame_height"] = height
+        # legend_figure_kwargs["sizing_mode"] = "stretch_width"
+
+    else:
+        legend_figure_kwargs["plot_width"] = frame_width
+        legend_figure_kwargs["plot_height"] = height
+        # legend_figure_kwargs["sizing_mode"] = "scale_width"
+
+    dummy_figure_for_legend = bokeh.plotting.figure(**legend_figure_kwargs)
+
     # set the components of the figure invisible
     for fig_component in [
         dummy_figure_for_legend.grid[0],
@@ -706,6 +725,9 @@ def _plotting_data(pages, summaries, width, height, height_fractions, **kwargs):
         canvas = plot_cycle_life_summary_bokeh(
             pages, summaries, width, height, height_fractions, **kwargs
         )
+    elif prms.Batch.backend == "plotly":
+        print("plotly not implemented yet")
+
     elif prms.Batch.backend == "matplotlib":
         logging.info("[obs! experimental]")
         canvas = plot_cycle_life_summary_matplotlib(
