@@ -87,7 +87,7 @@ class BatchClass(CellPyConfig):
     auto_use_file_list: bool = False
     template: str = "standard"
     fig_extension: str = "png"
-    backend: str = "bokeh"
+    backend: str = "plotly"
     notebook: bool = True
     dpi: int = 300
     markersize: int = 4
@@ -278,7 +278,7 @@ Db = DbClass()
 DbCols = DbColsClass()
 CellInfo = CellInfoClass()
 Materials = MaterialsClass()
-Batch = BatchClass(summary_plot_height_fractions=[0.2, 0.5, 0.3])
+Batch = BatchClass(backend="plotly")
 
 
 # ------------------------------------------------------------------------------
