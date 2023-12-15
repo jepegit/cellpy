@@ -1,3 +1,4 @@
+import functools
 import itertools
 import logging
 import sys
@@ -6,6 +7,13 @@ from collections import defaultdict
 
 import numpy as np
 import pandas as pd
+
+import plotly.express as px
+import plotly
+import plotly.io as pio
+import plotly.graph_objects as go
+
+import seaborn as sns
 
 from cellpy import prms
 from cellpy.exceptions import UnderDefined
@@ -19,8 +27,8 @@ try:
     import bokeh
 
 except ImportError:
-    prms.Batch.backend = "matplotlib"
-    logging.debug("could not import bokeh -> using matplotlib instead")
+    prms.Batch.backend = "plotly"
+    logging.debug("could not import bokeh -> using plotly instead")
 
 hdr_journal = get_headers_journal()
 hdr_summary = get_headers_summary()
@@ -89,7 +97,8 @@ def create_plot_option_dicts(
                 7: ["k", "r", "b", "g", "c", "m"],
                 8: ["k", "r", "b", "g", "c", "m", "y"],
             }
-        max_palette_row = max(palette.keys())
+
+    max_palette_row = max(palette.keys())
     if marker_types is None:
         marker_types = [
             "circle",
@@ -398,6 +407,10 @@ def plot_cycle_life_summary_bokeh(
     h_cap = int(height_fractions[1] * height)
     h_ir = int(height_fractions[2] * height)
     group_styles, sub_group_styles = create_plot_option_dicts(info)
+    print("-----------------------------------")
+    print(info)
+    print(group_styles)
+    print(sub_group_styles)
 
     p_eff, legends_eff = create_summary_plot_bokeh(
         coulombic_efficiency,
@@ -704,21 +717,496 @@ def plot_cycle_life_summary_matplotlib(
 
 def summary_plotting_engine(**kwargs):
     """creates plots of summary data."""
-
-    warnings.warn(
-        "This utility function will be seriously changed soon and possibly removed",
-        category=DeprecationWarning,
-    )
-    logging.debug(f"Using {prms.Batch.backend} for plotting")
     experiments = kwargs.pop("experiments")
     farms = kwargs.pop("farms")
     barn = None
-    logging.debug("    - summary_plot_engine")
-    farms = _preparing_data_and_plotting(experiments=experiments, farms=farms, **kwargs)
+    backend = prms.Batch.backend
+    logging.debug(f"Using {prms.Batch.backend} for plotting summaries")
+
+    if backend in ["bokeh", "matplotlib"]:
+        farms = _preparing_data_and_plotting_legacy(
+            experiments=experiments, farms=farms, **kwargs
+        )
+
+    elif backend in ["plotly", "seaborn"]:
+        for experiment in experiments:
+            if not isinstance(experiment, CyclingExperiment):
+                logging.debug(f"skipping {experiment} - not a CyclingExperiment")
+                continue
+            canvas = generate_summary_plots(
+                experiment=experiment, farms=farms, **kwargs
+            )
+            farms.append(canvas)
+            canvas.show()
+    else:
+        logging.info(f"the back-end {backend} is not implemented yet.")
+
     return farms, barn
 
 
-def _plotting_data(pages, summaries, width, height, height_fractions, **kwargs):
+def generate_summary_plots(experiment, **kwargs):
+    width = kwargs.pop("width", prms.Batch.summary_plot_width)
+    height = kwargs.pop("height", prms.Batch.summary_plot_height)
+    height_fractions = kwargs.pop(
+        "height_fractions", prms.Batch.summary_plot_height_fractions
+    )
+    pages = experiment.journal.pages
+    backend = prms.Batch.backend
+    plotters = {
+        "plotly": plot_cycle_life_summary_plotly,
+        "seaborn": plot_cycle_life_summary_seaborn,
+    }
+    try:
+        summaries = generate_summary_frame_for_plotting(pages, experiment)
+    except KeyError:
+        logging.info("could not process the summaries")
+        return
+
+    canvas = plotters[backend](summaries, **kwargs)
+
+    # try:
+    #     print("trying")
+    #     canvas = plotters[backend](
+    #        summaries, width, height, height_fractions, **kwargs
+    #     )
+    #     print("done")
+    # except Exception as e:
+    #     logging.info(f"could not generate summary plots ({e})")
+    #     return
+
+    return canvas
+
+
+def generate_summary_frame_for_plotting(pages, experiment, **kwargs):
+    trim_pages = kwargs.pop("trim_pages", False)
+    keys = [df.name for df in experiment.memory_dumped["summary_engine"]]
+    summaries = pd.concat(experiment.memory_dumped["summary_engine"], keys=keys, axis=1)
+
+    summaries = summaries.reset_index()
+    summaries.columns.names = ["variable", "cell"]
+
+    hdr_cycle = hdr_summary["cycle_index"]
+    hdr_charge = hdr_summary["charge_capacity_gravimetric"]
+    hdr_discharge = hdr_summary["discharge_capacity_gravimetric"]
+    hdr_ce = hdr_summary["coulombic_efficiency"]
+    hdr_ir_charge = hdr_summary["ir_charge"]
+    hdr_ir_discharge = hdr_summary["ir_discharge"]
+    hdr_charge_rate = hdr_summary["charge_c_rate"]
+    hdr_discharge_rate = hdr_summary["discharge_c_rate"]
+
+    _required_summaries = [hdr_cycle, hdr_ce, hdr_charge, hdr_discharge]
+    _optional_summaries = [
+        hdr_ir_charge,
+        hdr_ir_discharge,
+        hdr_charge_rate,
+        hdr_discharge_rate,
+    ]
+    for _optional_summary in _optional_summaries:
+        if _optional_summary in summaries.columns:
+            _required_summaries.append(_optional_summary)
+
+    summaries = summaries.loc[:, _required_summaries]
+    summaries = summaries.melt(id_vars=[hdr_cycle])
+
+    pages = pages.copy().reset_index()
+    pages = pages.rename(columns={"index": "cell"})
+
+    if trim_pages:
+        try:
+            pages = pages.loc[
+                :,
+                [
+                    "cell",
+                    "mass",
+                    "total_mass",
+                    "loading",
+                    "nom_cap",
+                    "area",
+                    "label",
+                    "cell_type",
+                    "instrument",
+                    "group",
+                    "sub_group",
+                ],
+            ]
+        except KeyError:
+            logging.debug("could not trim pages")
+
+    summaries = summaries.merge(pages, on="cell")
+    return summaries
+
+
+# plotly helpers
+def _plotly_remove_markers(trace):
+    trace.update(marker=None, mode="lines")
+    return trace
+
+
+def _plotly_legend_replacer(trace, df, group_legends=True):
+    name = trace.name
+    parts = name.split(",")
+    if len(parts) == 2:
+        group = int(parts[0])
+        subgroup = int(parts[1])
+    else:
+        print(
+            "Have not implemented replacing legend labels that are not on the form a,b yet."
+        )
+        print(f"legend label: {name}")
+        return trace
+
+    cell_label = df.loc[
+        (df["group"] == group) & (df["sub_group"] == subgroup), "cell"
+    ].values[0]
+    if group_legends:
+        trace.update(
+            name=cell_label,
+            legendgroup=group,
+            hovertemplate=f"{cell_label}<br>{trace.hovertemplate}",
+        )
+    else:
+        trace.update(
+            name=cell_label,
+            legendgroup=cell_label,
+            hovertemplate=f"{cell_label}<br>{trace.hovertemplate}",
+        )
+
+
+def _make_plotly_template(name="axis"):
+    tick_label_width = 6
+    title_font_size = 22
+    title_font_family = "Arial"
+    axis_font_size = 16
+    axis_standoff = 15
+    linecolor = "rgb(36,36,36)"
+
+    t = go.layout.Template(
+        layout=dict(
+            font_family=title_font_family,
+            title=dict(
+                font_size=title_font_size,
+                x=0,
+                xref="paper",
+            ),
+            xaxis=dict(
+                linecolor=linecolor,
+                mirror=True,
+                showline=True,
+                zeroline=False,
+                title=dict(
+                    standoff=axis_standoff,
+                    font_size=axis_font_size,
+                ),
+            ),
+            yaxis=dict(
+                linecolor=linecolor,
+                mirror=True,
+                showline=True,
+                zeroline=False,
+                tickformat=f"{tick_label_width}",
+                title=dict(
+                    standoff=axis_standoff,
+                    font_size=axis_font_size,
+                ),
+            ),
+        )
+    )
+    pio.templates[name] = t
+
+
+def _make_labels():
+    labels = {
+        "cycle_index": "Cycle number",
+        "charge_capacity_gravimetric": "Gravimetric Charge Capacity",
+        "discharge_capacity_gravimetric": "Gravimetric Discharge Capacity",
+        "charge_c_rate": "C-rate (charge)",
+        "discharge_c_rate": "C-rate (discharge)",
+        "coulombic_efficiency": "Coulombic Efficiency",
+        "group": "Group",
+        "sub_group": "Sub-group",
+        "variable": "Variable",
+        "value": "Value",
+    }
+    return labels
+
+
+def plot_cycle_life_summary_plotly(summaries: pd.DataFrame, **kwargs):
+    group_legends = kwargs.pop("group_legends", True)
+    base_template = kwargs.pop("base_template", "plotly")
+    color_map = kwargs.pop("color_map", px.colors.qualitative.Set1)
+
+    ce_range = kwargs.pop("ce_range", None)
+    min_cycle = kwargs.pop("min_cycle", None)
+    max_cycle = kwargs.pop("max_cycle", None)
+
+    title = kwargs.pop("title", "Cycle Summary")
+    x_label = kwargs.pop("x_label", "Cycle Number")
+    direction = kwargs.pop("direction", "charge")
+    rate = kwargs.pop("rate", False)
+    ir = kwargs.pop("ir", True)
+
+    individual_plot_height = 250
+    header_height = 200
+    individual_legend_height = 20
+    legend_header_height = 20
+
+    hdr_cycle = hdr_summary["cycle_index"]
+    hdr_charge = hdr_summary["charge_capacity_gravimetric"]
+    hdr_discharge = hdr_summary["discharge_capacity_gravimetric"]
+    hdr_ce = hdr_summary["coulombic_efficiency"]
+    hdr_ir_charge = hdr_summary["ir_charge"]
+    hdr_ir_discharge = hdr_summary["ir_discharge"]
+    hdr_charge_rate = hdr_summary["charge_c_rate"]
+    hdr_discharge_rate = hdr_summary["discharge_c_rate"]
+    hdr_group = "group"
+    hdr_sub_group = "sub_group"
+
+    legend_dict = {"title": "<b>Cell</b>", "orientation": "v"}
+
+    additional_template = "axes_with_borders"
+    _make_plotly_template(additional_template)
+
+    available_summaries = summaries.variable.unique()
+
+    if direction == "discharge":
+        hdr_ir = hdr_ir_discharge
+        hdr_rate = hdr_discharge_rate
+        selected_summaries = [hdr_cycle, hdr_ce, hdr_discharge]
+    else:
+        selected_summaries = [hdr_cycle, hdr_ce, hdr_charge]
+        hdr_ir = hdr_ir_charge
+        hdr_rate = hdr_charge_rate
+
+    if ir:
+        if hdr_ir in available_summaries:
+            selected_summaries.append(hdr_ir)
+        else:
+            logging.debug("no ir data available")
+    if rate:
+        if hdr_rate in available_summaries:
+            selected_summaries.append(hdr_rate)
+        else:
+            logging.debug("no rate data available")
+
+    plotted_summaries = selected_summaries[1:]
+
+    summaries = summaries.loc[summaries.variable.isin(selected_summaries), :]
+    if max_cycle:
+        summaries = summaries.loc[_summaries[hdr_cycle] <= max_cycle, :]
+
+    if min_cycle:
+        summaries = summaries.loc[_summaries[hdr_cycle] >= min_cycle, :]
+
+    labels = _make_labels()
+    sub_titles = [labels.get(n, n.replace("_", " ").title()) for n in plotted_summaries]
+    if max_cycle or min_cycle:
+        sub_titles.append(f"[{min_cycle}, {max_cycle}]")
+    sub_titles = ", ".join(sub_titles)
+
+    number_of_cells = len(summaries.cell.unique())
+    number_of_rows = len(plotted_summaries)
+    legend_height = legend_header_height + individual_legend_height * number_of_cells
+    plot_height = max(legend_height, individual_plot_height * number_of_rows)
+    total_height = header_height + plot_height
+    canvas = px.line(
+        summaries,
+        x=hdr_cycle,
+        y="value",
+        facet_row="variable",
+        color=hdr_group,
+        symbol=hdr_sub_group,
+        labels=labels,
+        height=total_height,
+        category_orders={"variable": plotted_summaries},
+        template=f"{base_template}+{additional_template}",
+        color_discrete_sequence=color_map,
+        title=f"<b>{title}</b><br>{sub_titles}",
+    )
+
+    adjust_row_heights = True
+    if number_of_rows == 1:
+        domains = [[0.0, 1.00]]
+    elif number_of_rows == 2:
+        domains = [[0.0, 0.79], [0.8, 1.00]]
+    elif number_of_rows == 3:
+        domains = [[0.0, 0.39], [0.4, 0.79], [0.8, 1.00]]
+
+    elif number_of_rows == 4:
+        domains = [[0.0, 0.24], [0.25, 0.49], [0.5, 0.74], [0.75, 1.00]]
+
+    else:
+        adjust_row_heights = False
+        domains = None
+
+    canvas.for_each_trace(
+        functools.partial(
+            _plotly_legend_replacer,
+            df=summaries,
+            group_legends=group_legends,
+        )
+    )
+
+    canvas.for_each_annotation(lambda a: a.update(text=""))
+    canvas.update_traces(marker=dict(size=8))
+
+    canvas.update_xaxes(row=1, title_text=f"<b>{x_label}</b>")
+
+    for i, n in enumerate(reversed(plotted_summaries)):
+        n = labels.get(n, n.replace("_", " ").title())
+        update_kwargs = dict(
+            row=i + 1,
+            autorange=True,
+            matches=None,
+            title_text=f"<b>{n}</b>",
+        )
+        if adjust_row_heights:
+            domain = domains[i]
+            update_kwargs["domain"] = domain
+
+        canvas.update_yaxes(**update_kwargs)
+
+    if hdr_ce in plotted_summaries and ce_range is not None:
+        canvas.update_yaxes(row=number_of_rows, autorange=False, range=ce_range)
+
+    canvas.update_layout(
+        legend=legend_dict,
+        showlegend=True,
+    )
+    return canvas
+
+
+def plot_cycle_life_summary_seaborn(summaries: pd.DataFrame, **kwargs):
+    color_map = kwargs.pop("color_map", "Set1")
+
+    ce_range = kwargs.pop("ce_range", None)
+    min_cycle = kwargs.pop("min_cycle", None)
+    max_cycle = kwargs.pop("max_cycle", None)
+
+    title = kwargs.pop("title", "Cycle Summary")
+    x_label = kwargs.pop("x_label", "Cycle Number")
+    direction = kwargs.pop("direction", "charge")
+    rate = kwargs.pop("rate", False)
+    ir = kwargs.pop("ir", True)
+
+    hdr_cycle = hdr_summary["cycle_index"]
+    hdr_charge = hdr_summary["charge_capacity_gravimetric"]
+    hdr_discharge = hdr_summary["discharge_capacity_gravimetric"]
+    hdr_ce = hdr_summary["coulombic_efficiency"]
+    hdr_ir_charge = hdr_summary["ir_charge"]
+    hdr_ir_discharge = hdr_summary["ir_discharge"]
+    hdr_charge_rate = hdr_summary["charge_c_rate"]
+    hdr_discharge_rate = hdr_summary["discharge_c_rate"]
+    hdr_group = "group"
+    hdr_sub_group = "sub_group"
+
+    legend_dict = {"title": "<b>Cell</b>", "orientation": "v"}
+
+    available_summaries = summaries.variable.unique()
+
+    if direction == "discharge":
+        hdr_ir = hdr_ir_discharge
+        hdr_rate = hdr_discharge_rate
+        selected_summaries = [hdr_cycle, hdr_ce, hdr_discharge]
+    else:
+        selected_summaries = [hdr_cycle, hdr_ce, hdr_charge]
+        hdr_ir = hdr_ir_charge
+        hdr_rate = hdr_charge_rate
+
+    if ir:
+        if hdr_ir in available_summaries:
+            selected_summaries.append(hdr_ir)
+        else:
+            logging.debug("no ir data available")
+    if rate:
+        if hdr_rate in available_summaries:
+            selected_summaries.append(hdr_rate)
+        else:
+            logging.debug("no rate data available")
+
+    plotted_summaries = selected_summaries[1:]
+
+    summaries = summaries.loc[summaries.variable.isin(selected_summaries), :]
+    if max_cycle:
+        summaries = summaries.loc[_summaries[hdr_cycle] <= max_cycle, :]
+
+    if min_cycle:
+        summaries = summaries.loc[_summaries[hdr_cycle] >= min_cycle, :]
+
+    labels = _make_labels()
+    default_ranges = dict()
+    if ce_range is not None:
+        default_ranges[hdr_ce] = ce_range
+    ranges = _get_ranges(summaries, plotted_summaries, default_ranges)
+
+    sub_titles = [labels.get(n, n.replace("_", " ").title()) for n in plotted_summaries]
+    if max_cycle or min_cycle:
+        sub_titles.append(f"[{min_cycle}, {max_cycle}]")
+    sub_titles = ", ".join(sub_titles)
+
+    number_of_cells = len(summaries.cell.unique())
+    number_of_rows = len(plotted_summaries)
+
+    sns.set_theme(style="darkgrid")
+
+    canvas_grid = sns.relplot(
+        data=summaries, kind="line", x=hdr_cycle, y="value", hue=hdr_group, style=hdr_sub_group,
+        row="variable", markers=True, dashes=False,
+        height=3, aspect=3, linewidth=2.0, legend="auto", palette=color_map,
+        facet_kws={"sharex": True, "sharey": False, "legend_out": True},
+    )
+
+    canvas_grid.figure.suptitle(f"{title}\n{sub_titles}", y=1.05, fontsize=16)
+    axes = canvas_grid.figure.get_axes()
+    for ax in axes:
+        hdr = ax.get_title().split(" = ")[-1]
+        y_label = labels.get(hdr, hdr)
+        _x_label = ax.get_xlabel()
+        _x_label = labels.get(_x_label, _x_label)
+        if _x_label:
+            if x_label:
+                ax.set_xlabel(x_label)
+            else:
+                ax.set_xlabel(_x_label)
+        r = ranges.get(hdr, (None, None))
+        legend_handles, legend_labels = ax.get_legend_handles_labels()
+        # TODO: update legend
+        if legend_handles:
+            logging.debug("got legend handles")
+            # ax.legend(legend_handles, legend_labels)
+        ax.set_title("")
+        ax.set_ylabel(y_label)
+        ax.set_ylim(r)
+
+    return canvas_grid.figure
+
+
+def _get_ranges(summaries, plotted_summaries, defaults=None):
+    ranges = dict()
+    if defaults is None:
+        defaults = dict()
+    for hdr in plotted_summaries:
+        if hdr in defaults:
+            ranges[hdr] = defaults[hdr]
+            continue
+        start = summaries.loc[summaries.variable == hdr, "value"].min()
+        if start in [np.nan, np.inf, -np.inf]:
+            start = None
+
+        end = summaries.loc[summaries.variable == hdr, "value"].max()
+        if end in [np.nan, np.inf, -np.inf]:
+            end = None
+        if start is not None and end is not None:
+            start -= 0.1 * abs(abs(end)-abs(start))
+            end += 0.1 * abs(abs(end)-abs(start))
+        elif end is not None:
+            end += 0.1 * abs(end)
+        elif start is not None:
+            start -= 0.1 * abs(start)
+        ranges[hdr] = (start, end)
+    return ranges
+
+
+def _plotting_data_legacy(pages, summaries, width, height, height_fractions, **kwargs):
     # sub-sub-engine
     canvas = None
     if prms.Batch.backend == "bokeh":
@@ -739,12 +1227,11 @@ def _plotting_data(pages, summaries, width, height, height_fractions, **kwargs):
     return canvas
 
 
-def _preparing_data_and_plotting(**kwargs):
+def _preparing_data_and_plotting_legacy(**kwargs):
     # sub-engine
-    logging.debug("    - _preparing_data_and_plotting")
+    logging.debug("    - _preparing_data_and_plotting_legacy")
     experiments = kwargs.pop("experiments")
     farms = kwargs.pop("farms")
-
     width = kwargs.pop("width", prms.Batch.summary_plot_width)
     height = kwargs.pop("height", prms.Batch.summary_plot_height)
 
@@ -765,7 +1252,7 @@ def _preparing_data_and_plotting(**kwargs):
                 summaries = pd.concat(
                     experiment.memory_dumped["summary_engine"], keys=keys, axis=1
                 )
-                canvas = _plotting_data(
+                canvas = _plotting_data_legacy(
                     pages, summaries, width, height, height_fractions, **kwargs
                 )
 
@@ -879,19 +1366,6 @@ class CyclingSummaryPlotter(BasePlotter):
             engine=self.current_engine,
         )
         logging.debug("::dumper ended")
-
-    # def do(self):
-    #     if not self.experiments:
-    #         raise UnderDefined("cannot run until " "you have assigned an experiment")
-    #
-    #     for engine in self.engines:
-    #         self.empty_the_farms()
-    #         logging.debug(f"running - {str(engine)}")
-    #         self.run_engine(engine)
-    #
-    #         for dumper in self.dumpers:
-    #             logging.debug(f"exporting - {str(dumper)}")
-    #             self.run_dumper(dumper)
 
 
 class EISPlotter(BasePlotter):

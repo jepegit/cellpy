@@ -920,7 +920,7 @@ class BatchCyclesCollector(BatchCollector):
             rate_on=rate_on,
             rate_std=rate_std,
             rate_agg=rate_agg,
-            inverse=inverse
+            inverse=inverse,
         )
         elevated_plotter_arguments = dict(
             backend=backend,
@@ -1053,7 +1053,6 @@ def cycles_collector(
     method="back-and-forth",
     label_mapper=None,
 ):
-
     if cycles is None:
         cycles = list(range(1, max_cycle + 1))
     all_curves = []
@@ -1061,7 +1060,11 @@ def cycles_collector(
     for n, g, sg, c in pick_named_cell(b, label_mapper):
         if rate is not None:
             filtered_cycles = c.get_cycle_numbers(
-                rate=rate, rate_on=rate_on, rate_std=rate_std, rate_agg=rate_agg, inverse=inverse
+                rate=rate,
+                rate_on=rate_on,
+                rate_std=rate_std,
+                rate_agg=rate_agg,
+                inverse=inverse,
             )
             cycles = list(set(filtered_cycles).intersection(set(cycles)))
         curves = c.get_cap(
@@ -1109,7 +1112,11 @@ def ica_collector(
     for n, g, sg, c in pick_named_cell(b, label_mapper):
         if rate is not None:
             filtered_cycles = c.get_cycle_numbers(
-                rate=rate, rate_on=rate_on, rate_std=rate_std, rate_agg=rate_agg, inverse=inverse
+                rate=rate,
+                rate_on=rate_on,
+                rate_std=rate_std,
+                rate_agg=rate_agg,
+                inverse=inverse,
             )
             cycles = list(set(filtered_cycles).intersection(set(cycles)))
         curves = ica.dqdv_frames(

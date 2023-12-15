@@ -946,8 +946,13 @@ class Batch:
 
         if backend is None:
             backend = prms.Batch.backend
+            if backend in ["bokeh", "matplotlib"]:
+                logging.debug(
+                    f"over-riding default backend ('{backend}' will soon be deprecated)"
+                )
+                backend = "plotly"
 
-        if backend in ["bokeh", "matplotlib", "plotly"]:
+        if backend in ["bokeh", "matplotlib", "plotly", "seaborn"]:
             prms.Batch.backend = backend
 
         if backend == "bokeh":
@@ -959,7 +964,7 @@ class Batch:
                 **kwargs,
             )
 
-        if backend == "matplotlib":
+        elif backend == "matplotlib":
             print("...Using old plotter - this will soon change")
             self.plot_summaries(
                 output_filename=output_filename,
@@ -967,6 +972,16 @@ class Batch:
                 reload_data=reload_data,
                 **kwargs,
             )
+
+        elif backend == "plotly":
+            self.plotter.do(**kwargs)
+
+        elif backend == "seaborn":
+            self.plotter.do(**kwargs)
+            # 1: summary_plotting_engine
+            # 2:   _preparing_data_and_plotting_legacy
+            # 3:   _plotting_data_legacy
+            # 4:   plot_cycle_life_summary_[backend]
 
         else:
             print(f"backend {backend} not supported yet")

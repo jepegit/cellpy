@@ -4595,9 +4595,13 @@ class CellpyCell:
         ].dropna()
 
         if agg:
-            rates = rates.groupby(
-                [self.headers_step_table.cycle, self.headers_step_table.type]
-            ).agg(agg).reset_index()
+            rates = (
+                rates.groupby(
+                    [self.headers_step_table.cycle, self.headers_step_table.type]
+                )
+                .agg(agg)
+                .reset_index()
+            )
 
         if direction is not None:
             if not isinstance(direction, (list, tuple)):
@@ -4664,8 +4668,8 @@ class CellpyCell:
         rates = self.get_rates(steptable=steptable, agg=rate_agg, direction=rate_on)
         rate_column = self.headers_step_table.rate_avr
         cycles_mask = (rates[rate_column] < (rate + rate_std)) & (
-                rates[rate_column] > (rate - rate_std)
-            )
+            rates[rate_column] > (rate - rate_std)
+        )
 
         if inverse:
             cycles_mask = ~cycles_mask
@@ -4679,8 +4683,10 @@ class CellpyCell:
         """Get the IR data (Deprecated)."""
         raise DeprecatedFeature
 
-    def total_time_at_low_voltage(self, cycles=None, voltage_limit=0.5, sampling_unit="S"):
-        """ Experimental method for getting the total time spent at low voltage.
+    def total_time_at_low_voltage(
+        self, cycles=None, voltage_limit=0.5, sampling_unit="S"
+    ):
+        """Experimental method for getting the total time spent at low voltage.
 
         Args:
             cycles: cycle number (all cycles if None).
@@ -4705,7 +4711,8 @@ class CellpyCell:
             if not isinstance(cycles, (list, tuple)):
                 cycles = [cycles]
             v = self.data.raw.loc[
-                self.data.raw[cycle_index_hdr].isin(cycles), [date_time_hdr, cycle_index_hdr, voltage_hdr]
+                self.data.raw[cycle_index_hdr].isin(cycles),
+                [date_time_hdr, cycle_index_hdr, voltage_hdr],
             ].copy()
         else:
             v = self.data.raw[[date_time_hdr, cycle_index_hdr, voltage_hdr]].copy()

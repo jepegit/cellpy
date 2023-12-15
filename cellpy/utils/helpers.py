@@ -125,9 +125,7 @@ def _make_average(
             new_col_name_std = "std"
 
             if number_of_cols > 1:
-                avg_frame = (
-                    new_frame[col].agg(["mean", "std"], axis=1)
-                )
+                avg_frame = new_frame[col].agg(["mean", "std"], axis=1)
             else:
                 avg_frame = pd.DataFrame(
                     data=new_frame[col].values, columns=[new_col_name_mean]
@@ -714,7 +712,9 @@ def concatenate_summaries(
         ``pandas.DataFrame``
     """
 
-    warnings.warn("This helper function is not maintained anymore", category=DeprecationWarning)
+    warnings.warn(
+        "This helper function is not maintained anymore", category=DeprecationWarning
+    )
 
     if key_index_bounds is None:
         key_index_bounds = [1, -2]
@@ -1030,7 +1030,9 @@ def concat_summaries(
                 keys_sub.append(cell_id)
 
         if group_it:
-            cell_id = create_group_names(custom_group_labels, gno, key_index_bounds, keys_sub)
+            cell_id = create_group_names(
+                custom_group_labels, gno, key_index_bounds, keys_sub
+            )
             try:
                 s = _make_average(frames_sub, output_columns)
             except ValueError as e:
@@ -1079,7 +1081,7 @@ def create_group_names(custom_group_labels, gno, key_index_bounds, keys_sub):
             set(
                 [
                     splitter.join(
-                        k.split(splitter)[key_index_bounds[0]: key_index_bounds[1]]
+                        k.split(splitter)[key_index_bounds[0] : key_index_bounds[1]]
                     )
                     for k in keys_sub
                 ]
@@ -1104,7 +1106,9 @@ def fix_group_names(keys):
     return keys
 
 
-def collect_frames(frames, group_it: bool, hdr_norm_cycle: str, keys: list, normalize_cycles: bool):
+def collect_frames(
+    frames, group_it: bool, hdr_norm_cycle: str, keys: list, normalize_cycles: bool
+):
     """Helper function for concat_summaries."""
     cycle_header = "cycle"
     normalized_cycle_header = "equivalent_cycle"
@@ -1120,9 +1124,7 @@ def collect_frames(frames, group_it: bool, hdr_norm_cycle: str, keys: list, norm
         id_vars.extend([group_header, sub_group_header])
 
     if normalize_cycles:
-        cdf = cdf.rename(
-            columns={hdr_norm_cycle: normalized_cycle_header}
-        )
+        cdf = cdf.rename(columns={hdr_norm_cycle: normalized_cycle_header})
     return cdf
 
 

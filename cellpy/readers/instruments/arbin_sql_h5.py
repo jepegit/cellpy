@@ -186,7 +186,9 @@ class DataLoader(BaseLoader):
             try:
                 # data.raw[test_time_txt] = pd.to_timedelta(data.raw[test_time_txt])  # cellpy is not ready for this
                 # data.raw[step_time_txt] = pd.to_timedelta(data.raw[step_time_txt])  # cellpy is not ready for this
-                data.raw[date_time_txt] = pd.to_datetime(data.raw[date_time_txt], format=DATE_TIME_FORMAT)
+                data.raw[date_time_txt] = pd.to_datetime(
+                    data.raw[date_time_txt], format=DATE_TIME_FORMAT
+                )
             except ValueError:
                 logging.debug("could not convert to datetime format")
 
