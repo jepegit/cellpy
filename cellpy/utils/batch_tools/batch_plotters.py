@@ -5,15 +5,9 @@ import sys
 import warnings
 from collections import defaultdict
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-
-import plotly.express as px
-import plotly
-import plotly.io as pio
-import plotly.graph_objects as go
-
-import seaborn as sns
 
 from cellpy import prms
 from cellpy.exceptions import UnderDefined
@@ -21,20 +15,31 @@ from cellpy.parameters.internal_settings import get_headers_journal, get_headers
 from cellpy.utils.batch_tools.batch_core import BasePlotter
 from cellpy.utils.batch_tools.batch_experiments import CyclingExperiment
 
-# TODO: add palette to prms.Batch
+available_plotting_backends = ["matplotlib"]
 
 try:
     import bokeh
-
+    available_plotting_backends.append("bokeh")
 except ImportError:
-    prms.Batch.backend = "plotly"
-    logging.debug("could not import bokeh -> using plotly instead")
+    logging.debug("could not import bokeh")
+
+try:
+    import plotly.express as px
+    import plotly
+    import plotly.io as pio
+    import plotly.graph_objects as go
+    available_plotting_backends.append("plotly")
+except ImportError:
+    logging.debug("could not import plotly")
+
+try:
+    import seaborn as sns
+    available_plotting_backends.append("seaborn")
+except ImportError:
+    logging.debug("could not import seaborn")
 
 hdr_journal = get_headers_journal()
 hdr_summary = get_headers_summary()
-
-
-# print(prms.Batch.backend)
 
 
 def create_legend(info, c, option="clean", use_index=False):
@@ -170,9 +175,12 @@ def create_summary_plot_bokeh(
     #   or defaulting to datashader for large files.
 
     warnings.warn(
-        "This utility function will be seriously removed and replaced with a plotly version soon.",
+        "This utility function is not maintained anymore.",
         category=DeprecationWarning,
     )
+
+    if "bokeh" not in available_plotting_backends:
+        raise ImportError("bokeh not available")
 
     if tools is None:
         tools = "pan,box_zoom,reset,save"
@@ -325,7 +333,9 @@ def plot_cycle_life_summary_bokeh(
     add_rate=True,
     **kwargs,
 ):
-    # TODO: This function should be refactored!
+    if "bokeh" not in available_plotting_backends:
+        raise ImportError("bokeh not available")
+
     if height_fractions is None:
         height_fractions = [0.3, 0.4, 0.3]
     logging.debug(f"   * stacking and plotting")
@@ -407,10 +417,6 @@ def plot_cycle_life_summary_bokeh(
     h_cap = int(height_fractions[1] * height)
     h_ir = int(height_fractions[2] * height)
     group_styles, sub_group_styles = create_plot_option_dicts(info)
-    print("-----------------------------------")
-    print(info)
-    print(group_styles)
-    print(sub_group_styles)
 
     p_eff, legends_eff = create_summary_plot_bokeh(
         coulombic_efficiency,
@@ -574,11 +580,9 @@ def plot_cycle_life_summary_matplotlib(
     **kwargs,
 ):
     warnings.warn(
-        "This utility function will be seriously changed soon and possibly removed",
+        "This utility function is not maintained anymore",
         category=DeprecationWarning,
     )
-
-    import matplotlib.pyplot as plt
 
     logging.debug(f"   * stacking and plotting")
     logging.debug(f"      backend: {prms.Batch.backend}")
@@ -722,6 +726,11 @@ def summary_plotting_engine(**kwargs):
     barn = None
     backend = prms.Batch.backend
     logging.debug(f"Using {prms.Batch.backend} for plotting summaries")
+    if backend not in available_plotting_backends:
+        warnings.warn(f"The back-end {backend} is not available.")
+        warnings.warn(f"Available back-ends are: {available_plotting_backends}")
+        warnings.warn("Consider installing the missing back-end.")
+        return farms, barn
 
     if backend in ["bokeh", "matplotlib"]:
         farms = _preparing_data_and_plotting_legacy(
@@ -738,18 +747,11 @@ def summary_plotting_engine(**kwargs):
             )
             farms.append(canvas)
             canvas.show()
-    else:
-        logging.info(f"the back-end {backend} is not implemented yet.")
 
     return farms, barn
 
 
 def generate_summary_plots(experiment, **kwargs):
-    width = kwargs.pop("width", prms.Batch.summary_plot_width)
-    height = kwargs.pop("height", prms.Batch.summary_plot_height)
-    height_fractions = kwargs.pop(
-        "height_fractions", prms.Batch.summary_plot_height_fractions
-    )
     pages = experiment.journal.pages
     backend = prms.Batch.backend
     plotters = {
@@ -762,17 +764,13 @@ def generate_summary_plots(experiment, **kwargs):
         logging.info("could not process the summaries")
         return
 
-    canvas = plotters[backend](summaries, **kwargs)
-
-    # try:
-    #     print("trying")
-    #     canvas = plotters[backend](
-    #        summaries, width, height, height_fractions, **kwargs
-    #     )
-    #     print("done")
-    # except Exception as e:
-    #     logging.info(f"could not generate summary plots ({e})")
-    #     return
+    try:
+        canvas = plotters[backend](
+           summaries, **kwargs
+        )
+    except Exception as e:
+        logging.info(f"could not generate summary plots ({e})")
+        return
 
     return canvas
 
