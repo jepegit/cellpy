@@ -115,8 +115,8 @@ class LabJournal(BaseJournal, ABC):
         """
         txt += "<h3>Session info</h3>"
         if self.session:
-            for key in self.session:
-                txt += f"<p><b>{key}</b>: {self.session[key]}</p>"
+            for session_key in self.session:
+                txt += f"<p><b>{session_key}</b>: {self.session[session_key]}</p>"
 
         txt += "<h3>Pages</h3>"
         try:

@@ -118,6 +118,10 @@ class CyclingExperiment(BaseExperiment):
         """
         txt += "<h3>Cells</h3>"
         txt += f"<p><b>data</b>: contains {len(self)} cells.</p>"
+        txt += "<h3>Errors</h3>"
+        txt += f"<p><b>errors</b>: contains {len(self.errors)} errors.</p>"
+        txt += "<h3>Log</h3>"
+        txt += f"<p><b>log</b>: contains {len(self.log)} log entries.</p>"
         return txt
 
     @staticmethod

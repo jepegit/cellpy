@@ -416,8 +416,10 @@ class Batch:
         """Access cells as a Data object (attribute lookup and automatic loading)
 
         Usage (at least in jupyter notebook):
-            Write `b.cells.x` and press <TAB>. Then a pop-up will appear, and you can choose the
-            cell you would like to retrieve.
+            Write `b.cells.x` and press <TAB>. Then a pop-up might appear, and you can choose the
+            cell you would like to retrieve. UPDATE! It seems that it is not always working as intended,
+            at least not in my jupyter lab anymore. Instead, you can use `b.experiment.data` or
+            write `cells = b.cells` and then use `cells.x` and press <TAB> to get the pop-up.
         """
         return self.experiment.data
 
@@ -488,19 +490,6 @@ class Batch:
             current folder).
         """
         self.experiment.journal.duplicate_journal(folder)
-        #
-        # logging.debug(f"duplicating journal to folder {folder}")
-        # journal_name = pathlib.Path(self.experiment.journal.file_name)
-        # if not journal_name.is_file():
-        #     logging.info("No journal saved")
-        #     return
-        # new_journal_name = journal_name.name
-        # if folder is not None:
-        #     new_journal_name = pathlib.Path(folder) / new_journal_name
-        # try:
-        #     shutil.copy(journal_name, new_journal_name)
-        # except shutil.SameFileError:
-        #     logging.debug("same file exception encountered")
 
     def create_journal(
         self,
@@ -937,8 +926,32 @@ class Batch:
         else:
             self.summary_collector.do(**kwargs)
 
-    def plot(self, output_filename=None, backend=None, reload_data=False, **kwargs):
-        """Plot the summaries (new version)"""
+    def plot(self, backend=None, reload_data=False, **kwargs):
+        """Plot the summaries (e.g. capacity vs. cycle number).
+
+        Args:
+            backend (str): plotting backend (plotly, bokeh, matplotlib, seaborn)
+            reload_data (bool): reload the data before plotting
+            **kwargs: sent to the plotter
+
+        Keyword Args:
+            color_map (str, any): color map to use (defaults to px.colors.qualitative.Set1
+                for plotly and "Set1" seaborn)
+
+            ce_range (list): optional range for the coulombic efficiency plot
+            min_cycle (int): minimum cycle number to plot
+            max_cycle (int): maximum cycle number to plot
+
+            title (str): title of the figure (defaults to "Cycle Summary")
+            x_label (str): title of the x-label (defaults to "Cycle Number")
+            direction (str): plot charge or discharge (defaults to "charge")
+            rate (bool): (defaults to False)
+            ir (bool): (defaults to True)
+
+            group_legends (bool): group the legends so that they can be turned visible/invisible
+                as a group (defaults to True) (only for plotly)
+            base_template (str): template to use for the plot (only for plotly)
+        """
 
         if reload_data or ("summary_engine" not in self.experiment.memory_dumped):
             logging.debug("running summary_collector")
@@ -956,20 +969,20 @@ class Batch:
             prms.Batch.backend = backend
 
         if backend == "bokeh":
-            print("...Using old plotter - this will soon change")
+            print("...Using old plotter - this will change soon")
             self.plot_summaries(
-                output_filename=output_filename,
+                output_filename=None,
                 backend="bokeh",
-                reload_data=reload_data,
+                reload_data=False,
                 **kwargs,
             )
 
         elif backend == "matplotlib":
-            print("...Using old plotter - this will soon change")
+            print("...Using old plotter - this will change soon")
             self.plot_summaries(
-                output_filename=output_filename,
+                output_filename=None,
                 backend="matplotlib",
-                reload_data=reload_data,
+                reload_data=False,
                 **kwargs,
             )
 
@@ -991,6 +1004,7 @@ class Batch:
     ) -> None:
         """Plot the summaries"""
 
+        warnings.warn("Deprecated - use plot instead.", DeprecationWarning)
         if reload_data or ("summary_engine" not in self.experiment.memory_dumped):
             logging.debug("running summary_collector")
             self.summary_collector.do(reset=True)
@@ -1020,6 +1034,66 @@ class Batch:
                 )
 
         self.plotter.do(**kwargs)
+
+
+def load(name, project, batch_col=None, allow_from_journal=True, **kwargs):
+    """
+    Load a batch from a journal file or create a new batch and load it if the journal file does not exist.
+
+    Args:
+        name (str): name of batch
+        project (str): name of project
+        batch_col (str): batch column identifier (only used for loading from db with simple_db_reader)
+        allow_from_journal (bool): if True, the journal file will be loaded if it exists
+        **kwargs: sent to Batch during initialization
+
+    Returns:
+        populated Batch object (cellpy.utils.batch.Batch)
+    """
+
+    if allow_from_journal:
+        b = Batch(name=name, project=project, batch_col=batch_col, db_reader=None)
+        try:
+            print("checking if it is possible to load from journal file")
+            b.experiment.journal.generate_file_name()
+            journal_file = b.experiment.journal.file_name
+            print(f" - journal file name: {journal_file}")
+        except Exception as e:
+            print(f"could not generate journal file name: {e}")
+        else:
+            if pathlib.Path(journal_file).is_file():
+                print(f" - loading journal file {journal_file}")
+                b.experiment.journal.from_file(journal_file)
+                print(f" - linking")
+                b.link()
+                print("OK!")
+                return b
+            else:
+                print(f" - journal file not found")
+
+    auto_use_file_list = kwargs.pop("auto_use_file_list", None)
+    try:
+        print("loading information from db")
+        if batch_col is None:
+            batch_col = "b01"  # this is needed due to a bug in cellpy (will be fixed when new db reader is ready)
+        b = init(name=name, project=project, batch_col=batch_col, **kwargs)
+    except Exception as e:
+        print(f"could not initialize batch: {e}")
+        return None
+
+    b.create_journal(auto_use_file_list=auto_use_file_list)
+    print(" - created journal")
+    b.duplicate_journal()
+    print(" - duplicated journal")
+    b.paginate()
+    print(" - paginated")
+    print(" - updating...")
+    b.update()
+    print(" - updated")
+    b.combine_summaries()
+    print(" - collected and combined summaries")
+    print("OK!")
+    return b
 
 
 def init(*args, empty=False, **kwargs) -> Batch:
