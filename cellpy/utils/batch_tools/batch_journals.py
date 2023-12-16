@@ -120,6 +120,7 @@ class LabJournal(BaseJournal, ABC):
         """
         txt += "<h3>Session info</h3>"
         if self.session:
+            txt += f"<p>(type=dictionary | id={hex(id(self.session))})</p>"
             for session_key in self.session:
                 txt += f"<p><b>{session_key}</b>: {self.session[session_key]}</p>"
 

@@ -1122,7 +1122,22 @@ class Batch:
         self.plotter.do(**kwargs)
 
 
-def load(name, project, batch_col=None, allow_from_journal=True, **kwargs):
+def load_journal(journal_file, **kwargs):
+    """Edit a journal file.
+
+    Args:
+        journal_file (str): path to journal file.
+        **kwargs: sent to Journal.from_file
+
+    Returns:
+        journal
+    """
+    journal = LabJournal(db_reader=None)
+    journal.from_file(journal_file, **kwargs)
+    return journal
+
+
+def load(name, project, batch_col=None, allow_from_journal=True, drop_bad_cells=True, **kwargs):
     """
     Load a batch from a journal file or create a new batch and load it if the journal file does not exist.
 
@@ -1131,6 +1146,7 @@ def load(name, project, batch_col=None, allow_from_journal=True, **kwargs):
         project (str): name of project
         batch_col (str): batch column identifier (only used for loading from db with simple_db_reader)
         allow_from_journal (bool): if True, the journal file will be loaded if it exists
+        drop_bad_cells (bool): if True, bad cells will be dropped (only apply if journal file is loaded)
         **kwargs: sent to Batch during initialization
 
     Returns:
@@ -1152,6 +1168,9 @@ def load(name, project, batch_col=None, allow_from_journal=True, **kwargs):
                 b.experiment.journal.from_file(journal_file)
                 print(f" - linking")
                 b.link()
+                if drop_bad_cells:
+                    print(f" - dropping bad cells")
+                    b.drop_bad_cells()
                 print("OK!")
                 return b
             else:
