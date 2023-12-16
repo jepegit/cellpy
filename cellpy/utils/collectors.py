@@ -13,9 +13,6 @@ from itertools import count
 from multiprocessing import Process
 
 import pandas as pd
-import plotly.express as px
-import plotly.io as pio
-import plotly.graph_objects as go
 import numpy as np
 
 import cellpy
@@ -25,12 +22,31 @@ from cellpy.utils.helpers import concat_summaries
 from cellpy.utils.plotutils import plot_concatenated
 from cellpy.utils import ica
 
-DEFAULT_CYCLES = [1, 10, 20]
+supported_backends = []
 
+try:
+    import plotly.express as px
+    import plotly.io as pio
+    import plotly.graph_objects as go
+    supported_backends.append("plotly")
+except ImportError:
+    print("WARNING: plotly not installed")
+
+try:
+    import seaborn as sns
+    supported_backends.append("seaborn")
+except ImportError:
+    print("WARNING: seaborn not installed")
+
+
+DEFAULT_CYCLES = [1, 10, 20]
 CELLPY_MINIMUM_VERSION = "1.0.0"
 PLOTLY_BASE_TEMPLATE = "seaborn"
 IMAGE_TO_FILE_TIMEOUT = 30
-SUPPORTED_BACKENDS = ["plotly"]
+
+if not supported_backends:
+    print("WARNING: no supported backends found")
+    print("WARNING: install plotly or seaborn to enable plotting")
 
 px_template_all_axis_shown = dict(
     xaxis=dict(
@@ -113,6 +129,7 @@ class BatchCollector:
         elevated_plotter_arguments=None,
         data_collector_arguments: dict = None,
         plotter_arguments: dict = None,
+        experimental: bool = False,
         **kwargs,
     ):
         """Update both the collected data and the plot(s).
@@ -136,7 +153,11 @@ class BatchCollector:
         self.data_collector = data_collector
         self.plotter = plotter
         self.nick = nick
-        self.backend = backend
+        self.experimental = experimental
+        if backend != "plotly" and not self.experimental:
+            print("WARNING: only plotly is supported at the moment")
+        else:
+            self.backend = backend
         self.collector_name = collector_name or "base"
 
         # Arguments given as default arguments in the subclass have "low" priority (below elevated arguments at least):
@@ -303,6 +324,7 @@ class BatchCollector:
     def render(self):
         self.figure = self.plotter(
             self.data,
+            backend=self.backend,
             journal=self.b.journal,
             units=self.units,
             **self.plotter_arguments,
@@ -478,7 +500,11 @@ class BatchCollector:
             logging.info(f"updating figure with {kwargs}")
             self._update_arguments(plotter_arguments=kwargs)
             self.render()
-        return self.figure
+
+        if self.backend == "seaborn":
+            return self.figure.figure
+        else:
+            return self.figure
 
     def preprocess_data_for_csv(self):
         logging.debug(f"the data layout {self.csv_layout} is not supported yet!")
@@ -527,7 +553,7 @@ class BatchCollector:
             self._image_exporter_plotly(filename_svg)
             self.figure.write_json(filename_json)
             print(f"saved plotly json file: {filename_json}")
-        elif self.backend == "matplotlib":
+        elif self.backend == "seaborn":
             print(f"TODO: implement saving {filename_png}")
             print(f"TODO: implement saving {filename_svg}")
             print(f"TODO: implement saving {filename_json}")
@@ -622,7 +648,6 @@ class BatchSummaryCollector(BatchCollector):
                 key_index_bound[0] to key_index_bound[1].
 
         Elevated plotter args:
-            backend (str): backend used (defaults to Bokeh)
             points (bool): plot points if True
             line (bool): plot line if True
             width: width of plot
@@ -654,7 +679,6 @@ class BatchSummaryCollector(BatchCollector):
 
         elevated_plotter_arguments = {
             "fig_title": fig_title,
-            "backend": backend,
             "title": title,
             "points": points,
             "line": line,
@@ -670,6 +694,7 @@ class BatchSummaryCollector(BatchCollector):
 
         super().__init__(
             b,
+            backend=backend,
             plotter=summary_plotter,
             data_collector=summary_collector,
             collector_name="summary",
@@ -1275,12 +1300,15 @@ def sequence_plotter(
 
     for k in kwargs:
         logging.debug(f"keyword argument sent to the backend: {k}")
-    if backend not in SUPPORTED_BACKENDS:
+    if backend not in supported_backends:
         print(f"Backend '{backend}' not supported", end="")
-        print(f" - supported backends: {SUPPORTED_BACKENDS}")
+        print(f" - supported backends: {supported_backends}")
         return
     curves = None
+
+    plotly_arguments = dict()
     seaborn_arguments = dict()
+    seaborn_post_plot_operations = dict()
 
     if method == "film":
         labels = {
@@ -1302,10 +1330,15 @@ def sequence_plotter(
             f"{x}": f"{x_label} ({x_unit})",
         }
         plotly_arguments = dict(x=x, y=y, labels=labels, markers=markers)
+        seaborn_arguments = dict(x=x, y=y, markers=markers)
+        seaborn_post_plot_operations["labels"] = labels
+
         if g == "variable" and len(collected_curves[g].unique()) > 1:
             plotly_arguments["facet_row"] = g
+            seaborn_arguments["row"] = g
         if standard_deviation:
             plotly_arguments["error_y"] = standard_deviation
+            seaborn_post_plot_operations["error_y"] = standard_deviation
 
     else:
         labels = {
@@ -1358,9 +1391,13 @@ def sequence_plotter(
         if group_cells:
             plotly_arguments["color"] = group
             plotly_arguments["symbol"] = subgroup
+            seaborn_arguments["hue"] = group
+            seaborn_arguments["style"] = subgroup
         else:
             plotly_arguments["markers"] = markers
             plotly_arguments["color"] = z
+            seaborn_arguments["hue"] = z
+            seaborn_arguments["style"] = z
 
     elif method == "summary":
         logging.info("sequence-plotter - summary")
@@ -1372,8 +1409,11 @@ def sequence_plotter(
         if group_cells:
             plotly_arguments["color"] = group
             plotly_arguments["symbol"] = subgroup
+            seaborn_arguments["hue"] = group
+            seaborn_arguments["style"] = subgroup
         else:
             plotly_arguments["color"] = z
+            seaborn_arguments["hue"] = z
 
     if backend == "plotly":
         if method == "fig_pr_cell":
@@ -1457,11 +1497,6 @@ def sequence_plotter(
             fig.update_layout(coloraxis_colorbar_title_text=color_bar_txt)
 
         elif method == "summary":
-            # print("TRYING...")
-            #
-            # print(f"{plotly_arguments=}")
-            # print(f"{kwargs=}")
-            # print(f"{curves.columns}")
             fig = px.line(
                 curves,
                 **plotly_arguments,
@@ -1513,6 +1548,103 @@ def sequence_plotter(
 
         return fig
 
+    elif backend == "seaborn":
+        # {'x': 'cycle', 'y': 'mean', 'labels': {'cycle': 'Cycle (n.)'}, 'markers': False, 'error_y': 'std'}
+        sns.set_theme(style="darkgrid")
+        # seaborn_arguments = dict(
+        #     data=curves,
+        #     x="cycle",
+        #     y="mean",
+        #     hue="cell",
+        #     size=None,
+        #     style=None,
+        #     units=None,
+        #     row=None,
+        #     col=None,
+        #     col_wrap=None,
+        #     row_order=None,
+        #     col_order=None,
+        #     palette="Set1",
+        #     hue_order=None,
+        #     hue_norm=None,
+        #     sizes=None,
+        #     size_order=None,
+        #     size_norm=None,
+        #     markers=True,
+        #     dashes=None,
+        #     style_order=None,
+        #     legend="auto",
+        #     kind="line",
+        #     height=3,
+        #     aspect=3,
+        #     facet_kws=None,
+        #     linewidth=2.0,
+        #     **kwargs,
+        # )
+
+        if not seaborn_arguments.get("marker"):
+            seaborn_arguments["dashes"] = False
+        seaborn_arguments["kind"] = "line"
+        seaborn_arguments["height"] = 3
+        seaborn_arguments["aspect"] = 3
+        seaborn_arguments["linewidth"] = 2.0
+        seaborn_arguments["facet_kws"] = {
+            "sharex": True,
+            "sharey": False,
+            "legend_out": True,
+        }
+        print(f"{seaborn_arguments=}\n{kwargs=}")
+        print(f"{seaborn_post_plot_operations=}")
+        print(curves)
+
+        fig_grid = sns.relplot(
+            data=curves,
+            **seaborn_arguments,
+            **kwargs,
+        )
+
+        # if group_cells:
+        #     try:
+        #         fig.for_each_trace(
+        #             functools.partial(
+        #                 legend_replacer,
+        #                 df=curves,
+        #                 group_legends=group_legend_muting,
+        #             )
+        #         )
+        #         if markers is not True:
+        #             fig.for_each_trace(remove_markers)
+        #     except Exception as e:
+        #         print("failed")
+        #         print(e)
+        #
+        # if y_label_mapper:
+        #     annotations = fig.layout.annotations
+        #     if annotations:
+        #         try:
+        #             # might consider a more robust method here - currently
+        #             # it assumes that the mapper is a list with same order
+        #             # and length as number of rows
+        #             for i, (a, la) in enumerate(zip(annotations, y_label_mapper)):
+        #                 row = i + 1
+        #                 fig.for_each_yaxis(
+        #                     functools.partial(y_axis_replacer, label=la),
+        #                     row=row,
+        #                 )
+        #             fig.update_annotations(text="")
+        #         except Exception as e:
+        #             print("failed")
+        #             print(e)
+        #     else:
+        #         try:
+        #             fig.for_each_yaxis(
+        #                 functools.partial(y_axis_replacer, label=y_label_mapper[0]),
+        #             )
+        #         except Exception as e:
+        #             print("failed")
+        #             print(e)
+
+        return fig_grid
     elif backend == "matplotlib":
         print(f"{backend} not implemented yet")
 
@@ -1649,6 +1781,7 @@ def summary_plotter(collected_curves, cycles_to_plot=None, backend="plotly", **k
     1) long format (where variables, for example charge capacity, are in the column "variable") or
     2) mixed long and wide format where the variables are own columns.
     """
+
     col_headers = collected_curves.columns.to_list()
     possible_id_vars = [
         "cell",
@@ -1748,6 +1881,8 @@ def summary_plotter(collected_curves, cycles_to_plot=None, backend="plotly", **k
     )
     if backend == "plotly":
         fig.update_yaxes(matches=None, showticklabels=True)
+    elif backend == "seaborn":
+        print("using seaborn (experimental feature)")
     return fig
 
 
