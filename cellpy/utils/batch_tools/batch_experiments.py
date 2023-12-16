@@ -222,6 +222,12 @@ class CyclingExperiment(BaseExperiment):
 
         debugging = kwargs.pop("debug", False)
         testing = kwargs.pop("testing", False)
+        skip_bad_cells = kwargs.pop("skip_bad_cells", False)
+        experimental = kwargs.pop("experimental_mode", False)
+
+        if skip_bad_cells and not experimental:
+            print("Skipping bad cells is only available in experimental mode")
+            skip_bad_cells = False
 
         # --- cleaning up attributes / arguments etc ---
         force_cellpy = kwargs.pop("force_cellpy", self.force_cellpy)
@@ -233,6 +239,13 @@ class CyclingExperiment(BaseExperiment):
 
         logging.info(f"Additional keyword arguments: {kwargs}")
         selector = kwargs.get("selector", None)
+
+        try:
+            bad_cells = self.journal.session.bad_cells
+            if bad_cells is None:
+                bad_cells = []
+        except Exception:
+            bad_cells = []
 
         pages = self.journal.pages
         if self.nom_cap:
@@ -278,6 +291,12 @@ class CyclingExperiment(BaseExperiment):
             h_txt = f"{index}"
             n_txt = f"loading {counter}"
             l_txt = f"starting to process file # {counter} ({index})"
+
+            if skip_bad_cells:
+                if index in bad_cells:
+                    logging.info(f"Skipping bad cell: {index}")
+                    continue
+
             pbar.set_description(n_txt, refresh=True)
             cell_spec_page = self._get_cell_spec_from_page(index, row)
 

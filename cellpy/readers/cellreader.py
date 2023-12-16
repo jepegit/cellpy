@@ -6128,7 +6128,6 @@ def get(
 
     """
     from cellpy import log
-
     db_readers = ["arbin_sql", "arbin_sql_7"]
     instruments_with_colliding_file_suffix = ["arbin_sql_h5"]
 

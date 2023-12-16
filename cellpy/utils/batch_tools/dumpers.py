@@ -37,7 +37,8 @@ def csv_dumper(**kwargs):
 
         for animal in farm:
             file_name = os.path.join(out_dir, "summary_%s_%s.csv" % (animal.name, name))
-            logging.info(f"> {file_name}")
+            logging.debug(f"processing {name}::{animal.name}")
+            logging.info(f"-> {file_name}")
             animal.to_csv(file_name, sep=prms.Reader.sep)
 
 

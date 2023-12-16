@@ -741,6 +741,7 @@ def summary_plotting_engine(**kwargs):
         for experiment in experiments:
             if not isinstance(experiment, CyclingExperiment):
                 logging.debug(f"skipping {experiment} - not a CyclingExperiment")
+                logging.debug(f"({type(experiment)})")
                 continue
             canvas = generate_summary_plots(
                 experiment=experiment, farms=farms, **kwargs

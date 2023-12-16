@@ -50,12 +50,12 @@ def cycles_engine(**kwargs):
         if experiment.all_in_memory:
             logging.debug("all in memory")
             for key in experiment.cell_data_frames:
-                logging.debug(f"extracting cycles from {key}")
+                logging.debug(f"extracting cycles from {key} (NOT IMPLEMENTED YET)")
                 # extract cycles here and send it to the farm
         else:
             logging.debug("dont have it in memory - need to lookup in the files")
             for key in experiment.cell_data_frames:
-                logging.debug(f"looking up cellpyfile for {key}")
+                logging.debug(f"looking up cellpyfile for {key} (NOT IMPLEMENTED YET)")
                 # extract cycles here and send it to the farm
 
     return farms, barn

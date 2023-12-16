@@ -448,6 +448,88 @@ class Batch:
         for cell_label in cell_labels_to_remove:
             del self.experiment.cell_data_frames[cell_label]
 
+    def drop_cell(self, cell_label):
+        """Drop a cell from the journal.
+
+        Args:
+            cell_label: the cell label of the cell you would like to remove.
+        """
+
+        if cell_label not in self.pages.index:
+            logging.critical(f"could not find {cell_label}")
+        else:
+            self.pages = self.pages.drop(cell_label)
+
+    def drop_cells(self, cell_labels):
+        """Drop cells from the journal.
+
+        Args:
+            cell_labels: the cell labels of the cells you would like to remove.
+        """
+
+        for cell_label in cell_labels:
+            self.drop_cell(cell_label)
+
+    def drop_bad_cells(self):
+        """Drop bad cells from the journal (experimental feature)."""
+
+        try:
+            cell_labels = self.journal.session["bad_cells"]
+        except AttributeError:
+            logging.critical(
+                "session info about bad cells is missing - cannot drop"
+            )
+            return
+        if cell_labels is None:
+            logging.debug("no bad cells to drop")
+            return
+        self.drop_cells(cell_labels)
+
+    def mark_as_bad(self, cell_label):
+        """Mark a cell as bad (experimental feature).
+
+        Args:
+            cell_label: the cell label of the cell you would like to mark as bad.
+        """
+        if cell_label not in self.pages.index:
+            logging.critical(f"could not find {cell_label}")
+            return
+
+        try:
+            cell_labels = self.journal.session["bad_cells"]
+        except AttributeError:
+            cell_labels = []
+        if cell_labels is None:
+            cell_labels = []
+
+        if cell_label not in cell_labels:
+            cell_labels.append(cell_label)
+        self.journal.session["bad_cells"] = cell_labels
+
+    def remove_mark_as_bad(self, cell_label):
+        """Remove the bad cell mark from a cell (experimental feature).
+
+        Args:
+            cell_label: the cell label of the cell you would like to remove the bad mark from.
+        """
+
+        if cell_label not in self.pages.index:
+            logging.critical(f"could not find {cell_label} in pages")
+        try:
+            cell_labels = self.journal.session["bad_cells"]
+        except AttributeError:
+            logging.critical(f"could not find 'bad_cells' session info")
+            return
+
+        if not cell_labels:
+            logging.critical(f"nothing to remove - found nothing marked as 'bad_cells'")
+            return
+
+        if cell_label in cell_labels:
+            cell_labels.remove(cell_label)
+            logging.info(f"removed {cell_label} from bad_cells")
+        self.journal.session["bad_cells"] = cell_labels
+
     @property
     def journal(self) -> LabJournal:
         return self.experiment.journal
