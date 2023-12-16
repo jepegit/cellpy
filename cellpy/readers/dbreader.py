@@ -107,11 +107,10 @@ class Reader(BaseDbReader):
         logging.debug(self.table)
 
     def __str__(self):
-        newline = "\n  - "
-        txt = f"<Reader:: \n  - {newline.join(self.__dict__)} \n>\n"
-        txt += "Reader.table.head():\n"
-        txt += str(self.table.head())
-        return txt
+        return f"<ExcelReader> (rows: {len(self.table)}, cols: {len(self.table.columns)})"
+
+    def _repr_html_(self):
+        return f"<b>ExcelReader</b> (rows: {len(self.table)}, cols: {len(self.table.columns)})"
 
     def select_batch(
         self, batch, batch_col_name=None, case_sensitive=True, drop=True

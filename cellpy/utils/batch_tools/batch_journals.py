@@ -87,6 +87,11 @@ class LabJournal(BaseJournal, ABC):
         self.batch_col = batch_col or "b01"
 
     def _repr_html_(self):
+        if hasattr(self.db_reader, "_repr_html_"):
+            db_reader_txt = self.db_reader._repr_html_()
+        else:
+            db_reader_txt = self.db_reader.__str__()
+
         txt = f"<h2>LabJournal-object</h2> id={hex(id(self))}"
         txt += "<h3>Main attributes</h3>"
         txt += f"""
@@ -101,9 +106,9 @@ class LabJournal(BaseJournal, ABC):
                 <tr><td><b>name</b></td><td>{self.name}</td></tr>
                 <tr><td><b>project</b></td><td>{self.project}</td></tr>
                 <tr><td><b>file_name</b></td><td>{self.file_name}</td></tr>
-                <tr><td><b>db_reader</b></td><td>{self.db_reader}</td></tr>
+                <tr><td><b>db_reader</b></td><td>{db_reader_txt}</td></tr>
         """
-        if self.db_reader == "default":
+        if self.db_reader == "default" or isinstance(self.db_reader, dbreader.Reader):
             txt += f"<tr><td><b>batch_col</b></td><td>{self.batch_col}</td></tr>"
         txt += f"""
                 <tr><td><b>time_stamp</b></td><td>{self.time_stamp}</td></tr>

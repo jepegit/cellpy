@@ -985,6 +985,10 @@ class Batch:
                 reload_data=False,
                 **kwargs,
             )
+            # 1: summary_plotting_engine
+            # 2:   _preparing_data_and_plotting_legacy
+            # 3:   _plotting_data_legacy
+            # 4:   plot_cycle_life_summary_[backend]
 
         elif backend == "plotly":
             self.plotter.do(**kwargs)
@@ -992,8 +996,8 @@ class Batch:
         elif backend == "seaborn":
             self.plotter.do(**kwargs)
             # 1: summary_plotting_engine
-            # 2:   _preparing_data_and_plotting_legacy
-            # 3:   _plotting_data_legacy
+            # 2:   generate_summary_plots
+            # 3:   generate_summary_frame_for_plotting
             # 4:   plot_cycle_life_summary_[backend]
 
         else:

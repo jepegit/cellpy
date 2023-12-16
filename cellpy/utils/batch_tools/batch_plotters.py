@@ -779,7 +779,6 @@ def generate_summary_frame_for_plotting(pages, experiment, **kwargs):
     trim_pages = kwargs.pop("trim_pages", False)
     keys = [df.name for df in experiment.memory_dumped["summary_engine"]]
     summaries = pd.concat(experiment.memory_dumped["summary_engine"], keys=keys, axis=1)
-
     summaries = summaries.reset_index()
     summaries.columns.names = ["variable", "cell"]
 
@@ -802,12 +801,12 @@ def generate_summary_frame_for_plotting(pages, experiment, **kwargs):
     for _optional_summary in _optional_summaries:
         if _optional_summary in summaries.columns:
             _required_summaries.append(_optional_summary)
-
     summaries = summaries.loc[:, _required_summaries]
     summaries = summaries.melt(id_vars=[hdr_cycle])
 
-    pages = pages.copy().reset_index()
-    pages = pages.rename(columns={"index": "cell"})
+    pages = pages.copy()
+    pages.index.name = "cell"
+    pages = pages.reset_index()
 
     if trim_pages:
         try:
@@ -827,10 +826,12 @@ def generate_summary_frame_for_plotting(pages, experiment, **kwargs):
                     "sub_group",
                 ],
             ]
-        except KeyError:
-            logging.debug("could not trim pages")
-
-    summaries = summaries.merge(pages, on="cell")
+        except KeyError as e:
+            logging.debug(f"could not trim pages ({e})")
+    try:
+        summaries = summaries.merge(pages, on="cell")
+    except Exception as e:
+        logging.debug(f"could not merge summaries and pages ({e})")
     return summaries
 
 
