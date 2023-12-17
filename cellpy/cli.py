@@ -1730,9 +1730,12 @@ def _get_author_name():
     return author_name
 
 
-def _serve(server):
+def _serve(server, executable=None):
     click.echo(f"serving with jupyter {server}")
-    subprocess.run(["jupyter", server], check=True)
+    # TODO: search for jupyter and find the right one
+    if executable is None:
+        executable = "jupyter"
+    subprocess.run([executable, server], check=True)
     click.echo("Finished serving.")
 
 
@@ -1740,7 +1743,12 @@ def _serve(server):
 @click.command()
 @click.option("--lab", "-l", is_flag=True, help="Use Jupyter Lab instead of Notebook")
 @click.option("--directory", "-d", default=None, help="Start in custom directory DIR")
-def serve(lab, directory):
+@click.option(
+    "--executable", "-e",
+    default=None,
+    help="Custom Jupyter executable (needed if Jupyter is not in the same env as cellpy)"
+)
+def serve(lab, directory, executable):
     """Start a Jupyter server."""
 
     from cellpy.parameters import prms
@@ -1763,7 +1771,7 @@ def serve(lab, directory):
         server = "notebook"
 
     os.chdir(directory)
-    _serve(server)
+    _serve(server, executable=executable)
 
 
 cli.add_command(setup)
