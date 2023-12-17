@@ -1137,7 +1137,7 @@ def load_journal(journal_file, **kwargs):
     return journal
 
 
-def load(name, project, batch_col=None, allow_from_journal=True, drop_bad_cells=True, **kwargs):
+def load(name, project, batch_col=None, allow_from_journal=True, drop_bad_cells=True, force_reload=False, **kwargs):
     """
     Load a batch from a journal file or create a new batch and load it if the journal file does not exist.
 
@@ -1146,6 +1146,7 @@ def load(name, project, batch_col=None, allow_from_journal=True, drop_bad_cells=
         project (str): name of project
         batch_col (str): batch column identifier (only used for loading from db with simple_db_reader)
         allow_from_journal (bool): if True, the journal file will be loaded if it exists
+        force_reload (bool): if True, the batch will be reloaded even if the journal file exists
         drop_bad_cells (bool): if True, bad cells will be dropped (only apply if journal file is loaded)
         **kwargs: sent to Batch during initialization
 
@@ -1166,8 +1167,12 @@ def load(name, project, batch_col=None, allow_from_journal=True, drop_bad_cells=
             if pathlib.Path(journal_file).is_file():
                 print(f" - loading journal file {journal_file}")
                 b.experiment.journal.from_file(journal_file)
-                print(f" - linking")
-                b.link()
+                if force_reload:
+                    print(f" - reloading")
+                    b.update()
+                else:
+                    print(f" - linking")
+                    b.link()
                 if drop_bad_cells:
                     print(f" - dropping bad cells")
                     b.drop_bad_cells()

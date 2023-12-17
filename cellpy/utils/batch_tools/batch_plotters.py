@@ -992,10 +992,10 @@ def plot_cycle_life_summary_plotly(summaries: pd.DataFrame, **kwargs):
 
     summaries = summaries.loc[summaries.variable.isin(selected_summaries), :]
     if max_cycle:
-        summaries = summaries.loc[_summaries[hdr_cycle] <= max_cycle, :]
+        summaries = summaries.loc[summaries[hdr_cycle] <= max_cycle, :]
 
     if min_cycle:
-        summaries = summaries.loc[_summaries[hdr_cycle] >= min_cycle, :]
+        summaries = summaries.loc[summaries[hdr_cycle] >= min_cycle, :]
 
     labels = _make_labels()
     sub_titles = [labels.get(n, n.replace("_", " ").title()) for n in plotted_summaries]

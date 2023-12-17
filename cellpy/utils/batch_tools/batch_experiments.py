@@ -224,6 +224,8 @@ class CyclingExperiment(BaseExperiment):
         testing = kwargs.pop("testing", False)
         skip_bad_cells = kwargs.pop("skip_bad_cells", False)
         experimental = kwargs.pop("experimental_mode", False)
+        find_ir = kwargs.pop("find_ir", True)
+        find_end_voltage = kwargs.pop("find_end_voltage", True)
 
         if skip_bad_cells and not experimental:
             print("Skipping bad cells is only available in experimental mode")
@@ -334,6 +336,7 @@ class CyclingExperiment(BaseExperiment):
 
             summary_kwargs = {
                 "use_cellpy_stat_file": prms.Reader.use_cellpy_stat_file,
+                "find_ir": find_ir,
             }
 
             step_kwargs = {}
@@ -408,7 +411,7 @@ class CyclingExperiment(BaseExperiment):
                 logging.info("Running make_summary")
                 n_txt = f"summary {counter}"
                 pbar.set_description(n_txt, refresh=True)
-                cell_data.make_summary(find_end_voltage=True, find_ir=True)
+                cell_data.make_summary(find_end_voltage=find_end_voltage, find_ir=find_ir)
 
             # some clean-ups (might not be needed anymore):
             if not summary_tmp.index.name == hdr_summary.cycle_index:
@@ -567,6 +570,8 @@ class CyclingExperiment(BaseExperiment):
         # --- cleaning up attributes / arguments etc ---
         force_cellpy = kwargs.pop("force_cellpy", self.force_cellpy)
         force_raw = kwargs.pop("force_raw", self.force_raw)
+        find_ir = kwargs.pop("find_ir", True)
+        find_end_voltage = kwargs.pop("find_end_voltage", True)
 
         logging.info("[update experiment]")
         if all_in_memory is not None:
@@ -652,6 +657,8 @@ class CyclingExperiment(BaseExperiment):
 
                 summary_kwargs = {
                     "use_cellpy_stat_file": prms.Reader.use_cellpy_stat_file,
+                    "find_ir": find_ir,
+                    "find_end_voltage": find_end_voltage,
                 }
 
                 step_kwargs = {}
@@ -710,7 +717,7 @@ class CyclingExperiment(BaseExperiment):
 
                 if summary_tmp is None or self.force_recalc:
                     logging.info("Running make_summary")
-                    cell_data.make_summary(find_end_voltage=True, find_ir=True)
+                    cell_data.make_summary(find_end_voltage=find_end_voltage, find_ir=find_ir)
 
                 # some clean-ups (might not be needed anymore):
                 if not summary_tmp.index.name == hdr_summary.cycle_index:
