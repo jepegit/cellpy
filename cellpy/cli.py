@@ -1470,14 +1470,20 @@ def _read_local_templates(local_templates_path=None):
     "-r",
     "run_",
     is_flag=True,
-    help="Use PaperMill to run the notebook(s) from the template "
-    "(will only work properly if the notebooks can be sorted in correct run-order by 'sorted'.",
+    help="Use PaperMill to run the notebook(s) from the template (will only work properly if "
+         "the notebooks can be sorted in correct run-order by 'sorted' and "
+         "cellpy can find the jupyter executable).",
 )
 @click.option(
     "--lab",
     "-j",
     is_flag=True,
     help="Use Jupyter Lab instead of Notebook when serving.",
+)
+@click.option(
+    "--jupyter-executable",
+    default=None,
+    help="Jupyter executable.",
 )
 @click.option(
     "--list", "-l", "list_", is_flag=True, help="List available templates and exit."
@@ -1491,6 +1497,7 @@ def new(
     serve_,
     run_,
     lab,
+    executable,
     list_,
 ):
     """Set up a batch experiment (might need git installed)."""
@@ -1503,6 +1510,7 @@ def new(
         serve_=serve_,
         run_=run_,
         lab=lab,
+        executable=executable,
         list_=list_,
     )
 
@@ -1516,6 +1524,7 @@ def _new(
     run_: bool = False,
     lab: bool = False,
     list_: bool = False,
+    executable: Union[str, None] = None,
     session_id: str = "experiment_001",
     no_input: bool = False,
     cookie_directory: str = "",
@@ -1529,6 +1538,7 @@ def _new(
         serve_: serve the notebook after creation if True.
         run_: run the notebooks using papermill if True.
         lab: use jupyter-lab instead of jupyter notebook if True.
+        executable: path to jupyter executable.
         list_: list all available templates and return if True.
         project_dir: your project directory.
         session_id: the lookup value.
@@ -1691,9 +1701,11 @@ def _new(
 
     if serve_:
         os.chdir(directory)
-        _serve(server)
+        _serve(server, executable)
 
-    if run_:
+    elif run_:
+        click.echo("WARNING - experimental feature - use at your own risk")
+        input("Press Enter to continue...")
         try:
             import papermill as pm
         except ImportError:
