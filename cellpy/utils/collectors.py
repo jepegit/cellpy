@@ -155,7 +155,9 @@ class BatchCollector:
         self.nick = nick
         self.experimental = experimental
         if backend != "plotly" and not self.experimental:
+            print(f"{backend=}")
             print("WARNING: only plotly is supported at the moment")
+            self.backend = "plotly"
         else:
             self.backend = backend
         self.collector_name = collector_name or "base"
@@ -610,7 +612,7 @@ class BatchSummaryCollector(BatchCollector):
         inverse=None,
         inverted: bool = None,
         key_index_bounds=None,
-        backend: str = None,
+        backend: str = "plotly",
         title: str = None,
         points: bool = None,
         line: bool = None,
@@ -625,6 +627,9 @@ class BatchSummaryCollector(BatchCollector):
         **kwargs,
     ):
         """Collects and shows summaries.
+
+        Arguments:
+            backend (str): what plotting backend to use (currently only 'plotly' is supported)
 
         Elevated data collector args:
             max_cycle (int): drop all cycles above this value.
@@ -798,7 +803,7 @@ class BatchICACollector(BatchCollector):
         rate_agg=None,
         inverse=False,
         label_mapper=None,
-        backend=None,
+        backend="plotly",
         cycles_to_plot=None,
         width=None,
         palette=None,
@@ -826,7 +831,6 @@ class BatchICACollector(BatchCollector):
             label_mapper=label_mapper,
         )
         elevated_plotter_arguments = dict(
-            backend=backend,
             cycles_to_plot=cycles_to_plot,
             width=width,
             palette=palette,
@@ -842,6 +846,7 @@ class BatchICACollector(BatchCollector):
             plotter=ica_plotter,
             data_collector=ica_collector,
             collector_name="ica",
+            backend=backend,
             elevated_data_collector_arguments=elevated_data_collector_arguments,
             elevated_plotter_arguments=elevated_plotter_arguments,
             *args,
@@ -888,7 +893,7 @@ class BatchCyclesCollector(BatchCollector):
         rate_agg=None,
         inverse=False,
         label_mapper=None,
-        backend=None,
+        backend="plotly",
         cycles_to_plot=None,
         width=None,
         palette=None,
@@ -905,6 +910,7 @@ class BatchCyclesCollector(BatchCollector):
         Args:
             b:
             plot_type (str): either 'fig_pr_cell' or 'fig_pr_cycle'
+            backend (str): what plotting backend to use (currently only 'plotly' is supported)
             collector_type (str): how the curves are given
                 "back-and-forth" - standard back and forth; discharge
                     (or charge) reversed from where charge (or discharge) ends.
@@ -927,7 +933,6 @@ class BatchCyclesCollector(BatchCollector):
                 Remark! No check are performed to ensure that the new cell labels are unique.
 
         Elevated plotter args:
-            backend (str): backend used (defaults to Bokeh)
             cycles_to_plot (int): plot points if True
             width (float): width of plot
             legend_position (str): position of the legend
@@ -948,7 +953,6 @@ class BatchCyclesCollector(BatchCollector):
             inverse=inverse,
         )
         elevated_plotter_arguments = dict(
-            backend=backend,
             cycles_to_plot=cycles_to_plot,
             width=width,
             palette=palette,
@@ -969,6 +973,7 @@ class BatchCyclesCollector(BatchCollector):
             b,
             plotter=cycles_plotter,
             data_collector=cycles_collector,
+            backend=backend,
             collector_name="cycles",
             elevated_data_collector_arguments=elevated_data_collector_arguments,
             elevated_plotter_arguments=elevated_plotter_arguments,
@@ -1257,38 +1262,38 @@ def sequence_plotter(
 
     Args:
         collected_curves (pd.DataFrame): collected data in long format.
-        x: column name for x-values.
-        y: column name for y-values.
-        z: if method is 'fig_pr_cell', column name for color (legend), else for subplot.
-        g: if method is 'fig_pr_cell', column name for subplot, else for color.
+        x (str): column name for x-values.
+        y (str): column name for y-values.
+        z (str): if method is 'fig_pr_cell', column name for color (legend), else for subplot.
+        g (str): if method is 'fig_pr_cell', column name for subplot, else for color.
         standard_deviation: str = standard deviation column (skipped if None).
-        group: str = "group",
-        subgroup: str = "sub_group",
-        x_label: str = "",
-        x_unit:
-        y_label:
-        y_unit:
-        z_label: str = "Cycle"
-        z_unit: str = "n."
-        y_label_mapper: dict
-        nbinsx: int = 100
-        histfunc: str = "avg"
-        histscale (str) = "abs-log" used for scaling the z-values for 2D array plots (heatmaps and similar).
-        direction (str) = "charge", "discharge", or "both".
-        direction_col (str) = "direction",
+        group (str): column name for group.
+        subgroup (str): column name for subgroup.
+        x_label (str): x-label.
+        x_unit (str): x-unit (will be put in parentheses after the label).
+        y_label (str): y-label.
+        y_unit (str): y-unit (will be put in parentheses after the label).
+        z_label (str): z-label.
+        z_unit (str): z-unit (will be put in parentheses after the label).
+        y_label_mapper (dict): map the y-labels to something else.
+        nbinsx (int): number of bins to use in interpolations.
+        histfunc (str): aggregation method.
+        histscale (str): used for scaling the z-values for 2D array plots (heatmaps and similar).
+        direction (str): "charge", "discharge", or "both".
+        direction_col (str): name of columns containing information about direction ("charge" or "discharge").
         method: 'fig_pr_cell' or 'fig_pr_cycle'.
         markers: set to True if you want markers.
-        group_cells (bool):
-        group_legend_muting (bool):
-        backend: what backend to use.
+        group_cells (bool): give each cell within a group same color.
+        group_legend_muting (bool): if True, you can click on the legend to mute the whole group.
+        backend (str): what backend to use.
         cycles: what cycles to include in the plot.
-        palette_discrete:
-        palette_continuous:
-        palette_range (tuple):
+        palette_discrete: palette to use for discrete color mapping.
+        palette_continuous: palette to use for continuous color mapping.
+        palette_range (tuple): range of palette to use for continuous color mapping (from 0 to 1).
         facetplot (bool): square layout with group horizontally and subgroup vertically.
-        cols: number of columns for layout.
-        height:
-        width:
+        cols (int): number of columns for layout.
+        height (int): plot height.
+        width (int): plot width.
 
         **kwargs: sent to backend (if `backend == "plotly"`, it will be
             sent to `plotly.express` etc.)
@@ -1666,6 +1671,7 @@ def _cycles_plotter(
     default_title="Charge-Discharge Curves",
     backend="plotly",
     method="fig_pr_cell",
+    match_axes=True,
     **kwargs,
 ):
     """Plot charge-discharge curves.
@@ -1673,6 +1679,7 @@ def _cycles_plotter(
     Args:
         collected_curves(pd.DataFrame): collected data in long format.
         backend (str): what backend to use.
+        match_axes (bool): if True, all subplots will have the same axes.
         method (str): 'fig_pr_cell' or 'fig_pr_cycle'.
 
         **kwargs: consumed first in current function, rest sent to backend in sequence_plotter.
@@ -1770,6 +1777,9 @@ def _cycles_plotter(
             height=height,
             width=width,
         )
+        if not match_axes:
+            fig.update_yaxes(matches=None)
+            fig.update_xaxes(matches=None)
 
     return fig
 

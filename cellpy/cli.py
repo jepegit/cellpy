@@ -1497,7 +1497,7 @@ def new(
     serve_,
     run_,
     lab,
-    executable,
+    jupyter_executable,
     list_,
 ):
     """Set up a batch experiment (might need git installed)."""
@@ -1510,7 +1510,7 @@ def new(
         serve_=serve_,
         run_=run_,
         lab=lab,
-        executable=executable,
+        executable=jupyter_executable,
         list_=list_,
     )
 
