@@ -360,7 +360,7 @@ class BaseExperiment(metaclass=abc.ABCMeta):
         self._max_cycle = value
 
     @property
-    def data(self):
+    def data(self) -> Data:
         """Property for accessing the underlying data in an experiment.
 
         Example:

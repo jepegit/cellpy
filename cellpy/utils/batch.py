@@ -182,6 +182,17 @@ class Batch:
     def name(self):
         return self.experiment.journal.name
 
+    def _check_cell_data_points(self, cell_id):
+        error_code = 0
+        try:
+            c = self.experiment.data[cell_id]
+            if not c.has_no_partial_duplicates(subset="data_point"):
+                error_code = 1
+            return error_code
+        except Exception as e:
+            logging.debug(f"Exception ignored: {e}")
+            return None
+
     def _check_cell_raw(self, cell_id):
         try:
             c = self.experiment.data[cell_id]
@@ -297,28 +308,58 @@ class Batch:
             else:
                 self.pages = self.pages.drop(cell_label)
 
-    def report(self, stylize=True):
+    def report(self, stylize=True, grouped=False, check=False):
         """Create a report on all the cells in the batch object.
 
         Remark! To perform a reporting, cellpy needs to access all the data (and it might take some time).
+
+        Args:
+            stylize (bool): apply some styling to the report (default True).
+            grouped (bool): add information based on the group cell belongs to (default False).
+            check (bool): check if the data seems to be without errors (0 = no errors, 1 = partial duplicates)
+                (default False).
 
         Returns:
             ``pandas.DataFrame``
         """
         pages = self.experiment.journal.pages
-        pages = pages[COLUMNS_SELECTED_FOR_VIEW].copy()
-        # pages["empty"] = pages.index.map(self._check_cell_empty)
-        pages["raw_rows"] = pages.index.map(self._check_cell_raw)
-        pages["steps_rows"] = pages.index.map(self._check_cell_steps)
-        pages["summary_rows"] = pages.index.map(self._check_cell_summary)
-        pages["last_cycle"] = pages.index.map(self._check_cell_cycles)
-        pages["average_capacity"] = pages.index.map(self._check_cell_avg_cap)
-        pages["max_capacity"] = pages.index.map(self._check_cell_max_cap)
-        pages["min_capacity"] = pages.index.map(self._check_cell_min_cap)
-        pages["std_capacity"] = pages.index.map(self._check_cell_std_cap)
+        r_pages = self.experiment.journal.pages[COLUMNS_SELECTED_FOR_VIEW].copy()
+        r_pages["empty"] = pages.index.map(self._check_cell_empty)
+        r_pages["raw_rows"] = pages.index.map(self._check_cell_raw)
+        r_pages["steps_rows"] = pages.index.map(self._check_cell_steps)
+        r_pages["summary_rows"] = pages.index.map(self._check_cell_summary)
+        r_pages["last_cycle"] = pages.index.map(self._check_cell_cycles)
+        r_pages["average_capacity"] = pages.index.map(self._check_cell_avg_cap)
+        r_pages["max_capacity"] = pages.index.map(self._check_cell_max_cap)
+        r_pages["min_capacity"] = pages.index.map(self._check_cell_min_cap)
+        r_pages["std_capacity"] = pages.index.map(self._check_cell_std_cap)
+        if check:
+            r_pages["error_code"] = pages.index.map(self._check_cell_data_points)
 
-        avg_last_cycle = pages.last_cycle.mean()
-        avg_max_capacity = pages.max_capacity.mean()
+        avg_last_cycle = r_pages.last_cycle.mean()
+        avg_max_capacity = r_pages.max_capacity.mean()
+
+        logging.info(f"average last cycle: {avg_last_cycle:.2f}")
+        logging.info(f"average max capacity: {avg_max_capacity:.2f}")
+
+        if grouped:
+            # TODO: currently does not use cumulative values - consider implementing this
+            r_pages["group"] = pages.group
+            r_pages["group_avg_last_cycle"] = r_pages.group.map(
+                r_pages.groupby("group").last_cycle.mean()
+            )
+            r_pages["group_avg_max_capacity"] = r_pages.group.map(
+                r_pages.groupby("group").max_capacity.mean()
+            )
+            r_pages["group_avg_min_capacity"] = r_pages.group.map(
+                r_pages.groupby("group").min_capacity.mean()
+            )
+            r_pages["group_avg_std_capacity"] = r_pages.group.map(
+                r_pages.groupby("group").std_capacity.mean()
+            )
+            r_pages["group_avg_average_capacity"] = r_pages.group.map(
+                r_pages.groupby("group").average_capacity.mean()
+            )
 
         if stylize:
 
@@ -342,7 +383,7 @@ class Batch:
                 return ["background-color: #D85F41" if v else "" for v in outlier]
 
             styled_pages = (
-                pages.style.apply(highlight_small, subset=["last_cycle"])
+                r_pages.style.apply(highlight_small, subset=["last_cycle"])
                 .apply(
                     highlight_outlier,
                     subset=["min_capacity", "max_capacity", "average_capacity"],
@@ -360,9 +401,9 @@ class Batch:
                 #        'average_capacity': "{:.2f}",
                 #        'std_capacity': '{:.2f}'})
             )
-            pages = styled_pages
+            r_pages = styled_pages
 
-        return pages
+        return r_pages
 
     @property
     def info_file(self):
@@ -470,8 +511,8 @@ class Batch:
         for cell_label in cell_labels:
             self.drop_cell(cell_label)
 
-    def drop_bad_cells(self):
-        """Drop bad cells from the journal (experimental feature)."""
+    def drop_cells_marked_bad(self):
+        """Drop cells that has been marked as bad from the journal (experimental feature)."""
 
         try:
             cell_labels = self.journal.session["bad_cells"]
@@ -1175,7 +1216,7 @@ def load(name, project, batch_col=None, allow_from_journal=True, drop_bad_cells=
                     b.link()
                 if drop_bad_cells:
                     print(f" - dropping bad cells")
-                    b.drop_bad_cells()
+                    b.drop_cells_marked_bad()
                 print("OK!")
                 return b
             else:

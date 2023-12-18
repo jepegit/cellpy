@@ -4683,6 +4683,24 @@ class CellpyCell:
         """Get the IR data (Deprecated)."""
         raise DeprecatedFeature
 
+    def has_data_point_as_index(self):
+        """Check if the raw data has data_point as index."""
+        return self.data.raw.index.name == self.headers_normal.data_point_txt
+
+    def has_data_point_as_column(self):
+        """Check if the raw data has data_point as column."""
+        return self.headers_normal.data_point_txt in self.data.raw.columns
+
+    def has_no_full_duplicates(self):
+        """Check if the raw data has no full duplicates."""
+        return not self.data.raw.duplicated().any()
+
+    def has_no_partial_duplicates(self, subset="data_point"):
+        """Check if the raw data has no partial duplicates."""
+        if subset == "data_point":
+            subset = self.headers_normal.data_point_txt
+        return not self.data.raw.duplicated(subset=subset).any()
+
     def total_time_at_low_voltage(
         self, cycles=None, voltage_limit=0.5, sampling_unit="S"
     ):
