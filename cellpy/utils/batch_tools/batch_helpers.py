@@ -258,6 +258,7 @@ def join_summaries(summary_frames, selected_summaries, keep_old_header=False):
     """parse the summaries and combine based on column (selected_summaries)"""
     if not summary_frames:
         raise NullData("No summaries available to join")
+
     selected_summaries_dict = create_selected_summaries_dict(selected_summaries)
     logging.debug(f"summaries selected: {selected_summaries_dict.keys()}")
     logging.debug(f"summary frames: {summary_frames.keys()}")

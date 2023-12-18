@@ -157,6 +157,11 @@ class DataLoader(BaseLoader):
         backward_fill_ir = True
         fix_datetime = True
         set_dtypes = True
+        fix_duplicated_rows = True
+        recalc_capacity = False
+
+        if fix_duplicated_rows:
+            data.raw = data.raw.drop_duplicates()
 
         if rename_headers:
             columns = {}
@@ -208,6 +213,10 @@ class DataLoader(BaseLoader):
             logging.debug("forward filling ir")
             hdr_ir = self.cellpy_headers_normal.internal_resistance_txt
             data.raw[hdr_ir] = data.raw[hdr_ir].fillna(method="bfill")
+
+        if recalc_capacity:
+            print("Not implemented yet - do it yourself")
+            print("recalculating capacity: cap = current * time")
 
         hdr_date_time = self.arbin_headers_normal.datetime_txt
         start = data.raw[hdr_date_time].iat[0]
