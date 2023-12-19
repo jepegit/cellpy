@@ -164,8 +164,14 @@ class CellpyCell:
         all_vars += "</p>"
 
         cell_txt = ""
-        cell_txt += f"<h3>data</h3>"
-        cell_txt += f"<blockquote>{self.data._repr_html_()}</blockquote>"
+
+        try:
+            data_txt = self.data._repr_html_()
+        except NoDataFound:
+            cell_txt += f"<h3>No data</h3>"
+        else:
+            cell_txt += f"<h3>data</h3>"
+            cell_txt += f"<blockquote>{data_txt}</blockquote>"
         return header + all_vars + cell_txt
 
     def __str__(self):
@@ -315,7 +321,10 @@ class CellpyCell:
         """returns the session name"""
 
         if not self._cell_name:
-            return self.data.cell_name
+            try:
+                return self.data.cell_name
+            except NoDataFound:
+                return None
         else:
             return self._cell_name
 
@@ -432,7 +441,6 @@ class CellpyCell:
         """returns the DataSet instance"""
 
         if not self._data:
-            logging.critical("Sorry, I don't have any data to give you!")
             logging.debug(
                 "NoDataFound - might consider defaulting to create one in the future"
             )
@@ -2455,7 +2463,7 @@ class CellpyCell:
         if steptype in self.list_of_step_types:
             steptypes.append(steptype)
         else:
-            txt = "%s is not a valid core steptype" % steptype
+            txt = f"{steptype} is not a valid core steptype"
             if steptype in helper_step_types:
                 txt = "but a helper steptype"
                 if steptype == "ocv":
