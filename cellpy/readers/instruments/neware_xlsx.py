@@ -179,9 +179,7 @@ class DataLoader(BaseLoader):
             h_datetime = self.cellpy_headers_normal.datetime_txt
             data.raw[h_datetime] = data.raw[h_datetime].apply(to_datetime)
             if h_datetime in data.summary:
-                data.summary[h_datetime] = data.summary[h_datetime].apply(
-                    to_datetime
-                )
+                data.summary[h_datetime] = data.summary[h_datetime].apply(to_datetime)
 
         if set_dtypes:
             logging.debug("setting data types")
@@ -239,9 +237,7 @@ class DataLoader(BaseLoader):
             )
         elif file_format == "xlsx":
             engine = "openpyxl"
-            print(
-                f"parsing with pandas.read_excel using {engine}: {self.name}"
-            )
+            print(f"parsing with pandas.read_excel using {engine}: {self.name}")
 
         else:
             raise IOError(
@@ -257,9 +253,13 @@ class DataLoader(BaseLoader):
         hdr_start = "Oneset Date"
         hdr_end = "End Date"
         hdr_cycle = "Cycle Index"
+        hdr_step_step = "Step Type"
+        hdr_step = "Step Type"
 
         try:
-            unit_frame = pd.read_excel(file_name, engine=engine, sheet_name=unit_sheet, header=None)
+            unit_frame = pd.read_excel(
+                file_name, engine=engine, sheet_name=unit_sheet, header=None
+            )
         except ValueError as e:
             print(f"could not parse file: {e}")
             raise WrongFileVersion(f"could not parse file: {e}")
@@ -287,15 +287,33 @@ class DataLoader(BaseLoader):
 
         # combining the step and data frames
         data_frame[[hdr_date]] = data_frame[[hdr_date]].apply(pd.to_datetime)
-        step_frame[[hdr_start, hdr_end]] = step_frame[[hdr_start, hdr_end]].apply(pd.to_datetime)
-        start = step_frame.groupby(hdr_cycle)[hdr_start].min()
-        end = step_frame.groupby(hdr_cycle)[hdr_end].max()
+        step_frame[[hdr_start, hdr_end]] = step_frame[[hdr_start, hdr_end]].apply(
+            pd.to_datetime
+        )
+        start = step_frame.groupby(hdr_cycle)[[hdr_start, hdr_step_step]].first()
+        start.columns = ["start_time", "start_step"]
+        end = step_frame.groupby(hdr_cycle)[[hdr_end, hdr_step_step]].last()
+        end.columns = ["end_time", "end_step"]
         cycles = pd.concat([start, end], axis=1)
         data_frame[hdr_cycle] = 0
         for cycl, item in cycles.iterrows():
-            start_date = item[hdr_start]
-            end_date = item[hdr_end]
-            mask = (data_frame[hdr_date] >= start_date) & (data_frame[hdr_date] <= end_date)
+            start_date = item["start_time"]
+            end_date = item["end_time"]
+            start_step = item["start_step"]
+            end_step = item["end_step"]
+            mask = (
+                (data_frame[hdr_date] > start_date)
+                | (
+                    (data_frame[hdr_date] == start_date)
+                    & (data_frame[hdr_step] == start_step)
+                )
+            ) & (
+                (data_frame[hdr_date] < end_date)
+                | (
+                    (data_frame[hdr_date] == end_date)
+                    & (data_frame[hdr_step] == end_step)
+                )
+            )
             data_frame.loc[mask, hdr_cycle] = cycl
 
         # ----------- checking and exiting -----------------
@@ -303,7 +321,10 @@ class DataLoader(BaseLoader):
         if dev:
             import matplotlib.pyplot as plt
 
-            plt.plot(data_frame[hdr_date], data_frame["Voltage(V)"])
+            fig, ax = plt.subplots()
+            for cycl, item in data_frame.groupby("Cycle Index"):
+                ax.plot(item[hdr_date], item["Voltage(V)"], label=cycl)
+            ax.legend()
             plt.show()
             print(data_frame.head())
             sys.exit(0)
@@ -322,4 +343,3 @@ def check_get():
 
 if __name__ == "__main__":
     check_get()
-
