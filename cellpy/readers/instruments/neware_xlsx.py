@@ -131,8 +131,8 @@ class DataLoader(BaseLoader):
         raw_limits["ir_change"] = 0.00001
         return raw_limits
 
-    # TODO: rename this (for all instruments) to e.g. load
-    # TODO: implement more options (bad_cycles, ...)
+    # TODO: extract units from the file and link it to the get_raw_units method
+    # TODO: extract meta from the file
     def loader(self, name, **kwargs):
         """returns a Data object with loaded data.
 
