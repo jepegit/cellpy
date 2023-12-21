@@ -404,6 +404,11 @@ class Data:
 
     @tot_mass.setter
     def tot_mass(self, n):
+        if n < self.meta_common.mass:
+            logging.debug(
+                f"POSSIBLE BUG: TOTAL MASS LESS THAN MASS ({n} < {self.meta_common.mass})."
+            )
+            n = self.meta_common.mass
         self.meta_common.tot_mass = n
 
     @property
@@ -525,6 +530,12 @@ class Data:
 
     @property
     def empty(self):
+        if isinstance(self, pd.DataFrame):
+            raise TypeError(
+                "Data is a DataFrame (should be a Data object). "
+                "You probably have a bug in your code. "
+                "Maybe you wrote something like data = frame instead of data.raw = frame?"
+            )
         if self.has_data:
             return False
         return True

@@ -1,4 +1,5 @@
 """neware xlsx exported data"""
+from dataclasses import dataclass
 import datetime
 import logging
 import pathlib
@@ -13,30 +14,17 @@ from cellpy.exceptions import WrongFileVersion
 from cellpy.parameters.internal_settings import HeaderDict, get_headers_normal
 from cellpy.readers.core import Data, FileID
 from cellpy.readers.instruments.base import BaseLoader
+from cellpy.readers.instruments.processors import post_processors as pp
 from pathlib import Path
 
 DEBUG_MODE = prms.Reader.diagnostics  # not used
 ALLOW_MULTI_TEST_FILE = prms._allow_multi_test_file  # not used
 DATE_TIME_FORMAT = prms._date_time_format  # not used
 
-normal_headers_renaming_dict = {
-    "test_id_txt": "Test_ID",
-    "data_point_txt": "Data_Point",
-    "datetime_txt": "Date_Time",
-    "test_time_txt": "Test_Time",
-    "step_time_txt": "Step_Time",
-    "cycle_index_txt": "Cycle_Index",
-    "step_index_txt": "Step_Index",
-    "current_txt": "Current",
-    "voltage_txt": "Voltage",
-    "power_txt": "Power",
-    "charge_capacity_txt": "Charge_Capacity",
-    "discharge_capacity_txt": "Discharge_Capacity",
-    "charge_energy_txt": "Charge_Energy",
-    "discharge_energy_txt": "Discharge_Energy",
-    "internal_resistance_txt": "Internal_Resistance",
-    "ref_voltage_txt": "Aux_Voltage_1",
-}
+
+@dataclass
+class ModelParameters:
+    states: dict
 
 
 def to_datetime(n):
@@ -53,43 +41,78 @@ def to_datetime(n):
 class DataLoader(BaseLoader):
     """Class for loading arbin-data from MS SQL server."""
 
-    instrument_name = "arbin_sql_h5"
-    raw_ext = "h5"
+    instrument_name = "neware_xlsx"
+    raw_ext = "xlsx"
 
     def __init__(self, *args, **kwargs):
-        """initiates the ArbinSQLLoader class"""
-        self.arbin_headers_normal = (
-            self.get_headers_normal()
-        )  # the column headers defined by Arbin
+        """initiates the neware xlsx reader class"""
+        self.raw_headers_normal = None  # the column headers defined by Neware
         self.cellpy_headers_normal = (
             get_headers_normal()
         )  # the column headers defined by cellpy
+        self.normal_headers_renaming_dict = None  # renaming dict for the headers
+        self.config_params = None  # configuration parameters
 
     @staticmethod
     def get_headers_normal():
-        """Defines the so-called normal column headings for Arbin SQL Server h5 export"""
+        """Defines the so-called normal column headings for export"""
         # covered by cellpy at the moment
         return get_headers_normal()
 
     @staticmethod
     def get_headers_aux(df):
-        """Defines the so-called auxiliary table column headings for Arbin SQL Server h5 export"""
+        """Defines the so-called auxiliary table column headings for Neware xlsx export
+
+        Warning: not properly implemented yet
+
+        """
         headers = HeaderDict()
         for col in df.columns:
             if col.startswith("Aux_"):
                 ncol = col.replace("/", "_")
                 ncol = "".join(ncol.split("(")[0])
                 headers[col] = ncol.lower()
+            if col.startswith("Step Type"):
+                headers[col] = "step_type"
 
         return headers
 
-    @staticmethod
-    def get_raw_units():
+    def get_normal_headers_renaming_dict(self):
+        units = self.get_raw_units()
+        unit_current = units["current"]
+        unit_voltage = units["voltage"]
+        unit_capacity = units["charge"]
+        unit_energy = units["energy"]
+        unit_power = units["power"]
+
+        normal_headers_renaming_dict = {
+            "test_id_txt": "Test_ID",
+            "data_point_txt": "DataPoint",
+            "datetime_txt": "Date",
+            "test_time_txt": "Total Time",
+            "step_time_txt": "Step Time",
+            "cycle_index_txt": "Cycle Index",
+            "step_index_txt": "Step Index",
+            "current_txt": f"Current({unit_current})",
+            "voltage_txt": f"Voltage({unit_voltage})",
+            "power_txt": f"Power({unit_power})",
+            "charge_capacity_txt": f"Capacity({unit_capacity})",
+            # "discharge_capacity_txt": f"Capacity({unit_capacity})",
+            "charge_energy_txt": f"Energy({unit_energy})",
+            # "discharge_energy_txt": f"Energy({unit_energy})",
+            "internal_resistance_txt": "Internal_Resistance",
+            "ref_voltage_txt": "Aux_Voltage_1",
+        }
+        return normal_headers_renaming_dict
+
+    def get_raw_units(self):
         raw_units = dict()
         raw_units["current"] = "A"
         raw_units["charge"] = "Ah"
         raw_units["mass"] = "g"
         raw_units["voltage"] = "V"
+        raw_units["energy"] = "Wh"
+        raw_units["power"] = "W"
         raw_units["nominal_capacity"] = "Ah/g"
         return raw_units
 
@@ -124,8 +147,18 @@ class DataLoader(BaseLoader):
         # self.name = name
         # self.copy_to_temporary()
         logging.critical("Experimental loader for neware xlsx files")
-        data_dfs = self._query()
+        data_df = self._query()
+        self.normal_headers_renaming_dict = self.get_normal_headers_renaming_dict()
         data = Data()
+
+        self.config_params = ModelParameters(
+            {
+                "column_name": "step_type",  # changed from "Step Type" in the _query method
+                "charge_keys": ["CC Chg"],
+                "discharge_keys": ["CC DChg"],
+                "rest_keys": ["Rest"],
+            }
+        )
 
         # some metadata is available in the info_df part of the h5 file
         data.loaded_from = self.name
@@ -142,13 +175,18 @@ class DataLoader(BaseLoader):
         self.generate_fid()
         data.raw_data_files.append(self.fid)
 
-        data.raw = data_dfs["data_df"]
-        data.raw_data_files_length.append(len(data_dfs["data_df"]))
+        data.raw = data_df
+        data.raw_data_files_length.append(len(data_df))
         data.summary = (
             pd.DataFrame()
         )  # creating an empty frame - loading summary is not implemented yet
         data = self._post_process(data)
         data = self.identify_last_data_point(data)
+        dev = False
+        if dev:
+            print(data.raw.columns)
+            print(data.raw.head())
+            sys.exit(0)
         return data
 
     def _post_process(self, data):
@@ -158,7 +196,9 @@ class DataLoader(BaseLoader):
         backward_fill_ir = False
         fix_datetime = False
         set_dtypes = False
-        fix_duplicated_rows = False
+        time_to_sec = True
+        fix_duplicated_rows = True
+        split_the_capacity = True
         recalc_capacity = False
 
         if fix_duplicated_rows:
@@ -166,14 +206,31 @@ class DataLoader(BaseLoader):
 
         if rename_headers:
             columns = {}
-            for key in normal_headers_renaming_dict:
-                old_header = normal_headers_renaming_dict[key]
+            for key in self.normal_headers_renaming_dict:
+                old_header = self.normal_headers_renaming_dict[key]
                 new_header = self.cellpy_headers_normal[key]
                 columns[old_header] = new_header
 
             data.raw.rename(index=str, columns=columns, inplace=True)
             new_aux_headers = self.get_headers_aux(data.raw)
             data.raw.rename(index=str, columns=new_aux_headers, inplace=True)
+
+        if time_to_sec:
+            logging.debug("converting time to seconds")
+            hdr_step_time = self.cellpy_headers_normal.step_time_txt
+            hdr_test_time = self.cellpy_headers_normal.test_time_txt
+            if hdr_step_time in data.raw:
+                data.raw[hdr_step_time] = pd.to_timedelta(
+                    data.raw[hdr_step_time]
+                ).dt.total_seconds()
+            if hdr_test_time in data.raw:
+                data.raw[hdr_test_time] = pd.to_timedelta(
+                    data.raw[hdr_test_time]
+                ).dt.total_seconds()
+
+        if split_the_capacity:
+            logging.debug("splitting capacity")
+            data = pp.split_capacity(data, self.config_params)
 
         if fix_datetime:
             h_datetime = self.cellpy_headers_normal.datetime_txt
@@ -223,12 +280,28 @@ class DataLoader(BaseLoader):
 
         return data
 
+    # noinspection PyTypeChecker
     def _query(self):
         file_name = self.temp_file_path
         file_format = file_name.suffix[1:]
-        date_time_col = normal_headers_renaming_dict["datetime_txt"]
         file_name = pathlib.Path(file_name)
-        raw_frames = {}
+
+        step_sheet = "step"
+        data_sheet = "record"
+        unit_sheet = "unit"
+
+        hdr_step_step = "Step Type"
+        hdr_step_step_number = "Step Number"
+        hdr_step_step_index = "Step Index"
+        hdr_step_cycle = "Cycle Index"
+
+        hdr_date = "Date"
+        hdr_start = "Oneset Date"
+        hdr_end = "End Date"
+        hdr_cycle = "Cycle Index"
+        hdr_step = "Step Type"
+        hdr_step_number = "Step Number"
+        hdr_step_index = "Step Index"
 
         if file_format == "xls":
             engine = "xlrd"
@@ -243,18 +316,6 @@ class DataLoader(BaseLoader):
             raise IOError(
                 f"Could not read {file_name}, {file_format} not supported yet"
             )
-
-        # sheet_name = self.table_name
-        step_sheet = "step"
-        data_sheet = "record"
-        unit_sheet = "unit"
-
-        hdr_date = "Date"
-        hdr_start = "Oneset Date"
-        hdr_end = "End Date"
-        hdr_cycle = "Cycle Index"
-        hdr_step_step = "Step Type"
-        hdr_step = "Step Type"
 
         try:
             unit_frame = pd.read_excel(
@@ -290,45 +351,28 @@ class DataLoader(BaseLoader):
         step_frame[[hdr_start, hdr_end]] = step_frame[[hdr_start, hdr_end]].apply(
             pd.to_datetime
         )
-        start = step_frame.groupby(hdr_cycle)[[hdr_start, hdr_step_step]].first()
-        start.columns = ["start_time", "start_step"]
-        end = step_frame.groupby(hdr_cycle)[[hdr_end, hdr_step_step]].last()
-        end.columns = ["end_time", "end_step"]
-        cycles = pd.concat([start, end], axis=1)
+
         data_frame[hdr_cycle] = 0
-        for cycl, item in cycles.iterrows():
-            start_date = item["start_time"]
-            end_date = item["end_time"]
-            start_step = item["start_step"]
-            end_step = item["end_step"]
+        data_frame[hdr_step_index] = 0
+        for index, sub_frame in step_frame.iterrows():
+            start_date = sub_frame[hdr_start]
+            end_date = sub_frame[hdr_end]
+            step = sub_frame[hdr_step_step]
+            step_index = sub_frame[hdr_step_step_index]
+            cycle = sub_frame[hdr_step_cycle]
+
             mask = (
                 (data_frame[hdr_date] > start_date)
                 | (
                     (data_frame[hdr_date] == start_date)
-                    & (data_frame[hdr_step] == start_step)
+                    & (data_frame[hdr_step] == step)
                 )
             ) & (
                 (data_frame[hdr_date] < end_date)
-                | (
-                    (data_frame[hdr_date] == end_date)
-                    & (data_frame[hdr_step] == end_step)
-                )
+                | ((data_frame[hdr_date] == end_date) & (data_frame[hdr_step] == step))
             )
-            data_frame.loc[mask, hdr_cycle] = cycl
-
-        # ----------- checking and exiting -----------------
-        dev = True
-        if dev:
-            import matplotlib.pyplot as plt
-
-            fig, ax = plt.subplots()
-            for cycl, item in data_frame.groupby("Cycle Index"):
-                ax.plot(item[hdr_date], item["Voltage(V)"], label=cycl)
-            ax.legend()
-            plt.show()
-            print(data_frame.head())
-            sys.exit(0)
-        # ---------------------------------------------------
+            data_frame.loc[mask, hdr_cycle] = int(cycle)
+            data_frame.loc[mask, hdr_step_index] = int(step_index)
 
         return data_frame
 
@@ -337,7 +381,13 @@ def check_get():
     import cellpy
 
     name = r"c:\scripting\tasks\cenate\2023_vajee_neware_excel_dqdv\data\raw\neware_vajee.xlsx"
-    c = cellpy.get(name, instrument="neware_xlsx")
+    c = cellpy.get(
+        name,
+        instrument="neware_xlsx",
+        mass=1.2,
+        nominal_capacity=120.0,
+        auto_summary=True,
+    )
     print(c)
 
 

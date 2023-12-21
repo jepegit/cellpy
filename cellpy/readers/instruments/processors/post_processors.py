@@ -56,6 +56,7 @@ def remove_last_if_bad(data: Data, config_params: ModelParameters) -> Data:
     return data
 
 
+# noinspection PyUnreachableCode
 def convert_units(data: Data, config_params: ModelParameters) -> Data:
     raise Exception("THIS FUNCTION NEEDS TO BE UPDATED")
     # TODO: implement all
@@ -95,6 +96,7 @@ def select_columns_to_keep(data: Data, config_params: ModelParameters) -> Data:
     return data
 
 
+# noinspection PyUnreachableCode
 def get_column_names(data: Data, config_params: ModelParameters) -> Data:
     # TODO: add custom "splitter"
     # TODO: test
@@ -300,6 +302,9 @@ def _state_splitter(
     Returns: raw data
 
     """
+    n_charge = float(n_charge)
+    n_discharge = float(n_discharge)
+
     if base_col_name is None:
         base_col_name = headers_normal.charge_capacity_txt
     cycle_index_hdr = headers_normal.cycle_index_txt
@@ -320,9 +325,9 @@ def _state_splitter(
     rest_keys = states["rest_keys"]
     discharge_keys = states["discharge_keys"]
 
-    raw[temp_col_name_charge] = 0
+    raw[temp_col_name_charge] = 0.0
     if temp_col_name_charge != temp_col_name_discharge:
-        raw[temp_col_name_discharge] = 0
+        raw[temp_col_name_discharge] = 0.0
 
     cycle_numbers = raw[cycle_index_hdr].unique()
     good_cycles = []

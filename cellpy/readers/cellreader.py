@@ -2749,9 +2749,9 @@ class CellpyCell:
         # TODO: FutureWarning: The provided callable <function mean at 0x000002BD4D332840>
         #  is currently using SeriesGroupBy.mean. In a future version of pandas, the provided
         #  callable will be used directly. To keep current behavior pass the string "mean" instead.
-        df_steps = gf.agg(
-            [np.mean, np.std, np.amin, np.amax, first, last, delta]
-        ).rename(columns={"amin": "min", "amax": "max", "mean": "avr"})
+        df_steps = gf.agg(["mean", "std", "min", "max", "first", "last", delta]).rename(
+            columns={"amin": "min", "amax": "max", "mean": "avr"}
+        )
 
         df_steps = df_steps.reset_index()
 
@@ -2780,9 +2780,9 @@ class CellpyCell:
                     DIGITS_C_RATE,
                 )
             )
-        df_steps[shdr.type] = np.nan
-        df_steps[shdr.sub_type] = np.nan
-        df_steps[shdr.info] = np.nan
+        df_steps[shdr.type] = ""
+        df_steps[shdr.sub_type] = ""
+        df_steps[shdr.info] = ""
 
         if step_specifications is None:
             current_limit_value_hard = self.raw_limits["current_hard"]
@@ -6154,6 +6154,7 @@ def get(
 
     """
     from cellpy import log
+
     db_readers = ["arbin_sql", "arbin_sql_7"]
     instruments_with_colliding_file_suffix = ["arbin_sql_h5"]
 

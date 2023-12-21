@@ -214,7 +214,7 @@ class AtomicLoad:
         self._name = value
 
     @property
-    def temp_file_path(self):
+    def temp_file_path(self):  # -> Union[cellpy.internals.core.OtherPath, pathlib.Path]
         """The name of the file to be loaded if copied to a temporary file"""
         return self._temp_file_path
 
