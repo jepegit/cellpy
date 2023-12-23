@@ -12,7 +12,7 @@ from dateutil.parser import parse
 from cellpy import prms
 from cellpy.exceptions import WrongFileVersion
 from cellpy.parameters.internal_settings import HeaderDict, get_headers_normal
-from cellpy.readers.core import Data, FileID
+from cellpy.readers.core import Data, FileID, Q
 from cellpy.readers.instruments.base import BaseLoader
 from cellpy.readers.instruments.processors import post_processors as pp
 from pathlib import Path
@@ -147,29 +147,42 @@ class DataLoader(BaseLoader):
         # self.name = name
         # self.copy_to_temporary()
         logging.critical("Experimental loader for neware xlsx files")
-        data_df = self._query()
+        data_df, meta = self._query()
+
         self.normal_headers_renaming_dict = self.get_normal_headers_renaming_dict()
         data = Data()
 
-        self.config_params = ModelParameters(
-            {
-                "column_name": "step_type",  # changed from "Step Type" in the _query method
-                "charge_keys": ["CC Chg"],
-                "discharge_keys": ["CC DChg"],
-                "rest_keys": ["Rest"],
-            }
-        )
+        if kwargs.get("config_params"):
+            self.config_params = kwargs.get("config_params")
+        else:
+            self.config_params = ModelParameters(
+                {
+                    "column_name": "step_type",  # changed from "Step Type" in the _query method
+                    "charge_keys": ["CC Chg"],
+                    "discharge_keys": ["CC DChg"],
+                    "rest_keys": ["Rest"],
+                }
+            )
 
         # some metadata is available in the info_df part of the h5 file
         data.loaded_from = self.name
-        # data.channel_index = data_dfs["info_df"]["IV_Ch_ID"].iloc[0]
-        # # data.test_ID = data_dfs["info_df"]["Test_ID"].iloc[0]
-        # data.test_name = self.name.name
-        # data.creator = None
-        # data.schedule_file_name = data_dfs["info_df"]["Schedule_File_Name"].iloc[0]
-        # data.start_datetime = data_dfs["info_df"]["First_Start_DateTime"].iloc[0]
-        # data.mass = data_dfs["info_df"]["SpecificMASS"].iloc[0]
-        # data.nom_cap = data_dfs["info_df"]["SpecificCapacity"].iloc[0]
+
+        if meta.keys():
+            data.test_name = meta.get(name, "unknown")
+            data.custom_info = meta
+
+            if start_time := meta.get("start_time"):
+                # TODO: implement conversion to datetime
+                logging.debug(f"start_time: {start_time}")
+
+            if end_time := meta.get("end_time"):
+                # TODO: implement conversion to datetime
+                logging.debug(f"end-time: {end_time}")
+            if units := meta.get("units"):
+                # TODO: implement handling of units and updating get_raw_units
+                logging.debug(f"units: {units}")
+
+            # TODO: implement handling of the rest of the meta data
 
         # Generating a FileID project:
         self.generate_fid()
@@ -182,11 +195,7 @@ class DataLoader(BaseLoader):
         )  # creating an empty frame - loading summary is not implemented yet
         data = self._post_process(data)
         data = self.identify_last_data_point(data)
-        dev = False
-        if dev:
-            print(data.raw.columns)
-            print(data.raw.head())
-            sys.exit(0)
+
         return data
 
     def _post_process(self, data):
@@ -285,10 +294,13 @@ class DataLoader(BaseLoader):
         file_name = self.temp_file_path
         file_format = file_name.suffix[1:]
         file_name = pathlib.Path(file_name)
+        data_frame = pd.DataFrame()
+        meta_dict = dict()
 
         step_sheet = "step"
         data_sheet = "record"
         unit_sheet = "unit"
+        test_sheet = "test"
 
         hdr_step_step = "Step Type"
         hdr_step_step_number = "Step Number"
@@ -308,6 +320,8 @@ class DataLoader(BaseLoader):
             logging.debug(
                 f"parsing with pandas.read_excel using {engine} (old format): {self.name}"
             )
+            raise WrongFileVersion("reading old xls not implemented yet")
+
         elif file_format == "xlsx":
             engine = "openpyxl"
             print(f"parsing with pandas.read_excel using {engine}: {self.name}")
@@ -317,28 +331,65 @@ class DataLoader(BaseLoader):
                 f"Could not read {file_name}, {file_format} not supported yet"
             )
 
+        # -------------- meta data --------------
         try:
             unit_frame = pd.read_excel(
                 file_name, engine=engine, sheet_name=unit_sheet, header=None
             )
         except ValueError as e:
-            print(f"could not parse file: {e}")
-            raise WrongFileVersion(f"could not parse file: {e}")
+            print(f"could not parse {unit_sheet} in file: {e}")
 
-        if engine == "openpyxl":
+        else:
             try:
-                name = unit_frame.iloc[0, 0]
-                device = unit_frame.iloc[1, [1, 2, 3]].values
+                meta_dict["name"] = unit_frame.iloc[0, 0]
+                meta_dict["device"] = unit_frame.iloc[1, [1, 2, 3]].values
+
                 start_time, end_time = unit_frame.iloc[2, [2, 6]]
+                meta_dict["start_time"] = start_time
+                meta_dict["end_time"] = end_time
+
                 unit_sub_frame = unit_frame.iloc[5:7, 0:9].T
                 unit_sub_frame.columns = ["name", "value"]
-                units = unit_sub_frame.set_index("name").to_dict()["value"]
+                meta_dict["units"] = unit_sub_frame.set_index("name").to_dict()["value"]
+
             except Exception as e:
                 print(f"could not parse unit sheet: {e}")
-        else:
-            print("not implemented yet")
-            raise WrongFileVersion("reading old xls not implemented yet")
 
+        try:
+            test_frame = pd.read_excel(
+                file_name, engine=engine, sheet_name=test_sheet, header=None
+            )
+        except ValueError as e:
+            print(f"could not parse {test_sheet} in file: {e}")
+        else:
+            try:
+                meta_dict["start_step_id"] = test_frame.iloc[1, 2]
+                meta_dict["voltage_upper"] = test_frame.iloc[1, 5]
+                meta_dict["p_over_n"] = test_frame.iloc[1, 8]
+
+                meta_dict["cycle_count"] = test_frame.iloc[2, 2]
+                meta_dict["voltage_lower"] = test_frame.iloc[2, 5]
+                meta_dict["builder"] = test_frame.iloc[2, 8]
+
+                meta_dict["record_settings"] = test_frame.iloc[3, 2]
+                meta_dict["current_upper"] = test_frame.iloc[3, 5]
+                meta_dict["remarks"] = test_frame.iloc[3, 8]
+
+                meta_dict["voltage_range"] = test_frame.iloc[4, 8]
+                meta_dict["current_lower"] = test_frame.iloc[4, 5]
+
+                meta_dict["current_range"] = test_frame.iloc[5, 2]
+                meta_dict["start_time"] = test_frame.iloc[5, 5]
+                meta_dict["barcode"] = test_frame.iloc[5, 8]
+
+                meta_dict["active_material_mass"] = test_frame.iloc[6, 2]
+                meta_dict["nominal_capacity"] = test_frame.iloc[6, 5]
+                meta_dict["barcode"] = test_frame.iloc[6, 8]
+
+            except Exception as e:
+                print(f"could not parse test sheet: {e}")
+
+        # -------------- raw data --------------
         try:
             step_frame = pd.read_excel(file_name, engine=engine, sheet_name=step_sheet)
             data_frame = pd.read_excel(file_name, engine=engine, sheet_name=data_sheet)
@@ -374,7 +425,7 @@ class DataLoader(BaseLoader):
             data_frame.loc[mask, hdr_cycle] = int(cycle)
             data_frame.loc[mask, hdr_step_index] = int(step_index)
 
-        return data_frame
+        return data_frame, meta_dict
 
 
 def check_get():

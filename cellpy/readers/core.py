@@ -338,7 +338,12 @@ class Data:
                 "<p><b>steps data-frame </b><br> does not contain any columns!</p>"
             )
 
-        return txt + summary_txt + steps_txt + raw_txt
+        try:
+            custom_info_txt = f"<p><b>custom info</b><br>{self.custom_info}</p>"  # noqa
+        except AttributeError:
+            custom_info_txt = "<p><b>custom info </b><br> not found!</p>"
+
+        return txt + summary_txt + steps_txt + raw_txt + custom_info_txt
 
     def __init__(self, **kwargs):
         self.logger = logging.getLogger(__name__)
@@ -359,6 +364,8 @@ class Data:
         self.meta_common = CellpyMetaCommon()
         # TODO: v2.0 consider making this a list of several CellpyMetaIndividualTest
         self.meta_test_dependent = CellpyMetaIndividualTest()
+
+        self.custom_info = None  # Placeholder for custom meta-data
 
         # custom meta-data
         for k in kwargs:
