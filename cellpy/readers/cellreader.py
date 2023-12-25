@@ -4228,10 +4228,22 @@ class CellpyCell:
         # TODO: allow for fixing the interpolation range (so that it is possible
         #   to run the function on several cells and have a common x-axis)
 
-        # TODO: allow for missing steps (i.e. if you have a cell with only charge and no discharge in the first cycle)
-
         # if cycle is not given, then this function should
         # iterate through cycles
+
+        def last(df):
+            try:
+                return df.iat[-1]
+            except TypeError:
+                return 0.0
+
+        def first(df):
+            try:
+                return df.iat[0]
+            except TypeError:
+                return 0.0
+
+        experimental = True
 
         cycle_mode = cycle_mode or self.cycle_mode
 
@@ -4259,6 +4271,9 @@ class CellpyCell:
                 insert_nan = True
             else:
                 insert_nan = False
+
+        if insert_nan:
+            _nan = pd.DataFrame({"capacity": [np.nan], "voltage": [np.nan]})
 
         converter_kwargs = dict()
         if mass is not None:
@@ -4306,6 +4321,15 @@ class CellpyCell:
                     as_frame=False,
                     **kwargs,
                 )
+
+            except NullData as e:
+                error = True
+                logging.critical(e)
+                if not ignore_errors:
+                    logging.debug("breaking out of loop")
+                    break
+
+            try:
                 dc, dv = self.get_dcap(
                     current_cycle,
                     converter=specific_converter,
@@ -4320,7 +4344,7 @@ class CellpyCell:
                     logging.debug("breaking out of loop")
                     break
 
-            if not error:
+            if not error or experimental:
                 if cc.empty:
                     logging.debug("get_ccap returns empty cc Series")
 
@@ -4347,32 +4371,36 @@ class CellpyCell:
                     _last_step_v = dv
 
                 if method == "back-and-forth":
-                    # _last = np.amax(_first_step_c)
-                    _last = _first_step_c.iat[-1]
-                    # should change amax to last point
+                    _last = last(_first_step_c)
                     _first = None
                     _new_first = None
+
                     if not inter_cycle_shift:
                         prev_end = 0.0
+
                     if _last_step_c is not None:
                         _last_step_c = _last - _last_step_c + prev_end
+
                     else:
-                        logging.debug("no last charge step found")
+                        logging.critical("no last charge step found")
+
                     if _first_step_c is not None:
-                        _first = _first_step_c.iat[0]
+                        _first = first(_first_step_c)
                         _first_step_c += prev_end
-                        _new_first = _first_step_c.iat[0]
+                        _new_first = first(_first_step_c)
+
                     else:
-                        logging.debug("probably empty (_first_step_c is None)")
+                        logging.critical("probably empty (_first_step_c is None)")
                     # logging.debug(f"current shifts used: prev_end = {prev_end}")
                     # logging.debug(f"shifting start from {_first} to "
                     #                   f"{_new_first}")
 
                     # prev_end = np.amin(_last_step_c)
-                    prev_end = _last_step_c.iat[-1]
+                    prev_end = last(_last_step_c)
+
                 elif method == "forth":
                     # _last = np.amax(_first_step_c)
-                    _last = _first_step_c.iat[-1]
+                    _last = last(_first_step_c)
                     if _last_step_c is not None:
                         _last_step_c += _last + prev_end
                     else:
@@ -4382,9 +4410,8 @@ class CellpyCell:
                     else:
                         logging.debug("no first charge step found")
 
-                    # prev_end = np.amax(_last_step_c)
                     if inter_cycle_shift:
-                        prev_end = _last_step_c.iat[-1]
+                        prev_end = last(_last_step_c)
                     else:
                         prev_end = 0.0
 
@@ -4405,48 +4432,53 @@ class CellpyCell:
                         x_col, y_col = y_col, x_col
 
                     try:
-                        _first_df = pd.DataFrame(
-                            {
-                                "voltage": _first_step_v,
-                                "capacity": _first_step_c,
-                            }
-                        )
-                        if interpolated:
-                            _first_df = interpolate_y_on_x(
-                                _first_df,
-                                y=y_col,
-                                x=x_col,
-                                dx=dx,
-                                number_of_points=number_of_points,
-                                direction=first_interpolation_direction,
+                        # processing first
+                        if not _first_step_c.empty:
+                            _first_df = pd.DataFrame(
+                                {
+                                    "voltage": _first_step_v,
+                                    "capacity": _first_step_c,
+                                }
                             )
-                        if insert_nan:
-                            _nan = pd.DataFrame(
-                                {"capacity": [np.nan], "voltage": [np.nan]}
-                            )
-                            _first_df = pd.concat([_first_df, _nan])
-                        if categorical_column:
-                            _first_df["direction"] = -1
+                            if interpolated:
+                                _first_df = interpolate_y_on_x(
+                                    _first_df,
+                                    y=y_col,
+                                    x=x_col,
+                                    dx=dx,
+                                    number_of_points=number_of_points,
+                                    direction=first_interpolation_direction,
+                                )
+                            if insert_nan:
+                                _first_df = pd.concat([_first_df, _nan])
+                            if categorical_column:
+                                _first_df["direction"] = -1
+                        else:
+                            _first_df = pd.DataFrame()
 
-                        _last_df = pd.DataFrame(
-                            {
-                                "voltage": _last_step_v.values,
-                                "capacity": _last_step_c.values,
-                            }
-                        )
-                        if interpolated:
-                            _last_df = interpolate_y_on_x(
-                                _last_df,
-                                y=y_col,
-                                x=x_col,
-                                dx=dx,
-                                number_of_points=number_of_points,
-                                direction=last_interpolation_direction,
+                        # processing last
+                        if not _last_step_c.empty:
+                            _last_df = pd.DataFrame(
+                                {
+                                    "voltage": _last_step_v.values,
+                                    "capacity": _last_step_c.values,
+                                }
                             )
-                        if insert_nan:
-                            _last_df = pd.concat([_last_df, _nan])
-                        if categorical_column:
-                            _last_df["direction"] = 1
+                            if interpolated:
+                                _last_df = interpolate_y_on_x(
+                                    _last_df,
+                                    y=y_col,
+                                    x=x_col,
+                                    dx=dx,
+                                    number_of_points=number_of_points,
+                                    direction=last_interpolation_direction,
+                                )
+                            if insert_nan:
+                                _last_df = pd.concat([_last_df, _nan])
+                            if categorical_column:
+                                _last_df["direction"] = 1
+                        else:
+                            _last_df = pd.DataFrame()
 
                         if interpolate_along_cap:
                             if method == "forth":
@@ -4477,11 +4509,21 @@ class CellpyCell:
                         cycle_df = cycle_df[new_cols]
                 else:
                     logging.warning("returning non-dataframe")
-                    c = pd.concat([_first_step_c, _last_step_c], axis=0)
-                    v = pd.concat([_first_step_v, _last_step_v], axis=0)
+                    _non_empty_c = []
+                    _non_empty_v = []
+                    if not _first_step_c.empty:
+                        _non_empty_c.append(_first_step_c)
+                        _non_empty_v.append(_first_step_v)
+                    if not _last_step_c.empty:
+                        _non_empty_c.append(_last_step_c)
+                        _non_empty_v.append(_last_step_v)
 
-                    capacity = pd.concat([capacity, c], axis=0)
-                    voltage = pd.concat([voltage, v], axis=0)
+                    c = pd.concat(_non_empty_c, axis=0)
+                    v = pd.concat(_non_empty_v, axis=0)
+
+                    if not c.empty:
+                        capacity = pd.concat([capacity, c], axis=0)
+                        voltage = pd.concat([voltage, v], axis=0)
 
         if return_dataframe:
             return cycle_df
