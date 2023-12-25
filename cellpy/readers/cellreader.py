@@ -365,6 +365,24 @@ class CellpyCell:
         self.data.mass = self._dump_cellpy_unit(m, "mass")
 
     @property
+    def active_mass(self):
+        """returns the active mass (same as mass)"""
+        return self.data.mass
+
+    @active_mass.setter
+    def active_mass(self, m):
+        self.data.mass = self._dump_cellpy_unit(m, "mass")
+
+    @property
+    def tot_mass(self):
+        """returns the total mass"""
+        return self.data.tot_mass
+
+    @tot_mass.setter
+    def tot_mass(self, m):
+        self.data.tot_mass = self._dump_cellpy_unit(m, "mass")
+
+    @property
     def active_electrode_area(self):
         """returns the area"""
         return self.data.active_electrode_area
@@ -395,11 +413,13 @@ class CellpyCell:
         """Parse for unit, update cellpy_units class, and return magnitude."""
         if isinstance(value, numbers.Number):
             return value
-        logging.debug(f"Parsing {parameter} ({value})")
+        logging.critical(f"Parsing {parameter} ({value})")
+
         try:
             c = Q(value)
             c_unit = c.units
             self.cellpy_units[parameter] = f"{c_unit}"
+            logging.critical(f"Updated your cellpy_units['{parameter}'] to '{c_unit}'")
             c = c.magnitude
         except ValueError:
             logging.debug(f"Could not parse {value}")
@@ -1152,7 +1172,8 @@ class CellpyCell:
         Args:
             file_names (list of raw-file names): uses CellpyCell.file_names if
                 None. If the list contains more than one file name, then the
-                runs will be merged together.
+                runs will be merged together. Remark! the order of the files in
+                the list is important.
             pre_processor_hook (callable): function that will be applied to the data within the loader.
             post_processor_hook (callable): function that will be applied to the
                 cellpy.Dataset object after initial loading.
@@ -1201,7 +1222,11 @@ class CellpyCell:
         max_raw_files_to_merge = 20
         if len(self.file_names) > max_raw_files_to_merge:
             logging.debug("ERROR? Too many files to merge")
-            raise ValueError("Too many files to merge - could be a p2-p3 zip thing")
+            raise ValueError(
+                f"Too many files to merge (max allowed is {max_raw_files_to_merge})"
+                f" - could be a bug in the code (please report if you know you have"
+                f" less than {max_raw_files_to_merge} files)"
+            )
 
         logging.debug("start iterating through file(s)")
         recalc = kwargs.pop("recalc", True)
@@ -4140,6 +4165,11 @@ class CellpyCell:
         inter_cycle_shift=True,
         interpolate_along_cap=False,
         capacity_then_voltage=False,
+        mode="gravimetric",
+        mass=None,
+        area=None,
+        volume=None,
+        cycle_mode=None,
         **kwargs,
     ):
         """Gets the capacity for the run.
@@ -4180,6 +4210,14 @@ class CellpyCell:
                 of along the voltage axis. Defaults to False.
             capacity_then_voltage (bool): return capacity and voltage instead of
                 voltage and capacity. Defaults to False.
+            mode (string): 'gravimetric', 'areal', 'volumetric' or 'absolute'. Defaults
+                to 'gravimetric'.
+            mass (float): mass of active material (in set cellpy unit, typically mg).
+            area (float): area of electrode (in set cellpy units, typically cm2).
+            volume (float): volume of electrode (in set cellpy units, typically cm3).
+            cycle_mode (string): if 'anode' the first step is assumed to be the discharge,
+                else charge (defaults to CellpyCell.cycle_mode).
+            **kwargs: sent to get_ccap and get_dcap.
 
         Returns:
             pandas.DataFrame ((cycle) voltage, capacity, (direction (-1, 1)))
@@ -4188,10 +4226,16 @@ class CellpyCell:
         """
 
         # TODO: allow for fixing the interpolation range (so that it is possible
-        #   to run the function on several cells and have a common x-axis
+        #   to run the function on several cells and have a common x-axis)
+
+        # TODO: allow for missing steps (i.e. if you have a cell with only charge and no discharge in the first cycle)
+        # TODO: check - initialize cc, cv, dc, dv to pd.DataFrame() in the beginning of each loop
 
         # if cycle is not given, then this function should
         # iterate through cycles
+
+        cycle_mode = cycle_mode or self.cycle_mode
+
         if cycle is None:
             cycle = self.get_cycle_numbers()
 
@@ -4217,9 +4261,36 @@ class CellpyCell:
             else:
                 insert_nan = False
 
+        converter_kwargs = dict()
+        if mass is not None:
+            logging.critical(
+                f"mass of {mass} {self.cellpy_units['mass']} given - using gravimetric mode"
+            )
+            converter_kwargs["value"] = mass
+            mode = "gravimetric"
+
+        if area is not None:
+            logging.critical(
+                f"area of {area} {self.cellpy_units['area']} given - using areal mode"
+            )
+            converter_kwargs["value"] = area
+            mode = "areal"
+
+        if volume is not None:
+            logging.critical(
+                f"volume of {volume} {self.cellpy_units['volume']} given - using volumetric mode"
+            )
+            converter_kwargs["value"] = volume
+            mode = "volumetric"
+
+        if mode == "absolute":
+            logging.critical(f"absolute mode - no conversion")
+
         capacity = None
         voltage = None
-        specific_converter = self.get_converter_to_specific()
+        specific_converter = self.get_converter_to_specific(
+            mode=mode, **converter_kwargs
+        )
         cycle_df = pd.DataFrame()
 
         initial = True
@@ -4241,10 +4312,11 @@ class CellpyCell:
 
             except NullData as e:
                 error = True
-                logging.debug(e)
+                logging.critical(e)
                 if not ignore_errors:
                     logging.debug("breaking out of loop")
                     break
+
             if not error:
                 if cc.empty:
                     logging.debug("get_ccap returns empty cc Series")
@@ -4255,7 +4327,8 @@ class CellpyCell:
                 if initial:
                     prev_end = shift
                     initial = False
-                if self.cycle_mode == "anode":
+
+                if cycle_mode == "anode":
                     first_interpolation_direction = -1
                     _first_step_c = dc
                     _first_step_v = dv
@@ -4786,6 +4859,10 @@ class CellpyCell:
             elif nom_cap_specifics == "areal":
                 specific = self.data.active_electrode_area
 
+            # TODO: implement volumetric
+            elif nom_cap_specifics == "volumetric":
+                raise NotImplementedError("volumetric not implemented yet")
+
         if value is None:
             value = self.data.nom_cap
 
@@ -4795,6 +4872,10 @@ class CellpyCell:
             specific = Q(specific, self.cellpy_units["mass"])
         elif nom_cap_specifics == "areal":
             specific = Q(specific, self.cellpy_units["area"])
+
+        # TODO: implement volumetric
+        elif nom_cap_specifics == "volumetric":
+            raise NotImplementedError("volumetric not implemented yet")
 
         if convert_charge_units:
             conversion_factor_charge = Q(1, self.cellpy_units["charge"]) / Q(
@@ -4973,13 +5054,17 @@ class CellpyCell:
         if mode == "gravimetric":
             value = value or dataset.mass
             value = Q(value, new_units["mass"])
-
             to_unit_specific = Q(1.0, new_units["specific_gravimetric"])
 
         elif mode == "areal":
             value = value or dataset.active_electrode_area
             value = Q(value, new_units["area"])
             to_unit_specific = Q(1.0, new_units["specific_areal"])
+
+        elif mode == "volumetric":
+            value = value or dataset.volume
+            value = Q(value, new_units["volume"])
+            to_unit_specific = Q(1.0, new_units["specific_volumetric"])
 
         elif mode == "absolute":
             value = Q(1.0, None)
@@ -5381,6 +5466,11 @@ class CellpyCell:
         elif nom_cap_specifics == "areal":
             nom_cap_abs = self.nominal_capacity_as_absolute(
                 nom_cap, cell.active_electrode_area, nom_cap_specifics
+            )
+
+        elif nom_cap_specifics == "volumetric":
+            nom_cap_abs = self.nominal_capacity_as_absolute(
+                nom_cap, cell.volume, nom_cap_specifics
             )
 
         # ensuring that a step table exists:

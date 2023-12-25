@@ -324,7 +324,9 @@ class DataLoader(BaseLoader):
 
         elif file_format == "xlsx":
             engine = "openpyxl"
-            print(f"parsing with pandas.read_excel using {engine}: {self.name}")
+            logging.critical(
+                f"parsing with pandas.read_excel using {engine}: {self.name}"
+            )
 
         else:
             raise IOError(
@@ -338,6 +340,7 @@ class DataLoader(BaseLoader):
             )
         except ValueError as e:
             print(f"could not parse {unit_sheet} in file: {e}")
+            print(f"most likely this file is not appropriate for cellpy")
 
         else:
             try:
@@ -361,6 +364,7 @@ class DataLoader(BaseLoader):
             )
         except ValueError as e:
             print(f"could not parse {test_sheet} in file: {e}")
+            print(f"It is very likely that this file is not appropriate for cellpy!")
         else:
             try:
                 meta_dict["start_step_id"] = test_frame.iloc[1, 2]
