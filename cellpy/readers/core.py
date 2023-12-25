@@ -962,9 +962,10 @@ def interpolate_y_on_x(
     else:
         # TODO: @jepe - make this better (and safer)
         if isinstance(new_x, tuple):
-            print("EXPERIMENTAL FEATURE - USE WITH CAUTION")
-            x_min, x_max, number_of_points = new_x
-            new_x = np.linspace(x_min, x_max, number_of_points, dtype=float)
+            logging.critical("EXPERIMENTAL FEATURE - USE WITH CAUTION")
+            logging.critical(f"start, end, number_of_points = {new_x}")
+            _x_min, _x_max, _number_of_points = new_x
+            new_x = np.linspace(_x_min, _x_max, _number_of_points, dtype=float)
 
     new_y = f(new_x)
 
