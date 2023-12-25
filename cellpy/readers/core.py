@@ -959,6 +959,13 @@ def interpolate_y_on_x(
         else:
             new_x = np.arange(x_min, x_max, dx)
 
+    else:
+        # TODO: @jepe - make this better (and safer)
+        if isinstance(new_x, tuple):
+            print("EXPERIMENTAL FEATURE - USE WITH CAUTION")
+            x_min, x_max, number_of_points = new_x
+            new_x = np.linspace(x_min, x_max, number_of_points, dtype=float)
+
     new_y = f(new_x)
 
     new_df = pd.DataFrame({x: new_x, y: new_y})

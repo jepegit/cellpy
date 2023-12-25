@@ -4391,15 +4391,9 @@ class CellpyCell:
 
                     else:
                         logging.critical("probably empty (_first_step_c is None)")
-                    # logging.debug(f"current shifts used: prev_end = {prev_end}")
-                    # logging.debug(f"shifting start from {_first} to "
-                    #                   f"{_new_first}")
-
-                    # prev_end = np.amin(_last_step_c)
                     prev_end = last(_last_step_c)
 
                 elif method == "forth":
-                    # _last = np.amax(_first_step_c)
                     _last = last(_first_step_c)
                     if _last_step_c is not None:
                         _last_step_c += _last + prev_end
