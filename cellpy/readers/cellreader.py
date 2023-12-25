@@ -4229,7 +4229,6 @@ class CellpyCell:
         #   to run the function on several cells and have a common x-axis)
 
         # TODO: allow for missing steps (i.e. if you have a cell with only charge and no discharge in the first cycle)
-        # TODO: check - initialize cc, cv, dc, dv to pd.DataFrame() in the beginning of each loop
 
         # if cycle is not given, then this function should
         # iterate through cycles
@@ -4295,6 +4294,10 @@ class CellpyCell:
 
         initial = True
         for current_cycle in cycle:
+            cc = pd.DataFrame()
+            cv = pd.DataFrame()
+            dc = pd.DataFrame()
+            dv = pd.DataFrame()
             error = False
             try:
                 cc, cv = self.get_ccap(
