@@ -4827,7 +4827,11 @@ class CellpyCell:
         return not self.data.raw.duplicated(subset=subset).any()
 
     def total_time_at_voltage_level(
-        self, cycles=None, voltage_limit=0.5, sampling_unit="S", at="low",
+        self,
+        cycles=None,
+        voltage_limit=0.5,
+        sampling_unit="S",
+        at="low",
     ):
         """Experimental method for getting the total time spent at low / high voltage.
 
@@ -4851,9 +4855,11 @@ class CellpyCell:
 
         if sampling_unit not in ["S"]:
             logging.critical("Only 'S' (seconds) has been tested so far.")
-            logging.critical(f"It might work with sampling_unit='{sampling_unit}'"
-                             f"however, the result you get is probably in {sampling_unit} and not"
-                             f"seconds.")
+            logging.critical(
+                f"It might work with sampling_unit='{sampling_unit}'"
+                f"however, the result you get is probably in {sampling_unit} and not"
+                f"seconds."
+            )
 
         date_time_hdr = "date_time"
         cycle_index_hdr = "cycle_index"
@@ -4892,7 +4898,8 @@ class CellpyCell:
             v.loc[v[voltage_hdr] > voltage_limit, "is_at_target"] = 1
         elif at == "between":
             v.loc[
-                (v[voltage_hdr] > voltage_limit[0]) & (v[voltage_hdr] < voltage_limit[1]),
+                (v[voltage_hdr] > voltage_limit[0])
+                & (v[voltage_hdr] < voltage_limit[1]),
                 "is_at_target",
             ] = 1
         else:

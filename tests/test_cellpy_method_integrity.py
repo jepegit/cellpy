@@ -80,16 +80,12 @@ def neware_csv_cell(parameters):
 
 @pytest.fixture
 def maccor_txt_cell(parameters):
-    return get(
-        filename=parameters.mcc_file_path, instrument="maccor_txt", testing=True
-    )
+    return get(filename=parameters.mcc_file_path, instrument="maccor_txt", testing=True)
 
 
 @pytest.fixture
 def pec_txt_cell(parameters):
-    return get(
-        filename=parameters.pec_file_path, instrument="pec_csv", testing=True
-    )
+    return get(filename=parameters.pec_file_path, instrument="pec_csv", testing=True)
 
 
 @pytest.fixture
@@ -97,7 +93,10 @@ def custom_cell(parameters):
     file_name = parameters.custom_file_paths
     instrument_file = parameters.custom_instrument_definitions_file
     return get(
-        filename=file_name, instrument="custom", instrument_file=instrument_file, testing=True
+        filename=file_name,
+        instrument="custom",
+        instrument_file=instrument_file,
+        testing=True,
     )
 
 
@@ -138,8 +137,7 @@ def test_other_raw_cells(
         "cellpy_cell_v5",
         "cellpy_cell_v6",
         "neware_cellpy_cell",
-
-    ]
+    ],
 )
 def test_total_time_at_low_voltage_from_cellpy_cells(_c, request):
     c = request.getfixturevalue(_c)
@@ -157,7 +155,7 @@ def test_total_time_at_low_voltage_from_cellpy_cells(_c, request):
         "arbin_res_cell2",
         "arbin_res_cell3",
         "arbin_res_cell4",
-    ]
+    ],
 )
 def test_total_time_at_low_voltage_from_raw(_c, request):
     c = request.getfixturevalue(_c)
@@ -182,7 +180,7 @@ def test_total_time_at_low_voltage_from_raw(_c, request):
     "_c",
     [
         "pec_txt_cell",
-    ]
+    ],
 )
 def test_total_time_at_low_voltage_from_other_raw(_c, request):
     c = request.getfixturevalue(_c)
