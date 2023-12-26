@@ -4151,6 +4151,7 @@ class CellpyCell:
     def get_cap(
         self,
         cycle=None,
+        cycles=None,
         method="back-and-forth",
         insert_nan=None,
         shift=0.0,
@@ -4175,7 +4176,8 @@ class CellpyCell:
         """Gets the capacity for the run.
 
         Args:
-            cycle (int): cycle number.
+            cycle (int, list): cycle number (s).
+            cycles (list): list of cycle numbers.
             method (string): how the curves are given
                 "back-and-forth" - standard back and forth; discharge
                 (or charge) reversed from where charge (or discharge) ends.
@@ -4247,6 +4249,9 @@ class CellpyCell:
 
         cycle_mode = cycle_mode or self.cycle_mode
 
+        if cycles is not None:
+            cycle = cycles
+
         if cycle is None:
             cycle = self.get_cycle_numbers()
 
@@ -4277,28 +4282,28 @@ class CellpyCell:
 
         converter_kwargs = dict()
         if mass is not None:
-            logging.critical(
+            logging.info(
                 f"mass of {mass} {self.cellpy_units['mass']} given - using gravimetric mode"
             )
             converter_kwargs["value"] = mass
             mode = "gravimetric"
 
         if area is not None:
-            logging.critical(
+            logging.info(
                 f"area of {area} {self.cellpy_units['area']} given - using areal mode"
             )
             converter_kwargs["value"] = area
             mode = "areal"
 
         if volume is not None:
-            logging.critical(
+            logging.info(
                 f"volume of {volume} {self.cellpy_units['volume']} given - using volumetric mode"
             )
             converter_kwargs["value"] = volume
             mode = "volumetric"
 
         if mode == "absolute":
-            logging.critical(f"absolute mode - no conversion")
+            logging.info(f"absolute mode - no conversion")
 
         capacity = None
         voltage = None
@@ -4324,7 +4329,7 @@ class CellpyCell:
 
             except NullData as e:
                 error = True
-                logging.critical(e)
+                logging.info(e)
                 if not ignore_errors:
                     logging.debug("breaking out of loop")
                     break
@@ -4339,7 +4344,7 @@ class CellpyCell:
 
             except NullData as e:
                 error = True
-                logging.critical(e)
+                logging.info(e)
                 if not ignore_errors:
                     logging.debug("breaking out of loop")
                     break
@@ -4382,7 +4387,7 @@ class CellpyCell:
                         _last_step_c = _last - _last_step_c + prev_end
 
                     else:
-                        logging.critical("no last charge step found")
+                        logging.info("no last charge step found")
 
                     if _first_step_c is not None:
                         _first = first(_first_step_c)
@@ -4390,7 +4395,7 @@ class CellpyCell:
                         _new_first = first(_first_step_c)
 
                     else:
-                        logging.critical("probably empty (_first_step_c is None)")
+                        logging.info("probably empty (_first_step_c is None)")
                     prev_end = last(_last_step_c)
 
                 elif method == "forth":
