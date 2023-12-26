@@ -41,7 +41,7 @@ class CellPyConfig:
         return self.__dataclass_fields__.keys()
 
 
-# If updating this, you will have to do a lot of tweaks.
+# If updating PathsClass, you will have to do a lot of tweaks.
 #   .cellpy_prms_default.conf
 #   cli.py (_update_paths)
 #   test_cli_setup_interactive (NUMBER_OF_DIRS)
@@ -135,6 +135,7 @@ class ReaderClass(CellPyConfig):
     auto_dirs: bool = (
         True  # v2.0 search in prm-file for res and hdf5 dirs in cellpy.get()
     )
+    jupyter_executable: str = "jupyter"
 
 
 @dataclass

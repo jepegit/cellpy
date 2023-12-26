@@ -27,6 +27,21 @@ USE_MY_DOCUMENTS = False
 
 DEFAULT_FILENAME = DEFAULT_FILENAME_START + "default" + DEFAULT_FILENAME_END
 
+ENVIRONMENT_EXAMPLE = """
+# This is an example of an environment file for cellpy.
+# The environment file is used to set environment variables
+# that are used by cellpy.
+# The environment file should be located in the user directory
+# (i.e. the directory returned by pathlib.Path.home()).
+# The default environment file is named .env_cellpy, but you can
+# change this in your config file.
+# The environment file should contain the following variables:
+# CELLPY_PASSWORD=<password>
+# CELLPY_KEY_FILENAME=<key_filename>
+# CELLPY_HOST=<host>
+# CELLPY_USER=<user>
+"""
+
 # logger = logging.getLogger(__name__)
 
 yaml = YAML()
@@ -89,7 +104,7 @@ def get_user_dir():
 
 
 def _write_prm_file(file_name=None):
-    logging.debug("saving configuration to %s" % file_name)
+    logging.debug(f"saving configuration to {file_name}")
     config_dict = _pack_prms()
 
     try:
@@ -101,6 +116,24 @@ def _write_prm_file(file_name=None):
             yaml.dump(config_dict, config_file)
     except YAMLError:
         raise ConfigFileNotWritten
+
+
+# TODO: make this alive by setting it to not dev:
+def _write_env_file(env_file_name=None):
+    """writes example environment file"""
+    dev = True
+    if env_file_name is None:
+        env_file_name = get_env_file_name()
+
+    logging.debug(f"saving environment arguments to {env_file_name}")
+    if dev:
+        print("---in-env-file------------------------------------")
+        print(ENVIRONMENT_EXAMPLE)
+        print("--------------------------------------------------")
+        return
+
+    with open(env_file_name, "w") as env_file:
+        env_file.write(ENVIRONMENT_EXAMPLE)
 
 
 def _update_prms(config_dict, resolve_paths=True):
@@ -331,7 +364,8 @@ def _save_current_prms_to_user_dir():
 
 def get_env_file_name():
     """returns the location of the env-file"""
-    return pathlib.Path(prms.Paths.env_file)
+    env_file = pathlib.Path(prms.Paths.env_file)
+    return env_file
 
 
 def info():

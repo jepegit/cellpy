@@ -96,6 +96,12 @@ def save_prm_file(prm_filename):
     prmreader._write_prm_file(prm_filename)
 
 
+def dump_env_file(env_filename):
+    """saves (writes) the env to file"""
+    print("dumping env file to", env_filename)
+    prmreader._write_env_file(env_filename)
+
+
 def get_package_prm_dir():
     """gets the folder where the cellpy package lives"""
     return pathlib.Path(cellpy.parameters.__file__).parent
@@ -228,6 +234,7 @@ def setup(
     # generate variables
     init_filename = prmreader.create_custom_init_filename()
     user_dir, dst_file = prmreader.get_user_dir_and_dst(init_filename)
+    env_file = prmreader.get_env_file()
 
     if dry_run:
         click.echo("Create custom init filename and get user_dir and destination")
@@ -262,6 +269,9 @@ def setup(
         click.echo(f"[cellpy] {dst_file} not found -> I will make one for you!")
         reset = True
 
+    if not pathlib.Path(env_file).is_file():
+        click.echo(f"[cellpy] {env_file} not found -> I will make one, but you must edit it yourself!")
+
     if interactive:
         click.echo(" interactive mode ".center(80, "-"))
         _update_paths(
@@ -273,6 +283,7 @@ def setup(
             interactive=True,
         )
         _write_config_file(user_dir, dst_file, init_filename, dry_run)
+        _write_env_file(user_dir, env_file, dry_run)
         _check(dry_run=dry_run)
 
     else:
@@ -287,6 +298,7 @@ def setup(
                 silent=silent,
             )
         _write_config_file(user_dir, dst_file, init_filename, dry_run)
+        _write_env_file(user_dir, env_file, dry_run)
         _check(dry_run=dry_run)
 
 
@@ -762,6 +774,36 @@ def _write_config_file(user_dir, dst_file, init_filename, dry_run):
             click.echo(_txt)
     else:
         click.echo(f"[cellpy] (setup) Configuration file written!")
+        click.echo(
+            f"[cellpy] (setup) OK! Now you can edit it. For example by "
+            f"issuing \n\n         [your-favourite-editor] {init_filename}\n"
+        )
+
+
+def _write_env_file(user_dir, dst_file, dry_run):
+    click.echo(" update configuration ".center(80, "-"))
+    click.echo("[cellpy] (setup) Writing environment file:")
+    click.echo(f"\n         {user_dir}\n")
+
+    if os.path.isfile(dst_file):
+        click.echo(f"[cellpy] (setup) Environment file {dst_file} already exists!")
+        return
+
+    try:
+        if dry_run:
+            click.echo(
+                f"*** dry-run: skipping actual saving of {dst_file} ***", color="red"
+            )
+        else:
+            click.echo(f"[cellpy] (setup) Saving file ({dst_file})")
+            dump_env_file(dst_file)
+
+    except ConfigFileNotWritten:
+        _txt = "[cellpy] (setup) No, that did not work either.\n"
+        _txt += "[cellpy] (setup) Well, guess you have to talk to the developers."
+        click.echo(_txt)
+    else:
+        click.echo(f"[cellpy] (setup) Environment file written!")
         click.echo(
             f"[cellpy] (setup) OK! Now you can edit it. For example by "
             f"issuing \n\n         [your-favourite-editor] {init_filename}\n"
