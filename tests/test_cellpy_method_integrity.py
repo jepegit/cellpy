@@ -143,7 +143,7 @@ def test_other_raw_cells(
 )
 def test_total_time_at_low_voltage_from_cellpy_cells(_c, request):
     c = request.getfixturevalue(_c)
-    t = c.total_time_at_low_voltage()
+    t = c.total_time_at_voltage_level()
     print(f"total time at low voltage: {t} seconds")
 
 
@@ -161,7 +161,7 @@ def test_total_time_at_low_voltage_from_cellpy_cells(_c, request):
 )
 def test_total_time_at_low_voltage_from_raw(_c, request):
     c = request.getfixturevalue(_c)
-    t = c.total_time_at_low_voltage()
+    t = c.total_time_at_voltage_level()
     print(f"total time at low voltage: {t} seconds")
 
 
@@ -174,7 +174,7 @@ def test_total_time_at_low_voltage_from_raw(_c, request):
 # )
 # def test_total_time_at_low_voltage_from_custom_raw(_c, request):
 #     c = request.getfixturevalue(_c)
-#     t = c.total_time_at_low_voltage()
+#     t = c.total_time_at_voltage_level()
 #     print(f"total time at low voltage: {t} seconds")
 
 
@@ -186,5 +186,5 @@ def test_total_time_at_low_voltage_from_raw(_c, request):
 )
 def test_total_time_at_low_voltage_from_other_raw(_c, request):
     c = request.getfixturevalue(_c)
-    t = c.total_time_at_low_voltage()
+    t = c.total_time_at_voltage_level()
     print(f"total time at low voltage: {t} seconds")

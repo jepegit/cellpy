@@ -7,6 +7,18 @@ History
 =========================
 
 * Batch: `naked` and `init(empty=True)` easier method for creating batch with empty pages
+* File handling: new fix in `find_files`
+* Batch / Utils: refactored and updated `Collectors` (using `plotly`)
+* Batch: new summary plotter (using `plotly`)
+* Batch: new convenience function for automatically creating batch from batch-file if file exists.
+* Batch: added `mark` and `drop` methods
+* CLI: added possibility to use custom jupyter executable
+* Added checks (`c.has_xxx`) for checking if data has been processed correctly / fix errors in raw/semi-processed data.
+* Added possibility to filter on C-rates (`c.get_cycles`)
+* Added experimental feature `c.total_time_at_voltage_level` for calculating total time at low/high voltage
+* Added experimental instrument reader for neware xlsx files
+* Added try-except block for ica post-processing step and add if-clause (suggested by Vajee)
+* Fixed several smaller bugs and improved some of the functionality (most notably in `c.get_cap`)
 
 
 1.0.0 (2023)

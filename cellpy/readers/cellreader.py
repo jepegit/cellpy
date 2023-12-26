@@ -4826,14 +4826,14 @@ class CellpyCell:
             subset = self.headers_normal.data_point_txt
         return not self.data.raw.duplicated(subset=subset).any()
 
-    def total_time_at_low_voltage(
-        self, cycles=None, voltage_limit=0.5, sampling_unit="S"
+    def total_time_at_voltage_level(
+        self, cycles=None, voltage_limit=0.5, sampling_unit="S", at="low",
     ):
-        """Experimental method for getting the total time spent at low voltage.
+        """Experimental method for getting the total time spent at low / high voltage.
 
         Args:
             cycles: cycle number (all cycles if None).
-            voltage_limit: voltage limit (default 0.5 V)
+            voltage_limit: voltage limit (default 0.5 V). Can be a tuple (low, high) if at="between".
             sampling_unit: sampling unit (default "S")
                     H: hourly frequency
                     T, min: minutely frequency
@@ -4841,9 +4841,19 @@ class CellpyCell:
                     L, ms:  milliseconds
                     U, us: microseconds
                     N: nanoseconds
+            at (str): "low", "high", or "between" (default "low")
         """
 
         from pandas.api.types import is_datetime64_any_dtype as is_datetime
+
+        if at not in ["low", "high", "between"]:
+            raise ValueError("at must be either 'low', 'high', or 'between'")
+
+        if sampling_unit not in ["S"]:
+            logging.critical("Only 'S' (seconds) has been tested so far.")
+            logging.critical(f"It might work with sampling_unit='{sampling_unit}'"
+                             f"however, the result you get is probably in {sampling_unit} and not"
+                             f"seconds.")
 
         date_time_hdr = "date_time"
         cycle_index_hdr = "cycle_index"
@@ -4863,18 +4873,33 @@ class CellpyCell:
         # make sure data_time is datetime64[ns] (not sure if this works for all tester formats/loaders):
         col_has_date_time_dtype = is_datetime(v[date_time_hdr])
         duplicated = v[date_time_hdr].duplicated().any()
+
         if not col_has_date_time_dtype:
             logging.debug("converting date_time to datetime64[ns]")
             v[date_time_hdr] = pd.to_datetime(v[date_time_hdr], format=date_time_format)
+
         if duplicated:
             logging.debug("removing duplicated date_time values")
             v = v.loc[~v[date_time_hdr].duplicated(), :]
+
         v = v.set_index(date_time_hdr, drop=True)
         v = v.resample(sampling_unit).ffill().bfill()
         v["is_at_target"] = 0
-        v.loc[v[voltage_hdr] < voltage_limit, "is_at_target"] = 1
 
-        # missing - convert to seconds
+        if at == "low":
+            v.loc[v[voltage_hdr] < voltage_limit, "is_at_target"] = 1
+        elif at == "high":
+            v.loc[v[voltage_hdr] > voltage_limit, "is_at_target"] = 1
+        elif at == "between":
+            v.loc[
+                (v[voltage_hdr] > voltage_limit[0]) & (v[voltage_hdr] < voltage_limit[1]),
+                "is_at_target",
+            ] = 1
+        else:
+            # This will never occur, but keeping it here for completeness
+            raise ValueError("at must be either 'low' or 'high'")
+
+        # missing option - convert to seconds
         return v.is_at_target.sum()
 
     def nominal_capacity_as_absolute(

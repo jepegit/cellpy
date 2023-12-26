@@ -29,7 +29,7 @@ def test_get_neware_from_csv(parameters):
 def test_get_neware_from_h5(neware_cell):
     assert len(neware_cell.data.raw) == 9065
     assert len(neware_cell.data.summary) == 4
-    t = neware_cell.total_time_at_low_voltage()
+    t = neware_cell.total_time_at_voltage_level()
     print(f"total time at low voltage: {t} seconds")
 
 
