@@ -1018,6 +1018,7 @@ class CellpyCell:
                     similar[name] = True
         return similar
 
+    # TODO: v2.0 - remove this
     def loadcell(
         self,
         raw_files,
@@ -2205,7 +2206,6 @@ class CellpyCell:
             logging.debug("info about raw files missing")
         return fids, lengths
 
-    # TODO @jepe (v.1.0.0): update this to use single data instances (i.e. to cell from cells)
     def merge(self, datasets: list, **kwargs):
         """This function merges datasets into one set."""
         logging.info("Merging")
@@ -2220,7 +2220,6 @@ class CellpyCell:
                 self.data.raw_data_files_length.append(file_size)
         return self
 
-    # TODO @jepe (v.1.0.0): update/check this - single data instances (i.e. to cell from cells)
     def _append(self, t1, t2, merge_summary=False, merge_step_table=False, recalc=True):
         logging.debug(
             f"merging two datasets\n(merge summary = {merge_summary})\n"
@@ -2429,6 +2428,7 @@ class CellpyCell:
     ):
         # TODO: @jepe - include sub_steps here
         # TODO: @jepe - include option for not selecting taper steps here
+        # TODO: @jepe - refactor this method!
         """Get the step numbers of selected type.
 
         Returns the selected step_numbers for the selected type of step(s).
@@ -2503,7 +2503,7 @@ class CellpyCell:
         if not valid_step_type:
             return None
 
-        # in case of selection allctypes, then modify charge, discharge
+        # in case of selection `allctypes`, then modify charge, discharge
         if allctypes:
             add_these = []
             for st in steptypes:
@@ -3677,6 +3677,7 @@ class CellpyCell:
 
     # --------------helper-functions--------------------------------------------
     def _fix_dtype_step_table(self, dataset):
+        # used when saving to cellpy format
         hst = get_headers_step_table()
         try:
             cols = dataset.steps.columns
@@ -3692,7 +3693,8 @@ class CellpyCell:
 
     # TODO: check if this is useful and if it is rename, if not delete
     def _cap_mod_summary(self, summary, capacity_modifier="reset"):
-        # modifies the summary table
+        # Why did I make this method?
+        # OBS! modifies the summary table
         time_00 = time.time()
         discharge_title = self.headers_normal.discharge_capacity_txt
         charge_title = self.headers_normal.charge_capacity_txt
@@ -3717,9 +3719,11 @@ class CellpyCell:
 
     # TODO: check if this is useful and if it is rename, if not delete
     def _cap_mod_normal(self, capacity_modifier="reset", allctypes=True):
-        # modifies the normal table
+        # Why did I make this method?
+        # OBS! modifies the normal table
         time_00 = time.time()
         logging.debug("Not properly checked yet! Use with caution!")
+
         cycle_index_header = self.headers_normal.cycle_index_txt
         step_index_header = self.headers_normal.step_index_txt
         discharge_index_header = self.headers_normal.discharge_capacity_txt
@@ -4033,7 +4037,9 @@ class CellpyCell:
             print(" - look up the start and end 'data_point' in the raw DataFrame")
             print("")
             print(
-                "(Just remember to run make_step_table with the all_steps set to True before you do it)"
+                "(Just remember to run make_step_table with the all_steps set to True"
+                " before you do it. And re-run it with all_steps set to False afterwards"
+                " to ensure that it behaves normally)"
             )
             return
 
@@ -4690,10 +4696,10 @@ class CellpyCell:
         """Get the number of cycles in the test."""
         if steptable is None:
             d = self.data.raw
-            no_cycles = np.amax(d[self.headers_normal.cycle_index_txt])
+            number_of_cycles = np.amax(d[self.headers_normal.cycle_index_txt])
         else:
-            no_cycles = np.amax(steptable[self.headers_step_table.cycle])
-        return no_cycles
+            number_of_cycles = np.amax(steptable[self.headers_step_table.cycle])
+        return number_of_cycles
 
     def get_rates(self, steptable=None, agg="first", direction=None):
         """

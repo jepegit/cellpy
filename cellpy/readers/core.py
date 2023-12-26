@@ -660,6 +660,7 @@ def generate_default_factory():
     return instrument_factory
 
 
+# TODO: v1.1.0 - implement plugins and local instrument readers
 def find_all_instruments() -> Dict[str, Tuple[str, pathlib.Path]]:
     """finds all the supported instruments"""
 
@@ -808,6 +809,7 @@ def xldate_as_datetime(xldate, datemode=0, option="to_datetime"):
     return d
 
 
+# TODO: consider moving this to either internals/core or to new module
 def collect_capacity_curves(
     cell,
     direction="charge",
@@ -902,6 +904,7 @@ def collect_capacity_curves(
     return charge_list, cycles, minimum_v_value, maximum_v_value
 
 
+# TODO: consider moving this to either internals/core or to new module
 def interpolate_y_on_x(
     df,
     x=None,
@@ -974,6 +977,7 @@ def interpolate_y_on_x(
     return new_df
 
 
+# TODO: consider moving this to either internals/core or to new module
 def group_by_interpolate(
     df,
     x=None,
