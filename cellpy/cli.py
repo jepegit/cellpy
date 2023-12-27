@@ -270,7 +270,9 @@ def setup(
         reset = True
 
     if not pathlib.Path(env_file).is_file():
-        click.echo(f"[cellpy] {env_file} not found -> I will make one, but you must edit it yourself!")
+        click.echo(
+            f"[cellpy] {env_file} not found -> I will make one, but you must edit it yourself!"
+        )
 
     if interactive:
         click.echo(" interactive mode ".center(80, "-"))
@@ -1513,8 +1515,8 @@ def _read_local_templates(local_templates_path=None):
     "run_",
     is_flag=True,
     help="Use PaperMill to run the notebook(s) from the template (will only work properly if "
-         "the notebooks can be sorted in correct run-order by 'sorted' and "
-         "cellpy can find the jupyter executable).",
+    "the notebooks can be sorted in correct run-order by 'sorted' and "
+    "cellpy can find the jupyter executable).",
 )
 @click.option(
     "--lab",
@@ -1798,9 +1800,10 @@ def _serve(server, executable=None):
 @click.option("--lab", "-l", is_flag=True, help="Use Jupyter Lab instead of Notebook")
 @click.option("--directory", "-d", default=None, help="Start in custom directory DIR")
 @click.option(
-    "--executable", "-e",
+    "--executable",
+    "-e",
     default=None,
-    help="Custom Jupyter executable (needed if Jupyter is not in the same env as cellpy)"
+    help="Custom Jupyter executable (needed if Jupyter is not in the same env as cellpy)",
 )
 def serve(lab, directory, executable):
     """Start a Jupyter server."""
