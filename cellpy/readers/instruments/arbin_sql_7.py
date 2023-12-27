@@ -280,6 +280,7 @@ class DataLoader(BaseLoader):
         data.item_ID = None
         # Implemented metadata:
         data.schedule_file_name = meta_data["Schedule_File_Name"][0]
+        # TODO: convert to datetime:
         data.start_datetime = meta_data["First_Start_DateTime"][0]
         data.creator = meta_data["Creator"][0]
 

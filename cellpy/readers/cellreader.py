@@ -778,7 +778,13 @@ class CellpyCell:
         # TODO: v2.0 edit this from scalar to list
         try:
             data = self.data
-            return data.meta_test_dependent.cycle_mode
+            m = data.meta_test_dependent.cycle_mode
+            # cellpy saves this as a list (ready for v2.0),
+            # but we want to return a scalar for the moment
+            # Temporary fix to make sure that cycle_mode is a scalar:
+            if isinstance(m, (tuple, list)):
+                return m[0]
+            return m
         except NoDataFound:
             return self._cycle_mode
 

@@ -303,13 +303,28 @@ class Data:
 
     def _repr_html_(self):
         txt = f"<h2>Data-object</h2> <b>id</b>: {hex(id(self))}"
+
         txt += "<p>"
         for p in dir(self):
             if not p.startswith("_"):
-                if p not in ["raw", "summary", "steps", "logger"]:
+                if p not in [
+                    "raw",
+                    "summary",
+                    "steps",
+                    "logger",
+                    "raw_data_files",
+                    "custom_info",
+                    "populate_defaults",
+                ]:
                     value = self.__getattribute__(p)
                     txt += f"<b>{p}</b>: {value}<br>"
+            if p == "raw_data_files":
+                fid_txt = "<b>raw data files</b>:"
+                fid_names = ", ".join([f.name for f in self.raw_data_files])
+                fid_txt += f" [{fid_names}]<br>"
+                txt += fid_txt
         txt += "</p>"
+
         try:
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
@@ -389,10 +404,13 @@ class Data:
 
     @property
     def start_datetime(self):
+        # TODO: convert to datetime object?
+        print(type(self.meta_common.start_datetime))
         return self.meta_common.start_datetime
 
     @start_datetime.setter
     def start_datetime(self, n):
+        # TODO: convert to datetime object?
         self.meta_common.start_datetime = n
 
     @property

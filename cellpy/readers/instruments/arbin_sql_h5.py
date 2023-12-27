@@ -133,6 +133,7 @@ class DataLoader(BaseLoader):
         data.test_name = self.name.name
         data.creator = None
         data.schedule_file_name = data_dfs["info_df"]["Schedule_File_Name"].iloc[0]
+        # TODO: convert to datetime (note that this seems to be set also in the postprocessing)
         data.start_datetime = data_dfs["info_df"]["First_Start_DateTime"].iloc[0]
         data.mass = data_dfs["info_df"]["SpecificMASS"].iloc[0]
         data.nom_cap = data_dfs["info_df"]["SpecificCapacity"].iloc[0]
@@ -220,6 +221,7 @@ class DataLoader(BaseLoader):
 
         hdr_date_time = self.arbin_headers_normal.datetime_txt
         start = data.raw[hdr_date_time].iat[0]
+        # TODO: convert to datetime:
         data.start_datetime = start
 
         return data

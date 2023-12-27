@@ -460,6 +460,7 @@ class DataLoader(BaseLoader):
 
     def _generate_datetime(self):
         start_date = self.mpr_settings["start_date"]
+        # TODO: convert to datetime:
         start_datetime = self.mpr_log["Start"]
         cellpy_header_txt = "datetime_txt"
         date_format = "%Y-%m-%d %H:%M:%S"  # without microseconds

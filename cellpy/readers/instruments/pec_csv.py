@@ -214,6 +214,7 @@ class DataLoader(BaseLoader):
 
         # --------- read raw-data (normal-data) -------------------------
         self._load_pec_data(bad_steps)
+        # TODO: convert to datetime:
         data.start_datetime = self.pec_settings["start_time"]
         length_of_test = self.pec_data.shape[0]
         logging.debug(f"length of test: {length_of_test}")

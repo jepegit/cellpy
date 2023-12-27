@@ -225,6 +225,7 @@ class DataLoader(BaseLoader):
             data.raw[hdr_ir] = data.raw[hdr_ir].fillna(method="bfill")
 
         hdr_date_time = self.arbin_headers_normal.datetime_txt
+        # TODO: convert to datetime:
         start = data.raw[hdr_date_time].iat[0]
         data.start_datetime = start
 

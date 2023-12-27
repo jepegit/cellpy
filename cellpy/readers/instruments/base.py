@@ -565,6 +565,7 @@ class AutoLoader(BaseLoader):
         data.test_name = meta.get("test_name", None)
         data.creator = meta.get("creator", None)
         data.schedule_file_name = meta.get("schedule_file_name", None)
+        # TODO: convert to datetime:
         data.start_datetime = meta.get("start_datetime", None)
 
         # Generating a FileID project:
@@ -579,6 +580,7 @@ class AutoLoader(BaseLoader):
         data = self._post_process(data)
         data = self.identify_last_data_point(data)
         if data.start_datetime is None:
+            # TODO: convert to datetime:
             data.start_datetime = data.raw[headers_normal.datetime_txt].iat[0]
 
         data = self.validate(data)

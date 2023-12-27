@@ -268,10 +268,10 @@ class DataLoader(BaseLoader):
         data.test_ID = test_id
         data.test_name = name
 
-        # The following meta data is not implemented yet for SQL loader:
+        # The following metadata is not implemented yet for SQL loader:
         data.creator = None
         data.schedule_file_name = None
-        data.start_datetime = None
+        data.start_datetime = None  # REMARK! convert to datetime when implementing
 
         # Generating a FileID project:
         self.generate_fid()

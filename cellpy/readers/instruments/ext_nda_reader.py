@@ -91,6 +91,7 @@ class DataLoader(BaseLoader):
         channel_index = 1
         creator = "no name"
         schedule_file_name = "no name"
+        # TODO: convert to datetime:
         start_datetime = "2020.02.24 14:58:00"
         test_ID = 1
         test_name = "no name"

@@ -284,6 +284,7 @@ class DataLoader(BaseLoader):
             print("recalculating capacity: cap = current * time")
 
         # hdr_date_time = self.arbin_headers_normal.datetime_txt
+        # TODO: convert to datetime:
         # start = data.raw[hdr_date_time].iat[0]
         # data.start_datetime = start
 

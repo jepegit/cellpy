@@ -1079,6 +1079,7 @@ class DataLoader(BaseLoader):
         data.schedule_file_name = selected_global_data_df[
             self.arbin_headers_global.schedule_file_name_txt
         ].values[0]
+        # TODO: convert to datetime:
         data.start_datetime = selected_global_data_df[
             self.arbin_headers_global.start_datetime_txt
         ].values[0]
