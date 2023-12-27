@@ -311,16 +311,20 @@ class Data:
                     txt += f"<b>{p}</b>: {value}<br>"
         txt += "</p>"
         try:
-            raw_txt = f"<p><b>raw data-frame (summary)</b><br>{self.raw.describe()._repr_html_()}</p>"  # noqa
-            raw_txt += f"<p><b>raw data-frame (head)</b><br>{self.raw.head()._repr_html_()}</p>"  # noqa
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                raw_txt = f"<p><b>raw data-frame (summary)</b><br>{self.raw.describe()._repr_html_()}</p>"  # noqa
+                raw_txt += f"<p><b>raw data-frame (head)</b><br>{self.raw.head()._repr_html_()}</p>"  # noqa
         except AttributeError:
             raw_txt = "<p><b>raw data-frame </b><br> not found!</p>"
         except ValueError:
             raw_txt = "<p><b>raw data-frame </b><br> does not contain any columns!</p>"
 
         try:
-            summary_txt = f"<p><b>summary data-frame (summary)</b><br>{self.summary.describe()._repr_html_()}</p>"  # noqa
-            summary_txt += f"<p><b>summary data-frame (head)</b><br>{self.summary.head()._repr_html_()}</p>"  # noqa
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                summary_txt = f"<p><b>summary data-frame (summary)</b><br>{self.summary.describe()._repr_html_()}</p>"  # noqa
+                summary_txt += f"<p><b>summary data-frame (head)</b><br>{self.summary.head()._repr_html_()}</p>"  # noqa
         except AttributeError:
             summary_txt = "<p><b>summary data-frame </b><br> not found!</p>"
         except ValueError:
@@ -329,8 +333,10 @@ class Data:
             )
 
         try:
-            steps_txt = f"<p><b>steps data-frame (summary)</b><br>{self.steps.describe()._repr_html_()}</p>"  # noqa
-            steps_txt += f"<p><b>steps data-frame (head)</b><br>{self.steps.head()._repr_html_()}</p>"  # noqa
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                steps_txt = f"<p><b>steps data-frame (summary)</b><br>{self.steps.describe()._repr_html_()}</p>"  # noqa
+                steps_txt += f"<p><b>steps data-frame (head)</b><br>{self.steps.head()._repr_html_()}</p>"  # noqa
         except AttributeError:
             steps_txt = "<p><b>steps data-frame </b><br> not found!</p>"
         except ValueError:
