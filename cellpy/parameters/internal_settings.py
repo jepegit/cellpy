@@ -157,6 +157,7 @@ class CellpyMetaCommon(CellpyMeta):
     tot_mass: Optional[
         prms.CellPyDataConfig
     ] = prms.Materials.default_mass  # total material
+    # volume: Optional[prms.CellPyDataConfig] = prms.CellInfo.volume
     nom_cap: Optional[
         prms.CellPyDataConfig
     ] = prms.Materials.default_nom_cap  # nominal capacity   # used as property

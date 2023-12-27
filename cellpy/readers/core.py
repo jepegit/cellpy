@@ -405,7 +405,6 @@ class Data:
     @property
     def start_datetime(self):
         # TODO: convert to datetime object?
-        print(type(self.meta_common.start_datetime))
         return self.meta_common.start_datetime
 
     @start_datetime.setter
@@ -420,6 +419,14 @@ class Data:
     @material.setter
     def material(self, n):
         self.meta_common.material = n
+
+    # @property
+    # def volume(self):
+    #     return self.meta_common.volume
+    #
+    # @volume.setter
+    # def volume(self, n):
+    #     self.meta_common.volume = n
 
     @property
     def mass(self):

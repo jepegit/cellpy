@@ -5556,6 +5556,7 @@ class CellpyCell:
                 nom_cap, cell.active_electrode_area, nom_cap_specifics
             )
 
+        # TODO: this will break because cell.volume (data.volume) is not set yet
         elif nom_cap_specifics == "volumetric":
             nom_cap_abs = self.nominal_capacity_as_absolute(
                 nom_cap, cell.volume, nom_cap_specifics
@@ -6262,7 +6263,8 @@ def get(
         cycle_mode (str): the cycle mode (e.g. "anode" or "full_cell")
         mass (float): mass of active material (mg) (defaults to mass given in cellpy-file or 1.0)
         nominal_capacity (float): nominal capacity for the cell (e.g. used for finding C-rates)
-        nom_cap_specifics (str): either "gravimetric" (pr mass), "areal" (per area), or "volumetric" (per volume)
+        nom_cap_specifics (str): either "gravimetric" (pr mass), or "areal" (per area).
+            ("volumetric" is not fully implemented yet - let us know if you need it).
         loading (float): loading in units [mass] / [area]
         area (float): active electrode area (e.g. used for finding the areal capacity)
         estimate_area (bool): calculate area from loading if given (defaults to True)
@@ -6331,6 +6333,9 @@ def get(
         >>> c = cellpy.get()  # or c = cellpy.get(initialize=True) if you want to initialize it.
 
     """
+
+    # TODO: implement volume as parameter and 'volumetric' as nom_cap_specifics option.
+
     from cellpy import log
 
     db_readers = ["arbin_sql", "arbin_sql_7"]
@@ -6469,6 +6474,7 @@ def _update_meta(
     loading=None,
     estimate_area=None,
     units=None,
+    volume=None,  # not implemented yet
 ):
     """Used by get to update metadata in the CellpyCell object."""
     # Note: this is a bit messy, but it is a quick fix for now.
@@ -6515,8 +6521,13 @@ def _update_meta(
             f"calculating area from loading ({loading}) and mass ({cellpy_instance.data.mass}): {area}"
         )
         cellpy_instance.active_electrode_area = area
+
     else:
         logging.debug("using default area")
+
+    if volume is not None:
+        logging.debug(f"got volume: {volume}")
+        logging.critical("Volume not implemented yet")
 
     return cellpy_instance
 
