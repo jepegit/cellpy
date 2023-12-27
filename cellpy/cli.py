@@ -234,7 +234,7 @@ def setup(
     # generate variables
     init_filename = prmreader.create_custom_init_filename()
     user_dir, dst_file = prmreader.get_user_dir_and_dst(init_filename)
-    env_file = prmreader.get_env_file()
+    env_file = prmreader.get_env_file_name()
 
     if dry_run:
         click.echo("Create custom init filename and get user_dir and destination")
