@@ -302,7 +302,7 @@ class Data:
     """
 
     def _repr_html_(self):
-        txt = f"<h2>Data-object</h2> id={hex(id(self))}"
+        txt = f"<h2>Data-object</h2> <b>id</b>: {hex(id(self))}"
         txt += "<p>"
         for p in dir(self):
             if not p.startswith("_"):
