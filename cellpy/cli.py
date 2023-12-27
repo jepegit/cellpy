@@ -808,7 +808,7 @@ def _write_env_file(user_dir, dst_file, dry_run):
         click.echo(f"[cellpy] (setup) Environment file written!")
         click.echo(
             f"[cellpy] (setup) OK! Now you can edit it. For example by "
-            f"issuing \n\n         [your-favourite-editor] {init_filename}\n"
+            f"issuing \n\n         [your-favourite-editor] {dst_file}\n"
         )
 
 
