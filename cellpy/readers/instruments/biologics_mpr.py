@@ -372,6 +372,9 @@ class DataLoader(BaseLoader):
             )
             main_data = data_module["data"][405:]
             remaining_headers = data_module["data"][5 + 2 * n_columns : 405]
+        
+        elif data_version == 3:
+            raise IOError("Support for data version 3 is under development in issue 270")
 
         else:
             raise IOError("Unrecognised version for data module: %d" % data_version)
