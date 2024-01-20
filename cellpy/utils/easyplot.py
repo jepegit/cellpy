@@ -837,7 +837,9 @@ class EasyPlot:
                             chg = cyc_df.groupby("direction")
                             cyc_df = chg.get_group(1)
 
-                        # TODO: The way this is set up, when plotting both discharge and charge, the whole cycle is normalized on the maximum capacity, meaning the charge can be normalized on the discharge or the other way around.
+                        # TODO: The way this is set up, when plotting both discharge and charge, the whole cycle
+                        #  is normalized on the maximum capacity, meaning the charge can be normalized on
+                        #  the discharge or the other way around.
                         if self.kwargs["galvanostatic_normalize_capacity"]:
                             # Then we normalize capacity column on the max value (since this should be max cap)
                             maxcap = cyc_df["capacity"].max()
