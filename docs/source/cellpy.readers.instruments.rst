@@ -118,6 +118,14 @@ cellpy.readers.instruments.neware\_txt module
    :undoc-members:
    :show-inheritance:
 
+cellpy.readers.instruments.neware\_xlsx module
+----------------------------------------------
+
+.. automodule:: cellpy.readers.instruments.neware_xlsx
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 cellpy.readers.instruments.pec\_csv module
 ------------------------------------------
 

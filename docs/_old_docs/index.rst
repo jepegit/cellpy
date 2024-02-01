@@ -15,11 +15,9 @@ Contents
 .. toctree::
     :maxdepth: 2
 
-    getting_started/index.rst
-    fundamentals/index.rst
-    examples/index.rst
-    contributing/index.rst
-    other/index.rst
+    main_description/index.rst
+    examples_and_tutorials/index.rst
+    developers_guide/index.rst
 
 Indices and tables
 ==================

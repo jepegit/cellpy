@@ -3,6 +3,10 @@
 ============
 Installation
 ============
+``cellpy`` is available on Windows and Linux and can be installed using ``pip`` or ``conda``, or can be installed from source.
+
+
+To make sure all the dependencies are installed correctly
 
 If you are (relatively) new to installing python packages, please jump to the
 getting started tutorial (:ref:`getting-started`)

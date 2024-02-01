@@ -25,20 +25,32 @@ batteries and cells.
 
 |ProjectVersion|
 
+Installation and dependencies
+=============================
 
-Features
-========
+The easiest way to install ``cellpy`` is to install with conda or pip.
 
-* Load battery test-data from different testers and formats
-* Convert testing data into a common format
-* Summarize and compare data
-* Filter out the steps of interest
-* Process and plot the data
-* Do simple and advanced analysis on single datasets as well as collections of datasets
-* And more...
+With conda::
 
+   conda install -c conda-forge cellpy
+
+Or if you prefer installing using pip::
+
+   python -m pip install cellpy
+
+Have a look at the documentation for more detailed installation procedures, especially
+with respect to "difficult" dependencies when installing with pip.
 
 Licence
 =======
 
 ``cellpy`` is free software made available under the MIT License.
+
+Features
+========
+
+* Load test-data and store in a common format.
+* Summarize and compare data.
+* Filter out the steps of interest.
+* Process and plot the data.
+* And more...
