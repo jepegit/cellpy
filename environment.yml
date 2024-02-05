@@ -14,7 +14,7 @@ dependencies:
     - setuptools
     - ruamel.yaml
     - pyodbc
-    - PyGithub
+    - pygithub
     - cookiecutter
     - tqdm
     - dateparser
