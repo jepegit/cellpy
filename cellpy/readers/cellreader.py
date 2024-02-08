@@ -2641,6 +2641,8 @@ class CellpyCell:
         self,
         step_specifications=None,
         short=False,
+        override_step_types=None,
+        override_raw_limits=None,
         profiling=False,
         all_steps=False,
         add_c_rate=True,
@@ -2668,6 +2670,10 @@ class CellpyCell:
         Args:
             step_specifications (pandas.DataFrame): step specifications
             short (bool): step specifications in short format
+            override_step_types (dict): override the provided step types, for example set all
+                steps with step number 5 to "charge" by providing {5: "charge"}.
+            override_raw_limits (dict): override the instrument limits (resolution), for example set
+                'current_hard' to 0.1 by providing {'current_hard': 0.1}.
             profiling (bool): turn on profiling
             all_steps (bool): investigate all steps including same steps within
                 one cycle (this is useful for e.g. GITT).
@@ -2817,15 +2823,45 @@ class CellpyCell:
         df_steps[shdr.info] = ""
 
         if step_specifications is None:
-            current_limit_value_hard = self.raw_limits["current_hard"]
-            current_limit_value_soft = self.raw_limits["current_soft"]
-            stable_current_limit_hard = self.raw_limits["stable_current_hard"]
-            stable_current_limit_soft = self.raw_limits["stable_current_soft"]
-            stable_voltage_limit_hard = self.raw_limits["stable_voltage_hard"]
-            stable_voltage_limit_soft = self.raw_limits["stable_voltage_soft"]
-            stable_charge_limit_hard = self.raw_limits["stable_charge_hard"]
-            stable_charge_limit_soft = self.raw_limits["stable_charge_soft"]
-            ir_change_limit = self.raw_limits["ir_change"]
+            # TODO: refactor this:
+            if override_raw_limits is None:
+                override_raw_limits = {}
+            current_limit_value_hard = (
+                override_raw_limits.get("current_hard", None)
+                or self.raw_limits["current_hard"]
+            )
+            current_limit_value_soft = (
+                override_raw_limits.get("current_soft", None)
+                or self.raw_limits["current_soft"]
+            )
+            stable_current_limit_hard = (
+                override_raw_limits.get("stable_current_hard", None)
+                or self.raw_limits["stable_current_hard"]
+            )
+            stable_current_limit_soft = (
+                override_raw_limits.get("stable_current_soft", None)
+                or self.raw_limits["stable_current_soft"]
+            )
+            stable_voltage_limit_hard = (
+                override_raw_limits.get("stable_voltage_hard", None)
+                or self.raw_limits["stable_voltage_hard"]
+            )
+            stable_voltage_limit_soft = (
+                override_raw_limits.get("stable_voltage_soft", None)
+                or self.raw_limits["stable_voltage_soft"]
+            )
+            stable_charge_limit_hard = (
+                override_raw_limits.get("stable_charge_hard", None)
+                or self.raw_limits["stable_charge_hard"]
+            )
+            stable_charge_limit_soft = (
+                override_raw_limits.get("stable_charge_soft", None)
+                or self.raw_limits["stable_charge_soft"]
+            )
+            ir_change_limit = (
+                override_raw_limits.get("ir_change", None)
+                or self.raw_limits["ir_change"]
+            )
 
             mask_no_current_hard = (
                 df_steps.loc[:, (shdr.current, "max")].abs()
@@ -2938,6 +2974,12 @@ class CellpyCell:
             # mask_discharge_changed
             # mask_voltage_down
 
+            if override_step_types is not None:
+                for step, step_type in override_step_types.items():
+                    df_steps.loc[
+                        df_steps[shdr.step] == step, (shdr.type, slice(None))
+                    ] = step_type
+
             if profiling:
                 print(f"*** masking: {time.time() - time_01} s")
                 time_01 = time.time()
@@ -2982,7 +3024,6 @@ class CellpyCell:
             # logging.debug(empty_rows)
 
         # flatten (possible remove in the future),
-        # (maybe we will implement mulitindexed tables)
 
         logging.debug(f"flatten columns")
         if profiling:

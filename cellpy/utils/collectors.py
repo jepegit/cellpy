@@ -19,7 +19,6 @@ import cellpy
 from cellpy.readers.core import group_by_interpolate
 from cellpy.utils.batch import Batch
 from cellpy.utils.helpers import concat_summaries
-from cellpy.utils.plotutils import plot_concatenated
 from cellpy.utils import ica
 
 supported_backends = []
