@@ -669,6 +669,8 @@ class BatchSummaryCollector(BatchCollector):
             fig_title (str): title of the figure
         """
 
+        # TODO: include option for error-bands (spread) (https://plotly.com/python/continuous-error-bars/)
+
         elevated_data_collector_arguments = dict(
             max_cycle=max_cycle,
             rate=rate,
