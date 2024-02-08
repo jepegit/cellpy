@@ -20,6 +20,7 @@ History
 * Added try-except block for ica post-processing step and add if-clause (suggested by Vajee)
 * Fixed several smaller bugs and improved some of the functionality (most notably in `c.get_cap`)
 * [under progress]: check how cycle_mode and specific is handled and possibly improve
+* [under progress]: start moving/implementing all methods that modify the data to the `do` module
 
 
 1.0.0 (2023)

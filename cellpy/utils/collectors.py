@@ -28,12 +28,14 @@ try:
     import plotly.express as px
     import plotly.io as pio
     import plotly.graph_objects as go
+
     supported_backends.append("plotly")
 except ImportError:
     print("WARNING: plotly not installed")
 
 try:
     import seaborn as sns
+
     supported_backends.append("seaborn")
 except ImportError:
     print("WARNING: seaborn not installed")
@@ -649,8 +651,12 @@ class BatchSummaryCollector(BatchCollector):
             rate_column (str): name of the column containing the C-rates.
             inverse (bool): select steps that do not have the given C-rate.
             inverted (bool): select cycles that do not have the steps filtered by given C-rate.
-            key_index_bounds (list): used when creating a common label for the cells by splitting and combining from
-                key_index_bound[0] to key_index_bound[1].
+            key_index_bounds (list): used when creating a common label for the cells in a group
+                (when group_it is set to True) by splitting and combining from key_index_bound[0] to key_index_bound[1].
+                For example, if your cells are called "cell_01_01" and "cell_01_02" and you set
+                key_index_bounds=[0, 2], the common label will be "cell_01". Or if they are called
+                "20230101_cell_01_01_01" and "20230101_cell_01_01_02" and you set key_index_bounds=[1, 3],
+                the common label will be "cell_01_01".
 
         Elevated plotter args:
             points (bool): plot points if True
@@ -1698,7 +1704,6 @@ def _cycles_plotter(
     show_legend = kwargs.pop("show_legend", None)
     cols = kwargs.pop("cols", 3)
     sub_fig_min_height = kwargs.pop("sub_fig_min_height", 200)
-
     # kwargs from default `BatchCollector.render` method not used by `sequence_plotter`:
     journal = kwargs.pop("journal", None)
     units = kwargs.pop("units", None)
