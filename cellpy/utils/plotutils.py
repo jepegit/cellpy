@@ -272,7 +272,8 @@ def _cycle_info_plot_plotly(cell, cycle=None, get_axes=False, **kwargs):
     import numpy as np
 
     # TODO: implement options for units
-    # TODO: use proper cellpy headers (hard-coded for now)
+    raw_hdr = get_headers_normal()
+    step_hdr = get_headers_step_table()
 
     data = cell.data.raw.copy()
     table = cell.data.steps.copy()
@@ -283,45 +284,81 @@ def _cycle_info_plot_plotly(cell, cycle=None, get_axes=False, **kwargs):
     if not isinstance(cycle, (list, tuple)):
         cycle = [cycle]
 
+    delta = "_delta"
+    v_delta = step_hdr["voltage"] + delta
+    i_delta = step_hdr["current"] + delta
+    c_delta = step_hdr["charge"] + delta
+    dc_delta = step_hdr["discharge"] + delta
+    cycle_ = step_hdr["cycle"]
+    step_ = step_hdr["step"]
+    type_ = step_hdr["type"]
+
+    time_hdr = raw_hdr["test_time_txt"]
+    cycle_hdr = raw_hdr["cycle_index_txt"]
+    step_number_hdr = raw_hdr["step_index_txt"]
+    current_hdr = raw_hdr["current_txt"]
+    voltage_hdr = raw_hdr["voltage_txt"]
+
     data = data[
         [
-            "test_time",
-            "cycle_index",
-            "step_index",
-            "current",
-            "voltage",
+            time_hdr,
+            cycle_hdr,
+            step_number_hdr,
+            current_hdr,
+            voltage_hdr,
         ]
     ]
+
     table = table[
         [
-            "cycle",
-            "step",
-            "type",
-            "voltage_delta",
-            "current_delta",
-            "charge_delta",
-            "discharge_delta",
+            cycle_,
+            step_,
+            type_,
+            v_delta,
+            i_delta,
+            c_delta,
+            dc_delta,
         ]
     ]
-    m_cycle_data = data["cycle_index"].isin(cycle)
+    m_cycle_data = data[cycle_hdr].isin(cycle)
     data = data.loc[m_cycle_data, :]
 
     data = data.merge(
-        table, left_on=("cycle_index", "step_index"), right_on=("cycle", "step")
+        table,
+        left_on=(cycle_hdr, step_number_hdr),
+        right_on=(cycle_, step_),
     )
+
+    hover_template = (
+        "<br>".join(
+            [
+                "Time: %{x:.2f}",
+                "Voltage: %{y:.4f} V",
+                "Current: %{customdata[0]:.4f} mA",
+                "Step: %{customdata[1]}",
+                "Type: %{customdata[2]}",
+                "delta V: %{customdata[3]:.2f}",
+                "delta I: %{customdata[4]:.2f}",
+                "delta C: %{customdata[5]:.2f}",
+                "delta DC: %{customdata[6]:.2f}",
+            ]
+        ),
+    )
+
     fig = go.Figure()
 
-    grouped_data = data.groupby("cycle_index")
+    grouped_data = data.groupby(cycle_hdr)
     for cycle_number, group in grouped_data:
-        x = group["test_time"] / 3600
-        y = group["voltage"]
-        s = group["step_index"]
-        i = group["current"] * 1000
-        st = group["type"]
-        dV = group["voltage_delta"]
-        dI = group["current_delta"]
-        dC = group["charge_delta"]
-        dDC = group["discharge_delta"]
+        x = group[time_hdr] / 3600
+        y = group[voltage_hdr]
+        s = group[step_number_hdr]
+        i = group[current_hdr] * 1000
+
+        st = group[step_]
+        dV = group[v_delta]
+        dI = group[i_delta]
+        dC = group[c_delta]
+        dDC = group[dc_delta]
 
         fig.add_trace(
             go.Scatter(
@@ -330,21 +367,10 @@ def _cycle_info_plot_plotly(cell, cycle=None, get_axes=False, **kwargs):
                 mode="lines",
                 name=f"cycle {cycle_number}",
                 customdata=np.stack((i, s, st, dV, dI, dC, dDC), axis=-1),
-                hovertemplate="<br>".join(
-                    [
-                        "Time: %{x:.2f}",
-                        "Voltage: %{y:.4f} V",
-                        "Current: %{customdata[0]:.4f} mA",
-                        "Step: %{customdata[1]}",
-                        "Type: %{customdata[2]}",
-                        "delta V: %{customdata[3]:.2f}",
-                        "delta I: %{customdata[4]:.2f}",
-                        "delta C: %{customdata[5]:.2f}",
-                        "delta DC: %{customdata[6]:.2f}",
-                    ]
-                ),
+                hovertemplate=hover_template,
             )
         )
+
     if len(cycle) > 2:
         if cycle[-1] - cycle[0] == len(cycle) - 1:
             title = f"{cell.cell_name} Cycles {cycle[0]} - {cycle[-1]}"
@@ -354,6 +380,7 @@ def _cycle_info_plot_plotly(cell, cycle=None, get_axes=False, **kwargs):
         title = f"{cell.cell_name} Cycles {cycle[0]} and {cycle[1]}"
     else:
         title = f"{cell.cell_name} Cycle {cycle[0]}"
+
     fig.update_layout(
         title=title,
         xaxis_title="Time (hours)",
