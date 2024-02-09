@@ -247,8 +247,8 @@ def cycle_info_plot(
 
     Args:
         cell: cellpy object
-        cycle: cycle to select
-        get_axes (bool): return axes
+        cycle (int or list or tuple): cycle(s) to select (must be int for matplotlib)
+        get_axes (bool): return axes (for matplotlib) or figure (for plotly)
         interactive (bool): use interactive plotting (if available)
         **kwargs: parameters specific to plotting backend.
 
@@ -256,13 +256,113 @@ def cycle_info_plot(
         ``matplotlib.axes`` or None
     """
     if plotly_available and interactive:
-        import plotly.express as px
-
-        warnings.warn("Interactive plotting not yet implemented for cycle_info_plot")
+        fig = _cycle_info_plot_plotly(cell, cycle, get_axes, **kwargs)
+        if get_axes:
+            return fig
+        return fig
 
     axes = _cycle_info_plot_matplotlib(cell, cycle, get_axes, **kwargs)
     if get_axes:
         return axes
+
+
+def _cycle_info_plot_plotly(cell, cycle=None, get_axes=False, **kwargs):
+    import plotly.express as px
+    import plotly.graph_objects as go
+    import numpy as np
+
+    # TODO: implement options for units
+    # TODO: use proper cellpy headers (hard-coded for now)
+
+    data = cell.data.raw.copy()
+    table = cell.data.steps.copy()
+
+    if cycle is None:
+        cycle = list(data["cycle_index"].unique())
+
+    if not isinstance(cycle, (list, tuple)):
+        cycle = [cycle]
+
+    data = data[
+        [
+            "test_time",
+            "cycle_index",
+            "step_index",
+            "current",
+            "voltage",
+        ]
+    ]
+    table = table[
+        [
+            "cycle",
+            "step",
+            "type",
+            "voltage_delta",
+            "current_delta",
+            "charge_delta",
+            "discharge_delta",
+        ]
+    ]
+    m_cycle_data = data["cycle_index"].isin(cycle)
+    data = data.loc[m_cycle_data, :]
+
+    data = data.merge(
+        table, left_on=("cycle_index", "step_index"), right_on=("cycle", "step")
+    )
+    fig = go.Figure()
+
+    grouped_data = data.groupby("cycle_index")
+    for cycle_number, group in grouped_data:
+        x = group["test_time"] / 3600
+        y = group["voltage"]
+        s = group["step_index"]
+        i = group["current"] * 1000
+        st = group["type"]
+        dV = group["voltage_delta"]
+        dI = group["current_delta"]
+        dC = group["charge_delta"]
+        dDC = group["discharge_delta"]
+
+        fig.add_trace(
+            go.Scatter(
+                x=x,
+                y=y,
+                mode="lines",
+                name=f"cycle {cycle_number}",
+                customdata=np.stack((i, s, st, dV, dI, dC, dDC), axis=-1),
+                hovertemplate="<br>".join(
+                    [
+                        "Time: %{x:.2f}",
+                        "Voltage: %{y:.4f} V",
+                        "Current: %{customdata[0]:.4f} mA",
+                        "Step: %{customdata[1]}",
+                        "Type: %{customdata[2]}",
+                        "delta V: %{customdata[3]:.2f}",
+                        "delta I: %{customdata[4]:.2f}",
+                        "delta C: %{customdata[5]:.2f}",
+                        "delta DC: %{customdata[6]:.2f}",
+                    ]
+                ),
+            )
+        )
+    if len(cycle) > 2:
+        if cycle[-1] - cycle[0] == len(cycle) - 1:
+            title = f"{cell.cell_name} Cycles {cycle[0]} - {cycle[-1]}"
+        else:
+            title = f"{cell.cell_name} Cycles {cycle}"
+    elif len(cycle) == 2:
+        title = f"{cell.cell_name} Cycles {cycle[0]} and {cycle[1]}"
+    else:
+        title = f"{cell.cell_name} Cycle {cycle[0]}"
+    fig.update_layout(
+        title=title,
+        xaxis_title="Time (hours)",
+        yaxis_title="Voltage (V)",
+    )
+
+    if get_axes:
+        return fig
+    fig.show()
 
 
 def _plot_step(ax, x, y, color):
@@ -288,6 +388,9 @@ def _get_info(table, cycle, step):
 
 def _cycle_info_plot_matplotlib(cell, cycle, get_axes=False, **kwargs):
     # obs! hard-coded col-names. Please fix me.
+    if isinstance(cycle, (list, tuple)):
+        warnings.warn("Only one cycle at a time is supported for matplotlib")
+        cycle = cycle[0]
 
     data = cell.data.raw
     table = cell.data.steps

@@ -1181,6 +1181,7 @@ def ica_collector(
 
 # plotter functions (consider moving to plotutils)
 
+
 def remove_markers(trace):
     trace.update(marker=None, mode="lines")
     return trace
