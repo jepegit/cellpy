@@ -199,21 +199,23 @@ def raw_plot(
 ):
     # TODO: missing doc-string
 
+    raw = cell.data.raw.copy()
+
     if y is None:
-        y, y_label = ("voltage", "Voltage (V)")
+        y, y_label = ("voltage", f"Voltage ({cell.data.raw_units.voltage})")
     if x is None:
         x, x_label = ("test_time_hrs", "Time (hours)")
 
     if title is None:
         title = f"{cell.cell_name}"
 
-    raw = cell.data.raw
     if x == "test_time_hrs":
         raw["test_time_hrs"] = raw[hdr_raw["test_time_txt"]] / 3600
 
     if plotly_available and interactive:
         import plotly.express as px
 
+        title = f"<b>{title}</b>"
         if x_label or y_label:
             labels = {}
             if x_label:
@@ -240,7 +242,10 @@ def cycle_info_plot(
     cell,
     cycle,
     get_axes=False,
-    interactive=False,
+    interactive=True,
+    t_unit="hours",
+    v_unit="V",
+    i_unit="mA",
     **kwargs,
 ):
     """Show raw data together with step and cycle information.
@@ -250,28 +255,71 @@ def cycle_info_plot(
         cycle (int or list or tuple): cycle(s) to select (must be int for matplotlib)
         get_axes (bool): return axes (for matplotlib) or figure (for plotly)
         interactive (bool): use interactive plotting (if available)
+        t_unit (str): unit for x-axis (default: "hours")
+        v_unit (str): unit for y-axis (default: "V")
+        i_unit (str): unit for current (default: "mA")
         **kwargs: parameters specific to plotting backend.
 
     Returns:
         ``matplotlib.axes`` or None
     """
+    t_scaler = cell.unit_scaler_from_raw(t_unit, "time")
+    v_scaler = cell.unit_scaler_from_raw(v_unit, "voltage")
+    i_scaler = cell.unit_scaler_from_raw(i_unit, "current")
+
     if plotly_available and interactive:
-        fig = _cycle_info_plot_plotly(cell, cycle, get_axes, **kwargs)
+        fig = _cycle_info_plot_plotly(
+            cell,
+            cycle,
+            get_axes,
+            t_scaler,
+            t_unit,
+            v_scaler,
+            v_unit,
+            i_scaler,
+            i_unit,
+            **kwargs,
+        )
         if get_axes:
             return fig
         return fig
 
-    axes = _cycle_info_plot_matplotlib(cell, cycle, get_axes, **kwargs)
+    axes = _cycle_info_plot_matplotlib(
+        cell,
+        cycle,
+        get_axes,
+        t_scaler,
+        t_unit,
+        v_scaler,
+        v_unit,
+        i_scaler,
+        i_unit,
+        **kwargs,
+    )
+
     if get_axes:
         return axes
 
 
-def _cycle_info_plot_plotly(cell, cycle=None, get_axes=False, **kwargs):
+def _cycle_info_plot_plotly(
+    cell,
+    cycle,
+    get_axes,
+    t_scaler,
+    t_unit,
+    v_scaler,
+    v_unit,
+    i_scaler,
+    i_unit,
+    **kwargs,
+):
     import plotly.express as px
     import plotly.graph_objects as go
     import numpy as np
 
-    # TODO: implement options for units
+    if kwargs.get("xlim"):
+        logging.info("xlim is not supported for plotly")
+
     raw_hdr = get_headers_normal()
     step_hdr = get_headers_step_table()
 
@@ -323,38 +371,26 @@ def _cycle_info_plot_plotly(cell, cycle=None, get_axes=False, **kwargs):
     m_cycle_data = data[cycle_hdr].isin(cycle)
     data = data.loc[m_cycle_data, :]
 
+    data[time_hdr] = data[time_hdr] * t_scaler
+    data[voltage_hdr] = data[voltage_hdr] * v_scaler
+    data[current_hdr] = data[current_hdr] * i_scaler
+
     data = data.merge(
         table,
         left_on=(cycle_hdr, step_number_hdr),
         right_on=(cycle_, step_),
     )
 
-    hover_template = (
-        "<br>".join(
-            [
-                "Time: %{x:.2f}",
-                "Voltage: %{y:.4f} V",
-                "Current: %{customdata[0]:.4f} mA",
-                "Step: %{customdata[1]}",
-                "Type: %{customdata[2]}",
-                "delta V: %{customdata[3]:.2f}",
-                "delta I: %{customdata[4]:.2f}",
-                "delta C: %{customdata[5]:.2f}",
-                "delta DC: %{customdata[6]:.2f}",
-            ]
-        ),
-    )
-
     fig = go.Figure()
 
     grouped_data = data.groupby(cycle_hdr)
     for cycle_number, group in grouped_data:
-        x = group[time_hdr] / 3600
+        x = group[time_hdr]
         y = group[voltage_hdr]
         s = group[step_number_hdr]
-        i = group[current_hdr] * 1000
+        i = group[current_hdr]
 
-        st = group[step_]
+        st = group[type_]
         dV = group[v_delta]
         dI = group[i_delta]
         dC = group[c_delta]
@@ -367,24 +403,35 @@ def _cycle_info_plot_plotly(cell, cycle=None, get_axes=False, **kwargs):
                 mode="lines",
                 name=f"cycle {cycle_number}",
                 customdata=np.stack((i, s, st, dV, dI, dC, dDC), axis=-1),
-                hovertemplate=hover_template,
-            )
+                hovertemplate="<br>".join(
+                    [
+                        "<b>Time: %{x:.2f}" + f" {t_unit}" + "</b>",
+                        "  <b>Voltage:</b> %{y:.4f}" + f" {v_unit}",
+                        "  <b>Current:</b> %{customdata[0]:.4f}" + f" {i_unit}",
+                        "<b>Step: %{customdata[1]} (%{customdata[2]})</b>",
+                        "  <b>ΔV:</b> %{customdata[3]:.2f}",
+                        "  <b>ΔI:</b> %{customdata[4]:.2f}",
+                        "  <b>ΔCh:</b> %{customdata[5]:.2f}",
+                        "  <b>ΔDCh:</b> %{customdata[6]:.2f}",
+                    ]
+                ),
+            ),
         )
-
+    title_start = f"<b>{cell.cell_name}</b> Cycle"
     if len(cycle) > 2:
         if cycle[-1] - cycle[0] == len(cycle) - 1:
-            title = f"{cell.cell_name} Cycles {cycle[0]} - {cycle[-1]}"
+            title = f"{title_start}s {cycle[0]} - {cycle[-1]}"
         else:
-            title = f"{cell.cell_name} Cycles {cycle}"
+            title = f"{title_start}s {cycle}"
     elif len(cycle) == 2:
-        title = f"{cell.cell_name} Cycles {cycle[0]} and {cycle[1]}"
+        title = f"{title_start}s {cycle[0]} and {cycle[1]}"
     else:
-        title = f"{cell.cell_name} Cycle {cycle[0]}"
+        title = f"{title_start} {cycle[0]}"
 
     fig.update_layout(
         title=title,
-        xaxis_title="Time (hours)",
-        yaxis_title="Voltage (V)",
+        xaxis_title=f"Time ({t_unit})",
+        yaxis_title=f"Voltage ({v_unit})",
     )
 
     if get_axes:
@@ -413,7 +460,18 @@ def _get_info(table, cycle, step):
     return [step_type, rate, current_max, d_voltage, d_current, d_discharge, d_charge]
 
 
-def _cycle_info_plot_matplotlib(cell, cycle, get_axes=False, **kwargs):
+def _cycle_info_plot_matplotlib(
+    cell,
+    cycle,
+    get_axes,
+    t_scaler,
+    t_unit,
+    v_scaler,
+    v_unit,
+    i_scaler,
+    i_unit,
+    **kwargs,
+):
     # obs! hard-coded col-names. Please fix me.
     if isinstance(cycle, (list, tuple)):
         warnings.warn("Only one cycle at a time is supported for matplotlib")
@@ -436,32 +494,30 @@ def _cycle_info_plot_matplotlib(cell, cycle, get_axes=False, **kwargs):
     fig.suptitle(f"Cycle: {cycle}")
 
     ax3 = plt.subplot2grid((8, 3), (0, 0), colspan=3, rowspan=1, fig=fig)  # steps
-    ax4 = plt.subplot2grid((8, 3), (1, 0), colspan=3, rowspan=2, fig=fig)  # rate
+    ax4 = plt.subplot2grid((8, 3), (1, 0), colspan=3, rowspan=2, fig=fig)  # info
     ax1 = plt.subplot2grid((8, 3), (3, 0), colspan=3, rowspan=5, fig=fig)  # data
 
     ax2 = ax1.twinx()
-    ax1.set_xlabel("time (minutes)")
-    ax1.set_ylabel("voltage (V vs. Li/Li+)", color=voltage_color)
-    ax2.set_ylabel("current (mA)", color=current_color)
+    ax1.set_xlabel(f"time ({t_unit})")
+    ax1.set_ylabel(f"voltage ({v_unit})", color=voltage_color)
+    ax2.set_ylabel(f"current ({i_unit})", color=current_color)
 
     annotations_1 = []  # step number (IR)
     annotations_2 = []  # step number
-    annotations_4 = []  # rate
+    annotations_4 = []  # info
 
     for i, s in enumerate(all_steps):
         m = m_cycle_data & (data.step_index == s)
-        c = data.loc[m, "current"] * 1000
-        v = data.loc[m, "voltage"]
-        t = data.loc[m, "test_time"] / 60
+        c = data.loc[m, "current"] * i_scaler
+        v = data.loc[m, "voltage"] * v_scaler
+        t = data.loc[m, "test_time"] * t_scaler
         step_type, rate, current_max, dv, dc, d_discharge, d_charge = _get_info(
             table, cycle, s
         )
         if len(t) > 1:
             fcolor = next(color)
 
-            info_txt = (
-                f"{step_type}\nc-rate = {rate}\ni = |{1000 * current_max:0.2f}| mA\n"
-            )
+            info_txt = f"{step_type}\ni = |{i_scaler * current_max:0.2f}| {i_unit}\n"
             info_txt += f"delta V = {dv:0.2f} %\ndelta i = {dc:0.2f} %\n"
             info_txt += f"delta C = {d_charge:0.2} %\ndelta DC = {d_discharge:0.2} %\n"
 
@@ -487,6 +543,12 @@ def _cycle_info_plot_matplotlib(cell, cycle, get_axes=False, **kwargs):
     for ax in [ax3, ax4]:
         ax.axes.get_yaxis().set_visible(False)
         ax.axes.get_xaxis().set_visible(False)
+
+    if x := kwargs.get("xlim"):
+        ax1.set_xlim(x)
+        ax2.set_xlim(x)
+        ax3.set_xlim(x)
+        ax4.set_xlim(x)
 
     if get_axes:
         return ax1, ax2, ax2, ax4
