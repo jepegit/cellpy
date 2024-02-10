@@ -884,6 +884,7 @@ def concat_summaries(
     inverse=False,
     inverted=False,
     key_index_bounds=None,
+    pages=None,
 ) -> pd.DataFrame:
     """Merge all summaries in a batch into a gigantic summary data frame.
 
@@ -908,6 +909,8 @@ def concat_summaries(
         inverted (bool): select cycles that do not have the steps filtered by given C-rate.
         key_index_bounds (list): used when creating a common label for the cells by splitting the label on '_'
             and combining again using the key_index_bounds as start and end index.
+        pages (pandas.DataFrame): alternative pages (journal) of the batch object (if not given, it will use the
+            pages from the batch object).
 
     Returns:
         ``pandas.DataFrame``
@@ -918,17 +921,19 @@ def concat_summaries(
 
     cell_names_nest = []
     group_nest = []
+    if pages is None:
+        pages = b.pages
 
     if group_it:
-        g = b.pages.groupby("group")
+        g = pages.groupby("group")
         # this ensures that order is kept and grouping is correct
         # it is therefore ok to assume from now on that all the cells within a list belongs to the same group
         for gno, b_sub in g:
             cell_names_nest.append(list(b_sub.index))
             group_nest.append(gno)
     else:
-        cell_names_nest.append(list(b.experiment.cell_names))
-        group_nest.append(b.pages.group.to_list())
+        cell_names_nest.append(list(b.index))
+        group_nest.append(pages.group.to_list())
 
     default_columns = [hdr_summary["charge_capacity_gravimetric"]]
     hdr_norm_cycle = hdr_summary["normalized_cycle_index"]
@@ -980,8 +985,8 @@ def concat_summaries(
         keys_sub = []
         for cell_id in cell_names:
             logging.debug(f"Processing [{cell_id}]")
-            group = b.pages.loc[cell_id, "group"]
-            sub_group = b.pages.loc[cell_id, "sub_group"]
+            group = pages.loc[cell_id, "group"]
+            sub_group = pages.loc[cell_id, "sub_group"]
             try:
                 c = b.experiment.data[cell_id]
             except KeyError as e:
