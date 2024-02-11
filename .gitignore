@@ -118,4 +118,5 @@ settings.json
 /testdata/db/excel.db
 /cellpy.svg
 /.nox/
+/~$cellpy-environment.xlsx
 /cellpy-environment.xlsx

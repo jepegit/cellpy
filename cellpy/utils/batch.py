@@ -517,9 +517,7 @@ class Batch:
         try:
             cell_labels = self.journal.session["bad_cells"]
         except AttributeError:
-            logging.critical(
-                "session info about bad cells is missing - cannot drop"
-            )
+            logging.critical("session info about bad cells is missing - cannot drop")
             return
         if cell_labels is None:
             logging.debug("no bad cells to drop")
@@ -685,7 +683,7 @@ class Batch:
 
 
         Returns:
-            info_dict
+            None
 
         """
 
@@ -1178,7 +1176,15 @@ def load_journal(journal_file, **kwargs):
     return journal
 
 
-def load(name, project, batch_col=None, allow_from_journal=True, drop_bad_cells=True, force_reload=False, **kwargs):
+def load(
+    name,
+    project,
+    batch_col=None,
+    allow_from_journal=True,
+    drop_bad_cells=True,
+    force_reload=False,
+    **kwargs,
+):
     """
     Load a batch from a journal file or create a new batch and load it if the journal file does not exist.
 

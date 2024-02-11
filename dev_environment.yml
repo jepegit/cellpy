@@ -49,5 +49,7 @@ dependencies:
         - pydeps
         - twine
         - build
+        - sphinx_rtd_theme
+        - invoke
 
 

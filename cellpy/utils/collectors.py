@@ -19,21 +19,23 @@ import cellpy
 from cellpy.readers.core import group_by_interpolate
 from cellpy.utils.batch import Batch
 from cellpy.utils.helpers import concat_summaries
-from cellpy.utils.plotutils import plot_concatenated
 from cellpy.utils import ica
 
 supported_backends = []
 
 try:
+    import plotly
     import plotly.express as px
     import plotly.io as pio
     import plotly.graph_objects as go
+
     supported_backends.append("plotly")
 except ImportError:
     print("WARNING: plotly not installed")
 
 try:
     import seaborn as sns
+
     supported_backends.append("seaborn")
 except ImportError:
     print("WARNING: seaborn not installed")
@@ -649,8 +651,12 @@ class BatchSummaryCollector(BatchCollector):
             rate_column (str): name of the column containing the C-rates.
             inverse (bool): select steps that do not have the given C-rate.
             inverted (bool): select cycles that do not have the steps filtered by given C-rate.
-            key_index_bounds (list): used when creating a common label for the cells by splitting and combining from
-                key_index_bound[0] to key_index_bound[1].
+            key_index_bounds (list): used when creating a common label for the cells in a group
+                (when group_it is set to True) by splitting and combining from key_index_bound[0] to key_index_bound[1].
+                For example, if your cells are called "cell_01_01" and "cell_01_02" and you set
+                key_index_bounds=[0, 2], the common label will be "cell_01". Or if they are called
+                "20230101_cell_01_01_01" and "20230101_cell_01_01_02" and you set key_index_bounds=[1, 3],
+                the common label will be "cell_01_01".
 
         Elevated plotter args:
             points (bool): plot points if True
@@ -663,6 +669,8 @@ class BatchSummaryCollector(BatchCollector):
             spread (bool): plot error-bands instead of error-bars if True
             fig_title (str): title of the figure
         """
+
+        # TODO: include option for error-bands (spread) (https://plotly.com/python/continuous-error-bars/)
 
         elevated_data_collector_arguments = dict(
             max_cycle=max_cycle,
@@ -1172,6 +1180,9 @@ def ica_collector(
     return collected_curves
 
 
+# plotter functions (consider moving to plotutils)
+
+
 def remove_markers(trace):
     trace.update(marker=None, mode="lines")
     return trace
@@ -1218,6 +1229,75 @@ def legend_replacer(trace, df, group_legends=True):
         )
 
 
+def spread_plot(curves, plotly_arguments, **kwargs):
+    """Create a spread plot (error-bands instead of error-bars)."""
+
+    colors = plotly.colors.qualitative.Plotly
+    opacity = 0.2
+    color_list = []
+    for color in colors:
+        color_rgb = plotly.colors.hex_to_rgb(color)
+        color_rgb_main = f"rgb({color_rgb[0]}, {color_rgb[1]}, {color_rgb[2]})"
+        color_rgba_spread = (
+            f"rgba({color_rgb[0]}, {color_rgb[1]}, {color_rgb[2]}, {opacity})"
+        )
+        color_list.append((color_rgb_main, color_rgba_spread))
+
+    if plotly_arguments.get("markers"):
+        mode = "lines+markers"
+    else:
+        mode = "lines"
+
+    g = curves.groupby("cell")
+    fig = go.Figure()
+    for i, (cell, data) in enumerate(g):
+        color = color_list[i % len(color_list)]
+        fig.add_trace(
+            go.Scatter(
+                name=cell,
+                x=data["cycle"],
+                y=data["mean"],
+                mode=mode,
+                line=dict(color=color[0]),
+            )
+        )
+        fig.add_trace(
+            go.Scatter(
+                name="Upper Bound",
+                x=data["cycle"],
+                y=data["mean"] + data["std"],
+                mode="lines",
+                marker=dict(
+                    color=color[1],
+                ),
+                line=dict(width=0),
+                showlegend=False,
+            )
+        )
+        fig.add_trace(
+            go.Scatter(
+                name="Lower Bound",
+                x=data["cycle"],
+                y=data["mean"] - data["std"],
+                mode="lines",
+                marker=dict(
+                    color=color[1],
+                ),
+                line=dict(width=0),
+                fillcolor=color[1],
+                fill="tonexty",
+                showlegend=False,
+            )
+        )
+
+    if labels := plotly_arguments.get("labels"):
+        fig.update_layout(xaxis_title=labels.get("cycle", None))
+    if hover_mode := kwargs.pop("hovermode", None):
+        fig.update_layout(hovermode=hover_mode)
+
+    return fig
+
+
 def sequence_plotter(
     collected_curves: pd.DataFrame,
     x: str = "capacity",
@@ -1252,6 +1332,7 @@ def sequence_plotter(
     palette_range: tuple = None,
     height: float = None,
     width: float = None,
+    spread: bool = False,
     **kwargs,
 ) -> Any:
     """create a plot made up of sequences of data (voltage curves, dQ/dV, etc).
@@ -1294,6 +1375,7 @@ def sequence_plotter(
         cols (int): number of columns for layout.
         height (int): plot height.
         width (int): plot width.
+        spread (bool): plot error-bands instead of error-bars if True.
 
         **kwargs: sent to backend (if `backend == "plotly"`, it will be
             sent to `plotly.express` etc.)
@@ -1502,12 +1584,15 @@ def sequence_plotter(
             fig.update_layout(coloraxis_colorbar_title_text=color_bar_txt)
 
         elif method == "summary":
-            fig = px.line(
-                curves,
-                **plotly_arguments,
-                **kwargs,
-            )
-            if group_cells:
+            if spread:
+                fig = spread_plot(curves, plotly_arguments, **kwargs)
+            else:
+                fig = px.line(
+                    curves,
+                    **plotly_arguments,
+                    **kwargs,
+                )
+            if group_cells:  # all cells in same group has same color
                 try:
                     fig.for_each_trace(
                         functools.partial(
@@ -1698,7 +1783,6 @@ def _cycles_plotter(
     show_legend = kwargs.pop("show_legend", None)
     cols = kwargs.pop("cols", 3)
     sub_fig_min_height = kwargs.pop("sub_fig_min_height", 200)
-
     # kwargs from default `BatchCollector.render` method not used by `sequence_plotter`:
     journal = kwargs.pop("journal", None)
     units = kwargs.pop("units", None)
