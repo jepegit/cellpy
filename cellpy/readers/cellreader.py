@@ -5432,11 +5432,15 @@ class CellpyCell:
         last_items = raw[d_txt].isin(steps)
         return last_items
 
-    # TODO: @jepe - this method might be valuable for users and could be made public:
+    # TODO: @jepe - this method might be valuable for users and could be made
+    #  public when it is fixed:
     def _select_without(self, raw, exclude_types=None, exclude_steps=None):
         # this function gives a set of indexes pointing to the last
         # datapoints for each cycle in the dataset given that the steps
-        # is not in the exclude list (either by type of step or by step number)
+        # are not in the exclude list (either by type of step or by step number)
+        # It turns out that this is not usable for the summary since the
+        # cycle consists of both charge and discharge steps. Need to use the step
+        # table and subtract the values of the steps that are not wanted.
 
         steps = self.data.steps
         d_txt = self.headers_normal.data_point_txt
@@ -5469,7 +5473,11 @@ class CellpyCell:
             steps.loc[q, ["cycle", "point_last"]].groupby("cycle").last().values.ravel()
         )
         last_items = raw[d_txt].isin(last_data_points)
-        return last_items
+
+        # TODO: update values in raw to exclude the steps that are not wanted
+        updated_raw = raw.copy()
+
+        return last_items, updated_raw
 
     # ----------making-summary------------------------------------------------------
     def make_summary(
@@ -5695,6 +5703,8 @@ class CellpyCell:
                     "c.data.raw = c.data.raw[~raw.index.duplicated(keep='first')]"
                 )
 
+        # copy the raw data to updated_raw (in case we need to update it)
+        updated_raw = raw.copy()
         if use_cellpy_stat_file:
             summary_df = data.summary
             try:
@@ -5702,13 +5712,16 @@ class CellpyCell:
                     summary_df[self.headers_normal.data_point_txt]
                 )
             except KeyError:
+                # TODO: remove this "escape" and instead raise Error asking
+                #  the user to not use the stat-file if it is not working properly:
                 logging.info("Error in stat_file (?) - using _select_last")
-                summary_requirement = selector(raw)
+                summary_requirement, updated_raw = selector(raw)
         else:
-            summary_requirement = selector(raw)
+            summary_requirement, updated_raw = selector(raw)
         # End edit
 
-        summary = raw[summary_requirement].copy()
+        summary = updated_raw[summary_requirement].copy()
+
         if not summary.index.is_unique:
             warnings.warn(f"{self.cell_name}: index is not unique for summary data")
 
