@@ -5545,7 +5545,7 @@ class CellpyCell:
         nom_cap=None,
         nom_cap_specifics=None,
         # from_cycle=None,
-        experimental=False,
+        old=False,
         create_copy=False,
         exclude_types=None,
         exclude_steps=None,
@@ -5584,8 +5584,8 @@ class CellpyCell:
             txt += str(test.loaded_from)
 
         logging.debug(txt)
-        if experimental:
-            data = self._make_summary_experimental(
+        if not old:
+            data = self._make_summary(
                 find_ir=find_ir,
                 find_end_voltage=find_end_voltage,
                 use_cellpy_stat_file=use_cellpy_stat_file,
@@ -5609,7 +5609,7 @@ class CellpyCell:
                 # TODO: check if anything is using this feature (returning self), if not, remove it.
                 return self
 
-        self._make_summary(
+        self._make_summar_legacy(
             # find_ocv=find_ocv,
             find_ir=find_ir,
             find_end_voltage=find_end_voltage,
@@ -5622,7 +5622,7 @@ class CellpyCell:
         )
         return self
 
-    def _make_summary_experimental(
+    def _make_summary(
         self,
         mass=None,
         nom_cap=None,
@@ -5742,12 +5742,13 @@ class CellpyCell:
                 data.nom_cap = nom_cap
                 self.make_step_table()
 
-        raw = data.raw
-        if not raw.index.is_unique:
+        if not self.data.raw.index.is_unique:
             warnings.warn(f"{self.cell_name}: index is not unique for raw data")
             if remove_duplicates:
                 logging.debug("removing duplicates before making summary")
-                raw = raw[~raw.index.duplicated(keep="first")]
+                self.data.raw = self.data.raw[
+                    ~self.data.raw.index.duplicated(keep="first")
+                ]
             else:
                 warnings.warn(
                     "You should remove the duplicates before making summary. For example using"
@@ -5757,7 +5758,7 @@ class CellpyCell:
         if use_cellpy_stat_file:
             summary_df = data.summary
             try:
-                summary = raw[self.headers_normal.data_point_txt].isin(
+                summary = self.data.raw[self.headers_normal.data_point_txt].isin(
                     summary_df[self.headers_normal.data_point_txt]
                 )
             except KeyError:
@@ -5854,7 +5855,7 @@ class CellpyCell:
         logging.debug(f"(dt: {(time.time() - time_00):4.2f}s)")
         return data
 
-    def _make_summary(
+    def _make_summar_legacy(
         self,
         mass=None,
         update_it=False,
