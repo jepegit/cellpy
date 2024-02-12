@@ -5434,15 +5434,9 @@ class CellpyCell:
 
     # TODO: @jepe - this method might be valuable for users and could be made
     #  public when it is fixed:
-    def _select_without(self, raw, exclude_types=None, exclude_steps=None):
-        # this function gives a set of indexes pointing to the last
-        # datapoints for each cycle in the dataset given that the steps
-        # are not in the exclude list (either by type of step or by step number)
-        # It turns out that this is not usable for the summary since the
-        # cycle consists of both charge and discharge steps. Need to use the step
-        # table and subtract the values of the steps that are not wanted.
-
+    def _select_without(self, exclude_types=None, exclude_steps=None, replace_nan=True):
         steps = self.data.steps
+        raw = self.data.raw.copy()
 
         # unravel the headers:
         d_n_txt = self.headers_normal.data_point_txt
@@ -5464,17 +5458,26 @@ class CellpyCell:
 
         _first = "_first"
         _last = "_last"
+        _delta_label = "_diff"
 
-        # TODO: implement also for energy and power (and probably others as well)
+        # TODO: implement also for energy and power (and probably others as well) - this will
+        #  require changing step-table to also include energy and power etc. If implementing
+        #  this, you should also include diff in the step-table. You should preferably also use this
+        #  opportunity to also make both the headers in the tables as well as the names used for
+        #  the headers more aligned (e.g. for header_normal.data_point_txt -> header_normal.point;
+        #  "cycle_index" -> "cycle")
+
+        last_data_points = (
+            steps.loc[:, [c_st_txt, d_st_txt + _last]]
+            .groupby(c_st_txt)
+            .last()
+            .values.ravel()
+        )
+        last_items = raw[d_n_txt].isin(last_data_points)
+        selected = raw[last_items]
 
         if exclude_types is None and exclude_steps is None:
-            last_data_points = (
-                steps.loc[:, [c_st_txt, d_st_txt + _last]]
-                .groupby(c_st_txt)
-                .last()
-                .values.ravel()
-            )
-            return raw[d_n_txt].isin(last_data_points)
+            return selected
 
         if not isinstance(exclude_types, (list, tuple)):
             exclude_types = [exclude_types]
@@ -5491,25 +5494,17 @@ class CellpyCell:
             _q = ~steps[t_st_txt].isin(exclude_steps)
             q = _q if q is None else q & _q
 
-        last_data_points = (
-            steps.loc[q, [c_st_txt, d_st_txt + _last]]
-            .groupby(c_st_txt)
-            .last()
-            .values.ravel()
-        )
-        last_items = raw[d_n_txt].isin(last_data_points)
-
-        # --------- fixing ---------------- (still a mess)
-        #  goal: to find all the deltas (diffs) and subtract them from the raw data
-
-        updated_raw = raw.copy()
-
-        _delta_label = "_diff"
         _delta_columns = [
-            "current",
-            "voltage",
-            "charge",
-            "discharge",
+            i_st_txt,
+            v_st_txt,
+            ch_st_txt,
+            dch_st_txt,
+        ]
+        _raw_columns = [
+            i_n_txt,
+            v_n_txt,
+            ch_n_txt,
+            dch_n_txt,
         ]
         _diff_columns = [f"{col}{_delta_label}" for col in _delta_columns]
 
@@ -5517,33 +5512,23 @@ class CellpyCell:
         delta_last = [f"{col}{_last}" for col in _delta_columns]
         delta_columns = delta_first + delta_last
 
-        delta = steps.loc[~q, [c_st_txt, s_st_txt, d_st_txt + _last, *delta_columns]].copy()
+        delta = steps.loc[~q, [c_st_txt, d_st_txt + _last, *delta_columns]].copy()
 
         for col in _delta_columns:
             delta[col + _delta_label] = delta[col + _last] - delta[col + _first]
         delta = delta.drop(columns=delta_columns)
-
         delta = delta.groupby(c_st_txt).sum()
+        delta = delta.reset_index()
 
-        g = steps.groupby(c_st_txt)
-        for cycle, group in g:
-            data_point = group[d_st_txt + _last].values[0]
-            # CONTINUE FROM HERE (and afterward try to make it into pandas operations)
+        selected = selected.merge(delta, how="left", left_on=c_n_txt, right_on=c_st_txt)
+        if replace_nan:
+            selected = selected.fillna(0.0)
 
-        last_data_points_all = (
-            steps.loc[:, [c_st_txt, d_st_txt + _last]].groupby(c_st_txt).last().values.ravel()
-        )
-        last_items_all = raw[d_n_txt].isin(last_data_points_all)
+        for col_n, col_diff in zip(_raw_columns, _diff_columns):
+            selected[col_n] -= selected[col_diff]
+        selected = selected.drop(columns=_diff_columns)
 
-        s_all = self.data.raw[last_items_all]
-        s_filtered = self.data.raw[last_items]
-
-        print(s_all.data_point - s_filtered.data_point)
-
-        # TODO: update values in raw to exclude the steps that are not wanted
-        updated_raw = raw.copy()
-
-        return last_items, updated_raw
+        return selected
 
     # ----------making-summary------------------------------------------------------
     def make_summary(
@@ -5685,7 +5670,6 @@ class CellpyCell:
         # Edited here:
         if selector is None:
             if selector_type == "non-cv":
-                print("selector_type is non-cv")
                 exclude_types = ["cv_"]
             selector = functools.partial(
                 self._select_without,
@@ -5749,10 +5733,8 @@ class CellpyCell:
 
         # ensuring that a step table exists:
         if ensure_step_table:
-            print("ensuring existence of step-table")
             logging.debug("ensuring existence of step-table")
             if not data.has_steps:
-                print("no steps found")
                 logging.debug("dataset.step_table_made is not True")
                 logging.info("running make_step_table")
 
@@ -5772,25 +5754,20 @@ class CellpyCell:
                     "c.data.raw = c.data.raw[~raw.index.duplicated(keep='first')]"
                 )
 
-        # copy the raw data to updated_raw (in case we need to update it)
-        updated_raw = raw.copy()
         if use_cellpy_stat_file:
-            print("using cellpy statfile")
             summary_df = data.summary
             try:
-                summary_requirement = raw[self.headers_normal.data_point_txt].isin(
+                summary = raw[self.headers_normal.data_point_txt].isin(
                     summary_df[self.headers_normal.data_point_txt]
                 )
             except KeyError:
                 # TODO: remove this "escape" and instead raise Error asking
                 #  the user to not use the stat-file if it is not working properly:
                 logging.info("Error in stat_file (?) - using _select_last")
-                summary_requirement, updated_raw = selector(raw)
+                summary = selector()
         else:
-            summary_requirement, updated_raw = selector(raw)
+            summary = selector()
         # End edit
-
-        summary = updated_raw[summary_requirement].copy()
 
         if not summary.index.is_unique:
             warnings.warn(f"{self.cell_name}: index is not unique for summary data")
