@@ -5443,16 +5443,38 @@ class CellpyCell:
         # table and subtract the values of the steps that are not wanted.
 
         steps = self.data.steps
-        d_txt = self.headers_normal.data_point_txt
+
+        # unravel the headers:
+        d_n_txt = self.headers_normal.data_point_txt
+        v_n_txt = self.headers_normal.voltage_txt
+        c_n_txt = self.headers_normal.cycle_index_txt
+        s_n_txt = self.headers_normal.step_index_txt
+        i_n_txt = self.headers_normal.current_txt
+        ch_n_txt = self.headers_normal.charge_capacity_txt
+        dch_n_txt = self.headers_normal.discharge_capacity_txt
+
+        d_st_txt = self.headers_step_table.point
+        v_st_txt = self.headers_step_table.voltage
+        c_st_txt = self.headers_step_table.cycle
+        i_st_txt = self.headers_step_table.current
+        ch_st_txt = self.headers_step_table.charge
+        dch_st_txt = self.headers_step_table.discharge
+        t_st_txt = self.headers_step_table.type
+        s_st_txt = self.headers_step_table.step
+
+        _first = "_first"
+        _last = "_last"
+
+        # TODO: implement also for energy and power (and probably others as well)
 
         if exclude_types is None and exclude_steps is None:
             last_data_points = (
-                steps.loc[:, ["cycle", "point_last"]]
-                .groupby("cycle")
+                steps.loc[:, [c_st_txt, d_st_txt + _last]]
+                .groupby(c_st_txt)
                 .last()
                 .values.ravel()
             )
-            return raw[d_txt].isin(last_data_points)
+            return raw[d_n_txt].isin(last_data_points)
 
         if not isinstance(exclude_types, (list, tuple)):
             exclude_types = [exclude_types]
@@ -5462,17 +5484,61 @@ class CellpyCell:
 
         q = None
         for exclude_type in exclude_types:
-            _q = ~steps["type"].str.startswith(exclude_type)
+            _q = ~steps[t_st_txt].str.startswith(exclude_type)
             q = _q if q is None else q & _q
 
         if exclude_steps:
-            _q = ~steps["step"].isin(exclude_steps)
+            _q = ~steps[t_st_txt].isin(exclude_steps)
             q = _q if q is None else q & _q
 
         last_data_points = (
-            steps.loc[q, ["cycle", "point_last"]].groupby("cycle").last().values.ravel()
+            steps.loc[q, [c_st_txt, d_st_txt + _last]]
+            .groupby(c_st_txt)
+            .last()
+            .values.ravel()
         )
-        last_items = raw[d_txt].isin(last_data_points)
+        last_items = raw[d_n_txt].isin(last_data_points)
+
+        # --------- fixing ---------------- (still a mess)
+        #  goal: to find all the deltas (diffs) and subtract them from the raw data
+
+        updated_raw = raw.copy()
+
+        _delta_label = "_diff"
+        _delta_columns = [
+            "current",
+            "voltage",
+            "charge",
+            "discharge",
+        ]
+        _diff_columns = [f"{col}{_delta_label}" for col in _delta_columns]
+
+        delta_first = [f"{col}{_first}" for col in _delta_columns]
+        delta_last = [f"{col}{_last}" for col in _delta_columns]
+        delta_columns = delta_first + delta_last
+
+        delta = steps.loc[~q, [c_st_txt, s_st_txt, d_st_txt + _last, *delta_columns]].copy()
+
+        for col in _delta_columns:
+            delta[col + _delta_label] = delta[col + _last] - delta[col + _first]
+        delta = delta.drop(columns=delta_columns)
+
+        delta = delta.groupby(c_st_txt).sum()
+
+        g = steps.groupby(c_st_txt)
+        for cycle, group in g:
+            data_point = group[d_st_txt + _last].values[0]
+            # CONTINUE FROM HERE (and afterward try to make it into pandas operations)
+
+        last_data_points_all = (
+            steps.loc[:, [c_st_txt, d_st_txt + _last]].groupby(c_st_txt).last().values.ravel()
+        )
+        last_items_all = raw[d_n_txt].isin(last_data_points_all)
+
+        s_all = self.data.raw[last_items_all]
+        s_filtered = self.data.raw[last_items]
+
+        print(s_all.data_point - s_filtered.data_point)
 
         # TODO: update values in raw to exclude the steps that are not wanted
         updated_raw = raw.copy()
@@ -5619,6 +5685,7 @@ class CellpyCell:
         # Edited here:
         if selector is None:
             if selector_type == "non-cv":
+                print("selector_type is non-cv")
                 exclude_types = ["cv_"]
             selector = functools.partial(
                 self._select_without,
@@ -5682,8 +5749,10 @@ class CellpyCell:
 
         # ensuring that a step table exists:
         if ensure_step_table:
+            print("ensuring existence of step-table")
             logging.debug("ensuring existence of step-table")
             if not data.has_steps:
+                print("no steps found")
                 logging.debug("dataset.step_table_made is not True")
                 logging.info("running make_step_table")
 
@@ -5706,6 +5775,7 @@ class CellpyCell:
         # copy the raw data to updated_raw (in case we need to update it)
         updated_raw = raw.copy()
         if use_cellpy_stat_file:
+            print("using cellpy statfile")
             summary_df = data.summary
             try:
                 summary_requirement = raw[self.headers_normal.data_point_txt].isin(
