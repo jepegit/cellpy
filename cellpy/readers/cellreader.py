@@ -5414,8 +5414,9 @@ class CellpyCell:
         return y_new
 
     def _select_last(self, raw):
-        # this function gives a set of indexes pointing to the last
-        # datapoints for each cycle in the dataset
+        # this legacy method gives a set of indexes pointing to the last
+        # datapoints for each cycle in the dataset (only used in the old
+        # summary method and for the new summary method if use_cellpy_stat_file is True)
 
         c_txt = self.headers_normal.cycle_index_txt
         d_txt = self.headers_normal.data_point_txt
@@ -5466,6 +5467,9 @@ class CellpyCell:
         #  opportunity to also make both the headers in the tables as well as the names used for
         #  the headers more aligned (e.g. for header_normal.data_point_txt -> header_normal.point;
         #  "cycle_index" -> "cycle")
+
+        # TODO: @jepe - this method might be a bit slow for large datasets - consider using
+        #  more "native" pandas methods and get rid of all looping (need some timing to check first)
 
         last_data_points = (
             steps.loc[:, [c_st_txt, d_st_txt + _last]]
@@ -5584,56 +5588,56 @@ class CellpyCell:
             txt += str(test.loaded_from)
 
         logging.debug(txt)
-        if not old:
-            data = self._make_summary(
+
+        if old:
+            self._make_summar_legacy(
+                # find_ocv=find_ocv,
                 find_ir=find_ir,
                 find_end_voltage=find_end_voltage,
                 use_cellpy_stat_file=use_cellpy_stat_file,
                 ensure_step_table=ensure_step_table,
-                remove_duplicates=remove_duplicates,
+                # add_c_rate=add_c_rate,
                 normalization_cycles=normalization_cycles,
                 nom_cap=nom_cap,
                 nom_cap_specifics=nom_cap_specifics,
-                create_copy=create_copy,
-                exclude_types=exclude_types,
-                exclude_steps=exclude_steps,
-                selector_type=selector_type,
-                selector=selector,
-                **kwargs,
             )
-            if create_copy:
-                other = copy.deepcopy(self)
-                other.data = data
-                return other
-            else:
-                # TODO: check if anything is using this feature (returning self), if not, remove it.
-                return self
+            return self
 
-        self._make_summar_legacy(
-            # find_ocv=find_ocv,
+        data = self._make_summary(
             find_ir=find_ir,
             find_end_voltage=find_end_voltage,
             use_cellpy_stat_file=use_cellpy_stat_file,
             ensure_step_table=ensure_step_table,
-            # add_c_rate=add_c_rate,
+            remove_duplicates=remove_duplicates,
             normalization_cycles=normalization_cycles,
             nom_cap=nom_cap,
             nom_cap_specifics=nom_cap_specifics,
+            create_copy=create_copy,
+            exclude_types=exclude_types,
+            exclude_steps=exclude_steps,
+            selector_type=selector_type,
+            selector=selector,
+            **kwargs,
         )
-        return self
+        if create_copy:
+            other = copy.deepcopy(self)
+            other.data = data
+            return other
+        else:
+            # TODO: check if anything is using this feature (returning self), if not, remove it.
+            return self
 
     def _make_summary(
         self,
         mass=None,
         nom_cap=None,
         nom_cap_specifics="gravimetric",
-        update_it=False,  # TODO: rename this
+        update_mass=False,  # TODO: rename this
         select_columns=True,
         find_ir=True,
         find_end_voltage=False,
         ensure_step_table=True,
         remove_duplicates=True,
-        # TODO @jepe: - include option for omitting steps
         sort_my_columns=True,
         use_cellpy_stat_file=False,
         normalization_cycles=None,
@@ -5685,17 +5689,15 @@ class CellpyCell:
         time_00 = time.time()
         logging.debug("start making summary")
 
-        # Edited here:
         if create_copy:
             data = copy.deepcopy(self.data)
         else:
             data = self.data
-        # End edit
 
         if not mass:
             mass = data.mass or 1.0
         else:
-            if update_it:
+            if update_mass:
                 data.mass = mass
 
         if not use_cellpy_stat_file:
@@ -5768,7 +5770,6 @@ class CellpyCell:
                 summary = selector()
         else:
             summary = selector()
-        # End edit
 
         if not summary.index.is_unique:
             warnings.warn(f"{self.cell_name}: index is not unique for summary data")
