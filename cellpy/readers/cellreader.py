@@ -5557,8 +5557,26 @@ class CellpyCell:
         selector=None,
         **kwargs,
     ):
-        """Convenience function that makes a summary of the cycling data."""
-        # TODO: @jepe - include option for omitting steps
+        """Convenience function that makes a summary of the cycling data.
+
+        find_ir (bool): if True, the internal resistance will be calculated.
+        find_end_voltage (bool): if True, the end voltage will be calculated.
+        use_cellpy_stat_file (bool): if True, the summary will be made from
+            the cellpy_stat file (soon to be deprecated).
+        ensure_step_table (bool): if True, the step-table will be made if it does not exist.
+        remove_duplicates (bool): if True, duplicates will be removed from the summary.
+        normalization_cycles (int or list of int): cycles to use for normalization.
+        nom_cap (float or str): nominal capacity (if None, the nominal capacity from the data will be used).
+        nom_cap_specifics (str): gravimetric, areal, or volumetric.
+        old (bool): if True, the old summary method will be used.
+        create_copy (bool): if True, a copy of the cellpy object will be returned.
+        exclude_types (list of str): exclude these types from the summary.
+        exclude_steps (list of int): exclude these steps from the summary.
+        selector_type (str): select based on type (e.g. "non-cv", "non-rest", "non-ocv", "only-cv").
+        selector (callable): custom selector function.
+
+
+        """
         # TODO: @jepe  - make it is possible to update only new data by implementing
         #  from_cycle (only calculate summary from a given cycle number).
         #  Probably best to keep the old summary and make
