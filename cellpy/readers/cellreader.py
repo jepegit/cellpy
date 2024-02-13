@@ -5660,6 +5660,7 @@ class CellpyCell:
         exclude_steps=None,
         selector_type=None,
         selector=None,
+        **kwargs,
     ):
         # ---------------- discharge loss --------------------------------------
         # Assume that both charge and discharge is defined as positive.
