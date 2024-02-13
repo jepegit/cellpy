@@ -5632,7 +5632,7 @@ class CellpyCell:
         mass=None,
         nom_cap=None,
         nom_cap_specifics="gravimetric",
-        update_mass=False,  # TODO: rename this
+        update_mass=False,
         select_columns=True,
         find_ir=True,
         find_end_voltage=False,
@@ -5671,10 +5671,15 @@ class CellpyCell:
         # @jepe 2022.09.11: trying to use .assign from now on
         #   as it is recommended (but this will likely increase memory usage)
 
-        # Edited here:
         if selector is None:
             if selector_type == "non-cv":
                 exclude_types = ["cv_"]
+            elif selector_type == "non-rest":
+                exclude_types = ["rest_"]
+            elif selector_type == "non-ocv":
+                exclude_types = ["ocv_"]
+            elif selector_type == "only-cv":
+                exclude_types = ["charge", "discharge"]
             selector = functools.partial(
                 self._select_without,
                 exclude_types=exclude_types,
@@ -5700,8 +5705,10 @@ class CellpyCell:
             if update_mass:
                 data.mass = mass
 
-        if not use_cellpy_stat_file:
-            logging.debug("not using cellpy statfile")
+        if use_cellpy_stat_file:
+            warnings.warn(
+                "using cellpy 'statfile' - this feature is not properly supported anymore"
+            )
 
         if nom_cap is None:
             nom_cap = data.nom_cap
@@ -5710,7 +5717,7 @@ class CellpyCell:
 
         # cellpy has historically assumed that the nominal capacity (nom_cap) is specific gravimetric
         # (i.e. in units of for example mAh/g), but now we need it in absolute units (e.g. Ah). The plan
-        # is to set stuff like this during initiation of the cell (but not yet):
+        # is to set stuff like this during initiation of the cell (but not yet)
 
         # generating absolute nominal capacity (this should be refactored):
         if nom_cap_specifics == "gravimetric":
