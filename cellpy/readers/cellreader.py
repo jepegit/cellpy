@@ -5537,18 +5537,14 @@ class CellpyCell:
     # ----------making-summary------------------------------------------------------
     def make_summary(
         self,
-        # find_ocv=False,
         find_ir=False,
         find_end_voltage=True,
         use_cellpy_stat_file=None,
-        # all_tests=True,
         ensure_step_table=True,
         remove_duplicates=True,
-        # add_c_rate=True,
         normalization_cycles=None,
         nom_cap=None,
         nom_cap_specifics=None,
-        # from_cycle=None,
         old=False,
         create_copy=False,
         exclude_types=None,
