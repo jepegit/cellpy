@@ -45,6 +45,39 @@ DEFAULT_CYCLES = [1, 10, 20]
 CELLPY_MINIMUM_VERSION = "1.0.0"
 PLOTLY_BASE_TEMPLATE = "seaborn"
 IMAGE_TO_FILE_TIMEOUT = 30
+HDF_KEY = "collected_data"
+
+
+def load_data(filename):
+    """Load data from hdf5 file."""
+    try:
+        data = pd.read_hdf(filename, key=HDF_KEY)
+    except Exception as e:
+        print("Could not load data from hdf5 file")
+        print(e)
+        return None
+    return data
+
+
+def load_figure(filename, backend="plotly"):
+    """Load figure from file."""
+    if backend == "plotly":
+        return load_plotly_figure(filename)
+    else:
+        print("WARNING: only plotly is supported at the moment")
+        return None
+
+
+def load_plotly_figure(filename):
+    """Load plotly figure from file."""
+    try:
+        fig = pio.read_json(filename)
+    except Exception as e:
+        print("Could not load figure from json file")
+        print(e)
+        return None
+    return fig
+
 
 if not supported_backends:
     print("WARNING: no supported backends found")
@@ -529,6 +562,14 @@ class BatchCollector:
         )
         print(f"saved csv file: {filename}")
 
+    def to_hdf5(self, serial_number=None):
+        filename = self._output_path(serial_number)
+        filename = filename.with_suffix(".h5")
+        data = self.data
+
+        data.to_hdf(filename, key=HDF_KEY, mode="w")
+        print(f"saved hdf5 file: {filename}")
+
     def _image_exporter_plotly(self, filename, timeout=IMAGE_TO_FILE_TIMEOUT, **kwargs):
         p = Process(
             target=self.figure.write_image,
@@ -568,6 +609,7 @@ class BatchCollector:
 
     def save(self, serial_number=None):
         self.to_csv(serial_number=serial_number)
+        self.to_hdf5(serial_number=serial_number)
 
         if self._figure_valid():
             self.to_image_files(serial_number=serial_number)
