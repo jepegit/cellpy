@@ -19,7 +19,7 @@ def raw_file(auto_summary=True, testing=False):
         testing (bool): run in test mode
 
     Returns:
-        cellpy.CellpyCell object with the arbin data loaded
+        cellpy.CellpyCell object with the data loaded
 
     """
     file_path = RAW_PATH / "20160805_test001_45_cc_01.res"
@@ -36,10 +36,24 @@ def cellpy_file(testing=False):
         testing (bool): run in test mode
 
     Returns:
-        cellpy.CellpyCell object with the arbin data loaded
+        cellpy.CellpyCell object with the data loaded
     """
 
     file_path = H5_PATH / "20160805_test001_45_cc.h5"
+    return cellpy.get(filename=file_path, testing=testing)
+
+
+def rate_file(testing=False):
+    """load an example cellpy file.
+
+    Args:
+        testing (bool): run in test mode
+
+    Returns:
+        cellpy.CellpyCell object with the rate data loaded
+    """
+
+    file_path = H5_PATH / "20231115_rate_cc.h5"
     return cellpy.get(filename=file_path, testing=testing)
 
 
