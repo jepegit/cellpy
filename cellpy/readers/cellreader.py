@@ -5686,6 +5686,9 @@ class CellpyCell:
         # @jepe 2022.09.11: trying to use .assign from now on
         #   as it is recommended (but this will likely increase memory usage)
 
+        for k in kwargs:
+            warnings.warn(f"Unknown keyword argument: {k}")
+
         if selector is None:
             if selector_type == "non-cv":
                 exclude_types = ["cv_"]
