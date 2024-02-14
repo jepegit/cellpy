@@ -318,7 +318,7 @@ def _cycle_info_plot_plotly(
     import numpy as np
 
     if kwargs.get("xlim"):
-        logging.info("xlim is not supported for plotly")
+        logging.info("xlim is not supported for plotly yet")
 
     raw_hdr = get_headers_normal()
     step_hdr = get_headers_step_table()
@@ -417,7 +417,9 @@ def _cycle_info_plot_plotly(
                 ),
             ),
         )
-    title_start = f"<b>{cell.cell_name}</b> Cycle"
+
+    cell_name = kwargs.get("title", cell.cell_name)
+    title_start = f"<b>{cell_name}</b> Cycle"
     if len(cycle) > 2:
         if cycle[-1] - cycle[0] == len(cycle) - 1:
             title = f"{title_start}s {cycle[0]} - {cycle[-1]}"
