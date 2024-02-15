@@ -5414,8 +5414,9 @@ class CellpyCell:
         return y_new
 
     def _select_last(self, raw):
-        # this function gives a set of indexes pointing to the last
-        # datapoints for each cycle in the dataset
+        # this legacy method gives a set of indexes pointing to the last
+        # datapoints for each cycle in the dataset (only used in the old
+        # summary method and for the new summary method if use_cellpy_stat_file is True)
 
         c_txt = self.headers_normal.cycle_index_txt
         d_txt = self.headers_normal.data_point_txt
@@ -5432,23 +5433,55 @@ class CellpyCell:
         last_items = raw[d_txt].isin(steps)
         return last_items
 
-    # TODO: @jepe - this method might be valuable for users and could be made public:
-    def _select_without(self, raw, exclude_types=None, exclude_steps=None):
-        # this function gives a set of indexes pointing to the last
-        # datapoints for each cycle in the dataset given that the steps
-        # is not in the exclude list (either by type of step or by step number)
-
+    # TODO: @jepe - this method might be valuable for users and could be made
+    #  public when it is fixed:
+    def _select_without(self, exclude_types=None, exclude_steps=None, replace_nan=True):
         steps = self.data.steps
-        d_txt = self.headers_normal.data_point_txt
+        raw = self.data.raw.copy()
+
+        # unravel the headers:
+        d_n_txt = self.headers_normal.data_point_txt
+        v_n_txt = self.headers_normal.voltage_txt
+        c_n_txt = self.headers_normal.cycle_index_txt
+        s_n_txt = self.headers_normal.step_index_txt
+        i_n_txt = self.headers_normal.current_txt
+        ch_n_txt = self.headers_normal.charge_capacity_txt
+        dch_n_txt = self.headers_normal.discharge_capacity_txt
+
+        d_st_txt = self.headers_step_table.point
+        v_st_txt = self.headers_step_table.voltage
+        c_st_txt = self.headers_step_table.cycle
+        i_st_txt = self.headers_step_table.current
+        ch_st_txt = self.headers_step_table.charge
+        dch_st_txt = self.headers_step_table.discharge
+        t_st_txt = self.headers_step_table.type
+        s_st_txt = self.headers_step_table.step
+
+        _first = "_first"
+        _last = "_last"
+        _delta_label = "_diff"
+
+        # TODO: implement also for energy and power (and probably others as well) - this will
+        #  require changing step-table to also include energy and power etc. If implementing
+        #  this, you should also include diff in the step-table. You should preferably also use this
+        #  opportunity to also make both the headers in the tables as well as the names used for
+        #  the headers more aligned (e.g. for header_normal.data_point_txt -> header_normal.point;
+        #  "cycle_index" -> "cycle")
+
+        # TODO: @jepe - this method might be a bit slow for large datasets - consider using
+        #  more "native" pandas methods and get rid of all looping (need some timing to check first)
+
+        last_data_points = (
+            steps.loc[:, [c_st_txt, d_st_txt + _last]]
+            .groupby(c_st_txt)
+            .last()
+            .values.ravel()
+        )
+        last_items = raw[d_n_txt].isin(last_data_points)
+        selected = raw[last_items]
 
         if exclude_types is None and exclude_steps is None:
-            last_data_points = (
-                steps.loc[:, ["cycle", "point_last"]]
-                .groupby("cycle")
-                .last()
-                .values.ravel()
-            )
-            return raw[d_txt].isin(last_data_points)
+            return selected
 
         if not isinstance(exclude_types, (list, tuple)):
             exclude_types = [exclude_types]
@@ -5458,35 +5491,61 @@ class CellpyCell:
 
         q = None
         for exclude_type in exclude_types:
-            _q = ~steps["type"].str.startswith(exclude_type)
+            _q = ~steps[t_st_txt].str.startswith(exclude_type)
             q = _q if q is None else q & _q
 
         if exclude_steps:
-            _q = ~steps["step"].isin(exclude_steps)
+            _q = ~steps[t_st_txt].isin(exclude_steps)
             q = _q if q is None else q & _q
 
-        last_data_points = (
-            steps.loc[q, ["cycle", "point_last"]].groupby("cycle").last().values.ravel()
-        )
-        last_items = raw[d_txt].isin(last_data_points)
-        return last_items
+        _delta_columns = [
+            i_st_txt,
+            v_st_txt,
+            ch_st_txt,
+            dch_st_txt,
+        ]
+        _raw_columns = [
+            i_n_txt,
+            v_n_txt,
+            ch_n_txt,
+            dch_n_txt,
+        ]
+        _diff_columns = [f"{col}{_delta_label}" for col in _delta_columns]
+
+        delta_first = [f"{col}{_first}" for col in _delta_columns]
+        delta_last = [f"{col}{_last}" for col in _delta_columns]
+        delta_columns = delta_first + delta_last
+
+        delta = steps.loc[~q, [c_st_txt, d_st_txt + _last, *delta_columns]].copy()
+
+        for col in _delta_columns:
+            delta[col + _delta_label] = delta[col + _last] - delta[col + _first]
+        delta = delta.drop(columns=delta_columns)
+        delta = delta.groupby(c_st_txt).sum()
+        delta = delta.reset_index()
+
+        selected = selected.merge(delta, how="left", left_on=c_n_txt, right_on=c_st_txt)
+        if replace_nan:
+            selected = selected.fillna(0.0)
+
+        for col_n, col_diff in zip(_raw_columns, _diff_columns):
+            selected[col_n] -= selected[col_diff]
+        selected = selected.drop(columns=_diff_columns)
+
+        return selected
 
     # ----------making-summary------------------------------------------------------
     def make_summary(
         self,
-        # find_ocv=False,
         find_ir=False,
         find_end_voltage=True,
         use_cellpy_stat_file=None,
-        # all_tests=True,
         ensure_step_table=True,
         remove_duplicates=True,
-        # add_c_rate=True,
         normalization_cycles=None,
         nom_cap=None,
         nom_cap_specifics=None,
-        # from_cycle=None,
-        experimental=False,
+        old=False,
         create_copy=False,
         exclude_types=None,
         exclude_steps=None,
@@ -5494,8 +5553,26 @@ class CellpyCell:
         selector=None,
         **kwargs,
     ):
-        """Convenience function that makes a summary of the cycling data."""
-        # TODO: @jepe - include option for omitting steps
+        """Convenience function that makes a summary of the cycling data.
+
+        find_ir (bool): if True, the internal resistance will be calculated.
+        find_end_voltage (bool): if True, the end voltage will be calculated.
+        use_cellpy_stat_file (bool): if True, the summary will be made from
+            the cellpy_stat file (soon to be deprecated).
+        ensure_step_table (bool): if True, the step-table will be made if it does not exist.
+        remove_duplicates (bool): if True, duplicates will be removed from the summary.
+        normalization_cycles (int or list of int): cycles to use for normalization.
+        nom_cap (float or str): nominal capacity (if None, the nominal capacity from the data will be used).
+        nom_cap_specifics (str): gravimetric, areal, or volumetric.
+        old (bool): if True, the old summary method will be used.
+        create_copy (bool): if True, a copy of the cellpy object will be returned.
+        exclude_types (list of str): exclude these types from the summary.
+        exclude_steps (list of int): exclude these steps from the summary.
+        selector_type (str): select based on type (e.g. "non-cv", "non-rest", "non-ocv", "only-cv").
+        selector (callable): custom selector function.
+
+
+        """
         # TODO: @jepe  - make it is possible to update only new data by implementing
         #  from_cycle (only calculate summary from a given cycle number).
         #  Probably best to keep the old summary and make
@@ -5525,56 +5602,56 @@ class CellpyCell:
             txt += str(test.loaded_from)
 
         logging.debug(txt)
-        if experimental:
-            data = self._make_summary_experimental(
+
+        if old:
+            self._make_summar_legacy(
+                # find_ocv=find_ocv,
                 find_ir=find_ir,
                 find_end_voltage=find_end_voltage,
                 use_cellpy_stat_file=use_cellpy_stat_file,
                 ensure_step_table=ensure_step_table,
-                remove_duplicates=remove_duplicates,
+                # add_c_rate=add_c_rate,
                 normalization_cycles=normalization_cycles,
                 nom_cap=nom_cap,
                 nom_cap_specifics=nom_cap_specifics,
-                create_copy=create_copy,
-                exclude_types=exclude_types,
-                exclude_steps=exclude_steps,
-                selector_type=selector_type,
-                selector=selector,
-                **kwargs,
             )
-            if create_copy:
-                other = copy.deepcopy(self)
-                other.data = data
-                return other
-            else:
-                # TODO: check if anything is using this feature (returning self), if not, remove it.
-                return self
+            return self
 
-        self._make_summary(
-            # find_ocv=find_ocv,
+        data = self._make_summary(
             find_ir=find_ir,
             find_end_voltage=find_end_voltage,
             use_cellpy_stat_file=use_cellpy_stat_file,
             ensure_step_table=ensure_step_table,
-            # add_c_rate=add_c_rate,
+            remove_duplicates=remove_duplicates,
             normalization_cycles=normalization_cycles,
             nom_cap=nom_cap,
             nom_cap_specifics=nom_cap_specifics,
+            create_copy=create_copy,
+            exclude_types=exclude_types,
+            exclude_steps=exclude_steps,
+            selector_type=selector_type,
+            selector=selector,
+            **kwargs,
         )
-        return self
+        if create_copy:
+            other = copy.deepcopy(self)
+            other.data = data
+            return other
+        else:
+            # TODO: check if anything is using this feature (returning self), if not, remove it.
+            return self
 
-    def _make_summary_experimental(
+    def _make_summary(
         self,
         mass=None,
         nom_cap=None,
         nom_cap_specifics="gravimetric",
-        update_it=False,  # TODO: rename this
+        update_mass=False,
         select_columns=True,
         find_ir=True,
         find_end_voltage=False,
         ensure_step_table=True,
         remove_duplicates=True,
-        # TODO @jepe: - include option for omitting steps
         sort_my_columns=True,
         use_cellpy_stat_file=False,
         normalization_cycles=None,
@@ -5583,6 +5660,7 @@ class CellpyCell:
         exclude_steps=None,
         selector_type=None,
         selector=None,
+        **kwargs,
     ):
         # ---------------- discharge loss --------------------------------------
         # Assume that both charge and discharge is defined as positive.
@@ -5608,10 +5686,18 @@ class CellpyCell:
         # @jepe 2022.09.11: trying to use .assign from now on
         #   as it is recommended (but this will likely increase memory usage)
 
-        # Edited here:
+        for k in kwargs:
+            warnings.warn(f"Unknown keyword argument: {k}")
+
         if selector is None:
             if selector_type == "non-cv":
                 exclude_types = ["cv_"]
+            elif selector_type == "non-rest":
+                exclude_types = ["rest_"]
+            elif selector_type == "non-ocv":
+                exclude_types = ["ocv_"]
+            elif selector_type == "only-cv":
+                exclude_types = ["charge", "discharge"]
             selector = functools.partial(
                 self._select_without,
                 exclude_types=exclude_types,
@@ -5626,21 +5712,21 @@ class CellpyCell:
         time_00 = time.time()
         logging.debug("start making summary")
 
-        # Edited here:
         if create_copy:
             data = copy.deepcopy(self.data)
         else:
             data = self.data
-        # End edit
 
         if not mass:
             mass = data.mass or 1.0
         else:
-            if update_it:
+            if update_mass:
                 data.mass = mass
 
-        if not use_cellpy_stat_file:
-            logging.debug("not using cellpy statfile")
+        if use_cellpy_stat_file:
+            warnings.warn(
+                "using cellpy 'statfile' - this feature is not properly supported anymore"
+            )
 
         if nom_cap is None:
             nom_cap = data.nom_cap
@@ -5649,7 +5735,7 @@ class CellpyCell:
 
         # cellpy has historically assumed that the nominal capacity (nom_cap) is specific gravimetric
         # (i.e. in units of for example mAh/g), but now we need it in absolute units (e.g. Ah). The plan
-        # is to set stuff like this during initiation of the cell (but not yet):
+        # is to set stuff like this during initiation of the cell (but not yet)
 
         # generating absolute nominal capacity (this should be refactored):
         if nom_cap_specifics == "gravimetric":
@@ -5683,12 +5769,13 @@ class CellpyCell:
                 data.nom_cap = nom_cap
                 self.make_step_table()
 
-        raw = data.raw
-        if not raw.index.is_unique:
+        if not self.data.raw.index.is_unique:
             warnings.warn(f"{self.cell_name}: index is not unique for raw data")
             if remove_duplicates:
                 logging.debug("removing duplicates before making summary")
-                raw = raw[~raw.index.duplicated(keep="first")]
+                self.data.raw = self.data.raw[
+                    ~self.data.raw.index.duplicated(keep="first")
+                ]
             else:
                 warnings.warn(
                     "You should remove the duplicates before making summary. For example using"
@@ -5698,17 +5785,17 @@ class CellpyCell:
         if use_cellpy_stat_file:
             summary_df = data.summary
             try:
-                summary_requirement = raw[self.headers_normal.data_point_txt].isin(
+                summary = self.data.raw[self.headers_normal.data_point_txt].isin(
                     summary_df[self.headers_normal.data_point_txt]
                 )
             except KeyError:
+                # TODO: remove this "escape" and instead raise Error asking
+                #  the user to not use the stat-file if it is not working properly:
                 logging.info("Error in stat_file (?) - using _select_last")
-                summary_requirement = selector(raw)
+                summary = selector()
         else:
-            summary_requirement = selector(raw)
-        # End edit
+            summary = selector()
 
-        summary = raw[summary_requirement].copy()
         if not summary.index.is_unique:
             warnings.warn(f"{self.cell_name}: index is not unique for summary data")
 
@@ -5794,7 +5881,7 @@ class CellpyCell:
         logging.debug(f"(dt: {(time.time() - time_00):4.2f}s)")
         return data
 
-    def _make_summary(
+    def _make_summar_legacy(
         self,
         mass=None,
         update_it=False,
