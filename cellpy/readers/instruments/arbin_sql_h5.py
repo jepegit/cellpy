@@ -208,12 +208,14 @@ class DataLoader(BaseLoader):
         if forward_fill_ir:
             logging.debug("forward filling ir")
             hdr_ir = self.cellpy_headers_normal.internal_resistance_txt
-            data.raw[hdr_ir] = data.raw[hdr_ir].fillna(method="ffill")
+            # data.raw[hdr_ir] = data.raw[hdr_ir].fillna(method="ffill")
+            data.raw[hdr_ir] = data.raw[hdr_ir].ffill()
 
         if backward_fill_ir:
             logging.debug("forward filling ir")
             hdr_ir = self.cellpy_headers_normal.internal_resistance_txt
-            data.raw[hdr_ir] = data.raw[hdr_ir].fillna(method="bfill")
+            # data.raw[hdr_ir] = data.raw[hdr_ir].fillna(method="bfill")
+            data.raw[hdr_ir] = data.raw[hdr_ir].ffill()
 
         if recalc_capacity:
             print("Not implemented yet - do it yourself")

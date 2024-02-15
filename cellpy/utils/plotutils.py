@@ -187,6 +187,179 @@ def create_colormarkerlist(
     return _color_list, _symbol_list
 
 
+def create_col_info(c):
+    _cap_cols = ["charge_capacity", "discharge_capacity"]
+    _capacities_gravimetric = [col + "_gravimetric" for col in _cap_cols]
+    _capacities_gravimetric_split = (
+        _capacities_gravimetric
+        + [col + "_cv" for col in _capacities_gravimetric]
+        + [col + "_non_cv" for col in _capacities_gravimetric]
+    )
+    _capacities_areal = [col + "_areal" for col in _cap_cols]
+    _capacities_areal_split = (
+        _capacities_areal
+        + [col + "_cv" for col in _capacities_areal]
+        + [col + "_non_cv" for col in _capacities_areal]
+    )
+
+    x_columns = (["cycle_index", "data_point", "test_time", "date_time"],)
+    y_cols = dict(
+        voltages=["end_voltage_charge", "end_voltage_discharge"],
+        capacities_gravimetric=_capacities_gravimetric,
+        capacities_areal=_capacities_areal,
+        capacities_gravimetric_split_constant_voltage=_capacities_gravimetric_split,
+        capacities_areal_split_constant_voltage=_capacities_areal_split,
+    )
+    return x_columns, y_cols
+
+
+def create_label_dict(c):
+    x_axis_labels = {
+        "cycle_index": "Cycle Number",
+        "data_point": "Point",
+        "test_time": f"Test Time ({c.cellpy_units.time})",
+        "data_time": "Date",
+    }
+
+    _cap_gravimetric_label = (
+        f"Capacity ({c.cellpy_units.charge}/{c.cellpy_units.specific_gravimetric})"
+    )
+    _cap_areal_label = (
+        f"Capacity ({c.cellpy_units.charge}/{c.cellpy_units.specific_areal})"
+    )
+
+    y_axis_label = {
+        "voltages": f"Voltage ({c.cellpy_units.voltage})",
+        "capacities_gravimetric": _cap_gravimetric_label,
+        "capacities_areal": _cap_areal_label,
+        "capacities_gravimetric_split_constant_voltage": _cap_gravimetric_label,
+        "capacities_areal_split_constant_voltage": _cap_areal_label,
+    }
+    return x_axis_labels, y_axis_label
+
+
+def summary_plot(
+    c,
+    x: str = "cycle_index",
+    y: str = "capacities_gravimetric",
+    height: int = 600,
+    markers: bool = True,
+    title=None,
+    x_range: list = None,
+    y_range: list = None,
+    split: bool = False,
+    interactive: bool = True,
+):
+    """Create a summary plot. Currently only supports plotly.
+
+
+    Args:
+        c: cellpy object
+        x: x-axis column
+        y: y-axis column
+        height: height of the plot
+        markers: use markers
+        title: title of the plot
+        x_range: limits for x-axis
+        y_range: limits for y-axis
+        split: split the plot
+        interactive: use interactive plotting
+
+    """
+
+    import pandas as pd
+
+    if plotly_available and interactive:
+        import plotly.express as px
+    else:
+        warnings.warn(
+            "plotly not available, and it is currently the only supported backend"
+        )
+        return None
+
+    if title is None:
+        title = f"Summary <b>{c.cell_name}</b>"
+
+    x_columns, y_cols = create_col_info(c)
+    x_axis_labels, y_axis_label = create_label_dict(c)
+
+    # ------------------- main --------------------------------------------
+    y_header = "value"
+    color = "variable"
+    column_set = y_cols[y]
+    summary = c.data.summary
+
+    additional_kwargs = dict(
+        color=color,
+        height=height,
+        markers=markers,
+        title=title,
+    )
+
+    # filter on constant voltage vs constant current
+    if y.endswith("_split_constant_voltage"):
+        cap_type = (
+            "capacities_gravimetric"
+            if y.startswith("capacities_gravimetric")
+            else "capacities_areal"
+        )
+        summary_no_cv = c.make_summary(
+            selector_type="non-cv", create_copy=True
+        ).data.summary[y_cols[cap_type]]
+        summary_no_cv.columns = [col + "_non_cv" for col in summary_no_cv.columns]
+        summary_only_cv = c.make_summary(
+            selector_type="only-cv", create_copy=True
+        ).data.summary[y_cols[cap_type]]
+        summary_only_cv.columns = [col + "_cv" for col in summary_only_cv.columns]
+        summary = summary[y_cols[cap_type]]
+
+        if split:
+            id_vars = [x, "row"]
+            summary_no_cv["row"] = "without CV"
+            summary_only_cv["row"] = "with CV"
+            summary["row"] = "all"
+            additional_kwargs["facet_row"] = "row"
+        else:
+            id_vars = x
+
+        summary_no_cv = summary_no_cv.reset_index()
+        summary_only_cv = summary_only_cv.reset_index()
+        summary = summary.reset_index()
+
+        summary_no_cv = summary_no_cv.melt(id_vars)
+        summary_only_cv = summary_only_cv.melt(id_vars)
+        summary = summary.melt(id_vars)
+
+        s = pd.concat([summary, summary_no_cv, summary_only_cv], axis=0)
+        s = s.reset_index(drop=True)
+
+        # -------------------- simple ---------------------------------------
+    else:
+        summary = summary.reset_index()
+        s = summary.melt(x)
+        s = s.loc[s.variable.isin(column_set)]
+        s = s.reset_index(drop=True)
+
+    # -------------------- plotting --------------------------------------
+    fig = px.line(
+        s,
+        x=x,
+        y=y_header,
+        **additional_kwargs,
+        labels={
+            x: x_axis_labels[x],
+            y_header: y_axis_label[y],
+        },
+    )
+
+    if x_range is not None:
+        fig.update_layout(xaxis=dict(range=x_range))
+    if y_range is not None:
+        fig.update_layout(yaxis=dict(range=y_range))
+
+    return fig
+
+
 def raw_plot(
     cell,
     y=None,
