@@ -188,7 +188,11 @@ def create_colormarkerlist(
 
 
 def create_col_info(c):
-    _cap_cols = ["charge_capacity", "discharge_capacity"]
+    """Create column information for summary plots."""
+
+    # TODO: add support for more column sets and individual columns
+    hdr = c.headers_summary
+    _cap_cols = [hdr.charge_capacity_raw, hdr.discharge_capacity_raw]
     _capacities_gravimetric = [col + "_gravimetric" for col in _cap_cols]
     _capacities_gravimetric_split = (
         _capacities_gravimetric
@@ -202,9 +206,9 @@ def create_col_info(c):
         + [col + "_non_cv" for col in _capacities_areal]
     )
 
-    x_columns = (["cycle_index", "data_point", "test_time", "date_time"],)
+    x_columns = ([hdr.cycle_index, hdr.data_point, hdr.test_time, hdr.datetime],)
     y_cols = dict(
-        voltages=["end_voltage_charge", "end_voltage_discharge"],
+        voltages=[hdr.end_voltage_charge, hdr.end_voltage_discharge],
         capacities_gravimetric=_capacities_gravimetric,
         capacities_areal=_capacities_areal,
         capacities_gravimetric_split_constant_voltage=_capacities_gravimetric_split,
@@ -214,11 +218,12 @@ def create_col_info(c):
 
 
 def create_label_dict(c):
+    hdr = c.headers_summary
     x_axis_labels = {
-        "cycle_index": "Cycle Number",
-        "data_point": "Point",
-        "test_time": f"Test Time ({c.cellpy_units.time})",
-        "data_time": "Date",
+        hdr.cycle_index: "Cycle Number",
+        hdr.data_point: "Point",
+        hdr.test_time: f"Test Time ({c.cellpy_units.time})",
+        hdr.datetime: "Date",
     }
 
     _cap_gravimetric_label = (
@@ -240,7 +245,7 @@ def create_label_dict(c):
 
 def summary_plot(
     c,
-    x: str = "cycle_index",
+    x: str = None,
     y: str = "capacities_gravimetric",
     height: int = 600,
     markers: bool = True,
@@ -249,14 +254,19 @@ def summary_plot(
     y_range: list = None,
     split: bool = False,
     interactive: bool = True,
+    share_y: bool = False,
+    rangeslider: bool = False,
+    **kwargs,
 ):
     """Create a summary plot. Currently only supports plotly.
 
 
     Args:
         c: cellpy object
-        x: x-axis column
-        y: y-axis column
+        x: x-axis column (default: cycle_index)
+        y: y-axis column or column set (predefined sets implemented are: "voltages",
+          "capacities_gravimetric", "capacities_areal", "capacities_gravimetric_split_constant_voltage",
+          "capacities_areal_split_constant_voltage")
         height: height of the plot
         markers: use markers
         title: title of the plot
@@ -264,10 +274,14 @@ def summary_plot(
         y_range: limits for y-axis
         split: split the plot
         interactive: use interactive plotting
+        rangeslider: add a range slider to the x-axis (only for plotly)
+        share_y (bool): share y-axis
+        **kwargs: additional parameters for the plotting backend
+
+    Returns:
+        plotly figure or None
 
     """
-
-    import pandas as pd
 
     if plotly_available and interactive:
         import plotly.express as px
@@ -280,14 +294,15 @@ def summary_plot(
     if title is None:
         title = f"Summary <b>{c.cell_name}</b>"
 
+    if x is None:
+        x = "cycle_index"
+
     x_columns, y_cols = create_col_info(c)
     x_axis_labels, y_axis_label = create_label_dict(c)
 
     # ------------------- main --------------------------------------------
     y_header = "value"
     color = "variable"
-    column_set = y_cols[y]
-    summary = c.data.summary
 
     additional_kwargs = dict(
         color=color,
@@ -303,61 +318,109 @@ def summary_plot(
             if y.startswith("capacities_gravimetric")
             else "capacities_areal"
         )
-        summary_no_cv = c.make_summary(
-            selector_type="non-cv", create_copy=True
-        ).data.summary[y_cols[cap_type]]
-        summary_no_cv.columns = [col + "_non_cv" for col in summary_no_cv.columns]
-        summary_only_cv = c.make_summary(
-            selector_type="only-cv", create_copy=True
-        ).data.summary[y_cols[cap_type]]
-        summary_only_cv.columns = [col + "_cv" for col in summary_only_cv.columns]
-        summary = summary[y_cols[cap_type]]
-
+        column_set = y_cols[cap_type]
+        s = partition_summary_cv_steps(c, x, column_set, split, color, y_header)
         if split:
-            id_vars = [x, "row"]
-            summary_no_cv["row"] = "without CV"
-            summary_only_cv["row"] = "with CV"
-            summary["row"] = "all"
             additional_kwargs["facet_row"] = "row"
-        else:
-            id_vars = x
 
-        summary_no_cv = summary_no_cv.reset_index()
-        summary_only_cv = summary_only_cv.reset_index()
-        summary = summary.reset_index()
-
-        summary_no_cv = summary_no_cv.melt(id_vars)
-        summary_only_cv = summary_only_cv.melt(id_vars)
-        summary = summary.melt(id_vars)
-
-        s = pd.concat([summary, summary_no_cv, summary_only_cv], axis=0)
-        s = s.reset_index(drop=True)
-
-        # -------------------- simple ---------------------------------------
+    # simple case
     else:
+        column_set = y_cols.get(y, y)
+        if isinstance(column_set, str):
+            column_set = [column_set]
+        summary = c.data.summary
         summary = summary.reset_index()
         s = summary.melt(x)
         s = s.loc[s.variable.isin(column_set)]
         s = s.reset_index(drop=True)
 
-    # -------------------- plotting --------------------------------------
+    x_label = x_axis_labels.get(x, x)
+    y_label = y_axis_label.get(y, y)
     fig = px.line(
         s,
         x=x,
         y=y_header,
         **additional_kwargs,
         labels={
-            x: x_axis_labels[x],
-            y_header: y_axis_label[y],
+            x: x_label,
+            y_header: y_label,
         },
+        **kwargs,
     )
 
     if x_range is not None:
         fig.update_layout(xaxis=dict(range=x_range))
     if y_range is not None:
         fig.update_layout(yaxis=dict(range=y_range))
+    elif split and not share_y:
+        fig.update_yaxes(matches=None)
+
+    if rangeslider:
+        fig.update_layout(xaxis_rangeslider_visible=True)
 
     return fig
+
+
+def partition_summary_cv_steps(
+    c,
+    x: str,
+    column_set: list,
+    split: bool = False,
+    var_name: str = "variable",
+    value_name: str = "value",
+):
+    """Partition the summary data into CV and non-CV steps.
+
+    Args:
+        c: cellpy object
+        x: x-axis column name
+        column_set: names of columns to include
+        split: add additional column that can be used to split the data when plotting.
+        var_name: name of the variable column after melting
+        value_name: name of the value column after melting
+
+    Returns:
+        pandas DataFrame (melted with columns x, var_name, value_name, and optionally "row" if split is True)
+    """
+    import pandas as pd
+
+    summary = c.data.summary
+    summary = summary[column_set]
+
+    summary_no_cv = c.make_summary(
+        selector_type="non-cv", create_copy=True
+    ).data.summary[column_set]
+    summary_no_cv.columns = [col + "_non_cv" for col in summary_no_cv.columns]
+
+    summary_only_cv = c.make_summary(
+        selector_type="only-cv", create_copy=True
+    ).data.summary[column_set]
+    summary_only_cv.columns = [col + "_cv" for col in summary_only_cv.columns]
+
+    if split:
+        id_vars = [x, "row"]
+        summary_no_cv["row"] = "without CV"
+        summary_only_cv["row"] = "with CV"
+        summary["row"] = "all"
+    else:
+        id_vars = x
+
+    summary_no_cv = summary_no_cv.reset_index()
+    summary_only_cv = summary_only_cv.reset_index()
+    summary = summary.reset_index()
+
+    summary_no_cv = summary_no_cv.melt(
+        id_vars, var_name=var_name, value_name=value_name
+    )
+    summary_only_cv = summary_only_cv.melt(
+        id_vars, var_name=var_name, value_name=value_name
+    )
+    summary = summary.melt(id_vars, var_name=var_name, value_name=value_name)
+
+    s = pd.concat([summary, summary_no_cv, summary_only_cv], axis=0)
+    s = s.reset_index(drop=True)
+
+    return s
 
 
 def raw_plot(
