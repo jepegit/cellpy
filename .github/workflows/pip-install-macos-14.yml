@@ -1,7 +1,7 @@
 # This workflow will install Python dependencies, run tests and lint with a variety of Python versions
 # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
 
-name: Installing using pip on posix
+name: Installing using pip on Mac M chip
 
 on:
   push:
@@ -28,8 +28,8 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install mdbtools
       run: |
-        sudo apt-get update
-        sudo apt-get install -y mdbtools
+        brew install mdbtools
+#        sudo apt-get install -y mdbtools
 #        sudo apt-get install -y libhdf5-serial-dev
     - name: Install dependencies
       run: |
