@@ -48,7 +48,7 @@ jobs:
         python -m pip install -e .
     - name: Test with pytest
       run: |
-        pytest
+        python -m pytest
     - name: Run cellpy setup
       run: |
         cellpy setup --silent
