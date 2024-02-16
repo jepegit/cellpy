@@ -22,3 +22,4 @@ python-dotenv
 fabric
 dateparser
 ipykernel
+rich

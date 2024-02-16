@@ -59,6 +59,7 @@ requirements = [
     "jinja2_time",
     "tables",  # depends on HDF5 that is not available by pip
     "ipykernel",
+    "rich",
 ]
 
 test_requirements = [

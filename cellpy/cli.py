@@ -14,6 +14,7 @@ import urllib
 from pathlib import Path
 
 import click
+import rich
 
 import cellpy._version
 from cellpy.exceptions import ConfigFileNotWritten
@@ -915,7 +916,7 @@ def edit(name, default_editor, debug, silent):
     "--check",
     "-c",
     is_flag=True,
-    help="Do a sanity check to see if things" " works as they should.",
+    help="Do a sanity check to see if things works as they should.",
 )
 def info(version, configloc, params, check):
     """This will give you some valuable information about your cellpy."""
@@ -1915,9 +1916,6 @@ def check_it(var=None):
     p_env = pathlib.Path(sys.prefix)
     print(p_env.name)
     new(list_=True)
-
-
-if __name__ == "__main__":
     u1 = os.getlogin()
     u2 = os.path.expanduser("~")
     u3 = os.environ.get("USERNAME")
@@ -1935,3 +1933,11 @@ if __name__ == "__main__":
     # click.echo("\n\n", " RUNNING MAIN PULL ".center(80, "*"), "\n")
     _main_pull()
     # click.echo("ok")
+
+
+def check_info_check():
+    _check()
+
+
+if __name__ == "__main__":
+    check_info_check()
