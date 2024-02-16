@@ -1,4 +1,4 @@
-name: Run pytest on linux
+name: Run pytest on macos M (conda)
 on:
   push:
     branches:
