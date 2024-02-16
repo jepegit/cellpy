@@ -18,7 +18,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.9", "3.10", "3.11"]
+        python-version: ["3.10", "3.11"]
 
     steps:
     - uses: actions/checkout@v4
@@ -35,6 +35,12 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         python -m pip install pytest pytest-timeout pytest-benchmark lmfit
+        python -m pip install cython
+        brew install hdf5
+        brew install c-blosc
+        export HDF5_DIR=/opt/homebrew/opt/hdf5
+        export BLOSC_DIR=/opt/homebrew/opt/c-blosc
+        python -m pip install tables
         # if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     - name: Install cellpy
       run: |
