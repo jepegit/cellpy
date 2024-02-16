@@ -29,8 +29,9 @@ jobs:
     - name: Install mdbtools
       run: |
         brew install mdbtools
-#        sudo apt-get install -y mdbtools
-#        sudo apt-get install -y libhdf5-serial-dev
+    - name: Install unixodbc
+      run: |
+            brew install unixodbc
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
