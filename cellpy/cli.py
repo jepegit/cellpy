@@ -495,6 +495,8 @@ def _check_import_cellpy():
 
         return True
     except:
+        click.echo("Failed to import cellpy")
+        click.echo("Severity: critical")
         return False
 
 
@@ -751,7 +753,7 @@ def _check(dry_run=False):
         click.echo(80 * "-")
         return failed
 
-    check_types = ["cellpy imports", "importing pyodbc", "configuration (prm) file"]
+    check_types = ["cellpy imports", "importing pyodbc", "configuration files"]
     check_funcs = [_check_import_cellpy, _check_import_pyodbc, _check_config_file]
 
     for ct, cf in zip(check_types, check_funcs):
@@ -1377,7 +1379,8 @@ def _pull_examples(directory, pw):
 
 
 def _version():
-    click.echo(f"[cellpy] version:  {VERSION}")
+    version_text = "[cellpy] version: " + str(VERSION)
+    click.echo(version_text)
 
 
 def _configloc():
