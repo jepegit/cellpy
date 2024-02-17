@@ -553,6 +553,7 @@ def _check_import_pyodbc():
         command = ["command", "-v", sub_process_path]
 
         try:
+            click.echo(f" - trying to run {command}")
             result = run(command, stdout=PIPE, stderr=PIPE, universal_newlines=True)
             if result.returncode == 0:
                 click.echo(f" - found it: {result.stdout}")
