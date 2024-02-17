@@ -48,3 +48,6 @@ jobs:
     - name: Run the cellpy check
       run: |
         cellpy info --check
+    - name: Show the configuration
+      run: |
+        cellpy info -p

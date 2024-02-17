@@ -12,6 +12,7 @@ from pprint import pprint
 
 import box
 import dotenv
+from rich import print
 import ruamel
 from ruamel.yaml import YAML
 from ruamel.yaml.error import YAMLError
@@ -121,13 +122,14 @@ def _write_prm_file(file_name=None):
 # TODO: make this alive by setting it to not dev:
 def _write_env_file(env_file_name=None):
     """writes example environment file"""
-    dev = True
+    dev = False
     if env_file_name is None:
         env_file_name = get_env_file_name()
 
     logging.debug(f"saving environment arguments to {env_file_name}")
     if dev:
-        print("---in-env-file------------------------------------")
+        print("---content----------------------------------------")
+        print("* OBS! in dev-mode, file will not be saved!")
         print(ENVIRONMENT_EXAMPLE)
         print("--------------------------------------------------")
         return
@@ -371,9 +373,17 @@ def get_env_file_name():
 def info():
     """this function will show only the 'box'-type
     attributes and their content in the cellpy.prms module"""
-    print("Convenience function for listing prms")
-    print(prms.__name__)
-    print(f"prm file (for current user): {_get_prm_file()}")
+    print(80 * "=")
+    print(f"Listing the content of the prms module ({prms.__name__})")
+    print(80 * "-")
+    config_file = _get_prm_file()
+    env_file = get_env_file_name()
+    print(f" prm file (for current user): {config_file}")
+    print(f" - exists: {os.path.isfile(config_file)}")
+
+    print(f" env file (for current user): {env_file}")
+    print(f" - exists: {os.path.isfile(env_file)}")
+
     print()
 
     for key, current_object in prms.__dict__.items():
@@ -382,29 +392,27 @@ def info():
 
         elif isinstance(current_object, box.Box):
             print()
-            print(" OLD-TYPE PRM ".center(80, "="))
-            print(f"prms.{key}:")
-            print(80 * "-")
+            print(f" {key} [OLD-TYPE PRM] ".center(80, "-"))
             for subkey in current_object:
-                print(f"prms.{key}.{subkey} = ", f"{current_object[subkey]}")
+                print(f"prms.{key}.{subkey} = {current_object[subkey]}")
             print()
 
         elif key == "Paths":
-            print(" NEW-TYPE PRM WITH OTHERPATHS ".center(80, "*"))
+            print(" Paths ".center(80, "-"))
             attributes = {
                 k: v for k, v in vars(current_object).items() if not k.startswith("_")
             }
             for attr in OTHERPATHS:
                 attributes[attr] = getattr(current_object, attr)
-            pprint(attributes, width=1)
+            print(attributes)
 
         elif isinstance(current_object, (prms.CellPyConfig, prms.CellPyDataConfig)):
-            print(" NEW-TYPE PRM ".center(80, "="))
+            # print(" NEW-TYPE PRM ".center(80, "="))
             attributes = {
                 k: v for k, v in vars(current_object).items() if not k.startswith("_")
             }
-            print(f" {key} ".center(80, "="))
-            pprint(attributes, width=1)
+            print(f" {key} ".center(80, "-"))
+            print(attributes)
             print()
 
 

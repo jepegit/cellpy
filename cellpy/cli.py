@@ -32,7 +32,7 @@ try:
 except ModuleNotFoundError:
     txt = (
         "Could not import cookiecutter (used by cellpy new). Try installing it, for example by writing:"
-        "\npython -m pip install cookiecutter\n"
+        "\n\n         python -m pip install cookiecutter\n"
     )
     DIFFICULT_MISSING_MODULES["cookiecutter"] = txt
 
@@ -43,7 +43,7 @@ try:
 except ModuleNotFoundError:
     txt = (
         "Could not import the github library (used by cellpy pull). Try installing it, for example by writing:"
-        " \npython -m pip install github\n"
+        "\n\n         python -m pip install github\n"
     )
     DIFFICULT_MISSING_MODULES["github"] = txt
 
@@ -54,9 +54,8 @@ try:
 except ModuleNotFoundError:
     txt = (
         "Could not import the sqlalchemy_access library (usually used by when reading arbin .res files "
-        "on windows)."
-        "If you need it, try installing it by writing:"
-        " \npython -m pip install sqlalchemy-access\n"
+        "on windows). If you need it, try installing it by writing:"
+        "\n\n         python -m pip install sqlalchemy-access\n"
     )
     DIFFICULT_MISSING_MODULES["sqlalchemy-access"] = txt
 
@@ -67,8 +66,8 @@ try:
 except ModuleNotFoundError:
     txt = (
         "Could not import the lmfit library (used when fitting ocv rlx data)."
-        "If you think you will need it, try installing it for example by writing:"
-        " \npython -m pip install sqlalchemy-access\n"
+        " If you think you will need it, try installing it for example by writing:"
+        "\n\n         python -m pip install lmfit\n"
     )
     DIFFICULT_MISSING_MODULES["lmfit"] = txt
 
@@ -79,8 +78,8 @@ try:
 except ModuleNotFoundError:
     txt = (
         "Could not import the jinja2_time library (used by cellpy new)."
-        "Try installing it, for example by writing:"
-        " \npython -m pip install jinja2_time\n"
+        " Try installing it, for example by writing:"
+        "\n\n         python -m pip install jinja2_time\n"
     )
     DIFFICULT_MISSING_MODULES["jinja2_time"] = txt
 
@@ -99,7 +98,7 @@ def save_prm_file(prm_filename):
 
 def dump_env_file(env_filename):
     """saves (writes) the env to file"""
-    print("dumping env file to", env_filename)
+    click.echo(" dumping env file to", env_filename)
     prmreader._write_env_file(env_filename)
 
 
@@ -222,15 +221,14 @@ def setup(
     if not no_deps:
         click.echo("[cellpy] checking dependencies")
         for m in DIFFICULT_MISSING_MODULES:
-            click.echo(f"*** [cellpy] WARNING! ***")
-            click.echo(f"-------------------------")
+            click.echo(" [cellpy] WARNING! ".center(80, "-"))
             click.echo("[cellpy] missing dependencies:")
             click.echo(f"[cellpy] - {m}")
             click.echo(f"[cellpy] {DIFFICULT_MISSING_MODULES[m]}")
             click.echo(
                 "[cellpy] (you can skip this check by using the --no-deps option)"
             )
-            click.echo(f"-------------------------")
+            click.echo(80 * "-")
 
     # generate variables
     init_filename = prmreader.create_custom_init_filename()
@@ -267,12 +265,12 @@ def setup(
         click.echo(f"[cellpy] (setup) DEV-MODE dst_file: {dst_file}")
 
     if not pathlib.Path(dst_file).is_file():
-        click.echo(f"[cellpy] {dst_file} not found -> I will make one for you!")
+        click.echo(f"[cellpy] {dst_file} not found -> I will make one for you")
         reset = True
 
     if not pathlib.Path(env_file).is_file():
         click.echo(
-            f"[cellpy] {env_file} not found -> I will make one, but you must edit it yourself!"
+            f"[cellpy] {env_file} not found -> I will make one (but you must edit it yourself)"
         )
 
     if interactive:
@@ -841,12 +839,12 @@ def _write_config_file(user_dir, dst_file, init_filename, dry_run):
 def _write_env_file(user_dir, dst_file, dry_run):
     click.echo(" update configuration ".center(80, "-"))
     click.echo("[cellpy] (setup) Writing environment file:")
-    click.echo(f"\n         {user_dir}\n")
+    click.echo(f"\n         {dst_file}\n")
 
     if os.path.isfile(dst_file):
         click.echo(f"[cellpy] (setup) Environment file {dst_file} already exists!")
-        return
-
+        if not dry_run:
+            return
     try:
         if dry_run:
             click.echo(
@@ -1409,14 +1407,14 @@ def _configloc():
 
 def _envloc():
     env_file_name = prmreader.get_env_file_name()
-    click.echo(f"[cellpy] -> {env_file_name}")
+    click.echo(f"[cellpy] (from config) -> {env_file_name}")
     if not os.path.isfile(env_file_name):
         return
     return env_file_name
 
 
 def _dump_params():
-    click.echo("[cellpy] Dumping parameters to screen:\n")
+    click.echo("[cellpy] Running prmreader.info:\n")
     prmreader.info()
 
 
