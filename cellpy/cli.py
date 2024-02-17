@@ -554,9 +554,11 @@ def _check_import_pyodbc():
 
         try:
             click.echo(f" - trying to run {command}")
-            result = run(command, stdout=PIPE, stderr=PIPE, universal_newlines=True, shell=True)
+            result = run(
+                command, stdout=PIPE, stderr=PIPE, universal_newlines=True, shell=True
+            )
             if result.returncode == 0:
-                click.echo(f" - found it: {result.stdout}")
+                click.echo(f" - found it!")
                 return True
 
             click.echo(f" - could not find {sub_process_path}")
