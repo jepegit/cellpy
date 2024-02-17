@@ -370,6 +370,25 @@ def _save_current_prms_to_user_dir():
 
 def get_env_file_name():
     """returns the location of the env-file"""
+
+    # TODO: make this more robust - especially on posix systems strange
+    #  things seem to happen
+
+    # from prms.py (default values):
+    # user_dir = Path.home()
+    # env_file: Union[Path, str] = user_dir / ".env_cellpy"
+
+    # from running setup on CI:
+    #
+    # location of env-file:
+    # /Users/runner/work/cellpy/cellpy/.env_cellpy
+    #
+    # location of config-file:
+    # /Users/runner/.cellpy_prms_runner.conf
+    #
+    # WHY ARE THEY NOT IN THE SAME DIRECTORY?
+    # (could it be that Path.home() behaves different than I expect?)
+
     env_file = pathlib.Path(prms.Paths.env_file)
     return env_file
 
