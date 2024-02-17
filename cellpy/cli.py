@@ -667,6 +667,19 @@ def _check_import_pyodbc():
 
 def _check_config_file():
     prm_file_name = _configloc()
+    env_file_name = _envloc()
+
+    if env_file_name is None:
+        click.echo("FYI! Could not find the environment file")
+        click.echo(
+            "This is needed if you want to use the cellpy automatic ssh functionality"
+        )
+
+    if prm_file_name is None:
+        click.echo("Could not find the config file")
+        click.echo("You can create one by running 'cellpy setup'")
+        return False
+
     prm_dict = prmreader._read_prm_file_without_updating(prm_file_name)
     try:
         prm_paths = prm_dict["Paths"]
@@ -747,9 +760,13 @@ def _check(dry_run=False):
         except Exception as e:
             click.echo(f"[cellpy] check raised an exception ({e})")
         number_of_checks += 1
+    click.echo(" results ".center(80, "="))
     succeeded_checks = number_of_checks - failed_checks
+
     if failed_checks > 0:
-        click.echo(f"[cellpy] OH NO!!! You (or I) failed!")
+        click.echo(
+            f"[cellpy] Some of the checks failed! This could potentially be a problem."
+        )
         click.echo(f"[cellpy] Failed {failed_checks} out of {number_of_checks} checks.")
     else:
         click.echo(
@@ -1360,13 +1377,12 @@ def _pull_examples(directory, pw):
 
 
 def _version():
-    txt = "[cellpy] version: " + str(VERSION)
-    click.echo(txt)
+    click.echo(f"[cellpy] version:  {VERSION}")
 
 
 def _configloc():
     _, config_file_name = prmreader.get_user_dir_and_dst()
-    click.echo("[cellpy] ->%s" % config_file_name)
+    click.echo(f"[cellpy] -> {config_file_name}")
     if not os.path.isfile(config_file_name):
         click.echo("[cellpy] File does not exist!")
     else:
@@ -1374,7 +1390,7 @@ def _configloc():
 
 
 def _envloc():
-    click.echo(f"[cellpy] ->{prmreader.get_env_file_name()}")
+    click.echo(f"[cellpy] -> {prmreader.get_env_file_name()}")
     if not os.path.isfile(prmreader.get_env_file_name()):
         click.echo("[cellpy] File does not exist!")
     else:
