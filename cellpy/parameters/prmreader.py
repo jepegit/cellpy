@@ -134,8 +134,12 @@ def _write_env_file(env_file_name=None):
         print("--------------------------------------------------")
         return
 
-    with open(env_file_name, "w") as env_file:
-        env_file.write_text(ENVIRONMENT_EXAMPLE)
+    try:
+        with open(env_file_name, "w") as env_file:
+            env_file.write(ENVIRONMENT_EXAMPLE)
+    except Exception as e:
+        print(f"could not write to {env_file_name}")
+        print(e)
 
 
 def _update_prms(config_dict, resolve_paths=True):
