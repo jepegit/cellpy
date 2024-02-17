@@ -554,7 +554,7 @@ def _check_import_pyodbc():
 
         try:
             click.echo(f" - trying to run {command}")
-            result = run(command, stdout=PIPE, stderr=PIPE, universal_newlines=True)
+            result = run(command, stdout=PIPE, stderr=PIPE, universal_newlines=True, shell=True)
             if result.returncode == 0:
                 click.echo(f" - found it: {result.stdout}")
                 return True
