@@ -508,7 +508,11 @@ def _check_import_pyodbc():
 
     use_subprocess = prms.Instruments.Arbin.use_subprocess
     detect_subprocess_need = prms.Instruments.Arbin.detect_subprocess_need
-    click.echo(f" reading prms")
+    click.echo(f" This is needed for loading Arbin .res files")
+    click.echo(f" parsing prms")
+    click.echo(
+        f" (from your configuration file if it exists, otherwise using defaults)"
+    )
     click.echo(f" - ODBC: {ODBC}")
     click.echo(f" - SEARCH_FOR_ODBC_DRIVERS: {SEARCH_FOR_ODBC_DRIVERS}")
     click.echo(f" - use_subprocess: {use_subprocess}")
@@ -550,19 +554,36 @@ def _check_import_pyodbc():
             result = run(command, stdout=PIPE, stderr=PIPE, universal_newlines=True)
             if result.returncode == 0:
                 click.echo(f" - found it: {result.stdout}")
-            else:
-                click.echo(f" - failed finding it")
+                return True
+
+            click.echo(f" - could not find {sub_process_path}")
 
             if is_macos:
                 driver = "/usr/local/lib/libmdbodbc.dylib"
-                click.echo(f" looks like you are on a mac (driver set to\n {driver})")
+                click.echo(
+                    f" looks like you are on a mac. Searching for suitable driver: {driver})"
+                )
                 if not os.path.isfile(driver):
-                    click.echo(" - but cannot find it!")
+                    click.echo(f" - could not find {driver}")
+                    click.echo(
+                        " ! If you want to load Arbin .res files you will have to install it manually."
+                    )
+                    click.echo(" - Try installing it with brew:\n")
+                    click.echo("   brew install mdbtools")
                     return False
-            return True
+                click.echo(f" - found it: {driver}")
+                return True
+            else:
+                click.echo(
+                    " ! If you want to load Arbin .res files you will have to install it manually."
+                )
+                click.echo("   For example (for ubuntu):\n")
+                click.echo("   sudp apt-get update")
+                click.echo("   sudp apt-get install -y mdbtools")
+            return False
 
         except AssertionError:
-            click.echo(" - not found")
+            click.echo(" - could not find any suitable driver")
             return False
 
     # not posix - checking for odbc drivers
@@ -571,7 +592,7 @@ def _check_import_pyodbc():
         driver = prms.Instruments.Arbin.odbc_driver
         if not driver:
             raise AttributeError
-        click.echo("You have defined an odbc driver in your conifg file")
+        click.echo("You have defined an odbc driver in your config file")
         click.echo(f"driver: {driver}")
     except AttributeError:
         click.echo("FYI: you have not defined any odbc_driver(s)")
