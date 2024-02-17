@@ -45,3 +45,6 @@ jobs:
     - name: Run cellpy setup
       run: |
         cellpy setup --silent
+    - name: Run the cellpy check
+      run: |
+        cellpy info --check

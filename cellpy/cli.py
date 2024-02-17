@@ -302,7 +302,7 @@ def setup(
             )
         _write_config_file(user_dir, dst_file, init_filename, dry_run)
         _write_env_file(user_dir, env_file, dry_run)
-        _check(dry_run=dry_run)
+        _check(dry_run=dry_run, full_check=False)
 
 
 def _update_paths(
@@ -672,10 +672,7 @@ def _check_config_file():
     env_file_name = _envloc()
 
     if env_file_name is None:
-        click.echo("FYI! Could not find the environment file")
-        click.echo(
-            "This is needed if you want to use the cellpy automatic ssh functionality"
-        )
+        click.echo("FYI! Could not locate the environment file")
 
     if prm_file_name is None:
         click.echo("Could not find the config file")
@@ -734,7 +731,7 @@ def _check_config_file():
         return False
 
 
-def _check(dry_run=False):
+def _check(dry_run=False, full_check=True):
     click.echo(" checking ".center(80, "="))
     if dry_run:
         click.echo("*** dry-run: skipping the test")
@@ -753,8 +750,21 @@ def _check(dry_run=False):
         click.echo(80 * "-")
         return failed
 
-    check_types = ["cellpy imports", "importing pyodbc", "configuration files"]
-    check_funcs = [_check_import_cellpy, _check_import_pyodbc, _check_config_file]
+    check_types = [
+        "cellpy imports",
+        "importing pyodbc",
+    ]
+    check_funcs = [
+        _check_import_cellpy,
+        _check_import_pyodbc,
+    ]
+
+    # additional checks that require loading the config file (not a part of setup)
+    additional_types = ["configuration files"]
+    additional_funcs = [_check_config_file]
+    if full_check:
+        check_types.extend(additional_types)
+        check_funcs.extend(additional_funcs)
 
     for ct, cf in zip(check_types, check_funcs):
         try:
@@ -1393,11 +1403,11 @@ def _configloc():
 
 
 def _envloc():
-    click.echo(f"[cellpy] -> {prmreader.get_env_file_name()}")
-    if not os.path.isfile(prmreader.get_env_file_name()):
-        click.echo("[cellpy] File does not exist!")
-    else:
-        return prmreader.get_env_file_name()
+    env_file_name = prmreader.get_env_file_name()
+    click.echo(f"[cellpy] -> {env_file_name}")
+    if not os.path.isfile(env_file_name):
+        return
+    return env_file_name
 
 
 def _dump_params():
