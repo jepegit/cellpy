@@ -495,8 +495,8 @@ def _check_import_cellpy():
 
         return True
     except:
-        click.echo("Failed to import cellpy")
-        click.echo("Severity: critical")
+        click.echo(" Failed to import cellpy")
+        click.echo(" Severity: critical")
         return False
 
 
@@ -594,12 +594,12 @@ def _check_import_pyodbc():
         driver = prms.Instruments.Arbin.odbc_driver
         if not driver:
             raise AttributeError
-        click.echo("You have defined an odbc driver in your config file")
-        click.echo(f"driver: {driver}")
+        click.echo(" You have defined an odbc driver in your config file")
+        click.echo(f" - driver: {driver}")
     except AttributeError:
-        click.echo("FYI: you have not defined any odbc_driver(s)")
+        click.echo(" FYI: you have not defined any odbc_driver(s)")
         click.echo(
-            "(The name of the driver from the configuration file is "
+            " (The name of the driver from the configuration file is "
             "used as a backup when cellpy cannot locate a driver by itself)"
         )
 
@@ -644,25 +644,27 @@ def _check_import_pyodbc():
             for driver in dbloader.drivers()
             if "Microsoft Access Driver" in driver
         ]
-        click.echo(f"Found these: {drivers}")
+        click.echo(f" Found these: {drivers}")
         driver = drivers[0]
-        click.echo(f"odbc driver: {driver}")
+        click.echo(f" - odbc driver: {driver}")
         return True
 
     except IndexError as e:
-        logging.debug("Unfortunately, it seems the list of drivers is emtpy.")
+        logging.debug(" Unfortunately, it seems the list of drivers is emtpy.")
         click.echo(
-            "\nCould not find any odbc-drivers suitable for .res-type files. "
+            "\n Could not find any odbc-drivers suitable for .res-type files. "
             "Check out the homepage of pydobc for info on installing drivers"
         )
         click.echo(
-            "One solution that might work is downloading "
+            " One solution that might work is downloading "
             "the Microsoft Access database engine "
             "(in correct bytes (32 or 64)) "
             "from:\n"
             "https://www.microsoft.com/en-us/download/details.aspx?id=13255"
         )
-        click.echo("Or install mdbtools and set it up (check the cellpy docs for help)")
+        click.echo(
+            " Or install mdbtools and set it up (check the cellpy docs for help)"
+        )
         click.echo("\n")
         return False
 
@@ -672,11 +674,11 @@ def _check_config_file():
     env_file_name = _envloc()
 
     if env_file_name is None:
-        click.echo("FYI! Could not locate the environment file")
+        click.echo(" FYI! Could not locate the environment file")
 
     if prm_file_name is None:
-        click.echo("Could not find the config file")
-        click.echo("You can create one by running 'cellpy setup'")
+        click.echo(" Could not find the config file")
+        click.echo(" You can create one by running 'cellpy setup'")
         return False
 
     prm_dict = prmreader._read_prm_file_without_updating(prm_file_name)
@@ -696,10 +698,10 @@ def _check_config_file():
         missing = 0
         for k in required_dirs:
             value = prm_paths.get(k, None)
-            click.echo(f"{k}: {value}")
+            click.echo(f" - {k}: {value}")
             # splitting this into two if-statements to make it easier to debug if OtherPath changes
             if k in OTHERPATHS:
-                print(f"skipping check for external {k} (for now)")
+                print(f" skipping check for external {k} (for now)")
                 # if not OtherPath(
                 #     value
                 # ).is_dir():  # Assuming OtherPath returns True if it is external.
@@ -708,17 +710,17 @@ def _check_config_file():
                 #     click.echo(f"({value} is not a directory)")
             elif value and not pathlib.Path(value).is_dir():
                 missing += 1
-                click.echo("COULD NOT CONNECT!")
-                click.echo(f"({value} is not a directory)")
+                click.echo(" COULD NOT CONNECT!")
+                click.echo(f" ({value} is not a directory)")
             if not value:
                 missing += 1
-                click.echo("MISSING")
+                click.echo(" MISSING")
 
         value = prm_paths.get("db_filename", None)
-        click.echo(f"db_filename: {value}")
+        click.echo(f" - db_filename: {value}")
         if not value:
             missing += 1
-            click.echo("MISSING")
+            click.echo(" MISSING")
 
         if missing:
             return False
@@ -726,7 +728,7 @@ def _check_config_file():
             return True
 
     except Exception as e:
-        click.echo("Following error occurred:")
+        click.echo(" Following error occurred:")
         click.echo(e)
         return False
 
