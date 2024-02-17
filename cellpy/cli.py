@@ -98,7 +98,7 @@ def save_prm_file(prm_filename):
 
 def dump_env_file(env_filename):
     """saves (writes) the env to file"""
-    click.echo(" dumping env file to", env_filename)
+    click.echo(f" dumping env file to {env_filename}")
     prmreader._write_env_file(env_filename)
 
 
