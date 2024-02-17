@@ -135,7 +135,7 @@ def _write_env_file(env_file_name=None):
         return
 
     with open(env_file_name, "w") as env_file:
-        env_file.write(ENVIRONMENT_EXAMPLE)
+        env_file.write_text(ENVIRONMENT_EXAMPLE)
 
 
 def _update_prms(config_dict, resolve_paths=True):
@@ -321,7 +321,7 @@ def _get_prm_file(file_name=None, search_order=None):
     prm_default = os.path.join(script_dir, default_name)
 
     # -searching-----------------------
-    search_dict: OrderedDict[Any] = OrderedDict()
+    search_dict: OrderedDict = OrderedDict()
 
     for key in search_order:
         search_dict[key] = [None, None]
