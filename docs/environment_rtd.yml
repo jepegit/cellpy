@@ -29,4 +29,5 @@ dependencies:
     - fabric
     - sphinx_rtd_theme
     - myst-parser
+    - sphinx-autoapi
 

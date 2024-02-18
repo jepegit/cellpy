@@ -83,6 +83,7 @@ extensions = [
     "nbsphinx",
     "sphinx.ext.graphviz",
     "myst_parser",
+    "autoapi.extension",
 ]
 
 # Napoleon settings
@@ -334,3 +335,4 @@ texinfo_documents = [
 
 
 nbsphinx_kernel_name = "python3"
+autoapi_dirs = ["../cellpy"]
