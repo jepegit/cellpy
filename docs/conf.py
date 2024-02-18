@@ -82,6 +82,7 @@ extensions = [
     "sphinx.ext.intersphinx",
     "nbsphinx",
     "sphinx.ext.graphviz",
+    "myst_parser",
 ]
 
 # Napoleon settings
