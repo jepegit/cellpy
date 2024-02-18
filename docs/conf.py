@@ -336,3 +336,4 @@ texinfo_documents = [
 
 nbsphinx_kernel_name = "python3"
 autoapi_dirs = ["../cellpy"]
+autoapi_template_dir = "_autoapi_templates"
