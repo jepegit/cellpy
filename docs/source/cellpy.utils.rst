@@ -28,14 +28,6 @@ cellpy.utils.collectors module
    :undoc-members:
    :show-inheritance:
 
-cellpy.utils.collectors\_old module
------------------------------------
-
-.. automodule:: cellpy.utils.collectors_old
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 cellpy.utils.diagnostics module
 -------------------------------
 

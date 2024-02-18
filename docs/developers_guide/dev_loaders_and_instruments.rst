@@ -55,7 +55,7 @@ The ``AutoLoader`` class is a subclass of ``BaseLoader``. This class can be sub-
 if you want to make a data-reader for different type of "easily parsed" files (for example csv-files).
 
 The ``AutoLoader`` class implements loading a configuration
-from a configuration module of file (see below), and performs pre- and post-processing
+from a configuration module or a file (see below), and performs pre- and post-processing
 of the data/raw-file (the processors are turned on or off in the configuration).
 Subclasses of the ``AutoLoader`` class must implement the following methods:
 ``parse_loader_parameters``, ``parse_formatter_parameters``, and ``query_file``.
