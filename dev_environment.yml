@@ -51,5 +51,6 @@ dependencies:
         - build
         - sphinx_rtd_theme
         - invoke
+        - myst-parser
 
 
