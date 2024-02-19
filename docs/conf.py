@@ -31,7 +31,7 @@ if INCLUDE_SOURCE_FILES:
 
 # Extensions
 extensions = [
-    "sphinx.ext.autodoc",
+    # "sphinx.ext.autodoc",
     "sphinx.ext.inheritance_diagram",
     "sphinx.ext.viewcode",
     "sphinx.ext.napoleon",
