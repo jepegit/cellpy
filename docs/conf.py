@@ -207,7 +207,7 @@ html_theme_path = ["_themes"]
 # here, relative to this directory. They are copied after the builtin
 # static files, so a file named "default.css" will overwrite the builtin
 # "default.css".
-html_static_path = ["_build/_static"]
+html_static_path = ["static"]
 
 # If not '', a 'Last updated on:' timestamp is inserted at every page
 # bottom, using the given strftime format.
@@ -344,4 +344,8 @@ autoapi_options = [
     "show-inheritance",
     "show-module-summary",
     "show-inheritance-diagram",
+]
+myst_enable_extensions = [
+    "colon_fence",
+    "substitution",
 ]

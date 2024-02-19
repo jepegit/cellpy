@@ -1,22 +1,24 @@
-:::{figure} https://raw.githubusercontent.com/jepegit/cellpy/master/docs/_static/cellpy-icon-long.svg
-:alt: cellpy
-:name: cellpy-icon
-:height: 100
+![cellpy-icon](static/cellpy-icon-long.svg)
+
+:::{figure} https://source.unsplash.com/random/400x200?beach,ocean
+:name: my-fig
+:alt: Random image of the beach or ocean!
+:target: https://www.vg.no
+
 
 # - *a library for assisting in analysing batteries and cells*
 
-:::{image} https://img.shields.io/pypi/v/cellpy.svg
+![cellpy-icon](https://img.shields.io/pypi/v/cellpy.svg)
 :target: https://pypi.python.org/pypi/cellpy
 
 
-:::{image} https://readthedocs.org/projects/cellpy/badge/?version=latest
+![Documentation Status](https://readthedocs.org/projects/cellpy/badge/?version=latest)
 :alt: Documentation Status
-:target: https://cellpy.readthedocs.io/en/latest/?badge=latest
+![cellpy-icon](https://cellpy.readthedocs.io/en/latest/?badge=latest
 
 
-:::{image} https://static.pepy.tech/badge/cellpy
-:target: https://pepy.tech/project/cellpy
-```
+![cellpy-icon](https://static.pepy.tech/badge/cellpy
+
 
 This Python Package was developed to help the
 researchers at IFE, Norway, in their cumbersome task of
