@@ -77,11 +77,14 @@ sys.path.insert(0, project_internals)
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = [
     "sphinx.ext.autodoc",
+    "sphinx.ext.inheritance_diagram",
     "sphinx.ext.viewcode",
     "sphinx.ext.napoleon",
     "sphinx.ext.intersphinx",
     "nbsphinx",
     "sphinx.ext.graphviz",
+    "myst_parser",
+    "autoapi.extension",
 ]
 
 # Napoleon settings
@@ -333,3 +336,12 @@ texinfo_documents = [
 
 
 nbsphinx_kernel_name = "python3"
+autoapi_dirs = ["../cellpy"]
+autoapi_template_dir = "_autoapi_templates"
+autoapi_options = [
+    "members",
+    "undoc-members",
+    "show-inheritance",
+    "show-module-summary",
+    "show-inheritance-diagram",
+]
