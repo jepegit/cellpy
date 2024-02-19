@@ -1505,7 +1505,7 @@ def iterate_batches(folder, extension=".json", glob_pattern=None, **kwargs):
     print("\n...Finished ")
 
 
-def check_standard():
+def _check_standard():
     from pathlib import Path
 
     # Use these when working on my work PC:
@@ -1568,7 +1568,7 @@ def check_standard():
     logging.info("---FINISHED---")
 
 
-def check_new():
+def _check_new():
     use_db = False
     f = r"C:\scripts\processing_cellpy\out\SecondLife\cellpy_batch_embla_002.json"
     # f = r"C:\Scripting\Processing\Celldata\outdata\SilcRoad\cellpy_batch_uio66.json"
@@ -1586,11 +1586,11 @@ def check_new():
 # TODO: allow exporting html when processing batch instead of just png
 
 
-def check_iterate():
+def _check_iterate():
     folder_name = r"C:\Scripting\Processing\Celldata\live"
     iterate_batches(folder_name, export_cycles=False, export_raw=False)
 
 
 if __name__ == "__main__":
     print("---IN BATCH 2 MAIN---")
-    check_new()
+    _check_new()

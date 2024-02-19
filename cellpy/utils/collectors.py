@@ -2136,7 +2136,7 @@ def histogram_equalization(image: np.array) -> np.array:
     return image_equalized.reshape(image.shape)
 
 
-if __name__ == "__main__":
+def _check():
     from pathlib import Path
     import os
 
@@ -2178,3 +2178,7 @@ if __name__ == "__main__":
     dqdvs.figure.show()
 
     print("Ended OK")
+
+
+if __name__ == "__main__":
+    _check()

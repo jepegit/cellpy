@@ -652,7 +652,7 @@ def _create_dummy_summary(columns):
 #     return new_data_sets
 
 
-def check():
+def _check():
     old = HeadersSummaryV6()
     new = HeadersSummaryV7()
     df = _create_dummy_summary(columns=old.keys())
@@ -670,4 +670,4 @@ def check():
 
 
 if __name__ == "__main__":
-    check()
+    _check()

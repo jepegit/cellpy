@@ -23,7 +23,7 @@ def func(filename):
     return c
 
 
-def main():
+def _main():
     print(" starting ".center(80, "-"))
     max_number_processes = multiprocessing.cpu_count()
     print(f"{max_number_processes=}")
@@ -54,4 +54,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    _main()
