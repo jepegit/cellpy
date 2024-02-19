@@ -638,7 +638,6 @@ def _main():
     finally:
         shutil.rmtree(temp_dir)
 
-
     # dtype = dtype([('flags', 'u1'), ('time/s', '<f8'), ('Ewe/V', '<f4'), ('dQ/mA.h', '<f8'),
     #        ('I/mA', '<f4'), ('Ece/V', '<f4'), ('(Q-Qo)/mA.h', '<f8'), ('20', '<f8'),
     #        ('freq/Hz', '<f4'), ('Phase(Z)/deg', '<f4'), ('|Z|/Ohm', '<f4'),
@@ -656,6 +655,7 @@ def _main():
     #         ('Ns changes', (32, <class 'numpy.bool_'>)), ('counter inc.', (128, <class 'numpy.bool_'>))]
     # )
     # flags2 = OrderedDict()
+
 
 if __name__ == "__main__":
     _main()
