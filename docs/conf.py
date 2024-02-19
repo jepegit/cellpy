@@ -1,7 +1,7 @@
 import os
 import sys
 
-INCLUDE_SOURCE_FILES = True
+INCLUDE_SOURCE_FILES = False
 
 project_root = os.path.abspath("../")
 name = "cellpy"
@@ -31,7 +31,6 @@ if INCLUDE_SOURCE_FILES:
 
 # Extensions
 extensions = [
-    # "sphinx.ext.autodoc",
     "sphinx.ext.inheritance_diagram",
     "sphinx.ext.viewcode",
     "sphinx.ext.napoleon",
@@ -95,7 +94,7 @@ rst_epilog = f"""
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
-exclude_patterns = ["_build", "_autoapi_templates", "autoapi"]
+exclude_patterns = ["_build", "_autoapi_templates"]
 
 # The reST default role (used for this markup: `text`) to use for all
 # documents.
@@ -290,7 +289,7 @@ texinfo_documents = [
 
 nbsphinx_kernel_name = "python3"
 autoapi_dirs = ["../cellpy"]
-autoapi_template_dir = "_templates/_autoapi_templates"
+# autoapi_template_dir = "_templates/_autoapi_templates"
 autoapi_options = [
     "members",
     "undoc-members",

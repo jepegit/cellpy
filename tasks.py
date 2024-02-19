@@ -261,16 +261,17 @@ def sha(c, version=None):
 
 @task
 def jupyterlab(c):
-    print("installing jupyter lab-extensions")
+    print("This task is probably not relevant anymore")
+    print("... installing jupyter lab-extensions")
     extensions = [
         "@jupyter-widgets/jupyterlab-manager@2.0",
         "@pyviz/jupyterlab_pyviz",
         "@jupyter-widgets/jupyterlab-toc",
     ]
     for extension in extensions:
-        print(f"installing {extension}")
+        print(f"   * installing {extension}")
         c.run(f"jupyter labextension install {extension}")
-    print("OK")
+    print("OK :-)")
 
 
 @task
@@ -291,6 +292,7 @@ def man(c):
     print("----------")
     print("JUPYTERLAB")
     print("----------")
+    print("This info is probably not relevant anymore")
     print("> jupyter labextension install @jupyter-widgets/jupyterlab-manager@2.0")
     print("> jupyter labextension install @pyviz/jupyterlab_pyviz")
     print("> jupyter labextension build")
@@ -534,15 +536,16 @@ def build(
 
 
 @task
-def docs(c, _clean=False, _api=False, _serve=True, browser=True):
+def docs(c, _clean=True, _api=False, _serve=True, browser=True):
     """Build and view docs"""
-
+    cmd = "sphinx-build"
+    prms = "docs docs/_build"
     if _clean:
-        clean(c)
+        cmd += " -E -a"
     if _api:
         c.run("sphinx-apidoc -f -o docs/source/ cellpy")
     print(" Building docs ".center(80, "-"))
-    c.run("sphinx-build docs docs/_build")
+    c.run(f"{cmd} {prms}")
 
     if _serve:
         import pathlib
@@ -556,15 +559,23 @@ def docs(c, _clean=False, _api=False, _serve=True, browser=True):
             c.run(f"python -m webbrowser -t http://{_location}")
         else:
             print(
-                f" - hint! you can open your browser by typing:\n       python -m webbrowser -t http://{_location}"
+                f" - hint! you can open your browser by typing:\n"
+                f"       python -m webbrowser -t http://{_location}"
             )
         sphinx_serve()
 
 
 @task
-def serve(c):
+def serve(c, _docs=True):
+    import pathlib
+
+    if _docs:
+        print(" Serving docs")
+        builds_path = pathlib.Path("docs") / "_build"
+        os.chdir(builds_path)
+        print(" - opening browser")
     _location = r"localhost:8081"
-    c.run(f"python -m webbrowser -t http://{_location}")
+    c.run(f"python -m webbrowser -t http://{_location}/")
 
 
 if __name__ == "__main__":

@@ -2,17 +2,15 @@
 
 # - *a library for assisting in analysing batteries and cells*
 
-[![cellpy-icon](https://img.shields.io/pypi/v/cellpy.svg)](https://pypi.python.org/pypi/cellpy)
+[![cellpy package](https://img.shields.io/pypi/v/cellpy.svg)](https://pypi.python.org/pypi/cellpy)
 [![Documentation Status](https://readthedocs.org/projects/cellpy/badge/?version=latest)](https://cellpy.readthedocs.io/en/latest/?badge=latest)
 [![Downloads](https://pepy.tech/badge/cellpy)](https://pepy.tech/project/cellpy)
-
 
 This Python Package was developed to help the
 researchers at IFE, Norway, in their cumbersome task of
 interpreting and handling data from cycling tests of
 batteries and cells.
 
-{{ ProjectVersion }}
 
 ## Features
 

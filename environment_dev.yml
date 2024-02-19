@@ -42,15 +42,20 @@ dependencies:
     - seaborn
     - sphinx
     - nbsphinx
+    - sqlalchemy-access
+    - pandoc
+    - graphviz
+    - sphinx-autoapi
+    - invoke
+    - twine
+    - build
+    - bumpver
+    - python-dotenv
+    - myst-parser
+    - sphinx_rtd_theme
     - pip:
-        - bumpver
-        - sqlalchemy-access
         - pipdeptree
         - pydeps
-        - twine
-        - build
-        - sphinx_rtd_theme
-        - invoke
-        - myst-parser
+        - pip-tools
 
 

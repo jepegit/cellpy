@@ -16,18 +16,16 @@ dependencies:
   - setuptools
   - ruamel.yaml
   - pyodbc
-  - Sphinx
   - tqdm
   - python-box
-  - pandoc
   - ipykernel
   - pint
+  - fabric
+  - python-dotenv
+  - Sphinx
+  - pandoc
+  - sphinx_rtd_theme
+  - myst-parser
+  - sphinx-autoapi
   - graphviz
-  - pip:
-    - nbsphinx
-    - python-dotenv
-    - fabric
-    - sphinx_rtd_theme
-    - myst-parser
-    - sphinx-autoapi
 
