@@ -1,5 +1,6 @@
 # Welcome to cellpy's documentation!
 
+**version:** {{ ProjectVersion }}
 
 ```{include} adapted_readme.md
 ```
@@ -20,3 +21,4 @@ other/index.md
 
 - {ref}`genindex`
 - {ref}`modindex`
+
