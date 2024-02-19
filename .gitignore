@@ -9,6 +9,7 @@ __pycache__/
 .idea/
 old/
 bin/
+docs/autoapi/
 bin/mdbtools-win
 cellpy/utils/tmp
 tmp/
