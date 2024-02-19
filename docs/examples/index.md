@@ -3,5 +3,5 @@
 ```{toctree}
 :maxdepth: 2
 
-reading_data.rst
+reading_data.md
 ```
