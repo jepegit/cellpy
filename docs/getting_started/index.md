@@ -3,7 +3,7 @@
 ```{toctree}
 :maxdepth: 2
 
-installation.rst
-configuration.rst
-checkup.rst
+installation.md
+configuration.md
+checkup.md
 ```

@@ -24,6 +24,7 @@ dependencies:
   - python-dotenv
   - Sphinx
   - pandoc
+  - nbsphinx
   - sphinx_rtd_theme
   - myst-parser
   - sphinx-autoapi
