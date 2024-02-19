@@ -2,11 +2,9 @@
 
 # - *a library for assisting in analysing batteries and cells*
 
-[![cellpy-icon](https://img.shields.io/pypi/v/cellpy.svg)(https://pypi.python.org/pypi/cellpy)]
-
-[![Documentation Status](https://readthedocs.org/projects/cellpy/badge/?version=latest)(https://cellpy.readthedocs.io/en/latest/?badge=latest)]
-
-[![Downloads](https://pepy.tech/badge/cellpy)(https://pepy.tech/project/cellpy)]
+[![cellpy-icon](https://img.shields.io/pypi/v/cellpy.svg)](https://pypi.python.org/pypi/cellpy)
+[![Documentation Status](https://readthedocs.org/projects/cellpy/badge/?version=latest)](https://cellpy.readthedocs.io/en/latest/?badge=latest)
+[![Downloads](https://pepy.tech/badge/cellpy)](https://pepy.tech/project/cellpy)
 
 
 This Python Package was developed to help the
