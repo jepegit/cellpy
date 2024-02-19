@@ -3,10 +3,10 @@
 ============
 Installation
 ============
-``cellpy`` is available on (Windows :ref:`_Cellpy_Install_Windows`) and  (Linux :ref:`Cellpy_Setup_Linux`) and can be installed using ``pip``
-or ``conda``, or (from source :ref:`_Cellpy_Install_Sources`).
+``cellpy`` is available on :ref:`Cellpy_Install_Windows` and :ref:`Cellpy_Setup_Linux` and can be installed using ``pip``
+or ``conda``, or :ref:`Cellpy_Install_Sources`.
 
-For more details on dependencies, have a look (here :ref:`Cellpy_Dependencies`).
+For more details on dependencies, have a look at :ref:`Cellpy_Dependencies`.
 
 For a tea-spoon explanation on how to install ``cellpy`` on windows, including the
 installation of python and setup of virtual environments, (see below
@@ -20,8 +20,8 @@ After installing ``cellpy``, continue to
 
 .. _Cellpy_Install_Windows:
 
-Windows
-==============
+Installing on Windows
+=====================
 
 Conda
 -----
@@ -30,7 +30,7 @@ The easiest way to install ``cellpy`` is by using conda:
 
 .. code-block:: console
 
-    $ conda install cellpy
+    $ conda install -c conda-forge cellpy
 
 
 This will also install all of the critical dependencies, as well as ``jupyter``
@@ -38,24 +38,6 @@ that comes in handy when working with ``cellpy``.
 
 
 In general, we recommend to install ``cellpy`` in a virtual environment.
-
-To make sure your environment contains the correct packages and dependencies
-required for running ``cellpy``, you can create an environment based on the available
-``environment.yml`` file. Download the
-`environment.yml <https://github.com/jepegit/cellpy/blob/master/environment.yml>`_
-file and place it in the directory shown in your Anaconda Prompt, and run:
-
-.. code-block:: console
-
-    conda env create -f environment.yml
-
-Then activate your environment:
-
-.. code-block:: console
-
-    conda activate cellpy
-
-and install ``cellpy`` within the environment.
 
 
 Pip
@@ -69,29 +51,21 @@ If you would like to install 'only' ``cellpy``, you can use pip:
 
 
 Note that ``cellpy`` uses several packages that are a bit cumbersome to install
-on windows (e.g. ``scipy``, ``numpy`` and ``pytables`` ) and when using pip,
-you have to take care of this yourself. To make sure to install
-all the required dependencies, we recommend to create an environment based
-the provided ``environment.yml`` (see installation with conda above):
-
-.. code-block:: console
-
-    $ conda env create -f environment.yml
-
+on windows (e.g. ``pytables``) and when using pip,
+you have to take care of this yourself.
 
 Pre-releases can be installed by adding the ``--pre`` flag to the installation command:
 
 .. code-block:: console
 
-   python -m pip install --pre cellpy
-
+    $ python -m pip install --pre cellpy
 
 
 .. _Cellpy_Install_Linux:
 
-
 Linux
-==============
+=====
+
 Conda
 -----
 This is how to install ``cellpy`` using conda on Linux.
@@ -101,8 +75,8 @@ This includes ``libobdc``, that can be installed on Ubuntu like this:
 
 .. code-block:: console
 
-    sudo apt update
-    sudo apt install unixodbc-dev
+    $ sudo apt update
+    $ sudo apt install unixodbc-dev
 
 
 Pip
@@ -113,7 +87,7 @@ Be aware that you might have to install additional packages.
 .. _Cellpy_Install_Sources:
 
 Installation from sources
-==============
+=========================
 
 The sources for ``cellpy`` can be downloaded from the `Github repo`_.
 
