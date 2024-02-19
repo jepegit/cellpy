@@ -1,23 +1,12 @@
 ![cellpy-icon](static/cellpy-icon-long.svg)
 
-:::{figure} https://source.unsplash.com/random/400x200?beach,ocean
-:name: my-fig
-:alt: Random image of the beach or ocean!
-:target: https://www.vg.no
-
-
 # - *a library for assisting in analysing batteries and cells*
 
-![cellpy-icon](https://img.shields.io/pypi/v/cellpy.svg)
-:target: https://pypi.python.org/pypi/cellpy
+[![cellpy-icon](https://img.shields.io/pypi/v/cellpy.svg)(https://pypi.python.org/pypi/cellpy)]
 
+[![Documentation Status](https://readthedocs.org/projects/cellpy/badge/?version=latest)(https://cellpy.readthedocs.io/en/latest/?badge=latest)]
 
-![Documentation Status](https://readthedocs.org/projects/cellpy/badge/?version=latest)
-:alt: Documentation Status
-![cellpy-icon](https://cellpy.readthedocs.io/en/latest/?badge=latest
-
-
-![cellpy-icon](https://static.pepy.tech/badge/cellpy
+[![Downloads](https://pepy.tech/badge/cellpy)(https://pepy.tech/project/cellpy)]
 
 
 This Python Package was developed to help the
