@@ -1,119 +1,109 @@
-# cellpy.utils package
+cellpy.utils package
+====================
 
-## Subpackages
+Subpackages
+-----------
 
-```{toctree}
-:maxdepth: 4
+.. toctree::
+   :maxdepth: 4
 
-cellpy.utils.batch_tools
-```
+   cellpy.utils.batch_tools
 
-## Submodules
+Submodules
+----------
 
-## cellpy.utils.batch module
+cellpy.utils.batch module
+-------------------------
 
-```{eval-rst}
 .. automodule:: cellpy.utils.batch
    :members:
    :undoc-members:
    :show-inheritance:
-```
 
-## cellpy.utils.collectors module
+cellpy.utils.collectors module
+------------------------------
 
-```{eval-rst}
 .. automodule:: cellpy.utils.collectors
    :members:
    :undoc-members:
    :show-inheritance:
-```
 
-## cellpy.utils.diagnostics module
+cellpy.utils.diagnostics module
+-------------------------------
 
-```{eval-rst}
 .. automodule:: cellpy.utils.diagnostics
    :members:
    :undoc-members:
    :show-inheritance:
-```
 
-## cellpy.utils.easyplot module
+cellpy.utils.easyplot module
+----------------------------
 
-```{eval-rst}
 .. automodule:: cellpy.utils.easyplot
    :members:
    :undoc-members:
    :show-inheritance:
-```
 
-## cellpy.utils.example_data module
+cellpy.utils.example\_data module
+---------------------------------
 
-```{eval-rst}
 .. automodule:: cellpy.utils.example_data
    :members:
    :undoc-members:
    :show-inheritance:
-```
 
-## cellpy.utils.helpers module
+cellpy.utils.helpers module
+---------------------------
 
-```{eval-rst}
 .. automodule:: cellpy.utils.helpers
    :members:
    :undoc-members:
    :show-inheritance:
-```
 
-## cellpy.utils.ica module
+cellpy.utils.ica module
+-----------------------
 
-```{eval-rst}
 .. automodule:: cellpy.utils.ica
    :members:
    :undoc-members:
    :show-inheritance:
-```
 
-## cellpy.utils.live module
+cellpy.utils.live module
+------------------------
 
-```{eval-rst}
 .. automodule:: cellpy.utils.live
    :members:
    :undoc-members:
    :show-inheritance:
-```
 
-## cellpy.utils.ocv_rlx module
+cellpy.utils.ocv\_rlx module
+----------------------------
 
-```{eval-rst}
 .. automodule:: cellpy.utils.ocv_rlx
    :members:
    :undoc-members:
    :show-inheritance:
-```
 
-## cellpy.utils.plotutils module
+cellpy.utils.plotutils module
+-----------------------------
 
-```{eval-rst}
 .. automodule:: cellpy.utils.plotutils
    :members:
    :undoc-members:
    :show-inheritance:
-```
 
-## cellpy.utils.processor module
+cellpy.utils.processor module
+-----------------------------
 
-```{eval-rst}
 .. automodule:: cellpy.utils.processor
    :members:
    :undoc-members:
    :show-inheritance:
-```
 
-## Module contents
+Module contents
+---------------
 
-```{eval-rst}
 .. automodule:: cellpy.utils
    :members:
    :undoc-members:
    :show-inheritance:
-```

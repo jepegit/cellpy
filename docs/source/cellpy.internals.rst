@@ -1,21 +1,21 @@
-# cellpy.internals package
+cellpy.internals package
+========================
 
-## Submodules
+Submodules
+----------
 
-## cellpy.internals.core module
+cellpy.internals.core module
+----------------------------
 
-```{eval-rst}
 .. automodule:: cellpy.internals.core
    :members:
    :undoc-members:
    :show-inheritance:
-```
 
-## Module contents
+Module contents
+---------------
 
-```{eval-rst}
 .. automodule:: cellpy.internals
    :members:
    :undoc-members:
    :show-inheritance:
-```

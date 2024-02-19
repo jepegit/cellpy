@@ -1,50 +1,48 @@
-# cellpy package
+cellpy package
+==============
 
-## Subpackages
+Subpackages
+-----------
 
-```{toctree}
-:maxdepth: 4
+.. toctree::
+   :maxdepth: 4
 
-cellpy.internals
-cellpy.parameters
-cellpy.readers
-cellpy.utils
-```
+   cellpy.internals
+   cellpy.parameters
+   cellpy.readers
+   cellpy.utils
 
-## Submodules
+Submodules
+----------
 
-## cellpy.cli module
+cellpy.cli module
+-----------------
 
-```{eval-rst}
 .. automodule:: cellpy.cli
    :members:
    :undoc-members:
    :show-inheritance:
-```
 
-## cellpy.exceptions module
+cellpy.exceptions module
+------------------------
 
-```{eval-rst}
 .. automodule:: cellpy.exceptions
    :members:
    :undoc-members:
    :show-inheritance:
-```
 
-## cellpy.log module
+cellpy.log module
+-----------------
 
-```{eval-rst}
 .. automodule:: cellpy.log
    :members:
    :undoc-members:
    :show-inheritance:
-```
 
-## Module contents
+Module contents
+---------------
 
-```{eval-rst}
 .. automodule:: cellpy
    :members:
    :undoc-members:
    :show-inheritance:
-```

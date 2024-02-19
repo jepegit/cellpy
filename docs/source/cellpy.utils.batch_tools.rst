@@ -1,111 +1,101 @@
-# cellpy.utils.batch_tools package
+cellpy.utils.batch\_tools package
+=================================
 
-## Submodules
+Submodules
+----------
 
-## cellpy.utils.batch_tools.batch_analyzers module
+cellpy.utils.batch\_tools.batch\_analyzers module
+-------------------------------------------------
 
-```{eval-rst}
 .. automodule:: cellpy.utils.batch_tools.batch_analyzers
    :members:
    :undoc-members:
    :show-inheritance:
-```
 
-## cellpy.utils.batch_tools.batch_core module
+cellpy.utils.batch\_tools.batch\_core module
+--------------------------------------------
 
-```{eval-rst}
 .. automodule:: cellpy.utils.batch_tools.batch_core
    :members:
    :undoc-members:
    :show-inheritance:
-```
 
-## cellpy.utils.batch_tools.batch_experiments module
+cellpy.utils.batch\_tools.batch\_experiments module
+---------------------------------------------------
 
-```{eval-rst}
 .. automodule:: cellpy.utils.batch_tools.batch_experiments
    :members:
    :undoc-members:
    :show-inheritance:
-```
 
-## cellpy.utils.batch_tools.batch_exporters module
+cellpy.utils.batch\_tools.batch\_exporters module
+-------------------------------------------------
 
-```{eval-rst}
 .. automodule:: cellpy.utils.batch_tools.batch_exporters
    :members:
    :undoc-members:
    :show-inheritance:
-```
 
-## cellpy.utils.batch_tools.batch_helpers module
+cellpy.utils.batch\_tools.batch\_helpers module
+-----------------------------------------------
 
-```{eval-rst}
 .. automodule:: cellpy.utils.batch_tools.batch_helpers
    :members:
    :undoc-members:
    :show-inheritance:
-```
 
-## cellpy.utils.batch_tools.batch_journals module
+cellpy.utils.batch\_tools.batch\_journals module
+------------------------------------------------
 
-```{eval-rst}
 .. automodule:: cellpy.utils.batch_tools.batch_journals
    :members:
    :undoc-members:
    :show-inheritance:
-```
 
-## cellpy.utils.batch_tools.batch_plotters module
+cellpy.utils.batch\_tools.batch\_plotters module
+------------------------------------------------
 
-```{eval-rst}
 .. automodule:: cellpy.utils.batch_tools.batch_plotters
    :members:
    :undoc-members:
    :show-inheritance:
-```
 
-## cellpy.utils.batch_tools.batch_reporters module
+cellpy.utils.batch\_tools.batch\_reporters module
+-------------------------------------------------
 
-```{eval-rst}
 .. automodule:: cellpy.utils.batch_tools.batch_reporters
    :members:
    :undoc-members:
    :show-inheritance:
-```
 
-## cellpy.utils.batch_tools.dumpers module
+cellpy.utils.batch\_tools.dumpers module
+----------------------------------------
 
-```{eval-rst}
 .. automodule:: cellpy.utils.batch_tools.dumpers
    :members:
    :undoc-members:
    :show-inheritance:
-```
 
-## cellpy.utils.batch_tools.engines module
+cellpy.utils.batch\_tools.engines module
+----------------------------------------
 
-```{eval-rst}
 .. automodule:: cellpy.utils.batch_tools.engines
    :members:
    :undoc-members:
    :show-inheritance:
-```
 
-## cellpy.utils.batch_tools.sqlite_from_excel_db module
+cellpy.utils.batch\_tools.sqlite\_from\_excel\_db module
+--------------------------------------------------------
 
-```{eval-rst}
 .. automodule:: cellpy.utils.batch_tools.sqlite_from_excel_db
    :members:
    :undoc-members:
    :show-inheritance:
-```
 
-## Module contents
+Module contents
+---------------
 
-```{eval-rst}
 .. automodule:: cellpy.utils.batch_tools
    :members:
    :undoc-members:
    :show-inheritance:
-```

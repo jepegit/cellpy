@@ -1,157 +1,143 @@
-# cellpy.readers.instruments package
+cellpy.readers.instruments package
+==================================
 
-## Subpackages
+Subpackages
+-----------
 
-```{toctree}
-:maxdepth: 4
+.. toctree::
+   :maxdepth: 4
 
-cellpy.readers.instruments.configurations
-cellpy.readers.instruments.loader_specific_modules
-cellpy.readers.instruments.processors
-```
+   cellpy.readers.instruments.configurations
+   cellpy.readers.instruments.loader_specific_modules
+   cellpy.readers.instruments.processors
 
-## Submodules
+Submodules
+----------
 
-## cellpy.readers.instruments.arbin_res module
+cellpy.readers.instruments.arbin\_res module
+--------------------------------------------
 
-```{eval-rst}
 .. automodule:: cellpy.readers.instruments.arbin_res
    :members:
    :undoc-members:
    :show-inheritance:
-```
 
-## cellpy.readers.instruments.arbin_sql module
+cellpy.readers.instruments.arbin\_sql module
+--------------------------------------------
 
-```{eval-rst}
 .. automodule:: cellpy.readers.instruments.arbin_sql
    :members:
    :undoc-members:
    :show-inheritance:
-```
 
-## cellpy.readers.instruments.arbin_sql_7 module
+cellpy.readers.instruments.arbin\_sql\_7 module
+-----------------------------------------------
 
-```{eval-rst}
 .. automodule:: cellpy.readers.instruments.arbin_sql_7
    :members:
    :undoc-members:
    :show-inheritance:
-```
 
-## cellpy.readers.instruments.arbin_sql_csv module
+cellpy.readers.instruments.arbin\_sql\_csv module
+-------------------------------------------------
 
-```{eval-rst}
 .. automodule:: cellpy.readers.instruments.arbin_sql_csv
    :members:
    :undoc-members:
    :show-inheritance:
-```
 
-## cellpy.readers.instruments.arbin_sql_h5 module
+cellpy.readers.instruments.arbin\_sql\_h5 module
+------------------------------------------------
 
-```{eval-rst}
 .. automodule:: cellpy.readers.instruments.arbin_sql_h5
    :members:
    :undoc-members:
    :show-inheritance:
-```
 
-## cellpy.readers.instruments.arbin_sql_xlsx module
+cellpy.readers.instruments.arbin\_sql\_xlsx module
+--------------------------------------------------
 
-```{eval-rst}
 .. automodule:: cellpy.readers.instruments.arbin_sql_xlsx
    :members:
    :undoc-members:
    :show-inheritance:
-```
 
-## cellpy.readers.instruments.base module
+cellpy.readers.instruments.base module
+--------------------------------------
 
-```{eval-rst}
 .. automodule:: cellpy.readers.instruments.base
    :members:
    :undoc-members:
    :show-inheritance:
-```
 
-## cellpy.readers.instruments.biologics_mpr module
+cellpy.readers.instruments.biologics\_mpr module
+------------------------------------------------
 
-```{eval-rst}
 .. automodule:: cellpy.readers.instruments.biologics_mpr
    :members:
    :undoc-members:
    :show-inheritance:
-```
 
-## cellpy.readers.instruments.custom module
+cellpy.readers.instruments.custom module
+----------------------------------------
 
-```{eval-rst}
 .. automodule:: cellpy.readers.instruments.custom
    :members:
    :undoc-members:
    :show-inheritance:
-```
 
-## cellpy.readers.instruments.ext_nda_reader module
+cellpy.readers.instruments.ext\_nda\_reader module
+--------------------------------------------------
 
-```{eval-rst}
 .. automodule:: cellpy.readers.instruments.ext_nda_reader
    :members:
    :undoc-members:
    :show-inheritance:
-```
 
-## cellpy.readers.instruments.local_instrument module
+cellpy.readers.instruments.local\_instrument module
+---------------------------------------------------
 
-```{eval-rst}
 .. automodule:: cellpy.readers.instruments.local_instrument
    :members:
    :undoc-members:
    :show-inheritance:
-```
 
-## cellpy.readers.instruments.maccor_txt module
+cellpy.readers.instruments.maccor\_txt module
+---------------------------------------------
 
-```{eval-rst}
 .. automodule:: cellpy.readers.instruments.maccor_txt
    :members:
    :undoc-members:
    :show-inheritance:
-```
 
-## cellpy.readers.instruments.neware_txt module
+cellpy.readers.instruments.neware\_txt module
+---------------------------------------------
 
-```{eval-rst}
 .. automodule:: cellpy.readers.instruments.neware_txt
    :members:
    :undoc-members:
    :show-inheritance:
-```
 
-## cellpy.readers.instruments.neware_xlsx module
+cellpy.readers.instruments.neware\_xlsx module
+----------------------------------------------
 
-```{eval-rst}
 .. automodule:: cellpy.readers.instruments.neware_xlsx
    :members:
    :undoc-members:
    :show-inheritance:
-```
 
-## cellpy.readers.instruments.pec_csv module
+cellpy.readers.instruments.pec\_csv module
+------------------------------------------
 
-```{eval-rst}
 .. automodule:: cellpy.readers.instruments.pec_csv
    :members:
    :undoc-members:
    :show-inheritance:
-```
 
-## Module contents
+Module contents
+---------------
 
-```{eval-rst}
 .. automodule:: cellpy.readers.instruments
    :members:
    :undoc-members:
    :show-inheritance:
-```
