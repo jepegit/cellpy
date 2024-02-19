@@ -9,12 +9,6 @@ raw data is not changed (unless explicitly requested).
 from copy import deepcopy
 
 
-def say_hello(c_old):
-    c = deepcopy(c_old)
-    print(f"Hello {c.cell_name}!")
-    return c
-
-
 def copy(c_old):
     c = deepcopy(c_old)
     return c

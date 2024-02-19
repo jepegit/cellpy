@@ -411,7 +411,9 @@ class CyclingExperiment(BaseExperiment):
                 logging.info("Running make_summary")
                 n_txt = f"summary {counter}"
                 pbar.set_description(n_txt, refresh=True)
-                cell_data.make_summary(find_end_voltage=find_end_voltage, find_ir=find_ir)
+                cell_data.make_summary(
+                    find_end_voltage=find_end_voltage, find_ir=find_ir
+                )
 
             # some clean-ups (might not be needed anymore):
             if not summary_tmp.index.name == hdr_summary.cycle_index:
@@ -717,7 +719,9 @@ class CyclingExperiment(BaseExperiment):
 
                 if summary_tmp is None or self.force_recalc:
                     logging.info("Running make_summary")
-                    cell_data.make_summary(find_end_voltage=find_end_voltage, find_ir=find_ir)
+                    cell_data.make_summary(
+                        find_end_voltage=find_end_voltage, find_ir=find_ir
+                    )
 
                 # some clean-ups (might not be needed anymore):
                 if not summary_tmp.index.name == hdr_summary.cycle_index:

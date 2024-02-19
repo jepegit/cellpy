@@ -107,7 +107,9 @@ class Reader(BaseDbReader):
         logging.debug(self.table)
 
     def __str__(self):
-        return f"<ExcelReader> (rows: {len(self.table)}, cols: {len(self.table.columns)})"
+        return (
+            f"<ExcelReader> (rows: {len(self.table)}, cols: {len(self.table.columns)})"
+        )
 
     def _repr_html_(self):
         return f"<b>ExcelReader</b> (rows: {len(self.table)}, cols: {len(self.table.columns)})"

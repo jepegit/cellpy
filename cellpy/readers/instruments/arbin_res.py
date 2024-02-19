@@ -1228,7 +1228,7 @@ class DataLoader(BaseLoader):
         return length_of_test, normal_df
 
 
-def check_loader_aux():
+def _check_loader_aux():
     from pathlib import Path
 
     from cellpy import log
@@ -1243,7 +1243,7 @@ def check_loader_aux():
     print(n[0].raw.tail())
 
 
-def check_loader_empty_normal():
+def _check_loader_empty_normal():
     from cellpy import log
 
     log.setup_logging(default_level="CRITICAL")
@@ -1255,7 +1255,7 @@ def check_loader_empty_normal():
     print(df.empty)
 
 
-def check_multi():
+def _check_multi():
     import pathlib
     import cellpy
 
@@ -1266,7 +1266,7 @@ def check_multi():
     c.to_excel(out, raw=True)
 
 
-def noodle():
+def _noodle():
     import pandas as pd
 
     df = pd.DataFrame(
@@ -1285,5 +1285,5 @@ def noodle():
 
 if __name__ == "__main__":
     print(" arbin-res-py ".center(80, "="))
-    noodle()
+    _noodle()
     print(" finished ".center(80, "="))

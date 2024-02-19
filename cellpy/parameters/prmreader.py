@@ -439,7 +439,7 @@ def info():
             print()
 
 
-def main():
+def _main():
     print(" STARTING THE ACTUAL SCRIPT ".center(80, "-"))
     print("PRM FILE:")
     f = _get_prm_file()
@@ -456,4 +456,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    _main()

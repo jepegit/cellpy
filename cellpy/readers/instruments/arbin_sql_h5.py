@@ -241,7 +241,7 @@ class DataLoader(BaseLoader):
         return raw_frames
 
 
-def check_get():
+def _check_get():
     import cellpy
 
     name = r"c:\Data\Electrochemical\Projects-raw\LongLife\20220607_SiCx_slurry-04b_1_cc_01.h5"
@@ -250,4 +250,4 @@ def check_get():
 
 
 if __name__ == "__main__":
-    check_get()
+    _check_get()

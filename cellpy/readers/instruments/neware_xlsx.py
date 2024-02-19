@@ -433,7 +433,7 @@ class DataLoader(BaseLoader):
         return data_frame, meta_dict
 
 
-def check_get():
+def _check_get():
     import cellpy
 
     name = r"c:\scripting\tasks\cenate\2023_vajee_neware_excel_dqdv\data\raw\neware_vajee.xlsx"
@@ -448,4 +448,4 @@ def check_get():
 
 
 if __name__ == "__main__":
-    check_get()
+    _check_get()

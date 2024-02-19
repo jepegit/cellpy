@@ -217,7 +217,7 @@ class DataLoader(BaseLoader):
         return data_df
 
 
-def test_csv_loader():
+def _test_csv_loader():
     import pathlib
 
     datadir = pathlib.Path(
@@ -229,7 +229,7 @@ def test_csv_loader():
     dd = loader.loader(name)
 
 
-def test_loader_from_outside():
+def _test_loader_from_outside():
     import pathlib
 
     import matplotlib.pyplot as plt
@@ -283,7 +283,7 @@ def test_loader_from_outside():
     c.save(outfile)
 
 
-def check_seamless_files():
+def _check_seamless_files():
     import pathlib
 
     import matplotlib.pyplot as plt
@@ -320,4 +320,4 @@ def check_seamless_files():
 
 
 if __name__ == "__main__":
-    check_seamless_files()
+    _check_seamless_files()

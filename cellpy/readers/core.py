@@ -1160,14 +1160,14 @@ def convert_from_simple_unit_label_to_string_unit_label(k, v):
 # ---------------- LOCAL DEV TESTS ----------------
 
 
-def check_convert_from_simple_unit_label_to_string_unit_label():
+def _check_convert_from_simple_unit_label_to_string_unit_label():
     k = "resistance"
     v = 1.0
     n = convert_from_simple_unit_label_to_string_unit_label(k, v)
     print(n)
 
 
-def check_path_things():
+def _check_path_things():
     p = "//jepe@mymachine.my.no/./path/file.txt"
     p2 = pathlib.Path(p)
     print(f"{p2=}")
@@ -1213,7 +1213,7 @@ def check_path_things():
     print(f"{p2.exists()=}")
 
 
-def check_another_path_things():
+def _check_another_path_things():
     p01 = r"C:\scripting\cellpy\testdata\data\20160805_test001_45_cc_01.res"
     p02 = r"ssh://jepe@server.no/home/jepe/cellpy/testdata/data/20160805_test001_45_cc_01.res"
     p03 = r"scripting\cellpy\testdata\data\20160805_test001_45_cc_01.res"
@@ -1251,7 +1251,7 @@ def check_another_path_things():
         print()
 
 
-def check_how_other_path_works():
+def _check_how_other_path_works():
     p01 = r"C:\scripting\cellpy\testdata\data\20160805_test001_45_cc_01.res"
     p02 = r"ssh://jepe@somewhere.else.no/home/jepe/cellpy/testdata/data/20160805_test001_45_cc_01.res"
     p03 = None
@@ -1276,7 +1276,7 @@ def check_how_other_path_works():
         print(f"{p2.parts=}")
 
 
-def check_copy_external_file():
+def _check_copy_external_file():
     from cellpy import prms
 
     prms.Paths.env_file = r"C:\scripting\cellpy\local\.env_cellpy"
@@ -1286,4 +1286,4 @@ def check_copy_external_file():
 
 
 if __name__ == "__main__":
-    check_how_other_path_works()
+    _check_how_other_path_works()

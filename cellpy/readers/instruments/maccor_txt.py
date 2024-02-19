@@ -93,7 +93,7 @@ class DataLoader(TxtLoader):
         return data
 
 
-def check_retrieve_file(n=1):
+def _check_retrieve_file(n=1):
     import pathlib
 
     pd.options.display.max_columns = 100
@@ -112,7 +112,7 @@ def check_retrieve_file(n=1):
         raise IOError(f"could not locate the file {name}")
 
 
-def check_dev_loader(name=None, model=None):
+def _check_dev_loader(name=None, model=None):
     if name is None:
         name = check_retrieve_file()
 
@@ -132,7 +132,7 @@ def check_dev_loader(name=None, model=None):
     print(len(raw))
 
 
-def check_dev_loader2(name=None, model=None, sep=None, number=2):
+def _check_dev_loader2(name=None, model=None, sep=None, number=2):
     if name is None:
         name = check_retrieve_file(number)
 
@@ -152,7 +152,7 @@ def check_dev_loader2(name=None, model=None, sep=None, number=2):
     print(raw)
 
 
-def check_loader(name=None, number=1, model="one"):
+def c_heck_loader(name=None, number=1, model="one"):
     import matplotlib.pyplot as plt
 
     if name is None:
@@ -184,7 +184,7 @@ def check_loader(name=None, number=1, model="one"):
     plt.show()
 
 
-def check_loader_from_outside():
+def _check_loader_from_outside():
     # NOT EDITED YET!!!
     import pathlib
 
@@ -257,7 +257,7 @@ def check_loader_from_outside():
     c.save(outfile)
 
 
-def check_loader_from_outside_with_get():
+def _check_loader_from_outside_with_get():
     import pathlib
 
     import matplotlib.pyplot as plt
@@ -327,7 +327,7 @@ def check_loader_from_outside_with_get():
     c.save(outfile)
 
 
-def check_loader_from_outside_with_get2():
+def _check_loader_from_outside_with_get2():
     import pathlib
 
     import matplotlib.pyplot as plt
@@ -427,4 +427,4 @@ def check_loader_from_outside_with_get2():
 if __name__ == "__main__":
     # check_dev_loader2(model="two")
     # check_loader(number=2, model="two")
-    check_loader_from_outside_with_get()
+    _check_loader_from_outside_with_get()

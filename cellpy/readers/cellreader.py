@@ -6950,7 +6950,7 @@ def _update_meta(
 # ============== Internal tests =================
 
 
-def check_raw():
+def _check_raw():
     import cellpy
     from cellpy.utils import example_data
 
@@ -6976,7 +6976,7 @@ def check_raw():
     # assert my_test.summary.loc["1", "data_point"] == data_point
 
 
-def check_cellpy_file():
+def _check_cellpy_file():
     print("running", end=" ")
     print(sys.argv[0])
 
@@ -6999,7 +6999,7 @@ def check_cellpy_file():
     print(c.data.raw.columns)
 
 
-def save_and_load_cellpy_file():
+def _save_and_load_cellpy_file():
     # check to see if updating to new cellpy file version works
     """
     # How to update the cellpy file version
@@ -7056,7 +7056,7 @@ def save_and_load_cellpy_file():
     # print(c.data.raw.columns)
 
 
-def load_and_save_to_excel():
+def _load_and_save_to_excel():
     from pathlib import Path
     from pprint import pprint
 
@@ -7095,7 +7095,7 @@ def load_and_save_to_excel():
     # print("saved again ...")
 
 
-def check_excel():
+def _check_excel():
     import openpyxl
     from openpyxl.styles import Border, Side
     import pandas as pd
@@ -7128,7 +7128,7 @@ def check_excel():
     print("done")
 
 
-def check_new_dot_get_methods():
+def _check_new_dot_get_methods():
     from pathlib import Path
     from pprint import pprint
     import numpy as np
@@ -7177,4 +7177,4 @@ def check_new_dot_get_methods():
 
 
 if __name__ == "__main__":
-    check_new_dot_get_methods()
+    _check_new_dot_get_methods()

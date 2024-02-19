@@ -599,7 +599,7 @@ class SQLReader(BaseDbReader):
         ...
 
 
-def check_import_cells_from_excel_sqlite(cellpy_db_uri, sqlite_path):
+def _check_import_cells_from_excel_sqlite(cellpy_db_uri, sqlite_path):
     reader = SQLReader()
     reader.create_db(cellpy_db_uri, echo=False)
     reader.load_excel_sqlite(sqlite_path)
@@ -608,12 +608,12 @@ def check_import_cells_from_excel_sqlite(cellpy_db_uri, sqlite_path):
     reader.import_cells_from_excel_sqlite()
 
 
-def check_copy():
+def _check_copy():
     cellpy_db_file = r"C:\scripting\cellpy\testdata\db\cellpy.db"
     sqlite_path = r"C:\scripting\cellpy\testdata\db\excel.db"
     cellpy_db_uri = f"sqlite:///{cellpy_db_file}"
 
-    check_import_cells_from_excel_sqlite(cellpy_db_uri, sqlite_path)
+    _check_import_cells_from_excel_sqlite(cellpy_db_uri, sqlite_path)
     reader = SQLReader()
     reader.open_db(cellpy_db_uri, echo=False)
     with Session(reader.engine) as session:
@@ -625,7 +625,7 @@ def check_copy():
             print(cell.comment_history)
 
 
-def check1():
+def _check1():
     cellpy_db_file = r"C:\scripting\cellpy\testdata\db\cellpy.db"
     cellpy_db_uri = f"sqlite:///{cellpy_db_file}"
     reader = SQLReader()
@@ -641,7 +641,7 @@ def check1():
         print(f"{other}: {c}")
 
 
-def check():
+def _check():
     cellpy_db_file = r"C:\scripting\cellpy\testdata\db\cellpy.db"
     cellpy_db_uri = f"sqlite:///{cellpy_db_file}"
     reader = SQLReader(db_connection=cellpy_db_uri)
@@ -660,4 +660,4 @@ def check():
 # TODO: add better/easier methods for populating the db
 
 if __name__ == "__main__":
-    check()
+    _check()

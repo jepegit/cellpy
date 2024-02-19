@@ -186,7 +186,7 @@ class DataLoader(AutoLoader, ABC):
         return data_df
 
 
-def check_loader_from_outside_with_get():
+def _check_loader_from_outside_with_get():
     import pathlib
 
     import cellpy
@@ -286,4 +286,4 @@ def _process_cellpy_object(name, c, out):
 
 
 if __name__ == "__main__":
-    check_loader_from_outside_with_get()
+    _check_loader_from_outside_with_get()

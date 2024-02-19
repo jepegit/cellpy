@@ -454,7 +454,7 @@ class DataLoader(BaseLoader):
         return data_df, meta_data
 
 
-def check_sql_loader(server: str = None, tests: list = None):
+def _check_sql_loader(server: str = None, tests: list = None):
     test_name = tuple(tests) + ("",)  # neat trick :-)
     print(f"** test str: {test_name}")
     con_str = "Driver={SQL Server};Server=" + server + ";Trusted_Connection=yes;"
@@ -508,7 +508,7 @@ def check_sql_loader(server: str = None, tests: list = None):
     return data_df, stat_df
 
 
-def check_query():
+def _check_query():
     import pathlib
 
     name = ["20201106_HC03B1W_1_cc_01"]
@@ -519,7 +519,7 @@ def check_query():
     ds.to_clipboard()
 
 
-def check_loader():
+def _check_loader():
     print(" Testing connection to arbin sql server ".center(80, "-"))
 
     sql_loader = DataLoader()
@@ -529,7 +529,7 @@ def check_loader():
     return cell
 
 
-def check_loader_from_outside():
+def _check_loader_from_outside():
     import matplotlib.pyplot as plt
 
     from cellpy import cellreader
@@ -559,7 +559,7 @@ def check_loader_from_outside():
     plt.show()
 
 
-def check_get():
+def _check_get():
     import cellpy
 
     name = "20200820_CoFBAT_slurry07B_01_cc_01"
@@ -570,4 +570,4 @@ def check_get():
 if __name__ == "__main__":
     # test_query()
     # cell = test_loader()
-    check_get()
+    _check_get()

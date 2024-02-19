@@ -571,7 +571,8 @@ class DataLoader(BaseLoader):
         pass
 
 
-if __name__ == "__main__":
+def _main():
+    # This is just for testing
     import logging
     import os
     import sys
@@ -638,20 +639,23 @@ if __name__ == "__main__":
         shutil.rmtree(temp_dir)
 
 
-# dtype = dtype([('flags', 'u1'), ('time/s', '<f8'), ('Ewe/V', '<f4'), ('dQ/mA.h', '<f8'),
-#        ('I/mA', '<f4'), ('Ece/V', '<f4'), ('(Q-Qo)/mA.h', '<f8'), ('20', '<f8'),
-#        ('freq/Hz', '<f4'), ('Phase(Z)/deg', '<f4'), ('|Z|/Ohm', '<f4'),
-#        ('I Range', '<u2'), ('74', '<f8'), ('96', '<f8'), ('98', '<f8'),
-#        ('99', '<f8'), ('100', '<f8'), ('101', '<f8'), ('123', '<f8'),
-#        ('124', '<f8'), ('Capacitance charge/µF', '<f8'), ('Capacitance discharge/µF', '<f8'),
-#        ('Ns', '<u2'), ('430', '<f8'), ('431', '<f8'), ('432', '<f8'), ('433', '<f8'),
-#        ('Q charge/discharge/mA.h', '<f8'), ('half cycle', '<u4'), ('469', '<f8'),
-#        ('471', '<f8')])
-#
-# flags = OrderedDict(
-#     [
-#         ('mode', (3, <class 'numpy.uint8'>)),('ox/red', (4, <class 'numpy.bool_'>)),
-#         ('error', (8, <class 'numpy.bool_'>)), ('control changes', (16, <class 'numpy.bool_'>)),
-#         ('Ns changes', (32, <class 'numpy.bool_'>)), ('counter inc.', (128, <class 'numpy.bool_'>))]
-# )
-# flags2 = OrderedDict()
+    # dtype = dtype([('flags', 'u1'), ('time/s', '<f8'), ('Ewe/V', '<f4'), ('dQ/mA.h', '<f8'),
+    #        ('I/mA', '<f4'), ('Ece/V', '<f4'), ('(Q-Qo)/mA.h', '<f8'), ('20', '<f8'),
+    #        ('freq/Hz', '<f4'), ('Phase(Z)/deg', '<f4'), ('|Z|/Ohm', '<f4'),
+    #        ('I Range', '<u2'), ('74', '<f8'), ('96', '<f8'), ('98', '<f8'),
+    #        ('99', '<f8'), ('100', '<f8'), ('101', '<f8'), ('123', '<f8'),
+    #        ('124', '<f8'), ('Capacitance charge/µF', '<f8'), ('Capacitance discharge/µF', '<f8'),
+    #        ('Ns', '<u2'), ('430', '<f8'), ('431', '<f8'), ('432', '<f8'), ('433', '<f8'),
+    #        ('Q charge/discharge/mA.h', '<f8'), ('half cycle', '<u4'), ('469', '<f8'),
+    #        ('471', '<f8')])
+    #
+    # flags = OrderedDict(
+    #     [
+    #         ('mode', (3, <class 'numpy.uint8'>)),('ox/red', (4, <class 'numpy.bool_'>)),
+    #         ('error', (8, <class 'numpy.bool_'>)), ('control changes', (16, <class 'numpy.bool_'>)),
+    #         ('Ns changes', (32, <class 'numpy.bool_'>)), ('counter inc.', (128, <class 'numpy.bool_'>))]
+    # )
+    # flags2 = OrderedDict()
+
+if __name__ == "__main__":
+    _main()

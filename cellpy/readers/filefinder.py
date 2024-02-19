@@ -374,7 +374,7 @@ def search_for_files(
     return run_files, cellpy_file
 
 
-def check_01():
+def _check_01():
     import dotenv
     from cellpy import log
 
@@ -398,7 +398,7 @@ def check_01():
     # print(my_raw_file_dir.raw_path)
 
 
-def check_02():
+def _check_02():
     import dotenv
     import fabric
     import stat
@@ -449,7 +449,7 @@ def check_02():
             print(f"file: {f} of type {type(f)}")
 
 
-def check_03():
+def _check_03():
     from cellpy import prms
     from pprint import pprint
 
@@ -464,4 +464,4 @@ def check_03():
 
 
 if __name__ == "__main__":
-    check_03()
+    _check_03()
