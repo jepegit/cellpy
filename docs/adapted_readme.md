@@ -1,20 +1,20 @@
-```{image} _static/cellpy-icon-long.svg
+:::{figure} https://raw.githubusercontent.com/jepegit/cellpy/master/docs/_static/cellpy-icon-long.svg
 :alt: cellpy
+:name: cellpy-icon
 :height: 100
-```
 
 # - *a library for assisting in analysing batteries and cells*
 
-```{image} https://img.shields.io/pypi/v/cellpy.svg
+:::{image} https://img.shields.io/pypi/v/cellpy.svg
 :target: https://pypi.python.org/pypi/cellpy
-```
 
-```{image} https://readthedocs.org/projects/cellpy/badge/?version=latest
+
+:::{image} https://readthedocs.org/projects/cellpy/badge/?version=latest
 :alt: Documentation Status
 :target: https://cellpy.readthedocs.io/en/latest/?badge=latest
-```
 
-```{image} https://static.pepy.tech/badge/cellpy
+
+:::{image} https://static.pepy.tech/badge/cellpy
 :target: https://pepy.tech/project/cellpy
 ```
 
