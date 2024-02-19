@@ -1,4 +1,5 @@
 import functools
+import importlib
 import itertools
 import logging
 import sys
@@ -15,28 +16,29 @@ from cellpy.parameters.internal_settings import get_headers_journal, get_headers
 from cellpy.utils.batch_tools.batch_core import BasePlotter
 from cellpy.utils.batch_tools.batch_experiments import CyclingExperiment
 
+
+plotly_available = importlib.util.find_spec("plotly") is not None
+bokeh_available = importlib.util.find_spec("bokeh") is not None
+seaborn_available = importlib.util.find_spec("seaborn") is not None
+
 available_plotting_backends = ["matplotlib"]
 
-try:
-    import bokeh
+if bokeh_available:
     available_plotting_backends.append("bokeh")
-except ImportError:
-    logging.debug("could not import bokeh")
+    import bokeh
 
-try:
+if plotly_available:
     import plotly.express as px
     import plotly
     import plotly.io as pio
     import plotly.graph_objects as go
-    available_plotting_backends.append("plotly")
-except ImportError:
-    logging.debug("could not import plotly")
 
-try:
+    available_plotting_backends.append("plotly")
+
+if seaborn_available:
     import seaborn as sns
+
     available_plotting_backends.append("seaborn")
-except ImportError:
-    logging.debug("could not import seaborn")
 
 hdr_journal = get_headers_journal()
 hdr_summary = get_headers_summary()
@@ -766,9 +768,7 @@ def generate_summary_plots(experiment, **kwargs):
         return
 
     try:
-        canvas = plotters[backend](
-           summaries, **kwargs
-        )
+        canvas = plotters[backend](summaries, **kwargs)
     except Exception as e:
         logging.info(f"could not generate summary plots ({e})")
         return
@@ -1149,9 +1149,20 @@ def plot_cycle_life_summary_seaborn(summaries: pd.DataFrame, **kwargs):
     sns.set_theme(style="darkgrid")
 
     canvas_grid = sns.relplot(
-        data=summaries, kind="line", x=hdr_cycle, y="value", hue=hdr_group, style=hdr_sub_group,
-        row="variable", markers=True, dashes=False,
-        height=3, aspect=3, linewidth=2.0, legend="auto", palette=color_map,
+        data=summaries,
+        kind="line",
+        x=hdr_cycle,
+        y="value",
+        hue=hdr_group,
+        style=hdr_sub_group,
+        row="variable",
+        markers=True,
+        dashes=False,
+        height=3,
+        aspect=3,
+        linewidth=2.0,
+        legend="auto",
+        palette=color_map,
         facet_kws={"sharex": True, "sharey": False, "legend_out": True},
     )
 
@@ -1196,8 +1207,8 @@ def _get_ranges(summaries, plotted_summaries, defaults=None):
         if end in [np.nan, np.inf, -np.inf]:
             end = None
         if start is not None and end is not None:
-            start -= 0.1 * abs(abs(end)-abs(start))
-            end += 0.1 * abs(abs(end)-abs(start))
+            start -= 0.1 * abs(abs(end) - abs(start))
+            end += 0.1 * abs(abs(end) - abs(start))
         elif end is not None:
             end += 0.1 * abs(end)
         elif start is not None:
@@ -1323,12 +1334,12 @@ class CyclingSummaryPlotter(BasePlotter):
 
         The barns attribute is a pre-defined string used for picking what
         folder(s) the file(s) should be exported to.
-        For example, if barn equals "batch_dir", the the file(s) will be saved
+        For example, if barn equals "batch_dir", the file(s) will be saved
         to the experiments batch directory.
 
-        The engine(s) is given self.experiments and self.farms as input and
-        returns farms to self.farms and barn to self.barn. Thus, one could
-        in principle modify self.experiments within the engine without
+        The engine(s) is given `self.experiments` and `self.farms` as input and
+        returns farms to `self.farms` and barn to `self.barn`. Thus, one could
+        in principle modify `self.experiments` within the engine without
         explicitly 'notifying' the poor soul who is writing a batch routine
         using that engine. However, it is strongly advised not to do such
         things. And if you, as engine designer, really need to, then at least

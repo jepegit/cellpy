@@ -16,10 +16,16 @@ History
 * Added checks (`c.has_xxx`) for checking if data has been processed correctly / fix errors in raw/semi-processed data.
 * Added possibility to filter on C-rates (`c.get_cycles`)
 * Added experimental feature `c.total_time_at_voltage_level` for calculating total time at low/high voltage
-* Added experimental instrument reader for neware xlsx files
+* Added experimental instrument reader for neware xlsx files (hopefully not used much because it is very slow)
 * Added try-except block for ica post-processing step and add if-clause (suggested by Vajee)
 * Fixed several smaller bugs and improved some of the functionality (most notably in `c.get_cap`)
+* Added CI for macOS
+* Added conda package including sqlalchemy-access
 * [under progress]: check how cycle_mode and specific is handled and possibly improve
+* [under progress]: start moving/implementing all methods that modify the data to the `do` module
+* [under progress]: improve plotting tools
+* [under progress]: improve documentation
+* [under progress]: improve feedback from the CLI
 
 
 1.0.0 (2023)

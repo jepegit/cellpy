@@ -36,6 +36,14 @@ cellpy.readers.dbreader module
    :undoc-members:
    :show-inheritance:
 
+cellpy.readers.do module
+------------------------
+
+.. automodule:: cellpy.readers.do
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 cellpy.readers.filefinder module
 --------------------------------
 

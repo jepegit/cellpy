@@ -884,6 +884,9 @@ def concat_summaries(
     inverse=False,
     inverted=False,
     key_index_bounds=None,
+    pages=None,
+    recalc_summary_kwargs=None,
+    recalc_step_table_kwargs=None,
 ) -> pd.DataFrame:
     """Merge all summaries in a batch into a gigantic summary data frame.
 
@@ -908,6 +911,12 @@ def concat_summaries(
         inverted (bool): select cycles that do not have the steps filtered by given C-rate.
         key_index_bounds (list): used when creating a common label for the cells by splitting the label on '_'
             and combining again using the key_index_bounds as start and end index.
+        pages (pandas.DataFrame): alternative pages (journal) of the batch object (if not given, it will use the
+            pages from the batch object).
+        recalc_summary_kwargs (dict): keyword arguments to be used when recalculating the summary. If not given, it
+            will not recalculate the summary.
+        recalc_step_table_kwargs (dict): keyword arguments to be used when recalculating the step table. If not given,
+            it will not recalculate the step table.
 
     Returns:
         ``pandas.DataFrame``
@@ -918,17 +927,19 @@ def concat_summaries(
 
     cell_names_nest = []
     group_nest = []
+    if pages is None:
+        pages = b.pages
 
     if group_it:
-        g = b.pages.groupby("group")
+        g = pages.groupby("group")
         # this ensures that order is kept and grouping is correct
         # it is therefore ok to assume from now on that all the cells within a list belongs to the same group
         for gno, b_sub in g:
             cell_names_nest.append(list(b_sub.index))
             group_nest.append(gno)
     else:
-        cell_names_nest.append(list(b.experiment.cell_names))
-        group_nest.append(b.pages.group.to_list())
+        cell_names_nest.append(list(b.index))
+        group_nest.append(pages.group.to_list())
 
     default_columns = [hdr_summary["charge_capacity_gravimetric"]]
     hdr_norm_cycle = hdr_summary["normalized_cycle_index"]
@@ -980,8 +991,8 @@ def concat_summaries(
         keys_sub = []
         for cell_id in cell_names:
             logging.debug(f"Processing [{cell_id}]")
-            group = b.pages.loc[cell_id, "group"]
-            sub_group = b.pages.loc[cell_id, "sub_group"]
+            group = pages.loc[cell_id, "group"]
+            sub_group = pages.loc[cell_id, "sub_group"]
             try:
                 c = b.experiment.data[cell_id]
             except KeyError as e:
@@ -992,6 +1003,10 @@ def concat_summaries(
             if not c.empty:
                 if max_cycle is not None:
                     c = c.drop_from(max_cycle + 1)
+                if recalc_step_table_kwargs is not None:
+                    c.make_step_table(**recalc_step_table_kwargs)
+                if recalc_summary_kwargs is not None:
+                    c.make_summary(**recalc_summary_kwargs)
                 if normalize_capacity_on is not None:
                     if scale_by == "nom_cap":
                         if nom_cap is None:
@@ -1031,7 +1046,7 @@ def concat_summaries(
 
         if group_it:
             cell_id = create_group_names(
-                custom_group_labels, gno, key_index_bounds, keys_sub
+                custom_group_labels, gno, key_index_bounds, keys_sub, pages
             )
             try:
                 s = _make_average(frames_sub, output_columns)
@@ -1057,8 +1072,19 @@ def concat_summaries(
         return pd.DataFrame()
 
 
-def create_group_names(custom_group_labels, gno, key_index_bounds, keys_sub):
-    """Helper function for concat_summaries."""
+def create_group_names(custom_group_labels, gno, key_index_bounds, keys_sub, pages):
+    """Helper function for concat_summaries.
+
+    Args:
+        custom_group_labels (dict): dictionary of custom labels (key must be the group number).
+        gno (int): group number.
+        key_index_bounds (list): used when creating a common label for the cells by splitting the label on '_'
+            and combining again using the key_index_bounds as start and end index.
+        keys_sub (list): list of keys.
+        pages (pandas.DataFrame): pages (journal) of the batch object. If the column "group_label" is present, it will
+            be used to create the group name.
+
+    """
     cell_id = None
     if custom_group_labels is not None:
         if isinstance(custom_group_labels, dict):
@@ -1074,6 +1100,14 @@ def create_group_names(custom_group_labels, gno, key_index_bounds, keys_sub):
                 cell_id = f"{custom_group_labels}-group-{gno:02d}"
             else:
                 cell_id = f"{custom_group_labels}-group-{gno}"
+        return cell_id
+
+    # not tested yet:
+    if pages is not None:
+        if "group_label" in pages.columns:
+            cell_id = pages["group_label"].values[0]
+            if cell_id is not None:
+                return cell_id
 
     if cell_id is None:
         splitter = "_"

@@ -13,6 +13,8 @@ import warnings
 from io import StringIO
 from pathlib import Path
 
+import matplotlib.pyplot as plt
+
 from cellpy.parameters.internal_settings import (
     get_headers_journal,
     get_headers_normal,
@@ -21,23 +23,7 @@ from cellpy.parameters.internal_settings import (
 )
 from cellpy.utils import helpers
 
-try:
-    import matplotlib.pyplot as plt
-
-    plt_available = True
-except ImportError:
-    plt_available = False
-
-try:
-    import holoviews as hv
-    from holoviews import opts
-    from holoviews.plotting.links import RangeToolLink
-
-    hv_available = True
-except ImportError:
-    hv_available = False
-
-bokeh_available = importlib.util.find_spec("bokeh") is not None
+plotly_available = importlib.util.find_spec("plotly") is not None
 
 # logger = logging.getLogger(__name__)
 logging.captureWarnings(True)
@@ -152,311 +138,6 @@ hdr_steps = get_headers_step_table()
 hdr_journal = get_headers_journal()
 
 
-def _hv_bokeh_available():
-    warnings.warn(
-        "This utility function will be removed shortly", category=DeprecationWarning
-    )
-    if not hv_available:
-        print("You need holoviews. But I cannot load it. Aborting...")
-        return False
-    if not bokeh_available:
-        print("You need Bokeh. But I cannot find it. Aborting...")
-        return False
-    return True
-
-
-def find_column(columns, label=None, end="cycle_index"):
-    """find columns based on how the column-name ends.
-
-    Args:
-        columns: pandas columns
-        label: if not provided, generate, if provided, return as is
-        end: the string to use for searching
-
-    Returns:
-        column header, label
-    """
-
-    warnings.warn(
-        "This utility function will be removed shortly", category=DeprecationWarning
-    )
-    # TODO @jepe: refactor and use col names directly from HeadersNormal instead
-    hdr = None
-    lab = None
-    for col in columns:
-        if col.endswith(end):
-            hdr = col
-            if label is None:
-                lab = col.replace("_", " ")
-            else:
-                lab = label
-            break
-    return hdr, lab
-
-
-def plot_concatenated(
-    dataframe,
-    title="",
-    x=None,
-    y=None,
-    err=None,
-    xlabel=None,
-    ylabel=None,
-    points=True,
-    line=True,
-    errors=True,
-    hover=True,
-    width=800,
-    height=300,
-    journal=None,
-    file_id_level=0,
-    hdr_level=None,
-    axis=1,
-    mean_end="_mean",
-    std_end="_std",
-    cycle_end="cycle_index",
-    legend_title="cell-type",
-    marker_size=None,
-    cmap="default_colors",
-    spread=False,
-    extension="bokeh",
-    edges=False,
-    keys=None,
-    simple=False,
-    **kwargs,
-):
-    """Create a holoviews plot of the concatenated summary.
-
-    This function is still under development. Feel free to contribute.
-
-    Args:
-        dataframe: the concatenated summary
-        title (str): title of the plot (defaults to empty)
-        x: colum-name for the x variable (not implemented yet)
-        y: colum-name for the y variable (not implemented yet)
-        err: colum-name for the std variable (not implemented yet)
-        xlabel: label for x-axis
-        ylabel: label for y-axis
-        points (bool): plot points if True
-        line (bool): plot line if True
-        errors (bool): plot errors if True
-        hover (bool): add hover tool if True
-        width: width of plot
-        height: height of plot
-        journal: `batch.journal` object
-        file_id_level: the level (multiindex-level) where the cell-names are.
-        hdr_level:  the level (multiindex-level) where the parameter names are.
-        axis: what axis to use when looking in the data-frame (row-based or col-based).
-        mean_end: used for searching for y-column names
-        std_end: used for searching for e-column names
-        cycle_end: used for searching for x-column name
-        legend_title: title to put over the legend
-        marker_size: size of the markers used
-        cmap: color-map to use
-        spread (bool): plot error-bands instead of error-bars if True
-        extension (str): "matplotlib" or "bokeh". Note, this uses `hv.extension`) and will affect the
-            state of your notebook
-        edges (bool): show all axes
-        keys (dict): columns to plot (not working yet)
-        simple (bool): making a simple hv.Overlay instead of an hv.NdOverlay if True
-        **kwargs: key-word arguments sent to hv.NdOverlay
-
-    Example:
-        >>> my_mpl_plot = plot_concatenated(
-        >>>     cap_cycle_norm_fast_1000, journal=b.experiment.journal,
-        >>>     height=500, marker_size=5,
-        >>>     extension="matplotlib",
-        >>>     edges=True,
-        >>> )
-
-        >>> my_bokeh_plot = plot_concatenated(
-        >>>     cap_cycle_norm_fast_1000, journal=b.experiment.journal,
-        >>>     height=500, marker_size=5,
-        >>>     edges=True,
-        >>> )
-
-
-    Example:
-        >>> # Simple conversion from bokeh to matplotlib
-        >>> # NB! make sure you have only used matplotlib-bokeh convertable key-words (not marker_size)
-
-        >>> hv.extension("matplotlib")
-        >>> my_plot.opts(aspect="auto", fig_inches=(12,7), fig_size=90, legend_position="top_right",
-        >>>              legend_cols = 2,
-        >>>              show_frame=True)
-
-    """
-    # TODO: add option for using labels from journal in the legend
-    # TODO @jepe: refactor and use col names directly from HeadersNormal instead
-
-    warnings.warn(
-        "This utility function will be removed shortly", category=DeprecationWarning
-    )
-
-    if keys is None:
-        keys = dict()
-
-    if not hv_available:
-        print(
-            "This function uses holoviews. But could not import it."
-            "So I am aborting..."
-        )
-        return
-
-    if extension == "matplotlib":
-        hover = False
-    elif extension == "plotly":
-        print("The plotly backend might not work properly yet.")
-        print("Fingers crossed.")
-        print(
-            "(at least, make sure you are using the most "
-            "recent versions of jupyter, holoviews and plotly)"
-        )
-
-    try:
-        current_extension = hv.Store.current_backend
-        if extension != current_extension:
-            hv.extension(extension, logo=False)
-    except Exception as e:
-        hv.extension(extension, logo=False)
-
-    if hdr_level is None:
-        hdr_level = 0 if file_id_level == 1 else 1
-
-    averaged = True
-    columns = list(set(dataframe.columns.get_level_values(hdr_level)))
-    hdr_x, lab_x = find_column(columns, label=xlabel, end=cycle_end)
-    hdr_y, lab_y = find_column(columns, label=ylabel, end=mean_end)
-
-    if hdr_y is None:
-        averaged = False
-        errors = False
-        if hdr_x is not None:
-            columns.remove(hdr_x)
-        hdr_y = columns[0]
-        if ylabel is None:
-            lab_y = hdr_y.replace("_", " ")
-        else:
-            lab_y = ylabel
-    if errors:
-        hdr_e, _ = find_column(columns, end=std_end)
-
-    grouped = dataframe.groupby(axis=axis, level=file_id_level)
-    curve_dict = dict()
-
-    if not averaged and journal is not None:
-        journal_pages = journal.pages[
-            [hdr_journal["group"], hdr_journal["sub_group"]]
-        ].copy()
-        journal_pages["g"] = 0
-        journal_pages["sg"] = 0
-        markers = itertools.cycle(["s", "o", "<", "*", "+", "x"])
-        colors = itertools.cycle(hv.Cycle(cmap).values)
-
-        j = journal_pages.groupby(hdr_journal["group"])
-        for i, (jn, jg) in enumerate(j):
-            journal_pages.loc[journal_pages["group"] == jn, "g"] = i
-            journal_pages.loc[journal_pages["group"] == jn, "sg"] = list(range(len(jg)))
-
-        markers = [next(markers) for _ in range(journal_pages["sg"].max() + 1)]
-        colors = [next(colors) for _ in range(journal_pages["g"].max() + 1)]
-        journal_pages = journal_pages[["g", "sg"]]
-
-    for i, (name, group) in enumerate(grouped):
-        if name in keys:
-            label = keys[name]
-        else:
-            label = name
-            keys[name] = name
-
-        group.columns = group.columns.droplevel(file_id_level)
-        if hdr_x is None:
-            group = group.reset_index()
-            hdr_x = group.columns[0]
-
-        if lab_x is None:
-            lab_x = hdr_x.replace("_", " ")
-
-        if not averaged and journal is not None:
-            g = journal_pages.loc[name, "g"]
-            sg = journal_pages.loc[name, "sg"]
-            color = colors[g]
-            marker = markers[sg]
-            curve = hv.Curve(group, (hdr_x, lab_x), (hdr_y, lab_y), label=label).opts(
-                color=color
-            )
-
-        else:
-            curve = hv.Curve(group, (hdr_x, lab_x), (hdr_y, lab_y), label=label)
-
-        if points:
-            if not averaged and journal is not None:
-                scatter = hv.Scatter(curve).opts(color=color, marker=marker)
-
-                if edges and extension == "matplotlib":
-                    scatter = scatter.opts(edgecolor="k")
-
-                if edges and extension == "bokeh":
-                    scatter = scatter.opts(line_color="k", line_width=1)
-
-                if marker_size is not None and extension == "bokeh":
-                    scatter = scatter.opts(size=marker_size)
-            else:
-                scatter = hv.Scatter(curve)
-
-                if marker_size is not None and extension == "bokeh":
-                    scatter = scatter.opts(size=marker_size)
-
-        if points and line:
-            curve *= scatter
-
-        elif points:
-            curve = scatter
-
-        if errors:
-            if spread:
-                curve *= hv.Spread(group, hdr_x, [hdr_y, hdr_e])
-            else:
-                curve *= hv.ErrorBars(
-                    group, hdr_x, [hdr_y, hdr_e]
-                )  # should get the color from curve and set it here
-        curve_dict[label] = curve
-
-    if extension == "matplotlib":
-        overlay_opts = {
-            "aspect": "auto",
-            "fig_inches": (width * 0.016, height * 0.012),
-            "show_frame": True,
-        }
-    else:
-        overlay_opts = {"width": width, "height": height}
-
-    if simple:
-        if len(keys) == len(curve_dict):
-            new_curve_dict = {}
-            for k in keys:
-                new_curve_dict[k] = curve_dict[keys[k]]
-            curve_dict = new_curve_dict
-
-        final_plot = hv.Overlay(
-            [*curve_dict.values()], vdims=[*curve_dict.keys()]
-        ).opts(**overlay_opts, **kwargs)
-    else:
-        overlay_opts["title"] = title
-        logging.info(f"overlay_opts: {overlay_opts}")
-        logging.info(f"additional_kwargs_overlay_opts: {kwargs}")
-        final_plot = hv.NdOverlay(curve_dict, kdims=legend_title).opts(
-            **overlay_opts, **kwargs
-        )
-
-    if hover and not extension == "plotly":
-        if points:
-            final_plot.opts(opts.Scatter(tools=["hover"]))
-        else:
-            final_plot.opts(opts.Curve(tools=["hover"]))
-    return final_plot
-
-
 def create_colormarkerlist_for_journal(
     journal, symbol_label="all", color_style_label="seaborn-colorblind"
 ):
@@ -506,131 +187,494 @@ def create_colormarkerlist(
     return _color_list, _symbol_list
 
 
-def _raw_plot(raw_curve, title="Voltage versus time", **kwargs):
-    tgt = raw_curve.relabel(title).opts(
-        width=800,
-        height=300,
-        labelled=["y"],
-        # tools=["pan","box_zoom", "reset"],
-        active_tools=["pan"],
+def create_col_info(c):
+    """Create column information for summary plots."""
+
+    # TODO: add support for more column sets and individual columns
+    hdr = c.headers_summary
+    _cap_cols = [hdr.charge_capacity_raw, hdr.discharge_capacity_raw]
+    _capacities_gravimetric = [col + "_gravimetric" for col in _cap_cols]
+    _capacities_gravimetric_split = (
+        _capacities_gravimetric
+        + [col + "_cv" for col in _capacities_gravimetric]
+        + [col + "_non_cv" for col in _capacities_gravimetric]
     )
-    src = raw_curve.opts(width=800, height=100, yaxis=None, default_tools=[])
-
-    RangeToolLink(src, tgt)
-
-    layout = (tgt + src).cols(1)
-    layout.opts(opts.Layout(shared_axes=False, merge_tools=False))
-    return layout
-
-
-def raw_plot(cell, y=("voltage", "Voltage (V vs Li/Li+)"), title=None, **kwargs):
-    # TODO: missing doc-string
-
-    warnings.warn(
-        "This utility function will be replaced shortly", category=DeprecationWarning
+    _capacities_areal = [col + "_areal" for col in _cap_cols]
+    _capacities_areal_split = (
+        _capacities_areal
+        + [col + "_cv" for col in _capacities_areal]
+        + [col + "_non_cv" for col in _capacities_areal]
     )
+
+    x_columns = ([hdr.cycle_index, hdr.data_point, hdr.test_time, hdr.datetime],)
+    y_cols = dict(
+        voltages=[hdr.end_voltage_charge, hdr.end_voltage_discharge],
+        capacities_gravimetric=_capacities_gravimetric,
+        capacities_areal=_capacities_areal,
+        capacities_gravimetric_split_constant_voltage=_capacities_gravimetric_split,
+        capacities_areal_split_constant_voltage=_capacities_areal_split,
+    )
+    return x_columns, y_cols
+
+
+def create_label_dict(c):
+    hdr = c.headers_summary
+    x_axis_labels = {
+        hdr.cycle_index: "Cycle Number",
+        hdr.data_point: "Point",
+        hdr.test_time: f"Test Time ({c.cellpy_units.time})",
+        hdr.datetime: "Date",
+    }
+
+    _cap_gravimetric_label = (
+        f"Capacity ({c.cellpy_units.charge}/{c.cellpy_units.specific_gravimetric})"
+    )
+    _cap_areal_label = (
+        f"Capacity ({c.cellpy_units.charge}/{c.cellpy_units.specific_areal})"
+    )
+
+    y_axis_label = {
+        "voltages": f"Voltage ({c.cellpy_units.voltage})",
+        "capacities_gravimetric": _cap_gravimetric_label,
+        "capacities_areal": _cap_areal_label,
+        "capacities_gravimetric_split_constant_voltage": _cap_gravimetric_label,
+        "capacities_areal_split_constant_voltage": _cap_areal_label,
+    }
+    return x_axis_labels, y_axis_label
+
+
+def summary_plot(
+    c,
+    x: str = None,
+    y: str = "capacities_gravimetric",
+    height: int = 600,
+    markers: bool = True,
+    title=None,
+    x_range: list = None,
+    y_range: list = None,
+    split: bool = False,
+    interactive: bool = True,
+    share_y: bool = False,
+    rangeslider: bool = False,
+    **kwargs,
+):
+    """Create a summary plot. Currently only supports plotly.
+
+
+    Args:
+        c: cellpy object
+        x: x-axis column (default: cycle_index)
+        y: y-axis column or column set (predefined sets implemented are: "voltages",
+          "capacities_gravimetric", "capacities_areal", "capacities_gravimetric_split_constant_voltage",
+          "capacities_areal_split_constant_voltage")
+        height: height of the plot
+        markers: use markers
+        title: title of the plot
+        x_range: limits for x-axis
+        y_range: limits for y-axis
+        split: split the plot
+        interactive: use interactive plotting
+        rangeslider: add a range slider to the x-axis (only for plotly)
+        share_y (bool): share y-axis
+        **kwargs: additional parameters for the plotting backend
+
+    Returns:
+        plotly figure or None
+
+    """
+
+    if plotly_available and interactive:
+        import plotly.express as px
+    else:
+        warnings.warn(
+            "plotly not available, and it is currently the only supported backend"
+        )
+        return None
 
     if title is None:
-        if isinstance(y, (list, tuple)):
-            pre_title = str(y[0])
+        title = f"Summary <b>{c.cell_name}</b>"
+
+    if x is None:
+        x = "cycle_index"
+
+    x_columns, y_cols = create_col_info(c)
+    x_axis_labels, y_axis_label = create_label_dict(c)
+
+    # ------------------- main --------------------------------------------
+    y_header = "value"
+    color = "variable"
+
+    additional_kwargs = dict(
+        color=color,
+        height=height,
+        markers=markers,
+        title=title,
+    )
+
+    # filter on constant voltage vs constant current
+    if y.endswith("_split_constant_voltage"):
+        cap_type = (
+            "capacities_gravimetric"
+            if y.startswith("capacities_gravimetric")
+            else "capacities_areal"
+        )
+        column_set = y_cols[cap_type]
+        s = partition_summary_cv_steps(c, x, column_set, split, color, y_header)
+        if split:
+            additional_kwargs["facet_row"] = "row"
+
+    # simple case
+    else:
+        column_set = y_cols.get(y, y)
+        if isinstance(column_set, str):
+            column_set = [column_set]
+        summary = c.data.summary
+        summary = summary.reset_index()
+        s = summary.melt(x)
+        s = s.loc[s.variable.isin(column_set)]
+        s = s.reset_index(drop=True)
+
+    x_label = x_axis_labels.get(x, x)
+    y_label = y_axis_label.get(y, y)
+    fig = px.line(
+        s,
+        x=x,
+        y=y_header,
+        **additional_kwargs,
+        labels={
+            x: x_label,
+            y_header: y_label,
+        },
+        **kwargs,
+    )
+
+    if x_range is not None:
+        fig.update_layout(xaxis=dict(range=x_range))
+    if y_range is not None:
+        fig.update_layout(yaxis=dict(range=y_range))
+    elif split and not share_y:
+        fig.update_yaxes(matches=None)
+
+    if rangeslider:
+        fig.update_layout(xaxis_rangeslider_visible=True)
+
+    return fig
+
+
+def partition_summary_cv_steps(
+    c,
+    x: str,
+    column_set: list,
+    split: bool = False,
+    var_name: str = "variable",
+    value_name: str = "value",
+):
+    """Partition the summary data into CV and non-CV steps.
+
+    Args:
+        c: cellpy object
+        x: x-axis column name
+        column_set: names of columns to include
+        split: add additional column that can be used to split the data when plotting.
+        var_name: name of the variable column after melting
+        value_name: name of the value column after melting
+
+    Returns:
+        pandas DataFrame (melted with columns x, var_name, value_name, and optionally "row" if split is True)
+    """
+    import pandas as pd
+
+    summary = c.data.summary
+    summary = summary[column_set]
+
+    summary_no_cv = c.make_summary(
+        selector_type="non-cv", create_copy=True
+    ).data.summary[column_set]
+    summary_no_cv.columns = [col + "_non_cv" for col in summary_no_cv.columns]
+
+    summary_only_cv = c.make_summary(
+        selector_type="only-cv", create_copy=True
+    ).data.summary[column_set]
+    summary_only_cv.columns = [col + "_cv" for col in summary_only_cv.columns]
+
+    if split:
+        id_vars = [x, "row"]
+        summary_no_cv["row"] = "without CV"
+        summary_only_cv["row"] = "with CV"
+        summary["row"] = "all"
+    else:
+        id_vars = x
+
+    summary_no_cv = summary_no_cv.reset_index()
+    summary_only_cv = summary_only_cv.reset_index()
+    summary = summary.reset_index()
+
+    summary_no_cv = summary_no_cv.melt(
+        id_vars, var_name=var_name, value_name=value_name
+    )
+    summary_only_cv = summary_only_cv.melt(
+        id_vars, var_name=var_name, value_name=value_name
+    )
+    summary = summary.melt(id_vars, var_name=var_name, value_name=value_name)
+
+    s = pd.concat([summary, summary_no_cv, summary_only_cv], axis=0)
+    s = s.reset_index(drop=True)
+
+    return s
+
+
+def raw_plot(
+    cell,
+    y=None,
+    y_label=None,
+    x=None,
+    x_label=None,
+    title=None,
+    interactive=True,
+    **kwargs,
+):
+    # TODO: missing doc-string
+
+    raw = cell.data.raw.copy()
+
+    if y is None:
+        y, y_label = ("voltage", f"Voltage ({cell.data.raw_units.voltage})")
+    if x is None:
+        x, x_label = ("test_time_hrs", "Time (hours)")
+
+    if title is None:
+        title = f"{cell.cell_name}"
+
+    if x == "test_time_hrs":
+        raw["test_time_hrs"] = raw[hdr_raw["test_time_txt"]] / 3600
+
+    if plotly_available and interactive:
+        import plotly.express as px
+
+        title = f"<b>{title}</b>"
+        if x_label or y_label:
+            labels = {}
+            if x_label:
+                labels[x] = x_label
+            if y_label:
+                labels[y] = y_label
         else:
-            pre_title = str(y)
-        title = " ".join([pre_title, "versus", "time"])
+            labels = None
+        fig = px.line(raw, x=x, y=y, title=title, labels=labels, **kwargs)
 
-    if not _hv_bokeh_available():
-        return
+        return fig
 
-    hv.extension("bokeh", logo=False)
+    # default to a simple matplotlib figure
+    fig, ax = plt.subplots()
+    ax.plot(raw[x], raw[y])
+    ax.set_xlabel(x_label)
+    ax.set_ylabel(y_label)
+    ax.set_title(title)
 
-    raw = cell.data.raw
-    raw["test_time_hrs"] = raw[hdr_raw["test_time_txt"]] / 3600
-    x = ("test_time_hrs", "Time (hours)")
-    raw_curve = hv.Curve(raw, x, y)
-    layout = _raw_plot(raw_curve, title=title, **kwargs)
-    return layout
+    return ax
 
 
 def cycle_info_plot(
     cell,
-    cycle=None,
-    step=None,
-    title=None,
-    points=False,
-    x=None,
-    y=None,
-    info_level=1,
-    h_cycle=None,
-    h_step=None,
-    show_it=True,
-    label_cycles=True,
-    label_steps=False,
+    cycle,
     get_axes=False,
-    use_bokeh=True,
+    interactive=True,
+    t_unit="hours",
+    v_unit="V",
+    i_unit="mA",
     **kwargs,
 ):
     """Show raw data together with step and cycle information.
 
     Args:
         cell: cellpy object
-        cycle: cycles to select (optional, default is all)
-        step: steps to select (optional, defaults is all)
-        title: a title to give the plot
-        points: overlay a scatter plot
-        x (str): column header for the x-value (defaults to "Test_Time")
-        y (str): column header for the y-value (defaults to "Voltage")
-        info_level (int): how much information to display (defaults to 1)
-            (0 - almost nothing
-            1 - pretty much
-            2 - something else
-            3 - not implemented yet).
-        h_cycle: column header for the cycle number (defaults to "Cycle_Index")
-        h_step: column header for the step number (defaults to "Step_Index")
-        show_it (bool): show the figure (defaults to True). If not, return the figure.
-        label_cycles (bool): add labels with cycle numbers.
-        label_steps (bool): add labels with step numbers
-        get_axes (bool): return axes (for matplotlib)
-        use_bokeh (bool): use bokeh to plot (defaults to True). If not, use matplotlib.
-        **kwargs: parameters specific to either matplotlib or bokeh.
+        cycle (int or list or tuple): cycle(s) to select (must be int for matplotlib)
+        get_axes (bool): return axes (for matplotlib) or figure (for plotly)
+        interactive (bool): use interactive plotting (if available)
+        t_unit (str): unit for x-axis (default: "hours")
+        v_unit (str): unit for y-axis (default: "V")
+        i_unit (str): unit for current (default: "mA")
+        **kwargs: parameters specific to plotting backend.
 
     Returns:
         ``matplotlib.axes`` or None
     """
-    # TODO: missing doc-string
+    t_scaler = cell.unit_scaler_from_raw(t_unit, "time")
+    v_scaler = cell.unit_scaler_from_raw(v_unit, "voltage")
+    i_scaler = cell.unit_scaler_from_raw(i_unit, "current")
 
-    warnings.warn(
-        "This utility function will be replaced shortly", category=DeprecationWarning
-    )
-
-    if use_bokeh and not bokeh_available:
-        print("OBS! bokeh is not available - using matplotlib instead")
-        use_bokeh = False
-
-    if use_bokeh:
-        axes = _cycle_info_plot_bokeh(
+    if plotly_available and interactive:
+        fig = _cycle_info_plot_plotly(
             cell,
-            cycle=cycle,
-            step=step,
-            title=title,
-            points=points,
-            x=x,
-            y=y,
-            info_level=info_level,
-            h_cycle=h_cycle,
-            h_step=h_step,
-            show_it=show_it,
-            label_cycles=label_cycles,
-            label_steps=label_steps,
+            cycle,
+            get_axes,
+            t_scaler,
+            t_unit,
+            v_scaler,
+            v_unit,
+            i_scaler,
+            i_unit,
             **kwargs,
         )
-    else:
-        if isinstance(cycle, (list, tuple)):
-            if len(cycle) > 1:
-                print("OBS! The matplotlib-plotter only accepts single cycles.")
-                print(f"Selecting first cycle ({cycle[0]})")
-            cycle = cycle[0]
-        axes = _cycle_info_plot_matplotlib(cell, cycle, get_axes)
+        if get_axes:
+            return fig
+        return fig
+
+    axes = _cycle_info_plot_matplotlib(
+        cell,
+        cycle,
+        get_axes,
+        t_scaler,
+        t_unit,
+        v_scaler,
+        v_unit,
+        i_scaler,
+        i_unit,
+        **kwargs,
+    )
+
     if get_axes:
         return axes
+
+
+def _cycle_info_plot_plotly(
+    cell,
+    cycle,
+    get_axes,
+    t_scaler,
+    t_unit,
+    v_scaler,
+    v_unit,
+    i_scaler,
+    i_unit,
+    **kwargs,
+):
+    import plotly.express as px
+    import plotly.graph_objects as go
+    import numpy as np
+
+    if kwargs.get("xlim"):
+        logging.info("xlim is not supported for plotly yet")
+
+    raw_hdr = get_headers_normal()
+    step_hdr = get_headers_step_table()
+
+    data = cell.data.raw.copy()
+    table = cell.data.steps.copy()
+
+    if cycle is None:
+        cycle = list(data["cycle_index"].unique())
+
+    if not isinstance(cycle, (list, tuple)):
+        cycle = [cycle]
+
+    delta = "_delta"
+    v_delta = step_hdr["voltage"] + delta
+    i_delta = step_hdr["current"] + delta
+    c_delta = step_hdr["charge"] + delta
+    dc_delta = step_hdr["discharge"] + delta
+    cycle_ = step_hdr["cycle"]
+    step_ = step_hdr["step"]
+    type_ = step_hdr["type"]
+
+    time_hdr = raw_hdr["test_time_txt"]
+    cycle_hdr = raw_hdr["cycle_index_txt"]
+    step_number_hdr = raw_hdr["step_index_txt"]
+    current_hdr = raw_hdr["current_txt"]
+    voltage_hdr = raw_hdr["voltage_txt"]
+
+    data = data[
+        [
+            time_hdr,
+            cycle_hdr,
+            step_number_hdr,
+            current_hdr,
+            voltage_hdr,
+        ]
+    ]
+
+    table = table[
+        [
+            cycle_,
+            step_,
+            type_,
+            v_delta,
+            i_delta,
+            c_delta,
+            dc_delta,
+        ]
+    ]
+    m_cycle_data = data[cycle_hdr].isin(cycle)
+    data = data.loc[m_cycle_data, :]
+
+    data[time_hdr] = data[time_hdr] * t_scaler
+    data[voltage_hdr] = data[voltage_hdr] * v_scaler
+    data[current_hdr] = data[current_hdr] * i_scaler
+
+    data = data.merge(
+        table,
+        left_on=(cycle_hdr, step_number_hdr),
+        right_on=(cycle_, step_),
+    )
+
+    fig = go.Figure()
+
+    grouped_data = data.groupby(cycle_hdr)
+    for cycle_number, group in grouped_data:
+        x = group[time_hdr]
+        y = group[voltage_hdr]
+        s = group[step_number_hdr]
+        i = group[current_hdr]
+
+        st = group[type_]
+        dV = group[v_delta]
+        dI = group[i_delta]
+        dC = group[c_delta]
+        dDC = group[dc_delta]
+
+        fig.add_trace(
+            go.Scatter(
+                x=x,
+                y=y,
+                mode="lines",
+                name=f"cycle {cycle_number}",
+                customdata=np.stack((i, s, st, dV, dI, dC, dDC), axis=-1),
+                hovertemplate="<br>".join(
+                    [
+                        "<b>Time: %{x:.2f}" + f" {t_unit}" + "</b>",
+                        "  <b>Voltage:</b> %{y:.4f}" + f" {v_unit}",
+                        "  <b>Current:</b> %{customdata[0]:.4f}" + f" {i_unit}",
+                        "<b>Step: %{customdata[1]} (%{customdata[2]})</b>",
+                        "  <b>ΔV:</b> %{customdata[3]:.2f}",
+                        "  <b>ΔI:</b> %{customdata[4]:.2f}",
+                        "  <b>ΔCh:</b> %{customdata[5]:.2f}",
+                        "  <b>ΔDCh:</b> %{customdata[6]:.2f}",
+                    ]
+                ),
+            ),
+        )
+
+    cell_name = kwargs.get("title", cell.cell_name)
+    title_start = f"<b>{cell_name}</b> Cycle"
+    if len(cycle) > 2:
+        if cycle[-1] - cycle[0] == len(cycle) - 1:
+            title = f"{title_start}s {cycle[0]} - {cycle[-1]}"
+        else:
+            title = f"{title_start}s {cycle}"
+    elif len(cycle) == 2:
+        title = f"{title_start}s {cycle[0]} and {cycle[1]}"
+    else:
+        title = f"{title_start} {cycle[0]}"
+
+    fig.update_layout(
+        title=title,
+        xaxis_title=f"Time ({t_unit})",
+        yaxis_title=f"Voltage ({v_unit})",
+    )
+
+    if get_axes:
+        return fig
+    fig.show()
 
 
 def _plot_step(ax, x, y, color):
@@ -654,301 +698,22 @@ def _get_info(table, cycle, step):
     return [step_type, rate, current_max, d_voltage, d_current, d_discharge, d_charge]
 
 
-def _add_step_info_cols(df, table, cycles=None, steps=None, h_cycle=None, h_step=None):
-    if h_cycle is None:
-        h_cycle = "cycle_index"  # edit
-    if h_step is None:
-        h_step = "step_index"  # edit
-
-    col_name_mapper = {"cycle": h_cycle, "step": h_step}
-
-    df = df.merge(
-        table.rename(columns=col_name_mapper),
-        on=("cycle_index", "step_index"),
-        how="left",
-    )
-
-    return df
-
-
-def _cycle_info_plot_bokeh(
+def _cycle_info_plot_matplotlib(
     cell,
-    cycle=None,
-    step=None,
-    title=None,
-    points=False,
-    x=None,
-    y=None,
-    info_level=0,
-    h_cycle=None,
-    h_step=None,
-    show_it=False,
-    label_cycles=True,
-    label_steps=False,
+    cycle,
+    get_axes,
+    t_scaler,
+    t_unit,
+    v_scaler,
+    v_unit,
+    i_scaler,
+    i_unit,
     **kwargs,
 ):
-    """Plot raw data with annotations.
-
-    This function uses Bokeh for plotting and is intended for use in
-    Jupyter Notebooks.
-    """
-    # TODO: check that correct new column-names are used
-    # TODO: fix bokeh import (use e.g. import bokeh.io)
-
-    try:
-        from bokeh.io import output_notebook, show
-        from bokeh.layouts import column, row
-        from bokeh.models import ColumnDataSource, HoverTool, LabelSet
-        from bokeh.models.annotations import Span
-        from bokeh.models.widgets import Slider, TextInput
-        from bokeh.plotting import figure
-
-    except ImportError:
-        warnings.warn("Could not import bokeh")
-        return
-
-    try:
-        output_notebook(hide_banner=True)
-    finally:
-        sys.stdout = sys.__stdout__
-
-    if points:
-        if cycle is None or (len(cycle) > 1):
-            print("Plotting points only allowed when plotting one single cycle.")
-            print("Turning points off.")
-            points = False
-
-    if h_cycle is None:
-        h_cycle = "cycle_index"  # edit
-    if h_step is None:
-        h_step = "step_index"  # edit
-
-    if x is None:
-        x = "test_time"  # edit
-    if y is None:
-        y = "voltage"  # edit
-
-    if isinstance(x, tuple):
-        x, x_label = x
-    else:
-        x_label = x
-
-    if isinstance(y, tuple):
-        y, y_label = y
-    else:
-        y_label = y
-
-    t_x = x  # used in generating title - replace with a selector
-    t_y = y  # used in generating title - replace with a selector
-
-    if title is None:
-        title = f"{t_y} vs. {t_x}"
-
-    cols = [x, y]
-    cols.extend([h_cycle, h_step])
-
-    df = cell.data.raw.loc[:, cols]
-
-    if cycle is not None:
-        if not isinstance(cycle, (list, tuple)):
-            cycle = [cycle]
-
-        _df = df.loc[df[h_cycle].isin(cycle), :]
-        if len(cycle) < 5:
-            title += f" [c:{cycle}]"
-        else:
-            title += f" [c:{cycle[0]}..{cycle[-1]}]"
-        if _df.empty:
-            print(f"EMPTY (available cycles: {df[h_step].unique()})")
-            return
-        else:
-            df = _df
-
-    cycle = df[h_cycle].unique()
-
-    if step is not None:
-        if not isinstance(step, (list, tuple)):
-            step = [step]
-
-        _df = df.loc[df[h_step].isin(step), :]
-        if len(step) < 5:
-            title += f" (s:{step})"
-        else:
-            title += f" [s:{step[0]}..{step[-1]}]"
-        if _df.empty:
-            print(f"EMPTY (available steps: {df[h_step].unique()})")
-            return
-        else:
-            df = _df
-
-    x_min, x_max = df[x].min(), df[x].max()
-    y_min, y_max = df[y].min(), df[y].max()
-
-    if info_level > 0:
-        table = cell.data.steps
-        df = _add_step_info_cols(df, table, cycle, step)
-
-    source = ColumnDataSource(df)
-
-    plot = figure(
-        title=title,
-        tools="pan,reset,save,wheel_zoom,box_zoom,undo,redo",
-        x_range=[x_min, x_max],
-        y_range=[y_min, y_max],
-        **kwargs,
-    )
-
-    plot.line(x, y, source=source, line_width=3, line_alpha=0.6)
-
-    # labelling cycles
-    if label_cycles:
-        cycle_line_positions = [df.loc[df[h_cycle] == c, x].min() for c in cycle]
-        cycle_line_positions.append(df.loc[df[h_cycle] == cycle[-1], x].max())
-        for m in cycle_line_positions:
-            _s = Span(
-                location=m,
-                dimension="height",
-                line_color="red",
-                line_width=3,
-                line_alpha=0.5,
-            )
-            plot.add_layout(_s)
-
-        s_y_pos = y_min + 0.9 * (y_max - y_min)
-        s_x = []
-        s_y = []
-        s_l = []
-
-        for s in cycle:
-            s_x_min = df.loc[df[h_cycle] == s, x].min()
-            s_x_max = df.loc[df[h_cycle] == s, x].max()
-            s_x_pos = (s_x_min + s_x_max) / 2
-            s_x.append(s_x_pos)
-            s_y.append(s_y_pos)
-            s_l.append(f"c{s}")
-
-        c_labels = ColumnDataSource(data={x: s_x, y: s_y, "names": s_l})
-
-        c_labels = LabelSet(
-            x=x,
-            y=y,
-            text="names",
-            level="glyph",
-            source=c_labels,
-            render_mode="canvas",
-            text_color="red",
-            text_alpha=0.7,
-        )
-
-        plot.add_layout(c_labels)
-
-        # labelling steps
-    if label_steps:
-        for c in cycle:
-            step = df.loc[df[h_cycle] == c, h_step].unique()
-            step_line_positions = [
-                df.loc[(df[h_step] == s) & (df[h_cycle] == c), x].min()
-                for s in step[0:]
-            ]
-            for m in step_line_positions:
-                _s = Span(
-                    location=m,
-                    dimension="height",
-                    line_color="olive",
-                    line_width=3,
-                    line_alpha=0.1,
-                )
-                plot.add_layout(_s)
-
-            # s_y_pos = y_min + 0.8 * (y_max - y_min)
-            s_x = []
-            s_y = []
-            s_l = []
-
-            for s in step:
-                s_x_min = df.loc[(df[h_step] == s) & (df[h_cycle] == c), x].min()
-                s_x_max = df.loc[(df[h_step] == s) & (df[h_cycle] == c), x].max()
-                s_x_pos = s_x_min
-
-                s_y_min = df.loc[(df[h_step] == s) & (df[h_cycle] == c), y].min()
-                s_y_max = df.loc[(df[h_step] == s) & (df[h_cycle] == c), y].max()
-                s_y_pos = (s_y_max + s_y_min) / 2
-
-                s_x.append(s_x_pos)
-                s_y.append(s_y_pos)
-                s_l.append(f"s{s}")
-
-            s_labels = ColumnDataSource(data={x: s_x, y: s_y, "names": s_l})
-
-            s_labels = LabelSet(
-                x=x,
-                y=y,
-                text="names",
-                level="glyph",
-                source=s_labels,
-                render_mode="canvas",
-                text_color="olive",
-                text_alpha=0.3,
-            )
-
-            plot.add_layout(s_labels)
-
-    hover = HoverTool()
-    if info_level == 0:
-        hover.tooltips = [
-            (x, "$x{0.2f}"),
-            (y, "$y"),
-            ("cycle", f"@{h_cycle}"),
-            ("step", f"@{h_step}"),
-        ]
-    elif info_level == 1:
-        # insert C-rates etc here
-        hover.tooltips = [
-            (f"(x,y)", "($x{0.2f} $y"),
-            ("cycle", f"@{h_cycle}"),
-            ("step", f"@{h_step}"),
-            ("step_type", "@type"),
-            ("rate", "@rate_avr{0.2f}"),
-        ]
-
-    elif info_level == 2:
-        hover.tooltips = [
-            (x, "$x{0.2f}"),
-            (y, "$y"),
-            ("cycle", f"@{h_cycle}"),
-            ("step", f"@{h_step}"),
-            ("step_type", "@type"),
-            ("rate (C)", "@rate_avr{0.2f}"),
-            ("dv (%)", "@voltage_delta{0.2f}"),
-            ("I-max (A)", "@current_max"),
-            ("I-min (A)", "@current_min"),
-            ("dCharge (%)", "@charge_delta{0.2f}"),
-            ("dDischarge (%)", "@discharge_delta{0.2f}"),
-        ]
-
-    hover.mode = "vline"
-    plot.add_tools(hover)
-
-    plot.xaxis.axis_label = x_label
-    plot.yaxis.axis_label = y_label
-
-    if points:
-        plot.scatter(x, y, source=source, alpha=0.3)
-
-    if show_it:
-        show(plot)
-
-    return plot
-
-
-def _cycle_info_plot_matplotlib(cell, cycle, get_axes=False):
     # obs! hard-coded col-names. Please fix me.
-    if not plt_available:
-        print(
-            "This function uses matplotlib. But I could not import it. "
-            "So I decided to abort..."
-        )
-        return
+    if isinstance(cycle, (list, tuple)):
+        warnings.warn("Only one cycle at a time is supported for matplotlib")
+        cycle = cycle[0]
 
     data = cell.data.raw
     table = cell.data.steps
@@ -967,32 +732,30 @@ def _cycle_info_plot_matplotlib(cell, cycle, get_axes=False):
     fig.suptitle(f"Cycle: {cycle}")
 
     ax3 = plt.subplot2grid((8, 3), (0, 0), colspan=3, rowspan=1, fig=fig)  # steps
-    ax4 = plt.subplot2grid((8, 3), (1, 0), colspan=3, rowspan=2, fig=fig)  # rate
+    ax4 = plt.subplot2grid((8, 3), (1, 0), colspan=3, rowspan=2, fig=fig)  # info
     ax1 = plt.subplot2grid((8, 3), (3, 0), colspan=3, rowspan=5, fig=fig)  # data
 
     ax2 = ax1.twinx()
-    ax1.set_xlabel("time (minutes)")
-    ax1.set_ylabel("voltage (V vs. Li/Li+)", color=voltage_color)
-    ax2.set_ylabel("current (mA)", color=current_color)
+    ax1.set_xlabel(f"time ({t_unit})")
+    ax1.set_ylabel(f"voltage ({v_unit})", color=voltage_color)
+    ax2.set_ylabel(f"current ({i_unit})", color=current_color)
 
     annotations_1 = []  # step number (IR)
     annotations_2 = []  # step number
-    annotations_4 = []  # rate
+    annotations_4 = []  # info
 
     for i, s in enumerate(all_steps):
         m = m_cycle_data & (data.step_index == s)
-        c = data.loc[m, "current"] * 1000
-        v = data.loc[m, "voltage"]
-        t = data.loc[m, "test_time"] / 60
+        c = data.loc[m, "current"] * i_scaler
+        v = data.loc[m, "voltage"] * v_scaler
+        t = data.loc[m, "test_time"] * t_scaler
         step_type, rate, current_max, dv, dc, d_discharge, d_charge = _get_info(
             table, cycle, s
         )
         if len(t) > 1:
             fcolor = next(color)
 
-            info_txt = (
-                f"{step_type}\nc-rate = {rate}\ni = |{1000 * current_max:0.2f}| mA\n"
-            )
+            info_txt = f"{step_type}\ni = |{i_scaler * current_max:0.2f}| {i_unit}\n"
             info_txt += f"delta V = {dv:0.2f} %\ndelta i = {dc:0.2f} %\n"
             info_txt += f"delta C = {d_charge:0.2} %\ndelta DC = {d_discharge:0.2} %\n"
 
@@ -1019,408 +782,14 @@ def _cycle_info_plot_matplotlib(cell, cycle, get_axes=False):
         ax.axes.get_yaxis().set_visible(False)
         ax.axes.get_xaxis().set_visible(False)
 
+    if x := kwargs.get("xlim"):
+        ax1.set_xlim(x)
+        ax2.set_xlim(x)
+        ax3.set_xlim(x)
+        ax4.set_xlim(x)
+
     if get_axes:
         return ax1, ax2, ax2, ax4
-
-
-def save_fig(figure, file_name=None, wide=False, size=None, dpi=300, **kwargs):
-    """Save a figure, either a holoviews plot or a matplotlib figure.
-
-    This function should mainly be used when using the standard cellpy notebook
-    template (generated by '> cellpy new')
-
-    Args:
-        figure (obj): the figure or plot object
-        file_name (str): the file name
-        wide (bool): release the equal aspect lock (default on for holoviews)
-        size (int or tuple of ints): figure size in inches
-        dpi (int): resolution
-        **kwargs: sent to cellpy.utils.plotutils.hv_bokeh_to_mpl
-    """
-
-    warnings.warn(
-        "This utility function will be removed shortly", category=DeprecationWarning
-    )
-
-    out_path = Path("out/")
-    extension = "png"
-
-    if size is None:
-        size = (6, 6)
-
-    # create file name:
-    if file_name is None:
-        counter = 1
-        while True:
-            _file_name = f"cellpy-plot-{str(counter).zfill(3)}.{extension}"
-            _file_name = out_path / _file_name
-            if not os.path.isfile(_file_name):
-                break
-            counter += 1
-        file_name = _file_name
-
-    type_str = str(type(figure))
-
-    is_hv = type_str.find("holoviews") >= 0
-    is_mpl = type_str.find("matplotlib") >= 0
-
-    if is_mpl:
-        is_mpl_figure = type_str.find("figure.Figure") >= 0
-        is_mpl_axes = type_str.find(".axes.") >= 0
-        if not is_mpl_figure:
-            if is_mpl_axes:
-                figure = figure.get_figure()
-            else:
-                print("this matplotlib object is not supported")
-                print(type_str)
-                return
-
-        figure.savefig(file_name, dpi=dpi)
-    elif is_hv:
-        is_hv_nd_overlay = isinstance(figure, hv.core.overlay.NdOverlay)
-        is_hv_overlay = isinstance(figure, hv.core.overlay.Overlay)
-        is_hv_layout = isinstance(figure, hv.core.layout.Layout)
-
-        figure = hv_bokeh_to_mpl(figure, wide=wide, size=size, **kwargs)
-        figure.savefig(file_name, dpi=dpi)
-
-    else:
-        print("this figure object is not supported")
-        print(type_str)
-        return
-    print(f"saved to {file_name}")
-
-
-def hv_bokeh_to_mpl(figure, wide=False, size=(6, 4), **kwargs):
-    # I think this needs to be tackled differently. For example by setting hv.extension("matplotlib") and
-    # re-making the figure. Or making a custom renderer.
-    warnings.warn(
-        "This utility function will be removed shortly", category=DeprecationWarning
-    )
-    figure = hv.render(figure, backend="matplotlib")
-    axes = figure.axes
-    number_of_axes = len(axes)
-    if number_of_axes > 1:
-        for j, ax in enumerate(axes):
-            if j < number_of_axes - 1:
-                ax.set_xlabel("")
-            if j < number_of_axes - 1:
-                ax.get_legend().remove()
-            else:
-                handles, labels = ax.get_legend_handles_labels()
-                # This does not work:
-                # ax.legend(handles, labels, bbox_to_anchor=(1.05, 1), loc="upper_right")
-                # TODO: create new legend based on the ax data
-
-    if wide:
-        for axis in axes:
-            axis.set_aspect("auto")
-
-    figure.tight_layout()
-    figure.set_size_inches(size)
-
-    return figure
-
-
-def oplot(
-    b,
-    cap_ylim=None,
-    ce_ylim=None,
-    ir_ylim=None,
-    simple=False,
-    group_it=False,
-    spread=True,
-    capacity_unit="gravimetric",
-    capacity_unit_label=None,
-    internal_resistance_unit="Ohm",
-    **kwargs,
-):
-    """create a holoviews-plot containing Coulombic Efficiency, Capacity, and IR.
-
-    Args:
-        b (cellpy.batch object): the batch with the cells.
-        cap_ylim (tuple of two floats): scaling of y-axis for capacity plots.
-        ce_ylim (tuple of two floats): scaling of y-axis for c.e. plots.
-        ir_ylim (tuple of two floats): scaling of y-axis for i.r. plots.
-        simple (bool): if True, use hv.Overlay instead of hv.NdOverlay.
-        group_it (bool): if True, average pr group.
-        spread (bool): if True, show spread instead of error-bars.
-        capacity_unit (str): select "gravimetric", or "areal".
-        capacity_unit_label (str): shown in the plot title for the capacity plot
-            (defaults to mAh/g(a.m.) for gravimetric and mAh/cm2 for areal).
-        internal_resistance_unit (str): shown in the plot title for the ir plots (defaults to Ohm).
-
-    **kwargs:
-        Sent to plotutils.bplot.
-
-    Returns:
-        ``hv.Overlay`` or ``hv.NdOverlay``
-    """
-
-    warnings.warn(
-        "This utility function will be removed shortly", category=DeprecationWarning
-    )
-
-    extension = kwargs.pop("extension", "bokeh")
-
-    cap_colum_dict = {
-        "gravimetric": {
-            "discharge": "discharge_capacity_gravimetric",
-            "charge": "charge_capacity_gravimetric",
-            "unit": capacity_unit_label or "mAh/g(a.m.)",
-            "ylim": (0, 5000),
-        },
-        "areal": {
-            "discharge": "discharge_capacity_areal",
-            "charge": "charge_capacity_areal",
-            "unit": capacity_unit_label or "mAh/cm2",
-            "ylim": (0, 3),
-        },
-    }
-
-    if cap_ylim is not None:
-        cap_colum_dict[capacity_unit]["ylim"] = cap_ylim
-
-    if ce_ylim is None:
-        ce_ylim = (80, 120)
-
-    if ir_ylim is None:
-        ir_ylim = (0, 200)
-
-    overlay_sensitive_opts = {"ce": {}, "dcap": {}, "ccap": {}, "ird": {}, "irc": {}}
-
-    layout_sensitive_opts = {"ce": {}, "dcap": {}, "ccap": {}, "ird": {}, "irc": {}}
-
-    if extension == "bokeh":
-        overlay_sensitive_opts["ce"] = {"height": 150}
-        overlay_sensitive_opts["dcap"] = {"height": 400}
-        overlay_sensitive_opts["ccap"] = {"height": 150}
-        overlay_sensitive_opts["ird"] = {"height": 150}
-        overlay_sensitive_opts["irc"] = {"height": 150}
-
-    elif extension == "matplotlib":
-        simple = True
-        overlay_sensitive_opts["ce"] = {"aspect": 2}
-        overlay_sensitive_opts["dcap"] = {"aspect": 2}
-        overlay_sensitive_opts["ccap"] = {"aspect": 2}
-        overlay_sensitive_opts["ird"] = {"aspect": 2}
-        overlay_sensitive_opts["irc"] = {"aspect": 2}
-
-        hspace = 2
-        layout_sensitive_opts["ce"] = {"hspace": hspace}
-        layout_sensitive_opts["dcap"] = {"hspace": hspace}
-        layout_sensitive_opts["ccap"] = {"hspace": hspace}
-        layout_sensitive_opts["ird"] = {"hspace": hspace}
-        layout_sensitive_opts["irc"] = {"hspace": hspace}
-
-    bplot_shared_opts = {
-        "group_it": group_it,
-        "simple": simple,
-        "spread": spread,
-        "extension": extension,
-    }
-
-    if simple:
-        overlay_opts = hv.opts.Overlay
-        layout_opts = hv.opts.Layout
-    else:
-        overlay_opts = hv.opts.NdOverlay
-        layout_opts = hv.opts.NdLayout
-
-    # print("creating interactive plots")
-    oplot_ce = bplot(
-        b, columns=["coulombic_efficiency"], **bplot_shared_opts, **kwargs
-    ).opts(
-        hv.opts.Curve(ylim=ce_ylim),
-        overlay_opts(
-            title="",
-            show_legend=False,
-            xlabel="",
-            ylabel="C.E.",
-            **overlay_sensitive_opts["ce"],
-        ),
-        layout_opts(title="Coulombic efficiency (%)", **layout_sensitive_opts["ce"]),
-    )
-    # print(" - created oplot_ce")
-
-    oplot_dcap = bplot(
-        b,
-        columns=[cap_colum_dict[capacity_unit]["discharge"]],
-        **bplot_shared_opts,
-        **kwargs,
-    ).opts(
-        hv.opts.Curve(ylim=cap_colum_dict[capacity_unit]["ylim"]),
-        overlay_opts(
-            title="",
-            show_legend=True,
-            xlabel="",
-            ylabel="discharge",
-            **overlay_sensitive_opts["dcap"],
-        ),
-        layout_opts(
-            title=f"Capacity ({cap_colum_dict[capacity_unit]['unit']})",
-            **layout_sensitive_opts["dcap"],
-        ),
-    )
-    # print(" - created oplot_dcap")
-
-    oplot_ccap = bplot(
-        b,
-        columns=[cap_colum_dict[capacity_unit]["charge"]],
-        **bplot_shared_opts,
-        **kwargs,
-    ).opts(
-        hv.opts.Curve(ylim=cap_colum_dict[capacity_unit]["ylim"]),
-        overlay_opts(
-            title="",
-            show_legend=False,
-            xlabel="",
-            ylabel="charge",
-            **overlay_sensitive_opts["ccap"],
-        ),
-        layout_opts(title="", **layout_sensitive_opts["ccap"]),
-    )
-    # print(" - created oplot_ccap")
-
-    oplot_ird = bplot(b, columns=["ir_discharge"], **bplot_shared_opts, **kwargs).opts(
-        hv.opts.Curve(ylim=ir_ylim),
-        overlay_opts(
-            title="",
-            show_legend=False,
-            xlabel="",
-            ylabel="discharge",
-            **overlay_sensitive_opts["ird"],
-        ),
-        layout_opts(
-            title=f"Internal Resistance ({internal_resistance_unit})",
-            **layout_sensitive_opts["ird"],
-        ),
-    )
-
-    oplot_irc = bplot(b, columns=["ir_charge"], **bplot_shared_opts, **kwargs).opts(
-        hv.opts.Curve(ylim=ir_ylim),
-        overlay_opts(
-            title="",
-            show_legend=False,
-            ylabel="charge",
-            **overlay_sensitive_opts["irc"],
-        ),
-        layout_opts(title="", **layout_sensitive_opts["irc"]),
-    )
-
-    return (oplot_ce + oplot_dcap + oplot_ccap + oplot_ird + oplot_irc).cols(1)
-
-
-def bplot(b, individual=False, cols=1, **kwargs):
-    """plot batch summaries.
-
-    This is wrapper around the two functions concatenate_summaries and plot_concatenated.
-
-    >>> p1 = bplot(b, columns=["charge_capacity_gravimetric"], journal=b.experiment.journal, group_it=True)
-
-    is equivalent to:
-
-    >>> cs = helpers.concatenate_summaries(b, columns=["charge_capacity_gravimetric"], group_it=True)
-    >>> p1 = plot_concatenated(cs, journal=journal)
-
-    Args:
-        b (cellpy.batch object): the batch with the cells.
-        individual (bool): in case of multiple columns, return a list of plots instaed of a hv.Layout
-        cols (int): number of columns.
-
-    Key-word arguments sent further to the concatenator:
-
-    Keyword Args:
-        rate (float): filter on rate (C-rate)
-        on (str or list of str): only select cycles if based on the rate of this step-type (e.g. on="charge").
-        columns (list): selected column(s) (using cellpy attribute name) [defaults to "charge_capacity_gravimetric"]
-        column_names (list): selected column(s) (using exact column name)
-        normalize_capacity_on (list): list of cycle numbers that will be used for setting the basis of the normalization
-            (typically the first few cycles after formation)
-        scale_by (float or str): scale the normalized data with nominal capacity if "nom_cap", or given value (defaults to one).
-        nom_cap (float): nominal capacity of the cell
-        normalize_cycles (bool): perform a normalisation of the cycle numbers (also called equivalent cycle index)
-        add_areal (bool):  add areal capacity to the summary
-        group_it (bool): if True, average pr group.
-        rate_std (float): allow for this inaccuracy when selecting cycles based on rate
-        rate_column (str): name of the column containing the C-rates.
-        inverse (bool): select steps that do not have the given C-rate.
-        inverted (bool): select cycles that do not have the steps filtered by given C-rate.
-        journal (batch.journal object): the journal (will use the journal in b if not given).
-
-    Key-word arguments sent further to the plotter:
-
-    Keyword Args:
-        width (int): width of plot.
-        spread (bool): use error-spread instead of error-bars.
-        simple (bool): use ``hv.Overlay`` instead of ``hv.NdOverlay``.
-        extension (str): plotting backend.
-
-    Returns:
-        ``holoviews`` plot
-    """
-    warnings.warn(
-        "This utility function will be removed shortly", category=DeprecationWarning
-    )
-
-    width = kwargs.pop("width", 800)
-    journal = kwargs.pop("journal", b.experiment.journal)
-    spread = kwargs.pop("spread", True)
-    simple = kwargs.pop("simple", False)
-    columns = kwargs.pop("columns", ["charge_capacity_gravimetric"])
-    extension = kwargs.pop("extension", "bokeh")
-    if extension != "bokeh":
-        logging.critical(
-            f"Setting extension to {extension}. Remark that this will globally change the hv settings."
-        )
-    p = collections.OrderedDict()
-    i_width = width // cols
-    for i, col in enumerate(columns):
-        try:
-            cs = helpers.concatenate_summaries(b, columns=[col], **kwargs)
-            _p = plot_concatenated(
-                cs,
-                journal=journal,
-                spread=spread,
-                width=i_width,
-                extension=extension,
-                title=col,
-                simple=simple,
-            )
-
-            if i < len(columns) - 1:
-                _p.opts(show_legend=False)
-                if cols == 1:
-                    _p.opts(xlabel="")
-            else:
-                _p.opts(show_legend=True, legend_position="right")
-            # if (len(columns) > 1) and cols > 1:
-            #     _p.opts(frame_width=width)
-            if extension == "bokeh":
-                _p.opts(frame_width=width)
-            p[col] = _p
-
-        except KeyError as e:
-            print(f"Sorry - missing key: {col}")
-            logging.debug(e)
-
-    w = width / 180 * cols
-    h = 5 * len(p) / cols
-
-    if len(p) >= 1:
-        if not individual:
-            if simple:
-                out = hv.Layout(list(p.values())).cols(cols)
-            else:
-                out = hv.NdLayout(p, sort=False).cols(cols)
-            if extension == "matplotlib":
-                out.opts(fig_inches=(w, h))
-        else:
-            if extension == "matplotlib":
-                out = [o.opts(fig_inches=(w, h)) for o in p.values()]
-            else:
-                out = [p.values()]
-        return out
 
 
 if __name__ == "__main__":

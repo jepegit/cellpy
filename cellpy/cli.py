@@ -14,6 +14,7 @@ import urllib
 from pathlib import Path
 
 import click
+import rich
 
 import cellpy._version
 from cellpy.exceptions import ConfigFileNotWritten
@@ -31,7 +32,7 @@ try:
 except ModuleNotFoundError:
     txt = (
         "Could not import cookiecutter (used by cellpy new). Try installing it, for example by writing:"
-        "\npython -m pip install cookiecutter\n"
+        "\n\n         python -m pip install cookiecutter\n"
     )
     DIFFICULT_MISSING_MODULES["cookiecutter"] = txt
 
@@ -42,7 +43,7 @@ try:
 except ModuleNotFoundError:
     txt = (
         "Could not import the github library (used by cellpy pull). Try installing it, for example by writing:"
-        " \npython -m pip install github\n"
+        "\n\n         python -m pip install github\n"
     )
     DIFFICULT_MISSING_MODULES["github"] = txt
 
@@ -53,9 +54,8 @@ try:
 except ModuleNotFoundError:
     txt = (
         "Could not import the sqlalchemy_access library (usually used by when reading arbin .res files "
-        "on windows)."
-        "If you need it, try installing it by writing:"
-        " \npython -m pip install sqlalchemy-access\n"
+        "on windows). If you need it, try installing it by writing:"
+        "\n\n         python -m pip install sqlalchemy-access\n"
     )
     DIFFICULT_MISSING_MODULES["sqlalchemy-access"] = txt
 
@@ -66,8 +66,8 @@ try:
 except ModuleNotFoundError:
     txt = (
         "Could not import the lmfit library (used when fitting ocv rlx data)."
-        "If you think you will need it, try installing it for example by writing:"
-        " \npython -m pip install sqlalchemy-access\n"
+        " If you think you will need it, try installing it for example by writing:"
+        "\n\n         python -m pip install lmfit\n"
     )
     DIFFICULT_MISSING_MODULES["lmfit"] = txt
 
@@ -78,8 +78,8 @@ try:
 except ModuleNotFoundError:
     txt = (
         "Could not import the jinja2_time library (used by cellpy new)."
-        "Try installing it, for example by writing:"
-        " \npython -m pip install jinja2_time\n"
+        " Try installing it, for example by writing:"
+        "\n\n         python -m pip install jinja2_time\n"
     )
     DIFFICULT_MISSING_MODULES["jinja2_time"] = txt
 
@@ -98,7 +98,7 @@ def save_prm_file(prm_filename):
 
 def dump_env_file(env_filename):
     """saves (writes) the env to file"""
-    print("dumping env file to", env_filename)
+    click.echo(f" dumping env file to {env_filename}")
     prmreader._write_env_file(env_filename)
 
 
@@ -221,15 +221,14 @@ def setup(
     if not no_deps:
         click.echo("[cellpy] checking dependencies")
         for m in DIFFICULT_MISSING_MODULES:
-            click.echo(f"*** [cellpy] WARNING! ***")
-            click.echo(f"-------------------------")
+            click.echo(" [cellpy] WARNING! ".center(80, "-"))
             click.echo("[cellpy] missing dependencies:")
             click.echo(f"[cellpy] - {m}")
             click.echo(f"[cellpy] {DIFFICULT_MISSING_MODULES[m]}")
             click.echo(
                 "[cellpy] (you can skip this check by using the --no-deps option)"
             )
-            click.echo(f"-------------------------")
+            click.echo(80 * "-")
 
     # generate variables
     init_filename = prmreader.create_custom_init_filename()
@@ -266,12 +265,12 @@ def setup(
         click.echo(f"[cellpy] (setup) DEV-MODE dst_file: {dst_file}")
 
     if not pathlib.Path(dst_file).is_file():
-        click.echo(f"[cellpy] {dst_file} not found -> I will make one for you!")
+        click.echo(f"[cellpy] {dst_file} not found -> I will make one for you")
         reset = True
 
     if not pathlib.Path(env_file).is_file():
         click.echo(
-            f"[cellpy] {env_file} not found -> I will make one, but you must edit it yourself!"
+            f"[cellpy] {env_file} not found -> I will make one (but you must edit it yourself)"
         )
 
     if interactive:
@@ -301,7 +300,7 @@ def setup(
             )
         _write_config_file(user_dir, dst_file, init_filename, dry_run)
         _write_env_file(user_dir, env_file, dry_run)
-        _check(dry_run=dry_run)
+        _check(dry_run=dry_run, full_check=False)
 
 
 def _update_paths(
@@ -494,6 +493,8 @@ def _check_import_cellpy():
 
         return True
     except:
+        click.echo(" Failed to import cellpy")
+        click.echo(" Severity: critical")
         return False
 
 
@@ -507,7 +508,11 @@ def _check_import_pyodbc():
 
     use_subprocess = prms.Instruments.Arbin.use_subprocess
     detect_subprocess_need = prms.Instruments.Arbin.detect_subprocess_need
-    click.echo(f" reading prms")
+    click.echo(f" This is needed for loading Arbin .res files")
+    click.echo(f" parsing prms")
+    click.echo(
+        f" (from your configuration file if it exists, otherwise using defaults)"
+    )
     click.echo(f" - ODBC: {ODBC}")
     click.echo(f" - SEARCH_FOR_ODBC_DRIVERS: {SEARCH_FOR_ODBC_DRIVERS}")
     click.echo(f" - use_subprocess: {use_subprocess}")
@@ -546,22 +551,42 @@ def _check_import_pyodbc():
         command = ["command", "-v", sub_process_path]
 
         try:
-            result = run(command, stdout=PIPE, stderr=PIPE, universal_newlines=True)
+            click.echo(f" - trying to run {command}")
+            result = run(
+                command, stdout=PIPE, stderr=PIPE, universal_newlines=True, shell=True
+            )
             if result.returncode == 0:
-                click.echo(f" - found it: {result.stdout}")
-            else:
-                click.echo(f" - failed finding it")
+                click.echo(f" - found it!")
+                return True
+
+            click.echo(f" - could not find {sub_process_path}")
 
             if is_macos:
                 driver = "/usr/local/lib/libmdbodbc.dylib"
-                click.echo(f" looks like you are on a mac (driver set to\n {driver})")
+                click.echo(
+                    f" looks like you are on a mac. Searching for suitable driver: {driver})"
+                )
                 if not os.path.isfile(driver):
-                    click.echo(" - but cannot find it!")
+                    click.echo(f" - could not find {driver}")
+                    click.echo(
+                        " ! If you want to load Arbin .res files you will have to install it manually."
+                    )
+                    click.echo(" - Try installing it with brew:\n")
+                    click.echo("   brew install mdbtools")
                     return False
-            return True
+                click.echo(f" - found it: {driver}")
+                return True
+            else:
+                click.echo(
+                    " ! If you want to load Arbin .res files you will have to install it manually."
+                )
+                click.echo("   For example (for ubuntu):\n")
+                click.echo("   sudp apt-get update")
+                click.echo("   sudp apt-get install -y mdbtools")
+            return False
 
         except AssertionError:
-            click.echo(" - not found")
+            click.echo(" - could not find any suitable driver")
             return False
 
     # not posix - checking for odbc drivers
@@ -570,12 +595,12 @@ def _check_import_pyodbc():
         driver = prms.Instruments.Arbin.odbc_driver
         if not driver:
             raise AttributeError
-        click.echo("You have defined an odbc driver in your conifg file")
-        click.echo(f"driver: {driver}")
+        click.echo(" You have defined an odbc driver in your config file")
+        click.echo(f" - driver: {driver}")
     except AttributeError:
-        click.echo("FYI: you have not defined any odbc_driver(s)")
+        click.echo(" FYI: you have not defined any odbc_driver(s)")
         click.echo(
-            "(The name of the driver from the configuration file is "
+            " (The name of the driver from the configuration file is "
             "used as a backup when cellpy cannot locate a driver by itself)"
         )
 
@@ -620,31 +645,43 @@ def _check_import_pyodbc():
             for driver in dbloader.drivers()
             if "Microsoft Access Driver" in driver
         ]
-        click.echo(f"Found these: {drivers}")
+        click.echo(f" Found these: {drivers}")
         driver = drivers[0]
-        click.echo(f"odbc driver: {driver}")
+        click.echo(f" - odbc driver: {driver}")
         return True
 
     except IndexError as e:
-        logging.debug("Unfortunately, it seems the list of drivers is emtpy.")
+        logging.debug(" Unfortunately, it seems the list of drivers is emtpy.")
         click.echo(
-            "\nCould not find any odbc-drivers suitable for .res-type files. "
+            "\n Could not find any odbc-drivers suitable for .res-type files. "
             "Check out the homepage of pydobc for info on installing drivers"
         )
         click.echo(
-            "One solution that might work is downloading "
+            " One solution that might work is downloading "
             "the Microsoft Access database engine "
             "(in correct bytes (32 or 64)) "
             "from:\n"
             "https://www.microsoft.com/en-us/download/details.aspx?id=13255"
         )
-        click.echo("Or install mdbtools and set it up (check the cellpy docs for help)")
+        click.echo(
+            " Or install mdbtools and set it up (check the cellpy docs for help)"
+        )
         click.echo("\n")
         return False
 
 
 def _check_config_file():
     prm_file_name = _configloc()
+    env_file_name = _envloc()
+
+    if env_file_name is None:
+        click.echo(" FYI! Could not locate the environment file")
+
+    if prm_file_name is None:
+        click.echo(" Could not find the config file")
+        click.echo(" You can create one by running 'cellpy setup'")
+        return False
+
     prm_dict = prmreader._read_prm_file_without_updating(prm_file_name)
     try:
         prm_paths = prm_dict["Paths"]
@@ -662,10 +699,10 @@ def _check_config_file():
         missing = 0
         for k in required_dirs:
             value = prm_paths.get(k, None)
-            click.echo(f"{k}: {value}")
+            click.echo(f" - {k}: {value}")
             # splitting this into two if-statements to make it easier to debug if OtherPath changes
             if k in OTHERPATHS:
-                print(f"skipping check for external {k} (for now)")
+                print(f" skipping check for external {k} (for now)")
                 # if not OtherPath(
                 #     value
                 # ).is_dir():  # Assuming OtherPath returns True if it is external.
@@ -674,17 +711,17 @@ def _check_config_file():
                 #     click.echo(f"({value} is not a directory)")
             elif value and not pathlib.Path(value).is_dir():
                 missing += 1
-                click.echo("COULD NOT CONNECT!")
-                click.echo(f"({value} is not a directory)")
+                click.echo(" COULD NOT CONNECT!")
+                click.echo(f" ({value} is not a directory)")
             if not value:
                 missing += 1
-                click.echo("MISSING")
+                click.echo(" MISSING")
 
         value = prm_paths.get("db_filename", None)
-        click.echo(f"db_filename: {value}")
+        click.echo(f" - db_filename: {value}")
         if not value:
             missing += 1
-            click.echo("MISSING")
+            click.echo(" MISSING")
 
         if missing:
             return False
@@ -692,12 +729,12 @@ def _check_config_file():
             return True
 
     except Exception as e:
-        click.echo("Following error occurred:")
+        click.echo(" Following error occurred:")
         click.echo(e)
         return False
 
 
-def _check(dry_run=False):
+def _check(dry_run=False, full_check=True):
     click.echo(" checking ".center(80, "="))
     if dry_run:
         click.echo("*** dry-run: skipping the test")
@@ -716,8 +753,21 @@ def _check(dry_run=False):
         click.echo(80 * "-")
         return failed
 
-    check_types = ["cellpy imports", "importing pyodbc", "configuration (prm) file"]
-    check_funcs = [_check_import_cellpy, _check_import_pyodbc, _check_config_file]
+    check_types = [
+        "cellpy imports",
+        "importing pyodbc",
+    ]
+    check_funcs = [
+        _check_import_cellpy,
+        _check_import_pyodbc,
+    ]
+
+    # additional checks that require loading the config file (not a part of setup)
+    additional_types = ["configuration files"]
+    additional_funcs = [_check_config_file]
+    if full_check:
+        check_types.extend(additional_types)
+        check_funcs.extend(additional_funcs)
 
     for ct, cf in zip(check_types, check_funcs):
         try:
@@ -725,9 +775,13 @@ def _check(dry_run=False):
         except Exception as e:
             click.echo(f"[cellpy] check raised an exception ({e})")
         number_of_checks += 1
+    click.echo(" results ".center(80, "="))
     succeeded_checks = number_of_checks - failed_checks
+
     if failed_checks > 0:
-        click.echo(f"[cellpy] OH NO!!! You (or I) failed!")
+        click.echo(
+            f"[cellpy] Some of the checks failed! This could potentially be a problem."
+        )
         click.echo(f"[cellpy] Failed {failed_checks} out of {number_of_checks} checks.")
     else:
         click.echo(
@@ -785,12 +839,12 @@ def _write_config_file(user_dir, dst_file, init_filename, dry_run):
 def _write_env_file(user_dir, dst_file, dry_run):
     click.echo(" update configuration ".center(80, "-"))
     click.echo("[cellpy] (setup) Writing environment file:")
-    click.echo(f"\n         {user_dir}\n")
+    click.echo(f"\n         {dst_file}\n")
 
     if os.path.isfile(dst_file):
         click.echo(f"[cellpy] (setup) Environment file {dst_file} already exists!")
-        return
-
+        if not dry_run:
+            return
     try:
         if dry_run:
             click.echo(
@@ -915,7 +969,7 @@ def edit(name, default_editor, debug, silent):
     "--check",
     "-c",
     is_flag=True,
-    help="Do a sanity check to see if things" " works as they should.",
+    help="Do a sanity check to see if things works as they should.",
 )
 def info(version, configloc, params, check):
     """This will give you some valuable information about your cellpy."""
@@ -1338,13 +1392,13 @@ def _pull_examples(directory, pw):
 
 
 def _version():
-    txt = "[cellpy] version: " + str(VERSION)
-    click.echo(txt)
+    version_text = "[cellpy] version: " + str(VERSION)
+    click.echo(version_text)
 
 
 def _configloc():
     _, config_file_name = prmreader.get_user_dir_and_dst()
-    click.echo("[cellpy] ->%s" % config_file_name)
+    click.echo(f"[cellpy] -> {config_file_name}")
     if not os.path.isfile(config_file_name):
         click.echo("[cellpy] File does not exist!")
     else:
@@ -1352,15 +1406,15 @@ def _configloc():
 
 
 def _envloc():
-    click.echo(f"[cellpy] ->{prmreader.get_env_file_name()}")
-    if not os.path.isfile(prmreader.get_env_file_name()):
-        click.echo("[cellpy] File does not exist!")
-    else:
-        return prmreader.get_env_file_name()
+    env_file_name = prmreader.get_env_file_name()
+    click.echo(f"[cellpy] (from config) -> {env_file_name}")
+    if not os.path.isfile(env_file_name):
+        return
+    return env_file_name
 
 
 def _dump_params():
-    click.echo("[cellpy] Dumping parameters to screen:\n")
+    click.echo("[cellpy] Running prmreader.info:\n")
     prmreader.info()
 
 
@@ -1915,9 +1969,6 @@ def check_it(var=None):
     p_env = pathlib.Path(sys.prefix)
     print(p_env.name)
     new(list_=True)
-
-
-if __name__ == "__main__":
     u1 = os.getlogin()
     u2 = os.path.expanduser("~")
     u3 = os.environ.get("USERNAME")
@@ -1935,3 +1986,11 @@ if __name__ == "__main__":
     # click.echo("\n\n", " RUNNING MAIN PULL ".center(80, "*"), "\n")
     _main_pull()
     # click.echo("ok")
+
+
+def check_info_check():
+    _check()
+
+
+if __name__ == "__main__":
+    check_info_check()
