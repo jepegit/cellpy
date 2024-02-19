@@ -1,4 +1,4 @@
-![cellpy-icon](static/cellpy-icon-long.svg)
+<img src="static/cellpy-icon-long.svg" height="300" alt="cellpy-icon">
 
 # - *a library for assisting in analysing batteries and cells*
 
