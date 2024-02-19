@@ -3,14 +3,20 @@
 ============
 Installation
 ============
-``cellpy`` is available on (Windows :ref:`_Cellpy_Install_Windows`) and Linux (:ref:`Cellpy_Setup_Linux`)) and can be installed using ``pip``
-or ``conda``, or from source (:ref:`_Cellpy_Install_Sources`).
+``cellpy`` is available on (Windows :ref:`_Cellpy_Install_Windows`) and  (Linux :ref:`Cellpy_Setup_Linux`) and can be installed using ``pip``
+or ``conda``, or (from source :ref:`_Cellpy_Install_Sources`).
 
 For more details on dependencies, have a look (here :ref:`Cellpy_Dependencies`).
 
 For a tea-spoon explanation on how to install ``cellpy`` on windows, including the
 installation of python and setup of virtual environments, (see below
 :ref:`Cellpy_Setup_Teaspoon`).
+
+
+
+After installing ``cellpy``, continue to
+- :ref: `Setup and configuration`
+- :ref: `Check your cellpy installation`
 
 .. _Cellpy_Install_Windows:
 
@@ -90,6 +96,13 @@ Conda
 -----
 This is how to install ``cellpy`` using conda on Linux.
 Be aware that you might have to install additional packages.
+
+This includes ``libobdc``, that can be installed on Ubuntu like this:
+
+.. code-block:: console
+
+    sudo apt update
+    sudo apt install unixodbc-dev
 
 
 Pip
@@ -259,12 +272,4 @@ To finally install ``cellpy`` in your activated ``cellpy`` environment in the An
 Congratulations, you have (hopefully) successfully installed cellpy.
 
 If you run into problems, doublecheck that all your dependencies are
-installed and check your Microsoft Access odbc drivers.
-
-
-
-
-
-
-Review and include what is currently written in
-https://cellpy.readthedocs.io/en/latest/examples_and_tutorials/basics.html#setting-up-cellpy-on-windows-for-complete-beginners
+installed (see (here :ref:`Cellpy_Dependencies`)) and check your Microsoft Access odbc drivers.

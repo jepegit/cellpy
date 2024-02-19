@@ -5,6 +5,6 @@ Getting started
     :maxdepth: 2
 
     installation.rst
-    checkup.rst
     configuration.rst
+    checkup.rst
 
