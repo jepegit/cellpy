@@ -5,7 +5,7 @@ build:
   tools:
     python: "mambaforge-22.9"
 
-formats: all
+#formats: all
 
 sphinx:
     configuration: docs/conf.py
