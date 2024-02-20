@@ -11,7 +11,7 @@ researchers at IFE, Norway, in their cumbersome task of
 interpreting and handling data from cycling tests of
 batteries and cells.
 
-## Features
+# Features
 
 - Load battery test-data from different testers and formats
 - Convert testing data into a common format
@@ -19,8 +19,4 @@ batteries and cells.
 - Filter out the steps of interest
 - Process and plot the data
 - Do simple and advanced analysis on single datasets as well as collections of datasets
-- And more...
-
-## Licence
-
-`cellpy` is free software made available under the MIT License.
+- And more!
