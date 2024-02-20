@@ -1,15 +1,12 @@
-```{highlight} shell
-```
-
 # Installation
 
-`cellpy` is available on [Windows](#cellpy_install_windows) and [Linux](#cellpy_install_linux) and can be installed using `pip`
-or `conda`, or [installed from sources](#cellpy_install_sources).
+`cellpy` is available on {ref}`Windows <cellpy_install_windows>` and {ref}`Linux <cellpy_install_linux>` and can be
+installed using `pip` or `conda`, or {ref}`installed from sources <cellpy_install_sources>`.
 
-For more details on dependencies, have a look at [cellpy dependencies](#cellpy_dependencies).
+For more details on dependencies, have a look at {ref}`cellpy dependencies <cellpy_dependencies>`.
 
-For a tea-spoon explanation on how to install `cellpy` on Windows, including the
-installation of Python and setup of virtual environments, [see below](#cellpy_setup_teaspoon).
+For a teaspoon explanation on how to install `cellpy` on Windows, including the
+installation of Python and setup of virtual environments, {ref}`see below <cellpy_setup_teaspoon>`.
 
 After installing `cellpy`, continue to
 - [Setup and configuration](configuration.md)
@@ -22,21 +19,21 @@ After installing `cellpy`, continue to
 The easiest way to install cellpy is by using conda:
 
 ```console
-$ conda install -c conda-forge cellpy
+conda install -c conda-forge cellpy
 ```
 
-This will also install all of the critical dependencies, as well as `jupyter`
+This will also install all the critical dependencies, as well as `jupyter`
 that comes in handy when working with cellpy.
 
-In general, we recommend to install cellpy in a virtual environment (if
-you do not know what this means, have a look the [teaspoon explanation](#cellpy_setup_teaspoon)).
+In general, we recommend to install cellpy in a virtual environment (if you do not know what this means,
+have a look the at the {ref}`teaspoon explanation <cellpy_setup_teaspoon>`).
 
 ### Pip
 
 If you would like to install 'only' cellpy, you can use pip:
 
 ```console
-$ pip install cellpy
+pip install cellpy
 ```
 
 Note that `cellpy` uses several packages that are a bit cumbersome to install
@@ -48,27 +45,70 @@ based on the provided [environment.yml](https://github.com/jepegit/cellpy/blob/m
 :::
 
 (cellpy_install_linux)=
-## Installation on Linux
+## Installation on Linux (and macOS)
+
+It is especially recommended to install `cellpy` in a virtual environment on Linux and macOS.
 
 ### Conda
 
-This is how to install `cellpy` using conda on Linux.
-Be aware that you might have to install additional packages.
-
-This includes, e.g., `libobdc`, that can be installed on Ubuntu like this:
+To be able to get a fully functional installation of `cellpy` on Linux using`conda`,
+you might need to install some additional packages. For parsing .res files, you must have
+the `mdbtools` installed. If it is missing, you install it with the Linux package manager, for example:
 
 ```console
-$ sudo apt update
-$ sudo apt install unixodbc-dev
+sudo apt update
+sudo apt-get install -y mdbtools
+```
+
+For macOS, you can use `brew`:
+
+```console
+brew install mdbtools
+```
+
+Then you can install `cellpy` using conda:
+
+```console
+conda install -c conda-forge cellpy
 ```
 
 ### Pip
 
-This is how to install `cellpy` using pip on Linux.
-Be aware that you might have to install additional packages.
+Installing `cellpy` using pip on Linux might be a bit more cumbersome than using conda.
+A recipe that seems to work well in most cases is to first install the `mdbtools` (and possibly also `unixodbc`)
+and then install `cellpy` using pip. For example, on Ubuntu, you can do this by running the following commands
+in a terminal:
+
+```console
+# if you do not have sudo access, you can try without sudo also (not tested).
+sudo apt-get update
+sudo apt-get install -y mdbtools
+sudo apt install unixodbc-dev
+python -m pip install --user cellpy
+```
+You might also lack hdf5 support, and you can most likely install this using:
+
+```console
+sudo apt-get install libhdf5-serial-dev
+```
+
+:::{hint}
+To get `cellpy` up and running with Mac M chip, the following steps might work for you as it did for us
+(or more precisely, for our GitHub action):
+
+```console
+brew install mdbtools
+python -m pip install cython
+brew install hdf5
+brew install c-blosc
+export HDF5_DIR=/opt/homebrew/opt/hdf5
+export BLOSC_DIR=/opt/homebrew/opt/c-blosc
+python -m pip install tables
+python -m pip install cellpy
+```
+:::
 
 (cellpy-install-sources)=
-
 ## Installation from sources
 
 The sources for `cellpy` can be downloaded from the [Github repo].
@@ -76,7 +116,7 @@ The sources for `cellpy` can be downloaded from the [Github repo].
 You can clone the public repository by:
 
 ```console
-$ git clone git://github.com/jepegit/cellpy
+git clone git://github.com/jepegit/cellpy
 ```
 
 To make sure to install all the required dependencies, we recommend
@@ -84,13 +124,14 @@ to create an environment based the provided
 [environment.yml](https://github.com/jepegit/cellpy/blob/master/environment.yml) file:
 
 ```console
-$ conda env create -f environment.yml
+conda env create -f environment.yml
+conda activate cellpy
 ```
 
 Once you have a copy of the source, you can install cellpy using pip:
 
 ```console
-$ pip install -e .
+$ python -m pip install -e .
 ```
 
 (assuming that you are in the project folder, *i.e.* the folder that
@@ -128,7 +169,7 @@ conda install -c conda-forge pytables
 conda install -c conda-forge lmfit
 ```
 
-- `holoviz` and `plotly`: plotting library used in several of our example notebooks.
+- `seaborn` and `plotly`: plotting library used in several of our example notebooks.
 - `jupyter`: used for tutorial notebooks and in general very useful tool
   for working with and sharing your `cellpy` results.
 
@@ -136,16 +177,14 @@ For more details, have a look at the documentation of these packages.
 
 ### Additional requirements for .res files
 
-:::{note}
-Note! .res files from Arbin testers are actually in a Microsoft Access format.
+(note_windows)=
+:::{admonition} For Windows users
+.res files from Arbin testers are actually in a Microsoft Access format.
+If you do not have one of the most recent Office  versions, you might not be allowed to install a driver
+of different bit than your office version is using (the installers can be found [here](https://www.microsoft.com/en-US/download/details.aspx?id=13255)).
+Also remark that the driver needs to be of the same bit as your Python
+(so, if you are using 32 bit Python, you will need the 32 bit driver).
 :::
-
-- **For Windows users:** if you do not have one of the most recent Office
-  versions, you might not be allowed to install a driver
-  of different bit than your office version is using (the installers can be found
-  [here](https://www.microsoft.com/en-US/download/details.aspx?id=13255)).
-  Also remark that the driver needs to be of the same bit as your Python
-  (so, if you are using 32 bit Python, you will need the 32 bit driver).
 
 If you run into issues when trying to load .res files, try to install
 `sqlalchemy-access`:
@@ -154,14 +193,15 @@ If you run into issues when trying to load .res files, try to install
 pip install sqlalchemy-access
 ```
 
-- **For POSIX systems:** I have not found any suitable drivers. Instead,
-  `cellpy` will try to use `mdbtools` to first export the data to
-  temporary csv-files, and then import from those csv-file (using the
-  `pandas` library). You can install `mdbtools` using your systems
-  preferred package manager (*e.g.* `apt-get install mdbtools`).
+:::{admonition} For POSIX systems
+I have not found any suitable drivers. Instead, `cellpy` will try to use `mdbtools` to first export the data to
+temporary csv-files, and then import from those csv-file (using the`pandas` library).
+You can install `mdbtools` using your systems preferred package manager (*e.g.* `apt-get install mdbtools` on
+ubuntu or if you are on macOS, try `brew install mdbtools`).
+:::
 
 (cellpy_setup_teaspoon)=
-## The tea-spoon explanation including installation of Python
+## The teaspoon explanation including installation of Python
 
 This guide provides step-by-step instructions for installing cellpy on a Windows system,
 especially tailored for beginners.
@@ -179,7 +219,7 @@ weaker 32 bit version). Download it and let it install.
 :::{caution}
 The bin version matters sometimes, so try to make a mental note
 of what you selected. E.g., if you plan to use the Microsoft Access odbc
-driver (see below), and it is 32-bit, you probably should chose to install
+driver ({ref}`see above <note_windows>`), and it is 32-bit, you should probably go for
 a 32-bit python version).
 :::
 
@@ -191,8 +231,8 @@ as it should.
 
 ### 2. Create a virtual environment
 
-A virtual environment is a tool that helps to keep dependencies required by different projects separate by creating isolated
-Python environments for them.
+A virtual environment is a tool that helps to keep dependencies required by different
+projects separate by creating isolated Python environments for them.
 
 Create a virtual conda environment called `cellpy` (the name is not
 important, but it should be a name you are able to remember) by following
@@ -224,4 +264,4 @@ conda install -c conda-forge cellpy
 Congratulations, you have (hopefully) successfully installed cellpy.
 
 If you run into problems, doublecheck that all your dependencies are
-installed (see [here](#cellpy_dependencies)) and check your Microsoft Access odbc drivers.
+installed (see [here](#cellpy_dependencies)).
