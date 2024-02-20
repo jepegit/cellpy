@@ -4,7 +4,7 @@ include AUTHORS.md
 include CONTRIBUTING.md
 include HISTORY.md
 include LICENSE
-include README.rst
+include README.md
 include cellpy/logging.json
 recursive-include cellpy/parameters *_default.conf
 recursive-include cellpy/utils/data/raw  *.res

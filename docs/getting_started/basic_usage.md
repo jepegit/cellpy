@@ -53,11 +53,17 @@ the HDF5 file format, and will include the data as well as your summary and step
 >>> c.save("cellpyfiles/20141030_CELL_6_cc_0.h5")
 ```
 
-You can also save your data in csv-format easily by:
+The cellpy format is much faster to load than the raw-file formats typically encountered. It also includes the summary and step-tables, and it is easy to add more data to the file later on.
+
+You can also save your data in csv-format easily by using the method `to_csv´:
 
 ```
 >>> c.to_csv(out_folder)
 ```
+
+:::{note}
+The CellpyCell objects store the data (including the summary and step-tables) in pandas DataFrames. This means that you can easily export the data to other formats, such as Excel, by using the to_excel method of the DataFrame object. In addition, CellpyCell objects have a method called to_excel that exports the data to an Excel file.
+:::
 
 ### 4. Basic operations
 Maybe you want to take a closer look at the capacities for the different cycles?
@@ -87,5 +93,23 @@ Have a look at the examples and notebooks [here](examples/index.md) or on [Githu
 
 
 ## Convenience methods and tools
+Now lets try to create some dQ/dV plots. dQ/dV is a plot of the change in capacity (Q) with respect to the change in voltage (V). It is often used in battery analysis to observe specific electrochemical reactions. Here’s how to create and plot one:
 
-Add an example here, provide more in [examples and notebooks](examples/index.md).
+```
+>>> import matplotlib.pyplot as plt
+>>> import cellpy.utils.ica as ica
+
+>>> dqdv = ica.dqdv_frames(c, cycle=[1, 10, 100], voltage_resolution=0.01)
+
+>>> plt.figure(figsize=(10, 8))
+>>> plt.plot(dqdv["v"], dqdv["dq"], label="dQ/dV")
+>>> plt.xlabel("Voltage (V)")
+>>> plt.ylabel("dQ/dV (Ah/V)")
+>>> plt.legend()
+>>> plt.grid(True)
+>>> plt.show()
+```
+
+Remember that the process of creating a dQ/dV plot can be quite memory-intensive, especially for large datasets, so it may take a while for the plot to appear.
+
+For more examples, have a look in [examples and notebooks](examples/index.md).
