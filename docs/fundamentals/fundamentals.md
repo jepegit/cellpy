@@ -1,4 +1,4 @@
-# The fundamentals of `cellpy`
+# The fundamentals of cellpy
 `cellpy` is implemented in Python and can be used as either a library within Python scripts, or as a stand-alone application for analysing battery cell test data. Internally, `cellpy` utilises the rich ecosystem of scientific tools available for Python. In particular, `cellpy` uses `pandas` DataFrames as the “storage containers” for the collected data within the `cellpy` Data object. This offers full flexibility and makes it easy for the user to apply advanced methods, analyses of or transformations to the data in addition to the features implemented in `cellpy`.
 
 ## The CellpyCell
