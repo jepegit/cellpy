@@ -148,6 +148,13 @@ Note! .res files from Arbin testers are actually in a Microsoft Access format.
   Also remark that the driver needs to be of the same bit as your Python
   (so, if you are using 32 bit Python, you will need the 32 bit driver).
 
+If you run into issues when trying to load .res files, try to install
+`sqlalchemy-access`:
+
+```console
+pip install sqlalchemy-access
+```
+
 - **For POSIX systems:** I have not found any suitable drivers. Instead,
   `cellpy` will try to use `mdbtools` to first export the data to
   temporary csv-files, and then import from those csv-file (using the
