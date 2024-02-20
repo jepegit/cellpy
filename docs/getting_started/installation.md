@@ -29,7 +29,7 @@ This will also install all of the critical dependencies, as well as `jupyter`
 that comes in handy when working with cellpy.
 
 In general, we recommend to install cellpy in a virtual environment (if
-you do not know what this means, have a look the [tea-spoon explanation](#cellpy_setup_teaspoon)).
+you do not know what this means, have a look the [teaspoon explanation](#cellpy_setup_teaspoon)).
 
 ### Pip
 
@@ -81,7 +81,7 @@ $ git clone git://github.com/jepegit/cellpy
 
 To make sure to install all the required dependencies, we recommend
 to create an environment based the provided
-[environment.yml](https://github.com/jepegit/cellpy/blob/master/environment.yml)` file:
+[environment.yml](https://github.com/jepegit/cellpy/blob/master/environment.yml) file:
 
 ```console
 $ conda env create -f environment.yml
@@ -161,8 +161,7 @@ pip install sqlalchemy-access
   `pandas` library). You can install `mdbtools` using your systems
   preferred package manager (*e.g.* `apt-get install mdbtools`).
 
-(cellpy-setup-teaspoon)=
-
+(cellpy_setup_teaspoon)=
 ## The tea-spoon explanation including installation of Python
 
 This guide provides step-by-step instructions for installing cellpy on a Windows system,
