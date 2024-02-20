@@ -67,5 +67,4 @@ Contributing
 
 Contributions are welcome, and they are greatly appreciated! Every
 little bit helps, and credit will always be given. If you want to contribute,
-please have a look at these guidelines :ref:`Contributing`.
-
+please have a look at contributing guidelines.
