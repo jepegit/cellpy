@@ -507,7 +507,6 @@ def build(
         print(" Using token from environment (PYPI_TOKEN).")
         try:
             password = os.environ["PYPI_TOKEN"]
-            c.run(f"python -m twine upload dist/* -u __token__ -p {password}")
         except Exception:
             print("Could not extract token from environment")
             print("For it to work you need to export PYPI_TOKEN")
@@ -515,6 +514,14 @@ def build(
             print("or add it to your .env file.")
             print("Running upload (insert username and password when prompted)")
             c.run("python -m twine upload dist/*")
+        else:
+            try:
+                c.run(f"python -m twine upload dist/* -u __token__ -p {password}")
+            except Exception:
+                print("Could not upload to pypi.")
+                print("Maybe you forgot to bump the version number?")
+                print("You might need to run the following command manually:")
+                print("  python -m twine upload dist/*")
 
     else:
         print(" To upload to pypi: 'python -m twine upload dist/*'")
