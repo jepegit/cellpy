@@ -3,47 +3,49 @@
 
 # Installation
 
-`cellpy` is available on {ref}`Cellpy_Install_Windows` and {ref}`Cellpy_Setup_Linux` and can be installed using `pip`
-or `conda`, or {ref}`Cellpy_Install_Sources`.
+`cellpy` is available on [Windows](#cellpy_install_windows) and [Linux](#cellpy_install_linux) and can be installed using `pip`
+or `conda`, or [installed from sources](#cellpy_install_sources).
 
-For more details on dependencies, have a look at {ref}`Cellpy_Dependencies`.
+For more details on dependencies, have a look at [cellpy dependencies](#cellpy_dependencies).
 
-For a tea-spoon explanation on how to install `cellpy` on windows, including the
-installation of python and setup of virtual environments, (see below
-{ref}`Cellpy_Setup_Teaspoon`).
+For a tea-spoon explanation on how to install `cellpy` on Windows, including the
+installation of Python and setup of virtual environments, [see below](#cellpy_setup_teaspoon).
 
 After installing `cellpy`, continue to
-\- :ref: `Setup and configuration`
-\- :ref: `Check your cellpy installation`
+- [Setup and configuration](configuration.md)
+- [Check your cellpy installation](checkup.md)
 
 (cellpy-install-windows)=
-
-## Installing on Windows
+## Installation on Windows
 
 ### Conda
-
-The easiest way to install `cellpy` is by using conda:
+The easiest way to install cellpy is by using conda:
 
 ```console
 $ conda install -c conda-forge cellpy
 ```
 
 This will also install all of the critical dependencies, as well as `jupyter`
-that comes in handy when working with `cellpy`.
+that comes in handy when working with cellpy.
 
-In general, we recommend to install `cellpy` in a virtual environment.
+In general, we recommend to install cellpy in a virtual environment (if
+you do not know what this means, have a look the [tea-spoon explanation](#cellpy_setup_teaspoon)).
 
 ### Pip
 
-If you would like to install 'only' `cellpy`, you can use pip:
+If you would like to install 'only' cellpy, you can use pip:
 
 ```console
 $ pip install cellpy
 ```
 
 Note that `cellpy` uses several packages that are a bit cumbersome to install
-on windows (e.g. `pytables`) and when using pip,
-you have to take care of this yourself.
+on windows (e.g. `pytables`) and when using pip, you have to take care of this yourself.
+
+:::{hint}
+You can take care of most of the dependencies by creating a virtual environment
+based on the provided [environment.yml](https://github.com/jepegit/cellpy/blob/master/environment.yml) file.
+:::
 
 Pre-releases can be installed by adding the `--pre` flag to the installation command:
 
@@ -52,8 +54,7 @@ $ python -m pip install --pre cellpy
 ```
 
 (cellpy-install-linux)=
-
-## Linux
+## Installation on Linux
 
 ### Conda
 
@@ -85,14 +86,14 @@ $ git clone git://github.com/jepegit/cellpy
 ```
 
 To make sure to install all the required dependencies, we recommend
-to create an environment based the provided `environment.yml`:
+to create an environment based the provided
+[environment.yml](https://github.com/jepegit/cellpy/blob/master/environment.yml)` file:
 
 ```console
 $ conda env create -f environment.yml
 ```
 
-Once you have a copy of the source, you can install in development
-mode using pip:
+Once you have a copy of the source, you can install cellpy using pip:
 
 ```console
 $ pip install -e .
@@ -103,12 +104,12 @@ contains the setup.py file)
 
 (cellpy-dependencies)=
 
-## Fixing dependencies
+## Dependencies
 
 `cellpy` relies on a number of other python package and these need
 to be installed. Most of these packages are included when installing
 `cellpy` using conda or when creating the environment based on the
-`environment.yml` file as outlined above.
+[environment.yml](https://github.com/jepegit/cellpy/blob/master/environment.yml) file.
 
 Here is an additional overview on the required dependencies:
 
@@ -142,29 +143,31 @@ For more details, have a look at the documentation of these packages.
 
 ### Additional requirements for .res files
 
+:::{note}
 Note! .res files from Arbin testers are actually in a Microsoft Access format.
+:::
 
-**For Windows users:** if you do not have one of the
-most recent Office versions, you might not be allowed to install a driver
-of different bit than your office version is using (the installers can be found
-[here](https://www.microsoft.com/en-US/download/details.aspx?id=13255)).
-Also remark that the driver needs to be of the same bit as your Python
-(so, if you are using 32 bit Python, you will need the 32 bit driver).
+- **For Windows users:** if you do not have one of the most recent Office
+  versions, you might not be allowed to install a driver
+  of different bit than your office version is using (the installers can be found
+  [here](https://www.microsoft.com/en-US/download/details.aspx?id=13255)).
+  Also remark that the driver needs to be of the same bit as your Python
+  (so, if you are using 32 bit Python, you will need the 32 bit driver).
 
-**For POSIX systems:** I have not found any suitable drivers. Instead,
-`cellpy` will try to use `mdbtools` to first export the data to
-temporary csv-files, and then import from those csv-file (using the
-`pandas` library). You can install `mdbtools` using your systems
-preferred package manager (*e.g.* `apt-get install mdbtools`).
+- **For POSIX systems:** I have not found any suitable drivers. Instead,
+  `cellpy` will try to use `mdbtools` to first export the data to
+  temporary csv-files, and then import from those csv-file (using the
+  `pandas` library). You can install `mdbtools` using your systems
+  preferred package manager (*e.g.* `apt-get install mdbtools`).
 
 (cellpy-setup-teaspoon)=
 
-## The tea-spoon explanation including installation of python
+## The tea-spoon explanation including installation of Python
 
-This guide provides step-by-step instructions for installing Cellpy on a Windows system,
+This guide provides step-by-step instructions for installing cellpy on a Windows system,
 especially tailored for beginners.
 
-### 1. Install a scientific stack of python 3.x
+### 1. Install a scientific stack of Python 3.x
 
 If the words “virtual environment” or “miniconda” do not ring any bells,
 you should install the Anaconda scientific Python distribution. Go to
@@ -211,15 +214,15 @@ You then have to activate the environment:
 conda activate cellpy
 ```
 
-### 3. Install `cellpy`
+### 3. Install cellpy
 
 To finally install `cellpy` in your activated `cellpy` environment in the Anaconda Prompt run:
 
 ```console
-conda install cellpy
+conda install -c conda-forge cellpy
 ```
 
 Congratulations, you have (hopefully) successfully installed cellpy.
 
 If you run into problems, doublecheck that all your dependencies are
-installed (see (here {ref}`Cellpy_Dependencies`)) and check your Microsoft Access odbc drivers.
+installed (see [here](#cellpy_dependencies)) and check your Microsoft Access odbc drivers.

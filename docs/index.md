@@ -17,8 +17,12 @@ contributing/index.md
 other/index.md
 ```
 
+# License
+
+`cellpy` is free software made available under the MIT License.
+
+
 # Indices and tables
 
 - {ref}`genindex`
 - {ref}`modindex`
-

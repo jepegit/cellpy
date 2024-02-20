@@ -84,21 +84,29 @@ from one of the authors' configuration file:
 ```yaml
 ---
 Paths:
-    outdatadir: C:\scripts\processing_cellpy\out
+    outdatadir: C:\scripts\cellpy_data\out
     rawdatadir: I:\Org\MPT-BAT-LAB\Arbin-data
-    cellpydatadir: C:\scripts\processing_cellpy\cellpyfiles
-    db_path: C:\scripts\processing_cellpy\db
-    filelogdir: C:\scripts\processing_cellpy\logs
-    examplesdir: C:\scripts\processing_cellpy\examples
-    notebookdir: C:\scripts\processing_cellpy\notebooks
-    templatedir: C:\scripting\processing_cellpy\templates
-    batchfiledir: C:\scripts\processing_cellpy\batchfiles
-    db_filename: 2023_Cell_Analysis_db_001.xlsx
+    cellpydatadir: C:\scripts\cellpy_data\cellpyfiles
+    db_path: C:\scripts\cellpy_data\db
+    filelogdir: C:\scripts\cellpy_data\logs
+    examplesdir: C:\scripts\cellpy_data\examples
+    notebookdir: C:\scripts\cellpy_data\notebooks
+    templatedir: C:\scripting\cellpy_data\templates
+    batchfiledir: C:\scripts\cellpy_data\batchfiles
+    instrumentfiledir: C:\scripts\cellpy_data\instruments
+    db_filename: cellpy_db.xlsx
     env_file: .env_cellpy
 
 
 FileNames:
     file_name_format: YYYYMMDD_[NAME]EEE_CC_TT_RR
+    raw_extension: res
+    reg_exp:
+    sub_folders:
+    file_list_location:
+    file_list_type:
+    file_list_name:
+    cellpy_file_extension: h5
 ```
 
 The first part contains definitions of the different paths, files and file-patterns
@@ -138,13 +146,27 @@ DbCols:
 
 This part is rather long (since it needs to define the column names used in the db excel sheet).
 
-The next part contains settings regarding your dataset and the `cellreader`, as well as for
+The next part contains settings regarding your cell/dataset and the `cellreader`, as well as for
 the different `instruments`. At the bottom you will find the settings for the `batch` utility.
 
 ```yaml
-# settings related to your data
-DataSet:
-    nom_cap: 3579
+# settings related to your cell
+CellInfo:
+    voltage_lim_low: 0.0
+    voltage_lim_high: 1.0
+    active_electrode_area: 1.0
+    active_electrode_thickness: 1.0
+    electrolyte_volume: 1.0
+    electrolyte_type: standard
+    active_electrode_type: standard
+    counter_electrode_type: standard
+    reference_electrode_type: standard
+    experiment_type: cycling
+    cell_type: standard
+    separator_type: standard
+    active_electrode_current_collector: standard
+    reference_electrode_current_collector: standard
+    comment:
 
 # settings related to the reader
 Reader:
@@ -159,6 +181,7 @@ Reader:
         select_minimal: false
         limit_loaded_cycles:
         ensure_step_table: false
+        ensure_summary_table: false
         voltage_interpolation_step: 0.01
         time_interpolation_step: 10.0
         capacity_interpolation_step: 2.0
@@ -168,29 +191,32 @@ Reader:
 # settings related to the instrument loader
 # (each instrument can have its own set of settings)
 Instruments:
-    tester: arbin
+    tester: arbin_res
     custom_instrument_definitions_file:
-
-Arbin:
-    max_res_filesize: 1000000000
-    chunk_size:
-    max_chunks:
-    use_subprocess: false
-    detect_subprocess_need: false
-    sub_process_path:
-    office_version: 64bit
-    SQL_server: localhost
-    SQL_UID:
-    SQL_PWD:
-    SQL_Driver: ODBC Driver 17 for SQL Server
-    odbc_driver:
-Maccor:
-    default_model: one
+    Arbin:
+        max_res_filesize: 150000000
+        chunk_size:
+        max_chunks:
+        use_subprocess: false
+        detect_subprocess_need: false
+        sub_process_path:
+        office_version: 64bit
+        SQL_server: localhost
+        SQL_UID:
+        SQL_PWD:
+        SQL_Driver: ODBC Driver 17 for SQL Server
+        odbc_driver:
+    Maccor:
+        default_model: one
+    Neware:
+        default_model: one
 
 # settings related to running the batch procedure
 Batch:
+    auto_use_file_list: false
+    template: standard
     fig_extension: png
-    backend: bokeh
+    backend: matplotlib
     notebook: true
     dpi: 300
     markersize: 4
@@ -205,11 +231,6 @@ Batch:
     - 0.3
 ...
 ```
-
-As you can see, the author of this particular file most likely works with
-silicon as anode material for lithium ion
-batteries (the `nom_cap` is set to 3579 mAh/g, *i.e.* the theoretical
-gravimetric lithium capacity for silicon at normal temperatures) and is using windows.
 
 (cellpy-database-file)=
 
