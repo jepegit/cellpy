@@ -1,5 +1,4 @@
 # Basic usage
-
 As with most software, you are encouraged to play a little with it.
 In this section, we provide a very short overview of the basic functions.
 Some examples are provided in Examples & Tutorials (this is a work
@@ -14,6 +13,9 @@ both examples and tests.
 :::
 
 ## Simple usage as a python library
+Here is one very simple potential workflow using cellpy:
+
+### 1. Import
 
 To use `cellpy`, start with importing it:
 
@@ -29,6 +31,7 @@ Let us define some variables:
 >>> out_folder = r"C:\processed_data"
 ```
 
+### 2. Loading data
 To **load the data**, we use the `cellpy.get()` function. This function loads the data
 into the data-class (this was data obtained using an Arbin battery tester,
 for the moment we assume that you are using the default settings where the default
@@ -42,6 +45,7 @@ Here we choose to go for the default options, and `cellpy` will load the file (u
 file-loader "arbin_res" since the filename extension is .res), create a summary (for each cycle)
 and generate a step table (parsing the data and finding out what each step in each cycle is).
 
+### 3. Saving data
 You can now **save your data** as a tester-agnostic `cellpy`-file. The `cellpy` standard is
 the HDF5 file format, and will include the data as well as your summary and step table:
 
@@ -55,7 +59,8 @@ You can also save your data in csv-format easily by:
 >>> c.to_csv(out_folder)
 ```
 
-Or maybe you want to take a closer look at the capacities for the different cycles?
+### 4. Basic operations
+Maybe you want to take a closer look at the capacities for the different cycles?
 No problem. Now you are set to extract data for specific cycles and steps:
 
 ```
@@ -66,7 +71,7 @@ you have 658 cycles
 >>> current_voltage_df = c.get_cap(5) # current and voltage for cycle 5 (as pandas.DataFrame)
 ```
 
-You can also look for open circuit voltage steps:
+You can also look for open circuit voltage steps within a selected cycle:
 
 ```
 >>> cycle = 44
@@ -78,9 +83,9 @@ There are many more methods available, including methods
 for selecting steps and cycles (`get_current`, `get_voltage`, *etc.*)
 or tuning the data (*e.g.* `split` and `merge`).
 
-Take a look at the index page ({doc}`modules <source/modules>`), some of
-the tutorials ({doc}`tutorials <basics>`) or notebook examples ({doc}`Example notebooks <notebooks>`).
+Have a look at the examples and notebooks [here](examples/index.md) or on [Github](https://github.com/jepegit/cellpy/tree/master/examples).
+
 
 ## Convenience methods and tools
 
-For more details refer to examples
+Add an example here, provide more in [examples and notebooks](examples/index.md).

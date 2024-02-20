@@ -20,7 +20,7 @@ To get the filepath to your configuration file and other cellpy info, run:
 cellpy info -l
 ```
 
-## Useful `cellpy` commands
+## Useful cellpy commands
 
 To help installing and controlling your `cellpy` installation, a CLI
 (command-line-interface) is provided with several commands (including the already
@@ -80,6 +80,7 @@ version, run
 python -m pip install --upgrade cellpy
 ```
 
+## Pre-releases
 If you want to install a pre-release (a version that is so bleeding edge
 that it ends with a alpha or beta release identification, *e.g.* ends
 with .b2). Then you can add the –pre modifier to the installation command

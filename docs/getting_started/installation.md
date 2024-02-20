@@ -47,12 +47,6 @@ You can take care of most of the dependencies by creating a virtual environment
 based on the provided [environment.yml](https://github.com/jepegit/cellpy/blob/master/environment.yml) file.
 :::
 
-Pre-releases can be installed by adding the `--pre` flag to the installation command:
-
-```console
-$ python -m pip install --pre cellpy
-```
-
 (cellpy-install-linux)=
 ## Installation on Linux
 
@@ -61,7 +55,7 @@ $ python -m pip install --pre cellpy
 This is how to install `cellpy` using conda on Linux.
 Be aware that you might have to install additional packages.
 
-This includes `libobdc`, that can be installed on Ubuntu like this:
+This includes, e.g., `libobdc`, that can be installed on Ubuntu like this:
 
 ```console
 $ sudo apt update
