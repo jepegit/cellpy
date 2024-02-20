@@ -1062,7 +1062,7 @@ def run(
     list_,
     name,
 ):
-    """Run a cellpy process (e.g. a batch-job).
+    """Run a cellpy process (for example a batch-job).
 
     You can use this to launch specific applications.
 

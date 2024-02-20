@@ -27,6 +27,9 @@ out/
 raw/
 templates/
 ```
+It also creates a `.env_cellpy` file (most likely in the same directory as the configuration file, depending
+on if you have a configuration from before and how your system behaves). You need to edit this file
+to be able to utilize "automatic" loading of files through ssh connections.
 
 If you want to specify a root folder different from the default (your HOME
 folder), you can use the `-d` option *e.g.*
@@ -40,8 +43,8 @@ home directory, /. in posix and c:usersUSERNAME in not-too-old windows.
 
 To check, where your configuration file is actually located, you can run:
 
-```shell
-$ cellpy info --configloc
+```console
+cellpy info --configloc
 [cellpy] -> C:\Users\jepe\.cellpy_prms_jepe.conf
 ```
 
@@ -57,7 +60,7 @@ It is recommended to re-run setup each time you update `cellpy`.
 
 ## The configuration file
 
-The paths to raw data, the cellpy data base file, file locations etc. are set in
+The paths to raw data, the cellpy database file, file locations etc. are set in
 the `.cellpy_prms_USER.conf` file that is located in your home directory.
 `cellpy` tries to read this .conf file when imported the first time,
 and looks in your user directory after files named `.cellpy_prms_SOMENAME.conf`.

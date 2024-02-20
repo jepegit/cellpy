@@ -77,10 +77,9 @@ conda install -c conda-forge cellpy
 Installing `cellpy` using pip on Linux might be a bit more cumbersome than using conda.
 A recipe that seems to work well in most cases is to first install the `mdbtools` (and possibly also `unixodbc`)
 and then install `cellpy` using pip. For example, on Ubuntu, you can do this by running the following commands
-in a terminal:
+in a terminal (if you do not have sudo access, you can try without sudo also (not tested)):
 
 ```console
-# if you do not have sudo access, you can try without sudo also (not tested).
 sudo apt-get update
 sudo apt-get install -y mdbtools
 sudo apt install unixodbc-dev

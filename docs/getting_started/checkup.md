@@ -14,6 +14,11 @@ To run a more complete check of your installation, there exist a
 cellpy info --check
 ```
 
+:::{hint}
+Even though some of the checks fail, you might still be able to use and enjoy several of the `cellpy` features.
+But, if you want to use all the features, you should try to fix the issues that are reported.
+:::
+
 To get the filepath to your configuration file and other cellpy info, run:
 
 ```console
@@ -42,13 +47,13 @@ Options:
   --help  Show this message and exit.
 
 Commands:
-  edit   Edit your cellpy config file.
+  edit   Edit your cellpy config or database files.
   info   This will give you some valuable information about your cellpy.
-  new    Set up a batch experiment.
-  pull   Download examples or tests from the big internet.
-  run    Run a cellpy process.
-  serve  Start a Jupyter server
-  setup  This will help you to setup cellpy.
+  new    Set up a batch experiment (might need git installed).
+  pull   Download examples or tests from the big internet (needs git).
+  run    Run a cellpy process (for example a batch-job).
+  serve  Start a Jupyter server.
+  setup  This will help you to set up cellpy.
 ```
 
 You can get information about the sub-commands by issuing –-help after
@@ -63,12 +68,15 @@ gives
 ```console
 Usage: cellpy info [OPTIONS]
 
+  This will give you some valuable information about your cellpy.
+
 Options:
- -v, --version    Print version information.
- -l, --configloc  Print full path to the config file.
- -p, --params     Dump all parameters to screen.
- -c, --check      Do a sanity check to see if things works as they should.
- --help           Show this message and exit.
+  -v, --version    Print version information.
+  -l, --configloc  Print full path to the config file.
+  -p, --params     Dump all parameters to screen.
+  -c, --check      Do a sanity check to see if things works as they should.
+  --help           Show this message and exit.
+
 ```
 
 ## Upgrade `cellpy`
@@ -83,7 +91,7 @@ python -m pip install --upgrade cellpy
 ## Pre-releases
 If you want to install a pre-release (a version that is so bleeding edge
 that it ends with a alpha or beta release identification, *e.g.* ends
-with .b2). Then you can add the –pre modifier to the installation command
+with .b2). Then you can add the –-pre modifier to the installation command
 
 ```console
 python -m pip install --pre cellpy
