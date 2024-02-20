@@ -1,8 +1,8 @@
 
-include AUTHORS.rst
+include AUTHORS.md
 
-include CONTRIBUTING.rst
-include HISTORY.rst
+include CONTRIBUTING.md
+include HISTORY.md
 include LICENSE
 include README.rst
 include cellpy/logging.json
