@@ -5,23 +5,23 @@ channels:
 dependencies:
   - python >=3.9
   - pip
-  - numpy
-  - openpyxl
-  - matplotlib
-  - cryptography
-  - click
-  - scipy
-  - pandas
-  - pytables >=3.5.1
-  - setuptools
-  - ruamel.yaml
-  - pyodbc
-  - tqdm
-  - python-box
-  - ipykernel
-  - pint
-  - fabric
-  - python-dotenv
+#  - numpy
+#  - openpyxl
+#  - matplotlib
+#  - cryptography
+#  - click
+#  - scipy
+#  - pandas
+#  - pytables >=3.5.1
+#  - setuptools
+#  - ruamel.yaml
+#  - pyodbc
+#  - tqdm
+#  - python-box
+#  - ipykernel
+#  - pint
+#  - fabric
+#  - python-dotenv
   - Sphinx
   - pandoc
   - nbsphinx
