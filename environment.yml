@@ -32,6 +32,6 @@ dependencies:
     - ipywidgets
     - ipykernel
     - rich
-    - pip:
-        - sqlalchemy-access
+    - sqlalchemy-access
+
 
