@@ -1,4 +1,4 @@
-# Check your cellpy installation and useful commands
+# Checkup & useful commands
 
 The easiest way to check if `cellpy` has been installed, is to issue
 the command for printing the version number to the screen

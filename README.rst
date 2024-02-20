@@ -47,7 +47,7 @@ Or if you prefer installing using pip::
 Have a look at the documentation for more detailed installation procedures, especially
 with respect to "difficult" dependencies when installing with pip.
 
-Licence
+License
 =======
 
 ``cellpy`` is free software made available under the MIT License.
@@ -55,10 +55,17 @@ Licence
 Features
 ========
 
-* Load test-data and store in a common format.
-* Summarize and compare data.
-* Filter out the steps of interest.
-* Process and plot the data.
-* And more...
+* Convert testing data into a common format
+* Summarize and compare data
+* Filter out the steps of interest
+* Process and plot the data
+* Do simple and advanced analysis on single datasets as well as collections of datasets
+* And more!
 
+Contributing
+============
+
+Contributions are welcome, and they are greatly appreciated! Every
+little bit helps, and credit will always be given. If you want to contribute,
+please have a look at these guidelines :ref:`Contributing`.
 
