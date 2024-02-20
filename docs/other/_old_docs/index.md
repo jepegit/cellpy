@@ -1,8 +1,9 @@
-```{include} ./_main_description/index.md
-```
+# Legacy Documentation
 
-```{include} ./_examples_and_tutorials/index.md
-```
+```{toctree}
+:maxdepth: 2
 
-```{include} ./_developers_guide/index.md
+_developers_guide/index
+_examples_and_tutorials/index
+_main_description/index
 ```
