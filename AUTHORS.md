@@ -1,18 +1,13 @@
-=======
-Credits
-=======
+# Credits
 
-Development Lead
-================
+## Development Lead
 
 * Jan Petter Maehlen <jepe@ife.no>
 * Muhammad Abdelhamid <muhammad.abdelhamid@ife.no>
 * Asbjoern Ulvestad <asbjorn.ulvestad@ife.no>
 * Julia Wind <julia.wind@ife.no>
 
-
-Contributors
-============
+## Contributors
 
 * Tor Kristian Vara
 * Ulrik Aalborg Eriksen

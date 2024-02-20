@@ -3,5 +3,9 @@
 ```{toctree}
 :maxdepth: 2
 
-other.rst
+authors.md
+history.md
+licence.md
+code-of-conduct.md
+contributing.md
 ```

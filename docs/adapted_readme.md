@@ -11,7 +11,6 @@ researchers at IFE, Norway, in their cumbersome task of
 interpreting and handling data from cycling tests of
 batteries and cells.
 
-
 ## Features
 
 - Load battery test-data from different testers and formats
