@@ -15,7 +15,7 @@ After installing `cellpy`, continue to
 - [Setup and configuration](configuration.md)
 - [Check your cellpy installation](checkup.md)
 
-(cellpy-install-windows)=
+(cellpy_install_windows)=
 ## Installation on Windows
 
 ### Conda
@@ -47,7 +47,7 @@ You can take care of most of the dependencies by creating a virtual environment
 based on the provided [environment.yml](https://github.com/jepegit/cellpy/blob/master/environment.yml) file.
 :::
 
-(cellpy-install-linux)=
+(cellpy_install_linux)=
 ## Installation on Linux
 
 ### Conda
@@ -64,7 +64,7 @@ $ sudo apt install unixodbc-dev
 
 ### Pip
 
-This is how to install `cellpy` using conda on Linux.
+This is how to install `cellpy` using pip on Linux.
 Be aware that you might have to install additional packages.
 
 (cellpy-install-sources)=
@@ -96,8 +96,7 @@ $ pip install -e .
 (assuming that you are in the project folder, *i.e.* the folder that
 contains the setup.py file)
 
-(cellpy-dependencies)=
-
+(cellpy_dependencies)=
 ## Dependencies
 
 `cellpy` relies on a number of other python package and these need
