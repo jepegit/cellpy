@@ -1,10 +1,9 @@
-# Fundamentals & usage
+# Fundamentals
 
 ```{toctree}
 :maxdepth: 2
 
 fundamentals.md
-file_formats.md
-data_structure.md
-basic_usage.md
+[//]: # (file_formats.md)  
+[//]: # (data_structure.md)  
 ```

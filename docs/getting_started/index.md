@@ -6,4 +6,5 @@
 installation.md
 configuration.md
 checkup.md
+basic_usage.md
 ```

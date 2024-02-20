@@ -32,7 +32,7 @@ Let us define some variables:
 ```
 
 ### 2. Loading data
-To **load the data**, we use the `cellpy.get()` function. This function loads the data
+To load the data, we use the `cellpy.get()` function. This function loads the data
 into the data-class (this was data obtained using an Arbin battery tester,
 for the moment we assume that you are using the default settings where the default
 data-format is the Arbin .res format):
@@ -46,7 +46,7 @@ file-loader "arbin_res" since the filename extension is .res), create a summary 
 and generate a step table (parsing the data and finding out what each step in each cycle is).
 
 ### 3. Saving data
-You can now **save your data** as a tester-agnostic `cellpy`-file. The `cellpy` standard is
+You can now save your data as a tester-agnostic `cellpy`-file. The `cellpy` standard is
 the HDF5 file format, and will include the data as well as your summary and step table:
 
 ```
