@@ -35,10 +35,11 @@ extensions = [
     "sphinx.ext.viewcode",
     "sphinx.ext.napoleon",
     "sphinx.ext.intersphinx",
-    "myst_nb",
+    # "myst_nb",
+    "myst_parser",
     "sphinx.ext.graphviz",
     # "autodoc2",
-    # "nbsphinx",
+    "nbsphinx",
     "autoapi.extension",
 ]
 
@@ -289,7 +290,7 @@ texinfo_documents = [
 
 # --- other options ---------------------------------------------------
 
-# nbsphinx_kernel_name = "python3"
+nbsphinx_kernel_name = "python3"
 autoapi_dirs = ["../cellpy"]
 # autodoc2_packages = ["../cellpy"]
 # autoapi_template_dir = "_templates/_autoapi_templates"
@@ -314,5 +315,3 @@ myst_enable_extensions = [
 myst_substitutions = {
     "ProjectVersion": version,
 }
-nb_execution_mode = "inline"
-nb_output_stderr = "remove-warn"
