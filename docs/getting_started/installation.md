@@ -263,4 +263,4 @@ conda install -c conda-forge cellpy
 Congratulations, you have (hopefully) successfully installed cellpy.
 
 If you run into problems, doublecheck that all your dependencies are
-installed (see [here](#cellpy_dependencies)).
+installed (see {ref}`here <cellpy_dependencies>`).
