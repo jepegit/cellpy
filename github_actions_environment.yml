@@ -15,7 +15,7 @@ dependencies:
     - pandas
     - setuptools
     - ruamel.yaml
-#    - pyodbc
+    - pyodbc
     - PyGithub
     - cookiecutter
     - tqdm
@@ -36,7 +36,6 @@ dependencies:
     - pip:
         - sqlalchemy-access
         - jinja2_time
-        - pyodbc
 
 
 
