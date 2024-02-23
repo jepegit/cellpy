@@ -17,12 +17,14 @@ def raw_mock(parameters):
 
 def test_import_arbin_sql():
     from cellpy.readers.instruments import arbin_sql
+
     loader = arbin_sql.DataLoader()
     assert isinstance(loader, base.BaseLoader)
 
 
 def test_post_process_rename_headers_defined():
     from cellpy.readers.instruments import arbin_sql
+
     keywords = {
         "fix_datetime": False,
         "set_index": False,
@@ -41,6 +43,7 @@ def test_post_process_rename_headers_defined():
 
 def test_post_process_rename_headers_from_file(raw_mock):
     from cellpy.readers.instruments import arbin_sql
+
     keywords = {
         "fix_datetime": True,
         "set_index": True,
