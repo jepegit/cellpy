@@ -121,3 +121,4 @@ settings.json
 /.nox/
 /~$cellpy-environment.xlsx
 /cellpy-environment.xlsx
+/examples/cellpy batch utility/cellpy_batch_paper01.json
