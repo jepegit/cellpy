@@ -476,7 +476,7 @@ def raw_plot(
 
 def cycle_info_plot(
     cell,
-    cycle,
+    cycle=None,
     get_axes=False,
     interactive=True,
     t_unit="hours",
@@ -711,6 +711,10 @@ def _cycle_info_plot_matplotlib(
     **kwargs,
 ):
     # obs! hard-coded col-names. Please fix me.
+    if cycle is None:
+        warnings.warn("Only one cycle at a time is supported for matplotlib")
+        cycle = 1
+    
     if isinstance(cycle, (list, tuple)):
         warnings.warn("Only one cycle at a time is supported for matplotlib")
         cycle = cycle[0]
