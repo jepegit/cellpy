@@ -543,22 +543,22 @@ def build(
 
 
 @task
-def docs(c, _clean=True, _api=False, _serve=True, browser=True):
+def docs(c, _clean=True, _serve=True, browser=True):
     """Build and view docs"""
     cmd = "sphinx-build"
     prms = "docs docs/_build"
+    info_text = "Building docs"
     if _clean:
+        info_text += " (cleaning first)"
         cmd += " -E -a"
-    if _api:
-        c.run("sphinx-apidoc -f -o docs/source/ cellpy")
-    print(" Building docs ".center(80, "-"))
+    print(f" {info_text} ".center(80, "-"))
     c.run(f"{cmd} {prms}")
 
     if _serve:
         import pathlib
 
         builds_path = pathlib.Path("docs") / "_build"
-        print(" Serving docs")
+        print(" Serving docs ".center(80, "-"))
         os.chdir(builds_path)
         _location = r"localhost:8081"
         if browser:

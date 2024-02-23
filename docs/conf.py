@@ -35,9 +35,10 @@ extensions = [
     "sphinx.ext.viewcode",
     "sphinx.ext.napoleon",
     "sphinx.ext.intersphinx",
-    "nbsphinx",
+    "myst_nb",
     "sphinx.ext.graphviz",
-    "myst_parser",
+    # "autodoc2",
+    # "nbsphinx",
     "autoapi.extension",
 ]
 
@@ -90,7 +91,12 @@ release = version_ns["__version__"]
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
-exclude_patterns = ["_build", "_autoapi_templates"]
+exclude_patterns = [
+    "_build",
+    "_autoapi_templates",
+    "jupyter_execute",
+    "examples/.ipnb_checkpoints",
+]
 
 # The reST default role (used for this markup: `text`) to use for all
 # documents.
@@ -122,7 +128,7 @@ modindex_common_prefix = ["cellpy."]
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = "sphinx_rtd_theme"
+html_theme = "sphinx_book_theme"
 html_theme_path = ["_themes"]
 
 # Theme options are theme-specific and customize the look and feel of a
@@ -283,9 +289,13 @@ texinfo_documents = [
 
 # --- other options ---------------------------------------------------
 
-nbsphinx_kernel_name = "python3"
+# nbsphinx_kernel_name = "python3"
 autoapi_dirs = ["../cellpy"]
+# autodoc2_packages = ["../cellpy"]
 # autoapi_template_dir = "_templates/_autoapi_templates"
+
+# autodoc2_render_plugin = "myst"
+
 autoapi_options = [
     "members",
     "undoc-members",
@@ -293,6 +303,7 @@ autoapi_options = [
     "show-module-summary",
     "show-inheritance-diagram",
 ]
+
 
 # myst settings
 # see https://myst-parser.readthedocs.io/en/latest/syntax/optional.html
@@ -303,3 +314,5 @@ myst_enable_extensions = [
 myst_substitutions = {
     "ProjectVersion": version,
 }
+nb_execution_mode = "inline"
+nb_output_stderr = "remove-warn"

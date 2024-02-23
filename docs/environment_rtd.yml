@@ -10,6 +10,8 @@ dependencies:
   - nbsphinx
   - sphinx_rtd_theme
   - myst-parser
+  - myst-nb
   - sphinx-autoapi
   - graphviz
+  - sphinx-book-theme
 

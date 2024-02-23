@@ -57,5 +57,7 @@ dependencies:
         - pipdeptree
         - pydeps
         - pip-tools
+        - myst_nb
+        - sphinx-book-theme
 
 

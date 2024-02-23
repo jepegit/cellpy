@@ -9,5 +9,5 @@
 03_capacity_vs_voltage.ipynb
 04_incremental_capacity_analysis.ipynb
 05_GITT.ipynb
-
+06_test_plotly.ipynb
 ```
