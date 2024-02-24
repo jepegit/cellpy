@@ -1,11 +1,11 @@
-# Welcome to cellpy's documentation!
+# Welcome to cellpy's documentation
 
 **version:** {{ ProjectVersion }}
 
 ```{include} adapted_readme.md
 ```
 
-# Contents
+## Contents
 
 ```{toctree}
 :maxdepth: 2
@@ -17,12 +17,11 @@ contributing/index.md
 other/index.md
 ```
 
-# License
+## License
 
 `cellpy` is free software made available under the MIT License.
 
-
-# Indices and tables
+## Indices and tables
 
 - {ref}`genindex`
 - {ref}`modindex`

@@ -43,6 +43,14 @@ extensions = [
     "autoapi.extension",
 ]
 
+# Note about myst_nb:
+# It is possible to use myst_nb (wich can parse notebooks with myst markdown)
+# instead of nbsphinx, but at the moment it is difficult to get the plotly plots to
+# work properly. Setting plotly to make the plots in iframes is a workaround, but
+# this will only work smoothly if the jupyter notebook are in the root of the documentation
+# folder. If not, the paths to the plots (iframes) will be wrong (and you will have to copy the folder with
+# the iframes somehow to the same location as the built notebooks).
+
 # Napoleon settings
 napoleon_google_docstring = True
 napoleon_numpy_docstring = True
@@ -68,7 +76,7 @@ master_doc = "index"
 
 # General information about the project.
 project = "cellpy"
-copyright = "2023, Jan Petter Maehlen"
+copyright = "2024, Jan Petter Maehlen"
 
 # The version info for the project you're documenting, acts as replacement
 # for |version| and |release|, also used in various other places throughout
@@ -316,3 +324,6 @@ myst_enable_extensions = [
 myst_substitutions = {
     "ProjectVersion": version,
 }
+
+# nb_execution_mode = "cache"
+# nb_execution_in_temp = True
