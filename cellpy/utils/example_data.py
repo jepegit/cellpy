@@ -1,4 +1,5 @@
 """Tools for getting some data to play with"""
+
 import logging
 import os
 from pathlib import Path
@@ -39,7 +40,7 @@ def cellpy_file(testing=False):
         cellpy.CellpyCell object with the data loaded
     """
 
-    file_path = H5_PATH / "20160805_test001_45_cc.h5"
+    file_path = H5_PATH / "20180418_sf033_4_cc.h5"
     return cellpy.get(filename=file_path, testing=testing)
 
 
@@ -60,7 +61,7 @@ def rate_file(testing=False):
 def cellpy_file_path():
     """Get the path to an example cellpy file"""
 
-    return H5_PATH / "20160805_test001_45_cc.h5"
+    return H5_PATH / "20180418_sf033_4_cc.h5"
 
 
 def arbin_file_path():
