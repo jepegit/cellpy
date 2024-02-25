@@ -75,6 +75,8 @@ OTHERPATHS = ["rawdatadir", "cellpydatadir"]
 
 @dataclass
 class CellpyMeta:
+    """Base class for meta-data in cellpy."""
+
     def update(self, as_list: bool = False, **kwargs):
         """Updates from dictionary of form {key: [values]}
 
@@ -133,6 +135,8 @@ class CellpyMeta:
 
 @dataclass
 class CellpyMetaCommon(CellpyMeta):
+    """Common (not test-dependent) meta-data for cellpy."""
+
     # about test
     cell_name: Optional[str] = None  # used as property
     start_datetime: Optional[str] = None
@@ -200,6 +204,7 @@ class CellpyMetaCommon(CellpyMeta):
 
 @dataclass
 class CellpyMetaIndividualTest(CellpyMeta):
+    """Test-dependent meta-data for cellpy."""
     # ---------------- test dependent -------------------------------
     channel_index: Optional[prms.CellPyDataConfig] = None
     creator: Optional[str] = None
@@ -217,7 +222,7 @@ class CellpyMetaIndividualTest(CellpyMeta):
 
 # TODO: remove import of this
 class HeaderDict(UserDict):
-    """Sub-classing dict to allow for tab-completion."""
+    """A Sub-class of dict to allow for tab-completion."""
 
     def __setitem__(self, key: str, value: str) -> None:
         if key == "data":
@@ -313,7 +318,7 @@ class BaseSettings(DictLikeClass):
 
 @dataclass
 class BaseHeaders(BaseSettings):
-    """Extending BaseSetting so that it's allowed to add postfixes.
+    """Subclass of BaseSetting including option to add postfixes.
 
     Example:
          >>> header["key_postfix"]  # returns "value_postfix"
@@ -457,6 +462,8 @@ class CellpyLimits(BaseSettings):
 
 @dataclass
 class HeadersNormal(BaseHeaders):
+    """Headers used for the normal (raw) data (used as column headers for the main data pandas DataFrames)"""
+
     aci_phase_angle_txt: str = "aci_phase_angle"
     ref_aci_phase_angle_txt: str = "ref_aci_phase_angle"
     ac_impedance_txt: str = "ac_impedance"
@@ -490,7 +497,9 @@ class HeadersNormal(BaseHeaders):
 
 @dataclass
 class HeadersSummary(BaseHeaders):
-    """In addition to the headers defined here, the summary might also contain
+    """Headers used for the summary data (used as column headers for the main data pandas DataFrames)
+
+    In addition to the headers defined here, the summary might also contain
     specific headers (ending in _gravimetric or _areal).
     """
 
@@ -569,6 +578,7 @@ class HeadersSummary(BaseHeaders):
 
     @property
     def specific_columns(self) -> List[str]:
+        """Returns a list of the columns that can be "specific" (e.g. pr. mass or pr. area) for the summary table."""
         return [
             self.discharge_capacity,
             self.charge_capacity,
@@ -591,6 +601,7 @@ class HeadersSummary(BaseHeaders):
 
 @dataclass
 class HeadersStepTable(BaseHeaders):
+    """Headers used for the steps table (used as column headers for the steps pandas DataFrames)"""
     test: str = "test"
     ustep: str = "ustep"
     cycle: str = "cycle"
@@ -613,6 +624,7 @@ class HeadersStepTable(BaseHeaders):
 
 @dataclass
 class HeadersJournal(BaseHeaders):
+    """Headers used for the journal (batch) (used as column headers for the journal pandas DataFrames)"""
     filename: str = "filename"
     mass: str = "mass"
     total_mass: str = "total_mass"

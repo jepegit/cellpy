@@ -244,6 +244,7 @@ class FileID:
 
     @property
     def last_data_point(self):
+        """Get the last data point."""
         # TODO: consider including a method here to find the last data point (raw data)
         # ideally, this value should be set when loading the raw data before
         # merging files (if it consists of several files)
@@ -545,6 +546,8 @@ class Data:
         return txt
 
     def populate_defaults(self):
+        """Populate the data object with default values."""
+
         # modify this method upon need
         logging.debug("checking and populating defaults for the cell")
 
@@ -568,6 +571,7 @@ class Data:
 
     @property
     def empty(self):
+        """Check if the data object is empty."""
         if isinstance(self, pd.DataFrame):
             raise TypeError(
                 "Data is a DataFrame (should be a Data object). "
@@ -608,6 +612,8 @@ class Data:
 
 
 class InstrumentFactory:
+    """Factory for instrument loaders."""
+
     def __init__(self):
         self._builders = {}
         self._kwargs = {}
@@ -1127,6 +1133,8 @@ def group_by_interpolate(
 
 
 def convert_from_simple_unit_label_to_string_unit_label(k, v):
+    """Convert from simple unit label to string unit label."""
+
     old_raw_units = {
         "current": 1.0,
         "charge": 1.0,
