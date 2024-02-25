@@ -97,7 +97,7 @@ HEADERS_STEP_TABLE = get_headers_step_table()  # TODO @jepe refactor this (not n
 warnings.filterwarnings("ignore", category=pd.io.pytables.PerformanceWarning)
 pd.set_option("mode.chained_assignment", None)  # "raise", "warn", None
 
-module_logger = logging.getLogger(__name__)
+_module_logger = logging.getLogger(__name__)
 
 
 class CellpyCell:
