@@ -2,7 +2,8 @@
 
 All methods must implement the following parameters/arguments::
 
-    filename: Union[str, pathlib.Path], *args: str, **kwargs: str
+    - filename: Union[str, pathlib.Path]
+    - *args and **kwargs: Any additional parameters/arguments should be supported.
 
 All methods should return None (i.e. nothing).
 
@@ -16,7 +17,7 @@ from typing import Union
 
 
 def remove_empty_lines(
-    filename: Union[str, pathlib.Path], *args: str, **kwargs: str
+    filename: Union[str, pathlib.Path], *args, **kwargs
 ) -> pathlib.Path:
     """Remove all the empty lines in the file.
 
@@ -31,7 +32,6 @@ def remove_empty_lines(
     Returns:
         pathlib.Path of modified file
     """
-    # logging.getLogger().setLevel(logging.DEBUG)
     logging.debug(f"args: {args}, kwargs: {kwargs}")
     logging.debug(f"filename: {filename}")
 

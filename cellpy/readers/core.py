@@ -301,6 +301,18 @@ class Data:
     This class is used for storing all the relevant data for a cell-test, i.e. all
     the data collected by the tester as stored in the raw-files, and user-provided
     metadata about the cell-test.
+
+    Attributes:
+        raw_data_files (list): list of FileID objects.
+        raw (pandas.DataFrame): raw data.
+        summary (pandas.DataFrame): summary data.
+        steps (pandas.DataFrame): step data.
+        meta_common (CellpyMetaCommon): common meta-data.
+        meta_test_dependent (CellpyMetaIndividualTest): test-dependent meta-data.
+        custom_info (Any): custom meta-data.
+        raw_units (dict): dictionary with units for the raw data.
+        raw_limits (dict): dictionary with limits for the raw data.
+        loaded_from (str): name of the file where the data was loaded from.
     """
 
     def _repr_html_(self):

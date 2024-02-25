@@ -2,15 +2,16 @@
 
 All methods must implement the following parameters/arguments::
 
-    data: Data object
-    config_params: ModelParameters
+    - data: Data
+    - config_params: ModelParameters
 
 All methods should return the modified Data object.
 
 You can access the individual parameters for the post processor from
-the config_params.post_processor[<name of post processor>].
+the ``config_params.post_processor[<name of post processor>]``.
 
 """
+
 import datetime
 import logging
 import sys
@@ -57,7 +58,8 @@ def remove_last_if_bad(data: Data, config_params: ModelParameters) -> Data:
 
 
 # noinspection PyUnreachableCode
-def convert_units(data: Data, config_params: ModelParameters) -> Data:
+def _convert_units(data: Data, config_params: ModelParameters) -> Data:
+    """Convert units in the raw data (currently broken)."""
     raise Exception("THIS FUNCTION NEEDS TO BE UPDATED")
     # TODO: implement all
     if x := config_params.raw_units.get("voltage", None):
@@ -78,11 +80,13 @@ def convert_units(data: Data, config_params: ModelParameters) -> Data:
 
 
 def set_cycle_number_not_zero(data: Data, config_params: ModelParameters) -> Data:
+    """Set cycle number to start from 1 instead of 0."""
     data.raw[headers_normal.cycle_index_txt] += 1
     return data
 
 
 def select_columns_to_keep(data: Data, config_params: ModelParameters) -> Data:
+    """Select columns to keep in the raw data."""
     config_params.columns_to_keep.extend(
         headers_normal[h] for h in _minimum_columns_to_keep_for_raw_if_exists
     )
@@ -97,7 +101,7 @@ def select_columns_to_keep(data: Data, config_params: ModelParameters) -> Data:
 
 
 # noinspection PyUnreachableCode
-def get_column_names(data: Data, config_params: ModelParameters) -> Data:
+def _get_column_names(data: Data, config_params: ModelParameters) -> Data:
     # TODO: add custom "splitter"
     # TODO: test
     raise Exception("THIS FUNCTION NEEDS TO BE UPDATED")
@@ -152,13 +156,14 @@ def get_column_names(data: Data, config_params: ModelParameters) -> Data:
 
 
 def convert_date_time_to_datetime(data: Data, config_params: ModelParameters) -> Data:
+    """Convert date_time column to datetime."""
     hdr_date_time = headers_normal.datetime_txt
     data.raw[hdr_date_time] = pd.to_datetime(data.raw[hdr_date_time])
     return data
 
 
 def date_time_from_test_time(data: Data, config_params: ModelParameters) -> Data:
-    """add a date_time column (based on the test_time column)."""
+    """Add a date_time column (based on the test_time column)."""
     hdr_date_time = headers_normal.datetime_txt
     hdr_test_time = headers_normal.test_time_txt
 
@@ -173,6 +178,7 @@ def date_time_from_test_time(data: Data, config_params: ModelParameters) -> Data
 
 
 def convert_step_time_to_timedelta(data: Data, config_params: ModelParameters) -> Data:
+    """Convert step_time to timedelta."""
     hdr_step_time = headers_normal.step_time_txt
     if data.raw[hdr_step_time].dtype == "datetime64[ns]":
         logging.debug("already datetime64[ns] - need to convert to back first")
@@ -188,6 +194,7 @@ def convert_step_time_to_timedelta(data: Data, config_params: ModelParameters) -
 
 
 def convert_test_time_to_timedelta(data: Data, config_params: ModelParameters) -> Data:
+    """Convert test_time to timedelta."""
     hdr_test_time = headers_normal.test_time_txt
     if data.raw[hdr_test_time].dtype == "datetime64[ns]":
         logging.debug("already datetime64[ns] - need to convert to back first")
@@ -202,6 +209,7 @@ def convert_test_time_to_timedelta(data: Data, config_params: ModelParameters) -
 
 
 def set_index(data: Data, config_params: ModelParameters) -> Data:
+    """Set index to data_point."""
     hdr_data_point = headers_normal.data_point_txt
     if data.raw.index.name != hdr_data_point:
         data.raw = data.raw.set_index(hdr_data_point, drop=False)
@@ -232,13 +240,14 @@ def cumulate_capacity_within_cycle(data: Data, config_params: ModelParameters) -
     return data
 
 
-def replace(data: Data, config_params: ModelParameters) -> Data:
+def _replace(data: Data, config_params: ModelParameters) -> Data:
     print("NOT IMPLEMENTED")
     print("input:")
     print(config_params.post_processors["replace"])
 
 
 def rename_headers(data: Data, config_params: ModelParameters) -> Data:
+    """Rename headers to the correct Cellpy headers."""
     columns = {}
     renaming_dict = config_params.normal_headers_renaming_dict
     # ---- special cases ----
@@ -299,7 +308,8 @@ def _state_splitter(
         to_numeric: bool
         states: dictionary defining the state identification character/string
 
-    Returns: raw data
+    Returns:
+        raw data
 
     """
     n_charge = float(n_charge)
@@ -399,7 +409,7 @@ def split_current(data: Data, config_params: ModelParameters) -> Data:
 
 
 def split_capacity(data: Data, config_params: ModelParameters) -> Data:
-    """split capacity into charge and discharge"""
+    """Split capacity into charge and discharge"""
     data.raw = _state_splitter(
         data.raw,
         base_col_name=headers_normal.charge_capacity_txt,

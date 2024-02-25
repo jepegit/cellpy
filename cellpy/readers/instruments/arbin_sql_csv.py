@@ -81,13 +81,12 @@ not_implemented_in_cellpy_yet_renaming_dict = {
 
 
 class DataLoader(BaseLoader):
-    """Class for loading arbin-data from MS SQL server."""
+    """Class for loading csv-exported arbin-data from MS SQL server."""
 
     instrument_name = "arbin_sql_csv"
     raw_ext = "csv"
 
     def __init__(self, *args, **kwargs):
-        """initiates the ArbinSQLLoader class"""
         self.arbin_headers_normal = (
             self.get_headers_normal()
         )  # the column headers defined by Arbin
@@ -150,7 +149,7 @@ class DataLoader(BaseLoader):
             name (str): name of the file
 
         Returns:
-            new_tests (list of data objects)
+            Data: a Data object
         """
         # self.name = name
         # self.copy_to_temporary()

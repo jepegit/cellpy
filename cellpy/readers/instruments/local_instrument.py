@@ -1,6 +1,6 @@
-"""This module is used for loading data using the corresponding Local
+"""This module is used for loading data using the corresponding local
 yaml file with definitions on how the data should be loaded. This loader
-is based on the TxtLoader and can only be used to load csv-type files"""
+is based on the ``TxtLoader`` and can only be used to load csv-type files"""
 
 from cellpy.readers.instruments.base import TxtLoader
 from cellpy.readers.instruments.configurations import (
@@ -15,6 +15,11 @@ class DataLoader(TxtLoader):
     raw_ext = "*"
 
     def __init__(self, instrument_file=None, **kwargs):
+        """
+        Args:
+            instrument_file: name of the local instrument file.
+            **kwargs: not used.
+        """
         self.local_instrument_file = instrument_file
         super().__init__()
 

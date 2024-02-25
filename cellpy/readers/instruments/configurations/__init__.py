@@ -1,4 +1,5 @@
 """ Very simple implementation of a plugin-like infrastructure"""
+
 from dataclasses import dataclass, field
 from importlib import import_module
 from pathlib import Path
@@ -71,12 +72,13 @@ class ModelParameters:
 
 
 def register_local_configuration_from_yaml_file(instrument) -> ModelParameters:
-    """register a module (.yml file) and return it.
+    """Register a module (.yml file) and return it.
 
     This function will dynamically import the given module from the
-    cellpy.readers.instruments.configurations module and return it.
+    `cellpy.readers.instruments.configurations` module and return it.
 
-    Returns: ModelParameters
+    Returns:
+        ModelParameters
 
     """
 
@@ -130,12 +132,13 @@ def register_configuration_from_module(
     _module_path=None,
     _m=None,
 ) -> ModelParameters:
-    """register a python module (.py file) and return it.
+    """Register a python module (.py file) and return it.
 
     This function will dynamically import the given module from the
-    cellpy.readers.instruments.configurations module and return it.
+    `cellpy.readers.instruments.configurations` module and return it.
 
-    Returns: ModelParameters
+    Returns:
+        ModelParameters
     """
 
     if _m is None:

@@ -1,4 +1,5 @@
 """arbin res-type data files"""
+
 import logging
 import os
 import pathlib
@@ -35,46 +36,46 @@ USE_SQLALCHEMY_ACCESS_ENGINE = True
 ODBC = prms._odbc
 SEARCH_FOR_ODBC_DRIVERS = prms._search_for_odbc_driver
 
-use_subprocess = prms.Instruments.Arbin.use_subprocess
-detect_subprocess_need = prms.Instruments.Arbin.detect_subprocess_need
+_use_subprocess = prms.Instruments.Arbin.use_subprocess
+_detect_subprocess_need = prms.Instruments.Arbin.detect_subprocess_need
 
-is_posix = False
-is_macos = False
+_is_posix = False
+_is_macos = False
 if os.name == "posix":
-    is_posix = True
+    _is_posix = True
 current_platform = platform.system()
 if current_platform == "Darwin":
-    is_macos = True
+    _is_macos = True
 
 if DEBUG_MODE:
     logging.debug("DEBUG_MODE")
     logging.debug(f"ODBC: {ODBC}")
     logging.debug(f"SEARCH_FOR_ODBC_DRIVERS: {SEARCH_FOR_ODBC_DRIVERS}")
-    logging.debug(f"use_subprocess: {use_subprocess}")
-    logging.debug(f"detect_subprocess_need: {detect_subprocess_need}")
+    logging.debug(f"use_subprocess: {_use_subprocess}")
+    logging.debug(f"detect_subprocess_need: {_detect_subprocess_need}")
     logging.debug(f"current_platform: {current_platform}")
 
-if detect_subprocess_need:
+if _detect_subprocess_need:
     logging.debug("detect_subprocess_need is True: checking versions")
     python_version, os_version = platform.architecture()
     if python_version == "64bit" and prms.Instruments.Arbin.office_version == "32bit":
         logging.debug(
             "python 64bit and office 32bit -> " "setting use_subprocess to True"
         )
-        use_subprocess = True
+        _use_subprocess = True
 
-if use_subprocess and not is_posix:
+if _use_subprocess and not _is_posix:
     # The Windows users most likely have a strange custom path to mdbtools etc.
     logging.debug(
         "using subprocess (most likely mdbtools) on non-posix (most likely windows)"
     )
     if not prms.Instruments.Arbin.sub_process_path:
-        sub_process_path = str(prms._sub_process_path)
+        _sub_process_path = str(prms.sub_process_path)
     else:
-        sub_process_path = str(prms.Instruments.Arbin.sub_process_path)
+        _sub_process_path = str(prms.Instruments.Arbin.sub_process_path)
 
-if is_posix:
-    sub_process_path = "mdb-export"
+if _is_posix:
+    _sub_process_path = "mdb-export"
 
 try:
     driver_dll = prms.Instruments.Arbin.odbc_driver
@@ -108,7 +109,7 @@ TABLE_NAMES = {
     "aux": "Auxiliary_Table",
 }
 
-summary_headers_renaming_dict = {
+SUMMARY_HEADERS_RENAMING_DICT = {
     "test_id_txt": "Test_ID",
     "data_point_txt": "Data_Point",
     "vmax_on_cycle_txt": "Vmax_On_Cycle",
@@ -116,7 +117,7 @@ summary_headers_renaming_dict = {
     "discharge_time_txt": "Discharge_Time",
 }
 
-normal_headers_renaming_dict = {
+NORMAL_HEADERS_RENAMING_DICT = {
     "aci_phase_angle_txt": "ACI_Phase_Angle",
     "ref_aci_phase_angle_txt": "Reference_ACI_Phase_Angle",
     "ac_impedance_txt": "AC_Impedance",
@@ -148,15 +149,15 @@ normal_headers_renaming_dict = {
 class DataLoader(BaseLoader):
     """Class for loading arbin-data from res-files.
 
-    Implemented Cellpy params (prms.Instruments.Arbin):
-        max_res_filesize
-        chunk_size
-        max_chunks
-        use_subprocess
-        detect_subprocess_need
-        sub_process_path
-        office_version
-        SQL_server
+    Parameters from configuration (`prms.Instruments.Arbin`)::
+
+        - max_res_filesize: break if file size exceeds this limit.
+        - chunk_size: size of chunks to load.
+        - max_chunks: max number of chunks to load.
+        - use_subprocess: use mdbtools or not.
+        - detect_subprocess_need: detect if mdbtools is needed.
+        - sub_process_path: path to mdbtools (or similar).
+        - office_version: version of office (32 or 64 bit).
 
     """
 
@@ -164,7 +165,6 @@ class DataLoader(BaseLoader):
     raw_ext = "res"
 
     def __init__(self, *args, **kwargs):
-        """initiates the ArbinLoader class"""
         # could use __init__(self, cellpydata_object) and
         # set self.logger = cellpydata_object.logger etc.
         # then remember to include that as prm in "out of class" functions
@@ -286,9 +286,9 @@ class DataLoader(BaseLoader):
         headers["mapped_aux_pressure_number_txt"] = "Mapped_Aux_Pressure_Number"
         headers["mapped_aux_temperature_number_txt"] = "Mapped_Aux_Temperature_Number"
         headers["mapped_aux_voltage_number_txt"] = "Mapped_Aux_Voltage_Number"
-        headers[
-            "schedule_file_name_txt"
-        ] = "Schedule_File_Name"  # KEEP FOR CELLPY FILE FORMAT
+        headers["schedule_file_name_txt"] = (
+            "Schedule_File_Name"  # KEEP FOR CELLPY FILE FORMAT
+        )
         headers["start_datetime_txt"] = "Start_DateTime"
         headers["test_id_txt"] = "Test_ID"  # KEEP FOR CELLPY FILE FORMAT
         headers["test_name_txt"] = "Test_Name"  # KEEP FOR CELLPY FILE FORMAT
@@ -314,8 +314,8 @@ class DataLoader(BaseLoader):
         if dbloader is None:
             txt = f"{ODBC=}\n"
             txt += f"{SEARCH_FOR_ODBC_DRIVERS=}\n"
-            txt += f"{use_subprocess=}\n"
-            txt += f"{detect_subprocess_need=}\n"
+            txt += f"use_subprocess: {_use_subprocess}"
+            txt += f"{_detect_subprocess_need=}\n"
             txt += f"{current_platform=}\n"
             raise ValueError(
                 f"Something went seriously wrong." f"dbloader is None.\n{txt}"
@@ -339,7 +339,7 @@ class DataLoader(BaseLoader):
                 logging.debug("Unfortunately, it seems the list of drivers is emtpy.")
                 logging.debug("Use driver-name from config (if existing).")
                 driver = driver_dll
-                if is_macos:
+                if _is_macos:
                     driver = "/usr/local/lib/libmdbodbc.dylib"
                 else:
                     if not driver:
@@ -416,7 +416,7 @@ class DataLoader(BaseLoader):
         if rename_headers:
             columns = {}
             for key in self.arbin_headers_normal:
-                old_header = normal_headers_renaming_dict[key]
+                old_header = NORMAL_HEADERS_RENAMING_DICT[key]
                 new_header = self.cellpy_headers_normal[key]
                 columns[old_header] = new_header
 
@@ -425,7 +425,7 @@ class DataLoader(BaseLoader):
                 # TODO: check if summary df is existing (to only check if it is
                 #  empty will give an error later!)
                 columns = {}
-                for key, old_header in summary_headers_renaming_dict.items():
+                for key, old_header in SUMMARY_HEADERS_RENAMING_DICT.items():
                     try:
                         columns[old_header] = self.cellpy_headers_normal[key]
                     except KeyError:
@@ -682,8 +682,8 @@ class DataLoader(BaseLoader):
         table_name_aux_global = TABLE_NAMES["aux_global"]
         table_name_aux = TABLE_NAMES["aux"]
 
-        if is_posix:
-            if is_macos:
+        if _is_posix:
+            if _is_macos:
                 self.logger.debug("\nMAC OSX USING MDBTOOLS")
             else:
                 self.logger.debug("\nPOSIX USING MDBTOOLS")
@@ -825,9 +825,9 @@ class DataLoader(BaseLoader):
             self.logger.debug(f"could not get file size: {e}")
 
         use_mdbtools = False
-        if use_subprocess:
+        if _use_subprocess:
             use_mdbtools = True
-        if is_posix:
+        if _is_posix:
             use_mdbtools = True
 
         if use_mdbtools:
@@ -922,12 +922,12 @@ class DataLoader(BaseLoader):
             with open(tmp_file, "w") as f:
                 try:
                     subprocess.call(
-                        [sub_process_path, temp_filename, table_name], stdout=f
+                        [_sub_process_path, temp_filename, table_name], stdout=f
                     )
                     logging.debug(f"ran mdb-export {str(f)} {table_name}")
                 except FileNotFoundError as e:
                     logging.critical(
-                        f"Could not run {sub_process_path} on {temp_filename}"
+                        f"Could not run {_sub_process_path} on {temp_filename}"
                     )
                     logging.critical(f"Possible work-around: install mdbtools")
                     raise e

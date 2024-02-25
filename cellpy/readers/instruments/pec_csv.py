@@ -1,4 +1,5 @@
 """pec csv-type data files"""
+
 import logging
 import os
 import warnings
@@ -36,7 +37,7 @@ pec_headers_normal["test_id_txt"] = "Test"
 
 
 class DataLoader(BaseLoader):
-    """Main loading class"""
+    """Class for loading exported data from PEC"""
 
     instrument_name = "pec_csv"
     raw_ext = "csv"
@@ -128,27 +129,17 @@ class DataLoader(BaseLoader):
                     its_unit = item[x:]
                     pec_times[var] = units.get(its_unit)
                     if var == "total_time":
-                        pec_headers_normal[
-                            "test_time_txt"
-                        ] = f'Total_Time_{its_unit[1:-1].replace(" ", "_")}'
+                        pec_headers_normal["test_time_txt"] = (
+                            f'Total_Time_{its_unit[1:-1].replace(" ", "_")}'
+                        )
                     if var == "step_time":
-                        pec_headers_normal[
-                            "step_time_txt"
-                        ] = f'Step_Time_{its_unit[1:-1].replace(" ", "_")}'
+                        pec_headers_normal["step_time_txt"] = (
+                            f'Step_Time_{its_unit[1:-1].replace(" ", "_")}'
+                        )
         return pec_times
 
     @staticmethod
     def get_raw_units():
-        """Include the settings for the units used by the instrument.
-
-        The units are defined w.r.t. the SI units ('unit-fractions'; currently only units that are multiples of
-        Si units can be used). For example, for current defined in mA, the value for the
-        current unit-fraction will be 0.001.
-
-        Returns: dictionary containing the unit-fractions for current, charge, and mass
-
-        """
-
         raw_units = dict()
         raw_units["current"] = "A"
         raw_units["charge"] = "Ah"
@@ -171,16 +162,6 @@ class DataLoader(BaseLoader):
         return raw_units
 
     def get_raw_limits(self):
-        """Include the settings for how to decide what kind of step you are examining here.
-
-        The raw limits are 'epsilons' used to check if the current and/or voltage is stable (for example
-        for galvanostatic steps, one would expect that the current is stable (constant) and non-zero).
-        It is expected that different instruments (with different resolution etc.) have different
-        'epsilons'.
-
-        Returns: the raw limits (dict)
-
-        """
         warnings.warn("raw limits have not been subject for testing yet")
         raw_limits = dict()
         raw_limits["current_hard"] = 0.1  # There is a bug in PEC
@@ -408,7 +389,8 @@ class DataLoader(BaseLoader):
         return skiprows
 
     @staticmethod
-    def timestamp_to_seconds(timestamp):  # Changes hh:mm:s.xxx time format to seconds
+    def timestamp_to_seconds(timestamp):
+        """Changes hh:mm:s.xxx time format to seconds"""
         total_secs = 0
         # strptime can not handle more than 24 hours, days are counted manually
         hours = int(timestamp[:2])
