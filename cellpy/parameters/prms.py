@@ -150,6 +150,7 @@ class ReaderClass(CellPyConfig):
 @dataclass
 class DbClass(CellPyConfig):
     """Settings for the handling the simple database."""
+
     db_type: str = "simple_excel_reader"
     db_table_name: str = "db_table"  # used for simple excel db reader
     db_header_row: int = 0  # used for simple excel db reader
@@ -165,6 +166,7 @@ class DbClass(CellPyConfig):
 @dataclass
 class DbColsClass(CellPyConfig):  # used for simple excel db reader
     """Names of the columns in the simple database."""
+
     # Note to developers:
     #  1) This is ONLY for the excel-reader (dbreader.py)! More advanced
     #     readers should get their own way of handling the db-columns.
@@ -213,6 +215,7 @@ class DbColsClass(CellPyConfig):  # used for simple excel db reader
 @dataclass
 class DbColsUnitClass(CellPyConfig):
     """Unit of the columns in the simple database."""
+
     # Note to developers:
     #  1) This is ONLY for the excel-reader (dbreader.py)! More advanced
     #     readers should get their own way of handling the db-columns.
@@ -308,6 +311,7 @@ Batch = BatchClass(backend="plotly")
 @dataclass
 class InstrumentsClass(CellPyConfig):
     """Settings for the instruments."""
+
     tester: Union[str, None]
     custom_instrument_definitions_file: Union[str, None]
     Arbin: box.Box
