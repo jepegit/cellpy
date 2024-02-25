@@ -26,7 +26,7 @@ contains several attributes that can be assigned directly.
 
 ```
 
-## Methods
+### Methods
 The **CellpyCell** object contains lots of methods for manipulating, extracting
 and summarising the data from the run(s).
 The following two methods are typically automatically run upon loading your data using
@@ -47,7 +47,7 @@ Other common methods worth mentioning are:
 
 Take a look at API section (Module index, `cellpy.readers.cellreader.CellpyCell`) for more info.
 
-## Data
+### Data
 The data is stored as an instance of the Data class, `CellpyCell.data`
 (a `cellpy.cellreader.Data` instance).
 
@@ -140,7 +140,7 @@ from cellpy.parameters.internal_settings import headers_normal
 cycle_column_header = headers_normal.cycle_index_txt
 ```
 
-##### Column headings - raw data (or "normal" data)
+## Column headings - raw data (or "normal" data)
 
 ```python
 @dataclass
@@ -176,7 +176,7 @@ class HeadersNormal(BaseHeaders):
     test_name_txt: str = "test_name"
 ```
 
-##### Column headings - summary data
+### Column headings - summary data
 
 ```python
 @dataclass
@@ -241,7 +241,7 @@ class HeadersSummary(BaseHeaders):
     pre_aux: str = "aux_"
 ```
 
-#### Column headings - step table
+### Column headings - step table
 
 ```python
 @dataclass
@@ -266,7 +266,7 @@ class HeadersStepTable(BaseHeaders):
     rate_avr: str = "rate_avr"
 ```
 
-#### Column headings - journal pages
+### Column headings - journal pages
 
 ```python
 @dataclass
@@ -293,7 +293,7 @@ class HeadersJournal(BaseHeaders):
 CellpyCell.keys_journal_session = ["starred", "bad_cells", "bad_cycles", "notes"]
 ```
 
-#### Step types
+### Step types
 
 Identifiers for the different steps have pre-defined names given in the
 class attribute list `list_of_step_types` and is written to the "step" column.
@@ -306,7 +306,7 @@ list_of_step_types = ['charge', 'discharge',
                       'rest', 'not_known']
 ```
 
-### Tester-dependent attributes
+## Tester-dependent attributes
 
 For each type of testers that are supported by `cellpy`,
 a set of column headings and other different settings/attributes might also exist.

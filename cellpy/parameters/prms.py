@@ -1,4 +1,5 @@
 """cellpy parameters"""
+
 from __future__ import annotations
 import os
 import sys
@@ -123,9 +124,9 @@ class ReaderClass(CellPyConfig):
     cycle_mode: str = "anode"
     sorted_data: bool = True  # finding step-types assumes sorted data
     select_minimal: bool = False
-    limit_loaded_cycles: Optional[
-        int
-    ] = None  # limit loading cycles to given cycle number
+    limit_loaded_cycles: Optional[int] = (
+        None  # limit loading cycles to given cycle number
+    )
     ensure_step_table: bool = False
     ensure_summary_table: bool = False
     voltage_interpolation_step: float = 0.01
@@ -304,7 +305,7 @@ class InstrumentsClass(CellPyConfig):
 
 # Pre-defined instruments:
 # These can stay global:
-Arbin = {
+_Arbin = {
     "max_res_filesize": 150_000_000,
     "chunk_size": None,
     "max_chunks": None,
@@ -318,13 +319,13 @@ Arbin = {
     "SQL_Driver": "SQL Server",
 }
 
-Arbin = box.Box(Arbin)
+Arbin = box.Box(_Arbin)
 
-Maccor = {"default_model": "one"}
-Maccor = box.Box(Maccor)
+_Maccor = {"default_model": "one"}
+Maccor = box.Box(_Maccor)
 
-Neware = {"default_model": "one"}
-Neware = box.Box(Neware)
+_Neware = {"default_model": "one"}
+Neware = box.Box(_Neware)
 
 Instruments = InstrumentsClass(
     tester=None,  # TODO: moving this to DataSetClass (deprecate)
