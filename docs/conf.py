@@ -120,8 +120,10 @@ autoapi_options = [
     "show-module-summary",
     "show-inheritance-diagram",
 ]
-autoapi_ignore = ["txt"]
-
+autoapi_ignore = ["*dev_*"]
+autoapi_python_class_content = "both"
+autoapi_member_order = "groupwise"
+autoapi_keep_files = True
 # myst settings
 # see https://myst-parser.readthedocs.io/en/latest/syntax/optional.html
 myst_enable_extensions = [

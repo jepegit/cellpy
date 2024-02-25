@@ -30,58 +30,58 @@ try:
     import cookiecutter.prompt
 
 except ModuleNotFoundError:
-    txt = (
+    _txt = (
         "Could not import cookiecutter (used by cellpy new). Try installing it, for example by writing:"
         "\n\n         python -m pip install cookiecutter\n"
     )
-    DIFFICULT_MISSING_MODULES["cookiecutter"] = txt
+    DIFFICULT_MISSING_MODULES["cookiecutter"] = _txt
 
 try:
     import github
     from github import Github
 
 except ModuleNotFoundError:
-    txt = (
+    _txt = (
         "Could not import the github library (used by cellpy pull). Try installing it, for example by writing:"
         "\n\n         python -m pip install github\n"
     )
-    DIFFICULT_MISSING_MODULES["github"] = txt
+    DIFFICULT_MISSING_MODULES["github"] = _txt
 
 
 try:
     import sqlalchemy_access
 
 except ModuleNotFoundError:
-    txt = (
+    _txt = (
         "Could not import the sqlalchemy_access library (usually used by when reading arbin .res files "
         "on windows). If you need it, try installing it by writing:"
         "\n\n         python -m pip install sqlalchemy-access\n"
     )
-    DIFFICULT_MISSING_MODULES["sqlalchemy-access"] = txt
+    DIFFICULT_MISSING_MODULES["sqlalchemy-access"] = _txt
 
 
 try:
     import lmfit
 
 except ModuleNotFoundError:
-    txt = (
+    _txt = (
         "Could not import the lmfit library (used when fitting ocv rlx data)."
         " If you think you will need it, try installing it for example by writing:"
         "\n\n         python -m pip install lmfit\n"
     )
-    DIFFICULT_MISSING_MODULES["lmfit"] = txt
+    DIFFICULT_MISSING_MODULES["lmfit"] = _txt
 
 
 try:
     import jinja2_time
 
 except ModuleNotFoundError:
-    txt = (
+    _txt = (
         "Could not import the jinja2_time library (used by cellpy new)."
         " Try installing it, for example by writing:"
         "\n\n         python -m pip install jinja2_time\n"
     )
-    DIFFICULT_MISSING_MODULES["jinja2_time"] = txt
+    DIFFICULT_MISSING_MODULES["jinja2_time"] = _txt
 
 VERSION = cellpy._version.__version__
 REPO = "jepegit/cellpy"
@@ -117,27 +117,30 @@ def get_default_config_file_path(init_filename=None):
 
 
 def get_dst_file(user_dir, init_filename):
+    """gets the destination path for the config-file"""
     user_dir = pathlib.Path(user_dir)
     dst_file = user_dir / init_filename
     return dst_file
 
 
 def echo_missing_modules():
+    """prints out the missing modules"""
     for m in DIFFICULT_MISSING_MODULES:
         print(f"missing module: {m}")
         print(f"message: {DIFFICULT_MISSING_MODULES[m]}")
 
 
-def modify_config_file():
+def _modify_config_file():
     pass
 
 
-def create_cellpy_folders():
+def _create_cellpy_folders():
     pass
 
 
 @click.group("cellpy")
 def cli():
+    """cellpy - command line interface."""
     pass
 
 
@@ -1962,7 +1965,7 @@ def _cli_setup_interactive():
             click.echo(line.strip())
 
 
-def check_it(var=None):
+def _check_it(var=None):
     import pathlib
     import sys
 
@@ -1988,9 +1991,10 @@ def check_it(var=None):
     # click.echo("ok")
 
 
-def check_info_check():
+def _check_info_check():
+    """Check your cellpy installation."""
     _check()
 
 
 if __name__ == "__main__":
-    check_info_check()
+    _check_info_check()
