@@ -34,5 +34,6 @@ dependencies:
     - rich
     - sqlalchemy-access
     - kaleido==0.1.*
+    - jinja2_time
 
 
