@@ -635,7 +635,7 @@ def dqdv_cycles(cycles, not_merged=False, label_direction=False, **kwargs):
     return ica_df
 
 
-def dqdv(
+def dqdv( # this should be renamed to something sensible to reflect numpy input
     voltage,
     capacity,
     voltage_resolution=None,
@@ -762,7 +762,7 @@ def dqdv(
 
     return converter.voltage_processed, converter.incremental_capacity
 
-
+# this should be the actual dqdv function
 def dqdv_frames(cell, split=False, tidy=True, label_direction=False, **kwargs):
     """Returns dqdv data as pandas.DataFrame(s) for all cycles.
 
