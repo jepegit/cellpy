@@ -763,8 +763,8 @@ def generate_summary_plots(experiment, **kwargs):
     }
     try:
         summaries = generate_summary_frame_for_plotting(pages, experiment)
-    except KeyError:
-        logging.info("could not process the summaries")
+    except KeyError as e:
+        logging.info(f"could not process the summaries ({e})")
         return
 
     try:
@@ -803,8 +803,12 @@ def generate_summary_frame_for_plotting(pages, experiment, **kwargs):
         if _optional_summary in summaries.columns:
             _required_summaries.append(_optional_summary)
     summaries = summaries.loc[:, _required_summaries]
-    summaries = summaries.melt(id_vars=[hdr_cycle])
-
+    try:
+        summaries = summaries.melt(
+            id_vars=[hdr_cycle],
+        )
+    except Exception as e:
+        logging.debug(f"could not melt summaries ({e})")
     pages = pages.copy()
     pages.index.name = "cell"
     pages = pages.reset_index()

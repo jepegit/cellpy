@@ -10,7 +10,7 @@ dependencies:
     - cryptography
     - click
     - scipy
-    - pandas
+    - pandas <=2.1
     - setuptools
     - ruamel.yaml
     - pyodbc
