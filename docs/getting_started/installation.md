@@ -168,7 +168,14 @@ conda install -c conda-forge pytables
 conda install -c conda-forge lmfit
 ```
 
-- `seaborn` and `plotly`: plotting library used in several of our example notebooks.
+
+- `jina2-time` and `git` is required for using templating system in `cellpy`:
+
+```console
+conda install -c conda-forge jinja2-time
+```
+
+- `seaborn` and `plotly`: plotting libraries used in several of our example notebooks.
 - `jupyter`: used for tutorial notebooks and in general very useful tool
   for working with and sharing your `cellpy` results.
 

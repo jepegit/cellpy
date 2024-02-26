@@ -42,5 +42,6 @@ jobs:
       - name: pytest with nbmake (cellpy_batch_processing)
         run: |
           python -m pip install -e .
+          python -m pip install kaleido==0.1.*
           python -m ipykernel install --user --name=cellpy_dev
           pytest -v --nbmake  --nbmake-timeout=3600 --nbmake-kernel=cellpy_dev "examples/cellpy batch utility/cellpy_batch_processing.ipynb"
