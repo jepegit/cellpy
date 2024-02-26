@@ -60,5 +60,7 @@ dependencies:
         - pip-tools
         - myst_nb
         - sphinx-book-theme
+        - jinja2_time
+        - kaleido==0.1.*
 
 

@@ -803,9 +803,7 @@ def generate_summary_frame_for_plotting(pages, experiment, **kwargs):
         if _optional_summary in summaries.columns:
             _required_summaries.append(_optional_summary)
     summaries = summaries.loc[:, _required_summaries]
-    # try:
     id_var = summaries.columns[0]
-    print(f"using {id_var} as id_var")
     summaries = summaries.melt(
         id_vars=[id_var],
         # prior to pandas 2.2.0, the following line was used

@@ -38,6 +38,7 @@ dependencies:
     - pip:
         - sqlalchemy-access
         - jinja2_time
+        - kaleido==0.1.*
 
 
 

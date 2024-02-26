@@ -33,5 +33,6 @@ dependencies:
     - ipykernel
     - rich
     - sqlalchemy-access
+    - kaleido==0.1.*
 
 
