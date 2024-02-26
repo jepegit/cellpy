@@ -39,6 +39,3 @@ jobs:
 
       - name: pytest
         run: pytest
-
-      - name: pytest with nbmake (cellpy_batch_processing)
-        run: pytest -v --nbmake  --nbmake-timeout=3600 "examples/cellpy batch utility/cellpy_batch_processing.ipynb"
