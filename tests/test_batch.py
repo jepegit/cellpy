@@ -344,7 +344,7 @@ def test_interact_with_cellpydata_get_cap(updated_cycling_experiment, parameters
 
 def test_cycling_summary_plotter(populated_batch):
     populated_batch.combine_summaries()
-    populated_batch.plot_summaries()
+    populated_batch.plot()
 
 
 def test_concatinator(populated_batch):
