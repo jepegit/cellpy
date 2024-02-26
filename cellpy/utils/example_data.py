@@ -12,6 +12,13 @@ RAW_PATH = CURRENT_PATH / "data" / "raw"
 H5_PATH = CURRENT_PATH / "data"
 
 
+def _download_if_missing(filename):
+    p = RAW_PATH / filename
+    if not p.is_file():
+        _download_example_data(filename)
+    return p
+
+
 def _download_example_data(filename):
     """Download example data from the cellpy-data repository.
 
@@ -80,53 +87,32 @@ def cellpy_file_path():
 
 def arbin_file_path():
     """Get the path to an example arbin res file"""
-
-    return RAW_PATH / "20160805_test001_45_cc_01.res"
+    return _download_if_missing("20160805_test001_45_cc_01.res")
 
 
 def arbin_multi_file_path():
     """Get the path to an example arbin res file"""
-    r = "aux_multi_x.res"
-    p = RAW_PATH / r
-    if not p.is_file():
-        _download_example_data(r)
-    return p
+    return _download_if_missing("aux_multi_x.res")
 
 
 def maccor_file_path():
     """Get the path to an example maccor txt file"""
-    r = "maccor.txt"
-    p = RAW_PATH / r
-    if not p.is_file():
-        _download_example_data(r)
-    return p
+    return _download_if_missing("maccor.txt")
 
 
 def neware_file_path():
     """Get the path to an example neware csv file"""
-    r = "neware.csv"
-    p = RAW_PATH / r
-    if not p.is_file():
-        _download_example_data(r)
-    return p
+    return _download_if_missing("neware.csv")
 
 
 def pec_file_path():
     """Get the path to an example pec csv file"""
-    r = "pec.csv"
-    p = RAW_PATH / r
-    if not p.is_file():
-        _download_example_data(r)
-    return p
+    return _download_if_missing("pec.csv")
 
 
 def biologics_file_path():
     """Get the path to an example biologics mpr file"""
-    r = "biol.mpr"
-    p = RAW_PATH / r
-    if not p.is_file():
-        _download_example_data(r)
-    return p
+    return _download_if_missing("biol.mpr")
 
 
 if __name__ == "__main__":
