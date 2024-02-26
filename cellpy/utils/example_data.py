@@ -70,7 +70,27 @@ def arbin_file_path():
     return RAW_PATH / "20160805_test001_45_cc_01.res"
 
 
+def maccor_file_path():
+    """Get the path to an example maccor txt file"""
+    raise NotImplementedError
+
+
+def neware_file_path():
+    """Get the path to an example neware csv file"""
+    raise NotImplementedError
+
+
+def pec_file_path():
+    """Get the path to an example pec csv file"""
+    raise NotImplementedError
+
+
+def biologics_file_path():
+    """Get the path to an example biologics mpr file"""
+    raise NotImplementedError
+
+
 if __name__ == "__main__":
-    a = raw_file()
+    _a = raw_file()
     print("Saving new version of the cellpy file!")
-    a.save(cellpy_file_path())
+    _a.save(cellpy_file_path())

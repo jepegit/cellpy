@@ -24,6 +24,7 @@ from cellpy.parameters.internal_settings import (
 from cellpy.utils import helpers
 
 plotly_available = importlib.util.find_spec("plotly") is not None
+seaborn_available = importlib.util.find_spec("seaborn") is not None
 
 # logger = logging.getLogger(__name__)
 logging.captureWarnings(True)
@@ -132,10 +133,10 @@ COLOR_DICT = {
     ],
 }
 
-hdr_summary = get_headers_summary()
-hdr_raw = get_headers_normal()
-hdr_steps = get_headers_step_table()
-hdr_journal = get_headers_journal()
+_hdr_summary = get_headers_summary()
+_hdr_raw = get_headers_normal()
+_hdr_steps = get_headers_step_table()
+_hdr_journal = get_headers_journal()
 
 
 def create_colormarkerlist_for_journal(
@@ -153,8 +154,8 @@ def create_colormarkerlist_for_journal(
     """
     logging.debug("symbol_label: " + symbol_label)
     logging.debug("color_style_label: " + color_style_label)
-    groups = journal.pages[hdr_journal.group].unique()
-    sub_groups = journal.pages[hdr_journal.subgroup].unique()
+    groups = journal.pages[_hdr_journal.group].unique()
+    sub_groups = journal.pages[_hdr_journal.subgroup].unique()
     return create_colormarkerlist(groups, sub_groups, symbol_label, color_style_label)
 
 
@@ -188,7 +189,15 @@ def create_colormarkerlist(
 
 
 def create_col_info(c):
-    """Create column information for summary plots."""
+    """Create column information for summary plots.
+
+    Args:
+        c: cellpy object
+
+    Returns:
+        x_columns (tuple), y_cols (dict)
+
+    """
 
     # TODO: add support for more column sets and individual columns
     hdr = c.headers_summary
@@ -218,6 +227,16 @@ def create_col_info(c):
 
 
 def create_label_dict(c):
+    """Create label dictionary for summary plots.
+
+    Args:
+        c: cellpy object
+
+    Returns:
+        x_axis_labels (dict), y_axis_label (dict)
+
+    """
+
     hdr = c.headers_summary
     x_axis_labels = {
         hdr.cycle_index: "Cycle Number",
@@ -433,7 +452,22 @@ def raw_plot(
     interactive=True,
     **kwargs,
 ):
-    # TODO: missing doc-string
+    """Plot raw data.
+
+    Args:
+        cell: cellpy object
+        y: y-axis column
+        y_label: label for y-axis
+        x: x-axis column
+        x_label: label for x-axis
+        title: title of the plot
+        interactive: use interactive plotting
+        **kwargs: additional parameters for the plotting backend
+
+    Returns:
+        matplotlib figure or plotly figure
+
+    """
 
     raw = cell.data.raw.copy()
 
@@ -446,7 +480,7 @@ def raw_plot(
         title = f"{cell.cell_name}"
 
     if x == "test_time_hrs":
-        raw["test_time_hrs"] = raw[hdr_raw["test_time_txt"]] / 3600
+        raw["test_time_hrs"] = raw[_hdr_raw["test_time_txt"]] / 3600
 
     if plotly_available and interactive:
         import plotly.express as px
@@ -714,7 +748,7 @@ def _cycle_info_plot_matplotlib(
     if cycle is None:
         warnings.warn("Only one cycle at a time is supported for matplotlib")
         cycle = 1
-    
+
     if isinstance(cycle, (list, tuple)):
         warnings.warn("Only one cycle at a time is supported for matplotlib")
         cycle = cycle[0]

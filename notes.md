@@ -115,3 +115,91 @@ Update: Did not work for areal for John.
 strings with units (e.g. "0.1 mg", "12 cm2", "100.2 mAh").
 Damned! It seems that updating the nom_cap_specifics in the cellpyfile does not work properly yet. It still
 said gravimetric for the one that should be areal!!!!!!!!!!!!!! NEED TO FIX THIS ASAP!!!!!!!!!!!!!!!!!!!!!
+
+
+### Google docstrings
+
+https://www.sphinx-doc.org/en/master/usage/extensions/napoleon.html#sections
+
+All of the following section headers are supported:
+
+- Args (alias of Parameters)
+
+- Arguments (alias of Parameters)
+
+- Attention
+
+- Attributes
+
+- Caution
+
+- Danger
+
+- Error
+
+- Example
+
+- Examples
+
+- Hint
+
+- Important
+
+- Keyword Args (alias of Keyword Arguments)
+
+- Keyword Arguments
+
+- Methods
+
+- Note
+
+- Notes
+
+- Other Parameters
+
+- Parameters
+
+- Return (alias of Returns)
+
+- Returns
+
+- Raise (alias of Raises)
+
+- Raises
+
+- References
+
+- See Also
+
+- Tip
+
+- Todo
+
+- Warning
+
+- Warnings (alias of Warning)
+
+- Warn (alias of Warns)
+
+- Warns
+
+- Yield (alias of Yields)
+
+- Yields
+
+
+#### napoleon_custom_sections
+Add a list of custom sections to include, expanding the list of parsed sections.
+Defaults to None.
+
+The entries can either be strings or tuples, depending on the intention:
+
+- To create a custom “generic” section, just pass a string.
+
+- To create an alias for an existing section, pass a tuple containing the alias name and the original, in that order.
+
+- To create a custom section that displays like the parameters or returns section, pass a tuple containing the custom
+section name and a string value, “params_style” or “returns_style”.
+
+If an entry is just a string, it is interpreted as a header for a generic section.
+If the entry is a tuple/list/indexed container, the first entry is the name of the section, the second is the section key to emulate. If the second entry value is “params_style” or “returns_style”, the custom section will be displayed like the parameters section or returns section.
