@@ -803,12 +803,17 @@ def generate_summary_frame_for_plotting(pages, experiment, **kwargs):
         if _optional_summary in summaries.columns:
             _required_summaries.append(_optional_summary)
     summaries = summaries.loc[:, _required_summaries]
-    try:
-        summaries = summaries.melt(
-            id_vars=[hdr_cycle],
-        )
-    except Exception as e:
-        logging.debug(f"could not melt summaries ({e})")
+    # try:
+    id_var = summaries.columns[0]
+    print(f"using {id_var} as id_var")
+    summaries = summaries.melt(
+        id_vars=[id_var],
+        # prior to pandas 2.2.0, the following line was used
+        #   id_vars=[hdr_cycle],
+    )
+
+    # due to pandas 2.2.0 change, the following line is needed:
+    summaries = summaries.rename(columns={id_var: hdr_cycle})
     pages = pages.copy()
     pages.index.name = "cell"
     pages = pages.reset_index()
