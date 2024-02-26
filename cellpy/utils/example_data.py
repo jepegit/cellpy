@@ -12,6 +12,20 @@ RAW_PATH = CURRENT_PATH / "data" / "raw"
 H5_PATH = CURRENT_PATH / "data"
 
 
+def _download_example_data(filename):
+    """Download example data from the cellpy-data repository.
+
+    Args:
+        filename (str): the name of the file to download
+
+    Returns:
+        None
+
+    """
+    # Should download file from e.g. GitHub and save it in the data folder (RAW_PATH)
+    raise NotImplementedError("Downloading example data is not implemented yet.")
+
+
 def raw_file(auto_summary=True, testing=False):
     """load an example data file (arbin).
 
@@ -70,24 +84,49 @@ def arbin_file_path():
     return RAW_PATH / "20160805_test001_45_cc_01.res"
 
 
+def arbin_multi_file_path():
+    """Get the path to an example arbin res file"""
+    r = "aux_multi_x.res"
+    p = RAW_PATH / r
+    if not p.is_file():
+        _download_example_data(r)
+    return p
+
+
 def maccor_file_path():
     """Get the path to an example maccor txt file"""
-    raise NotImplementedError
+    r = "maccor.txt"
+    p = RAW_PATH / r
+    if not p.is_file():
+        _download_example_data(r)
+    return p
 
 
 def neware_file_path():
     """Get the path to an example neware csv file"""
-    raise NotImplementedError
+    r = "neware.csv"
+    p = RAW_PATH / r
+    if not p.is_file():
+        _download_example_data(r)
+    return p
 
 
 def pec_file_path():
     """Get the path to an example pec csv file"""
-    raise NotImplementedError
+    r = "pec.csv"
+    p = RAW_PATH / r
+    if not p.is_file():
+        _download_example_data(r)
+    return p
 
 
 def biologics_file_path():
     """Get the path to an example biologics mpr file"""
-    raise NotImplementedError
+    r = "biol.mpr"
+    p = RAW_PATH / r
+    if not p.is_file():
+        _download_example_data(r)
+    return p
 
 
 if __name__ == "__main__":
