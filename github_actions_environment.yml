@@ -33,6 +33,7 @@ dependencies:
     - pytest
     - pytest-timeout
     - pytest-benchmark
+    - nbmake
     - pip:
         - sqlalchemy-access
         - jinja2_time

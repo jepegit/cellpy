@@ -53,6 +53,7 @@ dependencies:
     - python-dotenv
     - myst-parser
     - sphinx_rtd_theme
+    - nbmake
     - pip:
         - pipdeptree
         - pydeps
