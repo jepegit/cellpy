@@ -116,6 +116,7 @@ def biologics_file_path():
 
 
 if __name__ == "__main__":
+    # This is used for making a new version of the cellpy file
     _a = raw_file()
     print("Saving new version of the cellpy file!")
     _a.save(cellpy_file_path())
