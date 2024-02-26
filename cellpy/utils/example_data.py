@@ -30,6 +30,7 @@ def _download_example_data(filename):
 
     """
     # Should download file from e.g. GitHub and save it in the data folder (RAW_PATH)
+    # with the name "filename"
     logging.info(f"{filename} not found. Downloading...")
     raise NotImplementedError("Downloading example data is not implemented yet.")
 
