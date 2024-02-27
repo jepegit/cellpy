@@ -4,16 +4,33 @@ import logging
 import os
 from pathlib import Path
 
+import requests
+
 import cellpy
+from cellpy import prms
 
 logging.info("Ready to help you to get some data to play with.")
 CURRENT_PATH = Path(os.path.dirname(os.path.realpath(__file__)))
-RAW_PATH = CURRENT_PATH / "data" / "raw"
-H5_PATH = CURRENT_PATH / "data"
+DATA_PATH = CURRENT_PATH / "data"
+
+
+def download_file(url, local_filename):
+    """Download a file from the web.
+
+    Args:
+        url (str): URL of the file to download
+        local_filename (str): Local filename to save the file to
+
+    """
+    with requests.get(url, stream=True) as r:
+        r.raise_for_status()
+        with open(local_filename, "wb") as f:
+            for chunk in r.iter_content(chunk_size=8192):
+                f.write(chunk)
 
 
 def _download_if_missing(filename: str) -> Path:
-    p = RAW_PATH / filename
+    p = DATA_PATH / filename
     if not p.is_file():
         _download_example_data(filename)
     return p
@@ -29,10 +46,15 @@ def _download_example_data(filename: str):
         None
 
     """
-    # Should download file from e.g. GitHub and save it in the data folder (RAW_PATH)
-    # with the name "filename"
-    logging.info(f"{filename} not found. Downloading...")
-    raise NotImplementedError("Downloading example data is not implemented yet.")
+    logging.info(f"{filename} not found. Trying to access it from GitHub...")
+    base_url = prms._url_example_cellpy_data
+    if not os.path.exists(DATA_PATH):
+        raise FileNotFoundError(f"Could not find {DATA_PATH}")
+
+    logging.debug(f"Downloading {filename} from {base_url} to {DATA_PATH}")
+    download_file(base_url + filename, os.path.join(DATA_PATH, filename))
+
+    logging.debug("File downloaded successfully.")
 
 
 def raw_file(
@@ -48,7 +70,7 @@ def raw_file(
         cellpy.CellpyCell object with the data loaded
 
     """
-    file_path = RAW_PATH / "20160805_test001_45_cc_01.res"
+    file_path = arbin_file_path()
     mass = 0.704
     return cellpy.get(
         filename=file_path, mass=mass, auto_summary=auto_summary, testing=testing
@@ -65,69 +87,61 @@ def cellpy_file(testing: bool = False) -> cellpy.cellreader.CellpyCell:
         cellpy.CellpyCell object with the data loaded
     """
 
-    file_path = H5_PATH / "20180418_sf033_4_cc.h5"
+    file_path = cellpy_file_path()
     return cellpy.get(filename=file_path, testing=testing)
 
 
-def rate_file(testing: bool = False) -> cellpy.cellreader.CellpyCell:
-    """load an example cellpy file.
-
-    Args:
-        testing (bool): run in test mode
-
-    Returns:
-        cellpy.CellpyCell object with the rate data loaded
-    """
-
-    file_path = H5_PATH / "20231115_rate_cc.h5"
-    return cellpy.get(filename=file_path, testing=testing)
+@property
+def rate_file():
+    """Get the path to an example cellpy file with rate data"""
+    return _download_if_missing("20231115_rate_cc.h5")
 
 
-# def GITT_file(testing: bool = False) -> cellpy.cellreader.CellpyCell:
-#     """load an example cellpy file.
-#
-#     Args:
-#         testing (bool): run in test mode
-#
-#     Returns:
-#         cellpy.CellpyCell object with the rate data loaded
-#     """
-#
-#     file_path = H5_PATH / "gitt.h5"
-# return cellpy.get(filename=file_path, testing=testing)
-
-
+@property
 def cellpy_file_path() -> Path:
     """Get the path to an example cellpy file"""
 
-    return H5_PATH / "20180418_sf033_4_cc.h5"
+    return _download_if_missing("20180418_sf033_4_cc.h5")
 
 
+@property
+def old_cellpy_file_path() -> Path:
+    """Get the path to an example cellpy file"""
+    return _download_if_missing("20160805_test001_45_cc.h5")
+
+
+@property
 def arbin_file_path() -> Path:
     """Get the path to an example arbin res file"""
+
     return _download_if_missing("20160805_test001_45_cc_01.res")
 
 
+@property
 def arbin_multi_file_path() -> Path:
     """Get the path to an example arbin res file"""
     return _download_if_missing("aux_multi_x.res")
 
 
+@property
 def maccor_file_path() -> Path:
     """Get the path to an example maccor txt file"""
     return _download_if_missing("maccor.txt")
 
 
+@property
 def neware_file_path() -> Path:
     """Get the path to an example neware csv file"""
     return _download_if_missing("neware.csv")
 
 
+@property
 def pec_file_path() -> Path:
     """Get the path to an example pec csv file"""
     return _download_if_missing("pec.csv")
 
 
+@property
 def biologics_file_path() -> Path:
     """Get the path to an example biologics mpr file"""
     return _download_if_missing("biol.mpr")

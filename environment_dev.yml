@@ -54,6 +54,7 @@ dependencies:
     - myst-parser
     - sphinx_rtd_theme
     - nbmake
+    - requests
     - pip:
         - pipdeptree
         - pydeps

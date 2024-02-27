@@ -48,6 +48,7 @@ requirements = [
     "PyGithub",
     "tqdm",
     "pint",
+    "requests",
     # 'pyodbc;platform_system=="windows"',
     "pyodbc",
     "sqlalchemy>=2.0.0",

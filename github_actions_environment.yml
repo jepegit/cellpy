@@ -35,6 +35,7 @@ dependencies:
     - pytest-benchmark
     - nbmake
     - plotly
+    - requests
     - pip:
         - sqlalchemy-access
         - jinja2_time
