@@ -94,7 +94,7 @@ def rate_file(testing: bool = False) -> cellpy.cellreader.CellpyCell:
 #     """
 #
 #     file_path = H5_PATH / "gitt.h5"
-    # return cellpy.get(filename=file_path, testing=testing)
+# return cellpy.get(filename=file_path, testing=testing)
 
 
 def cellpy_file_path() -> Path:
