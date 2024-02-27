@@ -10,7 +10,7 @@ dependencies:
     - cryptography
     - click
     - scipy
-    - pandas
+    - pandas <=2.1
     - setuptools
     - ruamel.yaml
     - pyodbc
@@ -33,5 +33,8 @@ dependencies:
     - ipykernel
     - rich
     - sqlalchemy-access
+# This version of kaleido is not available for macOS M-chip:
+    - kaleido==0.1.*
+    - jinja2_time
 
 

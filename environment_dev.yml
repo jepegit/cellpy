@@ -10,7 +10,7 @@ dependencies:
     - cryptography
     - click
     - scipy
-    - pandas
+    - pandas <=2.1
     - setuptools
     - ruamel.yaml
     - pyodbc
@@ -53,11 +53,14 @@ dependencies:
     - python-dotenv
     - myst-parser
     - sphinx_rtd_theme
+    - nbmake
     - pip:
         - pipdeptree
         - pydeps
         - pip-tools
         - myst_nb
         - sphinx-book-theme
+        - jinja2_time
+        - kaleido==0.1.*
 
 

@@ -109,7 +109,7 @@ class CellpyCell:
     cell-tester file-formats that can be read.
 
     Attributes:
-        data: cellpy.Data object
+        data: ``cellpy.Data`` object containing the data
         cellpy_units: cellpy.units object
         cellpy_datadir: path to cellpy data directory
         raw_datadir: path to raw data directory
@@ -122,11 +122,10 @@ class CellpyCell:
         empty: empty
         forced_errors: forced errors
         capacity_modifiers: capacity modifiers
-        sep: separator
+        sep: delimiter to use when reading (when applicable) and exporting files
         cycle_mode: cycle mode
         tester: tester
-        cell_name: cell name
-        cellpy_file_version: cellpy file version
+        cell_name: cell name (session name, defaults to concatenated names of the subtests)
     """
 
     def __repr__(self):
@@ -316,7 +315,7 @@ class CellpyCell:
     # improvement suggestion: use data.cell_name instead
     @property
     def cell_name(self):
-        """returns the session name"""
+        """Returns the session name"""
 
         if not self._cell_name:
             try:
@@ -355,7 +354,7 @@ class CellpyCell:
 
     @property
     def mass(self):
-        """returns the mass"""
+        """Returns the mass"""
         return self.data.mass
 
     @mass.setter
@@ -364,7 +363,7 @@ class CellpyCell:
 
     @property
     def active_mass(self):
-        """returns the active mass (same as mass)"""
+        """Returns the active mass (same as mass)"""
         return self.data.mass
 
     @active_mass.setter
@@ -373,7 +372,7 @@ class CellpyCell:
 
     @property
     def tot_mass(self):
-        """returns the total mass"""
+        """Returns the total mass"""
         return self.data.tot_mass
 
     @tot_mass.setter
@@ -382,7 +381,7 @@ class CellpyCell:
 
     @property
     def active_electrode_area(self):
-        """returns the area"""
+        """Returns the area"""
         return self.data.active_electrode_area
 
     @active_electrode_area.setter
@@ -391,7 +390,7 @@ class CellpyCell:
 
     @property
     def nom_cap(self):
-        """returns the nominal capacity"""
+        """Returns the nominal capacity"""
         return self.data.nom_cap
 
     @nom_cap.setter
@@ -400,7 +399,7 @@ class CellpyCell:
 
     @property
     def nominal_capacity(self):
-        """returns the nominal capacity"""
+        """Returns the nominal capacity"""
         return self.data.nom_cap
 
     @nominal_capacity.setter
@@ -426,7 +425,7 @@ class CellpyCell:
 
     @property
     def nom_cap_specifics(self):
-        """returns the nominal capacity specific"""
+        """Returns the nominal capacity specific"""
         return self.data.meta_common.nom_cap_specifics
 
     @nom_cap_specifics.setter
@@ -450,13 +449,13 @@ class CellpyCell:
 
     @property
     def raw_units(self):
-        """returns the raw_units dictionary"""
+        """Returns the raw_units dictionary"""
 
         return self.data.raw_units
 
     @property
     def data(self):
-        """returns the DataSet instance"""
+        """Returns the DataSet instance"""
 
         if not self._data:
             logging.debug(
@@ -808,7 +807,7 @@ class CellpyCell:
 
         Example:
             >>> d = CellpyCell()
-            >>> directory = "MyData/Arbindata"
+            >>> directory = "MyData/cycler-data"
             >>> d.set_raw_datadir(directory)
 
         """
@@ -849,8 +848,12 @@ class CellpyCell:
     def check_file_ids(self, rawfiles, cellpyfile, detailed=False):
         """Check the stats for the files (raw-data and cellpy hdf5).
 
-        This function checks if the hdf5 file and the res-files have the same
+        This method checks if the hdf5 file and the res-files have the same
         timestamps etc. to find out if we need to bother to load .res -files.
+
+        if detailed is set to True, the method returns dict
+        containing True or False for each individual raw-file. If not, it returns
+        False if the raw files are newer than the cellpy hdf5-file (i.e. update is needed), else True.
 
         Args:
             cellpyfile (str): filename of the cellpy hdf5-file.
@@ -858,11 +861,8 @@ class CellpyCell:
             detailed (bool): return a dict containing True or False for each individual raw-file.
 
         Returns:
-            If detailed is False:
-                False if the raw files are newer than the cellpy hdf5-file
-                (update needed). True if update is not needed.
-             If detailed is True it returns a dict containing True or False for each
-                individual raw-file.
+            Bool or dict
+
         """
 
         txt = f"Checking file ids - using '{self.filestatuschecker}'"
@@ -1078,6 +1078,10 @@ class CellpyCell:
             >>> ... cell_data.make_summary() # etc. etc.
             >>> ... cell_datas.append(cell_data)
             >>>
+
+        Warnings:
+            This method will soon be deprecated. Use ``cellpy.get`` instead.
+
         """
         # This is a part of a dramatic API change. It will not be possible to
         # load more than one set of datasets (i.e. one single cellpy-file or
@@ -1185,17 +1189,14 @@ class CellpyCell:
             is_a_file (bool): set this to False if it is a not a file-like object.
             refuse_copying (bool): if set to True, the raw-file will not be copied before loading.
 
-        Keyword Args for merging:
-            recalc (bool): set to false if you don't want cellpy to automatically shift cycle number
+        Transferred Parameters:
+            recalc (bool): used by merging. Set to false if you don't want cellpy to automatically shift cycle number
                 and time (e.g. add last cycle number from previous file to the cycle numbers
                 in the next file).
-
-        Other keywords depending on loader:
-            [ArbinLoader]:
-                bad_steps (list of tuples): (c, s) tuples of steps s (in cycle c)
-                    to skip loading.
-                data_points (tuple of ints): load only data from data_point[0] to
-                    data_point[1] (use None for infinite). NOT IMPLEMENTED YET.
+            bad_steps (list of tuples): used by ``ArbinLoader``. (c, s) tuples of steps s (in cycle c)
+                to skip loading.
+            data_points (tuple of ints): used by ``ArbinLoader``. Load only data from data_point[0] to
+                data_point[1] (use None for infinite). NOT IMPLEMENTED YET.
 
         """
         if file_names:
@@ -1344,7 +1345,7 @@ class CellpyCell:
             selector (): under development
 
         Returns:
-            cellpy.CellPyCellpy class if return_cls is True
+            cellpy.CellpyCell class if return_cls is True
         """
 
         # This is what happens:
@@ -1426,7 +1427,7 @@ class CellpyCell:
             selector (): select specific ranges (under development)
 
         Returns:
-            loaded datasets (DataSet-object)
+            loaded datasets (Data-object)
         """
 
         if parent_level is None:
@@ -2436,6 +2437,10 @@ class CellpyCell:
         """Get the step numbers of selected type.
 
         Returns the selected step_numbers for the selected type of step(s).
+        Either in a dictionary containing a list of step numbers corresponding
+        to the selected steptype for the cycle(s), or a ``pandas.DataFrame`` instead of
+        a dict of lists if pdtype is set to True. The frame is a sub-set of the
+        step-table frame (i.e. all the same columns, only filtered by rows).
 
         Args:
             steptype (string): string identifying type of step.
@@ -2448,11 +2453,7 @@ class CellpyCell:
             steptable (pandas.DataFrame): optional steptable
 
         Returns:
-            A dictionary containing a list of step numbers corresponding
-                to the selected steptype for the cycle(s).
-            Returns a pandas.DataFrame instead of a dict of lists if pdtype is
-                set to True. The frame is a sub-set of the step-table frame
-                (i.e. all the same columns, only filtered by rows).
+            dict or ``pandas.DataFrame``
 
         Example:
             >>> my_charge_steps = CellpyCell.get_step_numbers(
@@ -3458,21 +3459,19 @@ class CellpyCell:
             raw: (bool) export raw-data if True.
             summary: (bool) export summary if True.
             shifted (bool): export with cumulated shift.
-            method (string): how the curves are given::
+            method (string): how the curves are given:
 
-                "back-and-forth" - standard back and forth; discharge (or charge)
-                    reversed from where charge (or discharge) ends.
-
-                "forth" - discharge (or charge) continues along x-axis.
-
-                "forth-and-forth" - discharge (or charge) also starts at 0
-                    (or shift if not shift=0.0)
+                - "back-and-forth" - standard back and forth; discharge (or charge)
+                  reversed from where charge (or discharge) ends.
+                - "forth" - discharge (or charge) continues along x-axis.
+                - "forth-and-forth" - discharge (or charge) also starts at 0
+                  (or shift if not shift=0.0)
 
             shift: start-value for charge (or discharge)
             last_cycle: process only up to this cycle (if not None).
 
         Returns:
-            Nothing
+            None
 
         """
 
@@ -3549,7 +3548,9 @@ class CellpyCell:
             ensure_step_table: (bool) make step-table if missing.
             ensure_summary_table: (bool) make summary-table if missing.
 
-        Returns: Nothing at all.
+        Returns:
+            None
+
         """
         logging.debug(f"Trying to save cellpy-file to {filename}")
         logging.info(f" -> {filename}")
@@ -3844,8 +3845,9 @@ class CellpyCell:
     def sget_voltage(self, cycle, step):
         """Returns voltage for cycle, step.
 
-        Convenience function; same as issuing
-           raw[(raw[cycle_index_header] == cycle) &
+        Convenience function; same as issuing::
+
+            raw[(raw[cycle_index_header] == cycle) &
                  (raw[step_index_header] == step)][voltage_header]
 
         Args:
@@ -3861,9 +3863,9 @@ class CellpyCell:
     def sget_current(self, cycle, step):
         """Returns current for cycle, step.
 
-        Convenience function; same as issuing
-           raw[(raw[cycle_index_header] == cycle) &
-                 (raw[step_index_header] == step)][current_header]
+        Convenience function; same as issuing::
+
+            raw[(raw[cycle_index_header] == cycle) & (raw[step_index_header] == step)][current_header]
 
         Args:
             cycle: cycle number
@@ -3982,7 +3984,7 @@ class CellpyCell:
                 Remark that with_time and with_index will be False if as_frame is set to False.
 
         Returns:
-            pandas.DataFrame (or list of pandas.Series if cycle=None and as_frame=False)
+            ``pandas.DataFrame`` (or list of ``pandas.Series`` if cycle=None and as_frame=False)
         """
 
         y_header = self.headers_normal.current_txt
@@ -4008,7 +4010,7 @@ class CellpyCell:
                 Remark that with_time and with_index will be False if as_frame is set to False.
 
         Returns:
-            pandas.DataFrame (or list of pandas.Series if cycle=None and as_frame=False)
+            ``pandas.DataFrame`` (or list of ``pandas.Series`` if cycle=None and as_frame=False)
         """
 
         y_header = self.headers_normal.datetime_txt
@@ -4038,7 +4040,7 @@ class CellpyCell:
             units: return values in given time unit ("raw", "seconds", "minutes", "hours").
 
         Returns:
-            pandas.DataFrame (or list of pandas.Series if cycle=None and as_frame=False)
+            ``pandas.DataFrame`` (or list of ``pandas.Series`` if cycle=None and as_frame=False)
         """
 
         y_header = self.headers_normal.test_time_txt
@@ -4065,16 +4067,16 @@ class CellpyCell:
     def sget_steptime(self, cycle, step):
         """Returns step time for cycle, step.
 
-        Convenience function; same as issuing
-           raw[(raw[cycle_index_header] == cycle) &
-                 (raw[step_index_header] == step)][step_time_header]
+        Convenience function; Convenience function; same as issuing::
+
+            raw[(raw[cycle_index_header] == cycle) & (raw[step_index_header] == step)][step_time_header]
 
         Args:
             cycle: cycle number
             step: step number
 
         Returns:
-            pandas.Series or None if empty
+            ``pandas.Series`` or None if empty
         """
 
         header = self.headers_normal.step_time_txt
@@ -4113,8 +4115,9 @@ class CellpyCell:
     def sget_timestamp(self, cycle, step):
         """Returns timestamp for cycle, step.
 
-        Convenience function; same as issuing
-           raw[(raw[cycle_index_header] == cycle) &
+        Convenience function; same as issuing::
+
+            raw[(raw[cycle_index_header] == cycle) &
                  (raw[step_index_header] == step)][timestamp_header]
 
         Args:
@@ -4122,7 +4125,7 @@ class CellpyCell:
             step: step number (can be a list of several step numbers)
 
         Returns:
-            pandas.Series
+            ``pandas.Series``
         """
 
         header = self.headers_normal.test_time_txt
@@ -4131,8 +4134,9 @@ class CellpyCell:
     def sget_step_numbers(self, cycle, step):
         """Returns step number for cycle, step.
 
-        Convenience function; same as issuing
-           raw[(raw[cycle_index_header] == cycle) &
+        Convenience function; same as issuing::
+
+            raw[(raw[cycle_index_header] == cycle) &
                  (raw[step_index_header] == step)][step_index_header]
 
         Args:
@@ -4140,7 +4144,7 @@ class CellpyCell:
             step: step number (can be a list of several step numbers)
 
         Returns:
-            pandas.Series
+            ``pandas.Series``
         """
 
         header = self.headers_normal.step_index_txt
@@ -4165,8 +4169,10 @@ class CellpyCell:
                 if converter is not provided (or None).
             as_frame (bool): if True: returns pd.DataFrame instead of capacity, voltage series.
             **kwargs (dict): additional keyword arguments sent to the internal _get_cap method.
+
         Returns:
-            discharge_capacity, voltage (pd.Series or pd.DataFrame if return_dataframe is True).
+            ``pandas.DataFrame`` or list of ``pandas.Series`` if cycle=None and as_frame=False.
+
         """
 
         if converter is None:
@@ -4187,7 +4193,7 @@ class CellpyCell:
         as_frame=True,
         **kwargs,
     ):
-        """Returns charge-capacity and voltage for the selected cycle.
+        """Returns charge capacity and voltage for the selected cycle.
 
         Args:
             cycle (int): cycle number.
@@ -4200,7 +4206,7 @@ class CellpyCell:
             **kwargs (dict): additional keyword arguments sent to the internal _get_cap method.
 
         Returns:
-            charge_capacity, voltage (pandas.Series or pandas.DataFrame if return_dataframe is True).
+            ``pandas.DataFrame`` or list of ``pandas.Series`` if cycle=None and as_frame=False.
 
         """
 
@@ -4284,11 +4290,11 @@ class CellpyCell:
             area (float): area of electrode (in set cellpy units, typically cm2).
             volume (float): volume of electrode (in set cellpy units, typically cm3).
             cycle_mode (string): if 'anode' the first step is assumed to be the discharge,
-                else charge (defaults to CellpyCell.cycle_mode).
-            **kwargs: sent to get_ccap and get_dcap.
+                else charge (defaults to ``CellpyCell.cycle_mode``).
+            **kwargs: sent to ``get_ccap`` and ``get_dcap``.
 
         Returns:
-            pandas.DataFrame ((cycle) voltage, capacity, (direction (-1, 1)))
+            ``pandas.DataFrame`` ((cycle) voltage, capacity, (direction (-1, 1)))
             unless split is explicitly set to True. Then it returns a tuple
             with capacity and voltage.
         """
@@ -4668,7 +4674,7 @@ class CellpyCell:
         dx=None,
         number_of_points=None,
     ) -> pd.DataFrame:
-        """get the open circuit voltage relaxation curves.
+        """Get the open circuit voltage relaxation curves.
 
         Args:
             cycles (list of ints or None): the cycles to extract from
@@ -4686,8 +4692,8 @@ class CellpyCell:
                 for interpolation (i.e. the length of the interpolated data).
 
         Returns:
-            A pandas.DataFrame with cycle-number, step-number, step-time, and
-                voltage columns.
+            ``pandas.DataFrame`` with cycle-number, step-number, step-time, and voltage columns.
+
         """
         # TODO: use proper column header pickers
         if cycles is None:
@@ -4773,7 +4779,7 @@ class CellpyCell:
             direction (str or list of str): only select rates for this direction (e.g. "charge" or "discharge").
 
         Returns:
-            pandas.DataFrame with cycle, type, and rate_avr (i.e. C-rate) columns.
+            ``pandas.DataFrame`` with cycle, type, and rate_avr (i.e. C-rate) columns.
         """
 
         if steptable is None:
@@ -5176,6 +5182,9 @@ class CellpyCell:
     ) -> float:
         """Convert from absolute units to specific (areal or gravimetric).
 
+        The method provides a conversion factor that you can multiply your
+        values with to get them into specific values.
+
         Args:
             dataset: data instance
             value: value used to scale on.
@@ -5184,7 +5193,8 @@ class CellpyCell:
             mode (str): gravimetric, areal or absolute
 
         Returns:
-            conversion factor (multiply with this to get your values into specific values).
+            conversion factor (float)
+
         """
         # TODO @jepe: implement handling of edge-cases
         # TODO @jepe: fix all the instrument readers (replace floats in raw_units with strings)
@@ -5285,7 +5295,12 @@ class CellpyCell:
                 logging.debug("_set_run_attribute: this set is empty")
 
     def set_mass(self, mass, validated=None):
-        """Sets the mass (masses) for the test (datasets)."""
+        """
+
+        Warning:
+            This function is deprecated. Use the setter instead (mass = value).
+
+        """
 
         warnings.warn(
             "This function is deprecated. Use the setter instead (mass = value).",
@@ -5295,6 +5310,12 @@ class CellpyCell:
         self._set_run_attribute("mass", mass, validated=validated)
 
     def set_tot_mass(self, mass, validated=None):
+        """
+
+        Warning:
+            This function is deprecated. Use the setter instead (tot_mass = value).
+
+        """
         warnings.warn(
             "This function is deprecated. Use the setter instead (tot_mass = value).",
             DeprecationWarning,
@@ -5304,6 +5325,12 @@ class CellpyCell:
         self._set_run_attribute("tot_mass", mass, validated=validated)
 
     def set_nom_cap(self, nom_cap, validated=None):
+        """
+
+        Warning:
+            This function is deprecated. Use the setter instead (nom_cap = value).
+
+        """
         warnings.warn(
             "This function is deprecated. Use the setter instead (nom_cap = value).",
             DeprecationWarning,
@@ -5314,10 +5341,11 @@ class CellpyCell:
 
     @staticmethod
     def set_col_first(df, col_names):
-        """set selected columns first in a pandas.DataFrame.
+        """Set selected columns first in a pandas.DataFrame.
 
         This function sets cols with names given in  col_names (a list) first in
         the DataFrame. The last col in col_name will come first (processed last)
+
         """
 
         column_headings = df.columns
@@ -5333,7 +5361,13 @@ class CellpyCell:
             return df
 
     def get_summary(self, use_summary_made=False):
-        """Retrieve summary returned as a pandas DataFrame."""
+        """Retrieve summary returned as a pandas DataFrame.
+
+        Warning:
+            This function is deprecated. Use the CellpyCell.data.summary property instead.
+
+        """
+
         cell = self.data
 
         # This is a bit convoluted; in the old days, we used an attribute
@@ -6434,7 +6468,7 @@ class CellpyCell:
 
     # ---------------------- update --------------------------
 
-    def dev_update(self, file_names=None, **kwargs):
+    def _dev_update(self, file_names=None, **kwargs):
         """Experimental method for updating a cellpy-file with new raw-files."""
 
         print("NOT FINISHED YET!")
@@ -6445,17 +6479,17 @@ class CellpyCell:
                 print(fid)
         last = self.data.raw_data_files[0].last_data_point
 
-        self.dev_update_from_raw(
+        self._dev_update_from_raw(
             file_names=file_names, data_points=[last, None], **kwargs
         )
         print("lets try to merge")
-        self.data = self.dev_update_merge()
+        self.data = self._dev_update_merge()
         print("now it is time to update the step table")
-        self.dev_update_make_steps()
+        self._dev_update_make_steps()
         print("and finally, lets update the summary")
-        self.dev_update_make_summary()
+        self._dev_update_make_summary()
 
-    def dev_update_loadcell(
+    def _dev_update_loadcell(
         self,
         raw_files,
         cellpy_file=None,
@@ -6479,7 +6513,7 @@ class CellpyCell:
 
 
         """
-        logging.info("Started cellpy.cellreader.dev_update_loadcell")
+        logging.info("Started cellpy.cellreader._dev_update_loadcell")
 
         if cellpy_file is None or force_raw:
             similar = None
@@ -6523,10 +6557,10 @@ class CellpyCell:
                 except IndexError:
                     last_data_point = 0
 
-                self.dev_update_from_raw(
+                self._dev_update_from_raw(
                     file_names=f, data_points=[last_data_point, None]
                 )
-                self.data = self.dev_update_merge()
+                self.data = self._dev_update_merge()
 
             elif not similar[f.name]:
                 try:
@@ -6534,15 +6568,15 @@ class CellpyCell:
                 except IndexError:
                     last_data_point = 0
 
-                self.dev_update_from_raw(
+                self._dev_update_from_raw(
                     file_names=f, data_points=[last_data_point, None]
                 )
                 self.merge()
 
             start_file = False
 
-        self.dev_update_make_steps()
-        self.dev_update_make_summary(
+        self._dev_update_make_steps()
+        self._dev_update_make_summary(
             # all_tests=False,
             # find_ocv=summary_ocv,
             find_ir=summary_ir,
@@ -6552,7 +6586,7 @@ class CellpyCell:
         return self
 
     # TODO @jepe (v.1.0.0): update this to use single data instances (i.e. to cell from cells)
-    def dev_update_merge(self, t1, t2):
+    def _dev_update_merge(self, t1, t2):
         print("NOT FINISHED YET - but very close")
 
         if t1.raw.empty:
@@ -6576,7 +6610,7 @@ class CellpyCell:
 
         return test
 
-    def dev_update_make_steps(self, **kwargs):
+    def _dev_update_make_steps(self, **kwargs):
         old_steps = self.data.steps.iloc[:-1]
         # Note! hard-coding header name (might fail if changing default headers)
         from_data_point = self.data.steps.iloc[-1].point_first
@@ -6584,7 +6618,7 @@ class CellpyCell:
         merged_steps = pd.concat([old_steps, new_steps]).reset_index(drop=True)
         self.data.steps = merged_steps
 
-    def dev_update_make_summary(self, **kwargs):
+    def _dev_update_make_summary(self, **kwargs):
         print("NOT FINISHED YET - but not critical")
         # Update not implemented yet, running full summary calculations for now.
         # For later:
@@ -6598,7 +6632,7 @@ class CellpyCell:
         # merged_summary = pd.concat([old_summary, new_summary]).reset_index(drop=True)
         # self.data.summary = merged_summary
 
-    def dev_update_from_raw(self, file_names=None, data_points=None, **kwargs):
+    def _dev_update_from_raw(self, file_names=None, data_points=None, **kwargs):
         """This method is under development. Using this to develop updating files
         with only new data.
         """

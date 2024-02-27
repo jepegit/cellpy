@@ -168,9 +168,31 @@ conda install -c conda-forge pytables
 conda install -c conda-forge lmfit
 ```
 
-- `seaborn` and `plotly`: plotting library used in several of our example notebooks.
+
+- `jina2-time` and `git` is required for using templating system in `cellpy`.
+   On Windows you can obtain git from [git-scm](https://git-scm.com/) or
+   [git for windows](https://gitforwindows.org/). On Linux, you can install git using your package manager.
+   `jinja2-time` is a jinja2 extension for dates and times. You can install it using conda:
+
+```console
+conda install -c conda-forge jinja2-time git
+```
+
+- `seaborn` and `plotly`: plotting libraries used in several of our example notebooks.
 - `jupyter`: used for tutorial notebooks and in general very useful tool
   for working with and sharing your `cellpy` results.
+- `kaleido`: used for exporting plotly figures to static images.
+
+```console
+conda install -c conda-forge seaborn plotly jupyter python-kaleido==0.1.*
+```
+
+:::{note}
+The original maintainer for the `kaleido` package seems to have stopped maintaining it. It is
+recommended to use the version `0.1.*` until the situation is resolved (at least that version works
+on our Windows machines at the moment of writing this, while the newer versions appeared to be
+a bit more moody).
+:::
 
 For more details, have a look at the documentation of these packages.
 
@@ -185,12 +207,12 @@ Also remark that the driver needs to be of the same bit as your Python
 (so, if you are using 32 bit Python, you will need the 32 bit driver).
 :::
 
-If you run into issues when trying to load .res files, try to install
-`sqlalchemy-access`:
-
+:::{hint}
+If you run into issues when trying to load .res files on Windows, try to install `sqlalchemy-access`:
 ```console
 pip install sqlalchemy-access
 ```
+:::
 
 :::{admonition} For POSIX systems
 I have not found any suitable drivers. Instead, `cellpy` will try to use `mdbtools` to first export the data to

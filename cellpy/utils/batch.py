@@ -43,39 +43,41 @@ COLUMNS_SELECTED_FOR_VIEW = [
 
 
 class Batch:
-    """A convenient class for running batch procedures.
+    """A convenience class for running batch procedures.
 
-    The Batch class contains among other things:
-        - iterator protocol
-        - a journal with info about the different cells where the
-        main information is accessible as a pandas.DataFrame through the `.pages` attribute
-        - a data lookup accessor `.data` that behaves similarly as a dict.
+    The Batch class contains (among other things):
+
+    - iterator protocol
+    - a journal with info about the different cells where the
+      main information is accessible as a pandas.DataFrame through the ``.pages`` attribute
+    - a data lookup accessor ``.data`` that behaves similarly as a dict.
+
     """
 
     def __init__(self, *args, **kwargs):
-        """Initialize the Batch class.
-
+        """
         The initialization accepts arbitrary arguments and keyword arguments.
-        It first looks for the file_name and db_reader keyword arguments.
+        It first looks for the ``file_name`` and ``db_reader`` keyword arguments.
 
-        Usage:
+        **Usage**::
+
             b = Batch((name, (project)), **kwargs)
 
         Examples:
+
             >>> b = Batch("experiment001", "main_project")
             >>> b = Batch("experiment001", "main_project", batch_col="b02")
             >>> b = Batch(name="experiment001", project="main_project", batch_col="b02")
             >>> b = Batch(file_name="cellpydata/batchfiles/cellpy_batch_experiment001.json")
 
-        Keyword Args (priority):
+        Args:
+            name (str): (project (str))
+
+        Keyword Args:
             file_name (str or pathlib.Path): journal file name to load.
             db_reader (str): data-base reader to use (defaults to "default" as given
-                in the config-file or prm-class).
+              in the config-file or prm-class).
             frame (pandas.DataFrame): load from given dataframe.
-        Args:
-            *args: name (str) (project (str))
-
-        Keyword Args (other):
             default_log_level (str): custom log-level (defaults to None (i.e. default log-level in cellpy)).
             custom_log_dir (str or pathlib.Path): custom folder for putting the log-files.
             force_raw_file (bool): load from raw regardless (defaults to False).
@@ -86,8 +88,10 @@ class Batch:
             export_ica (bool): Extract and export individual dQ/dV data to csv (defaults to True).
             accept_errors (bool): Continue automatically to next file if error is raised (defaults to False).
             nom_cap (float): give a nominal capacity if you want to use another value than
-                the one given in the config-file or prm-class.
+              the one given in the config-file or prm-class.
+
         """
+
         # TODO: add option for setting max cycle number
         #   use self.experiment.last_cycle = xxx
         default_log_level = kwargs.pop("default_log_level", None)
@@ -168,11 +172,23 @@ class Batch:
         return self.experiment.__iter__()
 
     def show_pages(self, number_of_rows=5):
+        """Show the journal pages.
+
+        Warnings:
+            Will be deprecated soon - use pages.head() instead.
+
+        """
         warnings.warn("Deprecated - use pages.head() instead", DeprecationWarning)
         return self.experiment.journal.pages.head(number_of_rows)
 
     @property
     def view(self):
+        """Show the selected info about each cell.
+
+        Warnings:
+            Will be deprecated soon - use report() instead.
+
+        """
         warnings.warn("Deprecated - use report instead", DeprecationWarning)
         pages = self.experiment.journal.pages
         pages = pages[COLUMNS_SELECTED_FOR_VIEW]
@@ -280,9 +296,11 @@ class Batch:
         info about bad cells, and if it finds it, it will remove those from the
         journal.
 
-        Note! remember to save your journal again after modifying it.
+        Note:
+            Remember to save your journal again after modifying it.
 
-        Note! this method has not been properly tested yet.
+        Warning:
+            This method has not been properly tested yet.
 
         Args:
             cell_label (str): the cell label of the cell you would like to remove.
@@ -311,7 +329,8 @@ class Batch:
     def report(self, stylize=True, grouped=False, check=False):
         """Create a report on all the cells in the batch object.
 
-        Remark! To perform a reporting, cellpy needs to access all the data (and it might take some time).
+        Important:
+            To perform a reporting, cellpy needs to access all the data (and it might take some time).
 
         Args:
             stylize (bool): apply some styling to the report (default True).
@@ -321,6 +340,7 @@ class Batch:
 
         Returns:
             ``pandas.DataFrame``
+
         """
         pages = self.experiment.journal.pages
         r_pages = self.experiment.journal.pages[COLUMNS_SELECTED_FOR_VIEW].copy()
@@ -407,6 +427,13 @@ class Batch:
 
     @property
     def info_file(self):
+        """The name of the info file.
+
+        Warnings:
+            Will be deprecated soon - use ``journal_name`` instead.
+
+        """
+
         # renamed to journal_name
         warnings.warn("Deprecated - use journal_name instead", DeprecationWarning)
         return self.experiment.journal.file_name
@@ -454,13 +481,17 @@ class Batch:
 
     @property
     def cells(self) -> Data:
-        """Access cells as a Data object (attribute lookup and automatic loading)
+        """Access cells as a Data object (attribute lookup and automatic loading).
 
-        Usage (at least in jupyter notebook):
-            Write `b.cells.x` and press <TAB>. Then a pop-up might appear, and you can choose the
-            cell you would like to retrieve. UPDATE! It seems that it is not always working as intended,
-            at least not in my jupyter lab anymore. Instead, you can use `b.experiment.data` or
-            write `cells = b.cells` and then use `cells.x` and press <TAB> to get the pop-up.
+        Note:
+            Write ``b.cells.x`` and press <TAB>. Then a pop-up might appear, and you can choose the
+            cell you would like to retrieve.
+
+        Warning:
+            It seems that it is not always working as intended,
+            at least not in my jupyter lab anymore. Instead, you can use ``b.experiment.data`` or
+            write ``cells = b.cells`` and then use ``cells.x`` and press <TAB> to get the pop-up.
+
         """
         return self.experiment.data
 
@@ -494,6 +525,7 @@ class Batch:
 
         Args:
             cell_label: the cell label of the cell you would like to remove.
+
         """
 
         if cell_label not in self.pages.index:
@@ -506,6 +538,7 @@ class Batch:
 
         Args:
             cell_labels: the cell labels of the cells you would like to remove.
+
         """
 
         for cell_label in cell_labels:
@@ -529,6 +562,7 @@ class Batch:
 
         Args:
             cell_label: the cell label of the cell you would like to mark as bad.
+
         """
         if cell_label not in self.pages.index:
             logging.critical(f"could not find {cell_label}")
@@ -550,6 +584,7 @@ class Batch:
 
         Args:
             cell_label: the cell label of the cell you would like to remove the bad mark from.
+
         """
 
         if cell_label not in self.pages.index:
@@ -582,12 +617,13 @@ class Batch:
             "the journal.pages instead."
         )
 
-    def old_duplicate_journal(self, folder=None) -> None:
+    def _old_duplicate_journal(self, folder=None) -> None:
         """Copy the journal to folder.
 
         Args:
             folder (str or pathlib.Path): folder to copy to (defaults to the
             current folder).
+
         """
 
         logging.debug(f"duplicating journal to folder {folder}")
@@ -609,6 +645,7 @@ class Batch:
         Args:
             folder (str or pathlib.Path): folder to copy to (defaults to the
             current folder).
+
         """
         self.experiment.journal.duplicate_journal(folder)
 
@@ -622,65 +659,77 @@ class Batch:
     ):
         """Create journal pages.
 
-            This method is a wrapper for the different Journal methods for making
-            journal pages (Batch.experiment.journal.xxx). It is under development. If you
-            want to use 'advanced' options (i.e. not loading from a db), please consider
-            using the methods available in Journal for now.
+        This method is a wrapper for the different Journal methods for making
+        journal pages (``Batch.experiment.journal.xxx``). It is under development. If you
+        want to use 'advanced' options (i.e. not loading from a db), please consider
+        using the methods available in Journal for now.
 
-            Args:
-                description: the information and meta-data needed to generate the journal pages ('empty': create an
-                    empty journal; ``dict``: create journal pages from a dictionary; ``pd.DataFrame``: create journal pages
-                    from a ``pandas.DataFrame``: 'filename.json': load cellpy batch file; 'filename.xlsx': create journal
-                    pages from an Excel file).
-                from_db (bool): Deprecation Warning: this parameter will be removed as it is
-                    the default anyway. Generate the pages from a db (the default option).
-                    This will be over-ridden if description is given.
+        Args:
+            description: the information and meta-data needed to generate the journal pages:
 
-                auto_use_file_list (bool): Experimental feature. If True, a file list will be generated and used
-                    instead of searching for files in the folders.
-                file_list_kwargs (dict): Experimental feature. Keyword arguments to be sent to the file list generator.
+                - empty: create an empty journal
+                - ``dict``: create journal pages from a dictionary
+                - ``pd.DataFrame``: create journal pages from a ``pandas.DataFrame``
+                - 'filename.json': load cellpy batch file
+                - 'filename.xlsx': create journal pages from an Excel file.
 
-                **kwargs: sent to sub-function(s) (*e.g.* from_db -> simple_db_reader -> find_files ->
-                    filefinder.search_for_files).
+            from_db (bool): Deprecation Warning: this parameter will be removed as it is
+                the default anyway. Generate the pages from a db (the default option).
+                This will be over-ridden if description is given.
+            auto_use_file_list (bool): Experimental feature. If True, a file list will be generated and used
+                instead of searching for files in the folders.
+            file_list_kwargs (dict): Experimental feature. Keyword arguments to be sent to the file list generator.
 
-            kwargs -> from_db:
-                project=None, name=None, batch_col=None
+            **kwargs: sent to sub-function(s) (*e.g.* ``from_db`` -> ``simple_db_reader`` -> ``find_files`` ->
+                ``filefinder.search_for_files``).
 
+        The following keyword arguments are picked up by ``from_db``:
 
-            kwargs -> simple_db_reader:
-                reader: a reader object (defaults to dbreader.Reader)
-                cell_ids: keys (cell IDs)
-                file_list: file list to send to filefinder (instead of searching in folders for files).
-                pre_path: prepended path to send to filefinder.
-                include_key: include the key col in the pages (the cell IDs).
-                include_individual_arguments: include the argument column in the pages.
-                additional_column_names: list of additional column names to include in the pages.
+        Transferred Parameters:
+            project: None
+            name: None
+            batch_col: None
 
-            kwargs -> filefinder.search_for_files:
-                run_name(str): run-file identification.
-                raw_extension(str): optional, extension of run-files (without the '.').
-                cellpy_file_extension(str): optional, extension for cellpy files
-                    (without the '.').
-                raw_file_dir(path): optional, directory where to look for run-files
-                    (default: read prm-file)
-                project_dir(path): subdirectory in raw_file_dir to look for run-files
-                cellpy_file_dir(path): optional, directory where to look for
-                    cellpy-files (default: read prm-file)
-                prm_filename(path): optional parameter file can be given.
-                file_name_format(str): format of raw-file names or a glob pattern
-                    (default: YYYYMMDD_[name]EEE_CC_TT_RR).
-                reg_exp(str): use regular expression instead (defaults to None).
-                sub_folders (bool): perform search also in sub-folders.
-                file_list (list of str): perform the search within a given list
-                    of filenames instead of searching the folder(s). The list should
-                    not contain the full filepath (only the actual file names). If
-                    you want to provide the full path, you will have to modify the
-                    file_name_format or reg_exp accordingly.
-                pre_path (path or str): path to prepend the list of files selected
-                     from the file_list.
-            kwargs -> journal.to_file:
-                duplicate_to_local_folder (bool): default True.
+        The following keyword arguments are picked up by ``simple_db_reader``:
 
+        Transferred Parameters:
+            reader: a reader object (defaults to dbreader.Reader)
+            cell_ids: keys (cell IDs)
+            file_list: file list to send to filefinder (instead of searching in folders for files).
+            pre_path: prepended path to send to filefinder.
+            include_key: include the key col in the pages (the cell IDs).
+            include_individual_arguments: include the argument column in the pages.
+            additional_column_names: list of additional column names to include in the pages.
+
+        The following keyword arguments are picked up by ``filefinder.search_for_files``:
+
+        Transferred Parameters:
+            run_name(str): run-file identification.
+            raw_extension(str): optional, extension of run-files (without the '.').
+            cellpy_file_extension(str): optional, extension for cellpy files
+                (without the '.').
+            raw_file_dir(path): optional, directory where to look for run-files
+                (default: read prm-file)
+            project_dir(path): subdirectory in raw_file_dir to look for run-files
+            cellpy_file_dir(path): optional, directory where to look for
+                cellpy-files (default: read prm-file)
+            prm_filename(path): optional parameter file can be given.
+            file_name_format(str): format of raw-file names or a glob pattern
+                (default: YYYYMMDD_[name]EEE_CC_TT_RR).
+            reg_exp(str): use regular expression instead (defaults to None).
+            sub_folders (bool): perform search also in sub-folders.
+            file_list (list of str): perform the search within a given list
+                of filenames instead of searching the folder(s). The list should
+                not contain the full filepath (only the actual file names). If
+                you want to provide the full path, you will have to modify the
+                file_name_format or reg_exp accordingly.
+            pre_path (path or str): path to prepend the list of files selected
+                 from the file_list.
+
+        The following keyword arguments are picked up by ``journal.to_file``:
+
+        Transferred Parameters:
+            duplicate_to_local_folder (bool): default True.
 
         Returns:
             None
@@ -848,7 +897,7 @@ class Batch:
             self.experiment.journal.paginate()
             self.duplicate_journal(prms.Paths.batchfiledir)
 
-    def create_folder_structure(self) -> None:
+    def _create_folder_structure(self) -> None:
         warnings.warn("Deprecated - use paginate instead.", DeprecationWarning)
         self.experiment.journal.paginate()
         logging.info("created folders")
@@ -863,8 +912,9 @@ class Batch:
         """Save the journal (json-format).
 
         The journal file will be saved in the project directory and in the
-        batch-file-directory (prms.Paths.batchfiledir). The latter is useful
-        for processing several batches using the iterate_batches functionality.
+        batch-file-directory (``prms.Paths.batchfiledir``). The latter is useful
+        for processing several batches using the ``iterate_batches`` functionality.
+
         """
 
         # Remark! Got an recursive error when running on mac.
@@ -876,7 +926,13 @@ class Batch:
         logging.info("duplicated journal pages to current dir")
 
     def export_journal(self, filename=None) -> None:
-        """Export the journal to xlsx."""
+        """Export the journal to xlsx.
+
+        Args:
+            filename (str or pathlib.Path): the name of the file to save the journal to.
+                If not given, the journal will be saved to the default name.
+
+        """
         if filename is None:
             filename = self.experiment.journal.file_name
         filename = pathlib.Path(filename).with_suffix(".xlsx")
@@ -891,20 +947,22 @@ class Batch:
         the current folder.
 
         Args:
-            location: where to copy the files. Either choose among the following
-                options:
-                "standard": data/interim folder
-                "here": current directory
-                "cellpydatadir": the stated cellpy data dir in your settings (prms)
-            or if the location is not one of the above, use the actual value of the
-                location argument.
+            location: where to copy the files. Either choose among the following options:
+
+                - 'standard': data/interim folder
+                - 'here': current directory
+                - 'cellpydatadir': the stated cellpy data dir in your settings (prms)
+
+                or if the location is not one of the above, use the actual value of the location argument.
+
             selector (dict): if given, the cellpy files are reloaded after duplicating and
                 modified based on the given selector(s).
 
-            kwargs: sent to update if selector is provided
+            **kwargs: sent to ``Batch.experiment.update`` if selector is provided
 
         Returns:
             The updated journal pages.
+
         """
 
         pages = self.experiment.journal.pages
@@ -973,6 +1031,11 @@ class Batch:
             self.summary_collector.do(reset=True)
 
     def load(self) -> None:
+        """Load the selected datasets.
+
+        Warnings:
+            Will be deprecated soon - use ``update`` instead.
+        """
         # does the same as update
         warnings.warn("Deprecated - use update instead.", DeprecationWarning)
         self.experiment.update()
@@ -980,31 +1043,36 @@ class Batch:
     def update(self, pool=False, **kwargs) -> None:
         """Updates the selected datasets.
 
-        Keyword Args (to experiment-instance):
+        Keyword Args:
             all_in_memory (bool): store the `cellpydata` in memory (default
                 False)
-            cell_specs (dict of dicts): individual arguments pr. cell. The `cellspecs` key-word argument
+            cell_specs (dict of dicts): individual arguments pr. cell. The ``cellspecs`` key-word argument
                 dictionary will override the **kwargs and the parameters from the journal pages
                 for the indicated cell.
             logging_mode (str): sets the logging mode for the loader(s).
             accept_errors (bool): if True, the loader will continue even if it encounters errors.
 
+        Additional keyword arguments are sent to the loader(s)  if not
+        picked up earlier. Remark that you can obtain the same pr. cell by
+        providing a ``cellspecs`` dictionary. The kwargs have precedence over the
+        parameters given in the journal pages, but will be overridden by parameters
+        given by ``cellspecs``.
 
-        Additional kwargs:
-            transferred all the way to the instrument loader, if not
-            picked up earlier. Remark that you can obtain the same pr. cell by
-            providing a `cellspecs` dictionary. The kwargs have precedence over the
-            parameters given in the journal pages, but will be overridden by parameters
-            given by `cellspecs`.
+        Merging picks up the following keyword arguments:
 
-            Merging:
-                recalc (Bool): set to False if you don't want automatic "recalc" of
-                    cycle numbers etc. when merging several data-sets.
-            Loading:
-                selector (dict): selector-based parameters sent to the cellpy-file loader (hdf5) if
+        Transferred Parameters:
+            recalc (Bool): set to False if you don't want automatic recalculation of
+                cycle numbers etc. when merging several data-sets.
+
+
+        Loading picks up the following keyword arguments:
+
+        Transferred Parameters:
+            selector (dict): selector-based parameters sent to the cellpy-file loader (hdf5) if
                 loading from raw is not necessary (or turned off).
 
         """
+
         self.experiment.errors["update"] = []
         if pool:
             self.experiment.parallel_update(**kwargs)
@@ -1018,7 +1086,7 @@ class Batch:
         self.experiment.export_cellpy_files(path=path, **kwargs)
 
     def recalc(self, **kwargs) -> None:
-        """Run make_step_table and make_summary on all cells.
+        """Run ``make_step_table`` and ``make_summary`` on all cells.
 
         Keyword Args:
             save (bool): Save updated cellpy-files if True (defaults to True).
@@ -1035,12 +1103,27 @@ class Batch:
         self.experiment.recalc(**kwargs)
 
     def make_summaries(self) -> None:
+        """Combine selected columns from each of the cells into single frames and export.
+
+        Warnings:
+            This method will be deprecated in the future. Use ``combine_summaries`` instead.
+
+        """
         warnings.warn("Deprecated - use combine_summaries instead.", DeprecationWarning)
 
         self.exporter.do()
 
     def combine_summaries(self, export_to_csv=True, **kwargs) -> None:
-        """Combine selected columns from each of the cells into single frames"""
+        """Combine selected columns from each of the cells into single frames.
+
+        Keyword Args:
+            export_to_csv (bool): export the combined summaries to csv (defaults to True).
+            **kwargs: sent to the summary_collector.
+
+        Returns:
+            None
+
+        """
 
         if export_to_csv:
             self.exporter.do()
@@ -1056,8 +1139,8 @@ class Batch:
             **kwargs: sent to the plotter
 
         Keyword Args:
-            color_map (str, any): color map to use (defaults to px.colors.qualitative.Set1
-                for plotly and "Set1" seaborn)
+            color_map (str, any): color map to use (defaults to ``px.colors.qualitative.Set1``
+                for ``plotly`` and "Set1" for ``seaborn``)
 
             ce_range (list): optional range for the coulombic efficiency plot
             min_cycle (int): minimum cycle number to plot
@@ -1127,7 +1210,12 @@ class Batch:
     def plot_summaries(
         self, output_filename=None, backend=None, reload_data=False, **kwargs
     ) -> None:
-        """Plot the summaries"""
+        """Plot the summaries.
+
+        Warnings:
+            This method will be deprecated in the future. Use ``plot`` instead.
+
+        """
 
         warnings.warn("Deprecated - use plot instead.", DeprecationWarning)
         if reload_data or ("summary_engine" not in self.experiment.memory_dumped):
@@ -1162,14 +1250,15 @@ class Batch:
 
 
 def load_journal(journal_file, **kwargs):
-    """Edit a journal file.
+    """Load a journal file.
 
     Args:
         journal_file (str): path to journal file.
-        **kwargs: sent to Journal.from_file
+        **kwargs: sent to ``Journal.from_file``
 
     Returns:
         journal
+
     """
     journal = LabJournal(db_reader=None)
     journal.from_file(journal_file, **kwargs)
@@ -1198,7 +1287,8 @@ def load(
         **kwargs: sent to Batch during initialization
 
     Returns:
-        populated Batch object (cellpy.utils.batch.Batch)
+        populated Batch object (``cellpy.utils.batch.Batch``)
+
     """
 
     if allow_from_journal:
@@ -1260,18 +1350,22 @@ def init(*args, empty=False, **kwargs) -> Batch:
         empty (bool): if True, the batch will not be linked to any database and
             an empty batch is returned
         *args: passed directly to Batch()
-            **name**: name of batch;
-            **project**: name of project;
-            **batch_col**: batch column identifier.
-        **kwargs:
-            **file_name**: json file if loading from pages;
-            **default_log_level**: "INFO" or "DEBUG";
-            the rest is passed directly to Batch().
+
+            - **name**: name of batch.
+            - **project**: name of project.
+            - **batch_col**: batch column identifier.
+
+    Keyword Args:
+        file_name: json file if loading from pages (journal).
+        default_log_level: "INFO" or "DEBUG". Defaults to "CRITICAL".
+
+    Other keyword arguments are sent to the Batch object.
 
     Examples:
         >>> empty_batch = Batch.init(db_reader=None)
         >>> batch_from_file = Batch.init(file_name="cellpy_batch_my_experiment.json")
         >>> normal_init_of_batch = Batch.init()
+
     """
     # TODO: add option for setting max cycle number (experiment.last_cycle)
     # TODO: promote most used kwargs to named arguments
@@ -1305,6 +1399,7 @@ def naked(name=None, project=None) -> Batch:
 
     Examples:
         >>> empty_batch = naked()
+
     """
     b = Batch(db_reader=None)
     b.pages = b.experiment.journal.create_empty_pages()
@@ -1351,6 +1446,10 @@ def load_pages(file_name) -> pd.DataFrame:
 
 def process_batch(*args, **kwargs) -> Batch:
     """Execute a batch run, either from a given file_name or by giving the name and project as input.
+
+    Warnings:
+        This function is from ancient times and needs to be updated. It might have grown old and grumpy.
+        Expect it to change in the near future.
 
     Examples:
         >>> process_batch(file_name | (name, project), **kwargs)
@@ -1401,7 +1500,7 @@ def process_batch(*args, **kwargs) -> Batch:
         "paginate": (b.paginate,),
         "update": (b.update,),
         "combine": (b.combine_summaries,),
-        "plot": (b.plot_summaries,),
+        "plot": (b.plot,),
         "save": (_pb_save_plot, b, dpi),
     }
 
@@ -1445,11 +1544,16 @@ def _pb_save_plot(b, dpi):
 def iterate_batches(folder, extension=".json", glob_pattern=None, **kwargs):
     """Iterate through all journals in given folder.
 
+    Warnings:
+        This function is from ancient times and needs to be updated. It might have grown old and grumpy.
+        Expect it to change in the near future.
+
     Args:
         folder (str or pathlib.Path): folder containing the journal files.
         extension (str): extension for the journal files (used when creating a default glob-pattern).
         glob_pattern (str): optional glob pattern.
         **kwargs: keyword arguments passed to ``batch.process_batch``.
+
     """
 
     folder = pathlib.Path(folder)

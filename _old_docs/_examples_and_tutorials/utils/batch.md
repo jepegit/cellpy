@@ -68,7 +68,7 @@ and create an appropriate folder structure (`outdir/project_name/batch_name/raw_
 ```python
 # load info from your db and write the journal pages
 b.create_journal()
-b.create_folder_structure()
+b.paginate()
 ```
 
 ## Processing data

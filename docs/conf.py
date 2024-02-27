@@ -56,6 +56,10 @@ napoleon_use_ivar = False
 napoleon_use_param = True
 napoleon_use_rtype = True
 napoleon_use_keyword = True
+napoleon_custom_sections = [
+    "See Also",
+    ("Transferred Parameters", "params_style"),
+]
 templates_path = ["_templates"]
 source_suffix = ".rst"
 master_doc = "index"
@@ -120,7 +124,7 @@ autoapi_options = [
     "show-module-summary",
     "show-inheritance-diagram",
 ]
-autoapi_ignore = ["*dev_*"]
+autoapi_ignore = ["dev_*"]
 autoapi_python_class_content = "both"
 autoapi_member_order = "groupwise"
 autoapi_keep_files = True
