@@ -813,8 +813,8 @@ def dqdv(cell, split=False, tidy=True, label_direction=False, **kwargs):
 
     Example:
         >>> from cellpy.utils import ica
-        >>> charge_df, dcharge_df = ica.ica_frames(my_cell, split=True)
-        >>> charge_df.plot(x=("voltage", "v"))
+        >>> charge_df, dcharge_df = ica.dqdv(my_cell, split=True)
+        >>> charge_df.plot(x="voltage",y="dq")
 
     """
     # TODO: should add option for normalizing based on first cycle capacity
