@@ -1,6 +1,6 @@
-"""This module is used for loading data using the `instrument="custom"` method.
-If no `instrument_file` is given (either directly or through the use
-of the :: separator), the default instrument file (yaml) will be used."""
+"""This module is used for loading data using the ``instrument="custom"`` method.
+If no ``instrument_file`` is given (either directly or through the use
+of the ``::`` separator), the default instrument file (yaml) will be used."""
 
 # This module works, but is by no means finished. The module is meant to
 # be developed further allowing for example
@@ -135,6 +135,8 @@ class DataLoader(AutoLoader, ABC):
         )
 
     def query_file(self, name):
+        """Query the file and return a pandas dataframe."""
+
         # rewrite this on a later stage to use functions and dict lookup instead of if - else
         if self.file_format == "csv":
             logging.debug(f"parsing with pandas.read_csv: {name}")

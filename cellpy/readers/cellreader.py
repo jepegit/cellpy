@@ -97,20 +97,18 @@ HEADERS_STEP_TABLE = get_headers_step_table()  # TODO @jepe refactor this (not n
 warnings.filterwarnings("ignore", category=pd.io.pytables.PerformanceWarning)
 pd.set_option("mode.chained_assignment", None)  # "raise", "warn", None
 
-module_logger = logging.getLogger(__name__)
+_module_logger = logging.getLogger(__name__)
 
 
 class CellpyCell:
     """Main class for working and storing data.
 
-    This class is the main work-horse for cellpy where all the functions for
+    This class is the main work-horse for cellpy where methods for
     reading, selecting, and tweaking your data is located. It also contains the
     header definitions, both for the cellpy hdf5 format, and for the various
-    cell-tester file-formats that can be read. The class can contain
-    several cell-tests and each test is stored in a list. If you see what I mean...
+    cell-tester file-formats that can be read.
 
     Attributes:
-        # TODO v.1.0.1: update this
         data: cellpy.Data object
         cellpy_units: cellpy.units object
         cellpy_datadir: path to cellpy data directory
@@ -218,8 +216,7 @@ class CellpyCell:
         output_units=None,
         debug=False,
     ):
-        """CellpyCell object
-
+        """
         Args:
             filenames: list of files to load.
             selected_scans:
@@ -1044,7 +1041,7 @@ class CellpyCell:
         selector=None,
         **kwargs,
     ):
-        """Loads data for given cells.
+        """Loads data for given cells (soon to be deprecated).
 
         Args:
             raw_files (list): name of res-files
@@ -1309,11 +1306,11 @@ class CellpyCell:
                 return False
         return v
 
-    def partial_load(self, **kwargs):
+    def _partial_load(self, **kwargs):
         """Load only a selected part of the cellpy file."""
         raise NotImplementedError
 
-    def link(self, **kwargs):
+    def _link(self, **kwargs):
         """Create a link to a cellpy file.
 
         If the file is very big, it is sometimes better to work with the data
@@ -2589,10 +2586,18 @@ class CellpyCell:
     def load_step_specifications(self, file_name, short=False):
         """Load a table that contains step-type definitions.
 
-        This function loads a file containing a specification for each step or
-        for each (cycle_number, step_number) combinations if short==False. The
-        step_cycle specifications that are allowed are stored in the variable
-        cellreader.list_of_step_types.
+        This method loads a file containing a specification for each step or
+        for each (cycle_number, step_number) combinations if `short==False`, and
+        runs the `make_step_table` method. The step_cycle specifications that
+        are allowed are stored in the variable `cellreader.list_of_step_types`.
+
+        Args:
+            file_name (str): name of the file to load
+            short (bool): if True, the file only contains step numbers and
+                step types. If False, the file contains cycle numbers as well.
+
+        Returns:
+            None
         """
 
         # if short:
@@ -2659,13 +2664,13 @@ class CellpyCell:
 
         The format of the steps is:
 
-            index: cycleno - stepno - sub-step-no - ustep
-            Time info: average, stdev, max, min, start, end, delta
-            Logging info: average, stdev, max, min, start, end, delta
-            Current info: average, stdev, max, min, start, end, delta
-            Voltage info: average,  stdev, max, min, start, end, delta
-            Type: (from pre-defined list) - SubType
-            Info: not used.
+        - index: cycleno - stepno - sub-step-no - ustep
+        - Time info: average, stdev, max, min, start, end, delta
+        - Logging info: average, stdev, max, min, start, end, delta
+        - Current info: average, stdev, max, min, start, end, delta
+        - Voltage info: average,  stdev, max, min, start, end, delta
+        - Type: (from pre-defined list) - SubType
+        - Info: not used.
 
         Args:
             step_specifications (pandas.DataFrame): step specifications
@@ -3830,6 +3835,10 @@ class CellpyCell:
         logging.debug(f"(dt: {(time.time() - time_00):4.2f}s)")
 
     def get_mass(self):
+        """Returns the mass of the active material (in mg).
+
+        This method will be deprecated in the future.
+        """
         return self.data.meta_common.mass
 
     def sget_voltage(self, cycle, step):
@@ -4145,19 +4154,19 @@ class CellpyCell:
         as_frame=True,
         **kwargs,
     ):
-        """Returns discharge-capacity and voltage for the selected cycle
+        """Returns discharge-capacity and voltage for the selected cycle.
+
         Args:
-            cycle (int): cycle number.
-            converter (float): a multiplication factor that converts the values to specific values (i.e.
-                from Ah to mAh/g). If not provided (or None), the factor is obtained from the
-                self.get_converter_to_specific() method.
-            mode (string): 'gravimetric', 'areal' or 'absolute'. Defaults to 'gravimetric'.
-                Used if converter is not provided (or None).
+           cycle (int): cycle number.
+            converter (float): a multiplication factor that converts the values to
+                specific values (i.e. from Ah to mAh/g). If not provided (or None),
+                the factor is obtained from the self.get_converter_to_specific() method.
+            mode (string): 'gravimetric', 'areal' or 'absolute'. Defaults to 'gravimetric'. Used
+                if converter is not provided (or None).
             as_frame (bool): if True: returns pd.DataFrame instead of capacity, voltage series.
-            **kwargs:
+            **kwargs (dict): additional keyword arguments sent to the internal _get_cap method.
         Returns:
             discharge_capacity, voltage (pd.Series or pd.DataFrame if return_dataframe is True).
-
         """
 
         if converter is None:
@@ -4179,14 +4188,17 @@ class CellpyCell:
         **kwargs,
     ):
         """Returns charge-capacity and voltage for the selected cycle.
+
         Args:
             cycle (int): cycle number.
-            converter (float): a multiplication factor that converts the values to specific values (i.e.
-                from Ah to mAh/g). If not provided (or None), the factor is obtained from the
-                self.get_converter_to_specific() method.
-            mode (string): 'gravimetric', 'areal' or 'absolute'. Defaults to 'gravimetric'.
-                Used if converter is not provided (or None).
+            converter (float): a multiplication factor that converts the values to
+                specific values (i.e. from Ah to mAh/g). If not provided (or None),
+                the factor is obtained from the self.get_converter_to_specific() method.
+            mode (string): 'gravimetric', 'areal' or 'absolute'. Defaults to 'gravimetric'. Used
+                if converter is not provided (or None).
             as_frame (bool): if True: returns pd.DataFrame instead of capacity, voltage series.
+            **kwargs (dict): additional keyword arguments sent to the internal _get_cap method.
+
         Returns:
             charge_capacity, voltage (pandas.Series or pandas.DataFrame if return_dataframe is True).
 
@@ -4752,11 +4764,12 @@ class CellpyCell:
     def get_rates(self, steptable=None, agg="first", direction=None):
         """
         Get the rates in the test (only valid for constant current).
+
         Args:
             steptable: provide custom steptable (if None, the steptable from the cellpydata object will be used).
-            agg (str): perform an aggregation if more than one step of charge or discharge is found
-                (e.g. "mean", "first", "max"). For example, if agg='mean', the average rate for each cycle
-                will be returned. Set to None if you want to keep all the rates.
+            agg (str): perform an aggregation if more than one step of charge or
+                discharge is found (e.g. "mean", "first", "max"). For example, if agg='mean', the average rate
+                for each cycle will be returned. Set to None if you want to keep all the rates.
             direction (str or list of str): only select rates for this direction (e.g. "charge" or "discharge").
 
         Returns:
@@ -5219,12 +5232,6 @@ class CellpyCell:
         logging.debug(f"conversion factor: {conversion_factor}")
         return conversion_factor.m
 
-    def get_diagnostics_plots(self, scaled=False):
-        raise DeprecatedFeature(
-            "This feature is deprecated. "
-            "Extract diagnostics from the summary instead."
-        )
-
     def _set_mass(self, value):
         # TODO: replace with setter
         try:
@@ -5555,24 +5562,28 @@ class CellpyCell:
     ):
         """Convenience function that makes a summary of the cycling data.
 
-        find_ir (bool): if True, the internal resistance will be calculated.
-        find_end_voltage (bool): if True, the end voltage will be calculated.
-        use_cellpy_stat_file (bool): if True, the summary will be made from
-            the cellpy_stat file (soon to be deprecated).
-        ensure_step_table (bool): if True, the step-table will be made if it does not exist.
-        remove_duplicates (bool): if True, duplicates will be removed from the summary.
-        normalization_cycles (int or list of int): cycles to use for normalization.
-        nom_cap (float or str): nominal capacity (if None, the nominal capacity from the data will be used).
-        nom_cap_specifics (str): gravimetric, areal, or volumetric.
-        old (bool): if True, the old summary method will be used.
-        create_copy (bool): if True, a copy of the cellpy object will be returned.
-        exclude_types (list of str): exclude these types from the summary.
-        exclude_steps (list of int): exclude these steps from the summary.
-        selector_type (str): select based on type (e.g. "non-cv", "non-rest", "non-ocv", "only-cv").
-        selector (callable): custom selector function.
+        Args:
+            find_ir (bool): if True, the internal resistance will be calculated.
+            find_end_voltage (bool): if True, the end voltage will be calculated.
+            use_cellpy_stat_file (bool): if True, the summary will be made from
+                the cellpy_stat file (soon to be deprecated).
+            ensure_step_table (bool): if True, the step-table will be made if it does not exist.
+            remove_duplicates (bool): if True, duplicates will be removed from the summary.
+            normalization_cycles (int or list of int): cycles to use for normalization.
+            nom_cap (float or str): nominal capacity (if None, the nominal capacity from the data will be used).
+            nom_cap_specifics (str): gravimetric, areal, or volumetric.
+            old (bool): if True, the old summary method will be used.
+            create_copy (bool): if True, a copy of the cellpy object will be returned.
+            exclude_types (list of str): exclude these types from the summary.
+            exclude_steps (list of int): exclude these steps from the summary.
+            selector_type (str): select based on type (e.g. "non-cv", "non-rest", "non-ocv", "only-cv").
+            selector (callable): custom selector function.
+            **kwargs: additional keyword arguments sent to internal method (check source for info).
 
-
+        Returns:
+            cellpy.CellpyData: cellpy object with the summary added to it.
         """
+
         # TODO: @jepe  - make it is possible to update only new data by implementing
         #  from_cycle (only calculate summary from a given cycle number).
         #  Probably best to keep the old summary and make

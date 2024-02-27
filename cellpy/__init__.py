@@ -4,8 +4,18 @@
 
 """
 
-__author__ = "Jan Petter Maehlen", "Asbjoern Ulvestad", "Muhammad Abdelhamid"
-__email__ = "jepe@ife.no", "Asbjorn.Ulvestad@ife.no", "Muhammad.Abdelhamid@ife.no"
+__author__ = (
+    "Jan Petter Maehlen",
+    "Asbjoern Ulvestad",
+    "Muhammad Abdelhamid",
+    "Julia Wind",
+)
+__email__ = (
+    "jepe@ife.no",
+    "Asbjorn.Ulvestad@ife.no",
+    "Muhammad.Abdelhamid@ife.no",
+    "julia.wind@ife.no",
+)
 
 import logging
 import warnings
@@ -20,9 +30,12 @@ __version__ = cellpy._version.__version__
 
 logging.getLogger(__name__).addHandler(logging.NullHandler())
 
+# TODO: (v2.0) remove this and enforce using for example `import cellpy.session as clp` and then
+#  run `prmreader.initialize` in that `__init__` instead:
 init = prmreader.initialize
 init()
 
+# TODO: (v2.0) remove this and enforce using `cellpy.get` (or `cellpy.cellreader.get`) instead:
 get = cellreader.get
 
 __all__ = [

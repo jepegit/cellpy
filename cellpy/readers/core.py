@@ -3,6 +3,7 @@
 It also contains functions that are used by readers and utils.
 And it has the file version definitions.
 """
+
 import abc
 import datetime
 import importlib
@@ -244,6 +245,7 @@ class FileID:
 
     @property
     def last_data_point(self):
+        """Get the last data point."""
         # TODO: consider including a method here to find the last data point (raw data)
         # ideally, this value should be set when loading the raw data before
         # merging files (if it consists of several files)
@@ -299,6 +301,18 @@ class Data:
     This class is used for storing all the relevant data for a cell-test, i.e. all
     the data collected by the tester as stored in the raw-files, and user-provided
     metadata about the cell-test.
+
+    Attributes:
+        raw_data_files (list): list of FileID objects.
+        raw (pandas.DataFrame): raw data.
+        summary (pandas.DataFrame): summary data.
+        steps (pandas.DataFrame): step data.
+        meta_common (CellpyMetaCommon): common meta-data.
+        meta_test_dependent (CellpyMetaIndividualTest): test-dependent meta-data.
+        custom_info (Any): custom meta-data.
+        raw_units (dict): dictionary with units for the raw data.
+        raw_limits (dict): dictionary with limits for the raw data.
+        loaded_from (str): name of the file where the data was loaded from.
     """
 
     def _repr_html_(self):
@@ -545,6 +559,8 @@ class Data:
         return txt
 
     def populate_defaults(self):
+        """Populate the data object with default values."""
+
         # modify this method upon need
         logging.debug("checking and populating defaults for the cell")
 
@@ -568,6 +584,7 @@ class Data:
 
     @property
     def empty(self):
+        """Check if the data object is empty."""
         if isinstance(self, pd.DataFrame):
             raise TypeError(
                 "Data is a DataFrame (should be a Data object). "
@@ -608,6 +625,8 @@ class Data:
 
 
 class InstrumentFactory:
+    """Factory for instrument loaders."""
+
     def __init__(self):
         self._builders = {}
         self._kwargs = {}
@@ -1127,6 +1146,8 @@ def group_by_interpolate(
 
 
 def convert_from_simple_unit_label_to_string_unit_label(k, v):
+    """Convert from simple unit label to string unit label."""
+
     old_raw_units = {
         "current": 1.0,
         "charge": 1.0,

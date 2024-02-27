@@ -49,14 +49,24 @@ def find_delimiter_and_start(
     checking_length_header=30,
     checking_length_whole=200,
 ):
-    """function to automatically detect the delimiter and what line the first data appears on.
+    """Function to automatically detect the delimiter and what line the first data appears on.
 
-    Remark! This function is rather simple, it splits the data into to parts
-        (possible header part (checking_length_header) and the rest of the data). Then it counts the appearances of
-        the different possible delimiters in the rest of the data part, and then selects a delimiter if it has unique
-        counts for all the lines.
+    This function is fairly stupid. It splits the data into two parts, the (possible) header part
+    (using the number of lines defined in ``checking_length_header``) and the rest of the data.
+    Then it counts the appearances of the different possible delimiters in the rest of
+    the data part, and then selects a delimiter if it has unique counts for all the lines.
 
-        The first line is defined as where the delimiter is used same number of times (probably a header line).
+    The first line is defined as where the delimiter is used same number of times (probably a header line).
+
+    Args:
+        file_name: path to the file.
+        separators: list of possible delimiters.
+        checking_length_header: number of lines to check for header.
+        checking_length_whole: number of lines to check for delimiter.
+
+    Returns:
+        separator: the delimiter.
+        first_index: the index of the first line with data.
     """
 
     if separators is None:
@@ -148,6 +158,22 @@ def query_csv(
     decimal=None,
     thousands=None,
 ):
+    """function to query a csv file using pandas.read_csv.
+
+
+    Args:
+        name: path to the file.
+        sep: delimiter.
+        skiprows: number of lines to skip.
+        header: number of the header lines.
+        encoding: encoding.
+        decimal: character used for decimal in the raw data, defaults to '.'.
+        thousands: character used for thousands in the raw data, defaults to ','.
+
+    Returns:
+        pandas.DataFrame
+
+    """
     logging.debug(f"parsing with pandas.read_csv: {name}")
     sep = sep or self.sep
     skiprows = skiprows or self.skiprows
@@ -290,24 +316,7 @@ class BaseLoader(AtomicLoad, metaclass=abc.ABCMeta):
     @staticmethod
     @abc.abstractmethod
     def get_raw_units() -> dict:
-        """Include the settings for the units used by the instrument.
-
-        This is needed for example when converting the capacity to a specific capacity.
-        So far, it has been difficult to get any kind of consensus on what the most optimal
-        units are for storing cycling data. Therefore, cellpy implements three levels of units:
-        1) the raw units that the data is loaded in already has and 2) the cellpy units used by cellpy
-        when generating summaries and related information, and 3) output units that can be set to get the data
-        in a specif unit when exporting or creating specific outputs such as ICA.
-
-        Comment 2022.09.11::
-
-            still not sure if we should use raw units or cellpy units in the cellpy-files (.h5/ .cellpy).
-            Currently, the summary is in cellpy units and the raw and step data is in raw units. If
-            you have any input on this topic, let us know.
-
-        The units are defined w.r.t. the SI units ('unit-fractions'; currently only units that are multiples of
-        Si units can be used). For example, for current defined in mA, the value for the
-        current unit-fraction will be 0.001.
+        """Units used by the instrument.
 
         The internal cellpy units are given in the ``cellpy_units`` attribute.
 
@@ -315,7 +324,7 @@ class BaseLoader(AtomicLoad, metaclass=abc.ABCMeta):
             dictionary of units (str)
 
         Example:
-            A minimum viable implementation::
+            A minimum viable implementation could look like this::
 
                 @staticmethod
                 def get_raw_units():
@@ -327,11 +336,24 @@ class BaseLoader(AtomicLoad, metaclass=abc.ABCMeta):
                     return raw_units
 
         """
-        raise NotImplementedError
+        # This is needed for example when converting the capacity to a specific capacity.
+        # So far, it has been difficult to get any kind of consensus on what the most optimal
+        # units are for storing cycling data. Therefore, cellpy implements three levels of units:
+        # 1) the raw units that the data is loaded in already has and 2) the cellpy units used by cellpy
+        # when generating summaries and related information, and 3) output units that can be set to get the data
+        # in a specif unit when exporting or creating specific outputs such as ICA.
+        #
+        # Comment 2022.09.11::
+        #
+        #     still not sure if we should use raw units or cellpy units in the cellpy-files (.h5/ .cellpy).
+        #     Currently, the summary is in cellpy units and the raw and step data is in raw units. If
+        #     you have any input on this topic, let us know.
+
+        pass
 
     @abc.abstractmethod
     def get_raw_limits(self) -> dict:
-        """Include the settings for how to decide what kind of step you are examining here.
+        """Limits used to identify type of step.
 
         The raw limits are 'epsilons' used to check if the current and/or voltage is stable (for example
         for galvanostatic steps, one would expect that the current is stable (constant) and non-zero).
@@ -339,10 +361,11 @@ class BaseLoader(AtomicLoad, metaclass=abc.ABCMeta):
         It is expected that different instruments (with different resolution etc.) have different
         resolutions and noice levels, thus different 'epsilons'.
 
-        Returns: the raw limits (dict)
+        Returns:
+            the raw limits (dict)
 
         """
-        raise NotImplementedError
+        pass
 
     @classmethod
     def get_params(cls, parameter: Union[str, None]) -> dict:
@@ -382,7 +405,7 @@ class AutoLoader(BaseLoader):
         default_model: str = NICK_NAME_OF_DEFAULT_CONFIGURATION_MODULE
         supported_models: dict = SUPPORTED_MODELS
 
-    where SUPPORTED_MODELS is a dictionary with {NICK_NAME : CONFIGURATION_MODULE_NAME}  key-value pairs.
+    where SUPPORTED_MODELS is a dictionary with ``{"NICK_NAME" : "CONFIGURATION_MODULE_NAME"}``  key-value pairs.
     Remark! the NICK_NAME must be in upper-case!
 
     It is also possible to set these in a custom pre_init method::
@@ -456,19 +479,15 @@ class AutoLoader(BaseLoader):
         )
 
     @abc.abstractmethod
-    def parse_formatter_parameters(self, **kwargs) -> None:
-        ...
+    def parse_formatter_parameters(self, **kwargs) -> None: ...
 
     @abc.abstractmethod
-    def parse_loader_parameters(self, **kwargs):
-        ...
+    def parse_loader_parameters(self, **kwargs): ...
 
     @abc.abstractmethod
-    def query_file(self, file_path: Union[str, pathlib.Path]) -> pd.DataFrame:
-        ...
+    def query_file(self, file_path: Union[str, pathlib.Path]) -> pd.DataFrame: ...
 
-    def pre_init(self) -> None:
-        ...
+    def pre_init(self) -> None: ...
 
     def register_configuration(self) -> ModelParameters:
         """Register and load model configuration"""
@@ -485,30 +504,9 @@ class AutoLoader(BaseLoader):
         return register_configuration_from_module(self.model, model_module_name)
 
     def get_raw_units(self):
-        """Include the settings for the units used by the instrument.
-
-        The units are defined w.r.t. the SI units ('unit-fractions'; currently only units that are multiples of
-        Si units can be used). For example, for current defined in mA, the value for the
-        current unit-fraction will be 0.001.
-
-        Returns:
-            dictionary containing the unit-fractions for current, charge, and mass
-
-        """
         return self.config_params.raw_units
 
     def get_raw_limits(self):
-        """Include the settings for how to decide what kind of step you are examining here.
-
-        The raw limits are 'epsilons' used to check if the current and/or voltage is stable (for example
-        for galvanostatic steps, one would expect that the current is stable (constant) and non-zero).
-        It is expected that different instruments (with different resolution etc.) have different
-        'epsilons'.
-
-        Returns:
-            the raw limits (dict)
-
-        """
         return self.config_params.raw_limits
 
     @staticmethod
@@ -587,13 +585,13 @@ class AutoLoader(BaseLoader):
         return data
 
     def validate(self, data: core.Data) -> core.Data:
-        """validation of the loaded data, should raise an appropriate exception if it fails."""
+        """Validation of the loaded data, should raise an appropriate exception if it fails."""
 
         logging.debug(f"no validation of defined in this sub-class of TxtLoader")
         return data
 
     def parse_meta(self) -> dict:
-        """method that parses the data for meta-data (e.g. start-time, channel number, ...)"""
+        """Method that parses the data for meta-data (e.g. start-time, channel number, ...)"""
 
         logging.debug(
             f"no parsing method for meta-data defined in this sub-class of TxtLoader"
@@ -646,7 +644,7 @@ class TxtLoader(AutoLoader, ABC):
     If you need more flexibility, try using the ``CustomTxtLoader`` or subclass directly
     from ``AutoLoader`` or ``Loader``.
 
-    Constructor:
+    Attributes:
         model (str): short name of the (already implemented) sub-model.
         sep (str): delimiter.
         skiprows (int): number of lines to skip.
@@ -658,12 +656,13 @@ class TxtLoader(AutoLoader, ABC):
         returning them to the caller.
         include_aux (bool): also parse so-called auxiliary columns / data. Defaults to False.
         keep_all_columns (bool): load all columns, also columns that are not 100% necessary for ``cellpy`` to work.
-        Remark that the configuration settings for the sub-model must include a list of column header names
-        that should be kept if keep_all_columns is False (default).
 
-    Module:
+    Remark that the configuration settings for the sub-model must include a list of column header names
+    that should be kept if keep_all_columns is False (default).
+
+    Args:
         sep (str): the delimiter (also works as a switch to turn on/off automatic detection of delimiter and
-        start of data (skiprows)).
+            start of data (skiprows)).
 
     """
 

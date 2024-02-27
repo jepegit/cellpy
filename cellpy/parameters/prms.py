@@ -1,4 +1,5 @@
 """cellpy parameters"""
+
 from __future__ import annotations
 import os
 import sys
@@ -52,6 +53,8 @@ class CellPyConfig:
 # This can stay global:
 @dataclass
 class PathsClass(CellPyConfig):
+    """Paths used in cellpy."""
+
     outdatadir: Union[Path, str] = wdir
     _rawdatadir: Union[OtherPath, str] = op_wdir
     _cellpydatadir: Union[OtherPath, str] = op_wdir
@@ -84,6 +87,8 @@ class PathsClass(CellPyConfig):
 
 @dataclass
 class BatchClass(CellPyConfig):
+    """Settings for batch processing."""
+
     auto_use_file_list: bool = False
     template: str = "standard"
     fig_extension: str = "png"
@@ -103,6 +108,8 @@ class BatchClass(CellPyConfig):
 
 @dataclass
 class FileNamesClass(CellPyConfig):
+    """Settings for file names and file handling."""
+
     file_name_format: str = "YYYYMMDD_[NAME]EEE_CC_TT_RR"
     raw_extension: str = "res"
     reg_exp: str = None
@@ -115,6 +122,8 @@ class FileNamesClass(CellPyConfig):
 
 @dataclass
 class ReaderClass(CellPyConfig):
+    """Settings for reading data."""
+
     diagnostics: bool = False
     filestatuschecker: str = "size"
     force_step_table_creation: bool = True
@@ -123,9 +132,9 @@ class ReaderClass(CellPyConfig):
     cycle_mode: str = "anode"
     sorted_data: bool = True  # finding step-types assumes sorted data
     select_minimal: bool = False
-    limit_loaded_cycles: Optional[
-        int
-    ] = None  # limit loading cycles to given cycle number
+    limit_loaded_cycles: Optional[int] = (
+        None  # limit loading cycles to given cycle number
+    )
     ensure_step_table: bool = False
     ensure_summary_table: bool = False
     voltage_interpolation_step: float = 0.01
@@ -140,6 +149,8 @@ class ReaderClass(CellPyConfig):
 
 @dataclass
 class DbClass(CellPyConfig):
+    """Settings for the handling the simple database."""
+
     db_type: str = "simple_excel_reader"
     db_table_name: str = "db_table"  # used for simple excel db reader
     db_header_row: int = 0  # used for simple excel db reader
@@ -154,6 +165,8 @@ class DbClass(CellPyConfig):
 
 @dataclass
 class DbColsClass(CellPyConfig):  # used for simple excel db reader
+    """Names of the columns in the simple database."""
+
     # Note to developers:
     #  1) This is ONLY for the excel-reader (dbreader.py)! More advanced
     #     readers should get their own way of handling the db-columns.
@@ -201,6 +214,8 @@ class DbColsClass(CellPyConfig):  # used for simple excel db reader
 
 @dataclass
 class DbColsUnitClass(CellPyConfig):
+    """Unit of the columns in the simple database."""
+
     # Note to developers:
     #  1) This is ONLY for the excel-reader (dbreader.py)! More advanced
     #     readers should get their own way of handling the db-columns.
@@ -295,6 +310,8 @@ Batch = BatchClass(backend="plotly")
 # remark! using box.Box for each instrument
 @dataclass
 class InstrumentsClass(CellPyConfig):
+    """Settings for the instruments."""
+
     tester: Union[str, None]
     custom_instrument_definitions_file: Union[str, None]
     Arbin: box.Box
@@ -304,7 +321,7 @@ class InstrumentsClass(CellPyConfig):
 
 # Pre-defined instruments:
 # These can stay global:
-Arbin = {
+_Arbin = {
     "max_res_filesize": 150_000_000,
     "chunk_size": None,
     "max_chunks": None,
@@ -318,13 +335,13 @@ Arbin = {
     "SQL_Driver": "SQL Server",
 }
 
-Arbin = box.Box(Arbin)
+Arbin = box.Box(_Arbin)
 
-Maccor = {"default_model": "one"}
-Maccor = box.Box(Maccor)
+_Maccor = {"default_model": "one"}
+Maccor = box.Box(_Maccor)
 
-Neware = {"default_model": "one"}
-Neware = box.Box(Neware)
+_Neware = {"default_model": "one"}
+Neware = box.Box(_Neware)
 
 Instruments = InstrumentsClass(
     tester=None,  # TODO: moving this to DataSetClass (deprecate)
