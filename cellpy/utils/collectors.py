@@ -1199,7 +1199,7 @@ def ica_collector(
                 inverse=inverse,
             )
             cycles = list(set(filtered_cycles).intersection(set(cycles)))
-        curves = ica.dqdv_frames(
+        curves = ica.dqdv(
             c,
             cycle=cycles,
             voltage_resolution=voltage_resolution,

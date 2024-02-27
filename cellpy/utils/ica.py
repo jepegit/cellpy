@@ -429,21 +429,19 @@ def index_bounds(x):
         return x[0], x[-1]
 
 
-def dqdv_cycle(cycle, splitter=True, label_direction=False, **kwargs):
-    """Convenience functions for creating dq-dv data from given capacity and
+def dqdv_cycle(cycle_df, splitter=True, label_direction=False, **kwargs):
+    """Convenience function for creating dq-dv data from a given capacity and
     voltage cycle.
 
-    Returns the DataFrame with a 'voltage' and a 'incremental_capacity'
-    column.
+    Returns a tuple of numpy arrays with 'voltage' and 'incremental_capacity'.
 
     Args:
-        cycle (pandas.DataFrame): the cycle data ('voltage', 'capacity', 'direction' (1 or -1)).
+        cycle_df (pandas.DataFrame): the cycle data ('voltage', 'capacity', 'direction' (1 or -1)).
         splitter (bool): insert a np.NaN row between charge and discharge.
-        label_direction (bool):
+        label_direction (bool): include 'direction' (1 or -1).
 
     Returns:
-        List of step numbers corresponding to the selected steptype.
-        Returns a ``pandas.DataFrame`` instead of a list if ``pdtype`` is set to ``True``.
+        Returns a tuple of numpy arrays with 'voltage' and 'incremental_capacity'.
 
     Additional key-word arguments are sent to Converter:
 
@@ -480,11 +478,11 @@ def dqdv_cycle(cycle, splitter=True, label_direction=False, **kwargs):
 
     """
 
-    if cycle.empty:
-        raise NullData(f"The cycle (type={type(cycle)}) is empty.")
+    if cycle_df.empty:
+        raise NullData(f"The cycle (type={type(cycle_df)}) is empty.")
 
-    c_first = cycle.loc[cycle["direction"] == -1]
-    c_last = cycle.loc[cycle["direction"] == 1]
+    c_first = cycle_df.loc[cycle_df["direction"] == -1]
+    c_last = cycle_df.loc[cycle_df["direction"] == 1]
 
     converter = Converter(**kwargs)
 
@@ -530,15 +528,15 @@ def dqdv_cycle(cycle, splitter=True, label_direction=False, **kwargs):
     return voltage, incremental_capacity
 
 
-def dqdv_cycles(cycles, not_merged=False, label_direction=False, **kwargs):
-    """Convenience functions for creating dq-dv data from given capacity and
+def dqdv_cycles(cycles_df, not_merged=False, label_direction=False, **kwargs):
+    """Convenience function for creating dq-dv data from several given capacity and
     voltage cycles.
 
     Returns a DataFrame with a 'voltage' and a 'incremental_capacity'
     column.
 
     Args:
-        cycles (pandas.DataFrame): the cycle data ('cycle', 'voltage',
+        cycles_df (pandas.DataFrame): the cycle data ('cycle', 'voltage',
              'capacity', 'direction' (1 or -1)).
         not_merged (bool): return list of frames instead of concatenating (
             defaults to False).
@@ -593,12 +591,12 @@ def dqdv_cycles(cycles, not_merged=False, label_direction=False, **kwargs):
     # Converter using the key-word arguments
     #   normalize=True, normalization_factor=1.0, normalization_roof=nom_cap
 
-    if len(cycles) < 1:
+    if len(cycles_df) < 1:
         logging.debug("The food was without nutrition")
         return pd.DataFrame()
 
     ica_dfs = list()
-    cycle_group = cycles.groupby("cycle")
+    cycle_group = cycles_df.groupby("cycle")
     keys = list()
     for cycle_number, cycle in cycle_group:
         cycle = cycle.dropna()
@@ -635,7 +633,7 @@ def dqdv_cycles(cycles, not_merged=False, label_direction=False, **kwargs):
     return ica_df
 
 
-def dqdv( # this should be renamed to something sensible to reflect numpy input
+def dqdv_np(
     voltage,
     capacity,
     voltage_resolution=None,
@@ -656,8 +654,8 @@ def dqdv( # this should be renamed to something sensible to reflect numpy input
     max_points=None,
     **kwargs,
 ):
-    """Convenience functions for creating dq-dv data from given capacity
-    and voltage data.
+    """Convenience functions for creating dq-dv data from given arrays
+    of capacity and voltage data.
 
     Args:
         voltage: nd.array or pd.Series
@@ -762,9 +760,9 @@ def dqdv( # this should be renamed to something sensible to reflect numpy input
 
     return converter.voltage_processed, converter.incremental_capacity
 
-# this should be the actual dqdv function
-def dqdv_frames(cell, split=False, tidy=True, label_direction=False, **kwargs):
-    """Returns dqdv data as pandas.DataFrame(s) for all cycles.
+def dqdv(cell, split=False, tidy=True, label_direction=False, **kwargs):
+    """Calculates dq-dv data for all cycles contained in
+    the given CellpyCell object, returns data as pandas.DataFrame(s) 
 
     Args:
         cell (CellpyCell-object).
@@ -1093,7 +1091,7 @@ def _check_if_works():
 
     cell = _get_a_cell_to_play_with()
 
-    a = dqdv_frames(cell)
+    a = dqdv(cell)
     print("Hei")
 
 

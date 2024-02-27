@@ -981,11 +981,11 @@ class EasyPlot:
             for cpobj, cyc_nums, color, filename in self.file_data:
                 # Get Pandas DataFrame of dQdV
                 if self.kwargs["only_dischg"]:
-                    _, df = ica.dqdv_frames(cpobj, split=True)
+                    _, df = ica.dqdv(cpobj, split=True)
                 elif self.kwargs["only_chg"]:
-                    df, _ = ica.dqdv_frames(cpobj, split=True)
+                    df, _ = ica.dqdv(cpobj, split=True)
                 else:
-                    df = ica.dqdv_frames(cpobj)
+                    df = ica.dqdv(cpobj)
 
                 # Group by cycle and make list of cycle numbers
                 cycgrouped = df.groupby("cycle")
@@ -1046,11 +1046,11 @@ class EasyPlot:
 
                 # Get Pandas DataFrame of dQdV
                 if self.kwargs["only_dischg"]:
-                    _, df = ica.dqdv_frames(cpobj, split=True)
+                    _, df = ica.dqdv(cpobj, split=True)
                 elif self.kwargs["only_chg"]:
-                    df, _ = ica.dqdv_frames(cpobj, split=True)
+                    df, _ = ica.dqdv(cpobj, split=True)
                 else:
-                    df = ica.dqdv_frames(cpobj)
+                    df = ica.dqdv(cpobj)
 
                 # Group by cycle and make list of cycle numbers
                 cycgrouped = df.groupby("cycle")
@@ -1219,11 +1219,11 @@ class EasyPlot:
 
                 # Get Pandas DataFrame for dQdV
                 if self.kwargs["only_dischg"]:
-                    _, df = ica.dqdv_frames(cpobj, split=True)
+                    _, df = ica.dqdv(cpobj, split=True)
                 elif self.kwargs["only_chg"]:
-                    df, _ = ica.dqdv_frames(cpobj, split=True)
+                    df, _ = ica.dqdv(cpobj, split=True)
                 else:
-                    df = ica.dqdv_frames(cpobj)
+                    df = ica.dqdv(cpobj)
 
                 # Group by cycle and make list of cycle numbers
                 cycgrouped = df.groupby("cycle")
@@ -1351,11 +1351,11 @@ class EasyPlot:
 
                 # Get Pandas DataFrame for dQdV
                 if self.kwargs["only_dischg"]:
-                    _, df = ica.dqdv_frames(cpobj, split=True)
+                    _, df = ica.dqdv(cpobj, split=True)
                 elif self.kwargs["only_chg"]:
-                    df, _ = ica.dqdv_frames(cpobj, split=True)
+                    df, _ = ica.dqdv(cpobj, split=True)
                 else:
-                    df = ica.dqdv_frames(cpobj)
+                    df = ica.dqdv(cpobj)
 
                 # Group by cycle and make list of cycle numbers
                 cycgrouped = df.groupby("cycle")
@@ -1429,7 +1429,7 @@ class EasyPlot:
 
         from cellpy.utils import ica
         # Get Pandas DataFrame of pot vs cap from cellpy object
-        df = ica.dqdv_frames(cpobj)
+        df = ica.dqdv(cpobj)
 
         # Group by cycle and make list of cycle numbers
         cycgrouped = df.groupby("cycle")
