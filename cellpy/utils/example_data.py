@@ -37,7 +37,7 @@ def _download_example_data(filename: str):
 
 def raw_file(
     auto_summary: bool = True, testing: bool = False
-) -> cellpy.cellreader.CellpyData:
+) -> cellpy.cellreader.CellpyCell:
     """load an example data file (arbin).
 
     Args:
@@ -55,7 +55,7 @@ def raw_file(
     )
 
 
-def cellpy_file(testing: bool = False) -> cellpy.cellreader.CellpyData:
+def cellpy_file(testing: bool = False) -> cellpy.cellreader.CellpyCell:
     """load an example cellpy file.
 
     Args:
@@ -69,7 +69,7 @@ def cellpy_file(testing: bool = False) -> cellpy.cellreader.CellpyData:
     return cellpy.get(filename=file_path, testing=testing)
 
 
-def rate_file(testing: bool = False) -> cellpy.cellreader.CellpyData:
+def rate_file(testing: bool = False) -> cellpy.cellreader.CellpyCell:
     """load an example cellpy file.
 
     Args:
@@ -81,6 +81,20 @@ def rate_file(testing: bool = False) -> cellpy.cellreader.CellpyData:
 
     file_path = H5_PATH / "20231115_rate_cc.h5"
     return cellpy.get(filename=file_path, testing=testing)
+
+
+# def GITT_file(testing: bool = False) -> cellpy.cellreader.CellpyCell:
+#     """load an example cellpy file.
+#
+#     Args:
+#         testing (bool): run in test mode
+#
+#     Returns:
+#         cellpy.CellpyCell object with the rate data loaded
+#     """
+#
+#     file_path = H5_PATH / "gitt.h5"
+    # return cellpy.get(filename=file_path, testing=testing)
 
 
 def cellpy_file_path() -> Path:
