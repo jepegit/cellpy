@@ -49,7 +49,7 @@ yaml = YAML()
 
 
 def initialize():
-    """initializes cellpy by reading the config file and the environment file"""
+    """Initializes cellpy by reading the config file and the environment file"""
     try:
         _read_prm_file(_get_prm_file())
         _load_env_file()
@@ -60,7 +60,7 @@ def initialize():
 
 
 def _load_env_file():
-    """loads the environment file"""
+    """Loads the environment file"""
     env_file = pathlib.Path(prms.Paths.env_file)
     env_file_in_user_dir = pathlib.Path.home() / prms.Paths.env_file
     if env_file.is_file():
@@ -72,12 +72,12 @@ def _load_env_file():
 
 
 def get_user_name():
-    """get the username of the current user (cross-platform)"""
+    """Get the username of the current user (cross-platform)"""
     return getpass.getuser()
 
 
 def create_custom_init_filename(user_name=None):
-    """creates a custom prms filename"""
+    """Creates a custom prms filename"""
     if user_name is None:
         return DEFAULT_FILENAME_START + get_user_name() + DEFAULT_FILENAME_END
     else:
@@ -85,7 +85,7 @@ def create_custom_init_filename(user_name=None):
 
 
 def get_user_dir_and_dst(init_filename=None):
-    """gets the name of the user directory and full prm filepath"""
+    """Gets the name of the user directory and full prm filepath"""
     if init_filename is None:
         init_filename = create_custom_init_filename()
     user_dir = get_user_dir()
@@ -94,7 +94,7 @@ def get_user_dir_and_dst(init_filename=None):
 
 
 def get_user_dir():
-    """gets the name of the user directory"""
+    """Gets the name of the user directory"""
     # user_dir = pathlib.Path(os.path.abspath(os.path.expanduser("~")))
     user_dir = pathlib.Path().home().resolve()
     if os.name == "nt" and USE_MY_DOCUMENTS:
@@ -369,7 +369,7 @@ def _save_current_prms_to_user_dir():
 
 
 def get_env_file_name():
-    """returns the location of the env-file"""
+    """Returns the location of the env-file"""
 
     # TODO: make this more robust - especially on posix systems strange
     #  things seem to happen
@@ -394,7 +394,7 @@ def get_env_file_name():
 
 
 def info():
-    """this function will show only the 'box'-type
+    """This function will show only the 'box'-type
     attributes and their content in the cellpy.prms module"""
     print(80 * "=")
     print(f"Listing the content of the prms module ({prms.__name__})")

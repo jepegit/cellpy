@@ -105,18 +105,18 @@ def _check_external(path_string: str) -> Tuple[str, bool, str, str]:
 class OtherPath(pathlib.Path):
     """A pathlib.Path subclass that can handle external paths.
 
-    Additional attributes:
+    Attributes:
         is_external (bool): is True if the path is external.
         location (str): the location of the external path (e.g. a server name).
         uri_prefix (str): the prefix of the external path (e.g. scp:// or sftp://).
         raw_path (str): the path without any uri_prefix or location.
         original (str): the original path string.
         full_path (str): the full path (including uri_prefix and location).
-    Additional methods:
+
+    Methods:
         copy (method): a method for copying the file to a local path.
-    Overrides (only if is_external is True):
-        glob (method): a method for globbing external paths.
-        rglob (method): a method for 'recursive' globbing external paths (max one extra level deep).
+        glob (method): a method for globbing external paths if ``is_external`` is True.
+        rglob (method): a method for 'recursive' globbing external paths (max one extra level deep) if ``is_external`` is True.
     """
 
     _flavour = (
@@ -282,13 +282,14 @@ class OtherPath(pathlib.Path):
         """List the contents of the directory.
 
         Args:
-            levels (int, optional): How many sublevels to list. Defaults to 1.
-                If you want to list all sublevels, use `listdir(levels=-1)`.
-                If you want to list only the current level (no subdirectories),
-                use `listdir(levels=0)`.
+            levels (int, optional): How many sublevels to list:
+
+                - If you want to list all sublevels, use ``listdir(levels=-1)``.
+                - If you want to list only the current level (no subdirectories),
+                  use ``listdir(levels=0)``.
 
         Returns:
-            Generator: Generator of OtherPath objects.
+            Generator: Generator of ``OtherPath`` objects.
 
         """
         return self._listdir(levels, **kwargs)

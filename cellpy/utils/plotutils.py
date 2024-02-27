@@ -282,10 +282,12 @@ def summary_plot(
 
     Args:
         c: cellpy object
-        x: x-axis column (default: cycle_index)
-        y: y-axis column or column set (predefined sets implemented are: "voltages",
-          "capacities_gravimetric", "capacities_areal", "capacities_gravimetric_split_constant_voltage",
-          "capacities_areal_split_constant_voltage")
+        x: x-axis column (default: 'cycle_index')
+        y: y-axis column or column set. Currently, the following predefined sets exists:
+
+            - "voltages", "capacities_gravimetric", "capacities_areal", "capacities_gravimetric_split_constant_voltage",
+              "capacities_areal_split_constant_voltage"
+
         height: height of the plot
         markers: use markers
         title: title of the plot
@@ -298,7 +300,7 @@ def summary_plot(
         **kwargs: additional parameters for the plotting backend
 
     Returns:
-        plotly figure or None
+        ``plotly`` figure or None
 
     """
 
@@ -399,7 +401,7 @@ def partition_summary_cv_steps(
         value_name: name of the value column after melting
 
     Returns:
-        pandas DataFrame (melted with columns x, var_name, value_name, and optionally "row" if split is True)
+        ``pandas.DataFrame`` (melted with columns x, var_name, value_name, and optionally "row" if split is True)
     """
     import pandas as pd
 
@@ -465,7 +467,7 @@ def raw_plot(
         **kwargs: additional parameters for the plotting backend
 
     Returns:
-        matplotlib figure or plotly figure
+        ``matplotlib`` figure or ``plotly`` figure
 
     """
 

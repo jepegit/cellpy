@@ -187,6 +187,12 @@ All of the following section headers are supported:
 
 - Yields
 
+Additional sections implemented by cellpy:
+
+- Transferred Parameters
+
+- See Also
+
 
 #### napoleon_custom_sections
 Add a list of custom sections to include, expanding the list of parsed sections.

@@ -124,7 +124,7 @@ autoapi_options = [
     "show-module-summary",
     "show-inheritance-diagram",
 ]
-autoapi_ignore = ["*dev_*"]
+autoapi_ignore = ["dev_*"]
 autoapi_python_class_content = "both"
 autoapi_member_order = "groupwise"
 autoapi_keep_files = True

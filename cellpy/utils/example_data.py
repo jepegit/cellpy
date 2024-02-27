@@ -12,14 +12,14 @@ RAW_PATH = CURRENT_PATH / "data" / "raw"
 H5_PATH = CURRENT_PATH / "data"
 
 
-def _download_if_missing(filename):
+def _download_if_missing(filename: str) -> Path:
     p = RAW_PATH / filename
     if not p.is_file():
         _download_example_data(filename)
     return p
 
 
-def _download_example_data(filename):
+def _download_example_data(filename: str):
     """Download example data from the cellpy-data repository.
 
     Args:
@@ -35,7 +35,9 @@ def _download_example_data(filename):
     raise NotImplementedError("Downloading example data is not implemented yet.")
 
 
-def raw_file(auto_summary=True, testing=False):
+def raw_file(
+    auto_summary: bool = True, testing: bool = False
+) -> cellpy.cellreader.CellpyData:
     """load an example data file (arbin).
 
     Args:
@@ -53,7 +55,7 @@ def raw_file(auto_summary=True, testing=False):
     )
 
 
-def cellpy_file(testing=False):
+def cellpy_file(testing: bool = False) -> cellpy.cellreader.CellpyData:
     """load an example cellpy file.
 
     Args:
@@ -67,7 +69,7 @@ def cellpy_file(testing=False):
     return cellpy.get(filename=file_path, testing=testing)
 
 
-def rate_file(testing=False):
+def rate_file(testing: bool = False) -> cellpy.cellreader.CellpyData:
     """load an example cellpy file.
 
     Args:
@@ -81,38 +83,38 @@ def rate_file(testing=False):
     return cellpy.get(filename=file_path, testing=testing)
 
 
-def cellpy_file_path():
+def cellpy_file_path() -> Path:
     """Get the path to an example cellpy file"""
 
     return H5_PATH / "20180418_sf033_4_cc.h5"
 
 
-def arbin_file_path():
+def arbin_file_path() -> Path:
     """Get the path to an example arbin res file"""
     return _download_if_missing("20160805_test001_45_cc_01.res")
 
 
-def arbin_multi_file_path():
+def arbin_multi_file_path() -> Path:
     """Get the path to an example arbin res file"""
     return _download_if_missing("aux_multi_x.res")
 
 
-def maccor_file_path():
+def maccor_file_path() -> Path:
     """Get the path to an example maccor txt file"""
     return _download_if_missing("maccor.txt")
 
 
-def neware_file_path():
+def neware_file_path() -> Path:
     """Get the path to an example neware csv file"""
     return _download_if_missing("neware.csv")
 
 
-def pec_file_path():
+def pec_file_path() -> Path:
     """Get the path to an example pec csv file"""
     return _download_if_missing("pec.csv")
 
 
-def biologics_file_path():
+def biologics_file_path() -> Path:
     """Get the path to an example biologics mpr file"""
     return _download_if_missing("biol.mpr")
 
