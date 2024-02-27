@@ -20,15 +20,28 @@ DO_NOT_REMOVE_THESE_FILES = [".gitkeep"]
 class ExampleData(Enum):
     """Enum for example data files"""
 
-    ARBIN = "20160805_test001_45_cc_01.res"
     CELLPY = "20180418_sf033_4_cc.h5"
     OLD_CELLPY = "20160805_test001_45_cc.h5"
     RATE = "20231115_rate_cc.h5"
+    # GITT = "gitt.h5"
+    # COMMERCIAL = "commercial.h5"
+    # CV = "cv.h5"
+    # EIS = "eis.h5"
+    # BUGGY_FILE = "buggy.h5"
+    # PLATING = "plating.h5"
+    ARBIN = "20160805_test001_45_cc_01.res"
     AUX_MULTI_X = "aux_multi_x.res"
+    PEC_CSV = "pec.csv"
+    # CUSTOM = "custom.csv"
+    # CUSTOM_EXCEL = "custom.xlsx"
     # BIOL_MPR = "biol.mpr"
     # MACCOR_TXT = "maccor.txt"
     # NEWARE_CSV = "neware.csv"
-    PEC_CSV = "pec.csv"
+    # --------------------------------
+    # DB = "cellpy_db.sqlite"
+    # SIMPLE_DB = "simple_db.xlsx"
+    # STEPS = "steps.csv"
+    # STEPS_SHORT = "steps_short.csv"
 
 
 def download_file(url, local_filename):
