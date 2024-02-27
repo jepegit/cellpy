@@ -307,7 +307,7 @@ def generate_folder_names(name, project):
 def _extract_dqdv(cell_data, extract_func, last_cycle):
     """Simple wrapper around the cellpy.utils.ica.dqdv function."""
 
-    from cellpy.utils.ica import dqdv
+    from cellpy.utils.ica import dqdv_np
 
     list_of_cycles = cell_data.get_cycle_numbers()
     if last_cycle is not None:
@@ -318,7 +318,7 @@ def _extract_dqdv(cell_data, extract_func, last_cycle):
     for cycle in list_of_cycles:
         try:
             c, v = extract_func(cycle, return_dataframe=False)
-            v, dq = dqdv(v, c)
+            v, dq = dqdv_np(v, c)
             v = v.tolist()
             dq = dq.tolist()
         except NullData as e:

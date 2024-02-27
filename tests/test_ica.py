@@ -45,18 +45,18 @@ def test_ica_converter(dataset):
 
 @pytest.mark.xfail(raises=TypeError)
 def test_none_data():
-    ica.dqdv(None, None)
+    ica.dqdv_np(None, None)
 
 
 @pytest.mark.xfail(raises=NullData)
 def test_short_data():
-    ica.dqdv(pd.Series(), pd.Series())
+    ica.dqdv_np(pd.Series(), pd.Series())
 
 
 @pytest.mark.parametrize("cycle", [1, 2, 3, 4, 5, 10])
 def test_ica_dqdv(dataset, cycle):
     capacity, voltage = dataset.get_ccap(cycle, as_frame=False)
-    ica.dqdv(voltage, capacity)
+    ica.dqdv_np(voltage, capacity)
 
 
 def test_ica_value_bounds_simple():
@@ -154,11 +154,11 @@ def test_increment_data_smoothing(converter):
     assert len(v) > 1
 
 
-def test_dqdv_frames_split(dataset):
-    df_ica_charge, df_ica_discharge = ica.dqdv_frames(dataset, split=True, cycle=2)
+def test_dqdv_split(dataset):
+    df_ica_charge, df_ica_discharge = ica.dqdv(dataset, split=True, cycle=2)
     assert df_ica_charge.size == 300
     assert df_ica_discharge.size == 300
-    df_ica_charge, df_ica_discharge = ica.dqdv_frames(dataset, split=True)
+    df_ica_charge, df_ica_discharge = ica.dqdv(dataset, split=True)
     assert df_ica_charge.size == 5400
     assert df_ica_discharge.size == 5400
     assert "voltage" in df_ica_charge.columns
@@ -166,24 +166,24 @@ def test_dqdv_frames_split(dataset):
     assert "dq" in df_ica_charge.columns
 
 
-def test_dqdv_frames_one_cycle_tidy(dataset):
-    df_ica = ica.dqdv_frames(dataset, cycle=2)
+def test_dqdv_one_cycle_tidy(dataset):
+    df_ica = ica.dqdv(dataset, cycle=2)
     assert "voltage" in df_ica.columns
     assert "cycle" in df_ica.columns
     assert "dq" in df_ica.columns
     assert df_ica.size == 2280
 
 
-def test_dqdv_frames_multi_cycles_tidy(dataset):
-    df_ica = ica.dqdv_frames(dataset)
+def test_dqdv_multi_cycles_tidy(dataset):
+    df_ica = ica.dqdv(dataset)
     assert "voltage" in df_ica.columns
     assert "cycle" in df_ica.columns
     assert "dq" in df_ica.columns
     assert df_ica.size == 26379
 
 
-def test_dqdv_frames_multi_cycles_wide(dataset):
-    df_ica = ica.dqdv_frames(dataset, tidy=False)
+def test_dqdv_multi_cycles_wide(dataset):
+    df_ica = ica.dqdv(dataset, tidy=False)
     cycles_available = set(dataset.get_cycle_numbers())
     cycles_processed = set(df_ica.columns.get_level_values(0))
     assert cycles_available.issuperset(cycles_processed)
