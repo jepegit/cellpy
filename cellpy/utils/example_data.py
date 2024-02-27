@@ -104,6 +104,7 @@ def cellpy_file_path() -> Path:
     return _download_if_missing("20180418_sf033_4_cc.h5")
 
 
+@property
 def old_cellpy_file_path() -> Path:
     """Get the path to an example cellpy file"""
     return _download_if_missing("20160805_test001_45_cc.h5")
