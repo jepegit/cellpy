@@ -104,7 +104,7 @@ def setup_logging(
                         )
 
             except Exception as e:
-                warnings.warn("\nCould not set custom log-dir" + str(e))
+                warnings.warn(f"\nCould not set custom log-dir{e}")
 
         if default_level:
             w_txt = "\nCould not set custom default level for logger"

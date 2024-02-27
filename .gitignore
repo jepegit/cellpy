@@ -125,3 +125,4 @@ settings.json
 /examples/cellpy batch utility/data/cellpyfiles/*
 /examples/cellpy batch utility/out/*
 /docs/jupyter_execute/
+/cellpy/utils/data/*.*

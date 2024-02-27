@@ -356,9 +356,10 @@ Instruments = InstrumentsClass(
 # Other secret- or non-config (only for developers)
 # ------------------------------------------------------------------------------
 
-_url_example_cellpy_data = (
+_url_example_data = (
     "https://raw.githubusercontent.com/jepegit/cellpy/master/examples/data/"
 )
+_url_example_data_download_with_progressbar = True
 _db_cols_unit = DbColsUnitClass()
 _debug = False
 _variable_that_is_not_saved_to_config = "Hei"
