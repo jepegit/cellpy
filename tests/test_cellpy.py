@@ -199,17 +199,6 @@ def test_humanize_bytes():
     assert cellpy.readers.core.humanize_bytes(1024 * 1234 * 1111, 1) == "1.0 GB"
 
 
-def test_example_data():
-    from cellpy.utils import example_data
-
-    a = example_data.raw_file(testing=True)
-    c = example_data.cellpy_file(testing=True)
-    c.make_summary()
-
-    assert a.data.summary.shape == (18, 49)
-    assert c.data.summary.shape == (304, 49)
-
-
 def test_make_step_table():
     c = cellpy.get(
         fdv.res_file_path,

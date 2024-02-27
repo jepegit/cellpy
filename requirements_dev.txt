@@ -43,3 +43,4 @@ pandoc
 bumpver
 dateparser
 ipykernel
+requests
