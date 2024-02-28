@@ -723,26 +723,30 @@ class BatchSummaryCollector(BatchCollector):
             max_cycle (int): drop all cycles above this value (elevated data collector argument).
             rate (float): filter on rate (C-rate) (elevated data collector argument).
             on (str or list of str): only select cycles if based on the rate of this step-type (e.g. on="charge").
-            columns (list): selected column(s) (using cellpy attribute name)
-                [defaults to "charge_capacity_gravimetric"]
-            column_names (list): selected column(s) (using exact column name)
+                (elevated data collector argument).
+            columns (list): selected column(s) (using cellpy attribute name). Defaults to "charge_capacity_gravimetric".
+                (elevated data collector argument).
+            column_names (list): selected column(s) (using exact column name) (elevated data collector argument)
             normalize_capacity_on (list): list of cycle numbers that will be used for setting the basis of the
-                normalization (typically the first few cycles after formation)
+                normalization (typically the first few cycles after formation) (elevated data collector argument)
             scale_by (float or str): scale the normalized data with nominal capacity if "nom_cap",
-                or given value (defaults to one).
-            nom_cap (float): nominal capacity of the cell
+                or given value (defaults to one) (elevated data collector argument).
+            nom_cap (float): nominal capacity of the cell (elevated data collector argument)
             normalize_cycles (bool): perform a normalization of the cycle numbers (also called equivalent cycle index)
-            group_it (bool): if True, average pr group.
+                (elevated data collector argument).
+            group_it (bool): if True, average pr group (elevated data collector argument).
             rate_std (float): allow for this inaccuracy when selecting cycles based on rate
-            rate_column (str): name of the column containing the C-rates.
-            inverse (bool): select steps that do not have the given C-rate.
-            inverted (bool): select cycles that do not have the steps filtered by given C-rate.
+                (elevated data collector argument)
+            rate_column (str): name of the column containing the C-rates (elevated data collector argument).
+            inverse (bool): select steps that do not have the given C-rate (elevated data collector argument).
+            inverted (bool): select cycles that do not have the steps filtered by given C-rate
+                (elevated data collector argument).
             key_index_bounds (list): used when creating a common label for the cells in a group
                 (when group_it is set to True) by splitting and combining from key_index_bound[0] to key_index_bound[1].
                 For example, if your cells are called "cell_01_01" and "cell_01_02" and you set
                 key_index_bounds=[0, 2], the common label will be "cell_01". Or if they are called
                 "20230101_cell_01_01_01" and "20230101_cell_01_01_02" and you set key_index_bounds=[1, 3],
-                the common label will be "cell_01_01".
+                the common label will be "cell_01_01" (elevated data collector argument).
             points (bool): plot points if True (elevated plotter argument).
             line (bool): plot line if True (elevated plotter argument).
             width: width of plot (elevated plotter argument).
@@ -907,7 +911,38 @@ class BatchICACollector(BatchCollector):
         *args,
         **kwargs,
     ):
-        """Create a collection of ica (dQ/dV) plots."""
+        """Create a collection of ica (dQ/dV) plots.
+
+        Args:
+            b: cellpy batch object
+            plot_type (str): either 'fig_pr_cell' or 'fig_pr_cycle'
+            backend (str): what plotting backend to use (currently only 'plotly' is supported)
+            cycles (list): select these cycles (elevated data collector argument).
+            max_cycle (int): drop all cycles above this value (elevated data collector argument).
+            rate (float): filter on rate (C-rate) (elevated data collector argument).
+            rate_on (str or list of str): only select cycles if based on the rate of this step-type (e.g. on="charge")
+                (elevated data collector argument).
+            rate_std (float): allow for this inaccuracy when selecting cycles based on rate
+                (elevated data collector argument).
+            rate_agg (str): how to aggregate the rate (e.g. "mean", "max", "min", "first", "last")
+                (elevated data collector argument).
+            inverse (bool): select steps that do not have the given C-rate (elevated data collector argument).
+            label_mapper (callable or dict): function (or dict) that changes the cell names
+                (elevated data collector argument).
+                The dictionary must have the cell labels as given in the `journal.pages` index and new label as values.
+                Similarly, if it is a function it takes the cell label as input and returns the new label.
+                Remark! No check are performed to ensure that the new cell labels are unique.
+            cycles_to_plot (int): plot points if True (elevated plotter argument).
+            width (float): width of plot (elevated plotter argument).
+            palette (str): color-map to use (elevated plotter argument).
+            legend_position (str): position of the legend (elevated plotter argument).
+            show_legend (bool): set to False if you don't want to show legend (elevated plotter argument).
+            fig_title (str): title (will be put above the figure) (elevated plotter argument).
+            cols (int): number of columns (elevated plotter argument).
+            group_legend_muting (bool): if True, the legend will be interactive (elevated plotter argument).
+
+
+        """
 
         self.plot_type = plot_type
         self._default_plotter_arguments["method"] = plot_type
