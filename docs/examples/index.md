@@ -5,7 +5,7 @@ folder](https://github.com/jepegit/cellpy/tree/master/examples) in the cellpy Gi
 
 To exploit the full potential of cellpy, have a look at the [API](/autoapi/index).
 
-Contributions to more example notebooks are of course very welcome!
+[Contributions](/contributing/contributing.md) to more example notebooks are of course very welcome!
 
 ```{toctree}
 :maxdepth: 2

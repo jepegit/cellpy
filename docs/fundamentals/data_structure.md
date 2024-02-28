@@ -1,4 +1,5 @@
 # Data structure
+
 The most important file formats and data structures for cellpy are
 summarized here. It is also possible to look into the source-code at the
 repository <https://github.com/jepegit/cellpy>.
@@ -13,7 +14,6 @@ and for the various cell-tester file-formats that can be read. The class
 can contain several tests and each test is stored in a list. The class also
 contains several attributes that can be assigned directly.
 
-
 ```{eval-rst}
 .. graphviz::
 
@@ -26,7 +26,8 @@ contains several attributes that can be assigned directly.
 
 ```
 
-### Methods
+## Methods
+
 The **CellpyCell** object contains lots of methods for manipulating, extracting
 and summarising the data from the run(s).
 The following two methods are typically automatically run upon loading your data using
@@ -45,9 +46,10 @@ Other common methods worth mentioning are:
 > - `get_cycle_numbers`: get the cycle numbers for your run.
 > - `get_ocv`: get the rest steps after each charge and discharge step.
 
-Take a look at API section (Module index, `cellpy.readers.cellreader.CellpyCell`) for more info.
+Take a look at [API](/autoapi/index) (Module index, `cellpy.readers.cellreader.CellpyCell`) for more info.
 
-### Data
+## Data
+
 The data is stored as an instance of the Data class, `CellpyCell.data`
 (a `cellpy.cellreader.Data` instance).
 
@@ -75,7 +77,8 @@ The actual measurement data, information, and summary are stored in three `panda
 
 For details on column headings, see below.
 
-#### Metadata
+### Metadata
+
 The Data object contains the following metadata:
 
 ```python
@@ -119,13 +122,13 @@ comment = None
 
 The `Data` object can also take custom metadata if provided as keyword arguments.
 
-#### FileID
+### FileID
 
 The `FileID` object contains information about the raw file(s) and is used when comparing the cellpy-file
 with the raw file(s) (for example to check if it has been updated compared to the cellpy-file).
 Notice that `FileID` will contain a list of file identification parameters if the run is from several raw files.
 
-#### Column headings
+## Column headings
 
 Cellpy uses `pandas.DataFrame` objects internally. The column headers
 of the dataframes are defined in corresponding dataclass objects that can be
@@ -140,7 +143,7 @@ from cellpy.parameters.internal_settings import headers_normal
 cycle_column_header = headers_normal.cycle_index_txt
 ```
 
-## Column headings - raw data (or "normal" data)
+### Column headings - raw data (or "normal" data)
 
 ```python
 @dataclass
@@ -266,6 +269,19 @@ class HeadersStepTable(BaseHeaders):
     rate_avr: str = "rate_avr"
 ```
 
+#### Step types
+
+Identifiers for the different steps have pre-defined names given in the
+class attribute list `list_of_step_types` and is written to the "step" column.
+
+```python
+list_of_step_types = ['charge', 'discharge',
+                      'cv_charge', 'cv_discharge',
+                      'charge_cv', 'discharge_cv',
+                      'ocvrlx_up', 'ocvrlx_down', 'ir',
+                      'rest', 'not_known']
+```
+
 ### Column headings - journal pages
 
 ```python
@@ -291,19 +307,6 @@ class HeadersJournal(BaseHeaders):
 
 
 CellpyCell.keys_journal_session = ["starred", "bad_cells", "bad_cycles", "notes"]
-```
-
-### Step types
-
-Identifiers for the different steps have pre-defined names given in the
-class attribute list `list_of_step_types` and is written to the "step" column.
-
-```python
-list_of_step_types = ['charge', 'discharge',
-                      'cv_charge', 'cv_discharge',
-                      'charge_cv', 'discharge_cv',
-                      'ocvrlx_up', 'ocvrlx_down', 'ir',
-                      'rest', 'not_known']
 ```
 
 ## Tester-dependent attributes
