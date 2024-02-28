@@ -13,7 +13,7 @@
 getting_started/index.md
 fundamentals/index.md
 examples/index.md
-contributing/contributing.md
+contributing/index.md
 other/index.md
 ```
 
