@@ -4,7 +4,6 @@ environment:
   MINICONDA: C:\Miniconda3
   PYTHON_ARC: "64"
   matrix:
-    - PYTHON_VERSION: 3.9
     - PYTHON_VERSION: 3.10
     - PYTHON_VERSION: 3.11
 
