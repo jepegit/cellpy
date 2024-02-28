@@ -1,4 +1,4 @@
-# Structure of the `cellpy` package
+# Structure of the cellpy package
 
 ## Folder structure
 

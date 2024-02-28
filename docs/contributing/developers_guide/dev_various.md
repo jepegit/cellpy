@@ -40,7 +40,7 @@ cellpy/
         internal_settings.py
 ```
 
-## Installing `pyodbc` on Mac (no `conda`)
+## Installing pyodbc on Mac without conda
 
 If you do not want to use `conda`, you might miss a couple of libraries.
 

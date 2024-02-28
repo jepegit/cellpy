@@ -1,6 +1,6 @@
 (cellpy-objects)=
 
-# Main `cellpy` objects
+# Main cellpy objects
 
 :::{note}
 This chapter would benefit from some more love and care. Any help

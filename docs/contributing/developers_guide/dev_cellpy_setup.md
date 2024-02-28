@@ -13,7 +13,7 @@ Good alternatives are
 PyCharm (<https://www.jetbrains.com/pycharm/>) and
 VSCode (<https://code.visualstudio.com/>).
 
-## Install python 3.9 or higher
+## Install python 3.10 or higher
 
 There are many ways to install python. We recommend using the Miniconda distribution.
 You can download it from here: <https://docs.conda.io/en/latest/miniconda.html>
