@@ -7,8 +7,7 @@ include LICENSE
 include README.md
 include cellpy/logging.json
 recursive-include cellpy/parameters *_default.conf
-recursive-include cellpy/utils/data/raw  *.res
-recursive-include cellpy/utils/data *.h5
+recursive-include cellpy/utils/data/.gitkeep
 recursive-include cellpy/readers/instruments/configurations *.yml *.yaml *.jsn *.json *.conf
 
 recursive-exclude * __pycache__
@@ -22,5 +21,3 @@ prune examples
 prune recipe
 prune .pytest_cache
 prune .github
-
-recursive-include docs *.rst conf.py Makefile make.bat *.jpg *.png *.gif

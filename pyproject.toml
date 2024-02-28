@@ -1,3 +1,7 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
 [tool.pytest.ini_options]
 minversion = "6.0"
 addopts = "--durations=0 -v -m \"not slowtest and not smoketest and not unimportant and not unfinished and not onlylocal\""

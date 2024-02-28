@@ -1,4 +1,4 @@
-<img src="docs/_static/cellpy-icon-long.svg" height="100" alt="cellpy-icon">
+<img src="https://raw.githubusercontent.com/jepegit/cellpy/master/docs/_static/cellpy-icon-long.svg" height="100" alt="cellpy-icon">
 
 # **cellpy** - *a library for assisting in analysing batteries and cells*
 

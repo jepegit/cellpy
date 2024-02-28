@@ -103,7 +103,6 @@ setup(
     package_data={
         "parameters": [".cellpy_prms_default.conf"],
         "utils/data": ["*.h5"],
-        "utils/data/raw": ["*.res"],
     },
     entry_points={"console_scripts": ["cellpy=cellpy.cli:cli"]},
     include_package_data=True,
