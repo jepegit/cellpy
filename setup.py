@@ -94,7 +94,7 @@ setup(
     version=version_ns["__version__"],
     description=description,
     long_description=readme + "\n\n" + history,
-    long_description_content_type='text/markdown',
+    long_description_content_type="text/markdown",
     author="Jan Petter Maehlen",
     author_email="jepe@ife.no",
     url="https://github.com/jepegit/cellpy",
