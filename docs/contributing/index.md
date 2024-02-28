@@ -1,7 +1,7 @@
 # Contributing guide
 
 ```{toctree}
-:maxdepth: 2
+:maxdepth: 1
 
 contributing.md
 developers_guide/index.md

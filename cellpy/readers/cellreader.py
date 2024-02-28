@@ -4251,11 +4251,13 @@ class CellpyCell:
             cycle (int, list): cycle number (s).
             cycles (list): list of cycle numbers.
             method (string): how the curves are given
-                "back-and-forth" - standard back and forth; discharge
-                (or charge) reversed from where charge (or discharge) ends.
-                "forth" - discharge (or charge) continues along x-axis.
-                "forth-and-forth" - discharge (or charge) also starts at 0
-                (or shift if not shift=0.0)
+
+                - "back-and-forth" - standard back and forth; discharge
+                  (or charge) reversed from where charge (or discharge) ends.
+                - "forth" - discharge (or charge) continues along x-axis.
+                - "forth-and-forth" - discharge (or charge) also starts at 0
+                  (or shift if not shift=0.0)
+
             insert_nan (bool): insert a np.nan between the charge and discharge curves.
                 Defaults to True for "forth-and-forth", else False
             shift: start-value for charge (or discharge) (typically used when

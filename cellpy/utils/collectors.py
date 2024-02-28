@@ -168,6 +168,7 @@ class BatchCollector:
         **kwargs,
     ):
         """Update both the collected data and the plot(s).
+
         Args:
             b (cellpy.utils.Batch): the batch object.
             data_collector (callable): method that collects the data.
@@ -183,7 +184,9 @@ class BatchCollector:
             plotter_arguments (dict): keyword arguments sent to the plotter.
             update_name (bool): update the name (using automatic name generation) based on new settings.
             **kwargs: set Collector attributes.
+
         """
+
         self.b = b
         self.data_collector = data_collector
         self.plotter = plotter
@@ -352,6 +355,8 @@ class BatchCollector:
         self.toolbar = kwargs.get("toolbar", True)
 
     def generate_name(self):
+        """Generate a name for the collection."""
+
         names = ["collector", self.collector_name]
         if self.nick:
             names.insert(0, self.nick)
@@ -430,9 +435,11 @@ class BatchCollector:
         self, data_collector_arguments: dict = None, plotter_arguments: dict = None
     ):
         """Reset the arguments to the defaults.
+
         Args:
             data_collector_arguments (dict): optional additional keyword arguments for the data collector.
             plotter_arguments (dict): optional additional keyword arguments for the plotter.
+
         """
         self._data_collector_arguments = self._default_data_collector_arguments.copy()
         self._plotter_arguments = self._default_plotter_arguments.copy()
@@ -440,6 +447,7 @@ class BatchCollector:
 
     def parse_units(self, **kwargs):
         """Look through your cellpy objects and search for units."""
+
         b = self.b
         c_units = []
         r_units = []
@@ -473,6 +481,7 @@ class BatchCollector:
         update_plot: bool = True,
     ):
         """Update both the collected data and the plot(s).
+
         Args:
             data_collector_arguments (dict): keyword arguments sent to the data collector.
             plotter_arguments (dict): keyword arguments sent to the plotter.
@@ -480,6 +489,7 @@ class BatchCollector:
             update_data (bool): update the data before updating the plot even if data has been collected before.
             update_name (bool): update the name (using automatic name generation) based on new settings.
             update_plot (bool): update the plot.
+
         """
         if reset:
             self.reset_arguments(data_collector_arguments, plotter_arguments)
@@ -517,11 +527,12 @@ class BatchCollector:
     def show(self, **kwargs):
         """Show the figure.
 
-        Note that show returns the `figure` object and  if the `backend` used
-        does not provide automatic rendering in the editor / running environment you
-        are using, you might have to issue the rendering yourself. For example, if you
-        are using `plotly` and running it as a script in a typical command shell,
-        you will have to issue `.show()` on the returned `figure` object.
+        Notes:
+            The ``show`` method returns the ``figure`` object and  if the ``backend`` used
+            does not provide automatic rendering in the editor / running environment you
+            are using, you might have to issue the rendering yourself. For example, if you
+            are using `plotly` and running it as a script in a typical command shell,
+            you will have to issue ``.show()`` on the returned ``figure`` object.
 
         Args:
             **kwargs: sent to the plotter.
@@ -529,6 +540,7 @@ class BatchCollector:
         Returns:
             Figure object
         """
+
         if not self._figure_valid():
             return
 
@@ -548,6 +560,13 @@ class BatchCollector:
         return self.data
 
     def to_csv(self, serial_number=None):
+        """Save to csv file.
+
+        Args:
+            serial_number (int): serial number to append to the filename.
+
+        """
+
         filename = self._output_path(serial_number)
         filename = filename.with_suffix(".csv")
         if self.csv_layout != "long":
@@ -563,6 +582,13 @@ class BatchCollector:
         print(f"saved csv file: {filename}")
 
     def to_hdf5(self, serial_number=None):
+        """Save to hdf5 file.
+
+        Args:
+            serial_number (int): serial number to append to the filename.
+
+        """
+
         filename = self._output_path(serial_number)
         filename = filename.with_suffix(".h5")
         data = self.data
@@ -586,6 +612,19 @@ class BatchCollector:
             print(f"saved image file: {filename}")
 
     def to_image_files(self, serial_number=None):
+        """Save to image files (png, svg, json).
+
+        Notes:
+            This method requires ``kaleido`` for the plotly backend.
+
+        Notes:
+            Exporting to json is only applicable for the plotly backend.
+
+        Args:
+            serial_number (int): serial number to append to the filename.
+
+        """
+
         if not self._figure_valid():
             return
         filename_pre = self._output_path(serial_number)
@@ -608,6 +647,13 @@ class BatchCollector:
             print(f"TODO: implement saving {filename_json}")
 
     def save(self, serial_number=None):
+        """Save to csv, hdf5 and image files.
+
+        Args:
+            serial_number (int): serial number to append to the filename.
+
+        """
+
         self.to_csv(serial_number=serial_number)
         self.to_hdf5(serial_number=serial_number)
 
@@ -674,10 +720,8 @@ class BatchSummaryCollector(BatchCollector):
 
         Arguments:
             backend (str): what plotting backend to use (currently only 'plotly' is supported)
-
-        Elevated data collector args:
-            max_cycle (int): drop all cycles above this value.
-            rate (float): filter on rate (C-rate)
+            max_cycle (int): drop all cycles above this value (elevated data collector argument).
+            rate (float): filter on rate (C-rate) (elevated data collector argument).
             on (str or list of str): only select cycles if based on the rate of this step-type (e.g. on="charge").
             columns (list): selected column(s) (using cellpy attribute name)
                 [defaults to "charge_capacity_gravimetric"]
@@ -699,17 +743,15 @@ class BatchSummaryCollector(BatchCollector):
                 key_index_bounds=[0, 2], the common label will be "cell_01". Or if they are called
                 "20230101_cell_01_01_01" and "20230101_cell_01_01_02" and you set key_index_bounds=[1, 3],
                 the common label will be "cell_01_01".
-
-        Elevated plotter args:
-            points (bool): plot points if True
-            line (bool): plot line if True
-            width: width of plot
-            height: height of plot
-            legend_title: title to put over the legend
-            marker_size: size of the markers used
-            cmap: color-map to use
-            spread (bool): plot error-bands instead of error-bars if True
-            fig_title (str): title of the figure
+            points (bool): plot points if True (elevated plotter argument).
+            line (bool): plot line if True (elevated plotter argument).
+            width: width of plot (elevated plotter argument).
+            height: height of plot (elevated plotter argument).
+            legend_title: title to put over the legend (elevated plotter argument).
+            marker_size: size of the markers used (elevated plotter argument).
+            cmap: color-map to use (elevated plotter argument).
+            spread (bool): plot error-bands instead of error-bars if True (elevated plotter argument).
+            fig_title (str): title of the figure (elevated plotter argument).
         """
 
         # TODO: include option for error-bands (spread) (https://plotly.com/python/continuous-error-bars/)
@@ -958,38 +1000,40 @@ class BatchCyclesCollector(BatchCollector):
         """Create a collection of capacity plots.
 
         Args:
-            b:
+            b: cellpy batch object
             plot_type (str): either 'fig_pr_cell' or 'fig_pr_cycle'
             backend (str): what plotting backend to use (currently only 'plotly' is supported)
             collector_type (str): how the curves are given
-                "back-and-forth" - standard back and forth; discharge
-                    (or charge) reversed from where charge (or discharge) ends.
-                "forth" - discharge (or charge) continues along x-axis.
-                "forth-and-forth" - discharge (or charge) also starts at 0
+
+                - "back-and-forth" - standard back and forth; discharge
+                  (or charge) reversed from where charge (or discharge) ends.
+                - "forth" - discharge (or charge) continues along x-axis.
+                - "forth-and-forth" - discharge (or charge) also starts at 0.
+
             data_collector_arguments (dict) - arguments transferred to the plotter
             plotter_arguments (dict) - arguments transferred to the plotter
-
-        Elevated data collector args:
-            cycles (list): select these cycles.
-            max_cycle (int): drop all cycles above this value.
-            rate (float): filter on rate (C-rate)
-            rate_on (str or list of str): only select cycles if based on the rate of this step-type (e.g. on="charge").
+            cycles (list): select these cycles (elevated data collector argument).
+            max_cycle (int): drop all cycles above this value (elevated data collector argument).
+            rate (float): filter on rate (C-rate) (elevated data collector argument).
+            rate_on (str or list of str): only select cycles if based on the rate of this step-type (e.g. on="charge")
+                (elevated data collector argument).
             rate_std (float): allow for this inaccuracy when selecting cycles based on rate
+                (elevated data collector argument).
             rate_agg (str): how to aggregate the rate (e.g. "mean", "max", "min", "first", "last")
-            inverse (bool): select steps that do not have the given C-rate.
-            label_mapper (callable or dict): function (or dict) that changes the cell names.
+                (elevated data collector argument).
+            inverse (bool): select steps that do not have the given C-rate (elevated data collector argument).
+            label_mapper (callable or dict): function (or dict) that changes the cell names
+                (elevated data collector argument).
                 The dictionary must have the cell labels as given in the `journal.pages` index and new label as values.
                 Similarly, if it is a function it takes the cell label as input and returns the new label.
                 Remark! No check are performed to ensure that the new cell labels are unique.
-
-        Elevated plotter args:
-            cycles_to_plot (int): plot points if True
-            width (float): width of plot
-            legend_position (str): position of the legend
-            show_legend (bool): set to False if you don't want to show legend
-            fig_title (str): title (will be put above the figure)
-            palette (str): color-map to use
-            cols (int): number of columns
+            cycles_to_plot (int): plot points if True (elevated plotter argument).
+            width (float): width of plot (elevated plotter argument).
+            legend_position (str): position of the legend (elevated plotter argument).
+            show_legend (bool): set to False if you don't want to show legend (elevated plotter argument).
+            fig_title (str): title (will be put above the figure) (elevated plotter argument).
+            palette (str): color-map to use (elevated plotter argument).
+            cols (int): number of columns (elevated plotter argument).
         """
 
         elevated_data_collector_arguments = dict(
@@ -1065,7 +1109,7 @@ class BatchCyclesCollector(BatchCollector):
 
 
 def pick_named_cell(b, label_mapper=None):
-    """generator that picks a cell from the batch object, yields its label and the cell itself.
+    """Generator that picks a cell from the batch object, yields its label and the cell itself.
 
     Args:
         b (cellpy.batch object): your batch object
@@ -1133,6 +1177,27 @@ def cycles_collector(
     method="back-and-forth",
     label_mapper=None,
 ):
+    """
+    Collects cycles from all the cells in the batch object.
+
+    Args:
+        b: cellpy batch object
+        cycles: list of cycle numbers to collect
+        rate: filter on rate (C-rate)
+        rate_on: only select cycles if based on the rate of this step-type (e.g. on="charge").
+        rate_std: allow for this inaccuracy when selecting cycles based on rate
+        rate_agg: how to aggregate the rate (e.g. "mean", "max", "min", "first", "last")
+        inverse: select steps that do not have the given C-rate.
+        interpolated: if True, interpolate the data
+        number_of_points: number of points to interpolate to
+        max_cycle: drop all cycles above this value
+        abort_on_missing: if True, abort if a cell is empty
+        method: how the voltage curves are given (back-and-forth, forth, forth-and-forth)
+        label_mapper: function (or dict) that changes the cell names.
+
+    Returns:
+        pd.DataFrame: collected data
+    """
     if cycles is None:
         cycles = list(range(1, max_cycle + 1))
     all_curves = []
@@ -1185,6 +1250,29 @@ def ica_collector(
     label_mapper=None,
     **kwargs,
 ):
+    """
+    Collects ica (dQ/dV) curves from all the cells in the batch object.
+
+    Args:
+        b: cellpy batch object
+        cycles: list of cycle numbers to collect
+        rate: filter on rate (C-rate)
+        rate_on: only select cycles if based on the rate of this step-type (e.g. on="charge").
+        rate_std: allow for this inaccuracy when selecting cycles based on rate
+        rate_agg: how to aggregate the rate (e.g. "mean", "max", "min", "first", "last")
+        inverse: select steps that do not have the given C-rate.
+        voltage_resolution: smoothing of the voltage curve
+        number_of_points: number of points to interpolate to
+        max_cycle: drop all cycles above this value
+        abort_on_missing: if True, abort if a cell is empty
+        label_direction: how the voltage curves are given (back-and-forth, forth, forth-and-forth)
+        label_mapper: function (or dict) that changes the cell names.
+        **kwargs: passed on to ica.dqdv
+
+    Returns:
+        pd.DataFrame: collected data
+    """
+
     if cycles is None:
         cycles = list(range(1, max_cycle + 1))
     all_curves = []
@@ -1226,6 +1314,8 @@ def ica_collector(
 
 
 def remove_markers(trace):
+    """Remove markers from a plotly trace."""
+
     trace.update(marker=None, mode="lines")
     return trace
 
@@ -1237,11 +1327,14 @@ def _hist_eq(trace):
 
 
 def y_axis_replacer(ax, label):
+    """Replace y-axis label in matplotlib plots."""
     ax.update(title_text=label)
     return ax
 
 
 def legend_replacer(trace, df, group_legends=True):
+    """Replace legend labels with cell names in plotly plots."""
+
     name = trace.name
     parts = name.split(",")
     if len(parts) == 2:
@@ -1377,7 +1470,7 @@ def sequence_plotter(
     spread: bool = False,
     **kwargs,
 ) -> Any:
-    """create a plot made up of sequences of data (voltage curves, dQ/dV, etc).
+    """Create a plot made up of sequences of data (voltage curves, dQ/dV, etc).
 
     This method contains the "common" operations done for all the sequence plots,
     currently supporting filtering out the specific cycles, selecting either
