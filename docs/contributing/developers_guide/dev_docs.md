@@ -3,7 +3,7 @@
 
 # Writing documentation
 
-All contributions on documenting `cellpy` is highly welcomed.
+All contributions to documenting `cellpy` is highly welcomed.
 
 ## Types of documentation
 
@@ -20,7 +20,11 @@ Code can be documented by several means. All are valuable. For example:
 
 ## Add examples to the examples folder
 
-Todo
+The examples folder is a good place to add examples of how to
+use `cellpy`. The examples should be self-contained
+and easy to understand. It is recommended to use Jupyter notebooks (but not required).
+
+Another contribution could be to add example data.
 
 ## Working on the main documentation
 
@@ -39,72 +43,51 @@ Notebooks can also be used.
 ### Sphinx tooling
 
 List of extensions used
-
-- sphinx.ext.autodoc
+- sphinx.ext.inheritance_diagram
 - sphinx.ext.viewcode
 - sphinx.ext.napoleon
 - sphinx.ext.intersphinx
+- myst_parser
+- sphinx.ext.graphviz,
 - nbsphinx
-- sphinx.ext.graphviz
+- autoapi.extension
 
 Current HTML theme:
 
-- sphinx_rtd_theme
+- sphinx_book_theme
 
-Available "variables":
+Available variables:
 
 ```
-|ProjectVersion| -> writes "Version: <version number>"
+ProjectVersion -> writes version number
 ```
 
-Dependencies (python packages):
+Dependencies:
 
+- python >=3.10
+- pip
+- Sphinx
 - pandoc
-- sphinx-rtd-theme
 - nbsphinx
-
-Dependencies (non-python):
-
-- pandoc
+- myst-parser
+- sphinx-autoapi
 - graphviz
+- sphinx-book-theme
 
-Creating the API documentation:
 
-```
-# in the repository root folder
-sphinx-apidoc -o docs/source cellpy/
-```
+API documentation is created by autoapi.
 
-### Conventions
+### Doc-strings
 
-Order of headers:
-
-```
-========
-Header 1
-========
-
-Header 2
-========
-
-Header 3
---------
-
-Header 4
-........
-
-Header 5
-~~~~~~~~
-```
-
-Note that many of the documents (.rst files) are linked through an
-`index.rst` file. This file most likely contains the Header 1, so the
-actual document you are working on needs to start with Header 2.
-
-## Doc-strings
-
-Todo
+- Use Google-style doc-strings
+- In addition to the standard admonitions, you can also use:
+  - Transferred Arguments
+  - See Also
 
 ## Tests
 
-Todo
+- Use pytest
+- Use descriptive test names
+- Use fixtures and try to keep the tests organized in a logical way
+- Use the `conftest.py` file to keep fixtures and other common stuff
+- Parameters and variables (e.g. filenames) can be defined in the `fdv.py` file.
