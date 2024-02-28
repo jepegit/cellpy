@@ -2,7 +2,7 @@
 
 ## 1.0.1 (under development)
 
-* Utils: example_data now includes auto-download of example data
+* Utils: `example_data` now includes auto-download of example data
 * General: supports only python 3.10 and up to 3.11
 * Batch: `naked` and `init(empty=True)` easier method for creating batch with empty pages
 * File handling: new fix in `find_files`
