@@ -27,6 +27,7 @@ out/
 raw/
 templates/
 ```
+
 It also creates a `.env_cellpy` file (most likely in the same directory as the configuration file, depending
 on if you have a configuration from before and how your system behaves). You need to edit this file
 to be able to utilize "automatic" loading of files through ssh connections.
@@ -243,7 +244,9 @@ The database file should contain information (cell name, type, mass loading etc.
 on your cells (as specified in the config file), so that `cellpy` can find and
 link the test data to the provided metadata.
 
-The database file is also useful when working with the `cellpy` batch routine.
+Currently, `cellpy` ships with a very simple database solution that hardly justifies its name as a database. It reads an excel-file where the first row acts as column headers, the second provides the type (*e.g.* string, bool, etc), and the rest provides the necessary information for each of the cells (one row pr. cell).
+
+The database file is especially useful when working with the `cellpy` batch routine. A sample excel-file ("db-file") is included as part of the example on the usage of the cellpy batch utility (see [examples folder on GitHub](https://github.com/jepegit/cellpy/tree/master/examples/cellpy%20batch%20utility), or corresponding tutorial [here](/examples/cellpy%20batch%20utility/cellpy_batch_processing.ipynb)).
 
 ## How the configuration parameters are set and read
 
