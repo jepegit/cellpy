@@ -353,13 +353,17 @@ Instruments = InstrumentsClass(
 
 
 # ------------------------------------------------------------------------------
-# Other secret- or non-config (only for developers)
+# Other secret- or non-config (only for developers and super-users)
 # ------------------------------------------------------------------------------
 
-_url_example_data = (
-    "https://raw.githubusercontent.com/jepegit/cellpy/master/examples/data/"
-)
+_github_repo_parent = "jepegit"
+_github_repo = "cellpy"
+_github_templates_repo = "cellpy_cookies.git"
+
+_url_example_data = f"https://raw.githubusercontent.com/{_github_repo_parent}/{_github_repo}/master/examples/data/"
 _url_example_data_download_with_progressbar = True
+_example_data_in_example_folder_if_available = True
+
 _db_cols_unit = DbColsUnitClass()
 _debug = False
 _variable_that_is_not_saved_to_config = "Hei"
@@ -396,7 +400,9 @@ _cellpyfile_fidtable_format = "fixed"
 _date_time_format = "%Y-%m-%d %H:%M:%S:%f"
 
 # templates
-_standard_template_uri = "https://github.com/jepegit/cellpy_cookies.git"
+_standard_template_uri = (
+    f"https://github.com/{_github_repo_parent}/{_github_templates_repo}"
+)
 
 _registered_templates = {
     "standard": (_standard_template_uri, "standard"),  # (repository, name-of-folder)
