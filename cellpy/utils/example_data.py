@@ -1,5 +1,6 @@
 """Tools for getting some data to play with"""
 
+import warnings
 from enum import Enum
 import logging
 import os
@@ -13,8 +14,46 @@ from cellpy import prms
 
 logging.info("Ready to help you to get some data to play with.")
 CURRENT_PATH = Path(os.path.dirname(os.path.realpath(__file__)))
-DATA_PATH = CURRENT_PATH / "data"
+_DATA_PATH = CURRENT_PATH / "data"
 DO_NOT_REMOVE_THESE_FILES = [".gitkeep"]
+CHUNK_SIZE = 8192
+
+_example_data_download_help = """
+You don't have any accessible example directory set in your configurations so
+cellpy will try to download the example data to the folder where the cellpy
+package is installed.
+
+"""
+_example_data_download_error_help = """
+Unfortunately, cellpy could not find / failed to download the example data.
+It might be that you have not set up the example data directory in your configurations
+while you are not allowed to download the data to the folder where cellpy is
+installed (cellpy's backup option when it can't find any example data directory).
+
+You can set up cellpy through the command line interface:
+
+    cellpy setup
+
+or you can set the path to the example data directory manually in your script:
+
+    >>> from cellpy import prms
+    >>> prms.Paths.examplesdir = "/path/to/your/example/data"
+
+"""
+
+
+def _user_examples_dir():
+    """Get the path to the user's examples directory"""
+    examples_dir = Path(prms.Paths.examplesdir)
+    if not examples_dir.is_dir():
+        warnings.warn(f"Could not find {examples_dir}")
+        print(_example_data_download_help)
+        return None
+    return examples_dir / "data"
+
+
+if prms._example_data_in_example_folder_if_available:
+    DATA_PATH = _user_examples_dir() or _DATA_PATH
 
 
 class ExampleData(Enum):
@@ -59,7 +98,7 @@ def download_file(url, local_filename):
                 pbar = tqdm(
                     total=int(r.headers["Content-Length"]), unit="B", unit_scale=True
                 )
-            for chunk in r.iter_content(chunk_size=8192):
+            for chunk in r.iter_content(chunk_size=CHUNK_SIZE):
                 if chunk and prms._url_example_data_download_with_progressbar:
                     pbar.update(len(chunk))
                 f.write(chunk)
@@ -68,24 +107,27 @@ def download_file(url, local_filename):
 def _download_if_missing(filename: str) -> Path:
     p = DATA_PATH / filename
     if not p.is_file():
-        _download_example_data(filename)
+        try:
+            _download_example_data(filename)
+        except requests.HTTPError as e:
+            warnings.warn(f"Could not download {filename}: {e}")
+            raise e
+        except Exception as e:
+            warnings.warn(f"Could not download {filename}: {e}")
+            print(_example_data_download_error_help)
+            raise e
     return p
 
 
 def _remove_file(filename: str):
     p = DATA_PATH / filename
     logging.debug(f"Removing file: {p}")
-    p.unlink(missing_ok=False)
+    p.unlink(missing_ok=True)
 
 
 def _remove_all_files():
-    for f in DATA_PATH.glob("*"):
-        logging.debug(f"Removing file: {f}")
-        if f.name not in DO_NOT_REMOVE_THESE_FILES:
-            f.unlink(missing_ok=True)
-            logging.debug(f"{f.name} removed")
-        else:
-            logging.debug(f"{f.name} not removed (protected)")
+    for f in ExampleData:
+        _remove_file(f.value)
 
 
 def _is_downloaded(filename: str) -> bool:
@@ -111,7 +153,10 @@ def _download_example_data(filename: str):
     logging.info(f"{filename} not found. Trying to access it from GitHub...")
     base_url = prms._url_example_data
     if not os.path.exists(DATA_PATH):
-        raise FileNotFoundError(f"Could not find {DATA_PATH}")
+        try:
+            os.makedirs(DATA_PATH)
+        except Exception:  # noqa
+            raise FileNotFoundError(f"Could not find {DATA_PATH}")
 
     logging.debug(f"Downloading {filename} from {base_url} to {DATA_PATH}")
     download_file(base_url + filename, os.path.join(DATA_PATH, filename))

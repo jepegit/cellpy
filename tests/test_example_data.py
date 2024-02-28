@@ -50,7 +50,6 @@ def test_example_data_remove_and_download():
     from cellpy.utils import example_data
     import requests
 
-    # need to first remove the file if it exists:
     filename = example_data.cellpy_file_path()
     assert filename.is_file()
     example_data._remove_file(filename.name)
@@ -77,7 +76,7 @@ def test_download_all():
         assert (example_data.DATA_PATH / f.value).is_file()
 
 
-def test_remove_all_files():
+def test_remove_all():
     from cellpy.utils import example_data
 
     example_data._remove_all_files()
