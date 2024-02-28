@@ -1,6 +1,7 @@
 {
     "project_name": "cellpy_project",
     "session_id": "experiment_001",
+    "cellpy_version": "1.0.1",
     "author_name": "Your Name",
     "date": "{% now 'local' %}",
     "experiment_folder_name": "{{cookiecutter.date.replace('-','_')}}_{{cookiecutter.session_id}}",
