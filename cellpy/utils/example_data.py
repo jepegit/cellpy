@@ -56,6 +56,8 @@ if prms._example_data_in_example_folder_if_available:
     DATA_PATH = _user_examples_dir() or _DATA_PATH
 
 
+# TODO: add more example data files
+#  (here and in the examples folder and make tests)
 class ExampleData(Enum):
     """Enum for example data files"""
 
