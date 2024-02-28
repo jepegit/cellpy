@@ -26,15 +26,60 @@ def test_example_data():
 def test_example_path_data():
     from cellpy.utils import example_data
 
-    filepath = example_data.cellpy_file_path
-    print(f"{filepath=}")
-    print(f"{type(filepath)=}")
+    filepath = example_data.cellpy_file_path()
+    assert filepath.is_file()
 
 
 def test_example_path_download_data():
     from cellpy.utils import example_data
 
-    filepath = example_data.old_cellpy_file_path
-    # assert filepath.is_file()
-    print(f"{filepath=}")
-    print(f"{type(filepath)=}")
+    filepath = example_data.old_cellpy_file_path()
+    assert filepath.is_file()
+
+
+def test_example_data_missing_file():
+    from cellpy.utils import example_data
+    import requests
+
+    with pytest.raises(requests.HTTPError):
+        example_data._download_if_missing("non_existing_file.txt")
+
+
+@pytest.mark.skip(reason="this is not needed in CI/CD pipeline")
+def test_example_data_remove_and_download():
+    from cellpy.utils import example_data
+    import requests
+
+    # need to first remove the file if it exists:
+    filename = example_data.cellpy_file_path()
+    assert filename.is_file()
+    example_data._remove_file(filename.name)
+    assert not filename.is_file()
+    example_data._download_if_missing(filename.name)
+    assert filename.is_file()
+
+
+@pytest.mark.skip(reason="this is not needed in CI/CD pipeline")
+def test_download_all_and_then_remove():
+    from cellpy.utils import example_data
+
+    example_data._download_all_files()
+    for f in example_data.ExampleData:
+        assert (example_data.DATA_PATH / f.value).is_file()
+        example_data._remove_file(f.value)
+
+
+def test_download_all():
+    from cellpy.utils import example_data
+
+    example_data.download_all_files()
+    for f in example_data.ExampleData:
+        assert (example_data.DATA_PATH / f.value).is_file()
+
+
+def test_remove_all_files():
+    from cellpy.utils import example_data
+
+    example_data._remove_all_files()
+    for f in example_data.ExampleData:
+        assert not (example_data.DATA_PATH / f.value).is_file()

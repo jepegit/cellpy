@@ -1,10 +1,12 @@
 """Tools for getting some data to play with"""
 
+from enum import Enum
 import logging
 import os
 from pathlib import Path
 
 import requests
+from tqdm.auto import tqdm
 
 import cellpy
 from cellpy import prms
@@ -12,6 +14,34 @@ from cellpy import prms
 logging.info("Ready to help you to get some data to play with.")
 CURRENT_PATH = Path(os.path.dirname(os.path.realpath(__file__)))
 DATA_PATH = CURRENT_PATH / "data"
+DO_NOT_REMOVE_THESE_FILES = [".gitkeep"]
+
+
+class ExampleData(Enum):
+    """Enum for example data files"""
+
+    CELLPY = "20180418_sf033_4_cc.h5"
+    OLD_CELLPY = "20160805_test001_45_cc.h5"
+    RATE = "20231115_rate_cc.h5"
+    # GITT = "gitt.h5"
+    # COMMERCIAL = "commercial.h5"
+    # CV = "cv.h5"
+    # EIS = "eis.h5"
+    # BUGGY_FILE = "buggy.h5"
+    # PLATING = "plating.h5"
+    ARBIN = "20160805_test001_45_cc_01.res"
+    AUX_MULTI_X = "aux_multi_x.res"
+    PEC_CSV = "pec.csv"
+    # CUSTOM = "custom.csv"
+    # CUSTOM_EXCEL = "custom.xlsx"
+    # BIOL_MPR = "biol.mpr"
+    # MACCOR_TXT = "maccor.txt"
+    # NEWARE_CSV = "neware.csv"
+    # --------------------------------
+    # DB = "cellpy_db.sqlite"
+    # SIMPLE_DB = "simple_db.xlsx"
+    # STEPS = "steps.csv"
+    # STEPS_SHORT = "steps_short.csv"
 
 
 def download_file(url, local_filename):
@@ -25,7 +55,13 @@ def download_file(url, local_filename):
     with requests.get(url, stream=True) as r:
         r.raise_for_status()
         with open(local_filename, "wb") as f:
+            if prms._url_example_data_download_with_progressbar:
+                pbar = tqdm(
+                    total=int(r.headers["Content-Length"]), unit="B", unit_scale=True
+                )
             for chunk in r.iter_content(chunk_size=8192):
+                if chunk and prms._url_example_data_download_with_progressbar:
+                    pbar.update(len(chunk))
                 f.write(chunk)
 
 
@@ -34,6 +70,32 @@ def _download_if_missing(filename: str) -> Path:
     if not p.is_file():
         _download_example_data(filename)
     return p
+
+
+def _remove_file(filename: str):
+    p = DATA_PATH / filename
+    logging.debug(f"Removing file: {p}")
+    p.unlink(missing_ok=False)
+
+
+def _remove_all_files():
+    for f in DATA_PATH.glob("*"):
+        logging.debug(f"Removing file: {f}")
+        if f.name not in DO_NOT_REMOVE_THESE_FILES:
+            f.unlink(missing_ok=True)
+            logging.debug(f"{f.name} removed")
+        else:
+            logging.debug(f"{f.name} not removed (protected)")
+
+
+def _is_downloaded(filename: str) -> bool:
+    p = DATA_PATH / filename
+    return p.is_file()
+
+
+def _download_all_files():
+    for f in ExampleData:
+        _download_example_data(f.value)
 
 
 def _download_example_data(filename: str):
@@ -47,7 +109,7 @@ def _download_example_data(filename: str):
 
     """
     logging.info(f"{filename} not found. Trying to access it from GitHub...")
-    base_url = prms._url_example_cellpy_data
+    base_url = prms._url_example_data
     if not os.path.exists(DATA_PATH):
         raise FileNotFoundError(f"Could not find {DATA_PATH}")
 
@@ -55,6 +117,11 @@ def _download_example_data(filename: str):
     download_file(base_url + filename, os.path.join(DATA_PATH, filename))
 
     logging.debug("File downloaded successfully.")
+
+
+def download_all_files():
+    """Download all example data files from the cellpy-data repository."""
+    _download_all_files()
 
 
 def raw_file(
@@ -91,60 +158,51 @@ def cellpy_file(testing: bool = False) -> cellpy.cellreader.CellpyCell:
     return cellpy.get(filename=file_path, testing=testing)
 
 
-@property
 def rate_file():
     """Get the path to an example cellpy file with rate data"""
-    return _download_if_missing("20231115_rate_cc.h5")
+    return _download_if_missing(ExampleData.RATE.value)
 
 
-@property
 def cellpy_file_path() -> Path:
     """Get the path to an example cellpy file"""
 
-    return _download_if_missing("20180418_sf033_4_cc.h5")
+    return _download_if_missing(ExampleData.CELLPY.value)
 
 
-@property
 def old_cellpy_file_path() -> Path:
     """Get the path to an example cellpy file"""
-    return _download_if_missing("20160805_test001_45_cc.h5")
+    return _download_if_missing(ExampleData.OLD_CELLPY.value)
 
 
-@property
 def arbin_file_path() -> Path:
     """Get the path to an example arbin res file"""
 
-    return _download_if_missing("20160805_test001_45_cc_01.res")
+    return _download_if_missing(ExampleData.ARBIN.value)
 
 
-@property
 def arbin_multi_file_path() -> Path:
     """Get the path to an example arbin res file"""
-    return _download_if_missing("aux_multi_x.res")
+    return _download_if_missing(ExampleData.AUX_MULTI_X.value)
 
 
-@property
 def maccor_file_path() -> Path:
     """Get the path to an example maccor txt file"""
-    return _download_if_missing("maccor.txt")
+    return _download_if_missing(ExampleData.MACCOR_TXT.value)
 
 
-@property
 def neware_file_path() -> Path:
     """Get the path to an example neware csv file"""
-    return _download_if_missing("neware.csv")
+    return _download_if_missing(ExampleData.NEWARE_CSV.value)
 
 
-@property
 def pec_file_path() -> Path:
     """Get the path to an example pec csv file"""
-    return _download_if_missing("pec.csv")
+    return _download_if_missing(ExampleData.PEC_CSV.value)
 
 
-@property
 def biologics_file_path() -> Path:
     """Get the path to an example biologics mpr file"""
-    return _download_if_missing("biol.mpr")
+    return _download_if_missing(ExampleData.BIOL_MPR.value)
 
 
 if __name__ == "__main__":
