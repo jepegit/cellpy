@@ -107,7 +107,7 @@ Here’s how to create and plot one:
 >>> import matplotlib.pyplot as plt
 >>> import cellpy.utils.ica as ica
 
->>> dqdv = ica.dqdv_frames(c, cycle=[1, 10, 100], voltage_resolution=0.01)
+>>> dqdv = ica.dqdv(c, cycle=[1, 10, 100], voltage_resolution=0.01)
 
 >>> plt.figure(figsize=(10, 8))
 >>> plt.plot(dqdv["v"], dqdv["dq"], label="dQ/dV")

@@ -7,5 +7,4 @@ authors.md
 project-history.md
 project-license.md
 code-of-conduct.md
-legacy.md
 ```
