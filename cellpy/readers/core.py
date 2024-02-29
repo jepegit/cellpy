@@ -1043,7 +1043,7 @@ def group_by_interpolate(
     """Do a pandas.DataFrame.group_by and perform interpolation for all groups.
 
     This function is a wrapper around an internal interpolation function in
-    cellpy (that uses scipy.interpolate.interp1d) that combines doing a group-by
+    cellpy (that uses ``scipy.interpolate.interp1d``) that combines doing a group-by
     operation and interpolation.
 
     Args:
@@ -1069,15 +1069,13 @@ def group_by_interpolate(
             using the x-min and x-max values from the original dataframe where
             the method is set by the number_of_points key-word:
 
-            1)  if number_of_points is not None (default is 100):
+            1)  if number_of_points is not None (default is 100)::
 
-                ```
-                new_x = np.linspace(x_max, x_min, number_of_points)
-                ```
-            2)  else:
-                ```
-                new_x = np.arange(x_max, x_min, dx)
-                ```
+                    new_x = np.linspace(x_max, x_min, number_of_points)
+
+            2)  else::
+
+                    new_x = np.arange(x_max, x_min, dx)
 
 
     Returns: pandas.DataFrame with interpolated x- and y-values. The returned

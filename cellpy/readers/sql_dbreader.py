@@ -39,6 +39,8 @@ hdr_journal = get_headers_journal()
 
 
 class Base(DeclarativeBase):
+    """Base class for the database models."""
+
     pass
 
 
@@ -51,6 +53,8 @@ batch_cell_association_table = Table(
 
 
 class Cell(Base):
+    """Model for cell objects in the database."""
+
     __tablename__ = "cells"
     pk: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column()  # cell_name
@@ -74,9 +78,9 @@ class Cell(Base):
     comment_slurry: Mapped[Optional[str]] = mapped_column()  # comment_slurry
     comment_cell: Mapped[Optional[str]] = mapped_column()  # comment_cell
     comment_general: Mapped[Optional[str]] = mapped_column()  # comment_general
-    comment_history: Mapped[
-        Optional[str]
-    ] = mapped_column()  # div information from legacy Excel file
+    comment_history: Mapped[Optional[str]] = (
+        mapped_column()
+    )  # div information from legacy Excel file
     selected: Mapped[Optional[bool]] = mapped_column()  # selected
     frozen: Mapped[Optional[bool]] = mapped_column()  # freeze
     argument: Mapped[Optional[str]] = mapped_column()  # argument
@@ -123,6 +127,8 @@ class Cell(Base):
 
 
 class RawData(Base):
+    """Model for raw data objects in the database."""
+
     __tablename__ = "raw_data"
     pk: Mapped[int] = mapped_column(primary_key=True)
     cell_pk: Mapped[int] = mapped_column(ForeignKey("cells.pk"))
@@ -135,6 +141,8 @@ class RawData(Base):
 
 
 class Batch(Base):
+    """Model for batch objects in the database."""
+
     __tablename__ = "batches"
     pk: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column()
@@ -151,6 +159,8 @@ class Batch(Base):
 
 
 class SQLReader(BaseDbReader):
+    """A custom database reader for the batch utility in cellpy."""
+
     def __init__(self, db_connection: str = None, batch: str = None, **kwargs) -> None:
         """Initialize the SQLReader."""
         self.db_connection = db_connection
@@ -211,7 +221,7 @@ class SQLReader(BaseDbReader):
         """Add a batch object to the database.
 
         For this to work, you will have to create a batch object first, then populate it with
-        data (including the cell objects that the batch refers to, see .add_cell_object),
+        data (including the cell objects that the batch refers to, see ``.add_cell_object``),
         and finally add it to the database using this method.
 
         Examples:
@@ -253,6 +263,16 @@ class SQLReader(BaseDbReader):
         include_key: bool = False,
         include_individual_arguments: bool = False,
     ) -> dict:
+        """Get a dictionary with the data from a batch for the journal.
+
+        Args:
+            batch_name: name of the batch.
+            include_key: include the key (the cell ids).
+            include_individual_arguments: include the individual arguments.
+
+        Returns:
+            dict: dictionary with the data.
+        """
         pages_dict = defaultdict(list)
         arguments = []
         with Session(self.engine) as session:
@@ -595,8 +615,7 @@ class SQLReader(BaseDbReader):
 
         return date
 
-    def extract_date_from_cell_name(self, force=False):
-        ...
+    def extract_date_from_cell_name(self, force=False): ...
 
 
 def _check_import_cells_from_excel_sqlite(cellpy_db_uri, sqlite_path):

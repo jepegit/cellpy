@@ -1342,7 +1342,7 @@ class CellpyCell:
             return_cls (bool): Return the class.
             accept_old (bool): Accept loading old cellpy-file versions.
                 Instead of raising WrongFileVersion it only issues a warning.
-            selector (): under development
+            selector (str): Experimental feature - select specific ranges of data.
 
         Returns:
             cellpy.CellpyCell class if return_cls is True
@@ -4158,10 +4158,10 @@ class CellpyCell:
         as_frame=True,
         **kwargs,
     ):
-        """Returns discharge-capacity and voltage for the selected cycle.
+        """Returns discharge capacity and voltage for the selected cycle.
 
         Args:
-           cycle (int): cycle number.
+            cycle (int): cycle number.
             converter (float): a multiplication factor that converts the values to
                 specific values (i.e. from Ah to mAh/g). If not provided (or None),
                 the factor is obtained from the self.get_converter_to_specific() method.
@@ -6714,57 +6714,56 @@ def get(
     """Create a CellpyCell object
 
     Args:
-        filename (str, os.PathLike, OtherPath, or list of raw-file names): path to file(s) to load
-        instrument (str): instrument to use (defaults to the one in your cellpy config file)
-        instrument_file (str or path): yaml file for custom file type
+        filename (str, os.PathLike, OtherPath, or list of raw-file names): path to file(s) or data-set(s) to load.
+        instrument (str): instrument to use (defaults to the one in your cellpy config file).
+        instrument_file (str or path): yaml file for custom file type.
         cellpy_file (str, os.PathLike, or OtherPath): if both filename (a raw-file) and cellpy_file (a cellpy file)
             is provided, cellpy will try to check if the raw-file is has been updated since the
             creation of the cellpy-file and select this instead of the raw file if cellpy thinks
             they are similar (use with care!).
-        logging_mode (str): "INFO" or "DEBUG"
-        cycle_mode (str): the cycle mode (e.g. "anode" or "full_cell")
-        mass (float): mass of active material (mg) (defaults to mass given in cellpy-file or 1.0)
-        nominal_capacity (float): nominal capacity for the cell (e.g. used for finding C-rates)
+        logging_mode (str): "INFO" or "DEBUG".
+        cycle_mode (str): the cycle mode (e.g. "anode" or "full_cell").
+        mass (float): mass of active material (mg) (defaults to mass given in cellpy-file or 1.0).
+        nominal_capacity (float): nominal capacity for the cell (e.g. used for finding C-rates).
         nom_cap_specifics (str): either "gravimetric" (pr mass), or "areal" (per area).
             ("volumetric" is not fully implemented yet - let us know if you need it).
-        loading (float): loading in units [mass] / [area]
-        area (float): active electrode area (e.g. used for finding the areal capacity)
-        estimate_area (bool): calculate area from loading if given (defaults to True)
+        loading (float): loading in units [mass] / [area].
+        area (float): active electrode area (e.g. used for finding the areal capacity).
+        estimate_area (bool): calculate area from loading if given (defaults to True).
         auto_pick_cellpy_format (bool): decide if it is a cellpy-file based on suffix.
         auto_summary (bool): (re-) create summary.
         units (dict): update cellpy units (used after the file is loaded, e.g. when creating summary).
-        step_kwargs (dict): sent to make_steps
-        summary_kwargs (dict): sent to make_summary
+        step_kwargs (dict): sent to make_steps.
+        summary_kwargs (dict): sent to make_summary.
         selector (dict): passed to load (when loading cellpy-files).
         testing (bool): set to True if testing (will for example prevent making .log files)
         refuse_copying (bool): set to True if you do not want to copy the raw-file before loading.
         initialize (bool): set to True if you want to initialize the CellpyCell object (probably only
-            useful if you want to return a cellpy-file with no data in it)
+            useful if you want to return a cellpy-file with no data in it).
         debug (bool): set to True if you want to debug the loader.
-        **kwargs: sent to the loader
+        **kwargs: sent to the loader.
 
-    Keyword args ("arbin_res"):
-        bad_steps (list of tuples): (c, s) tuples of steps s (in cycle c) to skip loading [arbin_res].
+    Transferred Parameters:
+        bad_steps (list of tuples): (c, s) tuples of steps s (in cycle c) to skip loading ("arbin_res").
         dataset_number (int): the data set number ('Test-ID') to select if you are dealing
-            with arbin files with more than one data-set. Defaults to selecting all data-sets and merging them.
+            with arbin files with more than one data-set. Defaults to selecting all data-sets
+            and merging them ("arbin_res").
         data_points (tuple of ints): load only data from data_point[0] to
-                data_point[1] (use None for infinite).
-        increment_cycle_index (bool): increment the cycle index if merging several datasets (default True).
-
-    Keyword args ("maccor_txt", "neware_txt", "local_instrument", "custom"):
-        sep (str): separator used in the file.
-        skip_rows (int): number of rows to skip in the beginning of the file.
-        header (int): row number of the header.
-        encoding (str): encoding of the file.
-        decimal (str): decimal separator.
-        thousand (str): thousand separator.
-        pre_processor_hook (callable): pre-processors to use.
-
-    Keyword args ("pec_csv"):
-        bad_steps (list): separator used in the file (not implemented yet).
+            data_point[1] (use None for infinite) ("arbin_res").
+        increment_cycle_index (bool): increment the cycle index if merging several datasets (default True)
+        ("arbin_res").
+        sep (str): separator used in the file ("maccor_txt", "neware_txt", "local_instrument", "custom").
+        skip_rows (int): number of rows to skip in the beginning of the file
+            ("maccor_txt", "neware_txt", "local_instrument", "custom").
+        header (int): row number of the header ("maccor_txt", "neware_txt", "local_instrument", "custom").
+        encoding (str): encoding of the file ("maccor_txt", "neware_txt", "local_instrument", "custom").
+        decimal (str): decimal separator ("maccor_txt", "neware_txt", "local_instrument", "custom").
+        thousand (str): thousand separator ("maccor_txt", "neware_txt", "local_instrument", "custom").
+        pre_processor_hook (callable): pre-processors to use ("maccor_txt", "neware_txt", "local_instrument", "custom").
+        bad_steps (list): separator used in the file (not implemented yet) ("pec_csv").
 
     Returns:
-        CellpyCell object (if successful, None if not)
+        CellpyCell object (if successful, None if not).
 
     Examples:
         >>> # read an arbin .res file and create a cellpy object with

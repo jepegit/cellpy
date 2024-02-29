@@ -45,17 +45,17 @@ def find_in_raw_file_directory(
         list of str: list of file paths.
 
     Examples:
-        # find all files in your raw-file directory:
+        >>> # find all files in your raw-file directory:
         >>> filelist_1 = filefinder.find_in_raw_file_directory()
 
-        # find all files in your raw-file directory in the subdirectory 'MY-PROJECT':
+        >>> # find all files in your raw-file directory in the subdirectory 'MY-PROJECT':
         >>> filelist_2 = filefinder.find_in_raw_file_directory(raw_file_dir=rawdatadir/"MY-PROJECT")
 
-        # find all files in your raw-file directory with the extension '.raw' in the subdirectory 'MY-PROJECT':
+        >>> # find all files in your raw-file directory with the extension '.raw' in the subdirectory 'MY-PROJECT':
         >>> filelist_3 = filefinder.find_in_raw_file_directory(raw_file_dir=rawdatadir/"MY-PROJECT", extension="raw")
 
-        # find all files in your raw-file directory with the extension '.raw' in the subdirectory 'MY-PROJECT'
-        # that contains the string 'good' in the file name:
+        >>> # find all files in your raw-file directory with the extension '.raw' in the subdirectory 'MY-PROJECT'
+        >>> # that contains the string 'good' in the file name
         >>> filelist_4 = filefinder.find_in_raw_file_directory(
         >>>     raw_file_dir=rawdatadir/"MY-PROJECT",
         >>>     glob_txt="*good*",
