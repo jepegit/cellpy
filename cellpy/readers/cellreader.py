@@ -1288,7 +1288,8 @@ class CellpyCell:
         if not prms.Reader.sorted_data:
             logging.debug("sorting data")
             data = self._sort_data(data)
-            data.raw_units = self._set_raw_units()
+
+        data.raw_units = self._set_raw_units()
 
         self.data = data
         self._invent_a_cell_name(self.file_names)  # TODO (v1.0.0): fix me

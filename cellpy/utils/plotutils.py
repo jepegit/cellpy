@@ -220,6 +220,7 @@ def create_col_info(c):
         voltages=[hdr.end_voltage_charge, hdr.end_voltage_discharge],
         capacities_gravimetric=_capacities_gravimetric,
         capacities_areal=_capacities_areal,
+        capacities=_cap_cols,
         capacities_gravimetric_split_constant_voltage=_capacities_gravimetric_split,
         capacities_areal_split_constant_voltage=_capacities_areal_split,
     )
@@ -252,10 +253,13 @@ def create_label_dict(c):
         f"Capacity ({c.cellpy_units.charge}/{c.cellpy_units.specific_areal})"
     )
 
+    _cap_label = f"Capacity ({c.cellpy_units.charge})"
+
     y_axis_label = {
         "voltages": f"Voltage ({c.cellpy_units.voltage})",
         "capacities_gravimetric": _cap_gravimetric_label,
         "capacities_areal": _cap_areal_label,
+        "capacities": _cap_label,
         "capacities_gravimetric_split_constant_voltage": _cap_gravimetric_label,
         "capacities_areal_split_constant_voltage": _cap_areal_label,
     }
@@ -285,8 +289,8 @@ def summary_plot(
         x: x-axis column (default: 'cycle_index')
         y: y-axis column or column set. Currently, the following predefined sets exists:
 
-            - "voltages", "capacities_gravimetric", "capacities_areal", "capacities_gravimetric_split_constant_voltage",
-              "capacities_areal_split_constant_voltage"
+            - "voltages", "capacities_gravimetric", "capacities_areal", "capacities",
+              "capacities_gravimetric_split_constant_voltage", "capacities_areal_split_constant_voltage"
 
         height: height of the plot
         markers: use markers

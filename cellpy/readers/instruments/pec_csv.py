@@ -147,6 +147,7 @@ class DataLoader(BaseLoader):
         raw_units["voltage"] = "V"
         raw_units["energy"] = "Wh"
         raw_units["time"] = "s"
+        raw_units["capacity"] = "Ah"
 
         return raw_units
 
