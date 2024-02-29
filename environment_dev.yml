@@ -63,5 +63,7 @@ dependencies:
         - sphinx-book-theme
         - jinja2_time
         - kaleido==0.1.*
+        - jupyterlab-code-formatter
+        - isort
 
 

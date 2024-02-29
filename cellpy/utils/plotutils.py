@@ -646,12 +646,11 @@ def _cycle_info_plot_plotly(
     data[time_hdr] = data[time_hdr] * t_scaler
     data[voltage_hdr] = data[voltage_hdr] * v_scaler
     data[current_hdr] = data[current_hdr] * i_scaler
-
     data = data.merge(
         table,
         left_on=(cycle_hdr, step_number_hdr),
         right_on=(cycle_, step_),
-    )
+    ).sort_values(by=[time_hdr])
 
     fig = go.Figure()
 

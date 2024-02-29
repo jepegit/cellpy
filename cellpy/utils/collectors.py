@@ -2248,10 +2248,8 @@ def ica_plotter(
 
 
 def histogram_equalization(image: np.array) -> np.array:
-    """Perform histogram equalization on a numpy array.
-
+    """Perform histogram equalization on a numpy array."""
     # from http://www.janeriksolem.net/histogram-equalization-with-python-and.html
-    """
     number_bins = 256
     scale = 100
     image[np.isnan(image)] = 0.0
