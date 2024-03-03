@@ -1,4 +1,8 @@
-# not updated yet
+"""Configuration for tab-delimited Maccor txt files with three comment rows (used by UBham in the SIMBA project)."""
+
+# currently skips the comment rows instead of parsing them (change this by modifying the formatters
+# and add preprocessing step for parsing them)
+
 unit_labels = {
     "resistance": "Ohms",
     # not observed yet:

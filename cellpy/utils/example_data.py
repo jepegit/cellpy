@@ -76,7 +76,9 @@ class ExampleData(Enum):
     # CUSTOM = "custom.csv"
     # CUSTOM_EXCEL = "custom.xlsx"
     # BIOL_MPR = "biol.mpr"
-    # MACCOR_TXT = "maccor.txt"
+    MACCOR_TXT_TYPE_ONE = "maccor_one.txt"
+    MACCOR_TXT_TYPE_TWO = "maccor_two.txt"
+    MACCOR_TXT_TYPE_THREE = "maccor_three.txt"
     # NEWARE_CSV = "neware.csv"
     # --------------------------------
     # DB = "cellpy_db.sqlite"
@@ -234,7 +236,22 @@ def arbin_multi_file_path() -> Path:
 
 def maccor_file_path() -> Path:
     """Get the path to an example maccor txt file"""
-    return _download_if_missing(ExampleData.MACCOR_TXT.value)
+    return _download_if_missing(ExampleData.MACCOR_TXT_TYPE_TWO.value)
+
+
+def maccor_file_path_type_one() -> Path:
+    """Get the path to an example maccor txt file"""
+    return _download_if_missing(ExampleData.MACCOR_TXT_TYPE_ONE.value)
+
+
+def maccor_file_path_type_two() -> Path:
+    """Get the path to an example maccor txt file"""
+    return _download_if_missing(ExampleData.MACCOR_TXT_TYPE_TWO.value)
+
+
+def maccor_file_path_type_three() -> Path:
+    """Get the path to an example maccor txt file"""
+    return _download_if_missing(ExampleData.MACCOR_TXT_TYPE_THREE.value)
 
 
 def neware_file_path() -> Path:

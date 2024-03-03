@@ -670,12 +670,23 @@ class TxtLoader(AutoLoader, ABC):
     raw_ext = "*"
 
     # override this if needed
-    def parse_loader_parameters(self, **kwargs):
-        sep = kwargs.get("sep", None)
-        if sep is not None:
-            self.sep = sep
-        if self.sep is None:
+    def parse_loader_parameters(self, auto_formatter=None, **kwargs):
+        """Parse the loader parameters.
+
+        Args:
+            auto_formatter: if True, the formatter will be set to auto-formatting.
+            **kwargs: keyword arguments.
+        """
+
+        if auto_formatter:
             self._auto_formatter()
+        else:
+            # backup option - do auto-formatting if sep is not given
+            sep = kwargs.get("sep", None)
+            if sep is not None:
+                self.sep = sep
+            if self.sep is None:
+                self._auto_formatter()
 
     # override this if needed
     def parse_formatter_parameters(self, **kwargs):
@@ -715,6 +726,7 @@ class TxtLoader(AutoLoader, ABC):
         )
 
     def _auto_formatter(self):
+        print("auto-formatting")
         separator, first_index = find_delimiter_and_start(
             self.name,
             separators=None,

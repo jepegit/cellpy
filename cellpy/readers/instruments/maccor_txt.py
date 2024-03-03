@@ -14,18 +14,13 @@ from cellpy.readers.instruments.base import TxtLoader
 
 
 SUPPORTED_MODELS = {
-    "ZERO": "maccor_txt_zero",
+    "ZERO": "maccor_txt_zero",  # needs to be updated (does no postprocessing at the moment)
     "ONE": "maccor_txt_one",
     "TWO": "maccor_txt_two",
     "THREE": "maccor_txt_three",
-    "FOUR": "maccor_txt_four",
-    "WMG_SIMBA": "maccor_txt_three",
-    "KIT_SIMBA": "maccor_txt_four",
-    "KIT_COMMA_SIMBA": "maccor_txt_two",
-    "UBHAM_SIMBA": "maccor_txt_three",
-    "S4000-WMG": "maccor_txt_four",
-    "S4000-KIT": "maccor_txt_four",
-    "S4000-UBHAM": "maccor_txt_three",
+    "S4000-UBHAM": "maccor_txt_one",
+    "S4000-KIT": "maccor_txt_two",
+    "S4000-WMG": "maccor_txt_three",
 }
 
 
@@ -424,7 +419,74 @@ def _check_loader_from_outside_with_get2():
     c.save(outfile)
 
 
+def _fix_bugs_now():
+    import pathlib
+
+    import cellpy
+    import pandas as pd
+    import matplotlib.pyplot as plt
+
+    DATADIR = r"C:\scripting\cellpy_dev_resources\dev_data\simba_Maccor\S4000"
+    FILENAME = "01_UBham_CD_M50_Validation_0deg_01.txt"
+    INSTRUMENT = "maccor_txt"
+    MODEL = "ONE"
+
+    pd.options.display.max_columns = 100
+    datadir = pathlib.Path(DATADIR)
+    name = datadir / FILENAME
+    out = pathlib.Path(r"C:\scripting\trash")
+    print(f"File exists? {name.is_file()}")
+    if not name.is_file():
+        print(f"could not find {name} ")
+        return
+
+    c = cellpy.get(
+        filename=name,
+        instrument=INSTRUMENT,
+        model=MODEL,
+        mass=1.0,
+        auto_summary=False,
+        # auto_formatter=True,  # does not work for UBHAM (finds only two comment rows, but should be three)
+        # post_processors={"another_param": False},  # This parameter will be available in the post-processors
+    )
+    print(f"loaded the file - now lets see what we got")
+    raw = c.data.raw
+    raw.to_clipboard()
+    print(raw.head())
+    c.make_step_table()
+    steps = c.data.steps
+    summary = c.data.summary
+
+    raw.to_csv(out / "raw.csv", sep=";")
+    steps.to_csv(out / "steps.csv", sep=";")
+    summary.to_csv(out / "summary.csv", sep=";")
+
+    fig_1, (ax1, ax2, ax3, ax4) = plt.subplots(
+        4,
+        1,
+        figsize=(6, 10),
+        constrained_layout=True,
+        sharex=True,
+    )
+    raw.plot(x="test_time", y="voltage", ax=ax1, xlabel="")
+    raw.plot(x="test_time", y="current", ax=ax2, xlabel="")
+    raw.plot(
+        x="test_time", y=["charge_capacity", "discharge_capacity"], ax=ax3, xlabel=""
+    )
+    raw.plot(x="test_time", y="cycle_index", ax=ax4)
+    fig_1.suptitle(f"{name.name}", fontsize=16)
+
+    n = c.get_number_of_cycles()
+    print(f"Number of cycles: {n}")
+
+    plt.legend()
+    plt.show()
+
+    outfile = out / "test_out"
+    c.save(outfile)
+
+
 if __name__ == "__main__":
     # check_dev_loader2(model="two")
     # check_loader(number=2, model="two")
-    _check_loader_from_outside_with_get()
+    _fix_bugs_now()

@@ -1,4 +1,7 @@
-# Works for data from KIT (SIMBA project) with ',' as decimal and dropping bad last rows.
+"""Configuration for tab-delimited Maccor txt files with 12 comment rows (used by KIT in the SIMBA project)."""
+
+# currently skips the comment rows instead of parsing them (change this by modifying the formatters
+# and add preprocessing step for parsing them)
 
 unit_labels = {
     "resistance": "Ohms",

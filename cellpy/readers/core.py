@@ -14,7 +14,7 @@ import pickle
 import sys
 import time
 import warnings
-from typing import Any, Tuple, Dict, List, Union, TypeVar
+from typing import Any, Tuple, Dict, List, Union, TypeVar, Optional
 
 import numpy as np
 import pandas as pd
@@ -711,8 +711,15 @@ def generate_default_factory():
 
 
 # TODO: v1.1.0 - implement plugins and local instrument readers
-def find_all_instruments() -> Dict[str, Tuple[str, pathlib.Path]]:
+def find_all_instruments(
+    name_contains: Optional[str] = None,
+) -> Dict[str, Tuple[str, pathlib.Path]]:
     """finds all the supported instruments"""
+
+    if name_contains:
+        glob_txt = f"*{name_contains}*.py"
+    else:
+        glob_txt = "*.py"
 
     import cellpy.readers.instruments as hard_coded_instruments_site
 
@@ -724,7 +731,7 @@ def find_all_instruments() -> Dict[str, Tuple[str, pathlib.Path]]:
     ).parent
     modules_in_hard_coded_instruments_site = [
         s
-        for s in hard_coded_instruments_site.glob("*.py")
+        for s in hard_coded_instruments_site.glob(glob_txt)
         if not (
             str(s.name).startswith("_")
             or str(s.name).startswith("dev_")

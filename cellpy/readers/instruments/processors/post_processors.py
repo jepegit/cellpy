@@ -15,6 +15,7 @@ the ``config_params.post_processor[<name of post processor>]``.
 import datetime
 import logging
 import sys
+import warnings
 
 import pandas as pd
 import numpy as np
@@ -81,7 +82,8 @@ def _convert_units(data: Data, config_params: ModelParameters) -> Data:
 
 def set_cycle_number_not_zero(data: Data, config_params: ModelParameters) -> Data:
     """Set cycle number to start from 1 instead of 0."""
-    data.raw[headers_normal.cycle_index_txt] += 1
+    if data.raw[headers_normal.cycle_index_txt].min() == 0:
+        data.raw[headers_normal.cycle_index_txt] += 1
     return data
 
 
@@ -158,7 +160,15 @@ def _get_column_names(data: Data, config_params: ModelParameters) -> Data:
 def convert_date_time_to_datetime(data: Data, config_params: ModelParameters) -> Data:
     """Convert date_time column to datetime."""
     hdr_date_time = headers_normal.datetime_txt
-    data.raw[hdr_date_time] = pd.to_datetime(data.raw[hdr_date_time])
+    try:
+        data.raw[hdr_date_time] = pd.to_datetime(data.raw[hdr_date_time])
+    except ValueError as e:
+        warnings.warn(
+            f"Could not convert date_time to datetime. Will try mixed format (slow)."
+        )
+        data.raw[hdr_date_time] = pd.to_datetime(
+            data.raw[hdr_date_time], format="mixed"
+        )
     return data
 
 
