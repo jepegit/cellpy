@@ -28,9 +28,6 @@ class DataLoader(TxtLoader):
 
     def pre_init(self):
         self.auto_register_config = False
-        print("---------------------------")
-        print(f"{self.local_instrument_file}")
-        print("---------------------------")
         self.config_params = register_local_configuration_from_yaml_file(
             self.local_instrument_file
         )

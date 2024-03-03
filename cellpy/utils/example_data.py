@@ -236,7 +236,7 @@ def arbin_multi_file_path() -> Path:
 
 def maccor_file_path() -> Path:
     """Get the path to an example maccor txt file"""
-    return _download_if_missing(ExampleData.MACCOR_TXT_TYPE_TWO.value)
+    return _download_if_missing(ExampleData.MACCOR_TXT_TYPE_THREE.value)
 
 
 def maccor_file_path_type_one() -> Path:

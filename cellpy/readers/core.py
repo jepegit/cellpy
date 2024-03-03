@@ -7,6 +7,7 @@ And it has the file version definitions.
 import abc
 import datetime
 import importlib
+import inspect
 import logging
 import os
 import pathlib
@@ -37,6 +38,9 @@ HEADERS_NORMAL = get_headers_normal()  # TODO @jepe refactor this (not needed)
 HEADERS_SUMMARY = get_headers_summary()  # TODO @jepe refactor this (not needed)
 HEADERS_STEP_TABLE = get_headers_step_table()  # TODO @jepe refactor this (not needed)
 
+LOADERS_NOT_READY_FOR_PROD = [
+    "ext_nda_reader"
+]  # used by the instruments_configurations helper function (move?)
 
 # pint (https://pint.readthedocs.io/en/stable/)
 ureg = pint.UnitRegistry()
@@ -629,7 +633,17 @@ class InstrumentFactory:
 
     def __init__(self):
         self._builders = {}
-        self._kwargs = {}
+        self._kwargs = {}  # stored kwargs for the builders (not used yet)
+
+    def __str__(self):
+        txt = "<InstrumentFactory>\n"
+        for key in self._builders:
+            txt += f"  {key}\n"
+        return txt
+
+    @property
+    def builders(self):
+        return self._builders
 
     def register_builder(self, key: str, builder: Tuple[str, Any], **kwargs) -> None:
         """register an instrument loader module.
@@ -645,6 +659,65 @@ class InstrumentFactory:
         self._builders[key] = builder
         self._kwargs[key] = kwargs
 
+    def unregister_builder(self, key: str) -> None:
+        """unregister an instrument loader module.
+
+        Args:
+            key: instrument id
+        """
+        logging.debug(f"Unregistering instrument {key}")
+        self._builders.pop(key, None)
+        self._kwargs.pop(key, None)
+
+    def get_registered_builders(self):
+        return list(self._builders.keys())
+
+    def get_registered_kwargs(self):
+        return self._kwargs
+
+    def get_registered_builder(self, key):
+        return self._builders.get(key, None)
+
+    def create_all(self, **kwargs):
+        """Create all the instrument loader modules.
+
+        Args:
+            **kwargs: sent to the initializer of the loader class.
+
+        Returns:
+            dict of instances of loader classes.
+        """
+        loaders = {}
+        for key in self._builders:
+            bargs = self._kwargs.get(key, {})
+            bargs.update(kwargs)
+            try:
+                models = {}
+                loader = self.create(key, **bargs)
+                models["default"] = loader
+
+                if available_models := self._get_models(loader):
+                    for model in available_models:
+                        bargs["model"] = model
+                        models[model] = self.create(key, **bargs)
+
+                loaders[key] = models
+            except Exception as e:
+                logging.critical(f"Could not create loader for {key}: {e}")
+        return loaders
+
+    @staticmethod
+    def _get_models(loader):
+
+        try:
+            models = loader.get_params("supported_models")
+            return models
+
+        except Exception as e:
+            logging.debug(f"COULD NOT RETRIEVE supported_models for {loader}: {e}")
+
+        return
+
     def create(self, key: Union[str, None], **kwargs):
         """Create the instrument loader module and initialize the loader class.
 
@@ -655,7 +728,6 @@ class InstrumentFactory:
         Returns:
             instance of loader class.
         """
-
         module_name, module_path = self._builders.get(key, (None, None))
 
         # constant:
@@ -693,7 +765,49 @@ class InstrumentFactory:
 
         except (AttributeError, NotImplementedError, KeyError):
             logging.debug(f"COULD NOT RETRIEVE {variable} for {key}")
+
+        except Exception as e:
+            logging.debug(f"COULD NOT RETRIEVE {variable} for {key}: {e}")
+
         return
+
+
+def instrument_configurations(search_text: str = "") -> Dict[str, Any]:
+    """This function returns a dictionary with information about the available
+    instrument loaders and their models.
+
+    Args:
+        search_text: string to search for in the instrument names.
+
+    Returns:
+        dict: nested dictionary with information about the available instrument loaders and their models.
+
+    """
+    instruments = {}
+    _instruments = find_all_instruments(search_text)
+    factory = InstrumentFactory()
+
+    for instrument, instrument_settings in _instruments.items():
+        if instrument not in LOADERS_NOT_READY_FOR_PROD:
+            factory.register_builder(instrument, instrument_settings)
+
+    loaders = factory.create_all()
+
+    for loader, loader_instance in loaders.items():
+        _info = {"__all__": []}
+        for model, model_instance in loader_instance.items():
+            _info["__all__"].append(model)
+            _model_info = {}
+            if hasattr(model_instance, "config_params"):
+                _model_info["config_params"] = model_instance.config_params
+            else:
+                _model_info["config_params"] = None
+
+            _model_info["doc"] = inspect.getdoc(model_instance)
+
+            _info[model] = _model_info
+        instruments[loader] = _info
+    return instruments
 
 
 def generate_default_factory():
