@@ -5,14 +5,15 @@
 
 file_info = {"raw_extension": "txt"}
 
+# not used yet:
 unit_labels = {
     "resistance": "Ohms",
     "time": "s",
-    "current": "A",
-    "voltage": "V",
-    "power": "W",
-    "capacity": "Ah",
-    "energy": "Wh",
+    "current": "mA",
+    "voltage": "mV",
+    "power": "mW",
+    "capacity": "mAh",
+    "energy": "mWh",
     "temperature": "C",
 }
 
@@ -29,6 +30,8 @@ normal_headers_renaming_dict = {
     "datetime_txt": "DPt Time",
 }
 
+raw_units = {"current": "mA", "charge": "mAh", "mass": "g", "voltage": "mV"}
+
 states = {
     "column_name": "State",
     "charge_keys": ["C"],
@@ -36,8 +39,6 @@ states = {
     "rest_keys": ["R"],
 }
 
-
-raw_units = {"current": "A", "charge": "Ah", "mass": "g", "voltage": "V"}
 
 raw_limits = {
     "current_hard": 0.000_000_000_000_1,

@@ -79,7 +79,7 @@ class ExampleData(Enum):
     MACCOR_TXT_TYPE_ONE = "maccor_one.txt"
     MACCOR_TXT_TYPE_TWO = "maccor_two.txt"
     MACCOR_TXT_TYPE_THREE = "maccor_three.txt"
-    # NEWARE_CSV = "neware.csv"
+    NEWARE_CSV = "neware_uio.csv"
     # --------------------------------
     # DB = "cellpy_db.sqlite"
     # SIMPLE_DB = "simple_db.xlsx"
