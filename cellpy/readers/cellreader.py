@@ -763,12 +763,14 @@ class CellpyCell:
     def _parse_instrument_str(instrument, custom_instrument_splitter="::"):
         if not instrument:
             return None, None
-
-        _instrument = instrument.split(custom_instrument_splitter)
-        if len(_instrument) < 2:
-            return instrument, None
-
-        return _instrument
+        try:
+            _instrument = instrument.split(custom_instrument_splitter)
+            if len(_instrument) < 2:
+                return instrument, None
+            else:
+                return _instrument
+        except AttributeError:
+            return str(instrument), None
 
     @property
     def cycle_mode(self):

@@ -56,6 +56,7 @@ def test_load_custom_yaml_file(parameters):
 
 def test_cellpy_get_model_one_custom_instrument_file(parameters):
     """Use default location of user instrument files"""
+    # uses local_instrument.py as loader
     # TODO: create defaults for missing parameters in the custom instrument file.
 
     instrument = parameters.custom_instrument

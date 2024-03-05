@@ -70,11 +70,13 @@ def test_2_set_instrument(cellpy_data_instance):
 
 @pytest.mark.xfail
 def test_set_instrument_selecting_default_not_defined(cellpy_data_instance):
+    # uses custom.py as loader
     prms.Instruments.custom_instrument_definitions_file = None
     cellpy_data_instance.set_instrument(instrument="custom")
 
 
 def test_set_instrument_selecting_default(cellpy_data_instance, parameters):
+    # uses custom.py as loader
     prms.Instruments.custom_instrument_definitions_file = (
         parameters.custom_instrument_definitions_file
     )
@@ -82,6 +84,7 @@ def test_set_instrument_selecting_default(cellpy_data_instance, parameters):
 
 
 def test_set_instrument_and_instrument_file(cellpy_data_instance, parameters):
+    # uses custom.py as loader
     cellpy_data_instance.set_instrument(
         instrument="custom",
         instrument_file=parameters.custom_instrument_definitions_file,
@@ -89,12 +92,14 @@ def test_set_instrument_and_instrument_file(cellpy_data_instance, parameters):
 
 
 def test_set_instrument_and_instrument_file_using_sep(cellpy_data_instance, parameters):
+    # uses custom.py as loader
     instrument = "custom" + "::" + parameters.custom_instrument_definitions_file
     cellpy_data_instance.set_instrument(instrument=instrument)
 
 
 @pytest.mark.xfail
 def test_set_instrument_missing_file(cellpy_data_instance, parameters):
+    # uses custom.py as loader
     prms.Instruments.custom_instrument_definitions_file = (
         "a-file-that-should-not-exist.yml"
     )

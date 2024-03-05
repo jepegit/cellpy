@@ -828,6 +828,7 @@ def test_cellpyfile_roundtrip(tmp_path, parameters):
 
 
 def test_load_custom_default(cellpy_data_instance, parameters):
+    # uses custom.py loader
     from cellpy import prms
 
     s_headers = get_headers_summary()
@@ -840,6 +841,23 @@ def test_load_custom_default(cellpy_data_instance, parameters):
     cellpy_data_instance.make_step_table()
     cellpy_data_instance.make_summary()
     summary = cellpy_data_instance.data.summary
+    val = summary.loc[2, s_headers.shifted_discharge_capacity]
+    # TODO: this breaks (gives 711 instead of 593)
+    # assert 593.031 == pytest.approx(val, 0.1)
+
+
+def test_get_custom_default(parameters):
+    # uses custom.py loader
+    from cellpy import prms
+    import cellpy
+
+    s_headers = get_headers_summary()
+    file_name = parameters.custom_file_paths
+    instrument_file = parameters.custom_instrument_definitions_file
+
+    c = cellpy.get(file_name, instrument="custom", instrument_file=instrument_file)
+
+    summary = c.data.summary
     val = summary.loc[2, s_headers.shifted_discharge_capacity]
     # TODO: this breaks (gives 711 instead of 593)
     # assert 593.031 == pytest.approx(val, 0.1)

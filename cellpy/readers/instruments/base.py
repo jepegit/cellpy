@@ -717,6 +717,9 @@ class TxtLoader(AutoLoader, ABC):
             f"Formatters (cont.): self.decimal={self.decimal} self.thousands={self.thousands}"
         )
 
+    # TODO: need to implement the possibility to override the configuration parameters from the
+    #  configuration file (config_params), e.g.
+    #  c = cellpy.get(filename, instrument="xxx", model="yyy", raw_units={"voltage": "mV"})
     # override this if needed
     def parse_loader_parameters(self, auto_formatter=None, **kwargs):
         """Parse the loader parameters.
