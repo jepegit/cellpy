@@ -17,4 +17,5 @@ To exploit the full potential of cellpy, have a look at the [API](/autoapi/index
 04_incremental_capacity_analysis.ipynb
 05_GITT.ipynb
 batch_utility/cellpy_batch_processing_docs.ipynb
+templates/tutorial_templates.ipynb
 ```

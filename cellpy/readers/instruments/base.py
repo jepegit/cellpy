@@ -15,6 +15,7 @@ from typing import List, Union
 
 import pandas as pd
 
+from cellpy.exceptions import WrongFileVersion
 import cellpy.internals.core
 import cellpy.readers.core as core
 from cellpy.parameters.internal_settings import headers_normal
@@ -608,12 +609,20 @@ class AutoLoader(BaseLoader):
         # ordered post-processing steps:
         for processor_name in ORDERED_POST_PROCESSING_STEPS:
             if processor_name in self.post_processors:
-                data = self._perform_post_process_step(data, processor_name)
+                try:
+                    data = self._perform_post_process_step(data, processor_name)
+                except Exception as e:
+                    logging.error(f"failed to run {processor_name}: {e}")
+                    raise WrongFileVersion(f"failed to run {processor_name}: {e}")
 
         # non-ordered post-processing steps
         for processor_name in self.post_processors:
             if processor_name not in ORDERED_POST_PROCESSING_STEPS:
-                data = self._perform_post_process_step(data, processor_name)
+                try:
+                    data = self._perform_post_process_step(data, processor_name)
+                except Exception as e:
+                    logging.error(f"failed to run {processor_name}: {e}")
+                    raise WrongFileVersion(f"failed to run {processor_name}: {e}")
         return data
 
     def _perform_post_process_step(self, data, processor_name):
@@ -670,26 +679,9 @@ class TxtLoader(AutoLoader, ABC):
     raw_ext = "*"
 
     # override this if needed
-    def parse_loader_parameters(self, auto_formatter=None, **kwargs):
-        """Parse the loader parameters.
-
-        Args:
-            auto_formatter: if True, the formatter will be set to auto-formatting.
-            **kwargs: keyword arguments.
-        """
-
-        if auto_formatter:
-            self._auto_formatter()
-        else:
-            # backup option - do auto-formatting if sep is not given
-            sep = kwargs.get("sep", None)
-            if sep is not None:
-                self.sep = sep
-            if self.sep is None:
-                self._auto_formatter()
-
-    # override this if needed
     def parse_formatter_parameters(self, **kwargs):
+        """Parse the formatter parameters."""
+
         logging.debug(f"model: {self.model}")
         if not self.config_params.formatters:
             # Setting defaults if formatter is not loaded
@@ -724,6 +716,24 @@ class TxtLoader(AutoLoader, ABC):
         logging.debug(
             f"Formatters (cont.): self.decimal={self.decimal} self.thousands={self.thousands}"
         )
+
+    # override this if needed
+    def parse_loader_parameters(self, auto_formatter=None, **kwargs):
+        """Parse the loader parameters.
+
+        Args:
+            auto_formatter: if True, the formatter will be set to auto-formatting.
+            **kwargs: keyword arguments.
+        """
+        if auto_formatter:
+            self._auto_formatter()
+        else:
+            # backup option - do auto-formatting if sep is not given
+            sep = kwargs.get("sep", None)
+            if sep is not None:
+                self.sep = sep
+            if self.sep is None:
+                self._auto_formatter()
 
     def _auto_formatter(self):
         print("auto-formatting")
