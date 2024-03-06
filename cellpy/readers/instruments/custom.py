@@ -1,11 +1,6 @@
 """This module is used for loading data using the ``instrument="custom"`` method.
 If no ``instrument_file`` is given (either directly or through the use
 of the ``::`` separator), the default instrument file (yaml) will be used.
-As a "short-cut", this loader will be used if you set the ``instrument``
-to the name of the instrument file (with the ``.yml`` extension) e.g.
-``c = cellpy.get(rawfile, instrument="instrumentfile.yml")``.
-The default instrument file is defined in the cellpy configuration file
-(available through ``prms.Instruments.custom_instrument_definitions_file``).
 """
 
 # This module works, but is by no means finished. The module is meant to
