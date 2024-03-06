@@ -279,7 +279,7 @@ class DataLoader(BaseLoader):
         mpr_settings["offset"] = settings_mod["offset"]
         mpr_settings["version"] = settings_mod["version"]
         mpr_settings["data"] = settings_mod["data"]
-        # print(f"mpr_settings: {mpr_settings}")
+        print(f"mpr_settings: {mpr_settings}")
         self.mpr_settings = mpr_settings
         return None
 
