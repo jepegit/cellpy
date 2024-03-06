@@ -12,6 +12,8 @@ To exploit the full potential of cellpy, have a look at the [API](/autoapi/index
 
 [//]: # (reading_data.md)
 01_loading_data.ipynb
+06_loading_different_formats.ipynb
+07_custom_loaders.ipynb
 02_Initial_data_inspection.ipynb
 03_capacity_vs_voltage.ipynb
 04_incremental_capacity_analysis.ipynb
