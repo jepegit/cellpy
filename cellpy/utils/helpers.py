@@ -938,7 +938,7 @@ def concat_summaries(
             cell_names_nest.append(list(b_sub.index))
             group_nest.append(gno)
     else:
-        cell_names_nest.append(list(b.index))
+        cell_names_nest.append(list(pages.index))
         group_nest.append(pages.group.to_list())
 
     default_columns = [hdr_summary["charge_capacity_gravimetric"]]
