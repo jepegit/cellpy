@@ -1,11 +1,17 @@
 """This module is used for loading data using the ``instrument="custom"`` method.
 If no ``instrument_file`` is given (either directly or through the use
-of the ``::`` separator), the default instrument file (yaml) will be used."""
+of the ``::`` separator), the default instrument file (yaml) will be used.
+As a "short-cut", this loader will be used if you set the ``instrument``
+to the name of the instrument file (with the ``.yml`` extension) e.g.
+``c = cellpy.get(rawfile, instrument="instrumentfile.yml")``.
+The default instrument file is defined in the cellpy configuration file
+(available through ``prms.Instruments.custom_instrument_definitions_file``).
+"""
 
 # This module works, but is by no means finished. The module is meant to
 # be developed further allowing for example
 # to provide custom parsers. At the moment, we anticipate that it only should
-# work with txt-files (so the class is called CustomTxtLoader), however, it is
+# work with "simple" files (txt-files, xlsx, ...), however, it is
 # possible to extend the scope to allow for providing parsers that also can read
 # binary files. The future will show.
 
@@ -31,7 +37,10 @@ class DataLoader(AutoLoader, ABC):
 
     def __init__(self, instrument_file=None, **kwargs):
         if instrument_file is None:
-            logging.debug("No instrument_file provided - checking default")
+            logging.debug("No instrument_file provided - checking default for one")
+            # currently using the name custom_instrument_definitions_file for this also
+            # consider adding a separate config parameter for the default instrument file
+            # e.g. local_instrument_default_file
             instrument_file = prms.Instruments.custom_instrument_definitions_file
         if not instrument_file:
             raise FileExistsError(

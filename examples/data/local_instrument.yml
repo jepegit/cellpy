@@ -1,0 +1,69 @@
+---
+formatters:
+    skiprows: 2
+    sep: "\t"
+    header: 0
+    encoding: ISO-8859-1
+    decimal: .
+    thousands:
+    comment_chars:
+        - '#'
+        - '!'
+pre_processors:
+    remove_empty_lines: true
+post_processors:
+    split_capacity: true
+    split_current: true
+    set_index: true
+    rename_headers: true
+    set_cycle_number_not_zero: true
+    remove_last_if_bad: true
+    convert_date_time_to_datetime: true
+    convert_step_time_to_timedelta: true
+    convert_test_time_to_timedelta: true
+normal_headers_renaming_dict:
+    data_point_txt: "Rec#"
+    datetime_txt: "DPt Time"
+    test_time_txt: "TestTime"
+    step_time_txt: "StepTime"
+    cycle_index_txt: "Cyc#"
+    step_index_txt: "Step"
+    current_txt: "mAmps"
+    voltage_txt: "Volts"
+#    power_txt: "Watt-hr"
+    charge_capacity_txt: "mAmp-hr"
+    charge_energy_txt: "mWatt-hr"
+#    ac_impedance_txt: "ACImp/Ohms"
+#    internal_resistance_txt: "DCIR/Ohms"
+unit_labels:
+    resistance: Ohms
+    time: s
+    current: mA
+    voltage: mV
+    power: mW
+    capacity: mAh
+    energy: mWh
+    temperature: C
+states:
+    column_name: State
+    charge_keys:
+        - C
+    discharge_keys:
+        - D
+    rest_keys:
+        - R
+raw_units:
+    current: "mA"
+    charge: "mAh"
+    mass: "g"
+    voltage: "mV"
+raw_limits:
+    current_hard: 1.0e-13
+    current_soft: 1.0e-05
+    ir_change: 1.0e-05
+    stable_charge_hard: 0.9
+    stable_charge_soft: 5.0
+    stable_current_hard: 2.0
+    stable_current_soft: 4.0
+    stable_voltage_hard: 2.0
+    stable_voltage_soft: 4.0

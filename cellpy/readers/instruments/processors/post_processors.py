@@ -260,6 +260,7 @@ def rename_headers(data: Data, config_params: ModelParameters) -> Data:
     """Rename headers to the correct Cellpy headers."""
     columns = {}
     renaming_dict = config_params.normal_headers_renaming_dict
+    print(data.raw.columns)
     # ---- special cases ----
     # 1. datetime_txt and test_time_txt same column
     if "datetime_txt" in renaming_dict and "test_time_txt" in renaming_dict:

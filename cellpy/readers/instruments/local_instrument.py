@@ -1,6 +1,11 @@
 """This module is used for loading data using the corresponding local
 yaml file with definitions on how the data should be loaded. This loader
-is based on the ``TxtLoader`` and can only be used to load csv-type files"""
+is based on the ``TxtLoader`` and can only be used to load csv-type files.
+As a "short-cut", this loader will be used if you set the ``instrument``
+to the name of the instrument file (with the ``.yml`` extension) e.g.
+``c = cellpy.get(rawfile, instrument="instrumentfile.yml")``.
+The default instrument file is defined in the cellpy configuration file
+(available through ``prms.Instruments.custom_instrument_definitions_file``)."""
 
 from cellpy.readers.instruments.base import TxtLoader
 from cellpy.readers.instruments.configurations import (

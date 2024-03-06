@@ -73,14 +73,16 @@ class ExampleData(Enum):
     ARBIN = "20160805_test001_45_cc_01.res"
     AUX_MULTI_X = "aux_multi_x.res"
     PEC_CSV = "pec.csv"
-    # CUSTOM = "custom.csv"
-    # CUSTOM_EXCEL = "custom.xlsx"
+    CUSTOM = "custom_data.csv"
+    CUSTOM_EXCEL = "custom_data.xlsx"
     # BIOL_MPR = "biol.mpr"
     MACCOR_TXT_TYPE_ONE = "maccor_one.txt"
     MACCOR_TXT_TYPE_TWO = "maccor_two.txt"
     MACCOR_TXT_TYPE_THREE = "maccor_three.txt"
     NEWARE_CSV = "neware_uio.csv"
     # --------------------------------
+    LOCAL_INSTRUMENT = "local_instrument.yml"
+    CUSTOM_INSTRUMENT = "custom_instrument.yml"
     # DB = "cellpy_db.sqlite"
     # SIMPLE_DB = "simple_db.xlsx"
     # STEPS = "steps.csv"
@@ -267,6 +269,27 @@ def pec_file_path() -> Path:
 def biologics_file_path() -> Path:
     """Get the path to an example biologics mpr file"""
     return _download_if_missing(ExampleData.BIOL_MPR.value)
+
+
+def custom_file_path() -> Path:
+    """Get the path to an example custom data csv file"""
+    return _download_if_missing(ExampleData.CUSTOM.value)
+
+
+def custom_xlsx_file_path() -> Path:
+    """Get the path to an example custom data Excel file"""
+    return _download_if_missing(ExampleData.CUSTOM_EXCEL.value)
+
+
+def custom_instrument_path() -> Path:
+    """Get the path to an example custom instrument definition yaml file"""
+    return _download_if_missing(ExampleData.CUSTOM_INSTRUMENT.value)
+
+
+def local_instrument_path() -> Path:
+    """Get the path to an example local-instrument definition yaml file
+    for loading csv-type files"""
+    return _download_if_missing(ExampleData.LOCAL_INSTRUMENT.value)
 
 
 if __name__ == "__main__":
