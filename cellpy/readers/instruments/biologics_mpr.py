@@ -62,10 +62,9 @@ MINIMUM_SELECTION = [
 
 def _read_modules(fileobj):
     module_magic = fileobj.read(len(b"MODULE"))
+    logging.debug(f"-")
     hdr_bytes = fileobj.read(hdr_dtype.itemsize)
-    hdr = np.fromstring(
-        hdr_bytes, dtype=hdr_dtype, count=1
-    )  # TODO: change to frombuffer
+    hdr = np.fromstring(hdr_bytes, dtype=hdr_dtype, count=1)
     hdr_dict = dict(((n, hdr[n][0]) for n in hdr_dtype.names))
     hdr_dict["offset"] = fileobj.tell()
     hdr_dict["data"] = fileobj.read(hdr_dict["length"])
@@ -242,14 +241,7 @@ class DataLoader(BaseLoader):
 
     def _parse_mpr_log_data(self):
         if not self.mpr_log:
-            print("no mpr_log")
-            # self.mpr_log["end_date"] = self.mpr_settings["start_date"]
-            # self.mpr_log["length2"] = 0
-            # self.mpr_log["end2"] = 0
-            # self.mpr_log["offset2"] = 0
-            # self.mpr_log["version2"] = 0
-            # self.mpr_log["data"] = None
-            # self.mpr_log["file"] = None
+            logging.debug("OBS! No mpr_log!")
 
         for value in bl_log_pos_dtype:
             # print(value)
@@ -279,11 +271,11 @@ class DataLoader(BaseLoader):
         mpr_settings["offset"] = settings_mod["offset"]
         mpr_settings["version"] = settings_mod["version"]
         mpr_settings["data"] = settings_mod["data"]
-        print(f"mpr_settings: {mpr_settings}")
         self.mpr_settings = mpr_settings
-        return None
 
     def _get_flag(self, flag_name):
+        # TODO: next, find out what where the Ns changes are and Ns
+        #  seems to be a method there to get the cycle number as well
         print(f"flag_name: {flag_name}")
         if flag_name in self.flags_dict:
             mask, dtype = self.flags_dict[flag_name]
@@ -313,9 +305,9 @@ class DataLoader(BaseLoader):
         stats_info = os.stat(filename)
         mpr_modules = []
 
-        mpr_log = None
-        mpr_data = None
-        mpr_settings = None
+        # VMP LOG: log module
+        # VMP data: data module
+        # VMP Set: settings module
         with open(filename, mode="rb") as file_obj:
             label = file_obj.read(len(mpr_label))
             self.logger.debug(f"label: {label}")
@@ -332,7 +324,7 @@ class DataLoader(BaseLoader):
                     self.logger.info(txt)
                     break
 
-        # ------------- set -----------------------------------
+        # ------------- settings -------------------------------
         settings_mod = None
         for m in mpr_modules:
             if m["shortname"].strip().decode() == "VMP Set":
@@ -357,7 +349,7 @@ class DataLoader(BaseLoader):
         n_columns = np.fromstring(data_module["data"][4:5], dtype="u1")
         n_columns = n_columns[0]
 
-        # print(f"data (points, cols): {n_data_points}, {n_columns}")
+        logging.debug(f"data (points, cols): {n_data_points}, {n_columns}")
 
         if data_version == 0:
             logging.debug("data version 0")
@@ -381,45 +373,27 @@ class DataLoader(BaseLoader):
 
         whats_left = remaining_headers.strip(b"\x00").decode("utf8")
         if whats_left:
-            self.logger.debug("UPS! you have some columns left")
+            self.logger.debug(" *** UPS! you have some columns left")
             self.logger.debug(whats_left)
 
         dtype_dict = OrderedDict()
         flags_dict = OrderedDict()
-        print(" -> column_types")
         for col in column_types:
-            print(f"{col=}")
             if col in bl_flags.keys():
                 flags_dict[bl_flags[col][0]] = bl_flags[col][1]
-
             dtype_dict[bl_dtypes[col][1]] = bl_dtypes[col][0]
-
         self.dtype_dict = dtype_dict
         self.flags_dict = flags_dict
 
         dtype = np.dtype(list(dtype_dict.items()))
-
         p = dtype.itemsize
         if not p == (len(main_data) / n_data_points):
             self.logger.info(
-                "WARNING! You have defined %i bytes, "
-                "but it seems it should be %i" % (p, len(main_data) / n_data_points)
+                f"WARNING! You have defined {p} bytes, but it seems it should be [{len(main_data) / n_data_points}]"
             )
         bulk = main_data
         bulk_data = np.fromstring(bulk, dtype=dtype)
-        print(" -> bulk_data")
-        print(bulk_data)
         mpr_data = pd.DataFrame(bulk_data)
-        print(" -> as dataframe")
-        print(mpr_data.T.head(30))
-        print(f"{self.flags_dict=}")
-        print(f"{mpr_data.columns=}")
-        # print(f"{self.flags_dict=}")
-        # print(mpr_data.columns)
-        # print(mpr_data["flags"].unique())
-        # print(mpr_data["flags2"].unique())
-        logging.debug(mpr_data.columns)
-        self.logger.debug(mpr_data.head())
 
         # ------------- log  -----------------------------------
         log_module = None
@@ -444,6 +418,10 @@ class DataLoader(BaseLoader):
         self.mpr_log = mpr_log
         self._parse_mpr_log_data()
         self.mpr_data = mpr_data
+        self.mpr_data.to_csv(
+            r"C:\scripting\cellpy_dev_resources\dev_data\biologic\out\intermediate.csv",
+            sep=";",
+        )
 
     def _rename_header(self, h_old, h_new):
         try:

@@ -26,17 +26,6 @@ bl_log_pos_dtype = {
     ("Acquisition started on", 585, 593, "<f8"),
 }
 
-
-# bl_flags = {
-#     1: ["mode", (np.uint8(0x03), np.uint8)],
-#     2: ["ox/red", (np.uint8(0x04), np.bool_)],
-#     3: ["error", (np.uint8(0x08), np.bool_)],
-#     21: ["control changes", (np.uint8(0x10), np.bool_)],
-#     31: ["Ns changes", (np.uint8(0x20), np.bool_)],
-#     65: ["counter inc.", (np.uint8(0x80), np.bool_)],
-#     131: ["Ns", (np.uint8(0x03), np.bool_)], # must check this
-# }
-
 bl_flags = {
     1: ["mode", (2, np.uint8)],
     2: ["ox/red", (4, np.bool_)],
@@ -44,7 +33,7 @@ bl_flags = {
     21: ["control changes", (16, np.bool_)],
     31: ["Ns changes", (32, np.bool_)],
     65: ["counter inc.", (128, np.bool_)],
-    131: ["Ns", (256, np.bool_)],  # must check this
+    131: ["Ns", (256, np.bool_)],  # step number
 }
 
 # colno: [dtype, ColHeader, unit, BL_name, cellpyname]
