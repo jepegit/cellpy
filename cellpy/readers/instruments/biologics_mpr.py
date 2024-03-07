@@ -1,7 +1,9 @@
-"""This file contains methods for importing Bio-Logic mpr-type files"""
+"""This file contains methods for importing Bio-Logic mpr-type files.
+This is based on the work by Chris Kerr
+(https://github.com/chatcannon/galvani/blob/master/galvani/BioLogic.py)
 
-# This is based on the work by Chris Kerr
-# (https://github.com/chatcannon/galvani/blob/master/galvani/BioLogic.py)
+"""
+
 import datetime
 import dateparser
 import shutil
