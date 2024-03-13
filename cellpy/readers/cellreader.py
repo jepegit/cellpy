@@ -5867,7 +5867,10 @@ class CellpyCell:
             ]
             for cn in column_names:
                 if not columns_to_keep.count(cn):
-                    summary.pop(cn)
+                    try:
+                        summary.pop(cn)
+                    except KeyError:
+                        logging.debug(f"could not pop {cn}")
 
         data.summary = summary
 

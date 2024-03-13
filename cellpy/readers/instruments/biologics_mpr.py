@@ -1,6 +1,9 @@
-"""This file contains methods for importing Bio-Logic mpr-type files"""
-# This is based on the work by Chris Kerr
-# (https://github.com/chatcannon/galvani/blob/master/galvani/BioLogic.py)
+"""This file contains methods for importing Bio-Logic mpr-type files.
+This is based on the work by Chris Kerr
+(https://github.com/chatcannon/galvani/blob/master/galvani/BioLogic.py)
+
+"""
+
 import datetime
 import dateparser
 import shutil
@@ -61,10 +64,9 @@ MINIMUM_SELECTION = [
 
 def _read_modules(fileobj):
     module_magic = fileobj.read(len(b"MODULE"))
+    logging.debug(f"-")
     hdr_bytes = fileobj.read(hdr_dtype.itemsize)
-    hdr = np.fromstring(
-        hdr_bytes, dtype=hdr_dtype, count=1
-    )  # TODO: change to frombuffer
+    hdr = np.fromstring(hdr_bytes, dtype=hdr_dtype, count=1)
     hdr_dict = dict(((n, hdr[n][0]) for n in hdr_dtype.names))
     hdr_dict["offset"] = fileobj.tell()
     hdr_dict["data"] = fileobj.read(hdr_dict["length"])
@@ -106,8 +108,8 @@ class DataLoader(BaseLoader):
         """
 
         raw_units = dict()
-        raw_units["current"] = "A"
-        raw_units["charge"] = "Ah"
+        raw_units["current"] = "mA"
+        raw_units["charge"] = "mAh"
         raw_units["mass"] = "g"
         raw_units["voltage"] = "V"
         return raw_units
@@ -178,8 +180,8 @@ class DataLoader(BaseLoader):
         Returns:
             new test
         """
-        print("bad steps: %s" % bad_steps)
-        print(f"kwargs: {kwargs}")
+        # print("bad steps: %s" % bad_steps)
+        # print(f"kwargs: {kwargs}")
         # self.name = file_name
 
         # creating temporary file and connection
@@ -215,7 +217,9 @@ class DataLoader(BaseLoader):
         self.mpr_log = None
         self.mpr_settings = None
 
+        # print(" loading mpr-data ".center(80, "-"))
         self._load_mpr_data(temp_filename, bad_steps)
+
         length_of_test = self.mpr_data.shape[0]
         logging.debug(f"length of test: {length_of_test}")
 
@@ -228,7 +232,7 @@ class DataLoader(BaseLoader):
             txt = "\nCould not find any summary (stats-file)!"
             txt += " (summary_df.empty = True)"
             txt += "\n -> issue make_summary(use_cellpy_stat_file=False)"
-            warnings.warn(txt)
+            logging.debug(txt)
 
         data.summary = summary_df
         data.raw = self.mpr_data
@@ -239,14 +243,7 @@ class DataLoader(BaseLoader):
 
     def _parse_mpr_log_data(self):
         if not self.mpr_log:
-            print("no mpr_log")
-            # self.mpr_log["end_date"] = self.mpr_settings["start_date"]
-            # self.mpr_log["length2"] = 0
-            # self.mpr_log["end2"] = 0
-            # self.mpr_log["offset2"] = 0
-            # self.mpr_log["version2"] = 0
-            # self.mpr_log["data"] = None
-            # self.mpr_log["file"] = None
+            logging.debug("OBS! No mpr_log!")
 
         for value in bl_log_pos_dtype:
             # print(value)
@@ -276,23 +273,23 @@ class DataLoader(BaseLoader):
         mpr_settings["offset"] = settings_mod["offset"]
         mpr_settings["version"] = settings_mod["version"]
         mpr_settings["data"] = settings_mod["data"]
-        # print(f"mpr_settings: {mpr_settings}")
         self.mpr_settings = mpr_settings
-        return None
 
     def _get_flag(self, flag_name):
-        print(f"flag_name: {flag_name}")
+        # TODO: next, find out what where the Ns changes are and Ns
+        #  seems to be a method there to get the cycle number as well
+        # print(f"flag_name: {flag_name}")
         if flag_name in self.flags_dict:
             mask, dtype = self.flags_dict[flag_name]
-            print(f"flag: {flag_name}, mask: {mask}, dtype: {dtype}")
+            # print(f"flag: {flag_name}, mask: {mask}, dtype: {dtype}")
             bin_str = f"{mask:010b}"
-            print(f"bin_str: {bin_str}")
-            print([int(x) for x in bin_str])
-            print(self.mpr_data["flags"])
+            # print(f"bin_str: {bin_str}")
+            # print([int(x) for x in bin_str])
+            # print(self.mpr_data["flags"])
             stuff = np.array(
                 self.mpr_data["flags"] & mask, dtype=dtype
             )  # need to fix this!
-            print(f"stuff: {stuff}")
+            # print(f"stuff: {stuff}")
             return np.array(
                 self.mpr_data["flags"] & mask, dtype=dtype
             )  # need to fix this!
@@ -310,9 +307,9 @@ class DataLoader(BaseLoader):
         stats_info = os.stat(filename)
         mpr_modules = []
 
-        mpr_log = None
-        mpr_data = None
-        mpr_settings = None
+        # VMP LOG: log module
+        # VMP data: data module
+        # VMP Set: settings module
         with open(filename, mode="rb") as file_obj:
             label = file_obj.read(len(mpr_label))
             self.logger.debug(f"label: {label}")
@@ -329,7 +326,7 @@ class DataLoader(BaseLoader):
                     self.logger.info(txt)
                     break
 
-        # ------------- set -----------------------------------
+        # ------------- settings -------------------------------
         settings_mod = None
         for m in mpr_modules:
             if m["shortname"].strip().decode() == "VMP Set":
@@ -354,7 +351,7 @@ class DataLoader(BaseLoader):
         n_columns = np.fromstring(data_module["data"][4:5], dtype="u1")
         n_columns = n_columns[0]
 
-        # print(f"data (points, cols): {n_data_points}, {n_columns}")
+        logging.debug(f"data (points, cols): {n_data_points}, {n_columns}")
 
         if data_version == 0:
             logging.debug("data version 0")
@@ -378,41 +375,30 @@ class DataLoader(BaseLoader):
 
         whats_left = remaining_headers.strip(b"\x00").decode("utf8")
         if whats_left:
-            self.logger.debug("UPS! you have some columns left")
+            self.logger.debug(" *** UPS! you have some columns left")
             self.logger.debug(whats_left)
 
+        self.cols = []
         dtype_dict = OrderedDict()
         flags_dict = OrderedDict()
-
         for col in column_types:
-            print(f"{col=}")
+            # print(f"col: {col} - {bl_dtypes[col]}")
+            self.cols.append(col)
             if col in bl_flags.keys():
                 flags_dict[bl_flags[col][0]] = bl_flags[col][1]
-
             dtype_dict[bl_dtypes[col][1]] = bl_dtypes[col][0]
-
         self.dtype_dict = dtype_dict
         self.flags_dict = flags_dict
 
         dtype = np.dtype(list(dtype_dict.items()))
-
         p = dtype.itemsize
         if not p == (len(main_data) / n_data_points):
             self.logger.info(
-                "WARNING! You have defined %i bytes, "
-                "but it seems it should be %i" % (p, len(main_data) / n_data_points)
+                f"WARNING! You have defined {p} bytes, but it seems it should be [{len(main_data) / n_data_points}]"
             )
         bulk = main_data
         bulk_data = np.fromstring(bulk, dtype=dtype)
-        print(bulk_data)
         mpr_data = pd.DataFrame(bulk_data)
-        print(mpr_data.head())
-        print(self.flags_dict)
-        print(mpr_data.columns)
-        print(mpr_data["flags"].unique())
-        print(mpr_data["flags2"].unique())
-        logging.debug(mpr_data.columns)
-        self.logger.debug(mpr_data.head())
 
         # ------------- log  -----------------------------------
         log_module = None
@@ -437,6 +423,28 @@ class DataLoader(BaseLoader):
         self.mpr_log = mpr_log
         self._parse_mpr_log_data()
         self.mpr_data = mpr_data
+        self._unpack_flags()
+
+        # # temporary export while developing
+        # temp = self.mpr_data.copy()
+        #
+        # temp.to_csv(
+        #     r"C:\scripting\cellpy_dev_resources\dev_data\biologic\out\intermediate.csv",
+        #     sep=";",
+        # )
+
+    def _unpack_flags(self):
+
+        df = self.mpr_data
+        flags_dict = self.flags_dict
+
+        for flag_name, (mask, dtype) in flags_dict.items():
+            if flag_name in df.columns:
+                continue
+            df[flag_name] = np.array(df["flags"] & mask, dtype=dtype)
+            if dtype == np.bool_:  # bool, but we prefer 0 and 1
+                df[flag_name] = df[flag_name].astype(int)
+        self.mpr_data = df
 
     def _rename_header(self, h_old, h_new):
         try:
@@ -444,94 +452,172 @@ class DataLoader(BaseLoader):
                 columns={h_new: self.cellpy_headers[h_old]}, inplace=True
             )
         except KeyError as e:
-            # warnings.warn(f"KeyError {e}")
             self.logger.info(f"Problem during conversion to cellpy-format ({e})")
 
-    def _generate_cycle_index(self):
+    def _generate_cycle_index(self, cellpy_header_lookup=None, b_header=None):
+        if "half_cycle" in self.mpr_data.columns:
+            self.mpr_data[self.cellpy_headers["cycle_index_txt"]] = (
+                np.floor(self.mpr_data["half_cycle"] + 1) / 2
+            ).astype(int) + 1
+            return
+
+        if "cycleno" in self.mpr_data.columns:
+            self.mpr_data[self.cellpy_headers["cycle_index_txt"]] = (
+                np.floor(self.mpr_data["cycleno"] + 1) / 2
+            ).astype(int) + 1
+            return
+
+        logging.debug("No Ns - must generate from flags")
         flag = "Ns changes"
+        self.mpr_data[self.cellpy_headers["cycle_index_txt"]] = 1
+
         n = self._get_flag(flag)
-        print(f"n: {n}")
         if n is None:
             return
-        self.mpr_data[self.cellpy_headers["cycle_index_txt"]] = 1
+
         ns_changes = self.mpr_data[n].index.values
         for i in ns_changes:
             self.mpr_data.loc[i:, self.cellpy_headers["cycle_index_txt"]] += 1
 
-    def _generate_datetime(self):
-        start_date = self.mpr_settings["start_date"]
-        # TODO: convert to datetime:
+    def _generate_datetime(self, cellpy_header_lookup=None, b_header=None):
+        if b_header is None:
+            b_header = self.cellpy_headers["test_time_txt"]
         start_datetime = self.mpr_log["Start"]
-        cellpy_header_txt = "datetime_txt"
-        date_format = "%Y-%m-%d %H:%M:%S"  # without microseconds
-        self.mpr_data[self.cellpy_headers[cellpy_header_txt]] = [
+        self.mpr_data[self.cellpy_headers[cellpy_header_lookup]] = [
             start_datetime + datetime.timedelta(seconds=n)
-            for n in self.mpr_data["time"].values
+            for n in self.mpr_data[b_header].values
         ]
-        # self.mpr_data[self.cellpy_headers[cellpy_header_txt]]
-        # .start_date.strftime(date_format)
-        # TODO: @jepe - currently storing as datetime object
-        # (while for arbindata it is stored as str)
 
-    def _generate_step_index(self):
-        # TODO: @jepe - check and optionally fix me
-        cellpy_header_txt = "step_index_txt"
-        biologics_header_txt = "flags2"
-        self._rename_header(cellpy_header_txt, biologics_header_txt)
-        self.mpr_data[self.cellpy_headers[cellpy_header_txt]] += 1
+    def _generate_step_index(self, cellpy_header_lookup=None, b_header=None):
 
-    def _generate_step_time(self):
-        k = self.cellpy_headers["step_time_txt"]
-        if k in self.mpr_data.columns:
-            self.mpr_data[self.cellpy_headers["step_time_txt"]] = np.nan
+        if b_header in self.mpr_data.columns:
+            self.mpr_data[self.cellpy_headers["step_index_txt"]] = (
+                self.mpr_data[b_header].astype(int) + 1
+            )
+            return
 
-    def _generate_sub_step_time(self):
-        # TODO: @jepe - fix me
-        k = self.cellpy_headers["sub_step_time_txt"]
-        if k in self.mpr_data.columns:
-            self.mpr_data[self.cellpy_headers["sub_step_time_txt"]] = np.nan
+        logging.debug("No Ns - must generate from flags")
+        self.mpr_data[self.cellpy_headers["step_index_txt"]] = 1
+        flag = "Ns changes"
 
-    def _generate_capacities(self):
-        cap_col = self.mpr_data.get("QChargeDischarge")
+        n = self._get_flag(flag)
+        if n is None:
+            return
+
+        ns_changes = self.mpr_data[n].index.values
+        for i in ns_changes:
+            self.mpr_data.loc[i:, self.cellpy_headers["step_index_txt"]] += 1
+
+    def _generate_step_time(self, cellpy_header_lookup=None, b_header=None):
+
+        self.mpr_data[self.cellpy_headers["step_time_txt"]] = np.nan
+        if b_header is not None:
+            logging.debug("Not implemented yet")
+            return
+
+        try:
+            g = self.mpr_data.groupby(self.cellpy_headers["step_index_txt"])
+            for name, group in g:
+                t = group[self.cellpy_headers["test_time_txt"]].values
+                t = t - t[0]
+                self.mpr_data.loc[group.index, self.cellpy_headers["step_time_txt"]] = t
+
+        except Exception as e:
+            logging.debug(f"could not group by step_index_txt: {e}")
+            return
+
+    def _generate_capacities(self, cellpy_header_lookup=None, b_header=None):
+        if b_header is None:
+            b_header = "QChargeDischarge"
+
+        cap_col = self.mpr_data[b_header]
         if cap_col is None:
             return
-        k = self.cellpy_headers["charge_capacity_txt"]
-        if k in self.mpr_data.columns:
-            self.mpr_data[self.cellpy_headers["discharge_capacity_txt"]] = [
-                0.0 if x < 0 else x for x in cap_col
-            ]
-            self.mpr_data[self.cellpy_headers["charge_capacity_txt"]] = [
-                0.0 if x >= 0 else x for x in cap_col
-            ]
+        self.mpr_data[self.cellpy_headers["discharge_capacity_txt"]] = [
+            0.0 if x < 0 else x for x in cap_col
+        ]
+        self.mpr_data[self.cellpy_headers["charge_capacity_txt"]] = [
+            0.0 if x >= 0 else -x for x in cap_col
+        ]
 
     def _rename_headers(self):
         # should ideally use the info from bl_dtypes, will do that later
 
-        self.mpr_data[self.cellpy_headers["internal_resistance_txt"]] = np.nan
+        protected = [
+            "datetime_txt",
+            "step_time_txt",
+            "step_index_txt",
+            "cycle_index_txt",
+            "step_time_txt",
+            "sub_step_time_txt",
+            "charge_capacity_txt",
+            "discharge_capacity_txt",
+            "data_point_txt",
+            # "internal_resistance_txt",
+        ]
+
+        # self.mpr_data[self.cellpy_headers["internal_resistance_txt"]] = np.nan
         self.mpr_data[self.cellpy_headers["data_point_txt"]] = np.arange(
             1, self.mpr_data.shape[0] + 1, 1
         )
-        self._generate_datetime()
-        self._generate_cycle_index()
 
-        self._generate_step_time()
-        self._generate_sub_step_time()
-        self._generate_step_index()
-        self._generate_capacities()
+        cycle_index_made = False
+        step_index_made = False
+        sub_step_index_made = False
+        step_time_made = False
+        sub_step_time_made = False
+        capacity_made = False
+        datetime_made = False
 
-        # simple renaming of column headers for the rest
-        self._rename_header("frequency_txt", "freq")
-        self._rename_header("voltage_txt", "Ewe")
-        self._rename_header("current_txt", "I")
-        self._rename_header("aci_phase_angle_txt", "phaseZ")
-        self._rename_header("amplitude_txt", "absZ")
-        self._rename_header("ref_voltage_txt", "Ece")
-        self._rename_header("ref_aci_phase_angle_txt", "phaseZce")
-        self._rename_header("test_time_txt", "time")
+        for key in self.cols:
+            cellpy_header_lookup = bl_dtypes[key][-1]
+            b_header = bl_dtypes[key][1]
 
-        self.mpr_data[self.cellpy_headers["sub_step_index_txt"]] = self.mpr_data[
-            self.cellpy_headers["step_index_txt"]
-        ]
+            if cellpy_header_lookup:
+
+                if cellpy_header_lookup not in protected:
+                    self._rename_header(cellpy_header_lookup, b_header)
+
+                if cellpy_header_lookup == "charge_capacity_txt":
+                    self._generate_capacities(cellpy_header_lookup, b_header)
+                    capacity_made = True
+
+                if cellpy_header_lookup == "datetime_txt":
+                    self._generate_datetime(cellpy_header_lookup, b_header)
+                    datetime_made = True
+
+                if cellpy_header_lookup == "cycle_index_txt":
+                    self._generate_cycle_index(cellpy_header_lookup, b_header)
+                    cycle_index_made = True
+
+                if cellpy_header_lookup == "step_index_txt":
+                    self._generate_step_index(cellpy_header_lookup, b_header)
+                    step_index_made = True
+
+                if cellpy_header_lookup == "step_time_txt":
+                    self._generate_step_time(cellpy_header_lookup, b_header)
+                    step_time_made = True
+
+        if not capacity_made:
+            self._generate_capacities()
+        if not datetime_made:
+            self._generate_datetime("datetime_txt")
+        if not cycle_index_made:
+            self._generate_cycle_index()
+        if not step_index_made:
+            self._generate_step_index()
+
+        if not step_time_made:
+            self._generate_step_time()
+
+        if not sub_step_time_made:
+            self.mpr_data[self.cellpy_headers["sub_step_time_txt"]] = self.mpr_data[
+                self.cellpy_headers["step_time_txt"]
+            ]
+        if not sub_step_index_made:
+            self.mpr_data[self.cellpy_headers["sub_step_index_txt"]] = self.mpr_data[
+                self.cellpy_headers["step_index_txt"]
+            ]
 
     def _create_summary_data(self):
         # Summary data should contain datapoint-number
@@ -542,7 +628,7 @@ class DataLoader(BaseLoader):
         mpr_settings = self.mpr_settings
         # TODO: @jepe - finalise making summary of mpr-files
         # after figuring out steps etc
-        warnings.warn(
+        logging.debug(
             "Creating summary data for biologics mpr-files" " is not implemented yet"
         )
         self.logger.info(mpr_settings)
@@ -575,86 +661,78 @@ def _main():
     # This is just for testing
     import logging
     import os
+    import pathlib
     import sys
 
+    import pandas as pd
+
+    import cellpy
     from cellpy import cellreader, log
 
     # -------- defining overall path-names etc ----------
-    current_file_path = os.path.dirname(os.path.realpath(__file__))
-    # relative_test_data_dir = "../cellpy/data_ex"
-    relative_test_data_dir = "../../../testdata"
-    relative_out_data_dir = "../../../dev_data"
-    test_data_dir = os.path.abspath(
-        os.path.join(current_file_path, relative_test_data_dir)
-    )
-    test_data_dir_out = os.path.abspath(
-        os.path.join(current_file_path, relative_out_data_dir)
-    )
-    test_data_dir_raw = os.path.join(test_data_dir, "data")
-    if not os.path.isdir(test_data_dir_raw):
-        print(f"Could not find {test_data_dir_raw}")
-        sys.exit(-23)
-    if not os.path.isdir(test_data_dir_out):
-        sys.exit(-24)
+    # galvanostatic with steps (but only one cycle): Bec_03_02_formation_20170314_C02.mpr
+    # with several cycles (at least one) [VSP]: Mel495_GEIS_cycle4_all_temps.mpr
 
-    if not os.path.isdir(os.path.join(test_data_dir_out, "out")):
-        os.mkdir(os.path.join(test_data_dir_out, "out"))
-    test_data_dir_out = os.path.join(test_data_dir_out, "out")
+    mpr_file_path = pathlib.Path(r"C:\scripting\cellpy_dev_resources\dev_data\biologic")
+    mpr_file = mpr_file_path / "Bec_03_02_formation_20170314_C02.mpr"
 
-    test_raw_file = "biol.mpr"
-    test_raw_file_full = os.path.join(test_data_dir_raw, test_raw_file)
+    out_dir = pathlib.Path(r"C:\scripting\cellpy_dev_resources\dev_data\biologic\out")
 
-    test_data_dir_cellpy = os.path.join(test_data_dir, "hdf5")
-    test_cellpy_file = "geis.h5"
-    test_cellpy_file_tmp = "tmpfile.h5"
-    test_cellpy_file_full = os.path.join(test_data_dir_cellpy, test_cellpy_file)
-    test_cellpy_file_tmp_full = os.path.join(test_data_dir_cellpy, test_cellpy_file_tmp)
-
-    raw_file_name = test_raw_file_full
     print("\n======================mpr-dev===========================")
-    print(f"Test-file: {raw_file_name}")
+    print(f"Test-file: {mpr_file}")
+    log.setup_logging(default_level="DEBUG")
+    instrument = "biologics_mpr"
+
+    c = cellpy.get(mpr_file, instrument=instrument, mass=0.1, area=0.785)
+    c.to_csv(out_dir, sep=";")
+
+
+def _main0():
+    # This is just for testing
+    import logging
+    import os
+    import pathlib
+    import sys
+
+    import pandas as pd
+
+    import cellpy
+    from cellpy import cellreader, log
+
+    # -------- defining overall path-names etc ----------
+    # galvanostatic with steps (but only one cycle): Bec_03_02_formation_20170314_C02.mpr
+    # with several cycles (at least one) [VSP]: Mel495_GEIS_cycle4_all_temps.mpr
+
+    mpr_file_path = pathlib.Path(r"C:\scripting\cellpy_dev_resources\dev_data\biologic")
+    mpr_file = mpr_file_path / "Mel495_GEIS_cycle4_all_temps.mpr"
+
+    out_dir = pathlib.Path(r"C:\scripting\cellpy_dev_resources\dev_data\biologic\out")
+
+    print("\n======================mpr-dev===========================")
+    print(f"Test-file: {mpr_file}")
     log.setup_logging(default_level="DEBUG")
     instrument = "biologics_mpr"
     cellpy_data_instance = cellreader.CellpyCell()
     cellpy_data_instance.set_instrument(instrument=instrument)
     print("starting to load the file")
-    cellpy_data_instance.from_raw(raw_file_name)
+    cellpy_data_instance.from_raw(mpr_file, mass=0.1, area=0.785)
     print("printing cellpy instance:")
-    print(cellpy_data_instance)
+    raw = cellpy_data_instance.data.raw
+    print(raw.head())
+    out_name = f"{mpr_file.stem}_cellpy.csv"
+    raw.to_csv(out_dir / out_name, sep=";")
 
     print("---make step table")
     cellpy_data_instance.make_step_table()
+    steps = cellpy_data_instance.data.steps
+    out_name = f"{mpr_file.stem}_cellpy_steps.csv"
+    steps.to_csv(out_dir / out_name, sep=";")
 
     print("---make summary")
     cellpy_data_instance.make_summary()
-
-    print("---saving to csv")
-    try:
-        temp_dir = tempfile.mkdtemp()
-        cellpy_data_instance.to_csv(datadir=temp_dir)
-        cellpy_data_instance.to_csv(datadir=test_data_dir_out)
-        print("---saving to hdf5")
-        print("NOT YET")
-    finally:
-        shutil.rmtree(temp_dir)
-
-    # dtype = dtype([('flags', 'u1'), ('time/s', '<f8'), ('Ewe/V', '<f4'), ('dQ/mA.h', '<f8'),
-    #        ('I/mA', '<f4'), ('Ece/V', '<f4'), ('(Q-Qo)/mA.h', '<f8'), ('20', '<f8'),
-    #        ('freq/Hz', '<f4'), ('Phase(Z)/deg', '<f4'), ('|Z|/Ohm', '<f4'),
-    #        ('I Range', '<u2'), ('74', '<f8'), ('96', '<f8'), ('98', '<f8'),
-    #        ('99', '<f8'), ('100', '<f8'), ('101', '<f8'), ('123', '<f8'),
-    #        ('124', '<f8'), ('Capacitance charge/µF', '<f8'), ('Capacitance discharge/µF', '<f8'),
-    #        ('Ns', '<u2'), ('430', '<f8'), ('431', '<f8'), ('432', '<f8'), ('433', '<f8'),
-    #        ('Q charge/discharge/mA.h', '<f8'), ('half cycle', '<u4'), ('469', '<f8'),
-    #        ('471', '<f8')])
-    #
-    # flags = OrderedDict(
-    #     [
-    #         ('mode', (3, <class 'numpy.uint8'>)),('ox/red', (4, <class 'numpy.bool_'>)),
-    #         ('error', (8, <class 'numpy.bool_'>)), ('control changes', (16, <class 'numpy.bool_'>)),
-    #         ('Ns changes', (32, <class 'numpy.bool_'>)), ('counter inc.', (128, <class 'numpy.bool_'>))]
-    # )
-    # flags2 = OrderedDict()
+    summary = cellpy_data_instance.data.summary
+    out_name = f"{mpr_file.stem}_cellpy_summary.csv"
+    summary.to_csv(out_dir / out_name, sep=";")
 
 
 if __name__ == "__main__":

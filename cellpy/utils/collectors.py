@@ -391,7 +391,6 @@ class BatchCollector:
             for k, v in plotter_arguments.items():
                 if v is not None:
                     elevated_plotter_arguments[k] = v
-
             self._update_arguments(
                 None, elevated_plotter_arguments, set_as_defaults=True
             )
@@ -704,7 +703,7 @@ class BatchSummaryCollector(BatchCollector):
         key_index_bounds=None,
         backend: str = "plotly",
         title: str = None,
-        points: bool = None,
+        markers: bool = None,
         line: bool = None,
         width: int = None,
         height: int = None,
@@ -747,7 +746,7 @@ class BatchSummaryCollector(BatchCollector):
                 key_index_bounds=[0, 2], the common label will be "cell_01". Or if they are called
                 "20230101_cell_01_01_01" and "20230101_cell_01_01_02" and you set key_index_bounds=[1, 3],
                 the common label will be "cell_01_01" (elevated data collector argument).
-            points (bool): plot points if True (elevated plotter argument).
+            markers (bool): plot points if True (elevated plotter argument).
             line (bool): plot line if True (elevated plotter argument).
             width: width of plot (elevated plotter argument).
             height: height of plot (elevated plotter argument).
@@ -781,7 +780,7 @@ class BatchSummaryCollector(BatchCollector):
         elevated_plotter_arguments = {
             "fig_title": fig_title,
             "title": title,
-            "points": points,
+            "markers": markers,
             "line": line,
             "width": width,
             "height": height,
@@ -1679,11 +1678,11 @@ def sequence_plotter(
                 start, end = palette_range
             unique_cycle_numbers = curves[z].unique()
             number_of_colors = len(unique_cycle_numbers)
-
-            selected_colors = px.colors.sample_colorscale(
-                palette_continuous, number_of_colors, low=start, high=end
-            )
-            plotly_arguments["color_discrete_sequence"] = selected_colors
+            if number_of_colors > 1:
+                selected_colors = px.colors.sample_colorscale(
+                    palette_continuous, number_of_colors, low=start, high=end
+                )
+                plotly_arguments["color_discrete_sequence"] = selected_colors
         elif method == "fig_pr_cycle":
             if palette_discrete is not None:
                 # plotly_arguments["color_discrete_sequence"] = getattr(px.colors.sequential, palette_discrete)
