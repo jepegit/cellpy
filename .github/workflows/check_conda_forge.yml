@@ -34,5 +34,6 @@ jobs:
 
       - name: check cellpy
         run: |
+          conda activate cellpy_conda
           cellpy setup
           
