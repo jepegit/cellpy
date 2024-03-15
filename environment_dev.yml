@@ -55,6 +55,7 @@ dependencies:
     - sphinx_rtd_theme
     - nbmake
     - requests
+    - jupyterlab
     - pip:
         - pipdeptree
         - pydeps

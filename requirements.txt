@@ -22,5 +22,12 @@ python-dotenv
 fabric
 dateparser
 ipykernel
+jupyterlab
 rich
 requests
+plotly
+ipython
+ipywidgets
+ipykernel
+kaleido
+jinja2_time
