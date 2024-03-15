@@ -749,7 +749,8 @@ def summary_plotting_engine(**kwargs):
                 experiment=experiment, farms=farms, **kwargs
             )
             farms.append(canvas)
-            canvas.show()
+            if backend == "plotly":
+                canvas.show()
 
     return farms, barn
 

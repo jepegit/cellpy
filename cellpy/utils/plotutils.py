@@ -456,18 +456,25 @@ def raw_plot(
     x_label=None,
     title=None,
     interactive=True,
+    plot_type="voltage-current",
+    double_y=True,
+    return_matplotlib_figure=False,
     **kwargs,
 ):
     """Plot raw data.
 
     Args:
         cell: cellpy object
-        y: y-axis column
-        y_label: label for y-axis
-        x: x-axis column
-        x_label: label for x-axis
-        title: title of the plot
-        interactive: use interactive plotting
+        y (str or list): y-axis column
+        y_label (str or list): label for y-axis
+        x (str): x-axis column
+        x_label (str): label for x-axis
+        title (str): title of the plot
+        interactive (bool): use interactive plotting
+        plot_type (str): type of plot (defaults to "voltage-current") (overrides given y if y is not None),
+          currently only "voltage-current" is supported.
+        double_y (bool): use double y-axis (only for matplotlib and when plot_type is used)
+        return_matplotlib_figure (bool): return a matplotlib figure (only for matplotlib)
         **kwargs: additional parameters for the plotting backend
 
     Returns:
@@ -475,10 +482,32 @@ def raw_plot(
 
     """
 
-    raw = cell.data.raw.copy()
+    _set_individual_y_labels = False
 
-    if y is None:
-        y, y_label = ("voltage", f"Voltage ({cell.data.raw_units.voltage})")
+    raw = cell.data.raw.copy()
+    if y is not None:
+        if y_label is None:
+            y_label = y
+        y = [y]
+        y_label = [y_label]
+
+    elif plot_type is not None:
+        # special pre-defined plot types
+        if plot_type == "voltage-current":
+            y1 = _hdr_raw["voltage_txt"]
+            y1_label = f"Voltage ({cell.data.raw_units.voltage})"
+            y2 = _hdr_raw["current_txt"]
+            y2_label = f"Current ({cell.data.raw_units.current})"
+            y = [y1, y2]
+            y_label = [y1_label, y2_label]
+        else:
+            warnings.warn(f"Plot type {plot_type} not supported")
+            return None
+    else:
+        # default to voltage if y is not given
+        y = [_hdr_raw["voltage_txt"]]
+        y_label = [f"Voltage ({cell.data.raw_units.voltage})"]
+
     if x is None:
         x, x_label = ("test_time_hrs", "Time (hours)")
 
@@ -489,29 +518,97 @@ def raw_plot(
         raw["test_time_hrs"] = raw[_hdr_raw["test_time_txt"]] / 3600
 
     if plotly_available and interactive:
-        import plotly.express as px
-
         title = f"<b>{title}</b>"
-        if x_label or y_label:
-            labels = {}
-            if x_label:
-                labels[x] = x_label
-            if y_label:
-                labels[y] = y_label
+        if len(y) == 1:
+            # single plot
+            import plotly.express as px
+
+            if x_label or y_label:
+                labels = {}
+                if x_label:
+                    labels[x] = x_label
+                if y_label:
+                    labels[y[0]] = y_label[0]
+            else:
+                labels = None
+            fig = px.line(raw, x=x, y=y[0], title=title, labels=labels, **kwargs)
+
         else:
-            labels = None
-        fig = px.line(raw, x=x, y=y, title=title, labels=labels, **kwargs)
+            # double plot
+            from plotly.subplots import make_subplots
+            import plotly.graph_objects as go
+
+            fig = make_subplots(
+                rows=2,
+                cols=1,
+                shared_xaxes=True,
+                vertical_spacing=0.02,
+                x_title=x_label,
+            )
+            x_values = raw[x]
+            fig.add_trace(
+                go.Scatter(x=x_values, y=raw[y[0]], name=y_label[0]),
+                row=1,
+                col=1,
+            )
+            fig.add_trace(
+                go.Scatter(x=x_values, y=raw[y[1]], name=y_label[1]),
+                row=2,
+                col=1,
+            )
+
+            fig.update_layout(height=600, title_text=title)
+            if _set_individual_y_labels:
+                fig.update_yaxes(title_text=y_label[0], row=1, col=1)
+                fig.update_yaxes(title_text=y_label[1], row=2, col=1)
 
         return fig
 
     # default to a simple matplotlib figure
-    fig, ax = plt.subplots()
-    ax.plot(raw[x], raw[y])
-    ax.set_xlabel(x_label)
-    ax.set_ylabel(y_label)
-    ax.set_title(title)
+    xlim = kwargs.get("xlim")
+    if len(y) == 1:
+        y = y[0]
+        y_label = y_label[0]
+        fig, ax = plt.subplots()
+        ax.plot(raw[x], raw[y])
+        ax.set_xlabel(x_label)
+        ax.set_ylabel(y_label)
+        ax.set_title(title)
+        ax.set_xlim(xlim)
+        if return_matplotlib_figure:
+            return fig
+        return
 
-    return ax
+    if not double_y:
+        fig, (ax_v, ax_c) = plt.subplots(nrows=2, ncols=1, figsize=(20, 8), sharex=True)
+        ax_v.plot(raw[x], raw[y[0]])
+        ax_c.plot(raw[x], raw[y[1]])
+        ax_v.set_ylabel(y_label[0])
+        ax_c.set_ylabel(y_label[1])
+        ax_c.set_xlabel(x_label)
+        ax_v.set_title(title)
+        ax_v.set_xlim(xlim)
+    else:
+        fig, ax_v = plt.subplots(figsize=(12, 4))
+
+        color = "tab:red"
+        ax_v.set_xlabel(x_label)
+        ax_v.set_ylabel(y_label[0], color=color)
+        ax_v.plot(raw[x], raw[y[0]], label=y_label[0], color=color)
+        ax_v.tick_params(axis="y", labelcolor=color)
+
+        ax_c = ax_v.twinx()
+
+        color = "tab:blue"
+        ax_c.set_ylabel(y_label[1], color=color)
+        ax_c.plot(raw[x], raw[y[1]], label=y_label[1], color=color)
+        ax_c.tick_params(axis="y", labelcolor=color)
+        ax_v.set_xlim(xlim)
+
+        fig.tight_layout()
+    if return_matplotlib_figure:
+        return fig
+    return
 
 
 def cycle_info_plot(
