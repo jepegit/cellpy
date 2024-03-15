@@ -1,0 +1,39 @@
+name: Check if installing from conda-forge works
+on:
+  workflow_dispatch:
+
+jobs:
+  Install-miniconda:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -l {0}
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: conda-incubator/setup-miniconda@v3
+        with:
+          auto-update-conda: true
+          activate-environment: cellpy_dev
+          environment-file: github_actions_environment.yml
+          python-version: ${{ matrix.python-version }}
+
+      - name: Conda info
+        run: conda info
+
+      - name: Conda list
+        run: conda list
+
+      - name: create conda environment
+        run: |
+          conda create -n cellpy_conda
+          conda activate cellpy_conda
+          conda install -c conda-forge cellpy
+
+      - name: check cellpy
+        run: |
+          conda activate cellpy_conda
+          cellpy setup -s
+          

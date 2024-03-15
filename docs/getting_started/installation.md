@@ -41,7 +41,7 @@ on windows (e.g. `pytables`) and when using pip, you have to take care of this y
 
 :::{hint}
 You can take care of most of the dependencies by creating a virtual environment
-based on the provided [environment.yml](https://github.com/jepegit/cellpy/blob/master/environment.yml) file.
+based on the provided [environment.yml](https://github.com/jepegit/cellpy/blob/master/environment.yml) file, or install using the [requirements.txt](https://github.com/jepegit/cellpy/blob/master/requirements.txt) file.
 :::
 
 (cellpy_install_linux)=
@@ -141,8 +141,9 @@ contains the setup.py file)
 
 `cellpy` relies on a number of other python package and these need
 to be installed. Most of these packages are included when installing
-`cellpy` using conda or when creating the environment based on the
-[environment.yml](https://github.com/jepegit/cellpy/blob/master/environment.yml) file.
+`cellpy` using conda or when creating the environment based on
+[environment.yml](https://github.com/jepegit/cellpy/blob/master/environment.yml),
+or the use of [requirements.txt](https://github.com/jepegit/cellpy/blob/master/requirements.txt).
 
 Here is an additional overview on the required dependencies:
 
@@ -169,7 +170,7 @@ conda install -c conda-forge lmfit
 ```
 
 
-- `jina2-time` and `git` is required for using templating system in `cellpy`.
+- `jina2-time` and `git` are required for using templating system in `cellpy`.
    On Windows you can obtain git from [git-scm](https://git-scm.com/) or
    [git for windows](https://gitforwindows.org/). On Linux, you can install git using your package manager.
    `jinja2-time` is a jinja2 extension for dates and times. You can install it using conda:
@@ -178,10 +179,10 @@ conda install -c conda-forge lmfit
 conda install -c conda-forge jinja2-time git
 ```
 
-- `seaborn` and `plotly`: plotting libraries used in several of our example notebooks.
-- `jupyter`: used for tutorial notebooks and in general very useful tool
+- `jupyter`: used in tutorial notebooks and in general very useful tool
   for working with and sharing your `cellpy` results.
-- `kaleido`: used for exporting plotly figures to static images.
+- `seaborn` and `plotly`: plotting libraries used in several of our example notebooks.
+- `kaleido`: used for exporting plotly figures to static images (and used in example notebooks.)
 
 ```console
 conda install -c conda-forge seaborn plotly jupyter python-kaleido==0.1.*
@@ -202,7 +203,7 @@ For more details, have a look at the documentation of these packages.
 :::{admonition} For Windows users
 .res files from Arbin testers are actually in a Microsoft Access format.
 If you do not have one of the most recent Office  versions, you might not be allowed to install a driver
-of different bit than your office version is using (the installers can be found [here](https://www.microsoft.com/en-US/download/details.aspx?id=13255)).
+of different bit than your office version is using (the installers can be found [here](https://www.microsoft.com/en-us/download/details.aspx?id=54920)).
 Also remark that the driver needs to be of the same bit as your Python
 (so, if you are using 32 bit Python, you will need the 32 bit driver).
 :::
