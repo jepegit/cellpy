@@ -42,6 +42,7 @@ on windows (e.g. `pytables`) and when using pip, you have to take care of this y
 :::{hint}
 You can take care of most of the dependencies by creating a virtual environment
 based on the provided [environment.yml](https://github.com/jepegit/cellpy/blob/master/environment.yml) file, or install using the [requirements.txt](https://github.com/jepegit/cellpy/blob/master/requirements.txt) file.
+For windows, make also sure to have the correct drivers for the .res files (see {ref}`note_windows`).
 :::
 
 (cellpy_install_linux)=
@@ -185,7 +186,7 @@ conda install -c conda-forge jinja2-time git
 - `kaleido`: used for exporting plotly figures to static images (and used in example notebooks.)
 
 ```console
-conda install -c conda-forge seaborn plotly jupyter python-kaleido==0.1.*
+conda install -c conda-forge seaborn plotly jupyter python-kaleido
 ```
 
 :::{note}
@@ -193,6 +194,17 @@ The original maintainer for the `kaleido` package seems to have stopped maintain
 recommended to use the version `0.1.*` until the situation is resolved (at least that version works
 on our Windows machines at the moment of writing this, while the newer versions appeared to be
 a bit more moody).
+:::
+
+:::{note}
+When `plotly` uses the `kaleido` package to export figures (to for example .png or .svg), the `kaleido` python
+wrapper will search for the `kaleido` binary in the system path. If you have installed `kaleido` using conda,
+you might have to add the path to the `kaleido` binary to your system path. For example, if you are using
+conda on posix, you might find the path to the `kaleido` binary by running `which kaleido` in the terminal.
+Then you can  add this path to your system path by running `export PATH=$PATH:/path/to/kaleido` in the terminal.
+After this, `plotly` should be able to find the `kaleido` binary. Remark that if you are running in a
+`jupyterhub` session, the system path might not be the same as your user path, and you might have to
+add the path to the `kaleido` binary in the `jupyterhub` configuration file.
 :::
 
 For more details, have a look at the documentation of these packages.
