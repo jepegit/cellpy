@@ -470,6 +470,12 @@ class BatchCollector:
         cellpy_units = c_units[0]
         self.units = dict(raw_units=raw_units, cellpy_units=cellpy_units)
 
+    def collect(self, **kwargs):
+        """Collect data."""
+        self.data = self.data_collector(
+            self.b, **self.data_collector_arguments, **kwargs
+        )
+
     def update(
         self,
         data_collector_arguments: dict = None,
@@ -496,7 +502,7 @@ class BatchCollector:
             self._update_arguments(data_collector_arguments, plotter_arguments)
         if update_data or self.data is None:
             try:
-                self.data = self.data_collector(self.b, **self.data_collector_arguments)
+                self.collect()
             except TypeError as e:
                 print("Type error:", e)
                 print("Registered data_collector_arguments:")
@@ -2144,9 +2150,14 @@ def summary_plotter(collected_curves, cycles_to_plot=None, backend="plotly", **k
     )
     if backend == "plotly":
         fig.update_yaxes(matches=None, showticklabels=True)
-    elif backend == "seaborn":
+        return fig
+    if backend == "seaborn":
         print("using seaborn (experimental feature)")
-    return fig
+    elif backend == "matplotlib":
+        print("using matplotlib (experimental feature)")
+    elif backend == "bokeh":
+        print("using bokeh (experimental feature)")
+        return fig
 
 
 def cycles_plotter(
