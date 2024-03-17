@@ -40,6 +40,13 @@ try:
 except ImportError:
     print("WARNING: seaborn not installed")
 
+try:
+    import matplotlib.pyplot as plt
+
+    supported_backends.append("matplotlib")
+except ImportError:
+    print("WARNING: matplotlib not installed")
+
 
 DEFAULT_CYCLES = [1, 10, 20]
 CELLPY_MINIMUM_VERSION = "1.0.0"
@@ -363,13 +370,16 @@ class BatchCollector:
         name = "_".join(names)
         return name
 
-    def render(self):
+    def render(self, **kwargs):
+        """Render the figure."""
+
+        kwargs = {**self.plotter_arguments, **kwargs}
         self.figure = self.plotter(
             self.data,
             backend=self.backend,
             journal=self.b.journal,
             units=self.units,
-            **self.plotter_arguments,
+            **kwargs,
         )
 
     def _parse_elevated_arguments(
@@ -532,7 +542,13 @@ class BatchCollector:
     def show(self, **kwargs):
         """Show the figure.
 
-        Notes:
+        Note:
+            If you are working in a Jupyter notebook and using a "matplotlib"-type backend,
+            the figure will most likely be shown automatically when the figure is rendered.
+            You should not need to use this method in that case, unless you want to
+            show the figure one extra time.
+
+        Note:
             The ``show`` method returns the ``figure`` object and  if the ``backend`` used
             does not provide automatic rendering in the editor / running environment you
             are using, you might have to issue the rendering yourself. For example, if you
@@ -549,6 +565,8 @@ class BatchCollector:
         if not self._figure_valid():
             return
 
+        skip_render_for_seaborn = kwargs.pop("skip_render_for_seaborn", False)
+
         print(f"figure name: {self.name}")
         if kwargs:
             logging.info(f"updating figure with {kwargs}")
@@ -556,7 +574,14 @@ class BatchCollector:
             self.render()
 
         if self.backend == "seaborn":
-            return self.figure.figure
+            if not skip_render_for_seaborn:
+                return self.figure.figure
+            print(
+                "WARNING: skipping rendering for seaborn, assuming it is already rendered during the plotter call"
+            )
+            print(
+                "WARNING: if you want to show the figure, provide `skip_render_for_seaborn=False` as keyword argument"
+            )
         else:
             return self.figure
 
@@ -1570,7 +1595,6 @@ def sequence_plotter(
 
     plotly_arguments = dict()
     seaborn_arguments = dict()
-    seaborn_post_plot_operations = dict()
 
     if method == "film":
         labels = {
@@ -1593,14 +1617,14 @@ def sequence_plotter(
         }
         plotly_arguments = dict(x=x, y=y, labels=labels, markers=markers)
         seaborn_arguments = dict(x=x, y=y, markers=markers)
-        seaborn_post_plot_operations["labels"] = labels
+        seaborn_arguments["labels"] = labels
 
         if g == "variable" and len(collected_curves[g].unique()) > 1:
             plotly_arguments["facet_row"] = g
             seaborn_arguments["row"] = g
         if standard_deviation:
             plotly_arguments["error_y"] = standard_deviation
-            seaborn_post_plot_operations["error_y"] = standard_deviation
+            seaborn_arguments["error_y"] = standard_deviation
 
     else:
         labels = {
@@ -1608,6 +1632,7 @@ def sequence_plotter(
             f"{y}": f"{y_label} ({y_unit})",
         }
         plotly_arguments = dict(x=x, y=y, labels=labels, facet_col_wrap=cols)
+        seaborn_arguments = dict(x=x, y=y, labels=labels, row=g, col=subgroup)
 
     if method in ["fig_pr_cell", "film"]:
         group_cells = False
@@ -1814,102 +1839,47 @@ def sequence_plotter(
         return fig
 
     elif backend == "seaborn":
-        # {'x': 'cycle', 'y': 'mean', 'labels': {'cycle': 'Cycle (n.)'}, 'markers': False, 'error_y': 'std'}
-        sns.set_theme(style="darkgrid")
-        # seaborn_arguments = dict(
-        #     data=curves,
-        #     x="cycle",
-        #     y="mean",
-        #     hue="cell",
-        #     size=None,
-        #     style=None,
-        #     units=None,
-        #     row=None,
-        #     col=None,
-        #     col_wrap=None,
-        #     row_order=None,
-        #     col_order=None,
-        #     palette="Set1",
-        #     hue_order=None,
-        #     hue_norm=None,
-        #     sizes=None,
-        #     size_order=None,
-        #     size_norm=None,
-        #     markers=True,
-        #     dashes=None,
-        #     style_order=None,
-        #     legend="auto",
-        #     kind="line",
-        #     height=3,
-        #     aspect=3,
-        #     facet_kws=None,
-        #     linewidth=2.0,
-        #     **kwargs,
-        # )
+        if method != "summary":
+            print("WARNING: seaborn only supports summary plots")
 
-        if not seaborn_arguments.get("marker"):
-            seaborn_arguments["dashes"] = False
-        seaborn_arguments["kind"] = "line"
-        seaborn_arguments["height"] = 3
+        sns.set_theme(style="darkgrid")
+        seaborn_arguments["height"] = 4
         seaborn_arguments["aspect"] = 3
         seaborn_arguments["linewidth"] = 2.0
-        seaborn_arguments["facet_kws"] = {
-            "sharex": True,
-            "sharey": False,
-            "legend_out": True,
-        }
-        print(f"{seaborn_arguments=}\n{kwargs=}")
-        print(f"{seaborn_post_plot_operations=}")
-        print(curves)
 
-        fig_grid = sns.relplot(
-            data=curves,
-            **seaborn_arguments,
-            **kwargs,
+        x = seaborn_arguments.get("x", "cycle")
+        y = seaborn_arguments.get("y", "mean")
+        hue = seaborn_arguments.get("hue", None)
+
+        labels = seaborn_arguments.get("labels", None)
+        x_label = labels.get(x, x)
+
+        std = seaborn_arguments.get("error_y", None)
+        marker = "o" if seaborn_arguments.get("markers", False) else None
+        row = seaborn_arguments.get("row", None)
+
+        g = sns.FacetGrid(
+            curves,
+            hue=hue,
+            height=seaborn_arguments["height"],
+            aspect=seaborn_arguments["aspect"],
+            row=row,
         )
 
-        # if group_cells:
-        #     try:
-        #         fig.for_each_trace(
-        #             functools.partial(
-        #                 legend_replacer,
-        #                 df=curves,
-        #                 group_legends=group_legend_muting,
-        #             )
-        #         )
-        #         if markers is not True:
-        #             fig.for_each_trace(remove_markers)
-        #     except Exception as e:
-        #         print("failed")
-        #         print(e)
-        #
-        # if y_label_mapper:
-        #     annotations = fig.layout.annotations
-        #     if annotations:
-        #         try:
-        #             # might consider a more robust method here - currently
-        #             # it assumes that the mapper is a list with same order
-        #             # and length as number of rows
-        #             for i, (a, la) in enumerate(zip(annotations, y_label_mapper)):
-        #                 row = i + 1
-        #                 fig.for_each_yaxis(
-        #                     functools.partial(y_axis_replacer, label=la),
-        #                     row=row,
-        #                 )
-        #             fig.update_annotations(text="")
-        #         except Exception as e:
-        #             print("failed")
-        #             print(e)
-        #     else:
-        #         try:
-        #             fig.for_each_yaxis(
-        #                 functools.partial(y_axis_replacer, label=y_label_mapper[0]),
-        #             )
-        #         except Exception as e:
-        #             print("failed")
-        #             print(e)
+        if std:
+            g.map(plt.errorbar, x, y, std, marker=marker, elinewidth=0.5, capsize=2)
+        else:
+            g.map(plt.plot, x, y, marker=marker)
 
-        return fig_grid
+        fig = g.figure
+
+        g.set_xlabels(x_label)
+        if y_label_mapper:
+            for i, ax in enumerate(g.axes.flat):
+                ax.set_ylabel(y_label_mapper[i])
+        g.add_legend()
+        return fig
+
     elif backend == "matplotlib":
         print(f"{backend} not implemented yet")
 
@@ -2050,7 +2020,6 @@ def summary_plotter(collected_curves, cycles_to_plot=None, backend="plotly", **k
     1) long format (where variables, for example charge capacity, are in the column "variable") or
     2) mixed long and wide format where the variables are own columns.
     """
-
     col_headers = collected_curves.columns.to_list()
     possible_id_vars = [
         "cell",
@@ -2148,14 +2117,17 @@ def summary_plotter(collected_curves, cycles_to_plot=None, backend="plotly", **k
         cols=cols,
         **kwargs,
     )
+
     if backend == "plotly":
         fig.update_yaxes(matches=None, showticklabels=True)
         return fig
     if backend == "seaborn":
         print("using seaborn (experimental feature)")
-    elif backend == "matplotlib":
+        return fig
+    if backend == "matplotlib":
         print("using matplotlib (experimental feature)")
-    elif backend == "bokeh":
+        return fig
+    if backend == "bokeh":
         print("using bokeh (experimental feature)")
         return fig
 
