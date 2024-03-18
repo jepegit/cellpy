@@ -908,6 +908,19 @@ class Batch:
         self.experiment.journal.paginate()
         logging.info("created folders")
 
+    def save(self) -> None:
+        """Save journal and cellpy files.
+
+        The journal file will be saved in the project directory and in the
+        batch-file-directory (``prms.Paths.batchfiledir``). The latter is useful
+        for processing several batches using the ``iterate_batches`` functionality.
+
+        The name and location of the cellpy files is determined by the journal pages.
+        """
+
+        self.save_journal()
+        self.experiment.save_cells()
+
     def save_journal(self) -> None:
         """Save the journal (json-format).
 
@@ -917,7 +930,7 @@ class Batch:
 
         """
 
-        # Remark! Got an recursive error when running on mac.
+        # Remark! Got a recursive error when running on Mac.
         self.experiment.journal.to_file(to_project_folder=True, paginate=False)
         logging.info("saved journal pages to project folder")
         self.duplicate_journal(prms.Paths.batchfiledir)

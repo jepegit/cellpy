@@ -4,6 +4,7 @@ import functools
 import inspect
 import logging
 import math
+import pickle as pkl
 from pprint import pprint
 from pathlib import Path
 import textwrap
@@ -13,6 +14,7 @@ from itertools import count
 from multiprocessing import Process
 
 import pandas as pd
+import matplotlib.pyplot as plt
 import numpy as np
 
 import cellpy
@@ -40,14 +42,6 @@ try:
 except ImportError:
     print("WARNING: seaborn not installed")
 
-try:
-    import matplotlib.pyplot as plt
-
-    supported_backends.append("matplotlib")
-except ImportError:
-    print("WARNING: matplotlib not installed")
-
-
 DEFAULT_CYCLES = [1, 10, 20]
 CELLPY_MINIMUM_VERSION = "1.0.0"
 PLOTLY_BASE_TEMPLATE = "seaborn"
@@ -66,13 +60,51 @@ def load_data(filename):
     return data
 
 
-def load_figure(filename, backend="plotly"):
+def load_figure(filename, backend=None):
     """Load figure from file."""
+
+    filename = Path(filename)
+
+    if backend is None:
+        suffix = filename.suffix
+        if suffix in [".pkl", ".pickle"]:
+            backend = "matplotlib"
+        elif suffix in [".json", ".plotly", ".jsn"]:
+            backend = "plotly"
+        else:
+            backend = "plotly"
+
     if backend == "plotly":
         return load_plotly_figure(filename)
+    elif backend == "seaborn":
+        return load_matplotlib_figure(filename)
+    elif backend == "matplotlib":
+        return load_matplotlib_figure(filename)
     else:
-        print("WARNING: only plotly is supported at the moment")
+        print(f"WARNING: {backend=} is not supported at the moment")
         return None
+
+
+def save_matplotlib_figure(fig, filename):
+    pkl.dump(fig, open(filename, "wb"))
+
+
+def make_matplotlib_manager(fig):
+    """Create a new manager for a matplotlib figure."""
+    # create a dummy figure and use its
+    # manager to display "fig"  ; based on https://stackoverflow.com/a/54579616/8508004
+    dummy = plt.figure()
+    new_manager = dummy.canvas.manager
+    new_manager.canvas.figure = fig
+    fig.set_canvas(new_manager.canvas)
+    return fig
+
+
+def load_matplotlib_figure(filename, create_new_manager=False):
+    fig = pkl.load(open(filename, "rb"))
+    if create_new_manager:
+        fig = _make_matplotlib_manager(fig)
+    return fig
 
 
 def load_plotly_figure(filename):
@@ -609,7 +641,7 @@ class BatchCollector:
             sep=self.sep,
             index=self.csv_include_index,
         )
-        print(f"saved csv file: {filename}")
+        print(f" - saved csv file: {filename}")
 
     def to_hdf5(self, serial_number=None):
         """Save to hdf5 file.
@@ -624,7 +656,7 @@ class BatchCollector:
         data = self.data
 
         data.to_hdf(filename, key=HDF_KEY, mode="w")
-        print(f"saved hdf5 file: {filename}")
+        print(f" - saved hdf5 file: {filename}")
 
     def _image_exporter_plotly(self, filename, timeout=IMAGE_TO_FILE_TIMEOUT, **kwargs):
         p = Process(
@@ -639,7 +671,7 @@ class BatchCollector:
         if p.exitcode is None:
             print(f"Oops, {p} timeouts! Could not save {filename}")
         if p.exitcode == 0:
-            print(f"saved image file: {filename}")
+            print(f" - saved image file: {filename}")
 
     def to_image_files(self, serial_number=None):
         """Save to image files (png, svg, json).
@@ -661,16 +693,24 @@ class BatchCollector:
         filename_png = filename_pre.with_suffix(".png")
         filename_svg = filename_pre.with_suffix(".svg")
         filename_json = filename_pre.with_suffix(".json")
+        filename_pickle = filename_pre.with_suffix(".pickle")
 
         if self.backend == "plotly":
             self._image_exporter_plotly(filename_png, scale=3.0)
             self._image_exporter_plotly(filename_svg)
             self.figure.write_json(filename_json)
-            print(f"saved plotly json file: {filename_json}")
+            print(f" - saved plotly json file: {filename_json}")
         elif self.backend == "seaborn":
-            print(f"TODO: implement saving {filename_png}")
-            print(f"TODO: implement saving {filename_svg}")
-            print(f"TODO: implement saving {filename_json}")
+            self.figure.savefig(filename_png, dpi=self.dpi)
+            print(f" - saved png file: {filename_png}")
+            self.figure.savefig(filename_svg)
+            print(f" - saved svg file: {filename_svg}")
+            save_matplotlib_figure(self.figure, filename_pickle)
+            print(f" - pickled to file: {filename_pickle}")
+
+            # print(f"TODO: implement saving {filename_png}")
+            # print(f"TODO: implement saving {filename_svg}")
+            # print(f"TODO: implement saving {filename_json}")
         else:
             print(f"TODO: implement saving {filename_png}")
             print(f"TODO: implement saving {filename_svg}")

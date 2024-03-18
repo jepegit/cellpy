@@ -169,6 +169,34 @@ class CyclingExperiment(BaseExperiment):
                         logging.debug(e)
         return cell_spec
 
+    def save_cells(self, **kwargs):
+        """Save all cells in the experiment.
+
+        Args:
+            kwargs: passed to the save method of the CellpyData-object.
+
+        Returns:
+            None
+        """
+        errors = []
+        for row in self.journal.pages.iterrows():
+            cell_name = row[0]
+            c = self.data[cell_name]
+            try:
+                if self.custom_data_folder is not None:
+                    print("Save to custom data-folder not implemented yet")
+                    print(f"Saving to {row.cellpy_file_name} instead")
+                if row.fixed and Path(row.cellpy_file_name).is_file():
+                    logging.debug("saving cell skipped (set to 'fixed' in journal)")
+                else:
+                    logging.info(f"saving cell to {row.cellpy_file_name}")
+                    c.ensure_step_table = True
+                    c.save(row.cellpy_file_name, **kwargs)
+            except Exception as e:
+                errors.append(f"could not save {cell_name} - {e}")
+
+        self.errors["save_cells"] = errors
+
     def update(
         self,
         all_in_memory=None,
