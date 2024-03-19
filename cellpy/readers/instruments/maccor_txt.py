@@ -427,9 +427,9 @@ def _fix_bugs_now():
     import matplotlib.pyplot as plt
 
     DATADIR = r"C:\scripting\cellpy_dev_resources\dev_data\simba_Maccor\S4000"
-    FILENAME = "01_UBham_CD_M50_Validation_0deg_01.txt"
+    FILENAME = "KIT-CW-SIMBA-ET-FC-NAPF6-007.037-Full_data.txt"
     INSTRUMENT = "maccor_txt"
-    MODEL = "ONE"
+    MODEL = "TWO"
 
     pd.options.display.max_columns = 100
     datadir = pathlib.Path(DATADIR)
