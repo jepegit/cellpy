@@ -3,7 +3,7 @@ channels:
     - conda-forge
     - defaults
 dependencies:
-    - python>=3.10
+    - python
     - pip
     - numpy
     - openpyxl
@@ -12,7 +12,7 @@ dependencies:
     - cryptography
     - click
     - scipy
-    - pandas <=2.1
+    - pandas
     - setuptools
     - ruamel.yaml
     - pyodbc
