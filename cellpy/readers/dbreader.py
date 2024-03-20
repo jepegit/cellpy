@@ -139,7 +139,9 @@ class Reader(BaseDbReader):
         else:
             return self.selected_batch
 
-    def _select_batch(self, batch, batch_col_name=None, case_sensitive=True, drop=True):
+    def _select_batch(
+        self, batch, batch_col_name=None, case_sensitive=True, drop=True, clean=True
+    ):
         if not batch_col_name:
             batch_col_name = self.db_sheet_cols.batch
         logging.debug("selecting batch - %s" % batch)
@@ -157,6 +159,11 @@ class Reader(BaseDbReader):
         sheet = sheet[criterion & exists]
         if drop:
             self.table = sheet
+            if clean:
+                sheet = sheet.loc[:, identity]
+                sheet.drop_duplicates(inplace=True)
+                sheet.dropna(inplace=True)
+            return sheet.values.astype(int)
         return sheet.loc[:, identity].values.astype(int)
 
     def from_batch(
