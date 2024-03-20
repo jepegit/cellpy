@@ -47,6 +47,7 @@ CELLPY_MINIMUM_VERSION = "1.0.0"
 PLOTLY_BASE_TEMPLATE = "seaborn"
 IMAGE_TO_FILE_TIMEOUT = 30
 HDF_KEY = "collected_data"
+MAX_POINTS_SEABORN_FACET_GRID = 60_000
 
 
 def load_data(filename):
@@ -512,11 +513,16 @@ class BatchCollector:
         cellpy_units = c_units[0]
         self.units = dict(raw_units=raw_units, cellpy_units=cellpy_units)
 
-    def collect(self, **kwargs):
+    def collect(self, *args, **kwargs):
         """Collect data."""
         self.data = self.data_collector(
             self.b, **self.data_collector_arguments, **kwargs
         )
+        self.post_collect(*args, **kwargs)
+
+    def post_collect(self, *args, **kwargs):
+        """Perform post-operation after collecting the data"""
+        ...
 
     def update(
         self,
@@ -1115,8 +1121,8 @@ class BatchCyclesCollector(BatchCollector):
                 - "forth" - discharge (or charge) continues along x-axis.
                 - "forth-and-forth" - discharge (or charge) also starts at 0.
 
-            data_collector_arguments (dict) - arguments transferred to the plotter
-            plotter_arguments (dict) - arguments transferred to the plotter
+            data_collector_arguments (dict) - arguments transferred to the to `CellpyCell.get_cap`.
+            plotter_arguments (dict) - arguments transferred to `cycles_plotter`.
             cycles (list): select these cycles (elevated data collector argument).
             max_cycle (int): drop all cycles above this value (elevated data collector argument).
             rate (float): filter on rate (C-rate) (elevated data collector argument).
@@ -1132,7 +1138,7 @@ class BatchCyclesCollector(BatchCollector):
                 The dictionary must have the cell labels as given in the `journal.pages` index and new label as values.
                 Similarly, if it is a function it takes the cell label as input and returns the new label.
                 Remark! No check are performed to ensure that the new cell labels are unique.
-            cycles_to_plot (int): plot points if True (elevated plotter argument).
+            cycles_to_plot (int): plot only these cycles (elevated plotter argument).
             width (float): width of plot (elevated plotter argument).
             legend_position (str): position of the legend (elevated plotter argument).
             show_legend (bool): set to False if you don't want to show legend (elevated plotter argument).
@@ -1179,6 +1185,26 @@ class BatchCyclesCollector(BatchCollector):
             *args,
             **kwargs,
         )
+
+    def post_collect(self, *args, **kwargs):
+        """Update the x-unit after collecting the data in case the mode has been set."""
+
+        logging.debug("updating the x-unit")
+        if m := self.data_collector_arguments.get("mode"):
+            if m == "gravimetric":
+                self.plotter_arguments["x_unit"] = (
+                    f'{self.units["cellpy_units"].charge}/{self.units["cellpy_units"].gravimetric}'
+                )
+            elif m == "areal":
+                self.plotter_arguments["x_unit"] = (
+                    f'{self.units["cellpy_units"].charge}/{self.units["cellpy_units"].areal}'
+                )
+            elif m == "volumetric":
+                self.plotter_arguments["x_unit"] = (
+                    f'{self.units["cellpy_units"].charge}/{self.units["cellpy_units"].volumetric}'
+                )
+            elif m == "absolute":
+                self.plotter_arguments["x_unit"] = self.units["cellpy_units"].charge
 
     def _dynamic_update_template_parameter(self, hv_opt, backend, *args, **kwargs):
         k = hv_opt.key
@@ -1281,6 +1307,7 @@ def cycles_collector(
     abort_on_missing=False,
     method="back-and-forth",
     label_mapper=None,
+    mode="gravimetric",
 ):
     """
     Collects cycles from all the cells in the batch object.
@@ -1299,6 +1326,7 @@ def cycles_collector(
         abort_on_missing: if True, abort if a cell is empty
         method: how the voltage curves are given (back-and-forth, forth, forth-and-forth)
         label_mapper: function (or dict) that changes the cell names.
+        mode (string): 'gravimetric', 'areal', 'volumetric' or 'absolute'.
 
     Returns:
         pd.DataFrame: collected data
@@ -1323,6 +1351,7 @@ def cycles_collector(
             interpolated=interpolated,
             number_of_points=number_of_points,
             method=method,
+            mode=mode,
         )
         logging.debug(f"processing {n} (cell name: {c.cell_name})")
         if not curves.empty:
@@ -1605,7 +1634,7 @@ def sequence_plotter(
         method: 'fig_pr_cell' or 'fig_pr_cycle'.
         markers: set to True if you want markers.
         group_cells (bool): give each cell within a group same color.
-        group_legend_muting (bool): if True, you can click on the legend to mute the whole group.
+        group_legend_muting (bool): if True, you can click on the legend to mute the whole group (only for plotly).
         backend (str): what backend to use.
         cycles: what cycles to include in the plot.
         palette_discrete: palette to use for discrete color mapping.
@@ -1633,8 +1662,7 @@ def sequence_plotter(
         return
     curves = None
 
-    plotly_arguments = dict()
-    seaborn_arguments = dict()
+    # ----------------- parsing arguments -----------------------------
 
     if method == "film":
         labels = {
@@ -1650,6 +1678,8 @@ def sequence_plotter(
             nbinsx=nbinsx,
             histfunc=histfunc,
         )
+
+        seaborn_arguments = dict(x=x, y=z, z=y, labels=labels, row=g, col=subgroup)
 
     elif method == "summary":
         labels = {
@@ -1672,13 +1702,14 @@ def sequence_plotter(
             f"{y}": f"{y_label} ({y_unit})",
         }
         plotly_arguments = dict(x=x, y=y, labels=labels, facet_col_wrap=cols)
-        seaborn_arguments = dict(x=x, y=y, labels=labels, row=g, col=subgroup)
+        seaborn_arguments = dict(x=x, y=y, labels=labels, row=group, col=subgroup)
 
     if method in ["fig_pr_cell", "film"]:
         group_cells = False
         if method == "fig_pr_cell":
             plotly_arguments["markers"] = markers
             plotly_arguments["color"] = z
+            seaborn_arguments["hue"] = z
         if facetplot:
             plotly_arguments["facet_col"] = group
             plotly_arguments["facet_row"] = subgroup
@@ -1709,6 +1740,7 @@ def sequence_plotter(
     elif method == "fig_pr_cycle":
         z, g = g, z
         plotly_arguments["facet_col"] = g
+        seaborn_arguments["col"] = g
 
         if cycles is not None:
             curves = collected_curves.loc[collected_curves.cycle.isin(cycles), :]
@@ -1741,6 +1773,10 @@ def sequence_plotter(
         else:
             plotly_arguments["color"] = z
             seaborn_arguments["hue"] = z
+
+    # ----------------- individual plotting calls  -----------------------------
+    # TODO: move as much as possible up to the parsing of arguments
+    #   (i.e. prepare for future refactoring)
 
     if backend == "plotly":
         if method == "fig_pr_cell":
@@ -1878,47 +1914,130 @@ def sequence_plotter(
 
         return fig
 
-    elif backend == "seaborn":
-        if method != "summary":
-            print("WARNING: seaborn only supports summary plots")
+    if backend == "seaborn":
+        number_of_data_points = len(curves)
+        if number_of_data_points > MAX_POINTS_SEABORN_FACET_GRID:
+            print(
+                f"WARNING! Too many data points for seaborn to plot: {number_of_data_points}"
+            )
+            print(
+                f"  - Try to reduce the number of data points (e.g. by selecting fewer cycles and interpolating)"
+            )
+            return
 
-        sns.set_theme(style="darkgrid")
-        seaborn_arguments["height"] = 4
-        seaborn_arguments["aspect"] = 3
-        seaborn_arguments["linewidth"] = 2.0
+        if method == "fig_pr_cell":
+            seaborn_arguments["height"] = kwargs.pop("height", 3)
+            seaborn_arguments["aspect"] = kwargs.pop("height", 1)
+            sns.set_theme(style="darkgrid")
+            x = seaborn_arguments.get("x", "capacity")
+            y = seaborn_arguments.get("y", "voltage")
+            row = seaborn_arguments.get("row", "group")
+            hue = seaborn_arguments.get("hue", "cycle")
+            col = seaborn_arguments.get("col", "sub_group")
+            height = seaborn_arguments.get("height", 3)
+            aspect = seaborn_arguments.get("aspect", 1)
 
-        x = seaborn_arguments.get("x", "cycle")
-        y = seaborn_arguments.get("y", "mean")
-        hue = seaborn_arguments.get("hue", None)
+            if palette_discrete is not None:
+                seaborn_arguments["palette"] = getattr(
+                    sns.color_palette, palette_discrete
+                )
+            g = sns.FacetGrid(
+                curves,
+                hue=hue,
+                row=row,
+                col=col,
+                height=height,
+                aspect=aspect,
+            )
+            g.map(plt.plot, x, y)
+            fig = g.fig
+            g.set_xlabels(labels[x])
+            g.set_ylabels(labels[y])
+            g.add_legend()
+            return fig
 
-        labels = seaborn_arguments.get("labels", None)
-        x_label = labels.get(x, x)
+        if method == "fig_pr_cycle":
+            sns.set_theme(style="darkgrid")
+            seaborn_arguments["height"] = 4
+            seaborn_arguments["aspect"] = 3
+            seaborn_arguments["linewidth"] = 2.0
+            g = sns.FacetGrid(
+                curves,
+                hue=z,
+                height=seaborn_arguments["height"],
+                aspect=seaborn_arguments["aspect"],
+            )
+            g.map(plt.plot, x, y)
+            fig = g.fig
+            g.set_xlabels(x_label)
+            g.set_ylabels(y_label)
+            g.add_legend()
+            return fig
 
-        std = seaborn_arguments.get("error_y", None)
-        marker = "o" if seaborn_arguments.get("markers", False) else None
-        row = seaborn_arguments.get("row", None)
+        if method == "film":
+            sns.set_theme(style="darkgrid")
+            seaborn_arguments["height"] = 4
+            seaborn_arguments["aspect"] = 3
+            seaborn_arguments["linewidth"] = 2.0
+            g = sns.FacetGrid(
+                curves,
+                hue=z,
+                height=seaborn_arguments["height"],
+                aspect=seaborn_arguments["aspect"],
+            )
+            g.map(
+                sns.kdeplot,
+                y,
+                x,
+                fill=True,
+                thresh=0,
+                levels=100,
+                cmap=palette_continuous,
+            )
+            fig = g.fig
+            g.set_xlabels(x_label)
+            g.set_ylabels(y_label)
+            g.add_legend()
+            return fig
 
-        g = sns.FacetGrid(
-            curves,
-            hue=hue,
-            height=seaborn_arguments["height"],
-            aspect=seaborn_arguments["aspect"],
-            row=row,
-        )
+        if method == "summary":
+            sns.set_theme(style="darkgrid")
+            seaborn_arguments["height"] = 4
+            seaborn_arguments["aspect"] = 3
+            seaborn_arguments["linewidth"] = 2.0
 
-        if std:
-            g.map(plt.errorbar, x, y, std, marker=marker, elinewidth=0.5, capsize=2)
-        else:
-            g.map(plt.plot, x, y, marker=marker)
+            x = seaborn_arguments.get("x", "cycle")
+            y = seaborn_arguments.get("y", "mean")
+            hue = seaborn_arguments.get("hue", None)
 
-        fig = g.figure
+            labels = seaborn_arguments.get("labels", None)
+            x_label = labels.get(x, x)
 
-        g.set_xlabels(x_label)
-        if y_label_mapper:
-            for i, ax in enumerate(g.axes.flat):
-                ax.set_ylabel(y_label_mapper[i])
-        g.add_legend()
-        return fig
+            std = seaborn_arguments.get("error_y", None)
+            marker = "o" if seaborn_arguments.get("markers", False) else None
+            row = seaborn_arguments.get("row", None)
+
+            g = sns.FacetGrid(
+                curves,
+                hue=hue,
+                height=seaborn_arguments["height"],
+                aspect=seaborn_arguments["aspect"],
+                row=row,
+            )
+
+            if std:
+                g.map(plt.errorbar, x, y, std, marker=marker, elinewidth=0.5, capsize=2)
+            else:
+                g.map(plt.plot, x, y, marker=marker)
+
+            fig = g.figure
+
+            g.set_xlabels(x_label)
+            if y_label_mapper:
+                for i, ax in enumerate(g.axes.flat):
+                    ax.set_ylabel(y_label_mapper[i])
+            g.add_legend()
+            return fig
 
     elif backend == "matplotlib":
         print(f"{backend} not implemented yet")
@@ -2002,7 +2121,6 @@ def _cycles_plotter(
 
     if not height:
         height = no_rows * sub_fig_min_height
-
     fig = sequence_plotter(
         collected_curves,
         x=x,
@@ -2177,6 +2295,8 @@ def cycles_plotter(
     cycles_to_plot=None,
     backend="plotly",
     method="fig_pr_cell",
+    x_unit="mAh/g",
+    y_unit="V",
     **kwargs,
 ):
     """Plot charge-discharge curves.
@@ -2186,6 +2306,8 @@ def cycles_plotter(
         cycles_to_plot (list): cycles to plot
         backend (str): what backend to use.
         method (str): 'fig_pr_cell' or 'fig_pr_cycle'.
+        x_unit (str): unit for x-axis.
+        y_unit (str): unit for y-axis.
 
         **kwargs: consumed first in current function, rest sent to backend in sequence_plotter.
 
@@ -2196,6 +2318,7 @@ def cycles_plotter(
     if cycles_to_plot is not None:
         unique_cycles = list(collected_curves.cycle.unique())
         if len(unique_cycles) > 50:
+            print(f"Too many cycles - setting it to default {DEFAULT_CYCLES}")
             cycles_to_plot = DEFAULT_CYCLES
 
     return _cycles_plotter(
@@ -2204,6 +2327,8 @@ def cycles_plotter(
         y="voltage",
         z="cycle",
         g="cell",
+        x_unit=x_unit,
+        y_unit=y_unit,
         default_title="Charge-Discharge Curves",
         backend=backend,
         method=method,
