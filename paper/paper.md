@@ -57,9 +57,9 @@ specific battery testing equipment: notably galvani [@galvani] parses the propri
 neware_reader [@neware_reader] parsing several versions of [Neware](https://newarebattery.com/) data, and galv
 (formerly Galvanalyser) [@galv] supporting [Maccor](http://www.maccor.com/), [Ivium](https://www.ivium.com/) and BioLogic formats.
 In addition, the Battery Evaluation and Early Prediction (BEEP) library [@beep] provides an interface
-for parsing text-based data from several instruments. However, the target audience for this library seems to be
-machine learning researchers, and the library appears at its current state not to be ideal for in-depth data handling
-and analysis by battery researchers.
+for parsing text-based data from several instruments. However, the target audience for BEEP seems to be
+machine learning researchers, focusing on handling and preparing large datasets, while cellpy provides
+tools for more in-depth data handling and analysis for battery researchers.
 
 `cellpy` provides powerful and versatile tools for the simple and efficient handling of battery testing data originating from different battery cell testers, all the way from data collection to data analysis and visualisation, ensuring consistency, accuracy and comparability. `cellpy` can directly parse the data from most common commercial battery testers ([Arbin](http://www.arbin.com/), Maccor, [PEC](https://www.peccorp.com/battery-testing-solutions/), Neware, BioLogic), in addition to offering full flexibility by allowing the user to provide other file format specifications (in YAML format). The data is converted into and saved in a common format, accommodating not only data from diverse testers, but also thoughtfully embedding battery-specific metadata (*e.g.*, step-types, type of cell, type of chemistry, electrode properties, etc.). This makes subsequent data handling considerably easier and proves invaluable in interpreting and comparing results across tests and conditions. In addition to translating data to a common format, `cellpy` has a range of utilities for studying and analysing the data. These include methods for the extraction of key characteristics from tests, cell comparison, plotting and statistical analysis, as well as advanced tools such as incremental-capacity analysis (ICA, dQ/dV), OCV relaxation analysis and batch processing of results from many battery test (@2019and, @2020ulv, @2023hul, @2023spi).
 

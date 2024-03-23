@@ -115,7 +115,13 @@ class Reader(BaseDbReader):
         return f"<b>ExcelReader</b> (rows: {len(self.table)}, cols: {len(self.table.columns)})"
 
     def select_batch(
-        self, batch, batch_col_name=None, case_sensitive=True, drop=True
+        self,
+        batch,
+        batch_col_name=None,
+        case_sensitive=True,
+        drop=True,
+        clean=False,
+        **kwargs,
     ) -> List[int]:
         """Selects the rows in column batch_col_number.
 
@@ -124,10 +130,13 @@ class Reader(BaseDbReader):
             batch_col_name: column name to use for batch selection (default: DbSheetCols.batch).
             case_sensitive: if True, the batch name must match exactly (default: True).
             drop: if True, all un-selected rows are dropped from the table (default: True).
+            clean: if True and drop is True, the table is cleaned from duplicates and NaNs (default: False).
 
         Returns:
             List of row indices
         """
+
+        # including kwargs to avoid breaking if new kwargs are added
 
         if self.selected_batch is None:
             return self._select_batch(
@@ -135,12 +144,13 @@ class Reader(BaseDbReader):
                 batch_col_name=batch_col_name,
                 case_sensitive=case_sensitive,
                 drop=drop,
+                clean=clean,
             )
         else:
             return self.selected_batch
 
     def _select_batch(
-        self, batch, batch_col_name=None, case_sensitive=True, drop=True, clean=True
+        self, batch, batch_col_name=None, case_sensitive=True, drop=True, clean=False
     ):
         if not batch_col_name:
             batch_col_name = self.db_sheet_cols.batch
@@ -163,7 +173,7 @@ class Reader(BaseDbReader):
                 sheet = sheet.loc[:, identity]
                 sheet.drop_duplicates(inplace=True)
                 sheet.dropna(inplace=True)
-            return sheet.values.astype(int)
+                return sheet.values.astype(int)
         return sheet.loc[:, identity].values.astype(int)
 
     def from_batch(

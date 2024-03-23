@@ -149,13 +149,16 @@ class LabJournal(BaseJournal, ABC):
         self.file_name = file_name  # updates object (maybe not smart)
         return file_name
 
-    def from_db(self, project=None, name=None, batch_col=None, **kwargs):
+    def from_db(
+        self, project=None, name=None, batch_col=None, dbreader_kwargs=None, **kwargs
+    ):
         """populate journal from db.
 
         Args:
             project (str): project name.
             name (str): experiment name.
             batch_col (int): batch column.
+            dbreader_kwargs: sent to simple db_reader.
 
         **kwargs: sent to engine.
 
@@ -193,11 +196,19 @@ class LabJournal(BaseJournal, ABC):
             name = self.name
         else:
             self.name = name
-        logging.debug(f"batch_name, batch_col: {name}, {batch_col}")
+
+        if dbreader_kwargs is None:
+            dbreader_kwargs = {}
+
+        logging.debug(
+            f"batch_name, batch_col, dbreader_kwargs: {name}, {batch_col}, {dbreader_kwargs}"
+        )
 
         if self.db_reader is not None:
             if isinstance(self.db_reader, dbreader.Reader):  # Simple excel-db
-                id_keys = self.db_reader.select_batch(name, batch_col)
+                id_keys = self.db_reader.select_batch(
+                    name, batch_col, **dbreader_kwargs
+                )
                 logging.debug(f"id_keys: {id_keys}")
 
                 self.pages = self.engine(self.db_reader, id_keys, **kwargs)
