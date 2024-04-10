@@ -1,6 +1,6 @@
 # History
 
-## 1.0.1 (under development)
+## 1.0.1
 
 * Utils: `example_data` now includes auto-download of example data
 * General: supports only python 3.10 and up to 3.11
@@ -19,11 +19,9 @@
 * Fixed several smaller bugs and improved some of the functionality (most notably in `c.get_cap`)
 * Added CI for macOS
 * Added conda package including `sqlalchemy-access`
-* [under progress]: check how cycle_mode and specific is handled and possibly improve
-* [under progress]: start moving/implementing all methods that modify the data to the `do` module
-* [under progress]: improve plotting tools
-* [under progress]: improve documentation
-* [under progress]: improve feedback from the CLI
+* Improved plotting tools
+* Improved documentation
+* Improved feedback from the CLI
 
 ## 1.0.0 (2023)
 
