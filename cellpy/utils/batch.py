@@ -1355,23 +1355,37 @@ def load(
         print("loading information from db")
         if batch_col is None:
             batch_col = "b01"  # this is needed due to a bug in cellpy (will be fixed when new db reader is ready)
+        print("initializing batch object")
         b = init(name=name, project=project, batch_col=batch_col, **kwargs)
     except Exception as e:
         print(f"could not initialize batch: {e}")
         return None
+    print("processing batch")
+    try:
+        print("creating journal")
+        b.create_journal(auto_use_file_list=auto_use_file_list)
+        print(" - created journal")
+    except Exception as e:
+        print(f"could not create journal: {e}")
+        print("you might have duplicates in your database index or cell names")
+        return None
+    try:
+        b.duplicate_journal()
+        print(" - duplicated journal")
+        b.paginate()
+        print(" - paginated")
+        print(" - updating...")
+        b.update()
+        print(" - updated")
+        print("collecting and combining summaries")
+        b.combine_summaries()
+        print(" - collected and combined summaries")
+        print("OK!")
+    except Exception as e:
+        print("something went wrong")
+        print(e)
+        print("returning possibly incomplete batch")
 
-    b.create_journal(auto_use_file_list=auto_use_file_list)
-    print(" - created journal")
-    b.duplicate_journal()
-    print(" - duplicated journal")
-    b.paginate()
-    print(" - paginated")
-    print(" - updating...")
-    b.update()
-    print(" - updated")
-    b.combine_summaries()
-    print(" - collected and combined summaries")
-    print("OK!")
     return b
 
 
