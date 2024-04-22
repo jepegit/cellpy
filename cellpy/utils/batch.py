@@ -1297,7 +1297,26 @@ def load(
         allow_from_journal (bool): if True, the journal file will be loaded if it exists
         force_reload (bool): if True, the batch will be reloaded even if the journal file exists
         drop_bad_cells (bool): if True, bad cells will be dropped (only apply if journal file is loaded)
+        auto_use_file_list (bool): Experimental feature. If True, a file list will be generated and used
+            instead of searching for files in the folders.
         **kwargs: sent to Batch during initialization
+
+    Keyword Args:
+        db_reader (str): data-base reader to use (defaults to "default" as given
+          in the config-file or prm-class).
+        frame (pandas.DataFrame): load from given dataframe.
+        default_log_level (str): custom log-level (defaults to None (i.e. default log-level in cellpy)).
+        custom_log_dir (str or pathlib.Path): custom folder for putting the log-files.
+        force_raw_file (bool): load from raw regardless (defaults to False).
+        force_cellpy (bool): load cellpy-files regardless (defaults to False).
+        force_recalc (bool): Always recalculate (defaults to False).
+        export_cycles (bool): Extract and export individual cycles to csv (defaults to True).
+        export_raw (bool): Extract and export raw-data to csv (defaults to True).
+        export_ica (bool): Extract and export individual dQ/dV data to csv (defaults to True).
+        accept_errors (bool): Continue automatically to next file if error is raised (defaults to False).
+        nom_cap (float): give a nominal capacity if you want to use another value than
+          the one given in the config-file or prm-class.
+
 
     Returns:
         populated Batch object (``cellpy.utils.batch.Batch``)
