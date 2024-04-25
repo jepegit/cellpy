@@ -343,6 +343,12 @@ class CyclingExperiment(BaseExperiment):
             filename = None
             instrument = None
             cellpy_file = OtherPath(row[hdr_journal.cellpy_file_name])
+            if force_cellpy and not cellpy_file.is_file():
+                logging.critical(
+                    f"Cellpy file not given in the journal.pages for index={index}"
+                )
+                errors.append(index)
+                continue
             _cellpy_file = None
             if not force_raw and cellpy_file.is_file():
                 _cellpy_file = cellpy_file
