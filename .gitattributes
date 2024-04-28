@@ -1,2 +1,7 @@
-dev_utils/* linguist-documentation
-examples/* linguist-documentation
+dev_utils/** linguist-documentation
+examples/** linguist-documentation
+docs/** linguist-documentation
+_old_docs/** linguist-documentation
+paper/** linguist-documentation
+tests/** linguist-documentation
+testdata/** linguist-documentation
