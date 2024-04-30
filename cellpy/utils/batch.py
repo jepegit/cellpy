@@ -1168,6 +1168,10 @@ class Batch:
             group_legends (bool): group the legends so that they can be turned visible/invisible
                 as a group (defaults to True) (only for plotly)
             base_template (str): template to use for the plot (only for plotly)
+
+            filter_by_group (int or list of ints): show only the selected group(s)
+            filter_by_name (str): show only cells containing this string
+
         """
 
         if reload_data or ("summary_engine" not in self.experiment.memory_dumped):

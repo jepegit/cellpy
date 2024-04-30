@@ -952,6 +952,8 @@ def plot_cycle_life_summary_plotly(summaries: pd.DataFrame, **kwargs):
     direction = kwargs.pop("direction", "charge")
     rate = kwargs.pop("rate", False)
     ir = kwargs.pop("ir", True)
+    filter_by_group = kwargs.pop("filter_by_group", None)
+    filter_by_name = kwargs.pop("filter_by_name", None)
 
     individual_plot_height = 250
     header_height = 200
@@ -1016,6 +1018,15 @@ def plot_cycle_life_summary_plotly(summaries: pd.DataFrame, **kwargs):
     legend_height = legend_header_height + individual_legend_height * number_of_cells
     plot_height = max(legend_height, individual_plot_height * number_of_rows)
     total_height = header_height + plot_height
+
+    if filter_by_group is not None:
+        if not isinstance(filter_by_group, (list, tuple)):
+            filter_by_group = [filter_by_group]
+        summaries = summaries.loc[summaries[hdr_group].isin([filter_by_group]), :]
+
+    if filter_by_name is not None:
+        summaries = summaries.loc[summaries.cell.str.contains(filter_by_name), :]
+
     canvas = px.line(
         summaries,
         x=hdr_cycle,
@@ -1095,6 +1106,8 @@ def plot_cycle_life_summary_seaborn(summaries: pd.DataFrame, **kwargs):
     direction = kwargs.pop("direction", "charge")
     rate = kwargs.pop("rate", False)
     ir = kwargs.pop("ir", True)
+    filter_by_group = kwargs.pop("filter_by_group", None)
+    filter_by_name = kwargs.pop("filter_by_name", None)
 
     hdr_cycle = hdr_summary["cycle_index"]
     hdr_charge = hdr_summary["charge_capacity_gravimetric"]
@@ -1155,6 +1168,14 @@ def plot_cycle_life_summary_seaborn(summaries: pd.DataFrame, **kwargs):
     number_of_rows = len(plotted_summaries)
 
     sns.set_theme(style="darkgrid")
+
+    if filter_by_group is not None:
+        if not isinstance(filter_by_group, (list, tuple)):
+            filter_by_group = [filter_by_group]
+        summaries = summaries.loc[summaries[hdr_group].isin([filter_by_group]), :]
+
+    if filter_by_name is not None:
+        summaries = summaries.loc[summaries.cell.str.contains(filter_by_name), :]
 
     canvas_grid = sns.relplot(
         data=summaries,
