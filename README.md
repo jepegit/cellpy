@@ -11,11 +11,18 @@ This Python Package was developed to help the
 researchers at IFE, Norway, in their cumbersome task of
 interpreting and handling data from cycling tests of
 
+## Features
+
+* Convert testing data into a common format
+* Summarize and compare data
+* Filter out the steps of interest
+* Process and plot the data
+* Do simple and advanced analysis on single datasets as well as collections of datasets
+* And more!
 
 ## Documentation
 
 The documentation for ``cellpy`` is hosted on [Read the Docs](https://cellpy.readthedocs.io).
-
 
 ## Installation and dependencies
 
@@ -40,14 +47,13 @@ with respect to "difficult" dependencies when installing with pip.
 
 ``cellpy`` is free software made available under the MIT License.
 
-## Features
+## Citing cellpy
 
-* Convert testing data into a common format
-* Summarize and compare data
-* Filter out the steps of interest
-* Process and plot the data
-* Do simple and advanced analysis on single datasets as well as collections of datasets
-* And more!
+If you use ``cellpy`` in your work, please cite our paper:
+
+> Wind J., Ulvestad A., Abdelhamid M., Mæhlen J.P. (2024). Cellpy – an open-source library for processing and analysis of battery testing data. _Journal of Open Source Software, 9(97), 6236_.
+
+[![DOI](https://joss.theoj.org/papers/10.21105/joss.06236/status.svg)](https://doi.org/10.21105/joss.06236)
 
 ## Contributing
 
