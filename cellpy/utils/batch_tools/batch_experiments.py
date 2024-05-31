@@ -898,7 +898,7 @@ class CyclingExperiment(BaseExperiment):
                 print(f"{key}: {type(self.memory_dumped[key])}")
         print(80 * "=")
 
-    def link(self, **kwargs):
+    def link(self, mark_bad=False, **kwargs):
         """Ensure that an appropriate link to the cellpy-files exists for
         each cell.
 
@@ -911,6 +911,9 @@ class CyclingExperiment(BaseExperiment):
         for that (but the authors of this package is also a bit strange...).
 
         (OK, I will change it. Soon.)
+
+        Args:
+            mark_bad (bool): mark bad cells (default: False)
 
         **kwargs: passed to _link_cellpy_file
             max_cycle (int): maximum cycle number to link/load (remark that the
@@ -934,6 +937,11 @@ class CyclingExperiment(BaseExperiment):
                 e_txt = f"{cell_label}: links not established - try update instead"
                 logging.warning(e_txt)
                 errors.append(e_txt)
+                if mark_bad:
+                    if not self.journal.session["bad_cells"]:
+                        self.journal.session["bad_cells"] = []
+                    self.journal.session["bad_cells"].append(cell_label)
+                    logging.warning(f"Marked {cell_label} as bad")
 
         self.errors["link"] = errors
 

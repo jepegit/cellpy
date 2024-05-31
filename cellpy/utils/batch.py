@@ -6,6 +6,7 @@ import pathlib
 import shutil
 import sys
 import warnings
+from typing import List, Optional, Any
 
 import pandas as pd
 from pandas import Index
@@ -1028,18 +1029,21 @@ class Batch:
 
     # TODO: list_journals?
 
-    def link(self, max_cycle=None, force_combine_summaries=False) -> None:
+    def link(
+        self, max_cycle=Optional[int], mark_bad=False, force_combine_summaries=False
+    ) -> None:
         """Link journal content to the cellpy-files and load the step information.
 
         Args:
             max_cycle (int): set maximum cycle number to link to.
+            mark_bad (bool): mark cells as bad if they are not linked.
             force_combine_summaries (bool): automatically run combine_summaries (set this to True
                 if you are re-linking without max_cycle for a batch that previously were linked
                 with max_cycle)
 
         """
 
-        self.experiment.link(max_cycle=max_cycle)
+        self.experiment.link(max_cycle=max_cycle, mark_bad=mark_bad)
         if force_combine_summaries or max_cycle:
             self.summary_collector.do(reset=True)
 
@@ -1320,6 +1324,8 @@ def load(
         accept_errors (bool): Continue automatically to next file if error is raised (defaults to False).
         nom_cap (float): give a nominal capacity if you want to use another value than
           the one given in the config-file or prm-class.
+        max_cycle (int or None): maximum number of cycles to link up to (defaults to None).
+        force_combine_summaries (bool): automatically run combine_summaries when linking.
 
 
     Returns:
@@ -1345,12 +1351,20 @@ def load(
                     b.update()
                 else:
                     print(f" - linking")
-                    b.link()
+                    b.link(
+                        max_cycle=kwargs.pop("max_cycle", None),
+                        mark_bad=True,
+                        force_combine_summaries=kwargs.pop(
+                            "force_combine_summaries", False
+                        ),
+                    )
+
                 if drop_bad_cells:
-                    print(f" - dropping bad cells")
+                    print(f" - dropping cells marked as bad")
                     b.drop_cells_marked_bad()
                 print("OK!")
                 return b
+
             else:
                 print(f" - journal file not found")
 

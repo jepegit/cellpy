@@ -12,6 +12,7 @@ from typing import Any
 import time
 from itertools import count
 from multiprocessing import Process
+import warnings
 
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -483,6 +484,7 @@ class BatchCollector:
             plotter_arguments (dict): optional additional keyword arguments for the plotter.
 
         """
+        # warnings.warn("reset_arguments is deprecated", DeprecationWarning)
         self._data_collector_arguments = self._default_data_collector_arguments.copy()
         self._plotter_arguments = self._default_plotter_arguments.copy()
         self._update_arguments(data_collector_arguments, plotter_arguments)
