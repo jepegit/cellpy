@@ -37,6 +37,106 @@ ENV_VAR_CELLPY_KEY_FILENAME = "CELLPY_KEY_FILENAME"
 ENV_VAR_CELLPY_PASSWORD = "CELLPY_PASSWORD"
 
 
+def check_connection():
+    """Check if the connection works."""
+
+    #     def connection_info(self, testing: bool = False) -> Tuple[Dict, str]:
+    #     """Return a dictionary with connection information."""
+    #     if self.is_external:
+    #         return self._get_connection_info(testing)
+    #     logging.debug(f"not external path! returning empty dict and empty string")
+    #     return {}, ""
+    #
+    # def _get_connection_info(self, testing: bool = False) -> Tuple[Dict, str]:
+    #     host = self.location
+    #     uri_prefix = self.uri_prefix.replace("//", "")
+    #     if uri_prefix not in URI_PREFIXES:
+    #         raise ValueError(f"uri_prefix {uri_prefix} not recognized")
+    #     if uri_prefix not in IMPLEMENTED_PROTOCOLS:
+    #         raise ValueError(
+    #             f"uri_prefix {uri_prefix.replace(':', '')} not implemented yet"
+    #         )
+    #     password = os.getenv(ENV_VAR_CELLPY_PASSWORD, None)
+    #     key_filename = os.getenv(ENV_VAR_CELLPY_KEY_FILENAME, None)
+    #     if password is None and key_filename is None:
+    #         raise UnderDefined(
+    #             f"You must define either {ENV_VAR_CELLPY_PASSWORD} "
+    #             f"or {ENV_VAR_CELLPY_KEY_FILENAME} environment variables."
+    #         )
+    #     if key_filename is not None:
+    #         key_filename = pathlib.Path(key_filename).expanduser().resolve()
+    #         connect_kwargs = {"key_filename": str(key_filename)}
+    #         logging.debug(f"got key_filename")
+    #         if not testing:
+    #             if not pathlib.Path(key_filename).is_file():
+    #                 raise FileNotFoundError(f"Could not find key file {key_filename}")
+    #     else:
+    #         connect_kwargs = {"password": password}
+    #     return connect_kwargs, host
+
+    # def _listdir_with_fabric(
+    #     self: S,
+    #     host: str,
+    #     connect_kwargs: dict,
+    #     levels: int = 1,
+    # ) -> List[str]:
+    #     """List the contents of a directory through sftp."""
+    #
+    #     path_separator = "/"  # only supports unix-like systems
+    #     t1 = time.time()
+    #     with fabric.Connection(host, connect_kwargs=connect_kwargs) as conn:
+    #         try:
+    #             t1 = time.time()
+    #             sftp_conn = conn.sftp()
+    #             sftp_conn.chdir(self.raw_path)
+    #             sub_dirs = [
+    #                 f"{self.raw_path}{path_separator}{f}"
+    #                 for f in sftp_conn.listdir()
+    #                 if stat.S_ISDIR(sftp_conn.stat(f).st_mode)
+    #             ]
+    #             files = [
+    #                 f"{self.raw_path}{path_separator}{f}"
+    #                 for f in sftp_conn.listdir()
+    #                 if not stat.S_ISDIR(sftp_conn.stat(f).st_mode)
+    #             ]
+    #             while levels != 0:
+    #                 new_sub_dirs = []
+    #                 for sub_dir in sub_dirs:
+    #                     try:
+    #                         sftp_conn.chdir(sub_dir)
+    #                         _new_sub_dirs = [
+    #                             f"{sub_dir}{path_separator}{f}"
+    #                             for f in sftp_conn.listdir()
+    #                             if stat.S_ISDIR(sftp_conn.stat(f).st_mode)
+    #                         ]
+    #                         new_files = [
+    #                             f"{sub_dir}{path_separator}{f}"
+    #                             for f in sftp_conn.listdir()
+    #                             if not stat.S_ISDIR(sftp_conn.stat(f).st_mode)
+    #                         ]
+    #                         files += new_files
+    #                         new_sub_dirs += _new_sub_dirs
+    #                         sftp_conn.chdir(self.raw_path)
+    #                     except FileNotFoundError:
+    #                         logging.debug(
+    #                             f"Could not look in {sub_dir}: FileNotFoundError"
+    #                         )
+    #                     pass
+    #                 sub_dirs = new_sub_dirs
+    #                 if len(sub_dirs) == 0:
+    #                     break
+    #                 levels -= 1
+    #
+    #             logging.debug(f"globbing took {time.time() - t1:.2f} seconds")
+    #             return files
+    #         except FileNotFoundError as e:
+    #             raise FileNotFoundError(
+    #                 f"Could not perform directory listing in {self.raw_path} on {host}.\n{e}"
+    #             ) from e
+
+    pass
+
+
 @dataclass
 class ExternalStatResult:
     """Mock of os.stat_result."""
@@ -657,7 +757,7 @@ class OtherPath(pathlib.Path):
                 return files
             except FileNotFoundError as e:
                 raise FileNotFoundError(
-                    f"Could not find file {self.raw_path} on {host}"
+                    f"Could not perform directory listing in {self.raw_path} on {host}.\n{e}"
                 ) from e
 
     def _glob_with_fabric(
