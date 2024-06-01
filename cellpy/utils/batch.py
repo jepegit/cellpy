@@ -1031,9 +1031,9 @@ class Batch:
 
     def link(
         self,
-        max_cycle=Optional[int],
-        # mark_bad=False,
-        force_combine_summaries=False
+        max_cycle: Optional[int] = None,
+        mark_bad=False,
+        force_combine_summaries=False,
     ) -> None:
         """Link journal content to the cellpy-files and load the step information.
 
@@ -1046,10 +1046,7 @@ class Batch:
 
         """
 
-        self.experiment.link(
-            max_cycle=max_cycle,
-            # mark_bad=mark_bad
-        )
+        self.experiment.link(max_cycle=max_cycle, mark_bad=mark_bad)
         if force_combine_summaries or max_cycle:
             self.summary_collector.do(reset=True)
 
