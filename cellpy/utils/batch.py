@@ -1355,11 +1355,11 @@ def load(
                 else:
                     print(f" - linking")
                     b.link(
-                        # max_cycle=kwargs.pop("max_cycle", None),
-                        # mark_bad=True,
-                        # force_combine_summaries=kwargs.pop(
-                        #     "force_combine_summaries", False
-                        # ),
+                        max_cycle=kwargs.pop("max_cycle", None),
+                        mark_bad=True,
+                        force_combine_summaries=kwargs.pop(
+                            "force_combine_summaries", False
+                        ),
                     )
 
                 if drop_bad_cells:
