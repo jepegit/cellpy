@@ -898,7 +898,10 @@ class CyclingExperiment(BaseExperiment):
                 print(f"{key}: {type(self.memory_dumped[key])}")
         print(80 * "=")
 
-    def link(self, mark_bad=False, **kwargs):
+    def link(self,
+             # mark_bad=False,
+             **kwargs
+             ):
         """Ensure that an appropriate link to the cellpy-files exists for
         each cell.
 
@@ -937,11 +940,11 @@ class CyclingExperiment(BaseExperiment):
                 e_txt = f"{cell_label}: links not established - try update instead"
                 logging.warning(e_txt)
                 errors.append(e_txt)
-                if mark_bad:
-                    if not self.journal.session["bad_cells"]:
-                        self.journal.session["bad_cells"] = []
-                    self.journal.session["bad_cells"].append(cell_label)
-                    logging.warning(f"Marked {cell_label} as bad")
+                # if mark_bad:
+                #     if not self.journal.session["bad_cells"]:
+                #         self.journal.session["bad_cells"] = []
+                #     self.journal.session["bad_cells"].append(cell_label)
+                #     logging.warning(f"Marked {cell_label} as bad")
 
         self.errors["link"] = errors
 

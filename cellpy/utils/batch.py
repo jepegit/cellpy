@@ -1030,7 +1030,10 @@ class Batch:
     # TODO: list_journals?
 
     def link(
-        self, max_cycle=Optional[int], mark_bad=False, force_combine_summaries=False
+        self,
+        max_cycle=Optional[int],
+        # mark_bad=False,
+        force_combine_summaries=False
     ) -> None:
         """Link journal content to the cellpy-files and load the step information.
 
@@ -1043,7 +1046,10 @@ class Batch:
 
         """
 
-        self.experiment.link(max_cycle=max_cycle, mark_bad=mark_bad)
+        self.experiment.link(
+            max_cycle=max_cycle,
+            # mark_bad=mark_bad
+        )
         if force_combine_summaries or max_cycle:
             self.summary_collector.do(reset=True)
 
@@ -1352,11 +1358,11 @@ def load(
                 else:
                     print(f" - linking")
                     b.link(
-                        max_cycle=kwargs.pop("max_cycle", None),
-                        mark_bad=True,
-                        force_combine_summaries=kwargs.pop(
-                            "force_combine_summaries", False
-                        ),
+                        # max_cycle=kwargs.pop("max_cycle", None),
+                        # mark_bad=True,
+                        # force_combine_summaries=kwargs.pop(
+                        #     "force_combine_summaries", False
+                        # ),
                     )
 
                 if drop_bad_cells:
