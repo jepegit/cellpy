@@ -18,6 +18,7 @@ from cellpy.parameters.internal_settings import (
 )
 from cellpy.readers.cellreader import CellpyCell
 from cellpy.utils.batch import Batch
+from cellpy.internals.core import check_connection as _check_connection
 
 hdr_summary = get_headers_summary()
 hdr_steps = get_headers_step_table()
@@ -1314,6 +1315,10 @@ def add_normalized_capacity(
     return cell
 
 
+def check_connection(path=None):
+    return _check_connection(path)
+
+
 def load_and_save_resfile(filename, outfile=None, outdir=None, mass=1.00):
     """Load a raw data file and save it as cellpy-file.
 
@@ -1348,3 +1353,18 @@ def load_and_save_resfile(filename, outfile=None, outdir=None, mass=1.00):
     d.save(filename=outfile)
     d.to_csv(datadir=outdir, cycles=True, raw=True, summary=True)
     return outfile
+
+
+def _check():
+    print("Testing OtherPath-connection")
+    info = check_connection()
+    p0 = "scp://odin/home/jepe@ad.ife.no/projects"
+    info = check_connection(p0)
+    p1 = "scp://odin/home/jepe@ad.ife.no/this-folder-does-not-exist"
+    info = check_connection(p1)
+    p2 = pathlib.Path(".").resolve()
+    info = check_connection(p2)
+
+
+if __name__ == "__main__":
+    _check()

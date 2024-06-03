@@ -29,6 +29,7 @@ import fabric
 
 from cellpy.exceptions import UnderDefined
 
+
 S = TypeVar("S", bound="OtherPath")
 URI_PREFIXES = ["ssh:", "sftp:", "scp:", "http:", "https:", "ftp:", "ftps:", "smb:"]
 IMPLEMENTED_PROTOCOLS = ["ssh:", "sftp:", "scp:"]
@@ -37,104 +38,112 @@ ENV_VAR_CELLPY_KEY_FILENAME = "CELLPY_KEY_FILENAME"
 ENV_VAR_CELLPY_PASSWORD = "CELLPY_PASSWORD"
 
 
-def check_connection():
-    """Check if the connection works."""
+def check_connection(
+    p=None,
+):
+    """Check if the connection works.
 
-    #     def connection_info(self, testing: bool = False) -> Tuple[Dict, str]:
-    #     """Return a dictionary with connection information."""
-    #     if self.is_external:
-    #         return self._get_connection_info(testing)
-    #     logging.debug(f"not external path! returning empty dict and empty string")
-    #     return {}, ""
-    #
-    # def _get_connection_info(self, testing: bool = False) -> Tuple[Dict, str]:
-    #     host = self.location
-    #     uri_prefix = self.uri_prefix.replace("//", "")
-    #     if uri_prefix not in URI_PREFIXES:
-    #         raise ValueError(f"uri_prefix {uri_prefix} not recognized")
-    #     if uri_prefix not in IMPLEMENTED_PROTOCOLS:
-    #         raise ValueError(
-    #             f"uri_prefix {uri_prefix.replace(':', '')} not implemented yet"
-    #         )
-    #     password = os.getenv(ENV_VAR_CELLPY_PASSWORD, None)
-    #     key_filename = os.getenv(ENV_VAR_CELLPY_KEY_FILENAME, None)
-    #     if password is None and key_filename is None:
-    #         raise UnderDefined(
-    #             f"You must define either {ENV_VAR_CELLPY_PASSWORD} "
-    #             f"or {ENV_VAR_CELLPY_KEY_FILENAME} environment variables."
-    #         )
-    #     if key_filename is not None:
-    #         key_filename = pathlib.Path(key_filename).expanduser().resolve()
-    #         connect_kwargs = {"key_filename": str(key_filename)}
-    #         logging.debug(f"got key_filename")
-    #         if not testing:
-    #             if not pathlib.Path(key_filename).is_file():
-    #                 raise FileNotFoundError(f"Could not find key file {key_filename}")
-    #     else:
-    #         connect_kwargs = {"password": password}
-    #     return connect_kwargs, host
+    This is a helper function for cellpy v1.0 only and should be removed in later versions after
+    the OtherPath class has been updated to work with python >= 3.12.
 
-    # def _listdir_with_fabric(
-    #     self: S,
-    #     host: str,
-    #     connect_kwargs: dict,
-    #     levels: int = 1,
-    # ) -> List[str]:
-    #     """List the contents of a directory through sftp."""
-    #
-    #     path_separator = "/"  # only supports unix-like systems
-    #     t1 = time.time()
-    #     with fabric.Connection(host, connect_kwargs=connect_kwargs) as conn:
-    #         try:
-    #             t1 = time.time()
-    #             sftp_conn = conn.sftp()
-    #             sftp_conn.chdir(self.raw_path)
-    #             sub_dirs = [
-    #                 f"{self.raw_path}{path_separator}{f}"
-    #                 for f in sftp_conn.listdir()
-    #                 if stat.S_ISDIR(sftp_conn.stat(f).st_mode)
-    #             ]
-    #             files = [
-    #                 f"{self.raw_path}{path_separator}{f}"
-    #                 for f in sftp_conn.listdir()
-    #                 if not stat.S_ISDIR(sftp_conn.stat(f).st_mode)
-    #             ]
-    #             while levels != 0:
-    #                 new_sub_dirs = []
-    #                 for sub_dir in sub_dirs:
-    #                     try:
-    #                         sftp_conn.chdir(sub_dir)
-    #                         _new_sub_dirs = [
-    #                             f"{sub_dir}{path_separator}{f}"
-    #                             for f in sftp_conn.listdir()
-    #                             if stat.S_ISDIR(sftp_conn.stat(f).st_mode)
-    #                         ]
-    #                         new_files = [
-    #                             f"{sub_dir}{path_separator}{f}"
-    #                             for f in sftp_conn.listdir()
-    #                             if not stat.S_ISDIR(sftp_conn.stat(f).st_mode)
-    #                         ]
-    #                         files += new_files
-    #                         new_sub_dirs += _new_sub_dirs
-    #                         sftp_conn.chdir(self.raw_path)
-    #                     except FileNotFoundError:
-    #                         logging.debug(
-    #                             f"Could not look in {sub_dir}: FileNotFoundError"
-    #                         )
-    #                     pass
-    #                 sub_dirs = new_sub_dirs
-    #                 if len(sub_dirs) == 0:
-    #                     break
-    #                 levels -= 1
-    #
-    #             logging.debug(f"globbing took {time.time() - t1:.2f} seconds")
-    #             return files
-    #         except FileNotFoundError as e:
-    #             raise FileNotFoundError(
-    #                 f"Could not perform directory listing in {self.raw_path} on {host}.\n{e}"
-    #             ) from e
+    Args:
+        p (str, pathlib.Path or OtherPath, optional): The path to check. Defaults to prms.Paths.rawdatadir.
 
-    pass
+    """
+    # Note: users run this function from helpers.py
+    from pprint import pprint
+
+    logging.debug("checking connection")
+    if p is None:
+        print("No path given. Checking rawdatadir from prms.")
+
+        # need to import prms here to avoid circular imports:
+        from cellpy import prms
+
+        p = prms.Paths.rawdatadir
+
+    # recreating the OtherPath object to OtherPath since core is imported in the top __init__.py
+    # file resulting in isinstance(p, OtherPath) to be False
+    p = OtherPath(p)
+    logging.debug(f"p: {p}")
+
+    print("\nCollecting connection information:")
+
+    if not p.is_external:
+        print(f"   - {p} is not external. Returning.")
+        return {}
+
+    info = {
+        "is_external": p.is_external,
+        "uri_prefix": p.uri_prefix,
+        "location": p.location,
+        "raw_path": p.raw_path,
+        "full_path": p.full_path,
+        "host": p.location,
+    }
+
+    uri_prefix = p.uri_prefix.replace("//", "")
+    info["uri_prefix"] = uri_prefix
+    if uri_prefix not in URI_PREFIXES:
+        print(f"   - uri_prefix {uri_prefix} not recognized")
+    if uri_prefix not in IMPLEMENTED_PROTOCOLS:
+        print(f"   - uri_prefix {uri_prefix.replace(':', '')} not implemented yet")
+
+    password = os.getenv(ENV_VAR_CELLPY_PASSWORD, None)
+    info["password"] = "********" if password is not None else None
+
+    key_filename = os.getenv(ENV_VAR_CELLPY_KEY_FILENAME, None)
+    if password is None and key_filename is None:
+        print(
+            f"   - You must define either {ENV_VAR_CELLPY_PASSWORD} "
+            f"or {ENV_VAR_CELLPY_KEY_FILENAME} environment variables."
+        )
+    if key_filename is not None:
+        key_filename = pathlib.Path(key_filename).expanduser().resolve()
+        info["key_filename"] = str(key_filename)
+        if not pathlib.Path(key_filename).is_file():
+            print(f"   - Could not find key file {key_filename}")
+    else:
+        print("   - Using password")
+
+    for k, v in info.items():
+        print(f" {k}: {v}")
+
+    print("\nChecking connection:")
+    connect_kwargs, host = p.connection_info()
+
+    path_separator = "/"  # only supports unix-like systems
+    with fabric.Connection(host, connect_kwargs=connect_kwargs) as conn:
+        try:
+            t1 = time.perf_counter()
+            sftp_conn = conn.sftp()
+            print(f" connecting     [{time.perf_counter() - t1:.2f} seconds] OK")
+            sftp_conn.chdir(p.raw_path)
+            print(f" chdir          [{time.perf_counter() - t1:.2f} seconds] OK")
+            files = [
+                f"{p.raw_path}{path_separator}{f}"
+                for f in sftp_conn.listdir()
+                if not stat.S_ISDIR(sftp_conn.stat(f).st_mode)
+            ]
+            print(f" listing files  [{time.perf_counter() - t1:.2f} seconds] OK")
+            sub_dirs = [
+                f"{p.raw_path}{path_separator}{f}"
+                for f in sftp_conn.listdir()
+                if stat.S_ISDIR(sftp_conn.stat(f).st_mode)
+            ]
+            n_files = len(files)
+            n_sub_dirs = len(sub_dirs)
+            info["number_of_files"] = n_files
+            info["number_of_sub_directories"] = n_sub_dirs
+            print(f" found {n_files} files and {n_sub_dirs} sub directories")
+
+        except FileNotFoundError as e:
+            print(
+                f"   - FileNotFoundError: Could not perform directory listing in {p.raw_path} on {host}."
+                f"\n     {e}"
+            )
+
+    return info
 
 
 @dataclass
@@ -838,3 +847,19 @@ class OtherPath(pathlib.Path):
                 raise FileNotFoundError(
                     f"Could not find file {self.raw_path} on {host}"
                 ) from e
+
+
+def _check():
+    print("Testing OtherPath-connection")
+    # info = check_connection()
+    p0 = "scp://odin/home/jepe@ad.ife.no/projects"
+    # info = check_connection(p0)
+    p1 = "scp://odin/home/jepe@ad.ife.no/this-folder-does-not-exist"
+    # info = check_connection(p1)
+    p2 = pathlib.Path(".").resolve()
+    info = check_connection(p2)
+
+
+if __name__ == "__main__":
+    logging.debug("testing OtherPath")
+    _check()
