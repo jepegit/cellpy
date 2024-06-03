@@ -116,7 +116,13 @@ def check_connection(
     with fabric.Connection(host, connect_kwargs=connect_kwargs) as conn:
         try:
             t1 = time.perf_counter()
-            sftp_conn = conn.sftp()
+            try:
+                sftp_conn = conn.sftp()
+            except Exception as e:
+                print(f"   - Could not connect to {host}")
+                print(f"     {e}")
+                return info
+
             print(f" connecting     [{time.perf_counter() - t1:.2f} seconds] OK")
             sftp_conn.chdir(p.raw_path)
             print(f" chdir          [{time.perf_counter() - t1:.2f} seconds] OK")

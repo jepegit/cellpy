@@ -1358,12 +1358,16 @@ def load_and_save_resfile(filename, outfile=None, outdir=None, mass=1.00):
 def _check():
     print("Testing OtherPath-connection")
     info = check_connection()
-    p0 = "scp://odin/home/jepe@ad.ife.no/projects"
-    info = check_connection(p0)
-    p1 = "scp://odin/home/jepe@ad.ife.no/this-folder-does-not-exist"
-    info = check_connection(p1)
-    p2 = pathlib.Path(".").resolve()
-    info = check_connection(p2)
+    # p0 = "scp://odin/home/jepe@ad.ife.no/projects"
+    # info = check_connection(p0)
+    # p1 = "scp://odin/home/jepe@ad.ife.no/this-folder-does-not-exist"
+    # info = check_connection(p1)
+    # p2 = pathlib.Path(".").resolve()
+    # info = check_connection(p2)
+    # p3 = "scp://odin/home/evil@ad.ife.no/projects"
+    # info = check_connection(p3)
+    # p4 = "scp://madmax/home/evil@ad.ife.no/projects"
+    # info = check_connection(p4)
 
 
 if __name__ == "__main__":
