@@ -1092,6 +1092,7 @@ class BatchCyclesCollector(BatchCollector):
         collector_type="back-and-forth",
         cycles=None,
         max_cycle=None,
+        number_of_points=100,
         rate=None,
         rate_on=None,
         rate_std=None,
@@ -1152,6 +1153,7 @@ class BatchCyclesCollector(BatchCollector):
         elevated_data_collector_arguments = dict(
             cycles=cycles,
             max_cycle=max_cycle,
+            number_of_points=number_of_points,
             label_mapper=label_mapper,
             rate=rate,
             rate_on=rate_on,
@@ -1920,10 +1922,13 @@ def sequence_plotter(
         number_of_data_points = len(curves)
         if number_of_data_points > MAX_POINTS_SEABORN_FACET_GRID:
             print(
-                f"WARNING! Too many data points for seaborn to plot: {number_of_data_points}"
+                f"WARNING! Too many data points for seaborn to plot: "
+                f"{number_of_data_points} > {MAX_POINTS_SEABORN_FACET_GRID}"
             )
             print(
-                f"  - Try to reduce the number of data points (e.g. by selecting fewer cycles and interpolating)"
+                f"  - Try to reduce the number of data points "
+                f"e.g. by selecting fewer cycles and interpolating "
+                f"using the `number_of_points` and `max_cycle` or `cycles_to_plot` arguments."
             )
             return
 
@@ -1943,6 +1948,24 @@ def sequence_plotter(
                 seaborn_arguments["palette"] = getattr(
                     sns.color_palette, palette_discrete
                 )
+
+            number_of_columns = len(curves[col].unique())
+            if number_of_columns > 6:
+                print(
+                    f"WARNING! {number_of_columns} columns is a lot for seaborn to plot"
+                )
+                print(
+                    f"  - consider making the plot manually (use the `.data` attribute to get the data)"
+                )
+
+            legend_items = curves[hue].unique()
+            number_of_legends = len(legend_items)
+            palette = (
+                seaborn_arguments.get("palette", "viridis")
+                if number_of_legends > 10
+                else None
+            )
+
             g = sns.FacetGrid(
                 curves,
                 hue=hue,
@@ -1950,12 +1973,33 @@ def sequence_plotter(
                 col=col,
                 height=height,
                 aspect=aspect,
+                palette=palette,
             )
+
             g.map(plt.plot, x, y)
+
+            if number_of_legends > 10:
+
+                vmin = legend_items.min()
+                vmax = legend_items.max()
+
+                sm = plt.cm.ScalarMappable(
+                    cmap=palette, norm=plt.Normalize(vmin=vmin, vmax=vmax)
+                )
+                cbar = g.figure.colorbar(
+                    sm,
+                    ax=g.figure.axes,
+                    location="right",
+                    extend="max",
+                    # pad=0.05/number_of_columns,
+                )
+                cbar.ax.set_title("Cycle")
+            else:
+                g.add_legend()
+
             fig = g.fig
             g.set_xlabels(labels[x])
             g.set_ylabels(labels[y])
-            g.add_legend()
             return fig
 
         if method == "fig_pr_cycle":
