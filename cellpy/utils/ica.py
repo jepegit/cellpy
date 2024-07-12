@@ -10,7 +10,7 @@ import pandas as pd
 from scipy import stats
 from scipy.interpolate import interp1d
 from scipy.signal import savgol_filter
-from scipy.integrate import simps
+from scipy.integrate import simpson
 from scipy.ndimage.filters import gaussian_filter1d
 
 from cellpy.exceptions import NullData
@@ -388,7 +388,7 @@ class Converter:
             if len(incremental_capacity) == 0:
                 raise NullData("incremental_capacity is empty")
 
-            area = simps(incremental_capacity, voltage)
+            area = simpson(incremental_capacity, x=voltage)
             incremental_capacity = (
                 incremental_capacity * self.normalizing_factor / abs(area)
             )
