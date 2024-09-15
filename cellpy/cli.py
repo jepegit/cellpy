@@ -1629,6 +1629,7 @@ def _new(
     session_id: str = "experiment_001",
     no_input: bool = False,
     cookie_directory: str = "",
+    local_templates_with_sub_directories: bool = False,
 ):
     """Set up a batch experiment (might need git installed).
 
@@ -1645,6 +1646,7 @@ def _new(
         session_id: the lookup value.
         no_input: accept defaults if True (only valid when providing project_dir and session_id)
         cookie_directory: name of the directory for your cookie (inside the repository or zip file).
+        local_templates_with_sub_directories: use sub-directories in local templates if True.
     Returns:
         None
     """
@@ -1781,7 +1783,11 @@ def _new(
         if cookie_directory:
             cookie_dir = cookie_directory
         if not cookie_dir:
-            cookie_dir = template.lower()
+            # if cookie_dir is not set, use the template name
+            if not local_user_template:
+                cookie_dir = template.lower()
+            elif local_templates_with_sub_directories:
+                cookie_dir = template.lower()
 
         author_name = _get_author_name()
         cookiecutter.main.cookiecutter(
