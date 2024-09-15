@@ -65,13 +65,13 @@ Ready to contribute? Here's how to set up ``cellpy`` for local development.
 
    Or use ``conda`` environments. See the conda documentation for more information.
    A suitable environment yaml configuration file
-   can be found in the root of the repository (``dev_environment.yml``; to create the environment,
-   run ``conda env create -f dev_environment.yml``).
+   can be found in the root of the repository (``environment_dev.yml``; to create the environment,
+   run ``conda env create -f environment_dev.yml``).
 
 4. Install your local copy into your virtualenv:
 
     ```shell
-    python -m pip install . -e
+    python -m pip install -e .
     ```
 
 5. Create a branch for local development:
