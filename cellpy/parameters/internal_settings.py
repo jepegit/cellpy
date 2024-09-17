@@ -6,6 +6,7 @@ from collections import UserDict
 from dataclasses import dataclass, fields, asdict
 from typing import List, Optional
 
+# TODO: crashed for python 3.10 using pandas<=2.1
 import pandas as pd
 
 from cellpy import prms

@@ -28,7 +28,7 @@ openpyxl
 matplotlib>=1.5.3
 lmfit
 scipy
-pandas<=2.1
+pandas
 tables
 PyGithub>=1.43
 plotly

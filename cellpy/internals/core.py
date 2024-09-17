@@ -168,6 +168,7 @@ class ExternalStatResult:
     st_ctime: Optional[int] = None
 
 
+# TODO: This must be cleaned up. Now also python 3.11 crashes when running this code.
 def _clean_up_original_path_string(path_string):
     if not isinstance(path_string, str):
         if isinstance(path_string, OtherPath):
@@ -234,6 +235,7 @@ class OtherPath(pathlib.Path):
         rglob (method): a method for 'recursive' globbing external paths (max one extra level deep) if ``is_external`` is True.
     """
 
+    # TODO: This crashes now in python 3.11. Need to find a way to fix this.
     _flavour = (
         pathlib._windows_flavour if os.name == "nt" else pathlib._posix_flavour
     )  # noqa

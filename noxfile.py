@@ -4,7 +4,7 @@ from yaml import safe_load
 from pathlib import Path
 
 CONDA_ENV = "github_actions_environment.yml"
-PYTHON_VERSIONS = ["3.9", "3.10", "3.11"]
+PYTHON_VERSIONS = ["3.10", "3.11"]
 
 
 @nox.session(python=PYTHON_VERSIONS)
