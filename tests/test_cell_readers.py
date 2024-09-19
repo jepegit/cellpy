@@ -679,6 +679,12 @@ def test_make_summary(cellpy_data_instance, parameters):
     assert s2.iloc[:, 3].size == 18
 
 
+def test_v6(parameters):
+    # c = cellpy.get(logging_mode="DEBUG", testing=True)
+    c2 = cellpy.get(parameters.cellpy_file_path_v6, logging_mode="DEBUG", testing=True)
+    # c.load(parameters.cellpy_file_path_v6)
+
+
 def test_make_summary_new_version(parameters):
     c_raw = cellpy.get(logging_mode="DEBUG", testing=True)
     c_raw.from_raw(parameters.res_file_path)

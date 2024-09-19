@@ -1024,8 +1024,8 @@ def collect_capacity_curves(
                 f"collect_capacity_curve received unknown key-word argument: {arg=}"
             )
 
-    minimum_v_value = np.Inf
-    maximum_v_value = -np.Inf
+    minimum_v_value = np.inf
+    maximum_v_value = -np.inf
     charge_list = []
     cycles = kwargs.pop("cycle", None)
 

@@ -549,7 +549,7 @@ def rename_columns(
 
     if populate_missing_in_old:
         for col in missing_in_old:
-            df[col] = np.NAN
+            df[col] = np.nan
 
     return df.rename(columns=col_name_mapper)
 

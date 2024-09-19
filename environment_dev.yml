@@ -2,69 +2,68 @@ name: cellpy_dev
 channels:
     - conda-forge
 dependencies:
-    - python=3.11
-    - pip
-    - numpy
-    - openpyxl
-    - xlrd
-    - cryptography
-    - click
-    - scipy
-    - pandas <=2.1
-    - setuptools
-    - ruamel.yaml
-    - pyodbc
+    - python >=3.10
     - PyGithub
+    - black
+    - bumpver
+    - click
     - cookiecutter
-    - tqdm
+    - coverage
+    - cryptography
     - dateparser
-    - hdf5
-    - pytables
-    - python-box
-    - pint
-    - sqlalchemy
-    - python-dotenv
     - fabric
-    - lmfit
-    - matplotlib
-    - plotly
+    - graphviz
+    - hdf5
+    - invoke
+    - ipykernel
     - ipython
     - ipywidgets
-    - ipykernel
-    - rich
-    - coverage
-    - pytest
-    - pytest-timeout
-    - pytest-benchmark
-    - nox
-    - black
-    - plotly
-    - seaborn
-    - sphinx
-    - nbsphinx
-    - sqlalchemy-access
-    - pandoc
-    - graphviz
-    - sphinx-autoapi
-    - invoke
-    - twine
-    - build
-    - bumpver
-    - python-dotenv
-    - myst-parser
-    - sphinx_rtd_theme
-    - nbmake
-    - requests
     - jupyterlab
+    - lmfit
+    - matplotlib
+    - myst-parser
+    - nbmake
+    - nbsphinx
+    - nox
+    - numpy >= 2.0
+    - openpyxl
+    - pandas
+    - pandoc
+    - pint
+    - pip
+    - plotly
+    - plotly
+    - pyodbc
+    - pytables
+    - pytest
+    - pytest-benchmark
+    - pytest-timeout
+    - python-box
+    - python-dotenv
+    - python-dotenv
+    - requests
+    - rich
+    - ruamel.yaml
+    - scipy
+    - seaborn
+    - setuptools
+    - sphinx
+    - sphinx-autoapi
+    - sphinx_rtd_theme
+    - sqlalchemy
+    - sqlalchemy-access
+    - tqdm
+    - twine
+    - xlrd
     - pip:
+        - isort
+        - jinja2_time
+        - jupyterlab-code-formatter
+        - kaleido==0.1.*
+        - myst_nb
+        - pip-tools
         - pipdeptree
         - pydeps
-        - pip-tools
-        - myst_nb
         - sphinx-book-theme
-        - jinja2_time
-        - kaleido==0.1.*
-        - jupyterlab-code-formatter
-        - isort
 
 

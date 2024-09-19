@@ -4,13 +4,13 @@ channels:
 dependencies:
     - python=3.11
     - pip
-    - numpy
+    - numpy >= 2.0
     - openpyxl
     - xlrd
     - cryptography
     - click
     - scipy
-    - pandas <=2.1
+    - pandas
     - setuptools
     - ruamel.yaml
     - pyodbc

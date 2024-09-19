@@ -38,7 +38,7 @@ def _make_average_legacy(
     hdr_norm_cycle = hdr_summary["normalized_cycle_index"]
     hdr_cum_charge = hdr_summary["cumulated_charge_capacity"]
     cell_id = ""
-    not_a_number = np.NaN
+    not_a_number = np.nan
     new_frames = []
 
     if columns is None:
@@ -101,7 +101,7 @@ def _make_average(
     skip_st_dev_for_equivalent_cycle_index=True,
 ):
     hdr_norm_cycle = hdr_summary["normalized_cycle_index"]
-    not_a_number = np.NaN
+    not_a_number = np.nan
     new_frames = []
 
     if columns is None:

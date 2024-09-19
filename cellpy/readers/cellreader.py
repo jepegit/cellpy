@@ -1374,18 +1374,21 @@ class CellpyCell:
         except AttributeError:
             data = None
             logging.warning(
-                "This cellpy-file version is not supported by"
+                "This cellpy-file version is not supported by "
                 "current reader (try to update cellpy)."
             )
 
         if data:
             self.data = data
+            # self._invent_a_cell_name(cellpy_file)
+
         else:
             # raise LoadError
             logging.warning("Could not load")
             logging.warning(str(cellpy_file))
 
         self._invent_a_cell_name(cellpy_file)
+
         if return_cls:
             return self
 
@@ -1469,6 +1472,8 @@ class CellpyCell:
                     f"summary table."
                 )
                 new_data = self._load_old_hdf5(filename, cellpy_file_version)
+                logging.debug("loaded old file")
+                logging.debug(new_data)
             else:
                 raise WrongFileVersion(
                     f"File format too old: {filename} :: version: {cellpy_file_version}"

@@ -218,6 +218,46 @@ def _check_external(path_string: str) -> Tuple[str, bool, str, str]:
     return path_string, _is_external, _uri_prefix, _location
 
 
+class OtherPath2(pathlib.Path):
+    """A pathlib.Path subclass that can handle external paths.
+
+    Attributes:
+        is_external (bool): is True if the path is external.
+        location (str): the location of the external path (e.g. a server name).
+        uri_prefix (str): the prefix of the external path (e.g. scp:// or sftp://).
+        raw_path (str): the path without any uri_prefix or location.
+        original (str): the original path string.
+        full_path (str): the full path (including uri_prefix and location).
+
+    Methods:
+        copy (method): a method for copying the file to a local path.
+        glob (method): a method for globbing external paths if ``is_external`` is True.
+        rglob (method): a method for 'recursive' globbing external paths (max one extra level deep) if ``is_external`` is True.
+    """
+
+    def __new__(cls, *args, **kwargs):
+        cls._created = time.time()
+        if args:
+            path, *args = args
+        else:
+            path = "."
+            logging.debug("initiating OtherPath without any arguments")
+        if not path:
+            logging.debug("initiating OtherPath with empty path")
+            path = "."
+        if isinstance(path, OtherPath) and hasattr(path, "_original"):
+            logging.debug(f"path is OtherPath")
+            path = path._original
+        logging.debug(f"checked if path is OtherPath")
+
+        path = _clean_up_original_path_string(path)
+        assert isinstance(path, str), "path must be a string"
+        cls.__original = path
+        cls._pathlib_doc = super().__doc__
+        path = _check_external(path)[0]
+        return super().__new__(cls, path, *args, **kwargs)
+
+
 class OtherPath(pathlib.Path):
     """A pathlib.Path subclass that can handle external paths.
 

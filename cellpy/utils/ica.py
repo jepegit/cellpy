@@ -410,7 +410,7 @@ class Converter:
                 y=incremental_capacity,
                 kind=self.interpolation_method,
                 bounds_error=False,
-                fill_value=np.NaN,
+                fill_value=np.nan,
             )
             self.incremental_capacity = f(v)
             self.voltage_processed = v
@@ -437,7 +437,7 @@ def dqdv_cycle(cycle_df, splitter=True, label_direction=False, **kwargs):
 
     Args:
         cycle_df (pandas.DataFrame): the cycle data ('voltage', 'capacity', 'direction' (1 or -1)).
-        splitter (bool): insert a np.NaN row between charge and discharge.
+        splitter (bool): insert a np.nan row between charge and discharge.
         label_direction (bool): include 'direction' (1 or -1).
 
     Returns:
@@ -495,8 +495,8 @@ def dqdv_cycle(cycle_df, splitter=True, label_direction=False, **kwargs):
     incremental_capacity_first = converter.incremental_capacity
 
     if splitter:
-        voltage_first = np.append(voltage_first, np.NaN)
-        incremental_capacity_first = np.append(incremental_capacity_first, np.NaN)
+        voltage_first = np.append(voltage_first, np.nan)
+        incremental_capacity_first = np.append(incremental_capacity_first, np.nan)
 
     converter = Converter(**kwargs)
 
@@ -762,7 +762,7 @@ def dqdv_np(
 
 def dqdv(cell, split=False, tidy=True, label_direction=False, **kwargs):
     """Calculates dq-dv data for all cycles contained in
-    the given CellpyCell object, returns data as pandas.DataFrame(s) 
+    the given CellpyCell object, returns data as pandas.DataFrame(s)
 
     Args:
         cell (CellpyCell-object).
