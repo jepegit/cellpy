@@ -455,7 +455,7 @@ def bump(c, bumper=None):
 
 
     """
-
+    raise NotImplementedError("This task is not implemented yet")
     bumper = _get_bump_tag(bumper)
 
     if not bumper:
