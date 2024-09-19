@@ -2,7 +2,7 @@ name: cellpy
 channels:
     - conda-forge
 dependencies:
-    - python=3.11
+    - python>=3.10, <3.12
     - pip
     - numpy >= 2.0
     - openpyxl

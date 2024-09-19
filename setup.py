@@ -37,8 +37,8 @@ included_packages = find_packages(
 # TODO: update this
 requirements = [
     "scipy",
-    "numpy>=1.16.4",
-    "pandas>=1.5.0",
+    "numpy",
+    "pandas",
     "python-box",
     "setuptools",
     "ruamel.yaml",
