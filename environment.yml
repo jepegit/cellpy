@@ -2,38 +2,38 @@ name: cellpy
 channels:
     - conda-forge
 dependencies:
-    - python>=3.10, <3.12
-    - pip
-    - numpy >= 2.0
-    - openpyxl
-    - xlrd
-    - cryptography
     - click
-    - scipy
-    - pandas
-    - setuptools
-    - ruamel.yaml
-    - pyodbc
-    - pygithub
     - cookiecutter
-    - tqdm
+    - cryptography
     - dateparser
-    - hdf5
-    - pytables
-    - python-box
-    - pint
-    - sqlalchemy
-    - python-dotenv
     - fabric
-    - lmfit
-    - matplotlib
-    - plotly
+    - hdf5
+    - ipykernel
     - ipython
     - ipywidgets
-    - ipykernel
-    - rich
-    - sqlalchemy-access
+    - lmfit
+    - matplotlib
+    - numpy >= 2.0
+    - openpyxl
+    - pandas
+    - pint
+    - pip
+    - plotly
+    - pygithub
+    - pyodbc
+    - pytables
+    - python-box
+    - python-dotenv
+    - python>=3.10, <3.12
     - requests
+    - rich
+    - ruamel.yaml
+    - scipy
+    - setuptools
+    - sqlalchemy
+    - sqlalchemy-access
+    - tqdm
+    - xlrd
 # This version of kaleido is not available for macOS M-chip:
     - kaleido==0.1.*
     - jinja2_time

@@ -3,39 +3,39 @@ channels:
     - conda-forge
     - defaults
 dependencies:
-    - python
-    - pip
+    - PyGithub
+    - click
+    - cookiecutter
+    - coverage
+    - cryptography
+    - dateparser
+    - fabric
+    - hdf5
+    - lmfit
+    - matplotlib
+    - nbmake
     - numpy
     - openpyxl
-    - xlrd
-    - matplotlib
-    - cryptography
-    - click
-    - scipy
     - pandas
-    - setuptools
-    - ruamel.yaml
-    - pyodbc
-    - PyGithub
-    - cookiecutter
-    - tqdm
-    - lmfit
-    - hdf5
-    - pytables
-    - python-box
     - pint
-    - sqlalchemy
-    - python-dotenv
-    - fabric
-    - rich
-    - dateparser
-    - coverage
-    - pytest
-    - pytest-timeout
-    - pytest-benchmark
-    - nbmake
+    - pip
     - plotly
+    - pyodbc
+    - pytables
+    - pytest
+    - pytest-benchmark
+    - pytest-timeout
+    - python
+    - python-box
+    - python-dotenv
     - requests
+    - rich
+    - ruamel.yaml
+    - scipy
+    - setuptools
+    - sqlalchemy
+    - tqdm
+    - xlrd
     - pip:
         - sqlalchemy-access
         - jinja2_time
