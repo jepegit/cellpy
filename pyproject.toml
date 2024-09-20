@@ -9,7 +9,9 @@ markers = [
     "slowtest: marks tests as slow (deselect with '-m \"not slow\"')",
     "serial",
 ]
-[bumpver]
+
+
+[tool.bumpver]
 current_version = "1.0.2a3"
 version_pattern = "MAJOR.MINOR.PATCH[PYTAG][NUM]"
 commit_message = "bump version {old_version} -> {new_version}"
@@ -17,13 +19,11 @@ commit = true
 tag = true
 push = false
 
-[bumpver.file_patterns]
-"cellpy/_version.py" = [
-    '__version__ = "{version}"',
-]
-
-"bumpver.toml" = [
+[tool.bumpver.file_patterns]
+"pyproject.toml" = [
     'current_version = "{version}"',
 ]
 
-
+"cellpy/_version.py" = [
+    '__version__ = "{version}"',
+]
