@@ -146,6 +146,8 @@ class OtherPathNew(pathlib.Path):
 class OtherPathLegacy(pathlib.Path):
     """A pathlib.Path subclass that can handle external paths.
 
+    This is the legacy version of OtherPath only valid for Python 3.11 and earlier.
+
     Attributes:
         is_external (bool): is True if the path is external.
         location (str): the location of the external path (e.g. a server name).
