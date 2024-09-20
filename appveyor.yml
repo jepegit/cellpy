@@ -6,6 +6,7 @@ environment:
   matrix:
     - PYTHON_VERSION: 3.10
     - PYTHON_VERSION: 3.11
+    - PYTHON_VERSION: 3.12
 
 init:
   - "ECHO %PYTHON_VERSION% %MINICONDA% %PYTHON_ARC%"

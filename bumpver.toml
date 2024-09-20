@@ -1,10 +1,9 @@
 [bumpver]
-#DEPRECATED = "Use 'bumpversion' instead"
-current_version = "1.0.1post3"
+current_version = "1.0.2a3"
 version_pattern = "MAJOR.MINOR.PATCH[PYTAG][NUM]"
 commit_message = "bump version {old_version} -> {new_version}"
-commit = false
-tag = false
+commit = true
+tag = true
 push = false
 
 [bumpver.file_patterns]
