@@ -792,3 +792,16 @@ def get_otherpath_class():
     if _new_other_path_version():
         return OtherPathNew
     return OtherPathLegacy
+
+
+def check_otherpath_new():
+    if x := not _new_other_path_version():
+        print(f"New OtherPath version: {x}")
+        return
+
+    OtherPath = get_otherpath_class()
+    print(f"OtherPath class: {OtherPath}")
+
+
+if __name__ == "__main__":
+    check_otherpath_new()
