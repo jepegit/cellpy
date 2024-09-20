@@ -5,7 +5,7 @@ dependencies:
     - python >=3.10
     - PyGithub
     - black
-    - bumpversion
+    - bumpver
     - click
     - cookiecutter
     - coverage
