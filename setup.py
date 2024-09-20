@@ -117,6 +117,7 @@ setup(
         "Natural Language :: English",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
     ],
     test_suite="tests",
     tests_require=test_requirements,

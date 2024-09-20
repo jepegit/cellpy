@@ -24,7 +24,7 @@ dependencies:
     - pytables
     - python-box
     - python-dotenv
-    - python>=3.10, <3.12
+    - python>=3.10
     - requests
     - rich
     - ruamel.yaml

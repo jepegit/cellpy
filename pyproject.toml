@@ -11,4 +11,19 @@ markers = [
 ]
 
 
+[tool.bumpver]
+current_version = "1.0.2a5"
+version_pattern = "MAJOR.MINOR.PATCH[PYTAG][NUM]"
+commit_message = "bump version {old_version} -> {new_version}"
+commit = true
+tag = true
+push = false
 
+[tool.bumpver.file_patterns]
+"pyproject.toml" = [
+    'current_version = "{version}"',
+]
+
+"cellpy/_version.py" = [
+    '__version__ = "{version}"',
+]

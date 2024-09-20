@@ -455,7 +455,7 @@ def bump(c, bumper=None):
 
 
     """
-    raise NotImplementedError("This task is not implemented yet")
+    # raise NotImplementedError("This task is not implemented yet")
     bumper = _get_bump_tag(bumper)
 
     if not bumper:
@@ -469,7 +469,7 @@ def bump(c, bumper=None):
     regex_old = re.compile("- Old Version: (.*)")
     regex_new = re.compile("- New Version: (.*)")
     print(f" running bumpver ({bumper} --dry) ".center(80, "-"))
-    out = c.run(f"bumpver update --{bumper} --dry")
+    out = c.run(f"python -m bumpver update --{bumper} --dry")
     old_version = create_commit_message_from_output(out.stderr, regex_old)
     new_version = create_commit_message_from_output(out.stderr, regex_new)
     commit_message = f"bump version {old_version} -> {new_version}"
@@ -480,7 +480,7 @@ def bump(c, bumper=None):
         print("Aborting!")
         return
 
-    c.run(f"bumpver update --{bumper}")
+    c.run(f"python -m bumpver update --{bumper}")
     print("DONE")
 
 
