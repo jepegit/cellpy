@@ -312,7 +312,7 @@ def summary_plot(
         interactive: use interactive plotting
         rangeslider: add a range slider to the x-axis (only for plotly)
         share_y: share y-axis
-        verbose: print out some extra information to make it easier to find out what to plot
+        verbose: print out some extra information to make it easier to find out what to plot next time
         **kwargs: additional parameters for the plotting backend
 
     Returns:
