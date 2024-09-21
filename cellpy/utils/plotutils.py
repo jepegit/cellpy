@@ -215,7 +215,15 @@ def create_col_info(c):
         + [col + "_non_cv" for col in _capacities_areal]
     )
 
-    x_columns = ([hdr.cycle_index, hdr.data_point, hdr.test_time, hdr.datetime],)
+    x_columns = (
+        [
+            hdr.cycle_index,
+            hdr.data_point,
+            hdr.test_time,
+            hdr.datetime,
+            hdr.normalized_cycle_index,
+        ],
+    )
     y_cols = dict(
         voltages=[hdr.end_voltage_charge, hdr.end_voltage_discharge],
         capacities_gravimetric=_capacities_gravimetric,
@@ -244,6 +252,8 @@ def create_label_dict(c):
         hdr.data_point: "Point",
         hdr.test_time: f"Test Time ({c.cellpy_units.time})",
         hdr.datetime: "Date",
+        hdr.normalized_cycle_index: "Equivalent Full Cycle",
+        # hdr.normalized_cycle_index: "Normalized Cycle Number",
     }
 
     _cap_gravimetric_label = (
@@ -279,6 +289,7 @@ def summary_plot(
     interactive: bool = True,
     share_y: bool = False,
     rangeslider: bool = False,
+    verbose: bool = False,
     **kwargs,
 ):
     """Create a summary plot. Currently only supports plotly.
@@ -300,7 +311,8 @@ def summary_plot(
         split: split the plot
         interactive: use interactive plotting
         rangeslider: add a range slider to the x-axis (only for plotly)
-        share_y (bool): share y-axis
+        share_y: share y-axis
+        verbose: print out some extra information to make it easier to find out what to plot
         **kwargs: additional parameters for the plotting backend
 
     Returns:
@@ -361,29 +373,71 @@ def summary_plot(
 
     x_label = x_axis_labels.get(x, x)
     y_label = y_axis_label.get(y, y)
-    fig = px.line(
-        s,
-        x=x,
-        y=y_header,
-        **additional_kwargs,
-        labels={
-            x: x_label,
-            y_header: y_label,
-        },
-        **kwargs,
-    )
 
-    if x_range is not None:
-        fig.update_layout(xaxis=dict(range=x_range))
-    if y_range is not None:
-        fig.update_layout(yaxis=dict(range=y_range))
-    elif split and not share_y:
-        fig.update_yaxes(matches=None)
+    if verbose:
+        from pprint import pprint, pformat
+        import textwrap
 
-    if rangeslider:
-        fig.update_layout(xaxis_rangeslider_visible=True)
+        print("Running summary_plot in verbose mode\n")
+        print("Selected columns:")
+        print(60 * "-")
+        print(f"x: {x}")
+        print(f"y: {y}")
+        print("\nSelected Labels:")
+        print(60 * "-")
+        print(f"x: {x_label}")
+        print(f"y: {y_label}")
 
-    return fig
+        print("\nAvailable x-columns:")
+        print(60 * "-")
+        for col in x_columns[0]:
+            print(f"{col}")
+
+        print("\nAvailable y-columns sets:")
+        print(60 * "-")
+        for key, cols in y_cols.items():
+            print(f"{key}:")
+            for line in textwrap.wrap(pformat(cols), width=80):
+                print("  " + line)
+
+        print("\nAvailable y-columns:")
+        print(60 * "-")
+        cols = list(c.data.summary.columns)
+        for line in textwrap.wrap(pformat(cols), width=80):
+            print("  " + line)
+
+        print("\nAvailable pre-defined labels:")
+        print(60 * "-")
+        print("x_axis_labels")
+        pprint(x_axis_labels)
+        print("y_axis_label")
+        pprint(y_axis_label)
+
+    if interactive:
+        fig = px.line(
+            s,
+            x=x,
+            y=y_header,
+            **additional_kwargs,
+            labels={
+                x: x_label,
+                y_header: y_label,
+            },
+            **kwargs,
+        )
+
+        if x_range is not None:
+            fig.update_layout(xaxis=dict(range=x_range))
+        if y_range is not None:
+            fig.update_layout(yaxis=dict(range=y_range))
+        elif split and not share_y:
+            fig.update_yaxes(matches=None)
+
+        if rangeslider:
+            fig.update_layout(xaxis_rangeslider_visible=True)
+        return fig
+    else:
+        print("Only interactive plotting is supported for summary_plot")
 
 
 def partition_summary_cv_steps(
