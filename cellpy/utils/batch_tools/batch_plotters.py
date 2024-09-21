@@ -943,6 +943,12 @@ def plot_cycle_life_summary_plotly(summaries: pd.DataFrame, **kwargs):
     base_template = kwargs.pop("base_template", "plotly")
     color_map = kwargs.pop("color_map", px.colors.qualitative.Set1)
 
+    if isinstance(color_map, str):
+        if hasattr(px.colors.qualitative, color_map):
+            color_map = getattr(px.colors.qualitative, color_map)
+        else:
+            logging.warning(f"could not find color map {color_map}")
+
     ce_range = kwargs.pop("ce_range", None)
     min_cycle = kwargs.pop("min_cycle", None)
     max_cycle = kwargs.pop("max_cycle", None)
@@ -1336,6 +1342,23 @@ class CyclingSummaryPlotter(BasePlotter):
         self.current_engine = None
         self._assign_engine(summary_plotting_engine)
         self._assign_dumper(exporting_plots)
+
+    @property
+    def figure(self):
+        """Get the (first) figure/canvas."""
+        if len(self.farms) > 0:
+            return self.farms[0]
+
+    @property
+    def fig(self):
+        """Alias for figure."""
+        return self.figure
+
+    @property
+    def figures(self):
+        """Get all figures/canvases."""
+        if len(self.farms) > 0:
+            return self.farms
 
     @property
     def columns(self):

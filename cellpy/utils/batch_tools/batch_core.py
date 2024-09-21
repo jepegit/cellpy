@@ -176,9 +176,9 @@ class Data(collections.UserDict):
         cell_labels = self.experiment.journal.pages.index
         for cell_label in cell_labels:
             try:
-                self.accessors[
-                    self._create_accessor_label(cell_label)
-                ] = self.experiment.cell_data_frames[cell_label]
+                self.accessors[self._create_accessor_label(cell_label)] = (
+                    self.experiment.cell_data_frames[cell_label]
+                )
             except KeyError as e:
                 logging.debug(
                     f"Could not create accessors for {cell_label}"
@@ -234,9 +234,9 @@ class Data(collections.UserDict):
                 cell = self.experiment._load_cellpy_file(cellpy_file)  # noqa
                 self.experiment.cell_data_frames[cell_id] = cell
                 # trick for making tab-completion work:
-                self.accessors[
-                    self._create_accessor_label(cell_id)
-                ] = self.experiment.cell_data_frames[cell_id]
+                self.accessors[self._create_accessor_label(cell_id)] = (
+                    self.experiment.cell_data_frames[cell_id]
+                )
                 return cell
             else:
                 raise NotImplementedError
@@ -359,6 +359,17 @@ class BaseExperiment(metaclass=abc.ABCMeta):
     def max_cycle(self, value):
         self._max_cycle = value
 
+    def get_data(self):
+        if self._data is None:
+            data = Data(self)
+            if self._store_data_object:
+                # for cell_name in self.journal.pages.index:
+                #     data[cell_name] = None
+                self._data = data
+            return data
+        else:
+            return self._data
+
     @property
     def data(self) -> Data:
         """Property for accessing the underlying data in an experiment.
@@ -367,7 +378,6 @@ class BaseExperiment(metaclass=abc.ABCMeta):
             >>> cell_data_one = experiment.data["2018_cell_001"]
             >>> capacity, voltage = cell_data_one.get_cap(cycle=1)
         """
-
         # TODO: implement max cycle number (experiment.last_cycle)
         if self._data is None:
             data = Data(self)

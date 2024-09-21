@@ -154,6 +154,8 @@ class Batch:
         self._journal_name = self.journal_name
         self.headers_step_table = headers_step_table
 
+        self.cells = None
+
     def __str__(self):
         return str(self.experiment)
 
@@ -479,22 +481,6 @@ class Batch:
             "Label-based look-up is not supported yet. Performing cell-name based look-up instead."
         )
         return self.experiment.cell_names
-
-    @property
-    def cells(self) -> Data:
-        """Access cells as a Data object (attribute lookup and automatic loading).
-
-        Note:
-            Write ``b.cells.x`` and press <TAB>. Then a pop-up might appear, and you can choose the
-            cell you would like to retrieve.
-
-        Warning:
-            It seems that it is not always working as intended,
-            at least not in my jupyter lab anymore. Instead, you can use ``b.experiment.data`` or
-            write ``cells = b.cells`` and then use ``cells.x`` and press <TAB> to get the pop-up.
-
-        """
-        return self.experiment.data
 
     @property
     def cell_summary_headers(self) -> Index:
@@ -1050,6 +1036,8 @@ class Batch:
         if force_combine_summaries or max_cycle:
             self.summary_collector.do(reset=True)
 
+        self.cells = self.experiment.data
+
     def load(self) -> None:
         """Load the selected datasets.
 
@@ -1098,6 +1086,7 @@ class Batch:
             self.experiment.parallel_update(**kwargs)
         else:
             self.experiment.update(**kwargs)
+        self.cells = self.experiment.data
 
     def export_cellpy_files(self, path=None, **kwargs) -> None:
         if path is None:
@@ -1178,6 +1167,15 @@ class Batch:
 
             filter_by_group (int or list of ints): show only the selected group(s)
             filter_by_name (str): show only cells containing this string
+
+        Usage:
+            b.plot(backend="plotly", reload_data=False, color_map="Set2", ce_range=[95, 105],
+                     min_cycle=1, max_cycle=100, title="Cycle Summary", x_label="Cycle Number",
+                     direction="charge", rate=False, ir=True, group_legends=True, base_template="plotly_dark",
+                     filter_by_group=1, filter_by_name="2019")
+
+            # to get the plotly canvas:
+            my_canvas = b.figure
 
         """
 
