@@ -325,14 +325,11 @@ def summary_plot(
 
     """
 
-    if interactive:
-        if plotly_available:
-            import plotly.express as px
-        else:
-            warnings.warn(
+    if interactive and not plotly_available:
+        warnings.warn(
                 "plotly not available, and it is currently the only supported interactive backend"
             )
-            return None
+        return None
 
     if title is None:
         if interactive:
@@ -426,6 +423,7 @@ def summary_plot(
         pprint(y_axis_label)
 
     if interactive:
+        import plotly.express as px
         fig = px.line(
             s,
             x=x,
