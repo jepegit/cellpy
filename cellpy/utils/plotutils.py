@@ -316,20 +316,29 @@ def summary_plot(
         **kwargs: additional parameters for the plotting backend
 
     Returns:
-        ``plotly`` figure or None
+        ``plotly`` figure or ``matplotlib`` figure.
+
+    Hint:
+        If you want to modify the non-interactive (matplotlib) plot, you can get the axis from the
+        returned figure by ``ax = figure.get_axes()[0]``.
+
 
     """
 
-    if plotly_available and interactive:
-        import plotly.express as px
-    else:
-        warnings.warn(
-            "plotly not available, and it is currently the only supported backend"
-        )
-        return None
+    if interactive:
+        if plotly_available:
+            import plotly.express as px
+        else:
+            warnings.warn(
+                "plotly not available, and it is currently the only supported interactive backend"
+            )
+            return None
 
     if title is None:
-        title = f"Summary <b>{c.cell_name}</b>"
+        if interactive:
+            title = f"Summary <b>{c.cell_name}</b>"
+        else:
+            title = f"Summary {c.cell_name}"
 
     if x is None:
         x = "cycle_index"
@@ -372,7 +381,10 @@ def summary_plot(
         s = s.reset_index(drop=True)
 
     x_label = x_axis_labels.get(x, x)
-    y_label = y_axis_label.get(y, y)
+    if y in y_axis_label:
+        y_label = y_axis_label.get(y, y)
+    else:
+        y_label = y.replace("_", " ").title()
 
     if verbose:
         from pprint import pprint, pformat
@@ -437,7 +449,17 @@ def summary_plot(
             fig.update_layout(xaxis_rangeslider_visible=True)
         return fig
     else:
-        print("Only interactive plotting is supported for summary_plot")
+        import seaborn as sns
+
+        # a very simple seaborn (matplotlib) plot...
+        sns.set_theme(style="ticks")
+        fig, ax = plt.subplots()
+        ax = sns.lineplot(data=s, x=x, y=y_header, hue="variable", ax=ax)
+        ax.set_xlabel(x_label)
+        ax.set_ylabel(y_label)
+        ax.set_title(title)
+        plt.close(fig)
+        return fig
 
 
 def partition_summary_cv_steps(
