@@ -289,10 +289,11 @@ def summary_plot(
     interactive: bool = True,
     share_y: bool = False,
     rangeslider: bool = False,
+    return_data: bool = False,
     verbose: bool = False,
     **kwargs,
 ):
-    """Create a summary plot. Currently only supports plotly.
+    """Create a summary plot.
 
 
     Args:
@@ -312,23 +313,26 @@ def summary_plot(
         interactive: use interactive plotting
         rangeslider: add a range slider to the x-axis (only for plotly)
         share_y: share y-axis
+        return_data: return the data used for plotting
         verbose: print out some extra information to make it easier to find out what to plot next time
         **kwargs: additional parameters for the plotting backend
 
     Returns:
-        ``plotly`` figure or ``matplotlib`` figure.
+        if ``return_data`` is True, returns a tuple with the figure and the data used for plotting.
+        Otherwise, it returns only the figure. If ``interactive`` is True, the figure is a ``plotly`` figure,
+        else it is a ``matplotlib`` figure.
 
     Hint:
-        If you want to modify the non-interactive (matplotlib) plot, you can get the axis from the
-        returned figure by ``ax = figure.get_axes()[0]``.
+        If you want to modify the non-interactive (matplotlib) plot, you can get the axes from the
+        returned figure by ``axes = figure.get_axes()``.
 
 
     """
 
     if interactive and not plotly_available:
         warnings.warn(
-                "plotly not available, and it is currently the only supported interactive backend"
-            )
+            "plotly not available, and it is currently the only supported interactive backend"
+        )
         return None
 
     if title is None:
@@ -340,14 +344,15 @@ def summary_plot(
     if x is None:
         x = "cycle_index"
 
-    x_columns, y_cols = create_col_info(c)
+    x_cols, y_cols = create_col_info(c)
     x_axis_labels, y_axis_label = create_label_dict(c)
 
     # ------------------- main --------------------------------------------
     y_header = "value"
     color = "variable"
+    row = "row"
 
-    additional_kwargs = dict(
+    additional_kwargs_plotly = dict(
         color=color,
         height=height,
         markers=markers,
@@ -362,9 +367,13 @@ def summary_plot(
             else "capacities_areal"
         )
         column_set = y_cols[cap_type]
-        s = partition_summary_cv_steps(c, x, column_set, split, color, y_header)
+
+        # turning off warnings when splitting the data
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            s = partition_summary_cv_steps(c, x, column_set, split, color, y_header)
         if split:
-            additional_kwargs["facet_row"] = "row"
+            additional_kwargs_plotly["facet_row"] = row
 
     # simple case
     else:
@@ -384,51 +393,18 @@ def summary_plot(
         y_label = y.replace("_", " ").title()
 
     if verbose:
-        from pprint import pprint, pformat
-        import textwrap
-
-        print("Running summary_plot in verbose mode\n")
-        print("Selected columns:")
-        print(60 * "-")
-        print(f"x: {x}")
-        print(f"y: {y}")
-        print("\nSelected Labels:")
-        print(60 * "-")
-        print(f"x: {x_label}")
-        print(f"y: {y_label}")
-
-        print("\nAvailable x-columns:")
-        print(60 * "-")
-        for col in x_columns[0]:
-            print(f"{col}")
-
-        print("\nAvailable y-columns sets:")
-        print(60 * "-")
-        for key, cols in y_cols.items():
-            print(f"{key}:")
-            for line in textwrap.wrap(pformat(cols), width=80):
-                print("  " + line)
-
-        print("\nAvailable y-columns:")
-        print(60 * "-")
-        cols = list(c.data.summary.columns)
-        for line in textwrap.wrap(pformat(cols), width=80):
-            print("  " + line)
-
-        print("\nAvailable pre-defined labels:")
-        print(60 * "-")
-        print("x_axis_labels")
-        pprint(x_axis_labels)
-        print("y_axis_label")
-        pprint(y_axis_label)
+        _report_summary_plot_info(
+            c, x, y, x_label, x_axis_labels, x_cols, y_label, y_axis_label, y_cols
+        )
 
     if interactive:
         import plotly.express as px
+
         fig = px.line(
             s,
             x=x,
             y=y_header,
-            **additional_kwargs,
+            **additional_kwargs_plotly,
             labels={
                 x: x_label,
                 y_header: y_label,
@@ -445,19 +421,117 @@ def summary_plot(
 
         if rangeslider:
             fig.update_layout(xaxis_rangeslider_visible=True)
+        if return_data:
+            return fig, s
         return fig
+
     else:
+        # a very simple seaborn (matplotlib) plot...
+        if not seaborn_available:
+            warnings.warn(
+                "seaborn not available, returning only the data so that you can plot it yourself instead"
+            )
+            return s
+
         import seaborn as sns
 
-        # a very simple seaborn (matplotlib) plot...
-        sns.set_theme(style="ticks")
-        fig, ax = plt.subplots()
-        ax = sns.lineplot(data=s, x=x, y=y_header, hue="variable", ax=ax)
-        ax.set_xlabel(x_label)
-        ax.set_ylabel(y_label)
-        ax.set_title(title)
+        sns.set_style(kwargs.pop("style", "darkgrid"))
+
+        if split:
+            sns_fig = sns.relplot(
+                data=s,
+                x=x,
+                y=y_header,
+                hue=color,
+                row=row,
+                height=2,
+                aspect=4,
+                kind="line",
+                marker="o" if markers else None,
+                **kwargs,
+            )
+
+            sns_fig.set_axis_labels(x_label, y_label)
+            if x_range is not None:
+                sns_fig.set(xlim=x_range)
+            if y_range is not None:
+                sns_fig.set(ylim=y_range)
+
+            fig = sns_fig.figure
+            fig.suptitle(title, y=1.05)
+
+        else:
+            fig, ax = plt.subplots()
+            ax = sns.lineplot(
+                data=s,
+                x=x,
+                y=y_header,
+                hue=color,
+                ax=ax,
+                marker="o" if markers else None,
+                **kwargs,
+            )
+
+            ax.set_xlabel(x_label)
+            ax.set_ylabel(y_label)
+            ax.set_title(title)
+
+            if x_range is not None:
+                ax.set_xlim(x_range)
+
+            if y_range is not None:
+                ax.set_ylim(y_range)
+
+            sns.move_legend(
+                ax,
+                loc="upper left",
+                bbox_to_anchor=(1, 1),
+                title="Variable",
+                frameon=False,
+            )
+
         plt.close(fig)
+        if return_data:
+            return fig, s
         return fig
+
+
+def _report_summary_plot_info(
+    c, x, y, x_label, x_axis_labels, x_cols, y_label, y_axis_label, y_cols
+):
+    from pprint import pprint, pformat
+    import textwrap
+
+    print("Running summary_plot in verbose mode\n")
+    print("Selected columns:")
+    print(60 * "-")
+    print(f"x: {x}")
+    print(f"y: {y}")
+    print("\nSelected Labels:")
+    print(60 * "-")
+    print(f"x: {x_label}")
+    print(f"y: {y_label}")
+    print("\nAvailable x-columns:")
+    print(60 * "-")
+    for col in x_cols[0]:
+        print(f"{col}")
+    print("\nAvailable y-columns sets:")
+    print(60 * "-")
+    for key, cols in y_cols.items():
+        print(f"{key}:")
+        for line in textwrap.wrap(pformat(cols, width=60), width=60):
+            print("  " + line)
+    print("\nAvailable y-columns:")
+    print(60 * "-")
+    cols = list(c.data.summary.columns)
+    for line in textwrap.wrap(pformat(cols, width=60), width=60):
+        print("  " + line)
+    print("\nAvailable pre-defined labels:")
+    print(60 * "-")
+    print("x_axis_labels")
+    pprint(x_axis_labels)
+    print("y_axis_label")
+    pprint(y_axis_label)
 
 
 def partition_summary_cv_steps(
@@ -532,7 +606,6 @@ def raw_plot(
     interactive=True,
     plot_type="voltage-current",
     double_y=True,
-    return_matplotlib_figure=False,
     **kwargs,
 ):
     """Plot raw data.
@@ -548,13 +621,13 @@ def raw_plot(
         plot_type (str): type of plot (defaults to "voltage-current") (overrides given y if y is not None),
           currently only "voltage-current" is supported.
         double_y (bool): use double y-axis (only for matplotlib and when plot_type is used)
-        return_matplotlib_figure (bool): return a matplotlib figure (only for matplotlib)
         **kwargs: additional parameters for the plotting backend
 
     Returns:
         ``matplotlib`` figure or ``plotly`` figure
 
     """
+    from cellpy.readers.core import Q
 
     _set_individual_y_labels = False
 
@@ -583,13 +656,26 @@ def raw_plot(
         y_label = [f"Voltage ({cell.data.raw_units.voltage})"]
 
     if x is None:
-        x, x_label = ("test_time_hrs", "Time (hours)")
+        x = "test_time_hrs"
+
+    if x in ["test_time_hrs", "test_time_hours"]:
+        raw_time_unit = cell.raw_units.time
+        conv_factor = Q(raw_time_unit).to("hours").magnitude
+        raw[x] = raw[_hdr_raw["test_time_txt"]] * conv_factor
+        x_label = x_label or "Time (hours)"
+    elif x == "test_time_days":
+        raw_time_unit = cell.raw_units.time
+        conv_factor = Q(raw_time_unit).to("days").magnitude
+        raw[x] = raw[_hdr_raw["test_time_txt"]] * conv_factor
+        x_label = x_label or "Time (days)"
+    elif x == "test_time_years":
+        raw_time_unit = cell.raw_units.time
+        conv_factor = Q(raw_time_unit).to("years").magnitude
+        raw[x] = raw[_hdr_raw["test_time_txt"]] * conv_factor
+        x_label = x_label or "Time (years)"
 
     if title is None:
         title = f"{cell.cell_name}"
-
-    if x == "test_time_hrs":
-        raw["test_time_hrs"] = raw[_hdr_raw["test_time_txt"]] / 3600
 
     if plotly_available and interactive:
         title = f"<b>{title}</b>"
@@ -640,21 +726,28 @@ def raw_plot(
 
     # default to a simple matplotlib figure
     xlim = kwargs.get("xlim")
+    if seaborn_available:
+        import seaborn as sns
+
+        if double_y:
+            sns.set_style(kwargs.pop("style", "dark"))
+        else:
+            sns.set_style(kwargs.pop("style", "darkgrid"))
+
     if len(y) == 1:
         y = y[0]
         y_label = y_label[0]
-        fig, ax = plt.subplots()
+        fig, ax = plt.subplots(size=(8, 4))
         ax.plot(raw[x], raw[y])
         ax.set_xlabel(x_label)
         ax.set_ylabel(y_label)
         ax.set_title(title)
         ax.set_xlim(xlim)
-        if return_matplotlib_figure:
-            return fig
-        return
+        plt.close(fig)
+        return fig
 
     if not double_y:
-        fig, (ax_v, ax_c) = plt.subplots(nrows=2, ncols=1, figsize=(20, 8), sharex=True)
+        fig, (ax_v, ax_c) = plt.subplots(nrows=2, ncols=1, figsize=(10, 4), sharex=True)
         ax_v.plot(raw[x], raw[y[0]])
         ax_c.plot(raw[x], raw[y[1]])
         ax_v.set_ylabel(y_label[0])
@@ -662,6 +755,7 @@ def raw_plot(
         ax_c.set_xlabel(x_label)
         ax_v.set_title(title)
         ax_v.set_xlim(xlim)
+        fig.align_ylabels()
     else:
         fig, ax_v = plt.subplots(figsize=(12, 4))
 
@@ -679,10 +773,9 @@ def raw_plot(
         ax_c.tick_params(axis="y", labelcolor=color)
         ax_v.set_xlim(xlim)
 
-        fig.tight_layout()
-    if return_matplotlib_figure:
-        return fig
-    return
+    fig.tight_layout()
+    plt.close(fig)
+    return fig
 
 
 def cycle_info_plot(
