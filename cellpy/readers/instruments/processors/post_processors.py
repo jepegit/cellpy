@@ -405,7 +405,10 @@ def _state_splitter(
                 #  try using 'df.method({col: value}, inplace=True)' or
                 #  df[col] = df[col].method(value) instead,
                 #  to perform the operation inplace on the original object.
-                raw[temp_col_name_charge].update(n_charge * charge[base_col_name])
+                raw[temp_col_name_charge].update(
+                    n_charge * charge[base_col_name],
+                    inplace=True,
+                )
                 if propagate:
                     charge_last_index, charge_last_val = charge.iloc[-1]
                     raw.loc[
@@ -425,7 +428,8 @@ def _state_splitter(
                 #  df[col] = df[col].method(value) instead,
                 #  to perform the operation inplace on the original object.
                 raw[temp_col_name_discharge].update(
-                    n_discharge * discharge[base_col_name]
+                    n_discharge * discharge[base_col_name],
+                    inplace=True,
                 )
                 if propagate:
                     (discharge_last_index, discharge_last_val) = discharge.iloc[-1]

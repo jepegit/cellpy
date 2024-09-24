@@ -44,7 +44,10 @@ LOADERS_NOT_READY_FOR_PROD = [
 
 # pint (https://pint.readthedocs.io/en/stable/)
 ureg = pint.UnitRegistry()
-ureg.default_format = "~P"
+try:
+    ureg.formatter.default_format = "~P"
+except AttributeError:
+    ureg.default_format = "~P"
 Q = ureg.Quantity
 
 
@@ -731,6 +734,7 @@ class InstrumentFactory:
         Returns:
             instance of loader class.
         """
+
         module_name, module_path = self._builders.get(key, (None, None))
 
         # constant:

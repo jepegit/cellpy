@@ -672,7 +672,6 @@ class CellpyCell:
         return raw_units
 
     def _set_instrument(self, instrument, **kwargs):
-        logging.debug(f"Setting new instrument: {instrument}")
         self.loader_class = self.instrument_factory.create(instrument, **kwargs)
         self.raw_limits = self.loader_class.get_raw_limits()
         # ----- create the loader ------------------------
@@ -2726,7 +2725,9 @@ class CellpyCell:
                 # starts from a zero value
                 difference = 100.0 * x.iloc[-1]
             else:
-                difference = (x.iloc[-1] - x.iloc[0]) * 100 / abs(x.iloc[0])
+                difference_factor = 100.0 * (x.iloc[-1] - x.iloc[0])
+                difference_dividend = abs(x.iloc[0])
+                difference = difference_factor / difference_dividend
 
             return difference
 
@@ -6756,6 +6757,7 @@ def get(
         **kwargs: sent to the loader.
 
     Transferred Parameters:
+        model (str): model to use (only for loaders that supports models).
         bad_steps (list of tuples): (c, s) tuples of steps s (in cycle c) to skip loading ("arbin_res").
         dataset_number (int): the data set number ('Test-ID') to select if you are dealing
             with arbin files with more than one data-set. Defaults to selecting all data-sets
@@ -6884,6 +6886,7 @@ def get(
 
     logging.debug("Prepare for loading raw-file(s)")
     logging.debug(f"checking instrument and instrument_file")
+
     if instrument_file is not None:
         logging.debug(f"got instrument file {instrument_file=}")
         cellpy_instance.set_instrument(

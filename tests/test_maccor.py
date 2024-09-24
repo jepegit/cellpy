@@ -32,13 +32,15 @@ def test_set_instrument(cellpy_data_instance, parameters):
 
 def test_cellpy_get_model_one(parameters):
     instrument = "maccor_txt"
+    model = "one"
     c = get(
         filename=parameters.mcc_file_path,
         instrument=instrument,
-        model="one",
+        model=model,
         mass=1.0,
         testing=True,
     )
+    assert model.lower() == c.loader_class.model.lower()
     assert len(c.data.raw) == 6704
 
 

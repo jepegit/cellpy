@@ -18,7 +18,7 @@ def test_get_neware_from_csv(parameters):
     c = get(
         filename=parameters.nw_file_path,
         instrument="neware_txt",
-        model="UIO",
+        model="one",
         mass=2.08,
         testing=True,
     )

@@ -469,6 +469,7 @@ class AutoLoader(BaseLoader):
 
         # in case model is given as argument
         self.model = kwargs.pop("model", self.default_model)
+
         if self.auto_register_config:
             self.config_params = self.register_configuration()
 
@@ -496,6 +497,12 @@ class AutoLoader(BaseLoader):
         self.cellpy_headers_normal = (
             headers_normal  # the column headers defined by cellpy
         )
+
+    def __str__(self):
+        txt = f"{self.__class__.__name__}\n"
+        txt += f"  instrument_name: {self.instrument_name}\n"
+        txt += f"  model: {self.model}\n"
+        return txt
 
     @abc.abstractmethod
     def parse_formatter_parameters(self, **kwargs) -> None: ...
@@ -702,7 +709,13 @@ class TxtLoader(AutoLoader, ABC):
 
     # override this if needed
     def __init__(self, *args, **kwargs):
-        super().__init__(args, kwargs)
+        super().__init__(*args, **kwargs)
+
+    def __str__(self):
+        txt = f"{type(self)}\n"
+        txt += f"  instrument_name: {self.instrument_name}\n"
+        txt += f"  model: {self.model}\n"
+        return txt
 
     def parse_formatter_parameters(self, **kwargs):
         """Parse the formatter parameters."""
