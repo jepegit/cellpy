@@ -703,7 +703,7 @@ class InstrumentFactory:
 
                 loaders[key] = models
             except Exception as e:
-                logging.critical(f"Could not create loader for {key}: {e}")
+                logging.warning(f"Could not create loader for {key}: {e}")
         return loaders
 
     @staticmethod
