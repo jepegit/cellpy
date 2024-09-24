@@ -49,6 +49,7 @@ def find_delimiter_and_start(
     separators=None,
     checking_length_header=30,
     checking_length_whole=200,
+    check_encoding=True,
 ):
     """Function to automatically detect the delimiter and what line the first data appears on.
 
@@ -64,15 +65,31 @@ def find_delimiter_and_start(
         separators: list of possible delimiters.
         checking_length_header: number of lines to check for header.
         checking_length_whole: number of lines to check for delimiter.
+        check_encoding: check encoding.
 
     Returns:
         separator: the delimiter.
         first_index: the index of the first line with data.
+        encoding: the encoding (None if not found or checked).
     """
 
     if separators is None:
         separators = [";", "\t", "|", ","]
     logging.debug(f"checking internals of the file {file_name}")
+
+    encoding = None
+
+    if check_encoding:
+        import charset_normalizer
+
+        results = charset_normalizer.from_path(
+            file_name,
+            steps=10,  # Number of steps/block to extract from my_byte_str
+            chunk_size=512,  # Set block size of each extraction
+        )
+        if results:
+            r = results.best()
+            encoding = r.encoding
 
     empty_lines = 0
     with open(file_name, "r") as fin:
@@ -107,7 +124,7 @@ def find_delimiter_and_start(
         checking_length_header, lines, number_of_hits, separator
     )
     logging.debug(f"First line with delimiter: {first_index}")
-    return separator, first_index
+    return separator, first_index, encoding
 
 
 def _find_first_line_whit_delimiter(
@@ -443,11 +460,11 @@ class AutoLoader(BaseLoader):
 
         if not hasattr(self, "supported_models"):
             raise AttributeError(
-                f"missing attribute in sub-class of TxtLoader: supported_models"
+                f"missing attribute in sub-class of AutoLoader: supported_models"
             )
         if not hasattr(self, "default_model"):
             raise AttributeError(
-                f"missing attribute in sub-class of TxtLoader: default_model"
+                f"missing attribute in sub-class of AutoLoader: default_model"
             )
 
         # in case model is given as argument
@@ -456,6 +473,7 @@ class AutoLoader(BaseLoader):
             self.config_params = self.register_configuration()
 
         self.parse_formatter_parameters(**kwargs)
+        self.override_config_params(**kwargs)
 
         self.pre_processors = self.config_params.pre_processors
         additional_pre_processor_args = kwargs.pop(
@@ -503,6 +521,10 @@ class AutoLoader(BaseLoader):
                 f"\nCurrent supported models are {[*self.supported_models.keys()]}"
             )
         return register_configuration_from_module(self.model, model_module_name)
+
+    def override_config_params(self, **kwargs) -> None:
+        """Override configuration parameters"""
+        pass
 
     def get_raw_units(self):
         return self.config_params.raw_units
@@ -679,6 +701,9 @@ class TxtLoader(AutoLoader, ABC):
     raw_ext = "*"
 
     # override this if needed
+    def __init__(self, *args, **kwargs):
+        super().__init__(args, kwargs)
+
     def parse_formatter_parameters(self, **kwargs):
         """Parse the formatter parameters."""
 
@@ -717,9 +742,6 @@ class TxtLoader(AutoLoader, ABC):
             f"Formatters (cont.): self.decimal={self.decimal} self.thousands={self.thousands}"
         )
 
-    # TODO: need to implement the possibility to override the configuration parameters from the
-    #  configuration file (config_params), e.g.
-    #  c = cellpy.get(filename, instrument="xxx", model="yyy", raw_units={"voltage": "mV"})
     # override this if needed
     def parse_loader_parameters(self, auto_formatter=None, **kwargs):
         """Parse the loader parameters.
@@ -738,28 +760,63 @@ class TxtLoader(AutoLoader, ABC):
             if self.sep is None:
                 self._auto_formatter()
 
+        if raw_units := kwargs.get("raw_units", None):
+            logging.critical(f"overriding raw_units: {raw_units}")
+            self.config_params.raw_units.update(raw_units)
+
+        if unit_labels := kwargs.get("unit_labels", None):
+            logging.critical(f"overriding unit_labels: {unit_labels}")
+            self.config_params.raw_limits.update(unit_labels)
+
+        if raw_limits := kwargs.get("raw_limits", None):
+            logging.critical(f"overriding raw_limits: {raw_limits}")
+            self.config_params.raw_limits.update(raw_limits)
+
+        if encoding := kwargs.get("encoding", None):
+            logging.critical(f"overriding encoding: {encoding}")
+            self.encoding = encoding
+
+        if decimal := kwargs.get("decimal", None):
+            logging.critical(f"overriding decimal: {decimal}")
+            self.decimal = decimal
+
+        if thousands := kwargs.get("thousands", None):
+            logging.critical(f"overriding thousands: {thousands}")
+            self.thousands = thousands
+
+        if skiprows := kwargs.get("skiprows", None):
+            logging.critical(f"overriding skiprows: {skiprows}")
+            self.skiprows = skiprows
+
+        if header := kwargs.get("header", None):
+            logging.critical(f"overriding header: {header}")
+            self.header = header
+
+        if sep := kwargs.get("sep", None):
+            logging.critical(f"overriding sep: {sep}")
+            self.sep = sep
+
     def _auto_formatter(self):
-        print("auto-formatting")
-        separator, first_index = find_delimiter_and_start(
+        separator, first_index, encoding = find_delimiter_and_start(
             self.name,
             separators=None,
             checking_length_header=100,
             checking_length_whole=200,
         )
-        self.encoding = "UTF-8"  # consider adding a find_encoding function
+        self.encoding = encoding or "UTF-8"
         self.sep = separator
         self.skiprows = first_index - 1
         self.header = 0
 
         logging.critical(
-            f"auto-formatting:\n  {self.sep=}\n  {self.skiprows=}\n  {self.header=}\n  {self.encoding=}\n"
+            f"auto-formatting: {self.sep=}, {self.skiprows=}, {self.header=}, {self.encoding=}, {self.decimal=}"
         )
 
     # override this if using other query functions
     def query_file(self, name):
-        logging.debug(f"parsing with pandas.read_csv: {name}")
+        logging.critical(f"parsing with pandas.read_csv: {name}")
         logging.critical(
-            f"{self.sep=}, {self.skiprows=}, {self.header=}, {self.encoding=}, {self.decimal=}"
+            f"parameters: {self.sep=}, {self.skiprows=}, {self.header=}, {self.encoding=}, {self.decimal=}"
         )
         data_df = pd.read_csv(
             name,

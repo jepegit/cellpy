@@ -37,5 +37,6 @@ dependencies:
 # This version of kaleido is not available for macOS M-chip:
     - kaleido==0.1.*
     - jinja2_time
+    - charset-normalizer
 
 

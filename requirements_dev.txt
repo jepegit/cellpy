@@ -42,3 +42,4 @@ twine>=1.9.1
 watchdog>=0.8.3
 wheel>=0.29.0
 xlrd
+charset_normalizer

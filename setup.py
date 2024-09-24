@@ -61,6 +61,7 @@ requirements = [
     "tables",  # depends on HDF5 that is not available by pip
     "ipykernel",
     "rich",
+    "charset-normalizer",
 ]
 
 test_requirements = [

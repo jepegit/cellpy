@@ -55,6 +55,7 @@ dependencies:
     - tqdm
     - twine
     - xlrd
+    - charset-normalizer
     - pip:
         - bump-my-version
         - isort

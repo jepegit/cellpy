@@ -123,7 +123,7 @@ class DataLoader(AutoLoader, ABC):
 
     # TODO: consider rewriting this:
     def _auto_formatter(self):
-        separator, first_index = find_delimiter_and_start(
+        separator, first_index, encoding = find_delimiter_and_start(
             self.name,
             separators=None,
             checking_length_header=100,

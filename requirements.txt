@@ -32,3 +32,4 @@ sqlalchemy>=2.0.0
 tables>=3.7
 tqdm>=4.44.1
 xlrd
+charset_normalizer

@@ -37,6 +37,7 @@ init()
 
 # TODO: (v2.0) remove this and enforce using `cellpy.get` (or `cellpy.cellreader.get`) instead:
 get = cellreader.get
+print_instruments = cellreader.print_instruments
 
 __all__ = [
     "cellreader",

@@ -703,7 +703,10 @@ class InstrumentFactory:
 
                 loaders[key] = models
             except Exception as e:
-                logging.warning(f"Could not create loader for {key}: {e}")
+                if key == "local_instrument":
+                    logging.debug(f"Could not create loader for {key}: {e}")
+                else:
+                    logging.warning(f"Could not create loader for {key}: {e}")
         return loaders
 
     @staticmethod

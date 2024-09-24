@@ -70,13 +70,14 @@ from cellpy.parameters.internal_settings import (
 from cellpy.readers.core import (
     Data,
     FileID,
+    Q,
+    convert_from_simple_unit_label_to_string_unit_label,
+    generate_default_factory,
     identify_last_data_point,
+    instrument_configurations,
     interpolate_y_on_x,
     pickle_protocol,
     xldate_as_datetime,
-    generate_default_factory,
-    Q,
-    convert_from_simple_unit_label_to_string_unit_label,
 )
 from cellpy.internals.core import OtherPath
 
@@ -7002,6 +7003,21 @@ def _update_meta(
         logging.critical("Volume not implemented yet")
 
     return cellpy_instance
+
+
+def print_instruments():
+    """Prints out the available instrument loaders and their models."""
+    print(80 * "=")
+    print(f"Implemented instrument loaders")
+    print(80 * "=")
+    for name, value in instrument_configurations().items():
+        print(name)
+        instrument_models = value["__all__"].copy()
+        instrument_models.remove("default")
+        if len(instrument_models) > 0:
+            model_text = "  models: "
+            model_text += ", ".join(instrument_models)
+            print(model_text)
 
 
 # ============== Internal tests =================

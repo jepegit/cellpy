@@ -4,6 +4,7 @@ channels:
     - defaults
 dependencies:
     - PyGithub
+    - charset-normalizer
     - click
     - cookiecutter
     - coverage

@@ -26,7 +26,8 @@ from cellpy.readers.core import Data
 from cellpy.readers.instruments.configurations import ModelParameters
 
 ORDERED_POST_PROCESSING_STEPS = [
-    "get_column_names",
+    "update_headers_with_units",
+    "get_column_names",  # not implemented yet
     "rename_headers",
     "select_columns_to_keep",
     "remove_last_if_bad",
@@ -231,6 +232,7 @@ def cumulate_capacity_within_cycle(data: Data, config_params: ModelParameters) -
     # state_column = config_params.states["column_name"]
     # is_charge = config_params.states["charge_keys"]
     # is_discharge = config_params.states["discharge_keys"]
+
     cycles = data.raw.groupby("cycle_index")
     cumulated = []
     charge_hdr = "charge_capacity"
@@ -256,11 +258,37 @@ def _replace(data: Data, config_params: ModelParameters) -> Data:
     print(config_params.post_processors["replace"])
 
 
+def update_headers_with_units(data: Data, config_params: ModelParameters) -> Data:
+    """Update headers with units."""
+
+    using_jinja = False
+
+    if config_params.unit_labels:
+        unit_labels = config_params.unit_labels
+    else:
+        unit_labels = config_params.raw_units
+
+    if using_jinja:
+        raise NotImplementedError("Jinja templates not implemented yet")
+
+    for key in headers_normal:
+        if key in config_params.normal_headers_renaming_dict:
+            new_header = config_params.normal_headers_renaming_dict[key]
+            if "{{" in new_header:
+                split_one = new_header.split("{{")[1:]
+                for split in split_one:
+                    unit_name = split.split("}}")[0]
+                    unit = unit_labels.get(unit_name.strip())
+                    new_header = new_header.replace(f"{{{{{unit_name}}}}}", f"{unit}")
+                config_params.normal_headers_renaming_dict[key] = new_header
+    return data
+
+
 def rename_headers(data: Data, config_params: ModelParameters) -> Data:
     """Rename headers to the correct Cellpy headers."""
     columns = {}
     renaming_dict = config_params.normal_headers_renaming_dict
-    print(data.raw.columns)
+
     # ---- special cases ----
     # 1. datetime_txt and test_time_txt same column
     if "datetime_txt" in renaming_dict and "test_time_txt" in renaming_dict:
@@ -288,6 +316,7 @@ def rename_headers(data: Data, config_params: ModelParameters) -> Data:
         columns=config_params.not_implemented_in_cellpy_yet_renaming_dict,
         inplace=True,
     )
+
     return data
 
 
