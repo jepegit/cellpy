@@ -276,6 +276,17 @@ def create_label_dict(c):
     return x_axis_labels, y_axis_label
 
 
+def _get_capacity_unit(c, mode="gravimetric", seperator="/"):
+
+    specific_selector = {
+        "gravimetric": f"{c.cellpy_units.charge}{seperator}{c.cellpy_units.specific_gravimetric}",
+        "areal": f"{c.cellpy_units.charge}{seperator}{c.cellpy_units.specific_areal}",
+        "volumetric": f"{c.cellpy_units.charge}{seperator}{c.cellpy_units.specific_volumetric}",
+        "absolute": f"{c.cellpy_units.charge}",
+    }
+    return specific_selector.get(mode, "-")
+
+
 def summary_plot(
     c,
     x: str = None,
@@ -1099,5 +1110,139 @@ def _cycle_info_plot_matplotlib(
         return ax1, ax2, ax2, ax4
 
 
+def plot_cycles(
+    c,
+    cycles=None,
+    formation_cycles=3,
+    plot_formation=True,
+    mode="gravimetric",
+    method="forth-and-forth",
+    interpolated=True,
+    number_of_points=200,
+    colormap="cividis",
+    formation_colormap="autumn",
+    cut_colorbar=True,
+    title=None,
+    figsize=(6, 4),
+    xlim=None,
+    ylim=None,
+    return_figure=False,
+):
+    import numpy as np
+    import matplotlib
+    from matplotlib.colors import Normalize, ListedColormap
+
+    if cycles is None:
+        cycles = c.get_cycle_numbers()
+    kw_arguments = dict(
+        method=method,
+        interpolated=interpolated,
+        label_cycle_number=True,
+        categorical_column=True,
+        number_of_points=number_of_points,
+        insert_nan=True,
+        mode=mode,
+    )
+    df = c.get_cap(cycles=cycles, **kw_arguments)
+
+    selector = df["cycle"] <= formation_cycles
+    formation_cycles = df.loc[selector, :]
+    rest_cycles = df.loc[~selector, :]
+
+    fig, ax = plt.subplots(1, 1, figsize=figsize)
+
+    capacity_unit = _get_capacity_unit(c, mode=mode)
+
+    if not formation_cycles.empty and plot_formation:
+        min_cycle, max_cycle = (
+            formation_cycles["cycle"].min(),
+            formation_cycles["cycle"].max(),
+        )
+        norm_formation = Normalize(vmin=min_cycle, vmax=max_cycle)
+        cycle_sequence = np.arange(min_cycle, max_cycle + 1, 1)
+        c_m_formation = ListedColormap(
+            plt.get_cmap(formation_colormap, 2 * len(cycle_sequence))(cycle_sequence)
+        )
+        s_m_formation = matplotlib.cm.ScalarMappable(
+            cmap=c_m_formation, norm=norm_formation
+        )
+        for name, group in formation_cycles.groupby("cycle"):
+            ax.plot(
+                group["capacity"],
+                group["voltage"],
+                lw=2,
+                # alpha=0.7,
+                color=s_m_formation.to_rgba(name),
+                label=f"Cycle {name}",
+            )
+        cbar_formation = fig.colorbar(
+            s_m_formation,
+            ax=ax,
+            label="Formation Cycle",
+            ticks=np.arange(
+                formation_cycles["cycle"].min(), formation_cycles["cycle"].max() + 1, 1
+            ),
+        )
+
+    norm = Normalize(vmin=rest_cycles["cycle"].min(), vmax=rest_cycles["cycle"].max())
+    if cut_colorbar:
+        cycle_sequence = np.arange(
+            rest_cycles["cycle"].min(), rest_cycles["cycle"].max() + 1, 1
+        )
+        n = int(np.round(1.2 * rest_cycles["cycle"].max()))
+        c_m = ListedColormap(plt.get_cmap(colormap, n)(cycle_sequence))
+    else:
+        c_m = plt.get_cmap(colormap)
+
+    s_m = matplotlib.cm.ScalarMappable(cmap=c_m, norm=norm)
+    for name, group in rest_cycles.groupby("cycle"):
+        ax.plot(
+            group["capacity"],
+            group["voltage"],
+            lw=1,
+            color=s_m.to_rgba(name),
+            label=f"Cycle {name}",
+        )
+
+    cbar = fig.colorbar(
+        s_m,
+        ax=ax,
+        label="Cycle",
+    )
+
+    ax.set_xlabel(f"Capacity ({capacity_unit})")
+    ax.set_ylabel(f"Voltage ({c.cellpy_units.voltage})")
+    fig_title = title or f"{c.cell_name}"
+    ax.set_title(fig_title)
+
+    if xlim:
+        ax.set_xlim(xlim)
+    if ylim:
+        ax.set_ylim(ylim)
+
+    if return_figure:
+        plt.close(fig)
+        return fig
+
+
+def _check_plotter():
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+    import pathlib
+
+    import cellpy
+
+    p = pathlib.Path("../../testdata/hdf5/20160805_test001_45_cc.h5")
+    c = cellpy.get(p)
+    plot_cycles(
+        c,
+        ylim=[0.0, 1.0],
+        plot_formation=False,
+        cut_colorbar=False,
+        title="My nice plot",
+    )
+    plt.show()
+
+
 if __name__ == "__main__":
-    pass
+    _check_plotter()
