@@ -782,10 +782,11 @@ def raw_plot(
 
             width = kwargs.pop("width", 1000)
             height = kwargs.pop("height", None)
-            if height is None and _special_height is not None:
-                height = _special_height
-            else:
-                height = number_of_rows * 300
+            if height is None:
+                if _special_height is not None:
+                    height = _special_height
+                else:
+                    height = number_of_rows * 300
 
             vertical_spacing = kwargs.pop("vertical_spacing", 0.02)
 
