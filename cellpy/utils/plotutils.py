@@ -641,6 +641,7 @@ def raw_plot(
     from cellpy.readers.core import Q
 
     _set_individual_y_labels = False
+    _special_height = None
 
     raw = cell.data.raw.copy()
     if y is not None:
@@ -658,6 +659,75 @@ def raw_plot(
             y2_label = f"Current ({cell.data.raw_units.current})"
             y = [y1, y2]
             y_label = [y1_label, y2_label]
+
+        elif plot_type == "capacity":
+            _y = [
+                (
+                    _hdr_raw["charge_capacity_txt"],
+                    f"Charge capacity ({cell.data.raw_units.charge})",
+                ),
+                (
+                    _hdr_raw["discharge_capacity_txt"],
+                    f"Discharge capacity ({cell.data.raw_units.charge})",
+                ),
+            ]
+            y, y_label = zip(*_y)
+
+        elif plot_type == "raw":
+            _y = [
+                (
+                    _hdr_raw["cycle_index_txt"],
+                    f"Cycle index (#)",
+                ),
+                (
+                    _hdr_raw["step_index_txt"],
+                    f"Step index (#)",
+                ),
+                (_hdr_raw["voltage_txt"], f"Voltage ({cell.data.raw_units.voltage})"),
+                (_hdr_raw["current_txt"], f"Current ({cell.data.raw_units.current})"),
+            ]
+            y, y_label = zip(*_y)
+            _special_height = 600
+
+        elif plot_type == "capacity-current":
+            _y = [
+                (
+                    _hdr_raw["charge_capacity_txt"],
+                    f"Charge capacity ({cell.data.raw_units.charge})",
+                ),
+                (
+                    _hdr_raw["discharge_capacity_txt"],
+                    f"Discharge capacity ({cell.data.raw_units.charge})",
+                ),
+                (_hdr_raw["current_txt"], f"Current ({cell.data.raw_units.current})"),
+            ]
+            y, y_label = zip(*_y)
+            _special_height = 500
+
+        elif plot_type == "full":
+            _y = [
+                (_hdr_raw["voltage_txt"], f"Voltage ({cell.data.raw_units.voltage})"),
+                (_hdr_raw["current_txt"], f"Current ({cell.data.raw_units.current})"),
+                (
+                    _hdr_raw["charge_capacity_txt"],
+                    f"Charge capacity ({cell.data.raw_units.charge})",
+                ),
+                (
+                    _hdr_raw["discharge_capacity_txt"],
+                    f"Discharge capacity ({cell.data.raw_units.charge})",
+                ),
+                (
+                    _hdr_raw["cycle_index_txt"],
+                    f"Cycle index (#)",
+                ),
+                (
+                    _hdr_raw["step_index_txt"],
+                    f"Step index (#)",
+                ),
+            ]
+            y, y_label = zip(*_y)
+            _special_height = 800
+
         else:
             warnings.warn(f"Plot type {plot_type} not supported")
             return None
@@ -688,9 +758,11 @@ def raw_plot(
     if title is None:
         title = f"{cell.cell_name}"
 
+    number_of_rows = len(y)
+
     if plotly_available and interactive:
         title = f"<b>{title}</b>"
-        if len(y) == 1:
+        if number_of_rows == 1:
             # single plot
             import plotly.express as px
 
@@ -705,38 +777,47 @@ def raw_plot(
             fig = px.line(raw, x=x, y=y[0], title=title, labels=labels, **kwargs)
 
         else:
-            # double plot
             from plotly.subplots import make_subplots
             import plotly.graph_objects as go
 
+            width = kwargs.pop("width", 1000)
+            height = kwargs.pop("height", None)
+            if height is None and _special_height is not None:
+                height = _special_height
+            else:
+                height = number_of_rows * 300
+
+            vertical_spacing = kwargs.pop("vertical_spacing", 0.02)
+
             fig = make_subplots(
-                rows=2,
+                rows=number_of_rows,
                 cols=1,
                 shared_xaxes=True,
-                vertical_spacing=0.02,
+                vertical_spacing=vertical_spacing,
                 x_title=x_label,
+                # hoversubplots="axis",  # only available in plotly 5.21
             )
             x_values = raw[x]
-            fig.add_trace(
-                go.Scatter(x=x_values, y=raw[y[0]], name=y_label[0]),
-                row=1,
-                col=1,
-            )
-            fig.add_trace(
-                go.Scatter(x=x_values, y=raw[y[1]], name=y_label[1]),
-                row=2,
-                col=1,
-            )
 
-            fig.update_layout(height=600, title_text=title)
+            rows = range(1, number_of_rows + 1)
+            for i in range(number_of_rows):
+                fig.add_trace(
+                    go.Scatter(x=x_values, y=raw[y[i]], name=y_label[i]),
+                    row=rows[i],
+                    col=1,
+                    **kwargs,
+                )
+
+            fig.update_layout(height=height, width=width, title_text=title)
             if _set_individual_y_labels:
-                fig.update_yaxes(title_text=y_label[0], row=1, col=1)
-                fig.update_yaxes(title_text=y_label[1], row=2, col=1)
+                for i in range(number_of_rows):
+                    fig.update_yaxes(title_text=y_label[i], row=rows[i], col=1)
 
         return fig
 
     # default to a simple matplotlib figure
     xlim = kwargs.get("xlim")
+    figsize = kwargs.pop("figsize", (10, 2 * number_of_rows))
     if seaborn_available:
         import seaborn as sns
 
@@ -748,7 +829,7 @@ def raw_plot(
     if len(y) == 1:
         y = y[0]
         y_label = y_label[0]
-        fig, ax = plt.subplots(size=(8, 4))
+        fig, ax = plt.subplots(figsize=figsize)
         ax.plot(raw[x], raw[y])
         ax.set_xlabel(x_label)
         ax.set_ylabel(y_label)
@@ -757,18 +838,8 @@ def raw_plot(
         plt.close(fig)
         return fig
 
-    if not double_y:
-        fig, (ax_v, ax_c) = plt.subplots(nrows=2, ncols=1, figsize=(10, 4), sharex=True)
-        ax_v.plot(raw[x], raw[y[0]])
-        ax_c.plot(raw[x], raw[y[1]])
-        ax_v.set_ylabel(y_label[0])
-        ax_c.set_ylabel(y_label[1])
-        ax_c.set_xlabel(x_label)
-        ax_v.set_title(title)
-        ax_v.set_xlim(xlim)
-        fig.align_ylabels()
-    else:
-        fig, ax_v = plt.subplots(figsize=(12, 4))
+    elif len(y) == 2 and double_y:
+        fig, ax_v = plt.subplots(figsize=figsize)
 
         color = "tab:red"
         ax_v.set_xlabel(x_label)
@@ -783,6 +854,21 @@ def raw_plot(
         ax_c.plot(raw[x], raw[y[1]], label=y_label[1], color=color)
         ax_c.tick_params(axis="y", labelcolor=color)
         ax_v.set_xlim(xlim)
+    else:
+
+        fig, axes = plt.subplots(
+            nrows=number_of_rows, ncols=1, figsize=figsize, sharex=True
+        )
+
+        for i in range(number_of_rows):
+            axes[i].plot(raw[x], raw[y[i]])
+            axes[i].set_ylabel(y_label[i])
+
+        axes[0].set_title(title)
+        axes[0].set_xlim(xlim)
+        axes[-1].set_xlabel(x_label)
+
+        fig.align_ylabels()
 
     fig.tight_layout()
     plt.close(fig)
@@ -1114,26 +1200,86 @@ def plot_cycles(
     c,
     cycles=None,
     formation_cycles=3,
-    plot_formation=True,
+    show_formation=True,
     mode="gravimetric",
     method="forth-and-forth",
     interpolated=True,
     number_of_points=200,
-    colormap="cividis",
+    colormap="Blues_r",
     formation_colormap="autumn",
     cut_colorbar=True,
     title=None,
     figsize=(6, 4),
     xlim=None,
     ylim=None,
-    return_figure=False,
+    interactive=True,
+    return_figure=None,
+    width=600,
+    height=400,
+    marker_size=5,
+    formation_line_color="rgba(152, 0, 0, .8)",
+    force_colorbar=False,
+    force_nonbar=False,
 ):
+    """
+    Plot the voltage vs. capacity for different cycles of a cell.
+
+    This function is meant as an easy way of visualizing the voltage vs. capacity for different cycles of a cell. The
+    cycles are plotted with different colors, and the formation cycles are highlighted with a different colormap.
+    It is not intended to provide you with high quality plots, but rather to give you a quick overview of the data.
+
+    Args:
+        c: cellpy object containing the data to plot.
+        cycles (list, optional): List of cycle numbers to plot. If None, all cycles are plotted.
+        formation_cycles (int, optional): Number of formation cycles to highlight. Default is 3.
+        show_formation (bool, optional): Whether to show formation cycles. Default is True.
+        mode (str, optional): Mode for capacity ('gravimetric', 'areal', etc.). Default is 'gravimetric'.
+        method (str, optional): Method for interpolation. Default is 'forth-and-forth'.
+        interpolated (bool, optional): Whether to interpolate the data. Default is True.
+        number_of_points (int, optional): Number of points for interpolation. Default is 200.
+        colormap (str, optional): Colormap for the cycles. Default is 'Blues_r'.
+        formation_colormap (str, optional): Colormap for the formation cycles. Default is 'autumn'.
+        cut_colorbar (bool, optional): Whether to cut the colorbar. Default is True.
+        title (str, optional): Title of the plot. If None, the cell name is used.
+        figsize (tuple, optional): Size of the figure for matplotlib. Default is (6, 4).
+        xlim (list, optional): Limits for the x-axis.
+        ylim (list, optional): Limits for the y-axis.
+        interactive (bool, optional): Whether to use interactive plotting (Plotly). Default is True.
+        return_figure (bool, optional): Whether to return the figure object. Default is opposite of interactive.
+        width (int, optional): Width of the figure for Plotly. Default is 600.
+        height (int, optional): Height of the figure for Plotly. Default is 400.
+        marker_size (int, optional): Size of the markers for Plotly. Default is 5.
+        formation_line_color (str, optional): Color for the formation cycle lines in Plotly. Default is 'rgba(152, 0, 0, .8)'.
+        force_colorbar (bool, optional): Whether to force the colorbar to be shown. Default is False.
+        force_nonbar (bool, optional): Whether to force the colorbar to be hidden. Default is False.
+
+    Returns:
+        matplotlib.figure.Figure or plotly.graph_objects.Figure: The generated plot figure.
+    """
+
     import numpy as np
     import matplotlib
     from matplotlib.colors import Normalize, ListedColormap
 
+    if interactive and not plotly_available:
+        warnings.warn("Can not perform interactive plotting. Plotly is not available.")
+        interactive = False
+
+    if return_figure is None:
+        return_figure = not interactive
+
     if cycles is None:
         cycles = c.get_cycle_numbers()
+
+    if interactive and title is None:
+        fig_title = f"Capacity plots for <b>{c.cell_name}</b>"
+        fig_title += f"<br>{mode} mode"
+        if interpolated:
+            fig_title += f", interpolated ({number_of_points} points)"
+
+    else:
+        fig_title = title or f"Capacity plots for {c.cell_name}"
+
     kw_arguments = dict(
         method=method,
         interpolated=interpolated,
@@ -1149,80 +1295,195 @@ def plot_cycles(
     formation_cycles = df.loc[selector, :]
     rest_cycles = df.loc[~selector, :]
 
-    fig, ax = plt.subplots(1, 1, figsize=figsize)
+    n_formation_cycles = len(formation_cycles["cycle"].unique())
+    n_rest_cycles = len(rest_cycles["cycle"].unique())
 
     capacity_unit = _get_capacity_unit(c, mode=mode)
 
-    if not formation_cycles.empty and plot_formation:
-        min_cycle, max_cycle = (
-            formation_cycles["cycle"].min(),
-            formation_cycles["cycle"].max(),
+    cbar_aspect = 30
+
+    if not interactive:
+        fig, ax = plt.subplots(1, 1, figsize=figsize)
+        fig_width, fig_height = figsize
+
+        if not formation_cycles.empty and show_formation:
+            if fig_width < 6:
+                print("Warning: try setting the figsize to (6, 4) or larger")
+            if fig_width > 8:
+                print("Warning: try setting the figsize to (8, 4) or smaller")
+            min_cycle, max_cycle = (
+                formation_cycles["cycle"].min(),
+                formation_cycles["cycle"].max(),
+            )
+            norm_formation = Normalize(vmin=min_cycle, vmax=max_cycle)
+            cycle_sequence = np.arange(min_cycle, max_cycle + 1, 1)
+
+            shrink = min(1.0, (1 / 8) * n_formation_cycles)
+
+            c_m_formation = ListedColormap(
+                plt.get_cmap(formation_colormap, 2 * len(cycle_sequence))(
+                    cycle_sequence
+                )
+            )
+            s_m_formation = matplotlib.cm.ScalarMappable(
+                cmap=c_m_formation, norm=norm_formation
+            )
+            for name, group in formation_cycles.groupby("cycle"):
+                ax.plot(
+                    group["capacity"],
+                    group["voltage"],
+                    lw=2,
+                    # alpha=0.7,
+                    color=s_m_formation.to_rgba(name),
+                    label=f"Cycle {name}",
+                )
+            cbar_formation = fig.colorbar(
+                s_m_formation,
+                ax=ax,
+                # label="Formation Cycle",
+                ticks=np.arange(
+                    formation_cycles["cycle"].min(),
+                    formation_cycles["cycle"].max() + 1,
+                    1,
+                ),
+                shrink=shrink,
+                aspect=cbar_aspect * shrink,
+                location="right",
+                anchor=(0.0, 0.0),
+            )
+            cbar_formation.set_label(
+                "Form. Cycle",
+                rotation=270,
+                labelpad=12,
+            )
+
+        norm = Normalize(
+            vmin=rest_cycles["cycle"].min(), vmax=rest_cycles["cycle"].max()
         )
-        norm_formation = Normalize(vmin=min_cycle, vmax=max_cycle)
-        cycle_sequence = np.arange(min_cycle, max_cycle + 1, 1)
-        c_m_formation = ListedColormap(
-            plt.get_cmap(formation_colormap, 2 * len(cycle_sequence))(cycle_sequence)
-        )
-        s_m_formation = matplotlib.cm.ScalarMappable(
-            cmap=c_m_formation, norm=norm_formation
-        )
-        for name, group in formation_cycles.groupby("cycle"):
+        if cut_colorbar:
+            cycle_sequence = np.arange(
+                rest_cycles["cycle"].min(), rest_cycles["cycle"].max() + 1, 1
+            )
+            n = int(np.round(1.2 * rest_cycles["cycle"].max()))
+            c_m = ListedColormap(plt.get_cmap(colormap, n)(cycle_sequence))
+        else:
+            c_m = plt.get_cmap(colormap)
+
+        s_m = matplotlib.cm.ScalarMappable(cmap=c_m, norm=norm)
+        for name, group in rest_cycles.groupby("cycle"):
             ax.plot(
                 group["capacity"],
                 group["voltage"],
-                lw=2,
-                # alpha=0.7,
-                color=s_m_formation.to_rgba(name),
+                lw=1,
+                color=s_m.to_rgba(name),
                 label=f"Cycle {name}",
             )
-        cbar_formation = fig.colorbar(
-            s_m_formation,
+        cbar = fig.colorbar(
+            s_m,
             ax=ax,
-            label="Formation Cycle",
-            ticks=np.arange(
-                formation_cycles["cycle"].min(), formation_cycles["cycle"].max() + 1, 1
-            ),
+            label="Cycle",
+            aspect=cbar_aspect,
+            location="right",
         )
+        cbar.set_label(
+            "Cycle",
+            rotation=270,
+            labelpad=12,
+        )
+        # cbar.ax.yaxis.set_ticks_position("left")
 
-    norm = Normalize(vmin=rest_cycles["cycle"].min(), vmax=rest_cycles["cycle"].max())
-    if cut_colorbar:
-        cycle_sequence = np.arange(
-            rest_cycles["cycle"].min(), rest_cycles["cycle"].max() + 1, 1
-        )
-        n = int(np.round(1.2 * rest_cycles["cycle"].max()))
-        c_m = ListedColormap(plt.get_cmap(colormap, n)(cycle_sequence))
+        ax.set_xlabel(f"Capacity ({capacity_unit})")
+        ax.set_ylabel(f"Voltage ({c.cellpy_units.voltage})")
+
+        ax.set_title(fig_title)
+
+        if xlim:
+            ax.set_xlim(xlim)
+        if ylim:
+            ax.set_ylim(ylim)
+
+        if return_figure:
+            plt.close(fig)
+            return fig
     else:
-        c_m = plt.get_cmap(colormap)
 
-    s_m = matplotlib.cm.ScalarMappable(cmap=c_m, norm=norm)
-    for name, group in rest_cycles.groupby("cycle"):
-        ax.plot(
-            group["capacity"],
-            group["voltage"],
-            lw=1,
-            color=s_m.to_rgba(name),
-            label=f"Cycle {name}",
-        )
+        import plotly.express as px
+        import plotly.graph_objects as go
 
-    cbar = fig.colorbar(
-        s_m,
-        ax=ax,
-        label="Cycle",
-    )
+        color_scales = px.colors.named_colorscales()
+        if colormap not in color_scales:
+            colormap = "Blues_r"
 
-    ax.set_xlabel(f"Capacity ({capacity_unit})")
-    ax.set_ylabel(f"Voltage ({c.cellpy_units.voltage})")
-    fig_title = title or f"{c.cell_name}"
-    ax.set_title(fig_title)
+        if cut_colorbar:
+            range_color = [df["cycle"].min(), 1.2 * df["cycle"].max()]
+        else:
+            range_color = [df["cycle"].min(), df["cycle"].max()]
+        if (n_rest_cycles < 8 and not force_colorbar) or force_nonbar:
+            show_formation_legend = True
+            cmap = px.colors.sample_colorscale(
+                colorscale=colormap,
+                samplepoints=n_rest_cycles,
+                low=0.0,
+                high=0.8,
+                colortype="rgb",
+            )
 
-    if xlim:
-        ax.set_xlim(xlim)
-    if ylim:
-        ax.set_ylim(ylim)
+            fig = px.line(
+                rest_cycles,
+                x="capacity",
+                y="voltage",
+                color="cycle",
+                title=fig_title,
+                labels={
+                    "capacity": f"Capacity ({capacity_unit})",
+                    "voltage": f"Voltage ({c.cellpy_units.voltage})",
+                },
+                color_discrete_sequence=cmap,
+            )
 
-    if return_figure:
-        plt.close(fig)
-        return fig
+        else:
+            show_formation_legend = False
+            fig = px.scatter(
+                rest_cycles,
+                x="capacity",
+                y="voltage",
+                color="cycle",
+                title=fig_title,
+                labels={
+                    "capacity": f"Capacity ({capacity_unit})",
+                    "voltage": f"Voltage ({c.cellpy_units.voltage})",
+                },
+                color_continuous_scale=colormap,
+                range_color=range_color,
+            )
+            fig.update_traces(mode="lines+markers", line_color="white", line_width=1)
+
+        if not formation_cycles.empty and show_formation:
+            for name, group in formation_cycles.groupby("cycle"):
+                trace = go.Scatter(
+                    x=group["capacity"],
+                    y=group["voltage"],
+                    name=f"{name} (f.c.)",
+                    hovertemplate=f"Formation Cycle {name}<br>Capacity: %{{x}}<br>Voltage: %{{y}}",
+                    mode="lines",
+                    marker=dict(color=formation_line_color),
+                    showlegend=show_formation_legend,
+                    legendrank=1,
+                    legendgroup="formation",
+                )
+
+                fig.add_trace(trace)
+
+        fig.update_traces(marker=dict(size=marker_size))
+        fig.update_layout(height=height, width=width)
+        if xlim:
+            fig.update_xaxes(range=xlim)
+        if ylim:
+            fig.update_yaxes(range=ylim)
+
+        if return_figure:
+            return fig
+        fig.show()
 
 
 def _check_plotter():
@@ -1237,7 +1498,7 @@ def _check_plotter():
     plot_cycles(
         c,
         ylim=[0.0, 1.0],
-        plot_formation=False,
+        show_formation=False,
         cut_colorbar=False,
         title="My nice plot",
     )
