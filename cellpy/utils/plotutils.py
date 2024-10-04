@@ -631,7 +631,7 @@ def raw_plot(
         interactive (bool): use interactive plotting
         plot_type (str): type of plot (defaults to "voltage-current") (overrides given y if y is not None),
           currently only "voltage-current", "raw", "capacity", "capacity-current", and "full" is supported.
-        double_y (bool): use double y-axis (only for matplotlib and when plot_type is used)
+        double_y (bool): use double y-axis (only for matplotlib and when plot_type with 2 rows is used)
         **kwargs: additional parameters for the plotting backend
 
     Returns:
