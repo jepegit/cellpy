@@ -12,7 +12,7 @@ markers = [
 
 
 [tool.bumpver]
-current_version = "1.0.2a5"
+current_version = "1.0.2a6"
 version_pattern = "MAJOR.MINOR.PATCH[PYTAG][NUM]"
 commit_message = "bump version {old_version} -> {new_version}"
 commit = true
