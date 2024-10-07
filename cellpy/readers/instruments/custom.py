@@ -113,6 +113,9 @@ class DataLoader(AutoLoader, ABC):
                 "table_name", default_value="sheet 1", **kwargs
             )
 
+        elif self.file_format == "parquet":
+            self.engine = self._config_sub_parser("engine", default_value='auto', **kwargs)
+
         elif self.file_format == "json":
             print("json not implemented yet")
             sys.exit()
@@ -179,6 +182,15 @@ class DataLoader(AutoLoader, ABC):
                 logging.debug(f"read sheet: {sheet_name}")
                 return raw_frame[matching[0]]
             raise IOError(f"Could not find the sheet {sheet_name} in {name}")
+
+        elif self.file_format == 'parquet':
+            logging.debug(f"parsing with pandas.read_parquet: {name}")
+            logging.critical(
+                f"{self.engine=}"
+            )
+            data_df = pd.read_parquet(
+                path=name, engine=self.engine,
+            )
 
         elif self.file_format == "json":
             raise IOError(
