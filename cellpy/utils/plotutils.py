@@ -7,7 +7,9 @@ import collections
 import importlib
 import itertools
 import logging
+from multiprocessing import Process
 import os
+import pickle as pkl
 import sys
 import warnings
 from io import StringIO
@@ -26,9 +28,291 @@ from cellpy.utils import helpers
 plotly_available = importlib.util.find_spec("plotly") is not None
 seaborn_available = importlib.util.find_spec("seaborn") is not None
 
+# Refactoring work in progress:
+# - homogenize plotting tools (plotutils, batchutils and collectors) to
+#   remove the need to change code in many files when changing plotting settings and tools
+# - utilize the prms system to set plotting settings
+# - make standardized plot templates and looks
+
+# including this to mimic the behaviour of collectors:
+supported_backends = []
+if plotly_available:
+    supported_backends.append("plotly")
+if seaborn_available:
+    supported_backends.append("seaborn")
+
+
 # logger = logging.getLogger(__name__)
 logging.captureWarnings(True)
 
+
+# from collectors - template:
+
+PLOTLY_BASE_TEMPLATE = "seaborn"
+IMAGE_TO_FILE_TIMEOUT = 30
+
+px_template_all_axis_shown = dict(
+    xaxis=dict(
+        linecolor="rgb(36,36,36)",
+        mirror=True,
+        showline=True,
+        zeroline=False,
+        title={"standoff": 15},
+    ),
+    yaxis=dict(
+        linecolor="rgb(36,36,36)",
+        mirror=True,
+        showline=True,
+        zeroline=False,
+        title={"standoff": 15},
+    ),
+)
+
+# fig_pr_cell_template = go.layout.Template(
+#     # layout=px_template_all_axis_shown
+# )
+#
+# fig_pr_cycle_template = go.layout.Template(
+#     # layout=px_template_all_axis_shown
+# )
+#
+# film_template = go.layout.Template(
+#     # layout=px_template_all_axis_shown
+# )
+#
+# summary_template = go.layout.Template(
+#     # layout=px_template_all_axis_shown
+# )
+
+
+def _set_plotly_templates():
+    if plotly_available:
+        import plotly.io as pio
+
+        pio.templates.default = PLOTLY_BASE_TEMPLATE
+        pio.templates["all_axis_shown"] = px_template_all_axis_shown
+        # pio.templates["fig_pr_cell"] = fig_pr_cell_template
+        # pio.templates["fig_pr_cycle"] = fig_pr_cycle_template
+        # pio.templates["film"] = film_template
+        # pio.templates["summary"] = summary_template
+
+
+# from collectors - tools for loading and saving plots:
+def load_figure(filename, backend=None):
+    """Load figure from file."""
+
+    filename = Path(filename)
+
+    if backend is None:
+        suffix = filename.suffix
+        if suffix in [".pkl", ".pickle"]:
+            backend = "matplotlib"
+        elif suffix in [".json", ".plotly", ".jsn"]:
+            backend = "plotly"
+        else:
+            backend = "plotly"
+
+    if backend == "plotly":
+        return load_plotly_figure(filename)
+    elif backend == "seaborn":
+        return load_matplotlib_figure(filename)
+    elif backend == "matplotlib":
+        return load_matplotlib_figure(filename)
+    else:
+        print(f"WARNING: {backend=} is not supported at the moment")
+        return None
+
+
+def save_matplotlib_figure(fig, filename):
+    pkl.dump(fig, open(filename, "wb"))
+
+
+def make_matplotlib_manager(fig):
+    """Create a new manager for a matplotlib figure."""
+    # create a dummy figure and use its
+    # manager to display "fig"  ; based on https://stackoverflow.com/a/54579616/8508004
+    dummy = plt.figure()
+    new_manager = dummy.canvas.manager
+    new_manager.canvas.figure = fig
+    fig.set_canvas(new_manager.canvas)
+    return fig
+
+
+def load_matplotlib_figure(filename, create_new_manager=False):
+    fig = pkl.load(open(filename, "rb"))
+    if create_new_manager:
+        fig = make_matplotlib_manager(fig)
+    return fig
+
+
+def load_plotly_figure(filename):
+    """Load plotly figure from file."""
+
+    # TODO: create a decorator for this:
+    if not plotly_available:
+        print("Plotly not available")
+        return None
+    import plotly.io as pio
+
+    try:
+        fig = pio.read_json(filename)
+    except Exception as e:
+        print("Could not load figure from json file")
+        print(e)
+        return None
+    return fig
+
+
+def _image_exporter_plotly(figure, filename, timeout=IMAGE_TO_FILE_TIMEOUT, **kwargs):
+    p = Process(
+        target=figure.write_image,
+        args=(filename,),
+        name="save_plotly_image_to_file",
+        kwargs=kwargs,
+    )
+    p.start()
+    p.join(timeout=timeout)
+    p.terminate()
+    if p.exitcode is None:
+        print(f"Oops, {p} timeouts! Could not save {filename}")
+    if p.exitcode == 0:
+        print(f" - saved image file: {filename}")
+
+
+def save_image_files(figure, name="my_figure", scale=3.0, dpi=300, backend="plotly", formats: list = None):
+    """Save to image files (png, svg, json/pickle).
+
+    Notes:
+        This method requires ``kaleido`` for the plotly backend.
+
+    Notes:
+        Exporting to json is only applicable for the plotly backend.
+
+    Args:
+        figure (fig-object): The figure to save.
+        name (pathlib.Path or str): The path of the file (without extension).
+        scale (float): The scale of the image.
+        dpi (int): The dpi of the image.
+        backend (str): The backend to use (plotly or seaborn/matplotlib).
+        formats (list): The formats to save (default: ["png", "svg", "json", "pickle"]).
+
+    """
+    filename = Path(name)
+    filename_png = filename.with_suffix(".png")
+    filename_svg = filename.with_suffix(".svg")
+    filename_json = filename.with_suffix(".json")
+    filename_pickle = filename.with_suffix(".pickle")
+
+    if formats is None:
+        formats = ["png", "svg", "json", "pickle"]
+
+    if backend == "plotly":
+        if "png" in formats:
+            _image_exporter_plotly(figure, filename_png, scale=scale)
+        if "svg" in formats:
+            _image_exporter_plotly(figure, filename_svg)
+        if "json" in formats:
+            figure.write_json(filename_json)
+            print(f" - saved plotly json file: {filename_json}")
+
+    elif backend in ["seaborn", "matplotlib"]:
+        if "png" in formats:
+            figure.savefig(filename_png, dpi=dpi)
+            print(f" - saved png file: {filename_png}")
+        if "svg" in formats:
+            figure.savefig(filename_svg)
+            print(f" - saved svg file: {filename_svg}")
+        if "pickle" in formats:
+            save_matplotlib_figure(figure, filename_pickle)
+            print(f" - pickled to file: {filename_pickle}")
+
+    else:
+        print(f"TODO: implement saving {filename_png}")
+        print(f"TODO: implement saving {filename_svg}")
+        print(f"TODO: implement saving {filename_json}")
+
+
+# from batch_plotters:
+def _plotly_remove_markers(trace):
+    trace.update(marker=None, mode="lines")
+    return trace
+
+
+def _plotly_legend_replacer(trace, df, group_legends=True):
+    name = trace.name
+    parts = name.split(",")
+    if len(parts) == 2:
+        group = int(parts[0])
+        subgroup = int(parts[1])
+    else:
+        print("Have not implemented replacing legend labels that are not on the form a,b yet.")
+        print(f"legend label: {name}")
+        return trace
+
+    cell_label = df.loc[(df["group"] == group) & (df["sub_group"] == subgroup), "cell"].values[0]
+    if group_legends:
+        trace.update(
+            name=cell_label,
+            legendgroup=group,
+            hovertemplate=f"{cell_label}<br>{trace.hovertemplate}",
+        )
+    else:
+        trace.update(
+            name=cell_label,
+            legendgroup=cell_label,
+            hovertemplate=f"{cell_label}<br>{trace.hovertemplate}",
+        )
+
+
+def _make_plotly_template(name="axis"):
+
+    if not plotly_available:
+        return None
+    import plotly.graph_objects as go
+    import plotly.io as pio
+
+    tick_label_width = 6
+    title_font_size = 22
+    title_font_family = "Arial"
+    axis_font_size = 16
+    axis_standoff = 15
+    linecolor = "rgb(36,36,36)"
+
+    t = go.layout.Template(
+        layout=dict(
+            font_family=title_font_family,
+            title=dict(
+                font_size=title_font_size,
+                x=0,
+                xref="paper",
+            ),
+            xaxis=dict(
+                linecolor=linecolor,
+                mirror=True,
+                showline=True,
+                zeroline=False,
+                title=dict(
+                    standoff=axis_standoff,
+                    font_size=axis_font_size,
+                ),
+            ),
+            yaxis=dict(
+                linecolor=linecolor,
+                mirror=True,
+                showline=True,
+                zeroline=False,
+                tickformat=f"{tick_label_width}",
+                title=dict(
+                    standoff=axis_standoff,
+                    font_size=axis_font_size,
+                ),
+            ),
+        )
+    )
+    pio.templates[name] = t
+
+
+# original:
 SYMBOL_DICT = {
     "all": [
         "s",
@@ -139,9 +423,7 @@ _hdr_steps = get_headers_step_table()
 _hdr_journal = get_headers_journal()
 
 
-def create_colormarkerlist_for_journal(
-    journal, symbol_label="all", color_style_label="seaborn-colorblind"
-):
+def create_colormarkerlist_for_journal(journal, symbol_label="all", color_style_label="seaborn-colorblind"):
     """Fetch lists with color names and marker types of correct length for a journal.
 
     Args:
@@ -159,9 +441,7 @@ def create_colormarkerlist_for_journal(
     return create_colormarkerlist(groups, sub_groups, symbol_label, color_style_label)
 
 
-def create_colormarkerlist(
-    groups, sub_groups, symbol_label="all", color_style_label="seaborn-colorblind"
-):
+def create_colormarkerlist(groups, sub_groups, symbol_label="all", color_style_label="seaborn-colorblind"):
     """Fetch lists with color names and marker types of correct length.
 
     Args:
@@ -210,9 +490,7 @@ def create_col_info(c):
     )
     _capacities_areal = [col + "_areal" for col in _cap_cols]
     _capacities_areal_split = (
-        _capacities_areal
-        + [col + "_cv" for col in _capacities_areal]
-        + [col + "_non_cv" for col in _capacities_areal]
+        _capacities_areal + [col + "_cv" for col in _capacities_areal] + [col + "_non_cv" for col in _capacities_areal]
     )
 
     x_columns = (
@@ -256,12 +534,8 @@ def create_label_dict(c):
         # hdr.normalized_cycle_index: "Normalized Cycle Number",
     }
 
-    _cap_gravimetric_label = (
-        f"Capacity ({c.cellpy_units.charge}/{c.cellpy_units.specific_gravimetric})"
-    )
-    _cap_areal_label = (
-        f"Capacity ({c.cellpy_units.charge}/{c.cellpy_units.specific_areal})"
-    )
+    _cap_gravimetric_label = f"Capacity ({c.cellpy_units.charge}/{c.cellpy_units.specific_gravimetric})"
+    _cap_areal_label = f"Capacity ({c.cellpy_units.charge}/{c.cellpy_units.specific_areal})"
 
     _cap_label = f"Capacity ({c.cellpy_units.charge})"
 
@@ -341,9 +615,7 @@ def summary_plot(
     """
 
     if interactive and not plotly_available:
-        warnings.warn(
-            "plotly not available, and it is currently the only supported interactive backend"
-        )
+        warnings.warn("plotly not available, and it is currently the only supported interactive backend")
         return None
 
     if title is None:
@@ -372,11 +644,7 @@ def summary_plot(
 
     # filter on constant voltage vs constant current
     if y.endswith("_split_constant_voltage"):
-        cap_type = (
-            "capacities_gravimetric"
-            if y.startswith("capacities_gravimetric")
-            else "capacities_areal"
-        )
+        cap_type = "capacities_gravimetric" if y.startswith("capacities_gravimetric") else "capacities_areal"
         column_set = y_cols[cap_type]
 
         # turning off warnings when splitting the data
@@ -404,9 +672,7 @@ def summary_plot(
         y_label = y.replace("_", " ").title()
 
     if verbose:
-        _report_summary_plot_info(
-            c, x, y, x_label, x_axis_labels, x_cols, y_label, y_axis_label, y_cols
-        )
+        _report_summary_plot_info(c, x, y, x_label, x_axis_labels, x_cols, y_label, y_axis_label, y_cols)
 
     if interactive:
         import plotly.express as px
@@ -439,9 +705,7 @@ def summary_plot(
     else:
         # a very simple seaborn (matplotlib) plot...
         if not seaborn_available:
-            warnings.warn(
-                "seaborn not available, returning only the data so that you can plot it yourself instead"
-            )
+            warnings.warn("seaborn not available, returning only the data so that you can plot it yourself instead")
             return s
 
         import seaborn as sns
@@ -507,9 +771,7 @@ def summary_plot(
         return fig
 
 
-def _report_summary_plot_info(
-    c, x, y, x_label, x_axis_labels, x_cols, y_label, y_axis_label, y_cols
-):
+def _report_summary_plot_info(c, x, y, x_label, x_axis_labels, x_cols, y_label, y_axis_label, y_cols):
     from pprint import pprint, pformat
     import textwrap
 
@@ -571,14 +833,10 @@ def partition_summary_cv_steps(
     summary = c.data.summary
     summary = summary[column_set]
 
-    summary_no_cv = c.make_summary(
-        selector_type="non-cv", create_copy=True
-    ).data.summary[column_set]
+    summary_no_cv = c.make_summary(selector_type="non-cv", create_copy=True).data.summary[column_set]
     summary_no_cv.columns = [col + "_non_cv" for col in summary_no_cv.columns]
 
-    summary_only_cv = c.make_summary(
-        selector_type="only-cv", create_copy=True
-    ).data.summary[column_set]
+    summary_only_cv = c.make_summary(selector_type="only-cv", create_copy=True).data.summary[column_set]
     summary_only_cv.columns = [col + "_cv" for col in summary_only_cv.columns]
 
     if split:
@@ -593,12 +851,8 @@ def partition_summary_cv_steps(
     summary_only_cv = summary_only_cv.reset_index()
     summary = summary.reset_index()
 
-    summary_no_cv = summary_no_cv.melt(
-        id_vars, var_name=var_name, value_name=value_name
-    )
-    summary_only_cv = summary_only_cv.melt(
-        id_vars, var_name=var_name, value_name=value_name
-    )
+    summary_no_cv = summary_no_cv.melt(id_vars, var_name=var_name, value_name=value_name)
+    summary_only_cv = summary_only_cv.melt(id_vars, var_name=var_name, value_name=value_name)
     summary = summary.melt(id_vars, var_name=var_name, value_name=value_name)
 
     s = pd.concat([summary, summary_no_cv, summary_only_cv], axis=0)
@@ -857,9 +1111,7 @@ def raw_plot(
         ax_v.set_xlim(xlim)
     else:
 
-        fig, axes = plt.subplots(
-            nrows=number_of_rows, ncols=1, figsize=figsize, sharex=True
-        )
+        fig, axes = plt.subplots(nrows=number_of_rows, ncols=1, figsize=figsize, sharex=True)
 
         for i in range(number_of_rows):
             axes[i].plot(raw[x], raw[y[i]])
@@ -1087,12 +1339,8 @@ def _get_info(table, cycle, step):
     m_table = (table.cycle == cycle) & (table.step == step)
     p1, p2 = table.loc[m_table, ["point_min", "point_max"]].values[0]
     c1, c2 = table.loc[m_table, ["current_min", "current_max"]].abs().values[0]
-    d_voltage, d_current = table.loc[
-        m_table, ["voltage_delta", "current_delta"]
-    ].values[0]
-    d_discharge, d_charge = table.loc[
-        m_table, ["discharge_delta", "charge_delta"]
-    ].values[0]
+    d_voltage, d_current = table.loc[m_table, ["voltage_delta", "current_delta"]].values[0]
+    d_discharge, d_charge = table.loc[m_table, ["discharge_delta", "charge_delta"]].values[0]
     current_max = (c1 + c2) / 2
     rate = table.loc[m_table, "rate_avr"].values[0]
     step_type = table.loc[m_table, "type"].values[0]
@@ -1154,9 +1402,7 @@ def _cycle_info_plot_matplotlib(
         c = data.loc[m, "current"] * i_scaler
         v = data.loc[m, "voltage"] * v_scaler
         t = data.loc[m, "test_time"] * t_scaler
-        step_type, rate, current_max, dv, dc, d_discharge, d_charge = _get_info(
-            table, cycle, s
-        )
+        step_type, rate, current_max, dv, dc, d_discharge, d_charge = _get_info(table, cycle, s)
         if len(t) > 1:
             fcolor = next(color)
 
@@ -1321,14 +1567,8 @@ def plot_cycles(
 
             shrink = min(1.0, (1 / 8) * n_formation_cycles)
 
-            c_m_formation = ListedColormap(
-                plt.get_cmap(formation_colormap, 2 * len(cycle_sequence))(
-                    cycle_sequence
-                )
-            )
-            s_m_formation = matplotlib.cm.ScalarMappable(
-                cmap=c_m_formation, norm=norm_formation
-            )
+            c_m_formation = ListedColormap(plt.get_cmap(formation_colormap, 2 * len(cycle_sequence))(cycle_sequence))
+            s_m_formation = matplotlib.cm.ScalarMappable(cmap=c_m_formation, norm=norm_formation)
             for name, group in formation_cycles.groupby("cycle"):
                 ax.plot(
                     group["capacity"],
@@ -1358,13 +1598,9 @@ def plot_cycles(
                 labelpad=12,
             )
 
-        norm = Normalize(
-            vmin=rest_cycles["cycle"].min(), vmax=rest_cycles["cycle"].max()
-        )
+        norm = Normalize(vmin=rest_cycles["cycle"].min(), vmax=rest_cycles["cycle"].max())
         if cut_colorbar:
-            cycle_sequence = np.arange(
-                rest_cycles["cycle"].min(), rest_cycles["cycle"].max() + 1, 1
-            )
+            cycle_sequence = np.arange(rest_cycles["cycle"].min(), rest_cycles["cycle"].max() + 1, 1)
             n = int(np.round(1.2 * rest_cycles["cycle"].max()))
             c_m = ListedColormap(plt.get_cmap(colormap, n)(cycle_sequence))
         else:
@@ -1487,7 +1723,32 @@ def plot_cycles(
         fig.show()
 
 
-def _check_plotter():
+def _check_plotter_plotly():
+    import pathlib
+
+    import cellpy
+
+    p = pathlib.Path("../../testdata/hdf5/20160805_test001_45_cc.h5")
+    out = pathlib.Path("../../tmp")
+    assert out.exists()
+    c = cellpy.get(p)
+    fig = plot_cycles(
+        c,
+        ylim=[0.0, 1.0],
+        show_formation=False,
+        cut_colorbar=False,
+        title="My nice plot",
+        interactive=True,
+        return_figure=True,
+    )
+    print("saving figure")
+    print(f"{fig=}")
+    print(f"{type(fig)=}")
+    save_image_files(fig, out / "test_plot_plotly", backend="plotly")
+    fig.show()
+
+
+def _check_plotter_matplotlib():
     import matplotlib.pyplot as plt
     import seaborn as sns
     import pathlib
@@ -1495,16 +1756,28 @@ def _check_plotter():
     import cellpy
 
     p = pathlib.Path("../../testdata/hdf5/20160805_test001_45_cc.h5")
+    out = pathlib.Path("../../tmp")
+    assert out.exists()
     c = cellpy.get(p)
-    plot_cycles(
+    fig = plot_cycles(
         c,
         ylim=[0.0, 1.0],
         show_formation=False,
         cut_colorbar=False,
         title="My nice plot",
+        interactive=False,
+        return_figure=True,
     )
+    print("saving figure")
+    print(f"{fig=}")
+    print(f"{type(fig)=}")
+    save_image_files(fig, out / "test_plot_matplotlib", backend="matplotlib")
+    # need to create a new manager to show the figure since it is closed in
+    # the plot_cycles function when issuing return_figure=True:
+    make_matplotlib_manager(fig)
     plt.show()
 
 
 if __name__ == "__main__":
-    _check_plotter()
+    _check_plotter_plotly()
+    _check_plotter_matplotlib()

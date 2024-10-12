@@ -105,7 +105,7 @@ def make_matplotlib_manager(fig):
 def load_matplotlib_figure(filename, create_new_manager=False):
     fig = pkl.load(open(filename, "rb"))
     if create_new_manager:
-        fig = _make_matplotlib_manager(fig)
+        fig = make_matplotlib_manager(fig)
     return fig
 
 
@@ -247,9 +247,7 @@ class BatchCollector:
         self._update_arguments(data_collector_arguments, plotter_arguments)
 
         # Elevated arguments have preference above the data_collector and plotter argument dicts:
-        self._parse_elevated_arguments(
-            elevated_data_collector_arguments, elevated_plotter_arguments
-        )
+        self._parse_elevated_arguments(elevated_data_collector_arguments, elevated_plotter_arguments)
 
         self._set_attributes(**kwargs)
 
@@ -309,10 +307,7 @@ class BatchCollector:
         txt += f"{bullet_start}figure_directory: {self.figure_directory}" + sep
         txt += f"{bullet_start}data_directory: {self.data_directory}" + sep
         txt += f"{bullet_start}batch-instance: {self.b.name}" + sep
-        txt += (
-            f"{bullet_start}data_collector_arguments: {self.data_collector_arguments}"
-            + sep
-        )
+        txt += f"{bullet_start}data_collector_arguments: {self.data_collector_arguments}" + sep
         txt += f"{bullet_start}plotter_arguments: {self.plotter_arguments}" + sep
         return txt
 
@@ -416,18 +411,14 @@ class BatchCollector:
             **kwargs,
         )
 
-    def _parse_elevated_arguments(
-        self, data_collector_arguments: dict = None, plotter_arguments: dict = None
-    ):
+    def _parse_elevated_arguments(self, data_collector_arguments: dict = None, plotter_arguments: dict = None):
         if data_collector_arguments is not None:
             logging.info(f"Updating elevated arguments")
             elevated_data_collector_arguments = {}
             for k, v in data_collector_arguments.items():
                 if v is not None:
                     elevated_data_collector_arguments[k] = v
-            self._update_arguments(
-                elevated_data_collector_arguments, None, set_as_defaults=True
-            )
+            self._update_arguments(elevated_data_collector_arguments, None, set_as_defaults=True)
 
         if plotter_arguments is not None:
             logging.info(f"Updating elevated arguments")
@@ -435,9 +426,7 @@ class BatchCollector:
             for k, v in plotter_arguments.items():
                 if v is not None:
                     elevated_plotter_arguments[k] = v
-            self._update_arguments(
-                None, elevated_plotter_arguments, set_as_defaults=True
-            )
+            self._update_arguments(None, elevated_plotter_arguments, set_as_defaults=True)
 
     def _update_arguments(
         self,
@@ -468,15 +457,11 @@ class BatchCollector:
 
     def _check_plotter_arguments(self):
         if "plot_type" in self.plotter_arguments:
-            print(
-                "WARNING - using possible difficult option (future versions will fix this)"
-            )
+            print("WARNING - using possible difficult option (future versions will fix this)")
             print("*** 'plot_type' TRANSLATED TO 'method'")
             self.plotter_arguments["method"] = self.plotter_arguments.pop("plot_type")
 
-    def reset_arguments(
-        self, data_collector_arguments: dict = None, plotter_arguments: dict = None
-    ):
+    def reset_arguments(self, data_collector_arguments: dict = None, plotter_arguments: dict = None):
         """Reset the arguments to the defaults.
 
         Args:
@@ -517,9 +502,7 @@ class BatchCollector:
 
     def collect(self, *args, **kwargs):
         """Collect data."""
-        self.data = self.data_collector(
-            self.b, **self.data_collector_arguments, **kwargs
-        )
+        self.data = self.data_collector(self.b, **self.data_collector_arguments, **kwargs)
         self.post_collect(*args, **kwargs)
 
     def post_collect(self, *args, **kwargs):
@@ -616,9 +599,7 @@ class BatchCollector:
         if self.backend == "seaborn":
             if not skip_render_for_seaborn:
                 return self.figure.figure
-            print(
-                "WARNING: skipping rendering for seaborn, assuming it is already rendered during the plotter call"
-            )
+            print("WARNING: skipping rendering for seaborn, assuming it is already rendered during the plotter call")
             print(
                 "WARNING: if you want to show the figure, provide `skip_render_for_seaborn=False` as keyword argument"
             )
@@ -940,9 +921,7 @@ class BatchSummaryCollector(BatchCollector):
             logging.debug(f"index={index}")
             logging.debug(f"columns={wide_cols}")
             logging.debug(f"values={value_cols}")
-            data = pd.pivot(
-                self.data, index=index, columns=wide_cols, values=value_cols
-            )
+            data = pd.pivot(self.data, index=index, columns=wide_cols, values=value_cols)
         except Exception as e:
             print("Could not make wide:")
             print(e)
@@ -1366,9 +1345,7 @@ def cycles_collector(
             if abort_on_missing:
                 raise ValueError(f"{n} is empty - aborting!")
             logging.critical(f"[{n} (cell name: {c.cell_name}) empty]")
-    collected_curves = pd.concat(
-        all_curves, keys=keys, axis=0, names=["cell", "point"]
-    ).reset_index(level="cell")
+    collected_curves = pd.concat(all_curves, keys=keys, axis=0, names=["cell", "point"]).reset_index(level="cell")
     return collected_curves
 
 
@@ -1442,9 +1419,7 @@ def ica_collector(
             if abort_on_missing:
                 raise ValueError(f"{n} is empty - aborting!")
             logging.critical(f"[{n} (cell name: {c.cell_name}) empty]")
-    collected_curves = pd.concat(
-        all_curves, keys=keys, axis=0, names=["cell", "point"]
-    ).reset_index(level="cell")
+    collected_curves = pd.concat(all_curves, keys=keys, axis=0, names=["cell", "point"]).reset_index(level="cell")
     return collected_curves
 
 
@@ -1479,15 +1454,11 @@ def legend_replacer(trace, df, group_legends=True):
         group = int(parts[0])
         subgroup = int(parts[1])
     else:
-        print(
-            "Have not implemented replacing legend labels that are not on the form a,b yet."
-        )
+        print("Have not implemented replacing legend labels that are not on the form a,b yet.")
         print(f"legend label: {name}")
         return trace
 
-    cell_label = df.loc[
-        (df["group"] == group) & (df["sub_group"] == subgroup), "cell"
-    ].values[0]
+    cell_label = df.loc[(df["group"] == group) & (df["sub_group"] == subgroup), "cell"].values[0]
     if group_legends:
         trace.update(
             name=cell_label,
@@ -1511,9 +1482,7 @@ def spread_plot(curves, plotly_arguments, **kwargs):
     for color in colors:
         color_rgb = plotly.colors.hex_to_rgb(color)
         color_rgb_main = f"rgb({color_rgb[0]}, {color_rgb[1]}, {color_rgb[2]})"
-        color_rgba_spread = (
-            f"rgba({color_rgb[0]}, {color_rgb[1]}, {color_rgb[2]}, {opacity})"
-        )
+        color_rgba_spread = f"rgba({color_rgb[0]}, {color_rgb[1]}, {color_rgb[2]}, {opacity})"
         color_list.append((color_rgb_main, color_rgba_spread))
 
     if plotly_arguments.get("markers"):
@@ -1790,16 +1759,12 @@ def sequence_plotter(
             unique_cycle_numbers = curves[z].unique()
             number_of_colors = len(unique_cycle_numbers)
             if number_of_colors > 1:
-                selected_colors = px.colors.sample_colorscale(
-                    palette_continuous, number_of_colors, low=start, high=end
-                )
+                selected_colors = px.colors.sample_colorscale(palette_continuous, number_of_colors, low=start, high=end)
                 plotly_arguments["color_discrete_sequence"] = selected_colors
         elif method == "fig_pr_cycle":
             if palette_discrete is not None:
                 # plotly_arguments["color_discrete_sequence"] = getattr(px.colors.sequential, palette_discrete)
-                logging.debug(
-                    f"palette_discrete is not implemented yet ({palette_discrete})"
-                )
+                logging.debug(f"palette_discrete is not implemented yet ({palette_discrete})")
 
         elif method == "film":
             number_of_colors = 10
@@ -1815,12 +1780,8 @@ def sequence_plotter(
 
         abs_facet_row_spacing = kwargs.pop("abs_facet_row_spacing", 20)
         abs_facet_col_spacing = kwargs.pop("abs_facet_col_spacing", 20)
-        facet_row_spacing = kwargs.pop(
-            "facet_row_spacing", abs_facet_row_spacing / height if height else 0.1
-        )
-        facet_col_spacing = kwargs.pop(
-            "facet_col_spacing", abs_facet_col_spacing / (width or 1000)
-        )
+        facet_row_spacing = kwargs.pop("facet_row_spacing", abs_facet_row_spacing / height if height else 0.1)
+        facet_col_spacing = kwargs.pop("facet_col_spacing", abs_facet_col_spacing / (width or 1000))
 
         plotly_arguments["facet_row_spacing"] = facet_row_spacing
         plotly_arguments["facet_col_spacing"] = facet_col_spacing
@@ -1945,26 +1906,16 @@ def sequence_plotter(
             aspect = seaborn_arguments.get("aspect", 1)
 
             if palette_discrete is not None:
-                seaborn_arguments["palette"] = getattr(
-                    sns.color_palette, palette_discrete
-                )
+                seaborn_arguments["palette"] = getattr(sns.color_palette, palette_discrete)
 
             number_of_columns = len(curves[col].unique())
             if number_of_columns > 6:
-                print(
-                    f"WARNING! {number_of_columns} columns is a lot for seaborn to plot"
-                )
-                print(
-                    f"  - consider making the plot manually (use the `.data` attribute to get the data)"
-                )
+                print(f"WARNING! {number_of_columns} columns is a lot for seaborn to plot")
+                print(f"  - consider making the plot manually (use the `.data` attribute to get the data)")
 
             legend_items = curves[hue].unique()
             number_of_legends = len(legend_items)
-            palette = (
-                seaborn_arguments.get("palette", "viridis")
-                if number_of_legends > 10
-                else None
-            )
+            palette = seaborn_arguments.get("palette", "viridis") if number_of_legends > 10 else None
 
             g = sns.FacetGrid(
                 curves,
@@ -1983,9 +1934,7 @@ def sequence_plotter(
                 vmin = legend_items.min()
                 vmax = legend_items.max()
 
-                sm = plt.cm.ScalarMappable(
-                    cmap=palette, norm=plt.Normalize(vmin=vmin, vmax=vmax)
-                )
+                sm = plt.cm.ScalarMappable(cmap=palette, norm=plt.Normalize(vmin=vmin, vmax=vmax))
                 cbar = g.figure.colorbar(
                     sm,
                     ax=g.figure.axes,
@@ -2242,9 +2191,7 @@ def summary_plotter(collected_curves, cycles_to_plot=None, backend="plotly", **k
             id_vars.append(n)
 
     if "variable" not in col_headers:
-        collected_curves = collected_curves.melt(
-            id_vars=id_vars, value_vars=col_headers
-        )
+        collected_curves = collected_curves.melt(id_vars=id_vars, value_vars=col_headers)
 
     normalize_cycles = True if "equivalent_cycle" in id_vars else False
     group_it = False if "group" in id_vars else True
@@ -2302,6 +2249,11 @@ def summary_plotter(collected_curves, cycles_to_plot=None, backend="plotly", **k
                 v = v[:-1]
             v = " ".join(v).title()
             label_mapper[y].append(f"{v} ({u})")
+
+    # TODO: need to refactor and fix how the classes are created so that leftover kwargs are not sent to the backend
+    #  (for example if another collector is used and registers a kwarg without popping it)
+
+    _ = kwargs.pop("method", None)  # also set in BatchCyclesCollector
 
     fig = _cycles_plotter(
         collected_curves,

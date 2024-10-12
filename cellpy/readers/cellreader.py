@@ -682,6 +682,7 @@ class CellpyCell:
         instrument=None,
         model=None,
         instrument_file=None,
+        unit_test=False,
         **kwargs,
     ):
         """Set the instrument (i.e. tell cellpy the file-type you use).
@@ -709,6 +710,7 @@ class CellpyCell:
                 the choices made during the export or the model of the instrument, e.g. different number of
                 header lines, different encoding).
             instrument_file: (path) instrument definition file,
+            unit_test: (bool) set to True if you want to print the settings instead of setting them.
             kwargs (dict): key-word arguments sent to the initializer of the
                 loader class
 
@@ -724,20 +726,30 @@ class CellpyCell:
 
         # constants:
         custom_instrument_splitter = "::"
+        model_id = "model="
         # consume keyword arguments:
         _override_local_instrument_path = kwargs.pop(
             "_override_local_instrument_path", False
         )
 
         # parse input (need instrument, instrument_file and model)
+
+        # None, None, [-]
         if instrument is None and instrument_file is None:
             instrument = self.tester
 
+        # "xxx::yyy", None, [-] -> "xxx", "yyy", [-] or "xxx", None, "yyy"
         if not instrument_file:
-            instrument, instrument_file = self._parse_instrument_str(
+            instrument, instrument_file_or_model = self._parse_instrument_str(
                 instrument, custom_instrument_splitter
             )
+            if instrument_file_or_model:
+                if instrument_file_or_model.startswith(model_id):
+                    model = instrument_file_or_model[len(model_id) :]
+                else:
+                    instrument_file = instrument_file_or_model
 
+        # "xxx::yyy", "zzz", None -> "xxx", "zzz", "yyy"
         if instrument_file and not model:
             instrument, model = self._parse_instrument_str(
                 instrument, custom_instrument_splitter
@@ -754,6 +766,16 @@ class CellpyCell:
 
             if not instrument_file.is_file():
                 raise FileNotFoundError(f"Could not locate {instrument_file}")
+
+        if model is not None and model.startswith(model_id):
+            model = model[len(model_id) :]
+
+        if unit_test:
+            print(f"{instrument=}")
+            print(f"{instrument_file=}")
+            print(f"{model=}")
+            print(f"{kwargs=}")
+            return instrument, instrument_file, model, kwargs
 
         self._set_instrument(
             instrument, instrument_file=instrument_file, model=model, **kwargs

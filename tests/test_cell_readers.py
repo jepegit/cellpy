@@ -75,9 +75,7 @@ def test_raw_data_from_data_point(cellpy_data_instance, parameters):
 def test_raw_data_data_point(cellpy_data_instance, parameters):
     # TODO @jepe: refactor and use col names directly from HeadersNormal instead
     data_point_header = "data_point"
-    cellpy_data_instance.from_raw(
-        parameters.res_file_path, data_points=(10_000, 10_200)
-    )
+    cellpy_data_instance.from_raw(parameters.res_file_path, data_points=(10_000, 10_200))
 
     p1 = cellpy_data_instance.data.raw[data_point_header].iloc[0]
     p2 = cellpy_data_instance.data.raw[data_point_header].iloc[-1]
@@ -282,9 +280,7 @@ def test_get_timestamp(dataset, cycle, units, expected):
     assert x.iloc[0, -1] == pytest.approx(expected, 0.001)
 
 
-@pytest.mark.parametrize(
-    "cycle, units, as_frame, expected", [(None, "seconds", False, 300.01048193)]
-)
+@pytest.mark.parametrize("cycle, units, as_frame, expected", [(None, "seconds", False, 300.01048193)])
 def test_get_timestamp_list(dataset, cycle, units, as_frame, expected):
     from pprint import pprint
 
@@ -524,22 +520,16 @@ def test_check_file_ids_external_not_accessible(parameters):
         pytest.param(1, 8, "ocvrlx_up", "good", marks=pytest.mark.xfail),
     ],
 )
-def test_load_step_specs_short(
-    cellpy_data_instance, cycle, step, expected_type, expected_info, parameters
-):
+def test_load_step_specs_short(cellpy_data_instance, cycle, step, expected_type, expected_info, parameters):
     cellpy_data_instance.from_raw(parameters.res_file_path)
     cellpy_data_instance.set_mass(1.0)
     file_name = parameters.short_step_table_file_path
     assert os.path.isfile(file_name)
     cellpy_data_instance.load_step_specifications(file_name, short=True)
     step_table = cellpy_data_instance.data.steps
-    t = step_table.loc[
-        (step_table.cycle == cycle) & (step_table.step == step), "type"
-    ].values[0]
+    t = step_table.loc[(step_table.cycle == cycle) & (step_table.step == step), "type"].values[0]
     assert t == expected_type
-    i = step_table.loc[
-        (step_table.cycle == cycle) & (step_table.step == step), "info"
-    ].values[0]
+    i = step_table.loc[(step_table.cycle == cycle) & (step_table.step == step), "info"].values[0]
     assert str(i) == expected_info
 
 
@@ -573,9 +563,7 @@ def test_extract_fids_from_cellpy_file(parameters, tmp_path):
 
     c = cellreader.CellpyCell()
     with pd.HDFStore(cellpy_file) as store:
-        fid_table, fid_table_selected = c._extract_fids_from_cellpy_file(
-            fid_dir, parent_level, store
-        )
+        fid_table, fid_table_selected = c._extract_fids_from_cellpy_file(fid_dir, parent_level, store)
 
     raw_file = OtherPath(parameters.res_file_path)
     new_cellpy_file_path = tmp_path / cellpy_file.name
@@ -585,9 +573,7 @@ def test_extract_fids_from_cellpy_file(parameters, tmp_path):
     fids0 = c0.data.raw_data_files
 
     with pd.HDFStore(new_cellpy_file_path) as store:
-        fid_table2, fid_table_selected2 = c._extract_fids_from_cellpy_file(
-            fid_dir, parent_level, store
-        )
+        fid_table2, fid_table_selected2 = c._extract_fids_from_cellpy_file(fid_dir, parent_level, store)
     assert fid_table["raw_data_name"][0] == fid_table2["raw_data_name"][0]
     assert fid_table2["raw_data_name"][0] == fids0[0].name
 
@@ -600,9 +586,7 @@ def test_load_step_specs(cellpy_data_instance, parameters):
     assert os.path.isfile(file_name)
     cellpy_data_instance.load_step_specifications(file_name)
     step_table = cellpy_data_instance.data.steps
-    t = step_table.loc[(step_table.cycle == 1) & (step_table.step == 8), "type"].values[
-        0
-    ]
+    t = step_table.loc[(step_table.cycle == 1) & (step_table.step == 8), "type"].values[0]
     assert t == "ocvrlx_down"
 
 
@@ -730,9 +714,7 @@ def test_load_cellpyfile(cellpy_data_instance, parameters):
     assert any(map(lambda v: v in unique_cycles_read, unique_cycles))
     assert my_test.summary.loc[cycle_number, "data_point"] == data_point
     assert step_time == pytest.approx(my_test.raw.loc[5, "step_time"], 0.1)
-    assert sum_test_time == pytest.approx(
-        my_test.summary.loc[:, "test_time"].sum(), 0.1
-    )
+    assert sum_test_time == pytest.approx(my_test.summary.loc[:, "test_time"].sum(), 0.1)
 
 
 def test_get_current_voltage(dataset):
@@ -815,9 +797,7 @@ def test_check_cellpy_file(cellpy_data_instance, parameters):
 def test_cellpyfile_roundtrip(tmp_path, parameters):
     from cellpy import cellreader
 
-    cellpy_file_name = (
-        pathlib.Path(tmp_path) / pathlib.Path(parameters.cellpy_file_path).name
-    )
+    cellpy_file_name = pathlib.Path(tmp_path) / pathlib.Path(parameters.cellpy_file_path).name
     cdi = cellreader.CellpyCell()
 
     # create a cellpy file from the res-file
@@ -873,16 +853,12 @@ def test_group_by_interpolate(dataset):
     data = dataset.data.raw
     interpolated_data1 = cellpy.readers.core.group_by_interpolate(data)
     interpolated_data2 = cellpy.readers.core.group_by_interpolate(data, tidy=True)
-    interpolated_data3 = cellpy.readers.core.group_by_interpolate(
-        data, individual_x_cols=True
-    )
+    interpolated_data3 = cellpy.readers.core.group_by_interpolate(data, individual_x_cols=True)
 
 
 def test_get(parameters):
     c_h5 = cellpy.get(parameters.cellpy_file_path, testing=True)
-    c_res = cellpy.get(
-        parameters.res_file_path, instrument="arbin_res", mass=0.045, testing=True
-    )
+    c_res = cellpy.get(parameters.res_file_path, instrument="arbin_res", mass=0.045, testing=True)
 
 
 def test_get_advanced(parameters):
@@ -972,3 +948,32 @@ def test_cellpy_get_update_units(parameters):
     c3 = cellpy.get(raw_file, units=units_old, logging_mode="DEBUG", testing=True)
     sc3 = c3.data.summary.charge_capacity_gravimetric
     assert sc1.iloc[0] == pytest.approx(sc3.iloc[0], rel=1e-3)
+
+
+@pytest.mark.parametrize(
+    "instrument_str, expected_instrument, expected_inst_file, expected_model, instrument_file, model",
+    [
+        ("arbin_res", "arbin_res", None, None, None, None),
+        ("maccor_txt::some_file", "maccor_txt", "some_file", None, None, None),
+        ("maccor_txt::model=some_model", "maccor_txt", None, "some_model", None, None),
+        ("maccor_txt::model=some_model", "maccor_txt", "some_file.yml", "some_model", "some_file.yml", None),
+        ("maccor_txt", "maccor_txt", "some_file.yml", "some_model", "some_file.yml", "some_model"),
+    ],
+)
+def test_instrument_str_splitter(
+    instrument_str,
+    expected_instrument,
+    expected_inst_file,
+    expected_model,
+    instrument_file,
+    model,
+):
+    from cellpy.readers import cellreader
+
+    c = cellreader.CellpyCell()
+    instrument2, inst_file2, model2, kwargs = c.set_instrument(
+        instrument_str, instrument_file=instrument_file, model=model, unit_test=True
+    )
+    assert instrument2 == expected_instrument
+    assert inst_file2 == expected_inst_file
+    assert model2 == expected_model

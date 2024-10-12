@@ -10,6 +10,8 @@ markers = [
     "serial",
 ]
 
+[tool.black]
+line-length = 120
 
 [tool.bumpver]
 current_version = "1.0.2a6"

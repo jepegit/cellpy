@@ -104,10 +104,12 @@ class Batch:
                 reset_big_log=True,
             )
 
-        db_reader = kwargs.pop("db_reader", "default")
-
         file_name = kwargs.pop("file_name", None)
         frame = kwargs.pop("frame", None)
+        if frame is not None:
+            db_reader = kwargs.pop("db_reader", None)
+        else:
+            db_reader = kwargs.pop("db_reader", "default")
 
         logging.debug("creating CyclingExperiment")
         self.experiment = CyclingExperiment(db_reader=db_reader)
@@ -1175,7 +1177,7 @@ class Batch:
                      filter_by_group=1, filter_by_name="2019")
 
             # to get the plotly canvas:
-            my_canvas = b.figure
+            my_canvas = b.plotter.figure
 
         """
 
