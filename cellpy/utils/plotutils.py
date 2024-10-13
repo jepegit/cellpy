@@ -48,53 +48,8 @@ logging.captureWarnings(True)
 
 # from collectors - template:
 
-PLOTLY_BASE_TEMPLATE = "seaborn"
+PLOTLY_BASE_TEMPLATE = "plotly"
 IMAGE_TO_FILE_TIMEOUT = 30
-
-px_template_all_axis_shown = dict(
-    xaxis=dict(
-        linecolor="rgb(36,36,36)",
-        mirror=True,
-        showline=True,
-        zeroline=False,
-        title={"standoff": 15},
-    ),
-    yaxis=dict(
-        linecolor="rgb(36,36,36)",
-        mirror=True,
-        showline=True,
-        zeroline=False,
-        title={"standoff": 15},
-    ),
-)
-
-# fig_pr_cell_template = go.layout.Template(
-#     # layout=px_template_all_axis_shown
-# )
-#
-# fig_pr_cycle_template = go.layout.Template(
-#     # layout=px_template_all_axis_shown
-# )
-#
-# film_template = go.layout.Template(
-#     # layout=px_template_all_axis_shown
-# )
-#
-# summary_template = go.layout.Template(
-#     # layout=px_template_all_axis_shown
-# )
-
-
-def _set_plotly_templates():
-    if plotly_available:
-        import plotly.io as pio
-
-        pio.templates.default = PLOTLY_BASE_TEMPLATE
-        pio.templates["all_axis_shown"] = px_template_all_axis_shown
-        # pio.templates["fig_pr_cell"] = fig_pr_cell_template
-        # pio.templates["fig_pr_cycle"] = fig_pr_cycle_template
-        # pio.templates["film"] = film_template
-        # pio.templates["summary"] = summary_template
 
 
 # from collectors - tools for loading and saving plots:
@@ -264,54 +219,6 @@ def _plotly_legend_replacer(trace, df, group_legends=True):
         )
 
 
-def _make_plotly_template(name="axis"):
-
-    if not plotly_available:
-        return None
-    import plotly.graph_objects as go
-    import plotly.io as pio
-
-    tick_label_width = 6
-    title_font_size = 22
-    title_font_family = "Arial"
-    axis_font_size = 16
-    axis_standoff = 15
-    linecolor = "rgb(36,36,36)"
-
-    t = go.layout.Template(
-        layout=dict(
-            font_family=title_font_family,
-            title=dict(
-                font_size=title_font_size,
-                x=0,
-                xref="paper",
-            ),
-            xaxis=dict(
-                linecolor=linecolor,
-                mirror=True,
-                showline=True,
-                zeroline=False,
-                title=dict(
-                    standoff=axis_standoff,
-                    font_size=axis_font_size,
-                ),
-            ),
-            yaxis=dict(
-                linecolor=linecolor,
-                mirror=True,
-                showline=True,
-                zeroline=False,
-                tickformat=f"{tick_label_width}",
-                title=dict(
-                    standoff=axis_standoff,
-                    font_size=axis_font_size,
-                ),
-            ),
-        )
-    )
-    pio.templates[name] = t
-
-
 # original:
 SYMBOL_DICT = {
     "all": [
@@ -421,6 +328,89 @@ _hdr_summary = get_headers_summary()
 _hdr_raw = get_headers_normal()
 _hdr_steps = get_headers_step_table()
 _hdr_journal = get_headers_journal()
+
+
+def set_plotly_template(template_name=None, **kwargs):
+    """Set the default plotly template."""
+    if not plotly_available:
+        return None
+    import plotly.io as pio
+
+    if template_name is None:
+        name = create_plotly_default_template(**kwargs)
+        pio.templates.default = f"{PLOTLY_BASE_TEMPLATE}+{name}"
+    else:
+        pio.templates.default = template_name
+
+
+def create_plotly_default_template(
+    name="all_axis",
+    font_color="#455A64",
+    marker_edge_on=False,
+    marker_size=12,
+    marker_edge_color="white",
+    marker_width=None,
+    opacity=0.8,
+):
+    if not plotly_available:
+        return None
+    import plotly.graph_objects as go
+    import plotly.io as pio
+
+    axis_color = "rgb(36,36,36)"
+    grid_color = "white"
+    axis_font = "Arial Black"
+    axis_font_size = 16
+    # axis_standoff = 15
+    axis_standoff = None
+    tick_label_width = 6
+
+    title_font_size = 22
+    title_font_family = "Arial Black, Helvetica, Sans-serif"
+    title_font_color = font_color
+
+    marker = dict(
+        size=marker_size,
+    )
+    line = dict()
+
+    if marker_edge_on:
+        if marker_width is None:
+            if marker_size is not None:
+                marker_width = marker_size / 6
+            else:
+                marker_width = 0.5
+
+        marker["line"] = dict(
+            width=marker_width,
+            color=marker_edge_color,
+        )
+    axis = dict(
+        linecolor=axis_color,
+        mirror=True,
+        showline=True,
+        gridcolor=grid_color,
+        zeroline=False,
+        tickformat=f"{tick_label_width}",
+        titlefont_family=axis_font,
+        title=dict(
+            standoff=axis_standoff,
+            font_size=axis_font_size,
+            font_color=font_color,
+        ),
+    )
+    title = dict(
+        font_family=title_font_family,
+        font_size=title_font_size,
+        font_color=title_font_color,
+        x=0,
+        xref="paper",
+    )
+    data = dict(
+        scatter=[go.Scatter(marker=marker, line=line, opacity=opacity)],
+    )
+    pio.templates[name] = go.layout.Template(layout=dict(title=title, xaxis=axis, yaxis=axis), data=data)
+    return name
 
 
 def create_colormarkerlist_for_journal(journal, symbol_label="all", color_style_label="seaborn-colorblind"):
@@ -561,6 +551,9 @@ def _get_capacity_unit(c, mode="gravimetric", seperator="/"):
     return specific_selector.get(mode, "-")
 
 
+# TODO: add formation cycles handling
+# TODO: consistent parameter names (e.g. y_range vs ylim) between summary_plot, plot_cycles, raw_plot, cycle_info_plot and batchutils
+# TODO: consistent function names (raw_plot vs plot_raw etc)
 def summary_plot(
     c,
     x: str = None,
@@ -576,6 +569,7 @@ def summary_plot(
     rangeslider: bool = False,
     return_data: bool = False,
     verbose: bool = False,
+    plotly_template: str = None,
     **kwargs,
 ):
     """Create a summary plot.
@@ -600,6 +594,7 @@ def summary_plot(
         share_y: share y-axis
         return_data: return the data used for plotting
         verbose: print out some extra information to make it easier to find out what to plot next time
+        plotly_template: name of the plotly template to use
         **kwargs: additional parameters for the plotting backend
 
     Returns:
@@ -676,6 +671,8 @@ def summary_plot(
 
     if interactive:
         import plotly.express as px
+
+        set_plotly_template(plotly_template)
 
         fig = px.line(
             s,
@@ -1443,7 +1440,7 @@ def _cycle_info_plot_matplotlib(
         return ax1, ax2, ax2, ax4
 
 
-def plot_cycles(
+def cycles_plot(
     c,
     cycles=None,
     formation_cycles=3,
@@ -1467,6 +1464,7 @@ def plot_cycles(
     formation_line_color="rgba(152, 0, 0, .8)",
     force_colorbar=False,
     force_nonbar=False,
+    plotly_template=None,
 ):
     """
     Plot the voltage vs. capacity for different cycles of a cell.
@@ -1499,6 +1497,7 @@ def plot_cycles(
         formation_line_color (str, optional): Color for the formation cycle lines in Plotly. Default is 'rgba(152, 0, 0, .8)'.
         force_colorbar (bool, optional): Whether to force the colorbar to be shown. Default is False.
         force_nonbar (bool, optional): Whether to force the colorbar to be hidden. Default is False.
+        plotly_template (str, optional): Plotly template to use (uses default template if None).
 
     Returns:
         matplotlib.figure.Figure or plotly.graph_objects.Figure: The generated plot figure.
@@ -1647,6 +1646,8 @@ def plot_cycles(
         import plotly.express as px
         import plotly.graph_objects as go
 
+        set_plotly_template(plotly_template)
+
         color_scales = px.colors.named_colorscales()
         if colormap not in color_scales:
             colormap = "Blues_r"
@@ -1732,7 +1733,7 @@ def _check_plotter_plotly():
     out = pathlib.Path("../../tmp")
     assert out.exists()
     c = cellpy.get(p)
-    fig = plot_cycles(
+    fig = cycles_plot(
         c,
         ylim=[0.0, 1.0],
         show_formation=False,
@@ -1759,7 +1760,7 @@ def _check_plotter_matplotlib():
     out = pathlib.Path("../../tmp")
     assert out.exists()
     c = cellpy.get(p)
-    fig = plot_cycles(
+    fig = cycles_plot(
         c,
         ylim=[0.0, 1.0],
         show_formation=False,
@@ -1778,6 +1779,32 @@ def _check_plotter_matplotlib():
     plt.show()
 
 
+def _check_summary_plotter_plotly():
+    import pathlib
+
+    import cellpy
+
+    p = pathlib.Path("../../testdata/hdf5/20160805_test001_45_cc.h5")
+    out = pathlib.Path("../../tmp")
+    assert out.exists()
+    c = cellpy.get(p)
+    fig = summary_plot(
+        c,
+        # ylim=[0.0, 1.0],
+        # show_formation=False,
+        # cut_colorbar=False,
+        title="My nice plot",
+        interactive=True,
+        # return_figure=True,
+    )
+    print("saving figure")
+    print(f"{fig=}")
+    print(f"{type(fig)=}")
+    # save_image_files(fig, out / "test_plot_plotly", backend="plotly")
+    fig.show()
+
+
 if __name__ == "__main__":
     _check_plotter_plotly()
-    _check_plotter_matplotlib()
+    # _check_plotter_matplotlib()
+    # _check_summary_plotter_plotly()
