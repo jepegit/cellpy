@@ -570,6 +570,11 @@ def summary_plot(
     return_data: bool = False,
     verbose: bool = False,
     plotly_template: str = None,
+    formation_cycles=3,
+    show_formation=True,
+    colormap="Blues_r",
+    formation_colormap="autumn",
+    formation_line_color="rgba(152, 0, 0, .8)",
     **kwargs,
 ):
     """Create a summary plot.
@@ -595,6 +600,11 @@ def summary_plot(
         return_data: return the data used for plotting
         verbose: print out some extra information to make it easier to find out what to plot next time
         plotly_template: name of the plotly template to use
+        formation_cycles: number of formation cycles to show
+        show_formation: show formation cycles [DO NOT USE THIS YET]
+        colormap: colormap to use [DO NOT USE THIS YET]
+        formation_colormap: colormap to use for formation cycles [DO NOT USE THIS YET]
+        formation_line_color: color of the formation line [DO NOT USE THIS YET]
         **kwargs: additional parameters for the plotting backend
 
     Returns:
@@ -637,6 +647,9 @@ def summary_plot(
         title=title,
     )
 
+    # TODO: do not make two frames, instead add another column (formation) to
+    #  the data so that we can use plotly express directly (facet_row)
+
     # filter on constant voltage vs constant current
     if y.endswith("_split_constant_voltage"):
         cap_type = "capacities_gravimetric" if y.startswith("capacities_gravimetric") else "capacities_areal"
@@ -666,13 +679,23 @@ def summary_plot(
     else:
         y_label = y.replace("_", " ").title()
 
+    if formation_cycles > 0:
+        selector = s[_hdr_summary.cycle_index] <= formation_cycles
+        s["cycle_type"] = "standard"
+        s.loc[selector, "cycle_type"] = "formation"
+
     if verbose:
         _report_summary_plot_info(c, x, y, x_label, x_axis_labels, x_cols, y_label, y_axis_label, y_cols)
 
     if interactive:
         import plotly.express as px
+        from plotly.subplots import make_subplots
 
         set_plotly_template(plotly_template)
+
+        if show_formation:
+            print("formation cycles is under development")
+            additional_kwargs_plotly["facet_col"] = "cycle_type"
 
         fig = px.line(
             s,
@@ -687,7 +710,10 @@ def summary_plot(
         )
 
         if x_range is not None:
-            fig.update_layout(xaxis=dict(range=x_range))
+            if not show_formation:
+                fig.update_layout(xaxis=dict(range=x_range))
+            else:
+                print("Can not set x_range when showing formation cycles")
         if y_range is not None:
             fig.update_layout(yaxis=dict(range=y_range))
         elif split and not share_y:
@@ -700,7 +726,7 @@ def summary_plot(
         return fig
 
     else:
-        # a very simple seaborn (matplotlib) plot...
+        # formation cycle splitting not implemented yet for this case
         if not seaborn_available:
             warnings.warn("seaborn not available, returning only the data so that you can plot it yourself instead")
             return s
@@ -711,7 +737,7 @@ def summary_plot(
 
         if split:
             sns_fig = sns.relplot(
-                data=s,
+                data=s_cycles,
                 x=x,
                 y=y_header,
                 hue=color,
@@ -735,7 +761,7 @@ def summary_plot(
         else:
             fig, ax = plt.subplots()
             ax = sns.lineplot(
-                data=s,
+                data=s_cycles,
                 x=x,
                 y=y_header,
                 hue=color,
@@ -1538,10 +1564,10 @@ def cycles_plot(
     df = c.get_cap(cycles=cycles, **kw_arguments)
 
     selector = df["cycle"] <= formation_cycles
-    formation_cycles = df.loc[selector, :]
+    form_cycles = df.loc[selector, :]
     rest_cycles = df.loc[~selector, :]
 
-    n_formation_cycles = len(formation_cycles["cycle"].unique())
+    n_form_cycles = len(form_cycles["cycle"].unique())
     n_rest_cycles = len(rest_cycles["cycle"].unique())
 
     capacity_unit = _get_capacity_unit(c, mode=mode)
@@ -1552,14 +1578,14 @@ def cycles_plot(
         fig, ax = plt.subplots(1, 1, figsize=figsize)
         fig_width, fig_height = figsize
 
-        if not formation_cycles.empty and show_formation:
+        if not form_cycles.empty and show_formation:
             if fig_width < 6:
                 print("Warning: try setting the figsize to (6, 4) or larger")
             if fig_width > 8:
                 print("Warning: try setting the figsize to (8, 4) or smaller")
             min_cycle, max_cycle = (
-                formation_cycles["cycle"].min(),
-                formation_cycles["cycle"].max(),
+                form_cycles["cycle"].min(),
+                form_cycles["cycle"].max(),
             )
             norm_formation = Normalize(vmin=min_cycle, vmax=max_cycle)
             cycle_sequence = np.arange(min_cycle, max_cycle + 1, 1)
@@ -1568,7 +1594,7 @@ def cycles_plot(
 
             c_m_formation = ListedColormap(plt.get_cmap(formation_colormap, 2 * len(cycle_sequence))(cycle_sequence))
             s_m_formation = matplotlib.cm.ScalarMappable(cmap=c_m_formation, norm=norm_formation)
-            for name, group in formation_cycles.groupby("cycle"):
+            for name, group in form_cycles.groupby("cycle"):
                 ax.plot(
                     group["capacity"],
                     group["voltage"],
@@ -1582,8 +1608,8 @@ def cycles_plot(
                 ax=ax,
                 # label="Formation Cycle",
                 ticks=np.arange(
-                    formation_cycles["cycle"].min(),
-                    formation_cycles["cycle"].max() + 1,
+                    form_cycles["cycle"].min(),
+                    form_cycles["cycle"].max() + 1,
                     1,
                 ),
                 shrink=shrink,
@@ -1696,8 +1722,8 @@ def cycles_plot(
             )
             fig.update_traces(mode="lines+markers", line_color="white", line_width=1)
 
-        if not formation_cycles.empty and show_formation:
-            for name, group in formation_cycles.groupby("cycle"):
+        if not form_cycles.empty and show_formation:
+            for name, group in form_cycles.groupby("cycle"):
                 trace = go.Scatter(
                     x=group["capacity"],
                     y=group["voltage"],
@@ -1805,6 +1831,6 @@ def _check_summary_plotter_plotly():
 
 
 if __name__ == "__main__":
-    _check_plotter_plotly()
+    # _check_plotter_plotly()
     # _check_plotter_matplotlib()
-    # _check_summary_plotter_plotly()
+    _check_summary_plotter_plotly()
