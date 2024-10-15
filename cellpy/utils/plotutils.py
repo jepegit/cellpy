@@ -41,10 +41,8 @@ if plotly_available:
 if seaborn_available:
     supported_backends.append("seaborn")
 
-
 # logger = logging.getLogger(__name__)
 logging.captureWarnings(True)
-
 
 # from collectors - template:
 
@@ -218,6 +216,10 @@ def _plotly_legend_replacer(trace, df, group_legends=True):
             hovertemplate=f"{cell_label}<br>{trace.hovertemplate}",
         )
 
+
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+import numpy as np
 
 # original:
 SYMBOL_DICT = {
@@ -499,6 +501,8 @@ def create_col_info(c):
         capacities=_cap_cols,
         capacities_gravimetric_split_constant_voltage=_capacities_gravimetric_split,
         capacities_areal_split_constant_voltage=_capacities_areal_split,
+        capacities_gravimetric_coulombic_efficiency=_capacities_gravimetric + [hdr.coulombic_efficiency],
+        capacities_areal_coulombic_efficiency=_capacities_areal + [hdr.coulombic_efficiency],
     )
     return x_columns, y_cols
 
@@ -520,8 +524,7 @@ def create_label_dict(c):
         hdr.data_point: "Point",
         hdr.test_time: f"Test Time ({c.cellpy_units.time})",
         hdr.datetime: "Date",
-        hdr.normalized_cycle_index: "Equivalent Full Cycle",
-        # hdr.normalized_cycle_index: "Normalized Cycle Number",
+        hdr.normalized_cycle_index: "Equivalent Full Cycle",  # hdr.normalized_cycle_index: "Normalized Cycle Number",
     }
 
     _cap_gravimetric_label = f"Capacity ({c.cellpy_units.charge}/{c.cellpy_units.specific_gravimetric})"
@@ -536,12 +539,13 @@ def create_label_dict(c):
         "capacities": _cap_label,
         "capacities_gravimetric_split_constant_voltage": _cap_gravimetric_label,
         "capacities_areal_split_constant_voltage": _cap_areal_label,
+        "capacities_gravimetric_coulombic_efficiency": _cap_gravimetric_label,
+        "capacities_areal_coulombic_efficiency": _cap_areal_label,
     }
     return x_axis_labels, y_axis_label
 
 
 def _get_capacity_unit(c, mode="gravimetric", seperator="/"):
-
     specific_selector = {
         "gravimetric": f"{c.cellpy_units.charge}{seperator}{c.cellpy_units.specific_gravimetric}",
         "areal": f"{c.cellpy_units.charge}{seperator}{c.cellpy_units.specific_areal}",
@@ -558,7 +562,7 @@ def summary_plot(
     c,
     x: str = None,
     y: str = "capacities_gravimetric",
-    height: int = 600,
+    height: int = None,
     markers: bool = True,
     title=None,
     x_range: list = None,
@@ -575,6 +579,7 @@ def summary_plot(
     colormap="Blues_r",
     formation_colormap="autumn",
     formation_line_color="rgba(152, 0, 0, .8)",
+    column_seperator=0.01,
     **kwargs,
 ):
     """Create a summary plot.
@@ -619,6 +624,10 @@ def summary_plot(
 
     """
 
+    number_of_rows = 1
+
+    show_y_labels_on_right_pane = False
+
     if interactive and not plotly_available:
         warnings.warn("plotly not available, and it is currently the only supported interactive backend")
         return None
@@ -639,16 +648,12 @@ def summary_plot(
     y_header = "value"
     color = "variable"
     row = "row"
-
     additional_kwargs_plotly = dict(
         color=color,
         height=height,
         markers=markers,
         title=title,
     )
-
-    # TODO: do not make two frames, instead add another column (formation) to
-    #  the data so that we can use plotly express directly (facet_row)
 
     # filter on constant voltage vs constant current
     if y.endswith("_split_constant_voltage"):
@@ -661,8 +666,10 @@ def summary_plot(
             s = partition_summary_cv_steps(c, x, column_set, split, color, y_header)
         if split:
             additional_kwargs_plotly["facet_row"] = row
+            number_of_rows = 3
+            if additional_kwargs_plotly.get("height") is None:
+                additional_kwargs_plotly["height"] = 800
 
-    # simple case
     else:
         column_set = y_cols.get(y, y)
         if isinstance(column_set, str):
@@ -672,6 +679,18 @@ def summary_plot(
         s = summary.melt(x)
         s = s.loc[s.variable.isin(column_set)]
         s = s.reset_index(drop=True)
+        if split:
+            if y.endswith("_efficiency"):
+                s["row"] = 0
+                s.loc[s["variable"].str.contains("efficiency"), "row"] = 1
+                additional_kwargs_plotly["facet_row"] = row
+                number_of_rows = 2
+
+        if additional_kwargs_plotly.get("height") is None:
+            additional_kwargs_plotly["height"] = 400 * number_of_rows
+
+    max_cycle = s[x].max()
+    min_cycle = s[x].min()
 
     x_label = x_axis_labels.get(x, x)
     if y in y_axis_label:
@@ -679,10 +698,21 @@ def summary_plot(
     else:
         y_label = y.replace("_", " ").title()
 
+    if split and show_formation:
+        column_seperator += 0.05
+        show_y_labels_on_right_pane = True
+        warnings.warn(
+            "It is currently not easy to link y-axis between the formation and the rest of the cycles when splitting in plotly!"
+        )
+        warnings.warn(
+            "Still have not figured out how to modify annotations in plotly when split and show_formation is True in plotly!"
+        )
+
+    formation_cycle_selector = slice(None, None)
     if formation_cycles > 0:
-        selector = s[_hdr_summary.cycle_index] <= formation_cycles
+        formation_cycle_selector = s[x] <= formation_cycles
         s["cycle_type"] = "standard"
-        s.loc[selector, "cycle_type"] = "formation"
+        s.loc[formation_cycle_selector, "cycle_type"] = "formation"
 
     if verbose:
         _report_summary_plot_info(c, x, y, x_label, x_axis_labels, x_cols, y_label, y_axis_label, y_cols)
@@ -694,7 +724,6 @@ def summary_plot(
         set_plotly_template(plotly_template)
 
         if show_formation:
-            print("formation cycles is under development")
             additional_kwargs_plotly["facet_col"] = "cycle_type"
 
         fig = px.line(
@@ -709,18 +738,207 @@ def summary_plot(
             **kwargs,
         )
 
+        if show_formation:
+            formation_header = '<span style="color:red">Formation</span>'
+            x_axis_domain_formation = [0.0, 0.2 - column_seperator / 2]
+            x_axis_domain_rest = [0.2 + column_seperator / 2, 0.95]
+            max_cycle_formation = s.loc[formation_cycle_selector, x].max()
+            min_cycle_rest = s.loc[~formation_cycle_selector, x].min()
+            if x == _hdr_summary.normalized_cycle_index:
+                dd = 0.1
+
+            else:
+                dd = 0.4
+            x_axis_range_formation = [min_cycle - dd, max_cycle_formation + dd]
+            x_axis_range_rest = [min_cycle_rest - dd, max_cycle + dd]
+
+            if number_of_rows == 1:
+                fig.update_layout(
+                    xaxis_domain=x_axis_domain_formation,
+                    scene_domain_x=x_axis_domain_formation,
+                    xaxis=dict(range=x_axis_range_formation),
+                    xaxis2=dict(
+                        range=x_axis_range_rest,
+                        domain=x_axis_domain_rest,
+                        matches=None,
+                    ),
+                    yaxis2=dict(matches="y", showticklabels=show_y_labels_on_right_pane),
+                )
+                annotations = [{"text": formation_header, "x": 0.08, "y": 1.02, "showarrow": False}, {"text": ""}]
+                fig.update_layout(annotations=annotations)
+            elif number_of_rows == 2:
+                if y.endswith("_efficiency"):
+                    fig.update_layout(
+                        yaxis3={"title": dict(text="Coulombic Efficiency"), "domain": [0.7, 1.0]},
+                        yaxis1=dict(domain=[0.0, 0.65]),
+                        yaxis2=dict(domain=[0.0, 0.65]),
+                        yaxis4=dict(domain=[0.70, 1.0]),
+                    )
+                    # TODO: fix here so that the hoover text is correct:
+                    # fig.update_traces()
+                fig.update_yaxes(matches="y")
+                fig.update_layout(xaxis_domain=x_axis_domain_formation, scene_domain_x=x_axis_domain_formation)
+                fig.update_layout(
+                    xaxis2=dict(range=x_axis_range_rest, domain=x_axis_domain_rest, matches=None),
+                    xaxis3=dict(range=x_axis_range_formation, domain=x_axis_domain_formation, matches="x"),
+                    xaxis4=dict(range=x_axis_range_rest, domain=x_axis_domain_rest, matches="x2"),
+                    yaxis2=dict(matches="y", showticklabels=show_y_labels_on_right_pane),
+                    yaxis4=dict(matches="y3", showticklabels=show_y_labels_on_right_pane),
+                )
+                # TODO: fix this
+
+                annotations = [
+                    {
+                        "font": {},
+                        "showarrow": False,
+                        "text": formation_header,
+                        "x": 0.08,
+                        "xanchor": "center",
+                        "xref": "paper",
+                        "y": 1.0,
+                        "yanchor": "bottom",
+                        "yref": "paper",
+                    },
+                    {
+                        "font": {},
+                        "showarrow": False,
+                        "text": "",
+                        "x": 0.74,
+                        "xanchor": "center",
+                        "xref": "paper",
+                        "y": 1.0,
+                        "yanchor": "bottom",
+                        "yref": "paper",
+                    },
+                    {
+                        "font": {},
+                        "showarrow": False,
+                        "text": "",
+                        "textangle": 90,
+                        "x": 0.98,
+                        "xanchor": "left",
+                        "xref": "paper",
+                        "y": 0.2425,
+                        "yanchor": "middle",
+                        "yref": "paper",
+                    },
+                    {
+                        "font": {},
+                        "showarrow": False,
+                        "text": "",
+                        "textangle": 90,
+                        "x": 0.98,
+                        "xanchor": "left",
+                        "xref": "paper",
+                        "y": 0.7575000000000001,
+                        "yanchor": "middle",
+                        "yref": "paper",
+                    },
+                ]
+
+                # fig.layout["annotations"] = tuple()
+                fig.layout["annotations"] = annotations
+
+            elif number_of_rows == 3:
+                fig.update_yaxes(matches="y")
+                fig.update_layout(xaxis_domain=x_axis_domain_formation, scene_domain_x=x_axis_domain_formation)
+                fig.update_layout(
+                    xaxis2=dict(range=x_axis_range_rest, domain=x_axis_domain_rest, matches=None),
+                    xaxis3=dict(range=x_axis_range_formation, domain=x_axis_domain_formation, matches="x"),
+                    xaxis4=dict(range=x_axis_range_rest, domain=x_axis_domain_rest, matches="x2"),
+                    xaxis5=dict(range=x_axis_range_formation, domain=x_axis_domain_formation, matches="x"),
+                    xaxis6=dict(range=x_axis_range_rest, domain=x_axis_domain_rest, matches="x2"),
+                    yaxis2=dict(matches="y", showticklabels=show_y_labels_on_right_pane),
+                    yaxis4=dict(matches="y3", showticklabels=show_y_labels_on_right_pane),
+                    yaxis6=dict(matches="y5", showticklabels=show_y_labels_on_right_pane),
+                )
+                annotations = [
+                    {
+                        "font": {},
+                        "showarrow": False,
+                        "text": formation_header,
+                        "x": 0.08,
+                        "xanchor": "center",
+                        "xref": "paper",
+                        "y": 0.9999999999999998,
+                        "yanchor": "bottom",
+                        "yref": "paper",
+                    },
+                    {
+                        "font": {},
+                        "showarrow": False,
+                        "text": "",
+                        "x": 0.74,
+                        "xanchor": "center",
+                        "xref": "paper",
+                        "y": 0.9999999999999998,
+                        "yanchor": "bottom",
+                        "yref": "paper",
+                    },
+                    {
+                        "font": {},
+                        "showarrow": False,
+                        "text": "row=with CV",
+                        "textangle": 90,
+                        "x": 0.98,
+                        "xanchor": "left",
+                        "xref": "paper",
+                        "y": 0.15666666666666665,
+                        "yanchor": "middle",
+                        "yref": "paper",
+                    },
+                    {
+                        "font": {},
+                        "showarrow": False,
+                        "text": "row=without CV",
+                        "textangle": 90,
+                        "x": 0.98,
+                        "xanchor": "left",
+                        "xref": "paper",
+                        "y": 0.4999999999999999,
+                        "yanchor": "middle",
+                        "yref": "paper",
+                    },
+                    {
+                        "font": {},
+                        "showarrow": False,
+                        "text": "row=all",
+                        "textangle": 90,
+                        "x": 0.98,
+                        "xanchor": "left",
+                        "xref": "paper",
+                        "y": 0.8433333333333332,
+                        "yanchor": "middle",
+                        "yref": "paper",
+                    },
+                ]
+                # fig.layout["annotations"] = tuple()
+                fig.layout["annotations"] = annotations
+
+            else:
+                raise NotImplementedError("Not implemented for more than three rows")
+        else:
+            if y.endswith("_efficiency"):
+                fig.update_layout(
+                    yaxis=dict(domain=[0.0, 0.65]),
+                    yaxis2={"title": dict(text="Coulombic Efficiency"), "domain": [0.7, 1.0]},
+                )
+
         if x_range is not None:
             if not show_formation:
                 fig.update_layout(xaxis=dict(range=x_range))
             else:
-                print("Can not set x_range when showing formation cycles")
+                print("Can not set custom x_range when showing formation cycles")
         if y_range is not None:
             fig.update_layout(yaxis=dict(range=y_range))
         elif split and not share_y:
             fig.update_yaxes(matches=None)
 
         if rangeslider:
-            fig.update_layout(xaxis_rangeslider_visible=True)
+            if show_formation:
+                print("Can not add rangeslider when showing formation cycles")
+            else:
+                fig.update_layout(xaxis_rangeslider_visible=True)
         if return_data:
             return fig, s
         return fig
@@ -854,12 +1072,20 @@ def partition_summary_cv_steps(
     import pandas as pd
 
     summary = c.data.summary
+
+    summary_no_cv = c.make_summary(selector_type="non-cv", create_copy=True).data.summary
+    summary_only_cv = c.make_summary(selector_type="only-cv", create_copy=True).data.summary
+    if x != summary.index.name:
+        summary.set_index(x, inplace=True)
+        summary_no_cv.set_index(x, inplace=True)
+        summary_only_cv.set_index(x, inplace=True)
+
     summary = summary[column_set]
 
-    summary_no_cv = c.make_summary(selector_type="non-cv", create_copy=True).data.summary[column_set]
+    summary_no_cv = summary_no_cv[column_set]
     summary_no_cv.columns = [col + "_non_cv" for col in summary_no_cv.columns]
 
-    summary_only_cv = c.make_summary(selector_type="only-cv", create_copy=True).data.summary[column_set]
+    summary_only_cv = summary_only_cv[column_set]
     summary_only_cv.columns = [col + "_cv" for col in summary_only_cv.columns]
 
     if split:
@@ -873,7 +1099,6 @@ def partition_summary_cv_steps(
     summary_no_cv = summary_no_cv.reset_index()
     summary_only_cv = summary_only_cv.reset_index()
     summary = summary.reset_index()
-
     summary_no_cv = summary_no_cv.melt(id_vars, var_name=var_name, value_name=value_name)
     summary_only_cv = summary_only_cv.melt(id_vars, var_name=var_name, value_name=value_name)
     summary = summary.melt(id_vars, var_name=var_name, value_name=value_name)
@@ -1598,15 +1823,13 @@ def cycles_plot(
                 ax.plot(
                     group["capacity"],
                     group["voltage"],
-                    lw=2,
-                    # alpha=0.7,
+                    lw=2,  # alpha=0.7,
                     color=s_m_formation.to_rgba(name),
                     label=f"Cycle {name}",
                 )
             cbar_formation = fig.colorbar(
                 s_m_formation,
-                ax=ax,
-                # label="Formation Cycle",
+                ax=ax,  # label="Formation Cycle",
                 ticks=np.arange(
                     form_cycles["cycle"].min(),
                     form_cycles["cycle"].max() + 1,
@@ -1816,12 +2039,15 @@ def _check_summary_plotter_plotly():
     c = cellpy.get(p)
     fig = summary_plot(
         c,
+        # x="normalized_cycle_index",
+        y="capacities_gravimetric_coulombic_efficiency",
         # ylim=[0.0, 1.0],
         # show_formation=False,
         # cut_colorbar=False,
+        split=True,
         title="My nice plot",
-        interactive=True,
-        # return_figure=True,
+        interactive=True,  # rangeslider=True,
+        show_formation=True,  # return_figure=True,
     )
     print("saving figure")
     print(f"{fig=}")
