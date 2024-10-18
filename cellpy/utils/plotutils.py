@@ -326,6 +326,27 @@ COLOR_DICT = {
     ],
 }
 
+PLOTLY_BLANK_LABEL = {
+    "font": {},
+    "showarrow": False,
+    "text": "",
+    "x": 1.1,
+    "xanchor": "center",
+    "xref": "paper",
+    "y": 1.0,
+    "yanchor": "bottom",
+    "yref": "paper",
+}
+
+
+def _plotly_label_dict(text, x, y):
+    d = PLOTLY_BLANK_LABEL.copy()
+    d["text"] = text
+    d["x"] = x
+    d["y"] = y
+    return d
+
+
 _hdr_summary = get_headers_summary()
 _hdr_raw = get_headers_normal()
 _hdr_steps = get_headers_step_table()
@@ -555,7 +576,7 @@ def _get_capacity_unit(c, mode="gravimetric", seperator="/"):
     return specific_selector.get(mode, "-")
 
 
-# TODO: add formation cycles handling
+# TODO: add formation cycles handling for seaborn
 # TODO: consistent parameter names (e.g. y_range vs ylim) between summary_plot, plot_cycles, raw_plot, cycle_info_plot and batchutils
 # TODO: consistent function names (raw_plot vs plot_raw etc)
 def summary_plot(
@@ -568,6 +589,7 @@ def summary_plot(
     x_range: list = None,
     y_range: list = None,
     split: bool = False,
+    auto_convert_legend_labels: bool = True,
     interactive: bool = True,
     share_y: bool = False,
     rangeslider: bool = False,
@@ -576,10 +598,7 @@ def summary_plot(
     plotly_template: str = None,
     formation_cycles=3,
     show_formation=True,
-    colormap="Blues_r",
-    formation_colormap="autumn",
-    formation_line_color="rgba(152, 0, 0, .8)",
-    column_seperator=0.01,
+    column_separator=0.01,
     **kwargs,
 ):
     """Create a summary plot.
@@ -599,6 +618,7 @@ def summary_plot(
         x_range: limits for x-axis
         y_range: limits for y-axis
         split: split the plot
+        auto_convert_legend_labels: convert the legend labels to a nicer format.
         interactive: use interactive plotting
         rangeslider: add a range slider to the x-axis (only for plotly)
         share_y: share y-axis
@@ -606,10 +626,8 @@ def summary_plot(
         verbose: print out some extra information to make it easier to find out what to plot next time
         plotly_template: name of the plotly template to use
         formation_cycles: number of formation cycles to show
-        show_formation: show formation cycles [DO NOT USE THIS YET]
-        colormap: colormap to use [DO NOT USE THIS YET]
-        formation_colormap: colormap to use for formation cycles [DO NOT USE THIS YET]
-        formation_line_color: color of the formation line [DO NOT USE THIS YET]
+        show_formation: show formation cycles
+        column_separator: separation between columns when splitting the plot
         **kwargs: additional parameters for the plotting backend
 
     Returns:
@@ -623,10 +641,12 @@ def summary_plot(
 
 
     """
+    from copy import deepcopy
+
+    smart_link = kwargs.pop("smart_link", True)
+    show_y_labels_on_right_pane = kwargs.pop("show_y_labels_on_right_pane", False)
 
     number_of_rows = 1
-
-    show_y_labels_on_right_pane = False
 
     if interactive and not plotly_available:
         warnings.warn("plotly not available, and it is currently the only supported interactive backend")
@@ -643,6 +663,27 @@ def summary_plot(
 
     x_cols, y_cols = create_col_info(c)
     x_axis_labels, y_axis_label = create_label_dict(c)
+
+    def _auto_range(fig, axis_name_1, axis_name_2):
+        full_axis_name_1 = axis_name_1.replace("y", "yaxis")
+        full_axis_name_2 = axis_name_2.replace("y", "yaxis")
+
+        _range_1 = fig.layout[f"{full_axis_name_1}_range"]
+        _range_2 = fig.layout[f"{full_axis_name_2}_range"]
+        if _range_1 is None:
+            _range_1 = [np.inf, -np.inf]
+        if _range_2 is None:
+            _range_2 = [np.inf, -np.inf]
+        _range = [min(_range_1[0], _range_2[0]), max(_range_1[1], _range_2[1])]
+
+        for t in deepcopy(fig.data):
+            if t.yaxis in [axis_name_1, axis_name_2]:
+                y = deepcopy(t.y)
+                min_y = min(y)
+                max_y = max(y)
+                _range = [min(_range[0], min_y), max(_range[1], max_y)]
+        _range = [0.95 * _range[0], 1.05 * _range[1]]
+        return _range
 
     # ------------------- main --------------------------------------------
     y_header = "value"
@@ -698,15 +739,9 @@ def summary_plot(
     else:
         y_label = y.replace("_", " ").title()
 
-    if split and show_formation:
-        column_seperator += 0.05
+    if split and show_formation and not smart_link:
+        column_separator = max(column_separator, 0.06)
         show_y_labels_on_right_pane = True
-        warnings.warn(
-            "It is currently not easy to link y-axis between the formation and the rest of the cycles when splitting in plotly!"
-        )
-        warnings.warn(
-            "Still have not figured out how to modify annotations in plotly when split and show_formation is True in plotly!"
-        )
 
     formation_cycle_selector = slice(None, None)
     if formation_cycles > 0:
@@ -740,13 +775,12 @@ def summary_plot(
 
         if show_formation:
             formation_header = '<span style="color:red">Formation</span>'
-            x_axis_domain_formation = [0.0, 0.2 - column_seperator / 2]
-            x_axis_domain_rest = [0.2 + column_seperator / 2, 0.95]
+            x_axis_domain_formation = [0.0, 0.2 - column_separator / 2]
+            x_axis_domain_rest = [0.2 + column_separator / 2, 0.95]
             max_cycle_formation = s.loc[formation_cycle_selector, x].max()
             min_cycle_rest = s.loc[~formation_cycle_selector, x].min()
             if x == _hdr_summary.normalized_cycle_index:
                 dd = 0.1
-
             else:
                 dd = 0.4
             x_axis_range_formation = [min_cycle - dd, max_cycle_formation + dd]
@@ -764,9 +798,12 @@ def summary_plot(
                     ),
                     yaxis2=dict(matches="y", showticklabels=show_y_labels_on_right_pane),
                 )
-                annotations = [{"text": formation_header, "x": 0.08, "y": 1.02, "showarrow": False}, {"text": ""}]
+                annotations = [{"text": formation_header, "x": 0.08, "y": 1.02, "showarrow": False}, PLOTLY_BLANK_LABEL]
                 fig.update_layout(annotations=annotations)
+
             elif number_of_rows == 2:
+                fig.update_yaxes(matches="y")
+                fig.update_yaxes(autorange=False)
                 if y.endswith("_efficiency"):
                     fig.update_layout(
                         yaxis3={"title": dict(text="Coulombic Efficiency"), "domain": [0.7, 1.0]},
@@ -774,145 +811,59 @@ def summary_plot(
                         yaxis2=dict(domain=[0.0, 0.65]),
                         yaxis4=dict(domain=[0.70, 1.0]),
                     )
-                    # TODO: fix here so that the hoover text is correct:
-                    # fig.update_traces()
-                fig.update_yaxes(matches="y")
+
                 fig.update_layout(xaxis_domain=x_axis_domain_formation, scene_domain_x=x_axis_domain_formation)
+                range_1 = _auto_range(fig, "y", "y2")
+                range_2 = _auto_range(fig, "y3", "y4")
                 fig.update_layout(
                     xaxis2=dict(range=x_axis_range_rest, domain=x_axis_domain_rest, matches=None),
                     xaxis3=dict(range=x_axis_range_formation, domain=x_axis_domain_formation, matches="x"),
                     xaxis4=dict(range=x_axis_range_rest, domain=x_axis_domain_rest, matches="x2"),
-                    yaxis2=dict(matches="y", showticklabels=show_y_labels_on_right_pane),
-                    yaxis4=dict(matches="y3", showticklabels=show_y_labels_on_right_pane),
+                    yaxis=dict(
+                        matches="y2",
+                        range=range_1,
+                    ),
+                    yaxis2=dict(
+                        matches="y",
+                        showticklabels=show_y_labels_on_right_pane,
+                        range=range_1,
+                    ),
+                    yaxis3=dict(
+                        matches="y4",
+                        range=range_2,
+                    ),
+                    yaxis4=dict(
+                        matches="y3",
+                        showticklabels=show_y_labels_on_right_pane,
+                        range=range_2,
+                    ),
                 )
-                # TODO: fix this
-
-                annotations = [
-                    {
-                        "font": {},
-                        "showarrow": False,
-                        "text": formation_header,
-                        "x": 0.08,
-                        "xanchor": "center",
-                        "xref": "paper",
-                        "y": 1.0,
-                        "yanchor": "bottom",
-                        "yref": "paper",
-                    },
-                    {
-                        "font": {},
-                        "showarrow": False,
-                        "text": "",
-                        "x": 0.74,
-                        "xanchor": "center",
-                        "xref": "paper",
-                        "y": 1.0,
-                        "yanchor": "bottom",
-                        "yref": "paper",
-                    },
-                    {
-                        "font": {},
-                        "showarrow": False,
-                        "text": "",
-                        "textangle": 90,
-                        "x": 0.98,
-                        "xanchor": "left",
-                        "xref": "paper",
-                        "y": 0.2425,
-                        "yanchor": "middle",
-                        "yref": "paper",
-                    },
-                    {
-                        "font": {},
-                        "showarrow": False,
-                        "text": "",
-                        "textangle": 90,
-                        "x": 0.98,
-                        "xanchor": "left",
-                        "xref": "paper",
-                        "y": 0.7575000000000001,
-                        "yanchor": "middle",
-                        "yref": "paper",
-                    },
-                ]
-
-                # fig.layout["annotations"] = tuple()
+                annotations = [_plotly_label_dict(formation_header, 0.08, 1.0)] + 3 * [PLOTLY_BLANK_LABEL]
                 fig.layout["annotations"] = annotations
 
             elif number_of_rows == 3:
                 fig.update_yaxes(matches="y")
+                fig.update_yaxes(autorange=False)
                 fig.update_layout(xaxis_domain=x_axis_domain_formation, scene_domain_x=x_axis_domain_formation)
+
+                range_1 = _auto_range(fig, "y", "y2")
+                range_2 = _auto_range(fig, "y3", "y4")
+                range_3 = _auto_range(fig, "y5", "y6")
+
                 fig.update_layout(
                     xaxis2=dict(range=x_axis_range_rest, domain=x_axis_domain_rest, matches=None),
                     xaxis3=dict(range=x_axis_range_formation, domain=x_axis_domain_formation, matches="x"),
                     xaxis4=dict(range=x_axis_range_rest, domain=x_axis_domain_rest, matches="x2"),
                     xaxis5=dict(range=x_axis_range_formation, domain=x_axis_domain_formation, matches="x"),
                     xaxis6=dict(range=x_axis_range_rest, domain=x_axis_domain_rest, matches="x2"),
-                    yaxis2=dict(matches="y", showticklabels=show_y_labels_on_right_pane),
-                    yaxis4=dict(matches="y3", showticklabels=show_y_labels_on_right_pane),
-                    yaxis6=dict(matches="y5", showticklabels=show_y_labels_on_right_pane),
+                    yaxis=dict(matches="y2", range=range_1),
+                    yaxis2=dict(matches="y", showticklabels=show_y_labels_on_right_pane, range=range_1),
+                    yaxis3=dict(matches="y4", range=range_2),
+                    yaxis4=dict(matches="y3", showticklabels=show_y_labels_on_right_pane, range=range_2),
+                    yaxis5=dict(matches="y6", range=range_3),
+                    yaxis6=dict(matches="y5", showticklabels=show_y_labels_on_right_pane, range=range_3),
                 )
-                annotations = [
-                    {
-                        "font": {},
-                        "showarrow": False,
-                        "text": formation_header,
-                        "x": 0.08,
-                        "xanchor": "center",
-                        "xref": "paper",
-                        "y": 0.9999999999999998,
-                        "yanchor": "bottom",
-                        "yref": "paper",
-                    },
-                    {
-                        "font": {},
-                        "showarrow": False,
-                        "text": "",
-                        "x": 0.74,
-                        "xanchor": "center",
-                        "xref": "paper",
-                        "y": 0.9999999999999998,
-                        "yanchor": "bottom",
-                        "yref": "paper",
-                    },
-                    {
-                        "font": {},
-                        "showarrow": False,
-                        "text": "row=with CV",
-                        "textangle": 90,
-                        "x": 0.98,
-                        "xanchor": "left",
-                        "xref": "paper",
-                        "y": 0.15666666666666665,
-                        "yanchor": "middle",
-                        "yref": "paper",
-                    },
-                    {
-                        "font": {},
-                        "showarrow": False,
-                        "text": "row=without CV",
-                        "textangle": 90,
-                        "x": 0.98,
-                        "xanchor": "left",
-                        "xref": "paper",
-                        "y": 0.4999999999999999,
-                        "yanchor": "middle",
-                        "yref": "paper",
-                    },
-                    {
-                        "font": {},
-                        "showarrow": False,
-                        "text": "row=all",
-                        "textangle": 90,
-                        "x": 0.98,
-                        "xanchor": "left",
-                        "xref": "paper",
-                        "y": 0.8433333333333332,
-                        "yanchor": "middle",
-                        "yref": "paper",
-                    },
-                ]
-                # fig.layout["annotations"] = tuple()
+                annotations = [_plotly_label_dict(formation_header, 0.08, 1.0)] + 5 * [PLOTLY_BLANK_LABEL]
                 fig.layout["annotations"] = annotations
 
             else:
@@ -929,16 +880,41 @@ def summary_plot(
                 fig.update_layout(xaxis=dict(range=x_range))
             else:
                 print("Can not set custom x_range when showing formation cycles")
+
         if y_range is not None:
             fig.update_layout(yaxis=dict(range=y_range))
-        elif split and not share_y:
-            fig.update_yaxes(matches=None)
+
+        if split:
+            if show_formation:
+                if not share_y and not smart_link:
+                    fig.update_yaxes(matches=None)
+            elif not share_y:
+                fig.update_yaxes(matches=None)
 
         if rangeslider:
             if show_formation:
                 print("Can not add rangeslider when showing formation cycles")
             else:
                 fig.update_layout(xaxis_rangeslider_visible=True)
+
+        if auto_convert_legend_labels:
+            for trace in fig.data:
+                name = trace.name
+                name = name.replace("_", " ").title()
+                name = name.replace("Gravimetric", "Grav.")
+                name = name.replace("Cv", "(CV)")
+                name = name.replace("Non (CV)", "(without CV)")
+                hover_template = trace.hovertemplate
+                statements = []
+                for statement in hover_template.split("<br>"):
+                    variable, value = statement.split("=")
+                    if value.startswith("%{y}"):
+                        variable = name
+                    statement = "=".join((variable, value))
+                    statements.append(statement)
+                hover_template = "<br>".join(statements)
+                trace.update(name=name, hovertemplate=hover_template)
+
         if return_data:
             return fig, s
         return fig
