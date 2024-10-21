@@ -584,6 +584,7 @@ def summary_plot(
     x: str = None,
     y: str = "capacities_gravimetric",
     height: int = None,
+    width: int = 900,
     markers: bool = True,
     title=None,
     x_range: list = None,
@@ -613,6 +614,7 @@ def summary_plot(
               "capacities_gravimetric_split_constant_voltage", "capacities_areal_split_constant_voltage"
 
         height: height of the plot
+        width: width of the plot
         markers: use markers
         title: title of the plot
         x_range: limits for x-axis
@@ -694,7 +696,10 @@ def summary_plot(
         height=height,
         markers=markers,
         title=title,
+        width=width,
     )
+
+    additional_kwargs_seaborn = dict()
 
     # filter on constant voltage vs constant current
     if y.endswith("_split_constant_voltage"):
@@ -928,10 +933,15 @@ def summary_plot(
         import seaborn as sns
 
         sns.set_style(kwargs.pop("style", "darkgrid"))
+        sns.set_context(kwargs.pop("context", "notebook"))
 
+        if show_formation:
+            additional_kwargs_seaborn["col"] = "cycle_type"
+        # Next: individual x-range for formation and rest
+        # Next: set height and width
         if split:
             sns_fig = sns.relplot(
-                data=s_cycles,
+                data=s,
                 x=x,
                 y=y_header,
                 hue=color,
@@ -940,6 +950,7 @@ def summary_plot(
                 aspect=4,
                 kind="line",
                 marker="o" if markers else None,
+                **additional_kwargs_seaborn,
                 **kwargs,
             )
 
@@ -955,12 +966,13 @@ def summary_plot(
         else:
             fig, ax = plt.subplots()
             ax = sns.lineplot(
-                data=s_cycles,
+                data=s,
                 x=x,
                 y=y_header,
                 hue=color,
                 ax=ax,
                 marker="o" if markers else None,
+                **additional_kwargs_seaborn,
                 **kwargs,
             )
 
@@ -1532,6 +1544,8 @@ def _cycle_info_plot_plotly(
         )
 
     cell_name = kwargs.get("title", cell.cell_name)
+    height = kwargs.get("height", 600)
+    width = kwargs.get("width", 1000)
     title_start = f"<b>{cell_name}</b> Cycle"
     if len(cycle) > 2:
         if cycle[-1] - cycle[0] == len(cycle) - 1:
@@ -1547,6 +1561,8 @@ def _cycle_info_plot_plotly(
         title=title,
         xaxis_title=f"Time ({t_unit})",
         yaxis_title=f"Voltage ({v_unit})",
+        width=width,
+        height=height,
     )
 
     if get_axes:
