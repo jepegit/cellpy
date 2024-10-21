@@ -589,7 +589,7 @@ def summary_plot(
     title=None,
     x_range: list = None,
     y_range: list = None,
-    split: bool = False,
+    split: bool = True,
     auto_convert_legend_labels: bool = True,
     interactive: bool = True,
     share_y: bool = False,
@@ -727,8 +727,8 @@ def summary_plot(
         s = s.reset_index(drop=True)
         if split:
             if y.endswith("_efficiency"):
-                s["row"] = 0
-                s.loc[s["variable"].str.contains("efficiency"), "row"] = 1
+                s["row"] = 1
+                s.loc[s["variable"].str.contains("efficiency"), "row"] = 0
                 additional_kwargs_plotly["facet_row"] = row
                 number_of_rows = 2
 
@@ -934,23 +934,29 @@ def summary_plot(
 
         sns.set_style(kwargs.pop("style", "darkgrid"))
         sns.set_context(kwargs.pop("context", "notebook"))
-
+        facet_kws = dict()
+        gridspec_kws = dict()
         if show_formation:
             additional_kwargs_seaborn["col"] = "cycle_type"
-        # Next: individual x-range for formation and rest
-        # Next: set height and width
+            facet_kws["sharex"] = False
+            gridspec_kws["width_ratios"] = [1, 4]
         if split:
+            facet_kws["sharey"] = False
+            gridspec_kws["height_ratios"] = [1, 4]
+
+            facet_kws["gridspec_kws"] = gridspec_kws
             sns_fig = sns.relplot(
                 data=s,
                 x=x,
                 y=y_header,
                 hue=color,
                 row=row,
-                height=2,
-                aspect=4,
+                height=3,
+                aspect=1.5,
                 kind="line",
                 marker="o" if markers else None,
                 **additional_kwargs_seaborn,
+                facet_kws=facet_kws,
                 **kwargs,
             )
 
@@ -965,6 +971,8 @@ def summary_plot(
 
         else:
             fig, ax = plt.subplots()
+            # not implemented proper handling of columns here yet so removing the col argument for now
+            cols = additional_kwargs_seaborn.pop("col", None)
             ax = sns.lineplot(
                 data=s,
                 x=x,
