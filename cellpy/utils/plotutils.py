@@ -725,10 +725,11 @@ def summary_plot(
         s = summary.melt(x)
         s = s.loc[s.variable.isin(column_set)]
         s = s.reset_index(drop=True)
+        s[row] = 1
         if split:
             if y.endswith("_efficiency"):
-                s["row"] = 1
-                s.loc[s["variable"].str.contains("efficiency"), "row"] = 0
+                s[row] = 1
+                s.loc[s["variable"].str.contains("efficiency"), row] = 0
                 additional_kwargs_plotly["facet_row"] = row
                 number_of_rows = 2
 
@@ -941,18 +942,23 @@ def summary_plot(
             facet_kws["sharex"] = False
             gridspec_kws["width_ratios"] = [1, 4]
         if split:
-            facet_kws["sharey"] = False
-            gridspec_kws["height_ratios"] = [1, 4]
+            number_of_rows = s[row].nunique()
+            seaborn_plot_height = 2.4 + 0.4 * number_of_rows
+            seaborn_plot_aspect = 1.0 + 2.0 / number_of_rows
+            if y.endswith("_efficiency"):
+                facet_kws["sharey"] = False
+                gridspec_kws["height_ratios"] = [1, 4]
 
             facet_kws["gridspec_kws"] = gridspec_kws
+
             sns_fig = sns.relplot(
                 data=s,
                 x=x,
                 y=y_header,
                 hue=color,
                 row=row,
-                height=3,
-                aspect=1.5,
+                height=seaborn_plot_height,
+                aspect=seaborn_plot_aspect,
                 kind="line",
                 marker="o" if markers else None,
                 **additional_kwargs_seaborn,
@@ -967,6 +973,7 @@ def summary_plot(
                 sns_fig.set(ylim=y_range)
 
             fig = sns_fig.figure
+            fig.align_ylabels()
             fig.suptitle(title, y=1.05)
 
         else:
