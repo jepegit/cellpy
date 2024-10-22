@@ -582,7 +582,7 @@ def _get_capacity_unit(c, mode="gravimetric", seperator="/"):
 def summary_plot(
     c,
     x: str = None,
-    y: str = "capacities_gravimetric",
+    y: str = "capacities_gravimetric_coulombic_efficiency",
     height: int = None,
     width: int = 900,
     markers: bool = True,
@@ -597,6 +597,8 @@ def summary_plot(
     return_data: bool = False,
     verbose: bool = False,
     plotly_template: str = None,
+    seaborn_palette: str = "deep",
+    seaborn_style: str = "dark",
     formation_cycles=3,
     show_formation=True,
     column_separator=0.01,
@@ -611,26 +613,29 @@ def summary_plot(
         y: y-axis column or column set. Currently, the following predefined sets exists:
 
             - "voltages", "capacities_gravimetric", "capacities_areal", "capacities",
-              "capacities_gravimetric_split_constant_voltage", "capacities_areal_split_constant_voltage"
+              "capacities_gravimetric_split_constant_voltage", "capacities_areal_split_constant_voltage",
+              "capacities_gravimetric_coulombic_efficiency", "capacities_areal_coulombic_efficiency"
 
-        height: height of the plot
-        width: width of the plot
+        height: height of the plot (for plotly)
+        width: width of the plot (for plotly)
         markers: use markers
         title: title of the plot
         x_range: limits for x-axis
         y_range: limits for y-axis
         split: split the plot
         auto_convert_legend_labels: convert the legend labels to a nicer format.
-        interactive: use interactive plotting
+        interactive: use interactive plotting (plotly)
         rangeslider: add a range slider to the x-axis (only for plotly)
-        share_y: share y-axis
+        share_y: share y-axis (only for plotly)
         return_data: return the data used for plotting
         verbose: print out some extra information to make it easier to find out what to plot next time
         plotly_template: name of the plotly template to use
+        seaborn_palette: name of the seaborn palette to use
+        seaborn_style: name of the seaborn style to use
         formation_cycles: number of formation cycles to show
         show_formation: show formation cycles
-        column_separator: separation between columns when splitting the plot
-        **kwargs: additional parameters for the plotting backend
+        column_separator: separation between columns when splitting the plot (only for plotly)
+        **kwargs: includes additional parameters for the plotting backend (not properly documented yet).
 
     Returns:
         if ``return_data`` is True, returns a tuple with the figure and the data used for plotting.
@@ -663,6 +668,9 @@ def summary_plot(
     if x is None:
         x = "cycle_index"
 
+    if formation_cycles < 1:
+        show_formation = False
+
     x_cols, y_cols = create_col_info(c)
     x_axis_labels, y_axis_label = create_label_dict(c)
 
@@ -691,6 +699,7 @@ def summary_plot(
     y_header = "value"
     color = "variable"
     row = "row"
+    col_id = "cycle_type"
     additional_kwargs_plotly = dict(
         color=color,
         height=height,
@@ -752,8 +761,8 @@ def summary_plot(
     formation_cycle_selector = slice(None, None)
     if formation_cycles > 0:
         formation_cycle_selector = s[x] <= formation_cycles
-        s["cycle_type"] = "standard"
-        s.loc[formation_cycle_selector, "cycle_type"] = "formation"
+        s[col_id] = "standard"
+        s.loc[formation_cycle_selector, col_id] = "formation"
 
     if verbose:
         _report_summary_plot_info(c, x, y, x_label, x_axis_labels, x_cols, y_label, y_axis_label, y_cols)
@@ -765,7 +774,7 @@ def summary_plot(
         set_plotly_template(plotly_template)
 
         if show_formation:
-            additional_kwargs_plotly["facet_col"] = "cycle_type"
+            additional_kwargs_plotly["facet_col"] = col_id
 
         fig = px.line(
             s,
@@ -926,88 +935,363 @@ def summary_plot(
         return fig
 
     else:
-        # formation cycle splitting not implemented yet for this case
+
         if not seaborn_available:
             warnings.warn("seaborn not available, returning only the data so that you can plot it yourself instead")
             return s
 
         import seaborn as sns
 
-        sns.set_style(kwargs.pop("style", "darkgrid"))
-        sns.set_context(kwargs.pop("context", "notebook"))
-        facet_kws = dict()
-        gridspec_kws = dict()
+        def _clean_up_axis(fig, info_dicts=None, row_id="row", col_id="cycle_type"):
+            # creating a dictionary with keys the same as the axis titles:
+            info_dict = {}
+            for info in info_dicts:
+                if col_id is not None:
+                    if row_id is not None:
+                        info_text = f'{row_id} = {info["row"]} | {col_id} = {info["col"]}'
+                    else:
+                        info_text = f'{col_id} = {info["col"]}'
+                else:
+                    if row_id is not None:
+                        info_text = f'{row_id} = {info["row"]}'
+                    else:
+                        info_text = "single axis"
+                info_dict[info_text] = info
+
+            # iterating over the axes and setting the properties:
+            for a in fig.get_axes():
+                title_text = a.get_title()
+                if row_id is None and col_id is None:
+                    axis_info = info_dict["single axis"]
+                else:
+                    axis_info = info_dict.get(title_text, None)
+                if axis_info is None:
+                    continue
+                if xlim := axis_info["xlim"]:
+                    a.set_xlim(xlim)
+                if ylim := axis_info["ylim"]:
+                    a.set_ylim(ylim)
+                if ylabel := axis_info["ylabel"]:
+                    a.set_ylabel(ylabel)
+                a.set_title(axis_info["title"])
+                xticks = axis_info.get("xticks", None)
+                yticks = axis_info.get("yticks", None)
+                if xticks is False:
+                    a.set_xticks([])
+                if yticks is False:
+                    a.set_yticks([])
+
+        seaborn_facecolor = kwargs.pop("seaborn_facecolor", "#EAEAF2")
+        seaborn_edgecolor = kwargs.pop("seaborn_edgecolor", "black")
+        seaborn_style_dict_default = {"axes.facecolor": seaborn_facecolor, "axes.edgecolor": seaborn_edgecolor}
+        seaborn_style_dict = kwargs.pop("seaborn_style_dict", seaborn_style_dict_default)
+
+        sns.set_style(seaborn_style, seaborn_style_dict)
+        sns.set_palette(seaborn_palette)
+        sns.set_context(kwargs.pop("seaborn_context", "notebook"))
+
+        facet_kws = dict(despine=False, sharex=False, sharey=False)
+        gridspec_kws = dict(hspace=0.07)
+
         if show_formation:
-            additional_kwargs_seaborn["col"] = "cycle_type"
-            facet_kws["sharex"] = False
-            gridspec_kws["width_ratios"] = [1, 4]
-        if split:
+            additional_kwargs_seaborn["col"] = col_id
+            number_of_cols = 2
+            gridspec_kws["width_ratios"] = kwargs.pop("width_ratios", [1, 6])
+            gridspec_kws["wspace"] = kwargs.pop("wspace", 0.02)
+        else:
+            number_of_cols = 1
+            col_id = None
+
+        if not split:
+            number_of_rows = 1
+            row_id = None
+        else:
+            row_id = row
+            additional_kwargs_seaborn["row"] = row
             number_of_rows = s[row].nunique()
-            seaborn_plot_height = 2.4 + 0.4 * number_of_rows
-            seaborn_plot_aspect = 1.0 + 2.0 / number_of_rows
-            if y.endswith("_efficiency"):
-                facet_kws["sharey"] = False
-                gridspec_kws["height_ratios"] = [1, 4]
 
-            facet_kws["gridspec_kws"] = gridspec_kws
+        def _calculate_seaborn_plot_properties(number_of_rows, number_of_cols):
+            ## Maybe implement some proper calculations later...
+            # _default_seaborn_plot_height = 2.4 + 0.4 * number_of_rows
+            # _default_seaborn_plot_aspect = 1.0 + 2.0 / number_of_rows
 
-            sns_fig = sns.relplot(
-                data=s,
-                x=x,
-                y=y_header,
-                hue=color,
-                row=row,
-                height=seaborn_plot_height,
-                aspect=seaborn_plot_aspect,
-                kind="line",
-                marker="o" if markers else None,
-                **additional_kwargs_seaborn,
-                facet_kws=facet_kws,
-                **kwargs,
-            )
+            _selector = {
+                (1, 1): (4.0, 2.05),
+                (1, 2): (4.0, 1.0),
+                (2, 1): (2.8, 2.8),
+                (2, 2): (2.8, 1.4),
+                (3, 1): (3.0, 2.7),
+                (3, 2): (3.0, 1.35),
+            }
+            return _selector.get((number_of_rows, number_of_cols), (4.0, 1.8))
 
-            sns_fig.set_axis_labels(x_label, y_label)
-            if x_range is not None:
-                sns_fig.set(xlim=x_range)
-            if y_range is not None:
-                sns_fig.set(ylim=y_range)
+        _default_seaborn_plot_height, _default_seaborn_plot_aspect = _calculate_seaborn_plot_properties(
+            number_of_rows, number_of_cols
+        )
 
-            fig = sns_fig.figure
-            fig.align_ylabels()
-            fig.suptitle(title, y=1.05)
+        seaborn_plot_height = kwargs.pop("seaborn_plot_height", _default_seaborn_plot_height)
+        seaborn_plot_aspect = kwargs.pop("seaborn_plot_aspect", _default_seaborn_plot_aspect)
+
+        is_efficiency_plot = y.endswith("_efficiency")
+        is_split_constant_voltage_plot = y.endswith("_split_constant_voltage")
+        is_multi_row = number_of_rows > 1
+
+        info_dicts = []
+
+        # axis limits:
+        xlim_formation = kwargs.get("xlim_formation", (0.6, formation_cycles + 0.4))
+
+        eff_lim = kwargs.get("elim", None)
+        if eff_lim is None:
+            eff_vals = s.loc[s[color].str.contains("_efficiency"), y_header]
+            eff_min, eff_max = eff_vals.min(), eff_vals.max()
+            eff_lim = [eff_min - 0.05 * abs(eff_min), eff_max + 0.05 * abs(eff_max)]
+
+        if x_range is None:
+            cycle_range = max_cycle - formation_cycles
+            if cycle_range <= 0:
+                cycle_range = 10  # arbitrary value
+            x_range = (formation_cycles - 0.02 * abs(cycle_range), max_cycle + 0.02 * abs(cycle_range))
+        x_range = x_range or (formation_cycles + 0.1, max_cycle + 0.04)
+
+        if y_range is None:
+            y_vals = s.loc[~s[color].str.contains("_efficiency"), y_header]
+            min_value, max_value = y_vals.min(), y_vals.max()
+            y_range = y_range or [min_value - 0.05 * abs(min_value), max_value + 0.05 * abs(max_value)]
+        _efficiency_label = r"Efficiency (%)"
+        if is_efficiency_plot:
+            facet_kws["sharey"] = False
+            gridspec_kws["height_ratios"] = [1, 4]
+            if show_formation:
+                info_dicts.append(
+                    dict(
+                        ylabel=_efficiency_label,
+                        title="",
+                        xlim=xlim_formation,
+                        ylim=eff_lim,
+                        row=0,
+                        col="formation",
+                        yticks=None,
+                        xticks=False,
+                    )
+                )
+                info_dicts.append(
+                    dict(
+                        ylabel="",
+                        title="",
+                        xlim=x_range,
+                        ylim=eff_lim,
+                        row=0,
+                        col="standard",
+                        yticks=False,
+                        xticks=False,
+                    )
+                )
+                info_dicts.append(
+                    dict(
+                        ylabel="",
+                        title="",
+                        xlim=xlim_formation,
+                        ylim=y_range,
+                        row=1,
+                        col="formation",
+                        yticks=None,
+                        xticks=None,
+                    )
+                )
+                info_dicts.append(
+                    dict(
+                        ylabel="",
+                        title="",
+                        xlim=x_range,
+                        ylim=y_range,
+                        row=1,
+                        col="standard",
+                        yticks=False,
+                        xticks=None,
+                    )
+                )
+            else:
+                info_dicts.append(
+                    dict(
+                        ylabel=_efficiency_label,
+                        title="",
+                        xlim=x_range,
+                        ylim=eff_lim,
+                        row=0,
+                        col=None,
+                        yticks=None,
+                        xticks=False,
+                    )
+                )
+                info_dicts.append(
+                    dict(
+                        ylabel="",
+                        title="",
+                        xlim=x_range,
+                        ylim=y_range,
+                        row=1,
+                        col=None,
+                        yticks=None,
+                        xticks=None,
+                    )
+                )
+
+        elif is_split_constant_voltage_plot:
+            if is_multi_row:
+                y_range_cv = kwargs.pop("y_range_cv", y_range)
+                for r, _x, _y_range in zip(
+                    ["all", "without CV", "with CV"], [False, False, None], [y_range, y_range, y_range_cv]
+                ):
+                    _d = dict(
+                        ylabel=y_label,
+                        title="",
+                        xlim=x_range,
+                        ylim=_y_range,
+                        row=r,
+                        col=None,
+                        yticks=None,
+                        xticks=_x,
+                    )
+
+                    if show_formation:
+                        _d["col"] = "standard"
+                        _d["yticks"] = False
+                        _d["ylabel"] = ""
+                        info_dicts.append(
+                            dict(
+                                ylabel=y_label,
+                                title="",
+                                xlim=xlim_formation,
+                                ylim=_y_range,
+                                row=r,
+                                col="formation",
+                                yticks=None,
+                                xticks=_x,
+                            )
+                        )
+                    info_dicts.append(_d)
+            else:
+                _d = dict(
+                    ylabel=y_label,
+                    title="",
+                    xlim=x_range,
+                    ylim=y_range,
+                    row=None,
+                    col=None,
+                    yticks=None,
+                    xticks=None,
+                )
+                if show_formation:
+                    _d["col"] = "standard"
+                    _d["yticks"] = False
+                    _d["ylabel"] = ""
+                    info_dicts.append(
+                        dict(
+                            ylabel=y_label,
+                            title="",
+                            xlim=xlim_formation,
+                            ylim=y_range,
+                            row=None,
+                            col="formation",
+                            yticks=None,
+                            xticks=None,
+                        )
+                    )
+                info_dicts.append(_d)
 
         else:
-            fig, ax = plt.subplots()
-            # not implemented proper handling of columns here yet so removing the col argument for now
-            cols = additional_kwargs_seaborn.pop("col", None)
-            ax = sns.lineplot(
-                data=s,
-                x=x,
-                y=y_header,
-                hue=color,
-                ax=ax,
-                marker="o" if markers else None,
-                **additional_kwargs_seaborn,
-                **kwargs,
-            )
+            if is_multi_row:
+                for i in range(number_of_rows):
+                    info_dicts.append(
+                        dict(
+                            ylabel=y_label,
+                            title="",
+                            xlim=x_range,
+                            ylim=y_range,
+                            row=i,
+                            col=None,
+                            yticks=None,
+                            xticks=False,
+                        )
+                    )
+                    if show_formation:
+                        info_dicts.append(
+                            dict(
+                                ylabel=y_label,
+                                title="",
+                                xlim=xlim_formation,
+                                ylim=y_range,
+                                row=i,
+                                col="formation",
+                                yticks=None,
+                                xticks=False,
+                            )
+                        )
+            else:
+                _r = 1 if split else None
+                _d = dict(
+                    ylabel=y_label,
+                    title="",
+                    xlim=x_range,
+                    ylim=y_range,
+                    row=_r,
+                    col=None,
+                    yticks=None,
+                    xticks=None,
+                )
+                if show_formation:
+                    _d["col"] = "standard"
+                    _d["yticks"] = False
+                    _d["ylabel"] = ""
+                    info_dicts.append(
+                        dict(
+                            ylabel=y_label,
+                            title="",
+                            xlim=xlim_formation,
+                            ylim=y_range,
+                            row=_r,
+                            col="formation",
+                            yticks=None,
+                            xticks=None,
+                        )
+                    )
+                info_dicts.append(_d)
 
-            ax.set_xlabel(x_label)
-            ax.set_ylabel(y_label)
-            ax.set_title(title)
+        facet_kws["gridspec_kws"] = gridspec_kws
 
-            if x_range is not None:
-                ax.set_xlim(x_range)
+        sns_fig = sns.relplot(
+            data=s,
+            x=x,
+            y=y_header,
+            hue=color,
+            height=seaborn_plot_height,
+            aspect=seaborn_plot_aspect,
+            kind="line",
+            marker="o" if markers else None,
+            **additional_kwargs_seaborn,
+            facet_kws=facet_kws,
+            **kwargs,
+        )
 
-            if y_range is not None:
-                ax.set_ylim(y_range)
+        sns_fig.set_axis_labels(x_label, y_label)
 
-            sns.move_legend(
-                ax,
-                loc="upper left",
-                bbox_to_anchor=(1, 1),
-                title="Variable",
-                frameon=False,
-            )
+        if auto_convert_legend_labels:
+            legend = sns_fig.legend
+            for le in legend.get_texts():
+                name = le.get_text()
+                name = name.replace("_", " ").title()
+                name = name.replace("Gravimetric", "Grav.")
+                name = name.replace("Cv", "(CV)")
+                name = name.replace("Non (CV)", "(without CV)")
+                le.set_text(name)
+            sns_fig.legend.set_title(None)
+
+        fig = sns_fig.figure
+        _clean_up_axis(fig, info_dicts=info_dicts, row_id=row_id, col_id=col_id)
+        fig.align_ylabels()
+        _hack_to_position_legend = {1: 0.97, 2: 0.95, 3: 0.92, 4: 0.92, 5: 0.92}
+        fig.suptitle(title, y=_hack_to_position_legend[number_of_rows])
 
         plt.close(fig)
         if return_data:
@@ -1723,6 +2007,9 @@ def cycles_plot(
     force_colorbar=False,
     force_nonbar=False,
     plotly_template=None,
+    seaborn_palette: str = "deep",
+    seaborn_style: str = "dark",
+    **kwargs,
 ):
     """
     Plot the voltage vs. capacity for different cycles of a cell.
@@ -1756,6 +2043,9 @@ def cycles_plot(
         force_colorbar (bool, optional): Whether to force the colorbar to be shown. Default is False.
         force_nonbar (bool, optional): Whether to force the colorbar to be hidden. Default is False.
         plotly_template (str, optional): Plotly template to use (uses default template if None).
+        seaborn_palette: name of the seaborn palette to use (only if seaborn is available)
+        seaborn_style: name of the seaborn style to use (only if seaborn is available)
+        **kwargs: Additional keyword arguments for the plotting backend.
 
     Returns:
         matplotlib.figure.Figure or plotly.graph_objects.Figure: The generated plot figure.
@@ -1807,6 +2097,18 @@ def cycles_plot(
     cbar_aspect = 30
 
     if not interactive:
+        if seaborn_available:
+            import seaborn as sns
+
+            seaborn_facecolor = kwargs.pop("seaborn_facecolor", "#EAEAF2")
+            seaborn_edgecolor = kwargs.pop("seaborn_edgecolor", "black")
+            seaborn_style_dict_default = {"axes.facecolor": seaborn_facecolor, "axes.edgecolor": seaborn_edgecolor}
+            seaborn_style_dict = kwargs.pop("seaborn_style_dict", seaborn_style_dict_default)
+
+            sns.set_style(seaborn_style, seaborn_style_dict)
+            sns.set_palette(seaborn_palette)
+            sns.set_context(kwargs.pop("seaborn_context", "notebook"))
+
         fig, ax = plt.subplots(1, 1, figsize=figsize)
         fig_width, fig_height = figsize
 
@@ -1822,7 +2124,7 @@ def cycles_plot(
             norm_formation = Normalize(vmin=min_cycle, vmax=max_cycle)
             cycle_sequence = np.arange(min_cycle, max_cycle + 1, 1)
 
-            shrink = min(1.0, (1 / 8) * n_formation_cycles)
+            shrink = min(1.0, (1 / 8) * n_form_cycles)
 
             c_m_formation = ListedColormap(plt.get_cmap(formation_colormap, 2 * len(cycle_sequence))(cycle_sequence))
             s_m_formation = matplotlib.cm.ScalarMappable(cmap=c_m_formation, norm=norm_formation)
