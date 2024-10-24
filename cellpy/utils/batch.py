@@ -1169,6 +1169,7 @@ class Batch:
 
             filter_by_group (int or list of ints): show only the selected group(s)
             filter_by_name (str): show only cells containing this string
+            inverted_mode(bool): invert the colors vs symbols (only for plotly)
 
         Usage:
             b.plot(backend="plotly", reload_data=False, color_map="Set2", ce_range=[95, 105],
