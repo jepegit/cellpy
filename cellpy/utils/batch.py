@@ -318,9 +318,7 @@ class Batch:
             try:
                 cell_labels = self.journal.session["bad_cells"]
             except AttributeError:
-                logging.critical(
-                    "session info about bad cells is missing - cannot drop"
-                )
+                logging.critical("session info about bad cells is missing - cannot drop")
                 return
         else:
             cell_labels = [cell_label]
@@ -370,21 +368,11 @@ class Batch:
         if grouped:
             # TODO: currently does not use cumulative values - consider implementing this
             r_pages["group"] = pages.group
-            r_pages["group_avg_last_cycle"] = r_pages.group.map(
-                r_pages.groupby("group").last_cycle.mean()
-            )
-            r_pages["group_avg_max_capacity"] = r_pages.group.map(
-                r_pages.groupby("group").max_capacity.mean()
-            )
-            r_pages["group_avg_min_capacity"] = r_pages.group.map(
-                r_pages.groupby("group").min_capacity.mean()
-            )
-            r_pages["group_avg_std_capacity"] = r_pages.group.map(
-                r_pages.groupby("group").std_capacity.mean()
-            )
-            r_pages["group_avg_average_capacity"] = r_pages.group.map(
-                r_pages.groupby("group").average_capacity.mean()
-            )
+            r_pages["group_avg_last_cycle"] = r_pages.group.map(r_pages.groupby("group").last_cycle.mean())
+            r_pages["group_avg_max_capacity"] = r_pages.group.map(r_pages.groupby("group").max_capacity.mean())
+            r_pages["group_avg_min_capacity"] = r_pages.group.map(r_pages.groupby("group").min_capacity.mean())
+            r_pages["group_avg_std_capacity"] = r_pages.group.map(r_pages.groupby("group").std_capacity.mean())
+            r_pages["group_avg_average_capacity"] = r_pages.group.map(r_pages.groupby("group").average_capacity.mean())
 
         if stylize:
 
@@ -479,9 +467,7 @@ class Batch:
         # identifier. Consider also to allow for a group-name.
         # The label and cell name can be the same. Consider allowing several cells to share the same label
         # thus returning several cellpy cell objects. Our use "group" for this purpose.
-        print(
-            "Label-based look-up is not supported yet. Performing cell-name based look-up instead."
-        )
+        print("Label-based look-up is not supported yet. Performing cell-name based look-up instead.")
         return self.experiment.cell_names
 
     @property
@@ -744,28 +730,19 @@ class Batch:
         else:
             if self.experiment.journal.pages is not None:
                 warnings.warn(
-                    "You created a journal - but you already have a "
-                    "journal. Hope you know what you are doing!"
+                    "You created a journal - but you already have a " "journal. Hope you know what you are doing!"
                 )
 
         if from_db:
             if auto_use_file_list:
-                warnings.warn(
-                    "auto_use_file_list is True - this is an experimental feature"
-                )
+                warnings.warn("auto_use_file_list is True - this is an experimental feature")
                 if file_list_kwargs is None:
                     file_list_kwargs = {}
                 try:
-                    kwargs["file_list"] = filefinder.find_in_raw_file_directory(
-                        **file_list_kwargs
-                    )
+                    kwargs["file_list"] = filefinder.find_in_raw_file_directory(**file_list_kwargs)
                 except Exception as e:
-                    logging.critical(
-                        "You have set auto_use_file_list to True, but I could not create any file list."
-                    )
-                    logging.critical(
-                        "I recommend that you set auto_use_file_list to False and try again."
-                    )
+                    logging.critical("You have set auto_use_file_list to True, but I could not create any file list.")
+                    logging.critical("I recommend that you set auto_use_file_list to False and try again.")
                     logging.critical(
                         "This can be done by setting the correct parameters in "
                         "the prms-file or by providing the correct kwargs "
@@ -773,9 +750,7 @@ class Batch:
                     )
                     raise e
             self.experiment.journal.from_db(**kwargs)
-            self.experiment.journal.to_file(
-                duplicate_to_local_folder=duplicate_to_local_folder
-            )
+            self.experiment.journal.to_file(duplicate_to_local_folder=duplicate_to_local_folder)
 
             # TODO: remove these:
             if duplicate_to_local_folder:
@@ -806,9 +781,7 @@ class Batch:
                 if is_str and description.lower() == "empty":
                     logging.debug("creating empty journal pages")
 
-                    self.experiment.journal.pages = (
-                        self.experiment.journal.create_empty_pages()
-                    )
+                    self.experiment.journal.pages = self.experiment.journal.create_empty_pages()
 
                 elif isinstance(description, pd.DataFrame):
                     logging.debug("pandas DataFrame given")
@@ -833,9 +806,7 @@ class Batch:
 
                 elif isinstance(description, dict):
                     logging.debug("dictionary given")
-                    self.experiment.journal.pages = (
-                        self.experiment.journal.create_empty_pages()
-                    )
+                    self.experiment.journal.pages = self.experiment.journal.create_empty_pages()
                     for k in self.experiment.journal.pages.columns:
                         try:
                             value = description[k]
@@ -848,14 +819,8 @@ class Batch:
                                 value = [value]
                             if k == "raw_file_names":
                                 if not isinstance(value[0], list):
-                                    warnings.warn(
-                                        "encountered raw file description"
-                                        "that is not of list-type"
-                                    )
-                                    logging.debug(
-                                        "converting raw file description to a"
-                                        "list of lists"
-                                    )
+                                    warnings.warn("encountered raw file description" "that is not of list-type")
+                                    logging.debug("converting raw file description to a" "list of lists")
                                     value = [value]
                             self.experiment.journal.pages[k] = value
 
@@ -871,17 +836,12 @@ class Batch:
 
                 else:
                     logging.debug(
-                        "the option you provided seems to be either of "
-                        "an unknown type or a file not found"
+                        "the option you provided seems to be either of " "an unknown type or a file not found"
                     )
-                    logging.info(
-                        "did not understand the option - creating empty journal pages"
-                    )
+                    logging.info("did not understand the option - creating empty journal pages")
 
             # finally
-            self.experiment.journal.to_file(
-                duplicate_to_local_folder=duplicate_to_local_folder
-            )
+            self.experiment.journal.to_file(duplicate_to_local_folder=duplicate_to_local_folder)
             self.experiment.journal.generate_folder_names()
             self.experiment.journal.paginate()
             self.duplicate_journal(prms.Paths.batchfiledir)
@@ -938,13 +898,9 @@ class Batch:
         if filename is None:
             filename = self.experiment.journal.file_name
         filename = pathlib.Path(filename).with_suffix(".xlsx")
-        self.experiment.journal.to_file(
-            file_name=filename, to_project_folder=False, paginate=False
-        )
+        self.experiment.journal.to_file(file_name=filename, to_project_folder=False, paginate=False)
 
-    def duplicate_cellpy_files(
-        self, location: str = "standard", selector: dict = None, **kwargs
-    ) -> None:
+    def duplicate_cellpy_files(self, location: str = "standard", selector: dict = None, **kwargs) -> None:
         """Copy the cellpy files and make a journal with the new names available in
         the current folder.
 
@@ -1006,9 +962,7 @@ class Batch:
         pages["cellpy_file_name"] = pages["new_cellpy_file_name"]
         self.experiment.journal.pages = pages[columns]
         journal_file_name = pathlib.Path(self.experiment.journal.file_name).name
-        self.experiment.journal.to_file(
-            journal_file_name, paginate=False, to_project_folder=False
-        )
+        self.experiment.journal.to_file(journal_file_name, paginate=False, to_project_folder=False)
         if selector is not None:
             logging.info("Modifying the cellpy-files.")
             logging.info(f"selector: {selector}")
@@ -1189,9 +1143,7 @@ class Batch:
         if backend is None:
             backend = prms.Batch.backend
             if backend in ["bokeh", "matplotlib"]:
-                logging.debug(
-                    f"over-riding default backend ('{backend}' will soon be deprecated)"
-                )
+                logging.debug(f"over-riding default backend ('{backend}' will soon be deprecated)")
                 backend = "plotly"
 
         if backend in ["bokeh", "matplotlib", "plotly", "seaborn"]:
@@ -1232,9 +1184,7 @@ class Batch:
         else:
             print(f"backend {backend} not supported yet")
 
-    def plot_summaries(
-        self, output_filename=None, backend=None, reload_data=False, **kwargs
-    ) -> None:
+    def plot_summaries(self, output_filename=None, backend=None, reload_data=False, **kwargs) -> None:
         """Plot the summaries.
 
         Warnings:
@@ -1267,9 +1217,7 @@ class Batch:
 
             except ModuleNotFoundError:
                 prms.Batch.backend = "matplotlib"
-                logging.warning(
-                    "could not find the bokeh module -> using matplotlib instead"
-                )
+                logging.warning("could not find the bokeh module -> using matplotlib instead")
 
         self.plotter.do(**kwargs)
 
@@ -1358,9 +1306,7 @@ def load(
                     b.link(
                         max_cycle=kwargs.pop("max_cycle", None),
                         mark_bad=True,
-                        force_combine_summaries=kwargs.pop(
-                            "force_combine_summaries", False
-                        ),
+                        force_combine_summaries=kwargs.pop("force_combine_summaries", False),
                     )
 
                 if drop_bad_cells:
@@ -1441,9 +1387,7 @@ def init(*args, empty=False, **kwargs) -> Batch:
     default_log_level = kwargs.pop("default_log_level", None)
     testing = kwargs.pop("testing", False)
 
-    log.setup_logging(
-        default_level=default_log_level, testing=testing, reset_big_log=True
-    )
+    log.setup_logging(default_level=default_log_level, testing=testing, reset_big_log=True)
     if empty:
         logging.debug("returning naked Batch")
         return naked(*args, **kwargs)
@@ -1551,9 +1495,7 @@ def process_batch(*args, **kwargs) -> Batch:
     else:
         file_name = kwargs.pop("file_name", None)
     testing = kwargs.pop("testing", False)
-    log.setup_logging(
-        default_level=default_log_level, reset_big_log=True, testing=testing
-    )
+    log.setup_logging(default_level=default_log_level, reset_big_log=True, testing=testing)
     logging.debug(f"creating Batch(kwargs: {kwargs})")
 
     if file_name is not None:

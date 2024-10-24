@@ -1278,14 +1278,15 @@ def summary_plot(
 
         if auto_convert_legend_labels:
             legend = sns_fig.legend
-            for le in legend.get_texts():
-                name = le.get_text()
-                name = name.replace("_", " ").title()
-                name = name.replace("Gravimetric", "Grav.")
-                name = name.replace("Cv", "(CV)")
-                name = name.replace("Non (CV)", "(without CV)")
-                le.set_text(name)
-            sns_fig.legend.set_title(None)
+            if legend is not None:
+                for le in legend.get_texts():
+                    name = le.get_text()
+                    name = name.replace("_", " ").title()
+                    name = name.replace("Gravimetric", "Grav.")
+                    name = name.replace("Cv", "(CV)")
+                    name = name.replace("Non (CV)", "(without CV)")
+                    le.set_text(name)
+                sns_fig.legend.set_title(None)
 
         fig = sns_fig.figure
         _clean_up_axis(fig, info_dicts=info_dicts, row_id=row_id, col_id=col_id)
