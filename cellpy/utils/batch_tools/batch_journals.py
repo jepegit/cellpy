@@ -149,9 +149,7 @@ class LabJournal(BaseJournal, ABC):
         self.file_name = file_name  # updates object (maybe not smart)
         return file_name
 
-    def from_db(
-        self, project=None, name=None, batch_col=None, dbreader_kwargs=None, **kwargs
-    ):
+    def from_db(self, project=None, name=None, batch_col=None, dbreader_kwargs=None, **kwargs):
         """populate journal from db.
 
         Args:
@@ -200,28 +198,20 @@ class LabJournal(BaseJournal, ABC):
         if dbreader_kwargs is None:
             dbreader_kwargs = {}
 
-        logging.debug(
-            f"batch_name, batch_col, dbreader_kwargs: {name}, {batch_col}, {dbreader_kwargs}"
-        )
+        logging.debug(f"batch_name, batch_col, dbreader_kwargs: {name}, {batch_col}, {dbreader_kwargs}")
 
         if self.db_reader is not None:
             if isinstance(self.db_reader, dbreader.Reader):  # Simple excel-db
-                id_keys = self.db_reader.select_batch(
-                    name, batch_col, **dbreader_kwargs
-                )
+                id_keys = self.db_reader.select_batch(name, batch_col, **dbreader_kwargs)
                 logging.debug(f"id_keys: {id_keys}")
 
                 self.pages = self.engine(self.db_reader, id_keys, **kwargs)
             else:
-                logging.debug(
-                    "creating journal pages using advanced reader methods (not simple excel-db)"
-                )
+                logging.debug("creating journal pages using advanced reader methods (not simple excel-db)")
                 self.pages = self.engine(self.db_reader, batch_name=name, **kwargs)
 
             if self.pages.empty:
-                logging.critical(
-                    f"EMPTY JOURNAL: are you sure you have provided correct input to batch?"
-                )
+                logging.critical(f"EMPTY JOURNAL: are you sure you have provided correct input to batch?")
                 logging.critical(f"name: {name}")
                 logging.critical(f"project: {self.project}")
                 logging.critical(f"batch_col: {batch_col}")
@@ -296,9 +286,7 @@ class LabJournal(BaseJournal, ABC):
         temporary_directory = tempfile.mkdtemp()
         temporary_file_name = shutil.copy(file_name, temporary_directory)
         try:
-            pages = pd.read_excel(
-                temporary_file_name, engine="openpyxl", sheet_name=pages_sheet_name
-            )
+            pages = pd.read_excel(temporary_file_name, engine="openpyxl", sheet_name=pages_sheet_name)
         except KeyError:
             print(f"Worksheet '{pages_sheet_name}' does not exist.")
             return None
@@ -315,9 +303,7 @@ class LabJournal(BaseJournal, ABC):
             session = None
 
         try:
-            meta = pd.read_excel(
-                temporary_file_name, sheet_name=meta_sheet_name, engine="openpyxl"
-            )
+            meta = pd.read_excel(temporary_file_name, sheet_name=meta_sheet_name, engine="openpyxl")
 
         except (KeyError, ValueError):
             print(f"Worksheet '{meta_sheet_name}' does not exist.")
@@ -347,10 +333,7 @@ class LabJournal(BaseJournal, ABC):
     @classmethod
     def _unpack_session(cls, session):
         try:
-            bcn2 = {
-                l: list(sb["cycle_index"].values)
-                for l, sb in session["bad_cycles"].groupby("cell_name")
-            }
+            bcn2 = {l: list(sb["cycle_index"].values) for l, sb in session["bad_cycles"].groupby("cell_name")}
         except KeyError:
             bcn2 = []
 
@@ -416,22 +399,16 @@ class LabJournal(BaseJournal, ABC):
             pages[hdr_journal.raw_file_names] = new_p
 
         except KeyError:
-            print(
-                "Tried but failed in converting raw_file_names into an appropriate list"
-            )
+            print("Tried but failed in converting raw_file_names into an appropriate list")
         try:
-            pages[hdr_journal.cellpy_file_name] = pages[
-                hdr_journal.cellpy_file_name
-            ].apply(cls._fix_cellpy_paths)
+            pages[hdr_journal.cellpy_file_name] = pages[hdr_journal.cellpy_file_name].apply(cls._fix_cellpy_paths)
         except KeyError:
             # assumes it is an old type journal file
             print(f"The key '{hdr_journal.cellpy_file_name}' is missing!")
             print(f"Assumes that this is an old-type journal file.")
             try:
                 pages.rename(columns=trans_dict, inplace=True)
-                pages[hdr_journal.cellpy_file_name] = pages[
-                    hdr_journal.cellpy_file_name
-                ].apply(cls._fix_cellpy_paths)
+                pages[hdr_journal.cellpy_file_name] = pages[hdr_journal.cellpy_file_name].apply(cls._fix_cellpy_paths)
                 logging.warning("old journal file - updating")
             except KeyError:
                 print("Error! Could still not parse the pages.")
@@ -489,9 +466,7 @@ class LabJournal(BaseJournal, ABC):
         if project is not None:
             self.project = project
 
-        self.pages = (
-            frame  # TODO: include a check here to see if the pages are appropriate
-        )
+        self.pages = frame  # TODO: include a check here to see if the pages are appropriate
         for hdr in hdr_journal.values():
             if hdr not in self.pages.columns:
                 self.pages[hdr] = None
@@ -518,9 +493,7 @@ class LabJournal(BaseJournal, ABC):
 
         pages_dict = top_level_dict["info_df"]
         pages = pd.DataFrame(pages_dict)
-        pages[hdr_journal.cellpy_file_name] = pages[hdr_journal.cellpy_file_name].apply(
-            self._fix_cellpy_paths
-        )
+        pages[hdr_journal.cellpy_file_name] = pages[hdr_journal.cellpy_file_name].apply(self._fix_cellpy_paths)
         self.pages = pages
         self.file_name = file_name
         self._prm_packer(top_level_dict["metadata"])
@@ -579,9 +552,7 @@ class LabJournal(BaseJournal, ABC):
         Returns:
             None
         """
-        file_name = self._check_file_name(
-            file_name, to_project_folder=to_project_folder
-        )
+        file_name = self._check_file_name(file_name, to_project_folder=to_project_folder)
 
         pages = self.pages
         session = self.session
@@ -607,18 +578,14 @@ class LabJournal(BaseJournal, ABC):
                     pages.to_excel(writer, sheet_name="pages", engine="openpyxl")
                     # no index is not supported for multi-index (update to index=False when pandas implement it):
                     df_session.to_excel(writer, sheet_name="session", engine="openpyxl")
-                    df_meta.to_excel(
-                        writer, sheet_name="meta", engine="openpyxl", index=False
-                    )
+                    df_meta.to_excel(writer, sheet_name="meta", engine="openpyxl", index=False)
             except PermissionError as e:
                 print(f"Could not load journal to xlsx ({e})")
 
         if is_json:
             jason_string = json.dumps(
                 top_level_dict,
-                default=lambda info_df: json.loads(
-                    info_df.to_json(default_handler=str)
-                ),
+                default=lambda info_df: json.loads(info_df.to_json(default_handler=str)),
             )
 
             with open(file_name, "w") as outfile:
@@ -644,9 +611,7 @@ class LabJournal(BaseJournal, ABC):
                 l_bad_cycle_numbers.append(pd.DataFrame(data=v, columns=[k]))
 
             df_bad_cycle_numbers = (
-                pd.concat(l_bad_cycle_numbers, axis=1)
-                .melt(var_name="cell_name", value_name="cycle_index")
-                .dropna()
+                pd.concat(l_bad_cycle_numbers, axis=1).melt(var_name="cell_name", value_name="cycle_index").dropna()
             )
             frames.append(df_bad_cycle_numbers)
             keys.append("bad_cycles")
@@ -670,9 +635,7 @@ class LabJournal(BaseJournal, ABC):
 
     @staticmethod
     def _pack_meta(meta):
-        meta = pd.DataFrame(meta, index=[0]).melt(
-            var_name="parameter", value_name="value"
-        )
+        meta = pd.DataFrame(meta, index=[0]).melt(var_name="parameter", value_name="value")
         return meta
 
     def generate_folder_names(self):
@@ -683,16 +646,12 @@ class LabJournal(BaseJournal, ABC):
             logging.debug(self.project)
             self.project_dir = os.path.join(prms.Paths.outdatadir, self.project)
         else:
-            logging.critical(
-                "Could not create project dir (missing project definition)"
-            )
+            logging.critical("Could not create project dir (missing project definition)")
         if self.name:
             self.batch_dir = os.path.join(self.project_dir, self.name)
             self.raw_dir = os.path.join(self.batch_dir, "raw_data")
         else:
-            logging.critical(
-                "Could not create batch_dir and raw_dir", "(missing batch name)"
-            )
+            logging.critical("Could not create batch_dir and raw_dir", "(missing batch name)")
         logging.debug(f"batch dir: {self.batch_dir}")
         logging.debug(f"project dir: {self.project_dir}")
         logging.debug(f"raw dir: {self.raw_dir}")
@@ -737,7 +696,7 @@ class LabJournal(BaseJournal, ABC):
         file_name = f"cellpy_batch_{self.name}.json"
         self.file_name = os.path.join(project_dir, file_name)
 
-    # v.1.0.0:
+    # v.1.3.0:
     def look_for_file(self):
         pass
 
@@ -771,9 +730,7 @@ def _dev_journal_loading():
     from cellpy import log
 
     log.setup_logging(default_level="DEBUG")
-    journal_file = pathlib.Path(
-        "../../../testdata/batch_project/test_project.json"
-    ).resolve()
+    journal_file = pathlib.Path("../../../testdata/batch_project/test_project.json").resolve()
     assert journal_file.is_file()
 
     logging.debug(f"reading journal file {journal_file}")

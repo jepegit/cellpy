@@ -195,6 +195,7 @@ def simple_db_engine(
         pages_dict = dict()
         pages_dict[hdr_journal["filename"]] = _query(reader.get_cell_name, cell_ids)
         if include_key:
+
             pages_dict[hdr_journal["id_key"]] = cell_ids
 
         if include_individual_arguments:
@@ -205,9 +206,7 @@ def simple_db_engine(
         pages_dict[hdr_journal["loading"]] = _query(reader.get_loading, cell_ids)
         pages_dict[hdr_journal["nom_cap"]] = _query(reader.get_nom_cap, cell_ids)
         pages_dict[hdr_journal["area"]] = _query(reader.get_area, cell_ids)
-        pages_dict[hdr_journal["experiment"]] = _query(
-            reader.get_experiment_type, cell_ids
-        )
+        pages_dict[hdr_journal["experiment"]] = _query(reader.get_experiment_type, cell_ids)
         pages_dict[hdr_journal["fixed"]] = _query(reader.inspect_hd5f_fixed, cell_ids)
         pages_dict[hdr_journal["label"]] = _query(reader.get_label, cell_ids)
         pages_dict[hdr_journal["cell_type"]] = _query(reader.get_cell_type, cell_ids)
@@ -234,9 +233,7 @@ def simple_db_engine(
     pages_dict[hdr_journal["group"]] = groups
 
     my_timer_start = time.time()
-    pages_dict = helper.find_files(
-        pages_dict, file_list=file_list, pre_path=pre_path, **kwargs
-    )
+    pages_dict = helper.find_files(pages_dict, file_list=file_list, pre_path=pre_path, **kwargs)
     my_timer_end = time.time()
     if (my_timer_end - my_timer_start) > 5.0:
         logging.critical(
@@ -258,13 +255,9 @@ def simple_db_engine(
     pages = helper.make_unique_groups(pages)
 
     try:
-        pages[hdr_journal.label] = pages[hdr_journal.filename].apply(
-            helper.create_labels
-        )
+        pages[hdr_journal.label] = pages[hdr_journal.filename].apply(helper.create_labels)
     except AttributeError as e:
-        _report_suspected_duplicate_id(
-            e, "make labels", pages[[hdr_journal.label, hdr_journal.filename]]
-        )
+        _report_suspected_duplicate_id(e, "make labels", pages[[hdr_journal.label, hdr_journal.filename]])
 
     else:
         # TODO: check if drop=False works [#index]
