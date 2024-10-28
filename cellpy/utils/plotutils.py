@@ -185,6 +185,48 @@ def save_image_files(figure, name="my_figure", scale=3.0, dpi=300, backend="plot
         print(f"TODO: implement saving {filename_json}")
 
 
+def _make_plotly_template(name="axis"):
+    tick_label_width = 6
+    title_font_size = 22
+    title_font_family = "Arial"
+    axis_font_size = 16
+    axis_standoff = 15
+    linecolor = "rgb(36,36,36)"
+
+    t = go.layout.Template(
+        layout=dict(
+            font_family=title_font_family,
+            title=dict(
+                font_size=title_font_size,
+                x=0,
+                xref="paper",
+            ),
+            xaxis=dict(
+                linecolor=linecolor,
+                mirror=True,
+                showline=True,
+                zeroline=False,
+                title=dict(
+                    standoff=axis_standoff,
+                    font_size=axis_font_size,
+                ),
+            ),
+            yaxis=dict(
+                linecolor=linecolor,
+                mirror=True,
+                showline=True,
+                zeroline=False,
+                tickformat=f"{tick_label_width}",
+                title=dict(
+                    standoff=axis_standoff,
+                    font_size=axis_font_size,
+                ),
+            ),
+        )
+    )
+    pio.templates[name] = t
+
+
 # from batch_plotters:
 def _plotly_remove_markers(trace):
     trace.update(marker=None, mode="lines")
@@ -589,6 +631,7 @@ def summary_plot(
     title=None,
     x_range: list = None,
     y_range: list = None,
+    ce_range: list = None,
     split: bool = True,
     auto_convert_legend_labels: bool = True,
     interactive: bool = True,
@@ -667,6 +710,9 @@ def summary_plot(
 
     if x is None:
         x = "cycle_index"
+    xlim_formation = kwargs.pop("xlim_formation", (0.6, formation_cycles + 0.4))
+
+    eff_lim = ce_range
 
     if formation_cycles < 1:
         show_formation = False
@@ -743,7 +789,7 @@ def summary_plot(
                 number_of_rows = 2
 
         if additional_kwargs_plotly.get("height") is None:
-            additional_kwargs_plotly["height"] = 400 * number_of_rows
+            additional_kwargs_plotly["height"] = 200 + 200 * number_of_rows
 
     max_cycle = s[x].max()
     min_cycle = s[x].min()
@@ -828,8 +874,8 @@ def summary_plot(
                     )
 
                 fig.update_layout(xaxis_domain=x_axis_domain_formation, scene_domain_x=x_axis_domain_formation)
-                range_1 = _auto_range(fig, "y", "y2")
-                range_2 = _auto_range(fig, "y3", "y4")
+                range_1 = y_range or _auto_range(fig, "y", "y2")
+                range_2 = eff_lim or _auto_range(fig, "y3", "y4")
                 fig.update_layout(
                     xaxis2=dict(range=x_axis_range_rest, domain=x_axis_domain_rest, matches=None),
                     xaxis3=dict(range=x_axis_range_formation, domain=x_axis_domain_formation, matches="x"),
@@ -1039,11 +1085,8 @@ def summary_plot(
         info_dicts = []
 
         # axis limits:
-        xlim_formation = kwargs.get("xlim_formation", (0.6, formation_cycles + 0.4))
-
-        eff_lim = kwargs.get("elim", None)
         if eff_lim is None:
-            eff_vals = s.loc[s[color].str.contains("_efficiency"), y_header]
+            eff_vals = s.loc[s[color].str.contains("_efficiency"), y_header].replace([np.inf, -np.inf], np.nan).dropna()
             eff_min, eff_max = eff_vals.min(), eff_vals.max()
             eff_lim = [eff_min - 0.05 * abs(eff_min), eff_max + 0.05 * abs(eff_max)]
 
@@ -1051,13 +1094,13 @@ def summary_plot(
             cycle_range = max_cycle - formation_cycles
             if cycle_range <= 0:
                 cycle_range = 10  # arbitrary value
-            x_range = (formation_cycles - 0.02 * abs(cycle_range), max_cycle + 0.02 * abs(cycle_range))
-        x_range = x_range or (formation_cycles + 0.1, max_cycle + 0.04)
+            x_range = (formation_cycles + 1 - 0.02 * abs(cycle_range), max_cycle + 0.02 * abs(cycle_range))
 
         if y_range is None:
-            y_vals = s.loc[~s[color].str.contains("_efficiency"), y_header]
+            y_vals = s.loc[~s[color].str.contains("_efficiency"), y_header].replace([np.inf, -np.inf], np.nan).dropna()
             min_value, max_value = y_vals.min(), y_vals.max()
             y_range = y_range or [min_value - 0.05 * abs(min_value), max_value + 0.05 * abs(max_value)]
+
         _efficiency_label = r"Efficiency (%)"
         if is_efficiency_plot:
             facet_kws["sharey"] = False

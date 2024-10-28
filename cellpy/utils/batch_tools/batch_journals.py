@@ -479,7 +479,7 @@ class LabJournal(BaseJournal, ABC):
                 paginate = True
 
         if paginate:
-            logging.critical(f"paginating {project}/{name} ")
+            logging.info(f"paginating {project}/{name} ")
             self.generate_folder_names()
             self.paginate()
 

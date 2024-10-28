@@ -714,7 +714,8 @@ def summary_plotting_engine(**kwargs):
             canvas = generate_summary_plots(experiment=experiment, farms=farms, **kwargs)
             farms.append(canvas)
             if backend == "plotly":
-                canvas.show()
+                if kwargs.pop("plotly_show", True):
+                    canvas.show()
 
     return farms, barn
 
@@ -917,11 +918,13 @@ def plot_cycle_life_summary_plotly(summaries: pd.DataFrame, **kwargs):
 
     title = kwargs.pop("title", "Cycle Summary")
     x_label = kwargs.pop("x_label", "Cycle Number")
+    x_range = kwargs.pop("x_range", None)
     direction = kwargs.pop("direction", "charge")
     rate = kwargs.pop("rate", False)
     ir = kwargs.pop("ir", True)
     filter_by_group = kwargs.pop("filter_by_group", None)
     filter_by_name = kwargs.pop("filter_by_name", None)
+    width = kwargs.pop("width", 1000)
 
     individual_plot_height = 250
     header_height = 200
@@ -999,21 +1002,26 @@ def plot_cycle_life_summary_plotly(summaries: pd.DataFrame, **kwargs):
 
     if filter_by_name is not None:
         summaries = summaries.loc[summaries.cell.str.contains(filter_by_name), :]
-
-    canvas = px.line(
-        summaries,
-        x=hdr_cycle,
-        y="value",
-        facet_row="variable",
-        color=color_selector,
-        symbol=symbol_selector,
-        labels=labels,
-        height=total_height,
-        category_orders={"variable": plotted_summaries},
-        template=f"{base_template}+{additional_template}",
-        color_discrete_sequence=color_map,
-        title=f"<b>{title}</b><br>{sub_titles}",
-    )
+    try:
+        canvas = px.line(
+            summaries,
+            x=hdr_cycle,
+            y="value",
+            facet_row="variable",
+            color=color_selector,
+            symbol=symbol_selector,
+            labels=labels,
+            height=total_height,
+            width=width,
+            category_orders={"variable": plotted_summaries},
+            template=f"{base_template}+{additional_template}",
+            color_discrete_sequence=color_map,
+            title=f"<b>{title}</b><br>{sub_titles}",
+            range_x=x_range,
+        )
+    except Exception as e:
+        logging.critical(f"could not create plotly plot ({e})")
+        raise e
 
     adjust_row_heights = True
     if number_of_rows == 1:

@@ -1061,6 +1061,10 @@ class Batch:
             calc_steps (bool): Run make_steps before making the summary (defaults to True).
             testing (bool): Only for testing purposes (defaults to False).
 
+        Examples:
+            >>> # re-make summaries for all cells assuming cell-type is "anode" (anode half-cells):
+            >>> b.recalc(save=False, calc_steps=False, summary_opts=dict(cell_type="anode"))
+
         Returns:
             None
         """

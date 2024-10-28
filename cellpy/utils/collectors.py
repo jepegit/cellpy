@@ -45,7 +45,7 @@ except ImportError:
 
 DEFAULT_CYCLES = [1, 10, 20]
 CELLPY_MINIMUM_VERSION = "1.0.0"
-PLOTLY_BASE_TEMPLATE = "seaborn"
+PLOTLY_BASE_TEMPLATE = "plotly"
 IMAGE_TO_FILE_TIMEOUT = 30
 HDF_KEY = "collected_data"
 MAX_POINTS_SEABORN_FACET_GRID = 60_000
@@ -120,6 +120,63 @@ def load_plotly_figure(filename):
     return fig
 
 
+def generate_output_path(name, directory, serial_number=None):
+    d = Path(directory)
+    if not d.is_dir():
+        logging.debug(f"{d} does not exist")
+        d = Path().cwd()
+        logging.debug(f"using current directory ({d}) instead")
+    if serial_number is not None:
+        name = f"{name}_{serial_number:03}"
+    f = d / name
+    return f
+
+
+def _image_exporter_plotly(figure, filename, timeout=IMAGE_TO_FILE_TIMEOUT, **kwargs):
+    p = Process(
+        target=figure.write_image,
+        args=(filename,),
+        name="save_plotly_image_to_file",
+        kwargs=kwargs,
+    )
+    p.start()
+    p.join(timeout=timeout)
+    p.terminate()
+    if p.exitcode is None:
+        print(f"Oops, {p} timeouts! Could not save {filename}")
+    if p.exitcode == 0:
+        print(f" - saved image file: {filename}")
+
+
+def save_plotly_figure(figure, name=None, directory=".", serial_number=None):
+    """Save to image files (png, svg, json).
+
+    Notes:
+        This method requires ``kaleido`` for the plotly backend.
+
+    Notes:
+        Exporting to json is only applicable for the plotly backend.
+
+    Args:
+        figure: the plotly figure object.
+        name (str): name of the file (without extension).
+        directory (str): directory to save the file in.
+        serial_number (int): serial number to append to the filename.
+
+    """
+    if name is None:
+        name = f"{time.strftime('%Y%m%d_%H%M%S')}_figure"
+    filename_pre = generate_output_path(name, directory, serial_number)
+    filename_png = filename_pre.with_suffix(".png")
+    filename_svg = filename_pre.with_suffix(".svg")
+    filename_json = filename_pre.with_suffix(".json")
+
+    _image_exporter_plotly(figure, filename_png, scale=3.0)
+    _image_exporter_plotly(figure, filename_svg)
+    figure.write_json(filename_json)
+    print(f" - saved plotly json file: {filename_json}")
+
+
 if not supported_backends:
     print("WARNING: no supported backends found")
     print("WARNING: install plotly or seaborn to enable plotting")
@@ -141,21 +198,13 @@ px_template_all_axis_shown = dict(
     ),
 )
 
-fig_pr_cell_template = go.layout.Template(
-    # layout=px_template_all_axis_shown
-)
+fig_pr_cell_template = go.layout.Template(layout=px_template_all_axis_shown)
 
-fig_pr_cycle_template = go.layout.Template(
-    # layout=px_template_all_axis_shown
-)
+fig_pr_cycle_template = go.layout.Template(layout=px_template_all_axis_shown)
 
-film_template = go.layout.Template(
-    # layout=px_template_all_axis_shown
-)
+film_template = go.layout.Template(layout=px_template_all_axis_shown)
 
-summary_template = go.layout.Template(
-    # layout=px_template_all_axis_shown
-)
+summary_template = go.layout.Template(layout=px_template_all_axis_shown)
 
 
 def _setup():
@@ -1250,6 +1299,7 @@ def pick_named_cell(b, label_mapper=None):
         sub_group = b.pages.loc[n, "sub_group"]
 
         if label_mapper is not None:
+            logging.info(f"renaming {n} using label_mapper")
             try:
                 if isinstance(label_mapper, dict):
                     label = label_mapper[n]
@@ -1262,12 +1312,16 @@ def pick_named_cell(b, label_mapper=None):
         else:
             try:
                 label = b.pages.loc[n, "label"]
+
+                if label is None:
+                    logging.info(f"label from journal.pages: {label} -> using original name ({n})")
+                    label = n
             except Exception as e:
                 logging.info(f"lookup in pages failed: could not rename cell {n}")
                 logging.debug(f"caught exception: {e}")
                 label = n
 
-        logging.info(f"renaming {n} -> {label} (group={group}, subgroup={sub_group})")
+        logging.info(f"renaming {n} -> {label} (group={group}, sub_group={sub_group})")
         yield label, group, sub_group, b.experiment.data[n]
 
 
@@ -2074,7 +2128,7 @@ def _cycles_plotter(
     # --- pre-processing ---
     logging.debug("picking kwargs for current level - rest goes to sequence_plotter")
     title = kwargs.pop("fig_title", default_title)
-    width = kwargs.pop("width", None)
+    width = kwargs.pop("width", 900)
     height = kwargs.pop("height", None)
     palette = kwargs.pop("palette", None)
     legend_position = kwargs.pop("legend_position", None)
@@ -2082,6 +2136,7 @@ def _cycles_plotter(
     show_legend = kwargs.pop("show_legend", None)
     cols = kwargs.pop("cols", 3)
     sub_fig_min_height = kwargs.pop("sub_fig_min_height", 200)
+    figure_border_height = kwargs.pop("figure_border_height", 100)
     # kwargs from default `BatchCollector.render` method not used by `sequence_plotter`:
     journal = kwargs.pop("journal", None)
     units = kwargs.pop("units", None)
@@ -2115,7 +2170,8 @@ def _cycles_plotter(
     no_rows = math.ceil(number_of_figs / no_cols)
 
     if not height:
-        height = no_rows * sub_fig_min_height
+        height = figure_border_height + no_rows * sub_fig_min_height
+
     fig = sequence_plotter(
         collected_curves,
         x=x,

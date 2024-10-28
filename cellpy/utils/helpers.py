@@ -46,29 +46,15 @@ def _make_average_legacy(
 
     if keys is not None:
         if isinstance(keys, (list, tuple)):
-            cell_id = list(
-                set(
-                    [
-                        "_".join(
-                            k.split("_")[key_index_bounds[0] : key_index_bounds[1]]
-                        )
-                        for k in keys
-                    ]
-                )
-            )[0]
+            cell_id = list(set(["_".join(k.split("_")[key_index_bounds[0] : key_index_bounds[1]]) for k in keys]))[0]
         elif isinstance(keys, str):
             cell_id = keys
     new_frame = pd.concat(frames, axis=1)
     for col in columns:
         number_of_cols = len(new_frame.columns)
-        if (
-            col in [hdr_norm_cycle, hdr_cum_charge]
-            and skip_st_dev_for_equivalent_cycle_index
-        ):
+        if col in [hdr_norm_cycle, hdr_cum_charge] and skip_st_dev_for_equivalent_cycle_index:
             if number_of_cols > 1:
-                avg_frame = (
-                    new_frame[col].agg(["mean"], axis=1).rename(columns={"mean": col})
-                )
+                avg_frame = new_frame[col].agg(["mean"], axis=1).rename(columns={"mean": col})
             else:
                 avg_frame = new_frame[col].copy()
 
@@ -80,14 +66,10 @@ def _make_average_legacy(
                 avg_frame = (
                     new_frame[col]
                     .agg(["mean", "std"], axis=1)
-                    .rename(
-                        columns={"mean": new_col_name_mean, "std": new_col_name_std}
-                    )
+                    .rename(columns={"mean": new_col_name_mean, "std": new_col_name_std})
                 )
             else:
-                avg_frame = pd.DataFrame(
-                    data=new_frame[col].values, columns=[new_col_name_mean]
-                )
+                avg_frame = pd.DataFrame(data=new_frame[col].values, columns=[new_col_name_mean])
                 avg_frame[new_col_name_std] = not_a_number
         new_frames.append(avg_frame)
     final_frame = pd.concat(new_frames, axis=1)
@@ -114,9 +96,7 @@ def _make_average(
         if col == hdr_norm_cycle and skip_st_dev_for_equivalent_cycle_index:
             if number_of_cols > 1:
                 normalized_cycle_index_frame = (
-                    new_frame[col]
-                    .agg(["mean"], axis=1)
-                    .rename(columns={"mean": "equivalent_cycle"})
+                    new_frame[col].agg(["mean"], axis=1).rename(columns={"mean": "equivalent_cycle"})
                 )
             else:
                 normalized_cycle_index_frame = new_frame[col].copy()
@@ -128,18 +108,14 @@ def _make_average(
             if number_of_cols > 1:
                 avg_frame = new_frame[col].agg(["mean", "std"], axis=1)
             else:
-                avg_frame = pd.DataFrame(
-                    data=new_frame[col].values, columns=[new_col_name_mean]
-                )
+                avg_frame = pd.DataFrame(data=new_frame[col].values, columns=[new_col_name_mean])
                 avg_frame[new_col_name_std] = not_a_number
 
             avg_frame = avg_frame.assign(variable=col)
             new_frames.append(avg_frame)
 
     if not normalized_cycle_index_frame.empty:
-        new_frames = [
-            pd.concat([normalized_cycle_index_frame, x], axis=1) for x in new_frames
-        ]
+        new_frames = [pd.concat([normalized_cycle_index_frame, x], axis=1) for x in new_frames]
     final_frame = pd.concat(new_frames, axis=0)
     cols = final_frame.columns.to_list()
     new_cols = []
@@ -152,9 +128,7 @@ def _make_average(
     return final_frame
 
 
-def update_journal_cellpy_data_dir(
-    pages, new_path=None, from_path="PureWindowsPath", to_path="Path"
-):
+def update_journal_cellpy_data_dir(pages, new_path=None, from_path="PureWindowsPath", to_path="Path"):
     """Update the path in the pages (batch) from one type of OS to another.
 
     I use this function when I switch from my work PC (windows) to my home
@@ -179,17 +153,13 @@ def update_journal_cellpy_data_dir(
     to_path = getattr(pathlib, to_path)
 
     pages.cellpy_file_names = pages.cellpy_file_names.apply(from_path)
-    pages.cellpy_file_names = pages.cellpy_file_names.apply(
-        lambda x: to_path(new_path) / x.name
-    )
+    pages.cellpy_file_names = pages.cellpy_file_names.apply(lambda x: to_path(new_path) / x.name)
     return pages
 
 
 def make_new_cell():
     """create an empty CellpyCell object."""
-    warnings.warn(
-        "make_new_cell is deprecated, use CellpyCell.vacant instead", DeprecationWarning
-    )
+    warnings.warn("make_new_cell is deprecated, use CellpyCell.vacant instead", DeprecationWarning)
     new_cell = cellpy.cellreader.CellpyCell(initialize=True)
     return new_cell
 
@@ -251,9 +221,7 @@ def add_c_rate(cell, nom_cap=None, column_name=None):
         nom_cap = cell.data.nom_cap
 
     spec_conv_factor = cell.get_converter_to_specific()
-    cell.data.steps[column_name] = abs(
-        round(cell.data.steps.current_avr / (nom_cap / spec_conv_factor), 2)
-    )
+    cell.data.steps[column_name] = abs(round(cell.data.steps.current_avr / (nom_cap / spec_conv_factor), 2))
 
     return cell
 
@@ -277,16 +245,12 @@ def _remove_outliers_from_summary(s, filter_vals, freeze_indexes=None):
         try:
             filter_vals[freeze_indexes] = True
         except IndexError:
-            logging.critical(
-                f"Could not freeze - missing cycle indexes {freeze_indexes}"
-            )
+            logging.critical(f"Could not freeze - missing cycle indexes {freeze_indexes}")
 
     return s[filter_vals]
 
 
-def remove_outliers_from_summary_on_window(
-    s, window_size=3, cut=0.1, iterations=1, col_name=None, freeze_indexes=None
-):
+def remove_outliers_from_summary_on_window(s, window_size=3, cut=0.1, iterations=1, col_name=None, freeze_indexes=None):
     """Removes outliers based on neighbours"""
     if col_name is None:
         col = hdr_summary["charge_capacity"]
@@ -299,9 +263,7 @@ def remove_outliers_from_summary_on_window(
 
     for j in range(iterations):
         fractional_deviation_series = (
-            s[col]
-            .rolling(window=window_size, center=True, min_periods=1)
-            .apply(fractional_std)
+            s[col].rolling(window=window_size, center=True, min_periods=1).apply(fractional_std)
         )
         filter_vals = fractional_deviation_series < cut
         s = s[filter_vals]
@@ -311,9 +273,7 @@ def remove_outliers_from_summary_on_window(
     return s
 
 
-def remove_outliers_from_summary_on_nn_distance(
-    s, distance=0.7, filter_cols=None, freeze_indexes=None
-):
+def remove_outliers_from_summary_on_nn_distance(s, distance=0.7, filter_cols=None, freeze_indexes=None):
     """Remove outliers with missing neighbours.
 
     Args:
@@ -342,9 +302,7 @@ def remove_outliers_from_summary_on_nn_distance(
         if len(y) == 2:
             return abs(np.diff(y)) / np.mean(y)
         else:
-            return min(abs(y[1] - y[0]), abs(y[1] - y[2])) / min(
-                np.mean(y[0:1]), np.mean(y[1:])
-            )
+            return min(abs(y[1] - y[0]), abs(y[1] - y[2])) / min(np.mean(y[0:1]), np.mean(y[1:]))
 
     s2 = s[filter_cols].copy()
 
@@ -356,9 +314,7 @@ def remove_outliers_from_summary_on_nn_distance(
     return s
 
 
-def remove_outliers_from_summary_on_zscore(
-    s, zscore_limit=4, filter_cols=None, freeze_indexes=None
-):
+def remove_outliers_from_summary_on_zscore(s, zscore_limit=4, filter_cols=None, freeze_indexes=None):
     """Remove outliers based on z-score.
 
     Args:
@@ -389,9 +345,7 @@ def remove_outliers_from_summary_on_zscore(
     return s
 
 
-def remove_outliers_from_summary_on_value(
-    s, low=0.0, high=7_000, filter_cols=None, freeze_indexes=None
-):
+def remove_outliers_from_summary_on_value(s, low=0.0, high=7_000, filter_cols=None, freeze_indexes=None):
     """Remove outliers based highest and lowest allowed value
 
     Args:
@@ -588,9 +542,7 @@ def yank_outliers(
             else:
                 remove_last_this_cell = remove_last
 
-            s = remove_outliers_from_summary_on_index(
-                s, remove_indexes_this_cell, remove_last_this_cell
-            )
+            s = remove_outliers_from_summary_on_index(s, remove_indexes_this_cell, remove_last_this_cell)
 
         s = remove_outliers_from_summary_on_value(
             s,
@@ -713,9 +665,7 @@ def concatenate_summaries(
         ``pandas.DataFrame``
     """
 
-    warnings.warn(
-        "This helper function is not maintained anymore", category=DeprecationWarning
-    )
+    warnings.warn("This helper function is not maintained anymore", category=DeprecationWarning)
 
     if key_index_bounds is None:
         key_index_bounds = [1, -2]
@@ -805,9 +755,7 @@ def concatenate_summaries(
                     elif scale_by is None:
                         scale_by = 1.0
 
-                    c = add_normalized_capacity(
-                        c, norm_cycles=normalize_capacity_on, scale=scale_by
-                    )
+                    c = add_normalized_capacity(c, norm_cycles=normalize_capacity_on, scale=scale_by)
 
                 if rate is not None:
                     s = select_summary_based_on_rate(
@@ -888,6 +836,7 @@ def concat_summaries(
     pages=None,
     recalc_summary_kwargs=None,
     recalc_step_table_kwargs=None,
+    experimental_feature_cell_selector=None,
 ) -> pd.DataFrame:
     """Merge all summaries in a batch into a gigantic summary data frame.
 
@@ -930,6 +879,9 @@ def concat_summaries(
     group_nest = []
     if pages is None:
         pages = b.pages
+
+    if experimental_feature_cell_selector is not None:
+        pages = pages.loc[experimental_feature_cell_selector]
 
     if group_it:
         g = pages.groupby("group")
@@ -1017,9 +969,7 @@ def concat_summaries(
                     elif scale_by is None:
                         scale_by = 1.0
 
-                    c = add_normalized_capacity(
-                        c, norm_cycles=normalize_capacity_on, scale=scale_by
-                    )
+                    c = add_normalized_capacity(c, norm_cycles=normalize_capacity_on, scale=scale_by)
 
                 if rate is not None:
                     s = select_summary_based_on_rate(
@@ -1046,9 +996,7 @@ def concat_summaries(
                 keys_sub.append(cell_id)
 
         if group_it:
-            cell_id = create_group_names(
-                custom_group_labels, gno, key_index_bounds, keys_sub, pages
-            )
+            cell_id = create_group_names(custom_group_labels, gno, key_index_bounds, keys_sub, pages)
             try:
                 s = _make_average(frames_sub, output_columns)
             except ValueError as e:
@@ -1113,14 +1061,7 @@ def create_group_names(custom_group_labels, gno, key_index_bounds, keys_sub, pag
     if cell_id is None:
         splitter = "_"
         cell_id = list(
-            set(
-                [
-                    splitter.join(
-                        k.split(splitter)[key_index_bounds[0] : key_index_bounds[1]]
-                    )
-                    for k in keys_sub
-                ]
-            )
+            set([splitter.join(k.split(splitter)[key_index_bounds[0] : key_index_bounds[1]]) for k in keys_sub])
         )[0]
     return cell_id
 
@@ -1141,9 +1082,7 @@ def fix_group_names(keys):
     return keys
 
 
-def collect_frames(
-    frames, group_it: bool, hdr_norm_cycle: str, keys: list, normalize_cycles: bool
-):
+def collect_frames(frames, group_it: bool, hdr_norm_cycle: str, keys: list, normalize_cycles: bool):
     """Helper function for concat_summaries."""
     cycle_header = "cycle"
     normalized_cycle_header = "equivalent_cycle"
@@ -1222,10 +1161,7 @@ def select_summary_based_on_rate(
     summary = cell.data.summary
 
     if summary.index.name != cycle_number_header:
-        warnings.warn(
-            f"{cycle_number_header} not set as index\n"
-            f"Current index :: {summary.index}\n"
-        )
+        warnings.warn(f"{cycle_number_header} not set as index\n" f"Current index :: {summary.index}\n")
 
         if fix_index:
             summary.set_index(cycle_number_header, drop=True, inplace=True)
@@ -1241,9 +1177,7 @@ def select_summary_based_on_rate(
             & (step_table[on_column].isin(on))
         )
     else:
-        cycles_mask = (step_table[rate_column] < (rate + rate_std)) & (
-            step_table[rate_column] > (rate - rate_std)
-        )
+        cycles_mask = (step_table[rate_column] < (rate + rate_std)) & (step_table[rate_column] > (rate - rate_std))
 
     if inverse:
         cycles_mask = ~cycles_mask
@@ -1262,9 +1196,7 @@ def select_summary_based_on_rate(
     return summary.loc[filtered_index, :]
 
 
-def add_normalized_capacity(
-    cell, norm_cycles=None, individual_normalization=False, scale=1.0
-):
+def add_normalized_capacity(cell, norm_cycles=None, individual_normalization=False, scale=1.0):
     """Add normalized capacity to the summary.
 
     Args:
@@ -1297,9 +1229,7 @@ def add_normalized_capacity(
         print(f"  cycle indexes: {list(cell.data.summary.index)}")
         raise KeyError from e
     if individual_normalization:
-        norm_val_discharge = cell.data.summary.loc[
-            norm_cycles, col_name_discharge
-        ].mean()
+        norm_val_discharge = cell.data.summary.loc[norm_cycles, col_name_discharge].mean()
     else:
         norm_val_discharge = norm_val_charge
 
@@ -1308,9 +1238,7 @@ def add_normalized_capacity(
         [col_name_norm_charge, col_name_norm_discharge],
         [norm_val_charge, norm_val_discharge],
     ):
-        cell.data.summary[norm_col_name] = (
-            scale * cell.data.summary[col_name] / norm_value
-        )
+        cell.data.summary[norm_col_name] = scale * cell.data.summary[col_name] / norm_value
 
     return cell
 
