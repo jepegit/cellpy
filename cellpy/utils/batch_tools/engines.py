@@ -219,7 +219,6 @@ def simple_db_engine(
         pages_dict[hdr_journal["cellpy_file_name"]] = []
         pages_dict[hdr_journal["comment"]] = _query(reader.get_comment, cell_ids)
         pages_dict[hdr_journal["group"]] = _query(reader.get_group, cell_ids)
-
         if additional_column_names is not None:
             for k in additional_column_names:
                 try:
@@ -228,6 +227,7 @@ def simple_db_engine(
                     logging.info(f"Could not retrieve from column {k} ({e})")
 
         logging.debug(f"created info-dict from {reader.db_file}:")
+        del reader
 
     for key in list(pages_dict.keys()):
         logging.debug("%s: %s" % (key, str(pages_dict[key])))
@@ -235,7 +235,6 @@ def simple_db_engine(
     _groups = pages_dict[hdr_journal["group"]]
     groups = helper.fix_groups(_groups)
     pages_dict[hdr_journal["group"]] = groups
-
     my_timer_start = time.time()
     pages_dict = helper.find_files(pages_dict, file_list=file_list, pre_path=pre_path, **kwargs)
     my_timer_end = time.time()
@@ -245,7 +244,6 @@ def simple_db_engine(
             "Save your journal so you don't have to run it again! "
             "You can load it again using the from_journal(journal_name) method."
         )
-
     pages = pd.DataFrame(pages_dict)
     try:
         pages = pages.sort_values([hdr_journal.group, hdr_journal.filename])
@@ -262,6 +260,11 @@ def simple_db_engine(
         pages[hdr_journal.label] = pages[hdr_journal.filename].apply(helper.create_labels)
     except AttributeError as e:
         _report_suspected_duplicate_id(e, "make labels", pages[[hdr_journal.label, hdr_journal.filename]])
+    except IndexError as e:
+        logging.debug(f"Could not make labels: {e}")
+    except Exception as e:
+        logging.debug(f"Could not make labels (UNHANDLED EXCEPTION): {e}")
+        raise e
 
     else:
         # TODO: check if drop=False works [#index]

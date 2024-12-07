@@ -968,6 +968,10 @@ class CyclingExperiment(BaseExperiment):
             pbar.set_description(indx)
             try:
                 c = self.data[indx]
+            except KeyError as e:
+                e_txt = f"could not extract data for {indx} - the cell does not exist (maybe missing?)"
+                errors.append(e_txt)
+                warnings.warn(e_txt)
             except TypeError as e:
                 e_txt = f"could not extract data for {indx} - have you forgotten to link?"
                 errors.append(e_txt)
@@ -975,8 +979,10 @@ class CyclingExperiment(BaseExperiment):
 
             else:
                 if nom_cap:
+                    print("Setting nominal capacity")
                     c.set_nom_cap(nom_cap)
                 if mass:
+                    print("Setting mass")
                     c.set_mass(mass)
                 try:
                     if calc_steps:

@@ -204,7 +204,6 @@ class LabJournal(BaseJournal, ABC):
             if isinstance(self.db_reader, dbreader.Reader):  # Simple excel-db
                 id_keys = self.db_reader.select_batch(name, batch_col, **dbreader_kwargs)
                 logging.debug(f"id_keys: {id_keys}")
-
                 self.pages = self.engine(self.db_reader, id_keys, **kwargs)
             else:
                 logging.debug("creating journal pages using advanced reader methods (not simple excel-db)")

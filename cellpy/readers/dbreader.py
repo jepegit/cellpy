@@ -314,10 +314,11 @@ class Reader(BaseDbReader):
                 nrows=nrows,
             )
         except ValueError as e:
-            logging.debug("Could not parse all the columns (ValueError) " "using given dtypes. Trying without dtypes.")
+            logging.debug("Could not parse all the columns (ValueError) using given dtypes. Trying without dtypes.")
             logging.debug(str(e))
             sheet = work_book.parse(table_name, header=header_row, skiprows=rows_to_skip, nrows=nrows)
-
+        finally:
+            work_book.close()
         return sheet
 
     def _validate(self):

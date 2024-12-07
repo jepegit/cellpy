@@ -210,8 +210,13 @@ def _remove_date_and_celltype(
 ):
     parts = label.split("_")
     parts.pop(0)
-    if parts[-1] in CELL_TYPE_IDS:
-        parts.pop(-1)
+    try:
+        if parts[-1] in CELL_TYPE_IDS:
+            parts.pop(-1)
+    except IndexError:
+        logging.debug("could not remove date and cell type")
+        logging.debug("using the input label as is")
+        return label
     return "_".join(parts)
 
 
@@ -276,9 +281,7 @@ def join_summaries(summary_frames, selected_summaries, keep_old_header=False):
     summary_df = pd.concat(frames, keys=keys, axis=1, sort=True)
 
     for key, value in selected_summaries_dict.items():
-        _summary_df = summary_df.iloc[
-            :, summary_df.columns.get_level_values(1) == value
-        ]
+        _summary_df = summary_df.iloc[:, summary_df.columns.get_level_values(1) == value]
         _summary_df.name = key
 
         if not keep_old_header:
