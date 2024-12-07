@@ -398,6 +398,7 @@ class CyclingExperiment(BaseExperiment):
                     cycle_mode=cycle_mode,
                     mass=mass,
                     nominal_capacity=nom_cap,
+                    nom_cap_specifics=nom_cap_specifics,
                     loading=loading,
                     area=area,
                     step_kwargs=step_kwargs,

@@ -101,9 +101,7 @@ class BatchClass(CellPyConfig):
     figure_type: str = "unlimited"
     summary_plot_width: int = 900
     summary_plot_height: int = 800
-    summary_plot_height_fractions: List[float] = field(
-        default_factory=lambda: [0.2, 0.5, 0.3]
-    )
+    summary_plot_height_fractions: List[float] = field(default_factory=lambda: [0.2, 0.5, 0.3])
 
 
 @dataclass
@@ -132,18 +130,14 @@ class ReaderClass(CellPyConfig):
     cycle_mode: str = "anode"
     sorted_data: bool = True  # finding step-types assumes sorted data
     select_minimal: bool = False
-    limit_loaded_cycles: Optional[int] = (
-        None  # limit loading cycles to given cycle number
-    )
+    limit_loaded_cycles: Optional[int] = None  # limit loading cycles to given cycle number
     ensure_step_table: bool = False
     ensure_summary_table: bool = False
     voltage_interpolation_step: float = 0.01
     time_interpolation_step: float = 10.0
     capacity_interpolation_step: float = 2.0
     use_cellpy_stat_file: bool = False
-    auto_dirs: bool = (
-        True  # v2.0 search in prm-file for res and hdf5 dirs in cellpy.get()
-    )
+    auto_dirs: bool = True  # v2.0 search in prm-file for res and hdf5 dirs in cellpy.get()
     jupyter_executable: str = "jupyter"
 
 
@@ -192,6 +186,7 @@ class DbColsClass(CellPyConfig):  # used for simple excel db reader
     mass_total: str = "mass_total"
     loading: str = "loading_active_material"
     nom_cap: str = "nominal_capacity"
+    nom_cap_specifics: str = "nominal_capacity_specifics"
     file_name_indicator: str = "file_name_indicator"
     instrument: str = "instrument"
     raw_file_names: str = "raw_file_names"
@@ -400,9 +395,7 @@ _cellpyfile_fidtable_format = "fixed"
 _date_time_format = "%Y-%m-%d %H:%M:%S:%f"
 
 # templates
-_standard_template_uri = (
-    f"https://github.com/{_github_repo_parent}/{_github_templates_repo}"
-)
+_standard_template_uri = f"https://github.com/{_github_repo_parent}/{_github_templates_repo}"
 
 _registered_templates = {
     "standard": (_standard_template_uri, "standard"),  # (repository, name-of-folder)

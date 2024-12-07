@@ -104,15 +104,16 @@ def find_in_raw_file_directory(
             f = _file_list[0]
         else:
             with fabric.Connection(host, connect_kwargs=connect_kwargs) as conn:
-                out = conn.run(
-                    f'find -L {d.raw_path} -name "{glob_txt}"', hide="both", warn=True
-                )
+                find_command = f'find -L {d.raw_path} -name "{glob_txt}"'
+                out = conn.run(f"{find_command}", hide="both", warn=True)
             if out.return_code != 0:
                 logging.critical(f"Searching in: {d}")
+                warnings.warn(f"Could not find any files in {d.raw_path} -> {out.stderr}")
                 warnings.warn(
-                    f"Could not find any files in {d.raw_path} -> {out.stderr}"
+                    f"Tried running the command:\n"
+                    f"  {find_command}\n"
+                    f"Your platform is {platform}. Are you sure your OS supports the 'find' command?"
                 )
-                warnings.warn(f"Most likely the OS does not have the 'find' command")
                 continue
             _file_list = out.stdout.splitlines()
         file_list += list(map(lambda x: f"{d.uri_prefix}{host}" + x, _file_list))
@@ -269,9 +270,7 @@ def search_for_files(
 
     # backward compatibility check:
     if cellpy_file_extension.startswith("."):
-        warnings.warn(
-            "Deprecation warning: cellpy_file_extension should not include the '.'"
-        )
+        warnings.warn("Deprecation warning: cellpy_file_extension should not include the '.'")
         cellpy_file_extension = cellpy_file_extension[1:]
 
     if raw_file_dir is None:
@@ -312,9 +311,7 @@ def search_for_files(
     if file_name_format.upper() == "YYYYMMDD_[NAME]EEE_CC_TT_RR":
         # backward compatibility check
         if raw_extension.startswith("."):
-            warnings.warn(
-                "Deprecation warning: raw_extension should not include the '.'"
-            )
+            warnings.warn("Deprecation warning: raw_extension should not include the '.'")
             raw_extension = raw_extension[1:]
             warnings.warn(f"Removing it -> {raw_extension}")
         # TODO: give warning/error-message if run_name contains more than one file (due to duplicate in db)
@@ -383,14 +380,10 @@ def _check_01():
     print("searching for files")
     my_run_name = "20160805_test001_45_cc"
     # my_run_name = "20210218_Seam08_02_01_cc"
-    my_raw_file_dir = OtherPath(
-        f"scp://{os.getenv('CELLPY_HOST')}/home/{os.getenv('CELLPY_USER')}/tmp/"
-    )
+    my_raw_file_dir = OtherPath(f"scp://{os.getenv('CELLPY_HOST')}/home/{os.getenv('CELLPY_USER')}/tmp/")
     # my_raw_file_dir = OtherPath(r"C:\scripting\processing_cellpy\raw")
     my_cellpy_file_dir = OtherPath("C:/scripting/processing_cellpy/data/")
-    f = search_for_files(
-        my_run_name, raw_file_dir=my_raw_file_dir, cellpy_file_dir=my_cellpy_file_dir
-    )
+    f = search_for_files(my_run_name, raw_file_dir=my_raw_file_dir, cellpy_file_dir=my_cellpy_file_dir)
     print(f)
     #
     # print(my_raw_file_dir)
@@ -422,26 +415,14 @@ def _check_02():
                 print(f"file: {fileattr.filename}")
         print("===================")
         glob_str = "20*.res"
-        sub_dirs = [
-            f for f in sftp_conn.listdir() if stat.S_ISDIR(sftp_conn.stat(f).st_mode)
-        ]
-        files = [
-            f
-            for f in sftp_conn.listdir()
-            if not stat.S_ISDIR(sftp_conn.stat(f).st_mode)
-        ]
+        sub_dirs = [f for f in sftp_conn.listdir() if stat.S_ISDIR(sftp_conn.stat(f).st_mode)]
+        files = [f for f in sftp_conn.listdir() if not stat.S_ISDIR(sftp_conn.stat(f).st_mode)]
         filtered_files = fnmatch.filter(files, glob_str)
         for sub_dir in sub_dirs:
             sftp_conn.chdir(sub_dir)
-            new_files = [
-                f
-                for f in sftp_conn.listdir()
-                if not stat.S_ISDIR(sftp_conn.stat(f).st_mode)
-            ]
+            new_files = [f for f in sftp_conn.listdir() if not stat.S_ISDIR(sftp_conn.stat(f).st_mode)]
             new_filtered_files = fnmatch.filter(new_files, glob_str)
-            new_filtered_files = [
-                f"{sub_dir}{path_separator}{f}" for f in new_filtered_files
-            ]
+            new_filtered_files = [f"{sub_dir}{path_separator}{f}" for f in new_filtered_files]
             filtered_files += new_filtered_files
             sftp_conn.chdir("..")
 
