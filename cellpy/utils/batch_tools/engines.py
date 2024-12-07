@@ -203,6 +203,10 @@ def simple_db_engine(
 
         pages_dict[hdr_journal["mass"]] = _query(reader.get_mass, cell_ids)
         pages_dict[hdr_journal["total_mass"]] = _query(reader.get_total_mass, cell_ids)
+        try:
+            pages_dict[hdr_journal["nom_cap_specifics"]] = _query(reader.get_nom_cap_specifics, cell_ids)
+        except Exception as e:
+            pages_dict[hdr_journal["nom_cap_specifics"]] = "gravimetric"
         pages_dict[hdr_journal["loading"]] = _query(reader.get_loading, cell_ids)
         pages_dict[hdr_journal["nom_cap"]] = _query(reader.get_nom_cap, cell_ids)
         pages_dict[hdr_journal["area"]] = _query(reader.get_area, cell_ids)

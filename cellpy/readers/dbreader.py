@@ -100,16 +100,12 @@ class Reader(BaseDbReader):
             self.table = self._open_sheet()
 
         if batch:
-            self.selected_batch = self.select_batch(
-                batch, batch_col_name=batch_col_name
-            )
+            self.selected_batch = self.select_batch(batch, batch_col_name=batch_col_name)
         logging.debug("got table")
         logging.debug(self.table)
 
     def __str__(self):
-        return (
-            f"<ExcelReader> (rows: {len(self.table)}, cols: {len(self.table.columns)})"
-        )
+        return f"<ExcelReader> (rows: {len(self.table)}, cols: {len(self.table.columns)})"
 
     def _repr_html_(self):
         return f"<b>ExcelReader</b> (rows: {len(self.table)}, cols: {len(self.table.columns)})"
@@ -149,9 +145,7 @@ class Reader(BaseDbReader):
         else:
             return self.selected_batch
 
-    def _select_batch(
-        self, batch, batch_col_name=None, case_sensitive=True, drop=True, clean=False
-    ):
+    def _select_batch(self, batch, batch_col_name=None, case_sensitive=True, drop=True, clean=False):
         if not batch_col_name:
             batch_col_name = self.db_sheet_cols.batch
         logging.debug("selecting batch - %s" % batch)
@@ -200,9 +194,7 @@ class Reader(BaseDbReader):
         return arguments
 
     @staticmethod
-    def _extract_date_from_cell_name(
-        cell_name, strf="%Y%m%d", regexp=None, splitter="_", position=0, start=0, end=12
-    ):
+    def _extract_date_from_cell_name(cell_name, strf="%Y%m%d", regexp=None, splitter="_", position=0, start=0, end=12):
         """Extract date given a cell name (or filename).
 
         Uses regexp if given to find date txt, if not it uses splitter if splitter is not None or "",
@@ -229,11 +221,7 @@ class Reader(BaseDbReader):
                 day_r = r"%d"
 
                 regexp = strf.replace("\\", "\\\\").replace("-", r"\-")
-                regexp = (
-                    regexp.replace(year_r, "[0-9]{4}")
-                    .replace(month_r, "[0-9]{2}")
-                    .replace(day_r, "[0-9]{2}")
-                )
+                regexp = regexp.replace(year_r, "[0-9]{4}").replace(month_r, "[0-9]{2}").replace(day_r, "[0-9]{2}")
                 regexp = f"({regexp})"
 
             m = re.search(regexp, cell_name)
@@ -255,11 +243,7 @@ class Reader(BaseDbReader):
 
     def extract_date_from_cell_name(self, force=False):
         if force or "date" not in self.table.columns:
-            self.table = self.table.assign(
-                date=self.table.file_name_indicator.apply(
-                    self._extract_date_from_cell_name
-                )
-            )
+            self.table = self.table.assign(date=self.table.file_name_indicator.apply(self._extract_date_from_cell_name))
 
     # --------not fixed from here -------------------------------
 
@@ -274,10 +258,7 @@ class Reader(BaseDbReader):
         try:
             skiprows.remove(self.db_header_row)
         except KeyError:
-            logging.debug(
-                "Trying to remove header row number"
-                " from skiprow, but it is not in skiprow"
-            )
+            logging.debug("Trying to remove header row number" " from skiprow, but it is not in skiprow")
         skiprows.union((self.db_unit_row,))
         if self.db_search_end_row <= 0 or self.db_search_end_row is None:
             nrows = None
@@ -333,14 +314,9 @@ class Reader(BaseDbReader):
                 nrows=nrows,
             )
         except ValueError as e:
-            logging.debug(
-                "Could not parse all the columns (ValueError) "
-                "using given dtypes. Trying without dtypes."
-            )
+            logging.debug("Could not parse all the columns (ValueError) " "using given dtypes. Trying without dtypes.")
             logging.debug(str(e))
-            sheet = work_book.parse(
-                table_name, header=header_row, skiprows=rows_to_skip, nrows=nrows
-            )
+            sheet = work_book.parse(table_name, header=header_row, skiprows=rows_to_skip, nrows=nrows)
 
         return sheet
 
@@ -357,9 +333,7 @@ class Reader(BaseDbReader):
         # check if you have unique srnos
         id_col = sheet.loc[:, identity]
         if any(id_col.duplicated()):
-            warnings.warn(
-                "your database is corrupt: duplicates" " encountered in the srno-column"
-            )
+            warnings.warn("your database is corrupt: duplicates" " encountered in the srno-column")
             logging.debug("srno duplicates:\n" + str(id_col.duplicated()))
             probably_good_to_go = False
         return probably_good_to_go
@@ -486,9 +460,7 @@ class Reader(BaseDbReader):
             insp = self._pick_info(serial_number, column_name)
             return insp
         except KeyError:
-            logging.warning(
-                "Could not read the cycle mode (using value from prms instead)"
-            )
+            logging.warning("Could not read the cycle mode (using value from prms instead)")
             logging.debug(f"cycle mode: {prms.Reader.cycle_mode}")
             return prms.Reader.cycle_mode
 
@@ -522,6 +494,10 @@ class Reader(BaseDbReader):
         column_name = self.db_sheet_cols.nom_cap
         return self._pick_info(serial_number, column_name)
 
+    def get_nom_cap_specifics(self, serial_number):
+        column_name = self.db_sheet_cols.nom_cap_specifics
+        return self._pick_info(serial_number, column_name)
+
     def get_experiment_type(self, serial_number):
         column_name = self.db_sheet_cols.experiment_type
         return self._pick_info(serial_number, column_name)
@@ -543,9 +519,7 @@ class Reader(BaseDbReader):
         if not full_path:
             filename = self._pick_info(serial_number, column_name)
         else:
-            filename = os.path.join(
-                self.db_datadir_processed, self._pick_info(serial_number, column_name)
-            )
+            filename = os.path.join(self.db_datadir_processed, self._pick_info(serial_number, column_name))
         return filename
 
     @staticmethod

@@ -361,6 +361,10 @@ class CyclingExperiment(BaseExperiment):
             loading = None
             area = None
             if hdr_journal.loading in row:
+                nom_cap_specifics = row[hdr_journal.nom_cap_specifics]
+            else:
+                nom_cap_specifics = prms.Materials.default_nom_cap_specifics
+            if hdr_journal.loading in row:
                 loading = row[hdr_journal.loading]
             if hdr_journal.area in row:
                 area = row[hdr_journal.area]

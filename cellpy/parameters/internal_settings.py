@@ -626,6 +626,7 @@ class HeadersJournal(BaseHeaders):
     comment: str = "comment"
     argument: str = "argument"
     id_key: str = "id_key"
+    nom_cap_specifics: str = "nom_cap_specifics"
 
 
 keys_journal_session = ["starred", "bad_cells", "bad_cycles", "notes"]
