@@ -23,6 +23,7 @@ from cellpy.internals.core import OtherPath
 
 # TODO: @jepe - add function for searching in cloud storage (dropbox, google drive etc)
 # TODO: @jepe - add function for searching in database (sqlite, postgresql etc)
+# TODO: @jepe - allow for providing a glob pattern also when using file_list by editing the batch.py script
 
 
 def find_in_raw_file_directory(
@@ -30,6 +31,7 @@ def find_in_raw_file_directory(
     project_dir: Union[OtherPath, pathlib.Path, str, None] = None,
     extension: Optional[str] = None,
     glob_txt: Optional[str] = None,
+    allow_error_level: Optional[int] = 3,
 ):
     """Dumps the raw-file directory to a list.
 
@@ -40,6 +42,8 @@ def find_in_raw_file_directory(
         extension (str): optional, extension of run-files (without the '.'). If
             not given, all files will be listed.
         glob_txt (str, optional): optional, glob pattern to use when searching for files.
+        allow_error_level (int, optional): accept errors up to this level when using the find command Defaults to 3.
+            (1 raises Exception, 2 skips, 3 tries to process the stdout regardless).
 
     Returns:
         list of str: list of file paths.
@@ -107,15 +111,20 @@ def find_in_raw_file_directory(
                 find_command = f'find -L {d.raw_path} -name "{glob_txt}"'
                 out = conn.run(f"{find_command}", hide="both", warn=True)
             if out.return_code != 0:
-                logging.critical(f"Searching in: {d}")
-                warnings.warn(f"Could not find any files in {d.raw_path} -> {out.stderr}")
-                warnings.warn(
-                    f"Tried running the command:\n"
-                    f"  {find_command}\n"
-                    f"Your platform is {platform}. Are you sure your OS supports the 'find' command?"
-                )
-                continue
+                logging.critical(f"Errors encounter when running the find command in {d.raw_path}")
+                logging.debug(f"{find_command} -> {out.stderr}")
+                if allow_error_level == 1:
+                    raise cellpy.exceptions.SearchError(
+                        f"Following errors encounter when running the find command in ({d.raw_path}) ->\n{out.stderr}"
+                    )
+                elif allow_error_level == 2:
+                    logging.critical("Skipping this folder")
+                    continue
+                elif allow_error_level == 3:
+                    logging.critical("Trying to process the stdout regardless")
+
             _file_list = out.stdout.splitlines()
+
         file_list += list(map(lambda x: f"{d.uri_prefix}{host}" + x, _file_list))
     number_of_files = len(file_list)
     if number_of_files == 0:

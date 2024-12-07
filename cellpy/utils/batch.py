@@ -738,8 +738,13 @@ class Batch:
                 warnings.warn("auto_use_file_list is True - this is an experimental feature")
                 if file_list_kwargs is None:
                     file_list_kwargs = {}
+
+                file_list = filefinder.find_in_raw_file_directory(**file_list_kwargs)
+                if file_list is None:
+                    raise cellpy.exceptions.SearchError("Could not create any file list.")
                 try:
-                    kwargs["file_list"] = filefinder.find_in_raw_file_directory(**file_list_kwargs)
+                    kwargs["file_list"] = file_list
+
                 except Exception as e:
                     logging.critical("You have set auto_use_file_list to True, but I could not create any file list.")
                     logging.critical("I recommend that you set auto_use_file_list to False and try again.")

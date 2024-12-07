@@ -25,6 +25,12 @@ class FileNotFound(Error):
     pass
 
 
+class SearchError(Error):
+    """Raised when the search function fails"""
+
+    pass
+
+
 class WrongFileVersion(Error):
     """Raised when the file version is wrong"""
 
