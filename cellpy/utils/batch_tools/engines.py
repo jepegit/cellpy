@@ -157,6 +157,7 @@ def simple_db_engine(
     include_individual_arguments=True,
     additional_column_names=None,
     batch_name=None,
+    clean_journal=False,
     **kwargs,
 ):
     """Engine that gets values from the db for given set of cell IDs.
@@ -174,6 +175,7 @@ def simple_db_engine(
         include_individual_arguments: include the argument column in the pages.
         additional_column_names: list of additional column names to include in the pages.
         batch_name: name of the batch (used if cell_ids are not given)
+        clean_journal: remove the file_name_indicator column from the pages (default: True).
         **kwargs: sent to filefinder
 
     Returns:
@@ -197,6 +199,7 @@ def simple_db_engine(
 
     else:
         pages_dict = dict()
+        # TODO: rename this to "cell" or "cell_id" or something similar:
         pages_dict[hdr_journal["filename"]] = _query(reader.get_cell_name, cell_ids)
         if include_key:
 
@@ -211,6 +214,14 @@ def simple_db_engine(
             pages_dict[hdr_journal["nom_cap_specifics"]] = _query(reader.get_nom_cap_specifics, cell_ids)
         except Exception as e:
             pages_dict[hdr_journal["nom_cap_specifics"]] = "gravimetric"
+
+        try:
+            pages_dict[hdr_journal["file_name_indicator"]] = _query(reader.get_file_name_indicator, cell_ids)
+        except Exception as e:
+            pages_dict[hdr_journal["file_name_indicator"]] = pages_dict[
+                hdr_journal["filename"]
+            ]  # TODO: use of "filename"!
+
         pages_dict[hdr_journal["loading"]] = _query(reader.get_loading, cell_ids)
         pages_dict[hdr_journal["nom_cap"]] = _query(reader.get_nom_cap, cell_ids)
         pages_dict[hdr_journal["area"]] = _query(reader.get_area, cell_ids)
@@ -249,6 +260,10 @@ def simple_db_engine(
             "You can load it again using the from_journal(journal_name) method."
         )
     pages = pd.DataFrame(pages_dict)
+    if clean_journal:
+        if hdr_journal["file_name_indicator"] in pages.columns:
+            pages = pages.drop(columns=[hdr_journal["file_name_indicator"]])
+
     try:
         pages = pages.sort_values([hdr_journal.group, hdr_journal.filename])
     except TypeError as e:

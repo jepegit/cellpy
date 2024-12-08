@@ -547,6 +547,12 @@ def create_col_info(c):
     _capacities_areal_split = (
         _capacities_areal + [col + "_cv" for col in _capacities_areal] + [col + "_non_cv" for col in _capacities_areal]
     )
+    _capacities_absolute = [col + "_absolute" for col in _cap_cols]
+    _capacities_absolute_split = (
+        _capacities_absolute
+        + [col + "_cv" for col in _capacities_absolute]
+        + [col + "_non_cv" for col in _capacities_absolute]
+    )
 
     x_columns = (
         [
@@ -561,11 +567,13 @@ def create_col_info(c):
         voltages=[hdr.end_voltage_charge, hdr.end_voltage_discharge],
         capacities_gravimetric=_capacities_gravimetric,
         capacities_areal=_capacities_areal,
+        capacities_absolute=_capacities_absolute,
         capacities=_cap_cols,
         capacities_gravimetric_split_constant_voltage=_capacities_gravimetric_split,
         capacities_areal_split_constant_voltage=_capacities_areal_split,
         capacities_gravimetric_coulombic_efficiency=_capacities_gravimetric + [hdr.coulombic_efficiency],
         capacities_areal_coulombic_efficiency=_capacities_areal + [hdr.coulombic_efficiency],
+        capacities_absolute_coulombic_efficiency=_capacities_absolute + [hdr.coulombic_efficiency],
     )
     return x_columns, y_cols
 
@@ -592,8 +600,8 @@ def create_label_dict(c):
 
     _cap_gravimetric_label = f"Capacity ({c.cellpy_units.charge}/{c.cellpy_units.specific_gravimetric})"
     _cap_areal_label = f"Capacity ({c.cellpy_units.charge}/{c.cellpy_units.specific_areal})"
-
-    _cap_label = f"Capacity ({c.cellpy_units.charge})"
+    _cap_absolute_label = f"Capacity ({c.cellpy_units.charge})"
+    _cap_label = f"Capacity ({c.data.raw_units.charge})"
 
     y_axis_label = {
         "voltages": f"Voltage ({c.cellpy_units.voltage})",
@@ -604,6 +612,7 @@ def create_label_dict(c):
         "capacities_areal_split_constant_voltage": _cap_areal_label,
         "capacities_gravimetric_coulombic_efficiency": _cap_gravimetric_label,
         "capacities_areal_coulombic_efficiency": _cap_areal_label,
+        "capacities_absolute_coulombic_efficiency": _cap_absolute_label,
     }
     return x_axis_labels, y_axis_label
 
@@ -657,7 +666,8 @@ def summary_plot(
 
             - "voltages", "capacities_gravimetric", "capacities_areal", "capacities",
               "capacities_gravimetric_split_constant_voltage", "capacities_areal_split_constant_voltage",
-              "capacities_gravimetric_coulombic_efficiency", "capacities_areal_coulombic_efficiency"
+              "capacities_gravimetric_coulombic_efficiency", "capacities_areal_coulombic_efficiency",
+              "capacities_absolute_coulombic_efficiency"
 
         height: height of the plot (for plotly)
         width: width of the plot (for plotly)

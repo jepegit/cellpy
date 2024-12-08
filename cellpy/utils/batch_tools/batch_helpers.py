@@ -133,10 +133,11 @@ def find_files(info_dict, file_list=None, pre_path=None, sub_folders=None, **kwa
     """
     sub_folders = sub_folders or prms.FileNames.sub_folders
     instrument_factory = create_factory()
+    file_name_indicators = info_dict.get(hdr_journal["file_name_indicator"], hdr_journal["filename"])
     # searches for the raw data files and the cellpyfile-name
     # TODO: implement faster file searching
     # TODO: implement option for not searching for raw-file names if force_cellpy is True
-    for i, run_name in enumerate(info_dict[hdr_journal["filename"]]):
+    for i, run_name in enumerate(file_name_indicators):
         try:
             instrument = info_dict[hdr_journal["instrument"]][i]
             raw_ext = instrument_factory.query(instrument, "raw_ext")

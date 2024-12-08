@@ -608,7 +608,10 @@ class HeadersStepTable(BaseHeaders):
 class HeadersJournal(BaseHeaders):
     """Headers used for the journal (batch) (used as column headers for the journal pandas DataFrames)"""
 
+    # TODO: rename this to "cell":
     filename: str = "filename"
+
+    file_name_indicator: str = "file_name_indicator"
     mass: str = "mass"
     total_mass: str = "total_mass"
     loading: str = "loading"

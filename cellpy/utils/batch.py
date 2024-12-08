@@ -1134,12 +1134,14 @@ class Batch:
             filter_by_group (int or list of ints): show only the selected group(s)
             filter_by_name (str): show only cells containing this string
             inverted_mode(bool): invert the colors vs symbols (only for plotly)
+            capacity_specifics (str): select how to present the capacity ("gravimetric", "areal" or "absolute")
+                (defaults to "gravimetric")
 
         Usage:
             b.plot(backend="plotly", reload_data=False, color_map="Set2", ce_range=[95, 105],
                      min_cycle=1, max_cycle=100, title="Cycle Summary", x_label="Cycle Number",
                      direction="charge", rate=False, ir=True, group_legends=True, base_template="plotly_dark",
-                     filter_by_group=1, filter_by_name="2019")
+                     filter_by_group=1, filter_by_name="2019", capacity_specifics="areal")
 
             # to get the plotly canvas:
             my_canvas = b.plotter.figure

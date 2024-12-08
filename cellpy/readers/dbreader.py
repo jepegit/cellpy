@@ -522,6 +522,11 @@ class Reader(BaseDbReader):
             filename = os.path.join(self.db_datadir_processed, self._pick_info(serial_number, column_name))
         return filename
 
+    def get_file_name_indicator(self, serial_number):
+        column_name = self.db_sheet_cols.file_name_indicator
+        filename = self._pick_info(serial_number, column_name)
+        return filename
+
     @staticmethod
     def intersect(lists):
         # find serial_numbers that to belong to all snro-lists in lists

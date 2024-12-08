@@ -107,6 +107,7 @@ def find_in_raw_file_directory(
             _file_list = glob.glob(f"{d.raw_path}/**/{glob_txt}", recursive=True)
             f = _file_list[0]
         else:
+            # TODO: make a better error-message if the d.raw_path does not exist:
             with fabric.Connection(host, connect_kwargs=connect_kwargs) as conn:
                 find_command = f'find -L {d.raw_path} -name "{glob_txt}"'
                 out = conn.run(f"{find_command}", hide="both", warn=True)
