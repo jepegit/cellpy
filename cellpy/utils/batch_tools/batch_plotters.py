@@ -728,7 +728,7 @@ def generate_summary_plots(experiment, **kwargs):
         "seaborn": plot_cycle_life_summary_seaborn,
     }
     try:
-        summaries = generate_summary_frame_for_plotting(pages, experiment)
+        summaries = generate_summary_frame_for_plotting(pages, experiment, **kwargs)
     except KeyError as e:
         logging.info(f"could not process the summaries ({e})")
         return
@@ -744,14 +744,14 @@ def generate_summary_plots(experiment, **kwargs):
 
 def generate_summary_frame_for_plotting(pages, experiment, **kwargs):
     trim_pages = kwargs.pop("trim_pages", False)
+    capacity_specifics = kwargs.get("capacity_specifics", "gravimetric")
     keys = [df.name for df in experiment.memory_dumped["summary_engine"]]
     summaries = pd.concat(experiment.memory_dumped["summary_engine"], keys=keys, axis=1)
     summaries = summaries.reset_index()
     summaries.columns.names = ["variable", "cell"]
 
     hdr_cycle = hdr_summary["cycle_index"]
-    hdr_charge = hdr_summary["charge_capacity_gravimetric"]
-    hdr_discharge = hdr_summary["discharge_capacity_gravimetric"]
+    hdr_charge, hdr_discharge = _get_capacity_columns(capacity_specifics=capacity_specifics)
     hdr_ce = hdr_summary["coulombic_efficiency"]
     hdr_ir_charge = hdr_summary["ir_charge"]
     hdr_ir_discharge = hdr_summary["ir_discharge"]
@@ -768,7 +768,11 @@ def generate_summary_frame_for_plotting(pages, experiment, **kwargs):
     for _optional_summary in _optional_summaries:
         if _optional_summary in summaries.columns:
             _required_summaries.append(_optional_summary)
-    summaries = summaries.loc[:, _required_summaries]
+    try:
+        summaries = summaries.loc[:, _required_summaries]
+    except KeyError as e:
+        logging.critical(f"could not get the required summaries ({type(e)}: {e})")
+        raise e
     id_var = summaries.columns[0]
     summaries = summaries.melt(
         id_vars=[id_var],
@@ -888,10 +892,18 @@ def _make_labels():
     labels = {
         "cycle_index": "Cycle number",
         "charge_capacity_gravimetric": "Gravimetric Charge Capacity",
+        "charge_capacity_areal": "Areal Charge Capacity",
+        "charge_capacity_absolute": "Absolute Charge Capacity",
+        "charge_capacity": "Charge Capacity",
         "discharge_capacity_gravimetric": "Gravimetric Discharge Capacity",
+        "discharge_capacity_areal": "Areal Discharge Capacity",
+        "discharge_capacity_absolute": "Absolute Discharge Capacity",
+        "discharge_capacity": "Discharge Capacity",
         "charge_c_rate": "C-rate (charge)",
         "discharge_c_rate": "C-rate (discharge)",
         "coulombic_efficiency": "Coulombic Efficiency",
+        "ir_charge": "IR (charge)",
+        "ir_discharge": "IR (discharge)",
         "group": "Group",
         "sub_group": "Sub-group",
         "variable": "Variable",
@@ -900,7 +912,22 @@ def _make_labels():
     return labels
 
 
+def _get_capacity_columns(capacity_specifics="gravimetric"):
+    if capacity_specifics == "raw":
+        hdr_charge = hdr_summary["charge_capacity"]
+        hdr_discharge = hdr_summary["discharge_capacity"]
+        return hdr_charge, hdr_discharge
+
+    hdr_charge = hdr_summary["_".join(["charge_capacity", capacity_specifics])]
+    hdr_discharge = hdr_summary["_".join(["discharge_capacity", capacity_specifics])]
+    return hdr_charge, hdr_discharge
+
+
 def plot_cycle_life_summary_plotly(summaries: pd.DataFrame, **kwargs):
+    """Plotting cycle life summaries using plotly."""
+
+    # TODO: get either units or experiment object to get units and send it to _make_labels
+
     group_legends = kwargs.pop("group_legends", True)
     base_template = kwargs.pop("base_template", "plotly")
     inverted_mode = kwargs.pop("inverted_mode", False)
@@ -925,6 +952,7 @@ def plot_cycle_life_summary_plotly(summaries: pd.DataFrame, **kwargs):
     filter_by_group = kwargs.pop("filter_by_group", None)
     filter_by_name = kwargs.pop("filter_by_name", None)
     width = kwargs.pop("width", 1000)
+    capacity_specifics = kwargs.pop("capacity_specifics", "gravimetric")
 
     individual_plot_height = 250
     header_height = 200
@@ -932,8 +960,9 @@ def plot_cycle_life_summary_plotly(summaries: pd.DataFrame, **kwargs):
     legend_header_height = 20
 
     hdr_cycle = hdr_summary["cycle_index"]
-    hdr_charge = hdr_summary["charge_capacity_gravimetric"]
-    hdr_discharge = hdr_summary["discharge_capacity_gravimetric"]
+
+    hdr_charge, hdr_discharge = _get_capacity_columns(capacity_specifics)
+
     hdr_ce = hdr_summary["coulombic_efficiency"]
     hdr_ir_charge = hdr_summary["ir_charge"]
     hdr_ir_discharge = hdr_summary["ir_discharge"]
@@ -1077,6 +1106,12 @@ def plot_cycle_life_summary_plotly(summaries: pd.DataFrame, **kwargs):
 
 
 def plot_cycle_life_summary_seaborn(summaries: pd.DataFrame, **kwargs):
+    """Plotting cycle life summaries using seaborn."""
+
+    # TODO: get either units or experiment object to get units and send it to _make_labels
+    # TODO: clean up the legend
+
+    logging.critical("plotting summaries using seaborn")
     color_map = kwargs.pop("color_map", "Set1")
 
     ce_range = kwargs.pop("ce_range", None)
@@ -1090,10 +1125,10 @@ def plot_cycle_life_summary_seaborn(summaries: pd.DataFrame, **kwargs):
     ir = kwargs.pop("ir", True)
     filter_by_group = kwargs.pop("filter_by_group", None)
     filter_by_name = kwargs.pop("filter_by_name", None)
+    capacity_specifics = kwargs.pop("capacity_specifics", "gravimetric")
 
     hdr_cycle = hdr_summary["cycle_index"]
-    hdr_charge = hdr_summary["charge_capacity_gravimetric"]
-    hdr_discharge = hdr_summary["discharge_capacity_gravimetric"]
+    hdr_charge, hdr_discharge = _get_capacity_columns(capacity_specifics)
     hdr_ce = hdr_summary["coulombic_efficiency"]
     hdr_ir_charge = hdr_summary["ir_charge"]
     hdr_ir_discharge = hdr_summary["ir_discharge"]
@@ -1198,6 +1233,7 @@ def plot_cycle_life_summary_seaborn(summaries: pd.DataFrame, **kwargs):
         ax.set_title("")
         ax.set_ylabel(y_label)
         ax.set_ylim(r)
+    canvas_grid.figure.align_ylabels()
 
     return canvas_grid.figure
 

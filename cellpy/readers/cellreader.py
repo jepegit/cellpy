@@ -435,10 +435,12 @@ class CellpyCell:
             self.cellpy_units.nominal_capacity = f"{self.cellpy_units.charge}/{self.cellpy_units.specific_gravimetric}"
         elif c.lower() == "volumetric":
             self.cellpy_units.nominal_capacity = f"{self.cellpy_units.charge}/{self.cellpy_units.specific_volumetric}"
+        elif c.lower() == "absolute":
+            self.cellpy_units.nominal_capacity = f"{self.cellpy_units.charge}"
         else:
             logging.warning(f"Unknown nominal capacity specific: {c}")
             return
-        self.data.meta_common.nom_cap_specifics = c
+        self.data.meta_common.nom_cap_specifics = c.lower()
 
     @property
     def raw_units(self):
@@ -2710,6 +2712,9 @@ class CellpyCell:
                 area = self.data.active_electrode_area
                 nom_cap = self.nominal_capacity_as_absolute(nom_cap, area, nom_cap_specifics)
 
+            elif nom_cap_specifics == "absolute":
+                nom_cap = self.nominal_capacity_as_absolute(nom_cap, 1.0, nom_cap_specifics)
+
             df_steps[shdr.rate_avr] = abs(
                 round(
                     df_steps.loc[:, (shdr.current, "avr")] / nom_cap,
@@ -4781,6 +4786,7 @@ class CellpyCell:
             print(f"{nom_cap_specifics=}")
             print(f"{convert_charge_units=}")
             print(80 * "-")
+
         if nom_cap_specifics is None:
             nom_cap_specifics = "gravimetric"
 
@@ -4803,6 +4809,8 @@ class CellpyCell:
             specific = Q(specific, self.cellpy_units["mass"])
         elif nom_cap_specifics == "areal":
             specific = Q(specific, self.cellpy_units["area"])
+        elif nom_cap_specifics == "absolute":
+            specific = 1
 
         # TODO: implement volumetric
         elif nom_cap_specifics == "volumetric":
@@ -5445,7 +5453,7 @@ class CellpyCell:
         self,
         mass=None,
         nom_cap=None,
-        nom_cap_specifics="gravimetric",
+        nom_cap_specifics=None,
         update_mass=False,
         select_columns=True,
         find_ir=True,
@@ -5510,7 +5518,7 @@ class CellpyCell:
         # TODO: add this to arguments and possible prms:
         if nom_cap_specifics is None:
             nom_cap_specifics = self.nom_cap_specifics
-        specifics = ["gravimetric", "areal"]
+        specifics = ["gravimetric", "areal", "absolute"]
         cycle_index_as_index = True
         time_00 = time.time()
         logging.debug("start making summary")
@@ -5543,6 +5551,8 @@ class CellpyCell:
             nom_cap_abs = self.nominal_capacity_as_absolute(nom_cap, mass, nom_cap_specifics)
         elif nom_cap_specifics == "areal":
             nom_cap_abs = self.nominal_capacity_as_absolute(nom_cap, data.active_electrode_area, nom_cap_specifics)
+        elif nom_cap_specifics == "absolute":
+            nom_cap_abs = self.nominal_capacity_as_absolute(nom_cap, 1.0, nom_cap_specifics)
 
         # TODO: this will break because cell.volume (data.volume) is not set yet
         elif nom_cap_specifics == "volumetric":
@@ -6635,7 +6645,7 @@ def _update_meta(
         cellpy_instance.cycle_mode = cycle_mode
 
     if nom_cap_specifics is not None:
-        logging.debug("Setting nom_cap_specifics as given")
+        logging.info(f"Setting nom_cap_specifics as given {nom_cap_specifics=}")
         cellpy_instance.nom_cap_specifics = nom_cap_specifics
 
     if units is not None:

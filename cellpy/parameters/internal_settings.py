@@ -484,7 +484,7 @@ class HeadersSummary(BaseHeaders):
     specific headers (ending in _gravimetric or _areal).
     """
 
-    postfixes = ["gravimetric", "areal"]
+    postfixes = ["gravimetric", "areal", "absolute"]
 
     cycle_index: str = "cycle_index"
     data_point: str = "data_point"

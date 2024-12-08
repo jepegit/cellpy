@@ -20,6 +20,12 @@ hdr_summary = get_headers_summary()
 SELECTED_SUMMARIES = [
     hdr_summary["discharge_capacity_gravimetric"],
     hdr_summary["charge_capacity_gravimetric"],
+    hdr_summary["discharge_capacity_areal"],
+    hdr_summary["charge_capacity_areal"],
+    hdr_summary["discharge_capacity"],  # raw
+    hdr_summary["charge_capacity"],  # raw
+    hdr_summary["discharge_capacity_absolute"],  # absolute
+    hdr_summary["charge_capacity_absolute"],  # absolute
     hdr_summary["coulombic_efficiency"],
     hdr_summary["cumulated_coulombic_efficiency"],
     hdr_summary["ir_discharge"],
@@ -87,12 +93,10 @@ def summary_engine(**kwargs):
             selected_summaries = SELECTED_SUMMARIES
         else:
             selected_summaries = experiment.selected_summaries
-
         if reset or experiment.summary_frames is None:
             logging.debug("No summary frames found")
             logging.debug("Re-loading")
             experiment.summary_frames = _load_summaries(experiment)
-
         farm = helper.join_summaries(experiment.summary_frames, selected_summaries)
         farms.append(farm)
     barn = "batch_dir"

@@ -259,11 +259,16 @@ def pick_summary_data(key, summary_df, selected_summaries):
     return summary_df.iloc[:, summary_df.columns.get_level_values(1) == value]
 
 
-def join_summaries(summary_frames, selected_summaries, keep_old_header=False):
+def join_summaries(
+    summary_frames,
+    selected_summaries,
+    keep_old_header=False,
+    mitigation_strategy="drop",
+    mitigation_keep_method="first",
+):
     """parse the summaries and combine based on column (selected_summaries)"""
     if not summary_frames:
         raise NullData("No summaries available to join")
-
     selected_summaries_dict = create_selected_summaries_dict(selected_summaries)
     logging.debug(f"summaries selected: {selected_summaries_dict.keys()}")
     logging.debug(f"summary frames: {summary_frames.keys()}")
@@ -275,10 +280,28 @@ def join_summaries(summary_frames, selected_summaries, keep_old_header=False):
         keys.append(key)
         if summary_frames[key].empty:
             logging.debug("Empty summary_frame encountered")
-
         frames.append(summary_frames[key])
 
+    indexes_are_unique = all([frame.index.is_unique for frame in frames])
+    column_names_are_unique = all([frame.columns.is_unique for frame in frames])
+
+    if not indexes_are_unique:
+        if mitigation_strategy == "drop":
+            logging.critical("non-unique index observed in summary frames - dropping duplicates")
+            frames = [frame.loc[~frame.index.duplicated(keep=mitigation_keep_method)] for frame in frames]
+        else:
+            logging.debug(f"mitigation method {mitigation_strategy} for non-unique indexes not implemented yet")
+            # frames = [frame.reset_index(drop=False) for frame in frames]
+
+    if not column_names_are_unique:
+        if mitigation_strategy == "drop":
+            logging.critical("non-unique column names observed in summary frames - dropping duplicates")
+            frames = [frame.loc[:, ~frame.columns.duplicated(keep=mitigation_keep_method)] for frame in frames]
+        else:
+            logging.debug(f"mitigation method {mitigation_strategy} for non-unique column names not implemented yet")
+
     summary_df = pd.concat(frames, keys=keys, axis=1, sort=True)
+    summary_df.to_clipboard()
 
     for key, value in selected_summaries_dict.items():
         _summary_df = summary_df.iloc[:, summary_df.columns.get_level_values(1) == value]

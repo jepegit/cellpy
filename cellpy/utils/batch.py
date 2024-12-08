@@ -735,7 +735,7 @@ class Batch:
 
         if from_db:
             if auto_use_file_list:
-                warnings.warn("auto_use_file_list is True - this is an experimental feature")
+                logging.critical("auto_use_file_list is True - this is an experimental feature")
                 if file_list_kwargs is None:
                     file_list_kwargs = {}
 
@@ -1100,6 +1100,7 @@ class Batch:
         """
 
         if export_to_csv:
+            print("...Exporting summaries to csv")
             self.exporter.do()
         else:
             self.summary_collector.do(**kwargs)

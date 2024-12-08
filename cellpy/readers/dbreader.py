@@ -102,7 +102,6 @@ class Reader(BaseDbReader):
         if batch:
             self.selected_batch = self.select_batch(batch, batch_col_name=batch_col_name)
         logging.debug("got table")
-        logging.debug(self.table)
 
     def __str__(self):
         return f"<ExcelReader> (rows: {len(self.table)}, cols: {len(self.table.columns)})"
@@ -334,7 +333,7 @@ class Reader(BaseDbReader):
         # check if you have unique srnos
         id_col = sheet.loc[:, identity]
         if any(id_col.duplicated()):
-            warnings.warn("your database is corrupt: duplicates" " encountered in the srno-column")
+            warnings.warn("your database is corrupt: duplicates encountered in the srno-column")
             logging.debug("srno duplicates:\n" + str(id_col.duplicated()))
             probably_good_to_go = False
         return probably_good_to_go
@@ -344,7 +343,7 @@ class Reader(BaseDbReader):
         try:
             x = self._select_col(row, column_name)
         except KeyError:
-            warnings.warn(f"your database is missing the following key: {column_name}")
+            logging.debug(f"your database is missing the following key: {column_name}")
             return None
         else:
             x = x.values
