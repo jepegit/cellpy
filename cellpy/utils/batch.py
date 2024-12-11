@@ -875,20 +875,29 @@ class Batch:
         self.save_journal()
         self.experiment.save_cells()
 
-    def save_journal(self) -> None:
+    def save_journal(self, paginate=False, duplicate_journal=True) -> None:
         """Save the journal (json-format).
 
         The journal file will be saved in the project directory and in the
         batch-file-directory (``prms.Paths.batchfiledir``). The latter is useful
         for processing several batches using the ``iterate_batches`` functionality.
 
+        Args:
+            paginate (bool): paginate the journal pages, i.e. create a project folder structure inside your
+                'out' folder (defined in your settings) (default False).
+            duplicate_journal (bool): duplicate the journal pages to the 'batch' directory (defined in your settings)
+                and the current directory (default True).
         """
 
         # Remark! Got a recursive error when running on Mac.
-        self.experiment.journal.to_file(to_project_folder=True, paginate=False)
+        self.experiment.journal.to_file(to_project_folder=True, paginate=paginate)
         logging.info("saved journal pages to project folder")
-        self.duplicate_journal(prms.Paths.batchfiledir)
-        logging.info("duplicated journal pages to batch dir")
+        if pathlib.Path(prms.Paths.batchfiledir).is_dir() and duplicate_journal:
+            self.duplicate_journal(prms.Paths.batchfiledir)
+            logging.info("duplicated journal pages to batch dir")
+        else:
+            logging.info("batch dir not found")
+
         self.duplicate_journal()
         logging.info("duplicated journal pages to current dir")
 
