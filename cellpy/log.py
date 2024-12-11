@@ -40,9 +40,7 @@ def setup_logging(
         default_level = "CRITICAL"
 
     if not default_json_path:
-        default_json_path = os.path.join(
-            os.path.dirname(os.path.realpath(__file__)), "logging.json"
-        )
+        default_json_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "logging.json")
     path = default_json_path
     value = os.getenv(env_key, None)
     if value:
@@ -68,7 +66,7 @@ def setup_logging(
                 "\nUsing current directory instead: "
                 f"{os.getcwd()}"
             )
-            logging.warning(warning_txt)
+            logging.debug(warning_txt)
             log_dir = os.getcwd()
 
         for file_handler in [
@@ -83,9 +81,7 @@ def setup_logging(
                 logging.debug(f"Full path: {os.path.join(log_dir,file_name)}")
                 # print(f"Filename: {file_name}")
                 # print(f"Full path: {os.path.join(log_dir,file_name)}")
-                config["handlers"][file_handler]["filename"] = os.path.join(
-                    log_dir, file_name
-                )
+                config["handlers"][file_handler]["filename"] = os.path.join(log_dir, file_name)
 
                 if reset_big_log:
                     full_log_file_path = pathlib.Path(log_dir) / file_name
@@ -94,17 +90,13 @@ def setup_logging(
                         if file_size > max_size:
                             d_str = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M")
                             new_file_name = "_".join([d_str, file_name])
-                            new_full_log_file_path = (
-                                pathlib.Path(log_dir) / new_file_name
-                            )
+                            new_full_log_file_path = pathlib.Path(log_dir) / new_file_name
                             shutil.copy(full_log_file_path, new_full_log_file_path)
                     else:
-                        logging.debug(
-                            "Could not reset big log: could not find the file"
-                        )
+                        logging.debug("Could not reset big log: could not find the file")
 
             except Exception as e:
-                warnings.warn(f"\nCould not set custom log-dir{e}")
+                logging.debug(f"\nCould not set custom log-dir{e}")
 
         if default_level:
             w_txt = "\nCould not set custom default level for logger"
