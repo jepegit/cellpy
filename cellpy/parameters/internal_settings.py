@@ -604,6 +604,7 @@ class HeadersStepTable(BaseHeaders):
     rate_avr: str = "rate_avr"
 
 
+# TODO: include also the dtype for each column (maybe use pydantic for this?)
 @dataclass
 class HeadersJournal(BaseHeaders):
     """Headers used for the journal (batch) (used as column headers for the journal pandas DataFrames)"""
