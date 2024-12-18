@@ -1051,11 +1051,10 @@ def create_group_names(custom_group_labels, gno, key_index_bounds, keys_sub, pag
                 cell_id = f"{custom_group_labels}-group-{gno}"
         return cell_id
 
-    # not tested yet:
     if pages is not None:
         if "group_label" in pages.columns:
-            cell_id = pages["group_label"].values[0]
-            if cell_id is not None:
+            cell_id = pages.loc[pages["group"] == gno, "group_label"].values[0]
+            if isinstance(cell_id, str) and cell_id not in ["", "none"]:
                 return cell_id
 
     if cell_id is None:

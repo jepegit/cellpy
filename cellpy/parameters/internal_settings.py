@@ -159,7 +159,6 @@ class CellpyMetaCommon(CellpyMeta):
     # TODO @jepe: Maybe we should use values with units here instead (pint)?
     mass: Optional[prms.CellPyDataConfig] = prms.Materials.default_mass  # active material
     tot_mass: Optional[prms.CellPyDataConfig] = prms.Materials.default_mass  # total material
-    # volume: Optional[prms.CellPyDataConfig] = prms.CellInfo.volume
     nom_cap: Optional[prms.CellPyDataConfig] = prms.Materials.default_nom_cap  # nominal capacity   # used as property
     nom_cap_specifics: Optional[prms.CellPyDataConfig] = (
         prms.Materials.default_nom_cap_specifics
@@ -167,8 +166,10 @@ class CellpyMetaCommon(CellpyMeta):
 
     active_electrode_area: Optional[prms.CellPyDataConfig] = prms.CellInfo.active_electrode_area
     active_electrode_thickness: Optional[prms.CellPyDataConfig] = prms.CellInfo.active_electrode_thickness
-    electrolyte_volume: Optional[prms.CellPyDataConfig] = prms.CellInfo.electrolyte_volume
+    active_electrode_loading: Optional[prms.CellPyDataConfig] = prms.CellInfo.active_electrode_loading  # mAh/cm2
+    # volume: Optional[prms.CellPyDataConfig] = prms.CellInfo.volume  # cm3
 
+    electrolyte_volume: Optional[prms.CellPyDataConfig] = prms.CellInfo.electrolyte_volume
     electrolyte_type: Optional[prms.CellPyDataConfig] = prms.CellInfo.electrolyte_type
     active_electrode_type: Optional[prms.CellPyDataConfig] = prms.CellInfo.active_electrode_type
     counter_electrode_type: Optional[prms.CellPyDataConfig] = prms.CellInfo.counter_electrode_type
@@ -627,6 +628,7 @@ class HeadersJournal(BaseHeaders):
     cellpy_file_name: str = "cellpy_file_name"
     group: str = "group"
     sub_group: str = "sub_group"
+    group_label: str = "group_label"
     comment: str = "comment"
     argument: str = "argument"
     id_key: str = "id_key"

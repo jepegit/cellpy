@@ -206,6 +206,19 @@ def make_unique_groups(info_df):
     return info_df
 
 
+def make_sub_groups(info_df):
+    unique_g = info_df[hdr_journal.group].unique()
+    unique_g = [str(i) for i in unique_g]
+    unique_g = sorted(unique_g)
+    info_df[hdr_journal.sub_group] = info_df[hdr_journal.group] * 0
+    for i in unique_g:
+        counter = 1
+        for indx, row in info_df.loc[info_df[hdr_journal.group] == i].iterrows():
+            info_df.at[indx, hdr_journal.sub_group] = counter
+            counter += 1
+    return info_df
+
+
 def _remove_date_and_celltype(
     label,
 ):

@@ -243,6 +243,13 @@ class CellpyCell:
         logging.debug("created CellpyCell instance")
 
         self._cell_name = None
+        self._initial_cells = None
+        self.group = None
+        self.last_uploaded_from = None
+        self.last_uploaded_at = None
+        self.cellpy_file_name = None
+        self.cellpy_object_created_at = datetime.datetime.now()
+
         self.profile = profile
 
         self.minimum_selection = {}
@@ -1122,7 +1129,7 @@ class CellpyCell:
 
         logging.debug("setting cell_type")
         if cell_type is not None:
-            self.cycle_mode = cell_type
+            self.cycle_mode = cell_type.lower()
             logging.debug(f"setting cycle mode: {cell_type}")
 
         logging.debug("setting mass")
@@ -1288,6 +1295,8 @@ class CellpyCell:
 
         self.data = data
         self._invent_a_cell_name(self.file_names)  # TODO (v1.0.0): fix me
+        self.last_uploaded_from = "raw"
+        self.last_uploaded_at = datetime.datetime.now()
         return self
 
     def _validate_cell(self, level=0):
@@ -1376,6 +1385,9 @@ class CellpyCell:
             logging.warning(str(cellpy_file))
 
         self._invent_a_cell_name(cellpy_file)
+        self.last_uploaded_from = cellpy_file
+        self.cellpy_file_name = cellpy_file
+        self.last_uploaded_at = datetime.datetime.now()
 
         if return_cls:
             return self
@@ -5496,7 +5508,7 @@ class CellpyCell:
 
         for k in kwargs:
             if cell_type := kwargs.get("cell_type", None):
-                self.cycle_mode = cell_type
+                self.cycle_mode = cell_type.lower()
             else:
                 warnings.warn(f"Unknown keyword argument: {k}")
 

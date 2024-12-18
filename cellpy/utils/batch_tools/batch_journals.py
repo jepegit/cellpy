@@ -5,6 +5,7 @@ import pathlib
 import platform
 import shutil
 import tempfile
+from typing import Union
 import warnings
 from abc import ABC
 
@@ -22,6 +23,7 @@ from cellpy.parameters.legacy.update_headers import (
 from cellpy.readers import dbreader
 from cellpy.utils.batch_tools.batch_core import BaseJournal
 from cellpy.utils.batch_tools.engines import simple_db_engine, sql_db_engine
+from cellpy.utils.batch_tools import batch_helpers
 
 hdr_journal = get_headers_journal()
 
@@ -241,6 +243,29 @@ class LabJournal(BaseJournal, ABC):
         # p = pathlib.Path(p)
         return p
 
+    def from_dict(self, info_dict, **kwargs):
+        pages_dict = info_dict.get("info_df", None)
+        if pages_dict is None:
+            logging.critical("could not find any pages in the journal")
+            raise UnderDefined
+
+        meta_dict = info_dict.get("metadata", None)
+        session = info_dict.get("session", None)
+        pages = self._clean_pages(pages_dict)
+
+        if session is None:
+            logging.debug(f"no session - generating empty one")
+            session = dict()
+
+        session, pages = self._clean_session(session, pages)
+
+        if hdr_journal.filename in pages.columns:
+            pages = pages.set_index(hdr_journal.filename)
+
+        self.pages = pages
+        self.session = session
+        self._prm_packer(meta_dict)
+
     @classmethod
     def read_journal_jason_file(cls, file_name, **kwargs):
         logging.debug(f"json loader starting on {file_name}")
@@ -375,8 +400,11 @@ class LabJournal(BaseJournal, ABC):
         return session, pages
 
     @classmethod
-    def _clean_pages(cls, pages: pd.DataFrame) -> pd.DataFrame:
+    def _clean_pages(cls, pages: Union[pd.DataFrame, dict]) -> pd.DataFrame:
         import ast
+
+        if isinstance(pages, dict):
+            pages = pd.DataFrame(pages)
 
         logging.debug("removing empty rows")
         pages = pages.dropna(how="all")
@@ -428,6 +456,8 @@ class LabJournal(BaseJournal, ABC):
             if column_name not in pages.columns:
                 if column_name != hdr_journal.filename:
                     pages[column_name] = None
+
+        pages = batch_helpers.make_unique_groups(pages)
 
         return pages
 

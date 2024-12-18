@@ -257,6 +257,7 @@ class CellInfoClass(CellPyDataConfig):
     voltage_lim_high: float = 1.0
     active_electrode_area: float = 1.0
     active_electrode_thickness: float = 1.0
+    active_electrode_loading: float = 1.0
     electrolyte_volume: float = 1.0
 
     electrolyte_type: str = "standard"

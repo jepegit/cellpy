@@ -21,6 +21,7 @@ from cellpy.parameters.internal_settings import (
     headers_summary,
 )
 from cellpy.internals.core import OtherPath
+from cellpy.readers.cellreader import CellpyCell
 from cellpy.utils.batch_tools.batch_analyzers import (
     BaseSummaryAnalyzer,
     OCVRelaxationAnalyzer,
@@ -31,6 +32,7 @@ from cellpy.utils.batch_tools.batch_exporters import CSVExporter
 from cellpy.utils.batch_tools.batch_journals import LabJournal
 from cellpy.utils.batch_tools.batch_plotters import CyclingSummaryPlotter
 from cellpy.utils.batch_tools.dumpers import ram_dumper
+from cellpy.utils.batch_tools import batch_helpers
 
 # logger = logging.getLogger(__name__)
 logging.captureWarnings(True)
@@ -95,6 +97,13 @@ class Batch:
 
         # TODO: add option for setting max cycle number
         #   use self.experiment.last_cycle = xxx
+        version = kwargs.pop("mode", "old")
+        if version == "old":
+            self._init_old(*args, **kwargs)
+        else:
+            self._init_new(*args, **kwargs)
+
+    def _init_old(self, *args, **kwargs):
         default_log_level = kwargs.pop("default_log_level", None)
         custom_log_dir = kwargs.pop("custom_log_dir", None)
         if default_log_level is not None or custom_log_dir is not None:
@@ -103,7 +112,6 @@ class Batch:
                 default_level=default_log_level,
                 reset_big_log=True,
             )
-
         file_name = kwargs.pop("file_name", None)
         frame = kwargs.pop("frame", None)
         if frame is not None:
@@ -156,7 +164,49 @@ class Batch:
         self._journal_name = self.journal_name
         self.headers_step_table = headers_step_table
 
-        self.cells = None
+        self._initial_cells = None
+        self._cells = None
+
+    def _init_new(self, cells: list[CellpyCell] = None, *args, **kwargs):
+        logging.critical("Initializing new-mode batch object")
+        default_log_level = kwargs.pop("default_log_level", None)
+        custom_log_dir = kwargs.pop("custom_log_dir", None)
+        if default_log_level is not None or custom_log_dir is not None:
+            log.setup_logging(
+                custom_log_dir=custom_log_dir,
+                default_level=default_log_level,
+                reset_big_log=True,
+            )
+        self._initial_cells = cells  # used for making a batch object from a list of cellpy cell objects
+        self._cells = None  # not used yet - but will be used for the accessors
+        self.experiment = CyclingExperiment(db_reader=None)
+        self.experiment.force_cellpy = kwargs.pop("force_cellpy", False)
+        self.experiment.force_raw = kwargs.pop("force_raw_file", False)
+        self.experiment.force_recalc = kwargs.pop("force_recalc", False)
+        self.experiment.export_cycles = kwargs.pop("export_cycles", True)
+        self.experiment.export_raw = kwargs.pop("export_raw", True)
+        self.experiment.export_ica = kwargs.pop("export_ica", False)
+        self.experiment.accept_errors = kwargs.pop("accept_errors", False)
+        self.experiment.nom_cap = kwargs.pop("nom_cap", None)
+        self.experiment.journal.name = kwargs.pop("name", "my_experiment")
+        self.experiment.journal.project = kwargs.pop("project", "my_project")
+        self.experiment.journal.batch_col = kwargs.pop("batch_col", "b01")
+
+        self.exporter = CSVExporter()
+        self.exporter._assign_dumper(ram_dumper)
+        self.exporter.assign(self.experiment)
+
+        self.summary_collector = BaseSummaryAnalyzer()
+        self.summary_collector.assign(self.experiment)
+
+        self.plotter = CyclingSummaryPlotter()
+        self.plotter.assign(self.experiment)
+        self._journal_name = self.experiment.journal.file_name
+        self.headers_step_table = headers_step_table
+        self.experiment.journal.pages = self.experiment.journal.create_empty_pages()
+
+        if self._initial_cells is not None:
+            self.collect()
 
     def __str__(self):
         return str(self.experiment)
@@ -175,6 +225,77 @@ class Batch:
 
     def __iter__(self):
         return self.experiment.__iter__()
+
+    def collect(self, cells: list[CellpyCell] = None, **kwargs):
+        """Collect data from the cells.
+
+        Args:
+            cells (list): list of cellpy cell objects.
+            **kwargs: keyword arguments to be sent to the collector.
+
+        Returns:
+            None
+
+        """
+        from collections import defaultdict
+        from pprint import pprint
+
+        if cells is not None:
+            self._initial_cells = cells
+
+        if self._initial_cells is None or not self._initial_cells:
+            logging.critical("No cells given")
+            return
+
+        info_df = defaultdict(list)
+        for n, cell in enumerate(self._initial_cells):
+
+            cellpy_file_name = cell.cellpy_file_name
+            last_updated_from = cell.last_uploaded_from
+
+            # Note! "filename" will be renamed to "cell" or "cell_name" very soon
+            if cellpy_file_name is not None:
+                cell_name = pathlib.Path(cellpy_file_name).stem
+            elif last_updated_from is not None:
+                cell_name = last_updated_from
+            else:
+                cell_name = cell.cell_name
+
+            info_df["filename"].append(cell_name)
+            info_df["mass"].append(cell.active_mass)
+            info_df["total_mass"].append(cell.tot_mass)
+            info_df["loading"].append(cell.data.loading)
+            info_df["nom_cap"].append(cell.nominal_capacity)
+            info_df["label"].append(cell.data.cell_name)
+            info_df["cell_type"].append(cell.data.meta_common.cell_type)
+            if cellpy_file_name is not None:
+                info_df["cellpy_file_name"].append(cellpy_file_name)
+            else:
+                info_df["cellpy_file_name"].append(cell.data.cell_name + ".h5")
+            info_df["nom_cap_specifics"].append(cell.nom_cap_specifics)
+            raw_file_names = [f.name for f in cell.data.raw_data_files]
+            info_df["raw_file_names"].append(raw_file_names)
+            info_df["group"].append(cell.group or "none")
+            info_df["group_label"].append(cell.group or "none")
+            self.experiment.cell_data_frames[cell_name] = cell
+
+        cellpy_file_names = info_df["cellpy_file_name"]
+        flag = len(set(cellpy_file_names)) == len(cellpy_file_names)
+        if not flag:
+            logging.critical("Not all cellpy file names are unique")
+            logging.critical("This is a requirement for the batch object")
+            logging.critical(cellpy_file_names)
+            return
+
+        info_df["group"] = batch_helpers.fix_groups(info_df["group"])
+        meta = {}
+        session = {}
+
+        info_dict = dict(info_df=info_df, meta=meta, session=session)
+        self.experiment.journal.from_dict(info_dict)
+        self.experiment.journal.generate_file_name()
+        self.experiment.journal.generate_folder_names()
+        self.cells = self.experiment.data
 
     def show_pages(self, number_of_rows=5):
         """Show the journal pages.
@@ -642,7 +763,7 @@ class Batch:
         Args:
             description: the information and meta-data needed to generate the journal pages:
 
-                - empty: create an empty journal
+                - 'empty': create an empty journal
                 - ``dict``: create journal pages from a dictionary
                 - ``pd.DataFrame``: create journal pages from a ``pandas.DataFrame``
                 - 'filename.json': load cellpy batch file
@@ -1726,6 +1847,26 @@ def _check_iterate():
     iterate_batches(folder_name, export_cycles=False, export_raw=False)
 
 
+def _check_collect():
+    import pathlib
+    import cellpy
+
+    print(" Collecting cells ".center(80, "="))
+    datadir = pathlib.Path(r"C:\scripting\cellpy\testdata\hdf5")
+    c1_path = datadir / "20160805_test001_45_cc.h5"
+    c2_path = datadir / "neware_uio.h5"
+
+    c1 = cellpy.get(c1_path)
+    c2 = cellpy.get(c2_path)
+
+    b = Batch(mode="new", cells=[c1, c2])
+    b.collect()
+    print(b.pages.T)
+    b.summary_collector.do(reset=True)
+    b.experiment
+    # print(b.experiment.journal.pages)
+
+
 if __name__ == "__main__":
     print("---IN BATCH 2 MAIN---")
-    _check_new()
+    _check_collect()
