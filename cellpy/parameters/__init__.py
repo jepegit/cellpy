@@ -5,6 +5,7 @@ initpkg(
     {
         "externals": {
             "pandas": "pandas",
+            "numpy": "numpy",
             "box": "box",
         },
     },

@@ -1,10 +1,8 @@
 import logging
 from dataclasses import dataclass
-from typing import Tuple, Dict, List
+from typing import Dict, List, Tuple
 
-import pandas as pd
-import numpy as np
-
+from .. import externals as externals
 from cellpy.parameters.internal_settings import BaseHeaders, CELLPY_FILE_VERSION
 
 HEADERS_KEYS_STEP_TABLE_EXTENDED = [
@@ -270,9 +268,7 @@ class HeadersSummaryV7(BaseHeaders):
     cumulated_coulombic_difference: str = "cumulated_coulombic_difference_gravimetric"
     discharge_capacity_loss: str = "discharge_capacity_loss_gravimetric"
     charge_capacity_loss: str = "charge_capacity_loss_gravimetric"
-    cumulated_discharge_capacity_loss: str = (
-        "cumulated_discharge_capacity_loss_gravimetric"
-    )
+    cumulated_discharge_capacity_loss: str = "cumulated_discharge_capacity_loss_gravimetric"
     cumulated_charge_capacity_loss: str = "cumulated_charge_capacity_loss_gravimetric"
 
     areal_charge_capacity: str = "charge_capacity_areal"
@@ -411,11 +407,11 @@ headers_journal_v0 = HeadersJournalV5()
 
 
 def rename_step_columns(
-    steps: pd.DataFrame,
+    steps: "externals.pandas.DataFrame",
     old_version: int,
     new_version: int = CELLPY_FILE_VERSION,
     **kwargs,
-) -> pd.DataFrame:
+) -> "externals.pandas.DataFrame":
     logging.debug("renaming headers")
     old = summary_header_versions.get(old_version)
     new = summary_header_versions.get(new_version)
@@ -429,11 +425,11 @@ def rename_step_columns(
 
 
 def rename_raw_columns(
-    raw: pd.DataFrame,
+    raw: "externals.pandas.DataFrame",
     old_version: int,
     new_version: int = CELLPY_FILE_VERSION,
     **kwargs,
-) -> pd.DataFrame:
+) -> "externals.pandas.DataFrame":
     logging.debug("renaming headers")
     old = raw_header_versions.get(old_version)
     new = raw_header_versions.get(new_version)
@@ -447,11 +443,11 @@ def rename_raw_columns(
 
 
 def rename_summary_columns(
-    summary: pd.DataFrame,
+    summary: "externals.pandas.DataFrame",
     old_version: int,
     new_version: int = CELLPY_FILE_VERSION,
     **kwargs,
-) -> pd.DataFrame:
+) -> "externals.pandas.DataFrame":
     """Rename the summary headers to new format.
 
     Args:
@@ -478,15 +474,13 @@ def rename_summary_columns(
 
 
 def rename_fid_columns(
-    fid_table: pd.DataFrame,
+    fid_table: "externals.pandas.DataFrame",
     old_version: int,
     new_version: int = CELLPY_FILE_VERSION,
     **kwargs,
-) -> pd.DataFrame:
+) -> "externals.pandas.DataFrame":
     logging.debug("renaming headers")
-    logging.critical(
-        "RENAMING NOT IMPLEMENTED YET -> Please, create an issue on Github"
-    )
+    logging.critical("RENAMING NOT IMPLEMENTED YET -> Please, create an issue on Github")
     return fid_table
 
 
@@ -518,12 +512,12 @@ def get_column_name_mapper(
 
 
 def rename_columns(
-    df: pd.DataFrame,
+    df: "externals.pandas.DataFrame",
     old: BaseHeaders,
     new: BaseHeaders,
     remove_missing_in_new: bool = False,
     populate_missing_in_old: bool = True,
-) -> pd.DataFrame:
+) -> "externals.pandas.DataFrame":
     """Rename the column headers of a cells dataframe.
 
     Usage:
@@ -549,14 +543,14 @@ def rename_columns(
 
     if populate_missing_in_old:
         for col in missing_in_old:
-            df[col] = np.nan
+            df[col] = externals.numpy.nan
 
     return df.rename(columns=col_name_mapper)
 
 
 def _create_dummy_summary(columns):
-    df = pd.DataFrame(
-        data=np.random.rand(5, len(columns) - 1), index=range(1, 6), columns=columns[1:]
+    df = externals.pandas.DataFrame(
+        data=externals.numpy.random.rand(5, len(columns) - 1), index=range(1, 6), columns=columns[1:]
     )
     df.index.name = columns[0]
     return df

@@ -14,7 +14,8 @@ import cellpy.readers.core
 from cellpy import prms
 from cellpy.exceptions import WrongFileVersion
 from cellpy.parameters.internal_settings import HeaderDict, get_headers_normal
-from cellpy.readers.core import Data, FileID, Q
+from cellpy.readers.core import Data, FileID
+from cellpy.readers.core import Q
 from cellpy.readers.instruments.base import BaseLoader
 from cellpy.readers.instruments.processors import post_processors as pp
 from pathlib import Path

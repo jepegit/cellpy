@@ -4473,7 +4473,7 @@ class CellpyCell:
         interpolated=False,
         dx=None,
         number_of_points=None,
-    ) -> externals.pandas.DataFrame:
+    ) -> "externals.pandas.DataFrame":
         """Get the open circuit voltage relaxation curves.
 
         Args:

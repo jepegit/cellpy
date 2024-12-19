@@ -3,7 +3,8 @@ import logging
 import pytest
 
 import cellpy.readers.core
-from cellpy import log, prms, Q
+from cellpy import log, prms
+from cellpy.readers.core import Q
 from cellpy.exceptions import NoDataFound
 from cellpy.parameters.internal_settings import get_headers_summary
 
@@ -24,27 +25,13 @@ def test_to_cellpy_unit_from_cellpy_instance(cellpy_data_instance):
 def test_to_cellpy_unit_from_cellpy_instance_with_cell(dataset):
     value = 12.2
     new_value = dataset.to_cellpy_unit(value, physical_property="length")
-    assert (
-        new_value
-        == Q(12.2, dataset.data.raw_units["length"])
-        .to(dataset.cellpy_units["length"])
-        .m
-    )
+    assert new_value == Q(12.2, dataset.data.raw_units["length"]).to(dataset.cellpy_units["length"]).m
 
-    new_value = dataset.to_cellpy_unit(
-        f"12.2 {dataset.cellpy_units['length']}", physical_property="length"
-    )
+    new_value = dataset.to_cellpy_unit(f"12.2 {dataset.cellpy_units['length']}", physical_property="length")
     assert new_value == 12.2
 
-    new_value = dataset.to_cellpy_unit(
-        (12.2, dataset.data.raw_units["length"]), physical_property="length"
-    )
-    assert (
-        new_value
-        == Q(12.2, dataset.data.raw_units["length"])
-        .to(dataset.cellpy_units["length"])
-        .m
-    )
+    new_value = dataset.to_cellpy_unit((12.2, dataset.data.raw_units["length"]), physical_property="length")
+    assert new_value == Q(12.2, dataset.data.raw_units["length"]).to(dataset.cellpy_units["length"]).m
 
 
 @pytest.mark.parametrize(
@@ -70,14 +57,8 @@ def test_get_converter_to_specific(dataset, test_input, expected):
     physical_unit = value_unit[test_input[1]]
 
     specific_conv = {
-        "gravimetric": lambda x: Q(x, physical_unit)
-        .to(dataset.cellpy_units[specific_unit])
-        .to_reduced_units()
-        .m,
-        "areal": lambda x: Q(x, physical_unit)
-        .to(dataset.cellpy_units[specific_unit])
-        .to_reduced_units()
-        .m,
+        "gravimetric": lambda x: Q(x, physical_unit).to(dataset.cellpy_units[specific_unit]).to_reduced_units().m,
+        "areal": lambda x: Q(x, physical_unit).to(dataset.cellpy_units[specific_unit]).to_reduced_units().m,
         "absolute": lambda x: x,
     }
 
@@ -97,9 +78,7 @@ def test_nominal_capacity(dataset):
     mass = 0.47
     nom_cap_specifics = None  # dataset.data._nom_cap_specifics
 
-    absolute_nom_cap = dataset.nominal_capacity_as_absolute(
-        nom_cap, mass, nom_cap_specifics
-    )
+    absolute_nom_cap = dataset.nominal_capacity_as_absolute(nom_cap, mass, nom_cap_specifics)
     print(nom_cap)
     print(absolute_nom_cap)
 
@@ -158,15 +137,10 @@ def test_set_cellpy_unit_and_use(dataset):
 
 
 def test_using_internal_pint_methods():
-    from cellpy import ureg, Q
-
     mass = Q(0.5, "mg")
     area = Q(2.5, "cm**2")
     print(f"mass: {mass}")
     print(f"area: {area}")
-    print(ureg.g)
-    print(ureg.ohms)
-    print(ureg.mAh)
 
 
 @pytest.mark.parametrize(
@@ -178,10 +152,6 @@ def test_using_internal_pint_methods():
     ],
 )
 def test_pint_nom_cap_conversion(nom_cap_tuple, expected):
-    import pint
-
-    ureg = pint.UnitRegistry()
-    Q = ureg.Quantity
     nom_cap = Q(*nom_cap_tuple)
     mass = Q(0.5, "mg")
     area = Q(2.5, "cm**2")

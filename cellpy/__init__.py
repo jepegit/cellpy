@@ -29,10 +29,8 @@ from cellpy.parameters import prmreader
 __version__ = cellpy._version.__version__
 
 from cellpy.readers import cellreader, dbreader, filefinder, do
-from cellpy.readers.core import Q, ureg
 
-# Q, ureg = cellpy.readers.core.get_pint_unit_registry()
-
+# from cellpy.readers.core import Q, ureg
 
 logging.getLogger(__name__).addHandler(logging.NullHandler())
 
@@ -54,6 +52,6 @@ __all__ = [
     "get",
     "do",
     "init",
-    "ureg",
-    "Q",
+    # "ureg",
+    # "Q",
 ]
