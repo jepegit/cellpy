@@ -10,13 +10,14 @@ from collections import OrderedDict
 from dataclasses import asdict, dataclass
 from pprint import pprint
 
-import box
+# import box
 import dotenv
 from rich import print
 import ruamel
 from ruamel.yaml import YAML
 from ruamel.yaml.error import YAMLError
 
+from . import externals as externals
 from cellpy.exceptions import ConfigFileNotRead, ConfigFileNotWritten
 from cellpy.parameters import prms
 from cellpy.parameters.internal_settings import OTHERPATHS
@@ -187,9 +188,9 @@ def _update_prms(config_dict, resolve_paths=True):
                 z = config_dict[key][k]
                 if isinstance(z, dict):
                     y = getattr(_config_attr, k)
-                    z = box.Box({**y, **z})
+                    z = externals.box.Box({**y, **z})
                 if isinstance(z, ruamel.yaml.comments.CommentedMap):
-                    z = box.Box(z)
+                    z = externals.box.Box(z)
                 setattr(_config_attr, k, z)
         else:
             logging.info("\n  not-supported prm: %s" % key)
@@ -413,7 +414,7 @@ def info():
         if key.startswith("_") and not key.startswith("__") and prms._debug:  # NOQA
             print(f"Internal: {key} (type={type(current_object)}): {current_object}")
 
-        elif isinstance(current_object, box.Box):
+        elif isinstance(current_object, externals.box.Box):
             print()
             print(f" {key} [OLD-TYPE PRM] ".center(80, "-"))
             for subkey in current_object:
@@ -422,18 +423,14 @@ def info():
 
         elif key == "Paths":
             print(" Paths ".center(80, "-"))
-            attributes = {
-                k: v for k, v in vars(current_object).items() if not k.startswith("_")
-            }
+            attributes = {k: v for k, v in vars(current_object).items() if not k.startswith("_")}
             for attr in OTHERPATHS:
                 attributes[attr] = getattr(current_object, attr)
             print(attributes)
 
         elif isinstance(current_object, (prms.CellPyConfig, prms.CellPyDataConfig)):
             # print(" NEW-TYPE PRM ".center(80, "="))
-            attributes = {
-                k: v for k, v in vars(current_object).items() if not k.startswith("_")
-            }
+            attributes = {k: v for k, v in vars(current_object).items() if not k.startswith("_")}
             print(f" {key} ".center(80, "-"))
             print(attributes)
             print()

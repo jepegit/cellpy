@@ -24,8 +24,8 @@ from typing import (
     cast,
 )
 
-import fabric
-
+# import fabric
+from . import externals as externals
 from cellpy.exceptions import UnderDefined
 
 NEW_OTHER_PATH_VERSION = (3, 12)
@@ -490,7 +490,7 @@ class OtherPathNew(pathlib.Path):
         return connect_kwargs, host
 
     def _copy_with_fabric(self, host: str, connect_kwargs: dict, destination: Union[str, S, pathlib.Path]):
-        with fabric.Connection(host, connect_kwargs=connect_kwargs) as conn:
+        with externals.fabric.Connection(host, connect_kwargs=connect_kwargs) as conn:
             try:
                 t1 = time.time()
                 conn.get(self.raw_path, str(destination / self.name))
@@ -499,7 +499,7 @@ class OtherPathNew(pathlib.Path):
                 raise FileNotFoundError(f"Could not find file {self.raw_path} on {host}") from e
 
     def _stat_with_fabric(self, host: str, connect_kwargs: dict) -> ExternalStatResult:
-        with fabric.Connection(host, connect_kwargs=connect_kwargs) as conn:
+        with externals.fabric.Connection(host, connect_kwargs=connect_kwargs) as conn:
             try:
                 t1 = time.time()
                 sftp_conn = conn.sftp()
@@ -523,7 +523,7 @@ class OtherPathNew(pathlib.Path):
 
         path_separator = "/"  # only supports unix-like systems
         t1 = time.time()
-        with fabric.Connection(host, connect_kwargs=connect_kwargs) as conn:
+        with externals.fabric.Connection(host, connect_kwargs=connect_kwargs) as conn:
             try:
                 t1 = time.time()
                 sftp_conn = conn.sftp()
@@ -584,7 +584,7 @@ class OtherPathNew(pathlib.Path):
         path_separator = "/"
         logging.info(f"glob_str: {glob_str}")
         logging.info("using fabric to glob")
-        with fabric.Connection(host, connect_kwargs=connect_kwargs) as conn:
+        with externals.fabric.Connection(host, connect_kwargs=connect_kwargs) as conn:
             try:
                 t1 = time.time()
                 sftp_conn = conn.sftp()
@@ -1063,7 +1063,7 @@ class OtherPathLegacy(pathlib.Path):
         return connect_kwargs, host
 
     def _copy_with_fabric(self, host: str, connect_kwargs: dict, destination: Union[str, S, pathlib.Path]):
-        with fabric.Connection(host, connect_kwargs=connect_kwargs) as conn:
+        with externals.fabric.Connection(host, connect_kwargs=connect_kwargs) as conn:
             try:
                 t1 = time.time()
                 conn.get(self.raw_path, str(destination / self.name))
@@ -1072,7 +1072,7 @@ class OtherPathLegacy(pathlib.Path):
                 raise FileNotFoundError(f"Could not find file {self.raw_path} on {host}") from e
 
     def _stat_with_fabric(self, host: str, connect_kwargs: dict) -> ExternalStatResult:
-        with fabric.Connection(host, connect_kwargs=connect_kwargs) as conn:
+        with externals.fabric.Connection(host, connect_kwargs=connect_kwargs) as conn:
             try:
                 t1 = time.time()
                 sftp_conn = conn.sftp()
@@ -1096,7 +1096,7 @@ class OtherPathLegacy(pathlib.Path):
 
         path_separator = "/"  # only supports unix-like systems
         t1 = time.time()
-        with fabric.Connection(host, connect_kwargs=connect_kwargs) as conn:
+        with externals.fabric.Connection(host, connect_kwargs=connect_kwargs) as conn:
             try:
                 t1 = time.time()
                 sftp_conn = conn.sftp()
@@ -1157,7 +1157,7 @@ class OtherPathLegacy(pathlib.Path):
         path_separator = "/"
         logging.info(f"glob_str: {glob_str}")
         logging.info("using fabric to glob")
-        with fabric.Connection(host, connect_kwargs=connect_kwargs) as conn:
+        with externals.fabric.Connection(host, connect_kwargs=connect_kwargs) as conn:
             try:
                 t1 = time.time()
                 sftp_conn = conn.sftp()

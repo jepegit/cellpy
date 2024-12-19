@@ -27,7 +27,7 @@ from typing import Union, Sequence, List, Optional, Iterable
 from typing import TYPE_CHECKING
 from dataclasses import asdict
 
-from . import externals
+from . import externals as externals
 from cellpy.readers import core
 import cellpy.internals.core as internals
 

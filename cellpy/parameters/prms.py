@@ -9,9 +9,9 @@ from typing import List, Tuple, Union, Optional, TYPE_CHECKING
 
 # Using TYPE_CHECKING to avoid circular imports
 # (this will only work without from __future__ import annotations for python 3.11 and above)
-from cellpy.internals.core import OtherPath
 
-import box
+from . import externals as externals
+from cellpy.internals.core import OtherPath
 
 # When adding prms, please
 #   1) check / update the internal_settings.py file as well to
@@ -310,9 +310,9 @@ class InstrumentsClass(CellPyConfig):
 
     tester: Union[str, None]
     custom_instrument_definitions_file: Union[str, None]
-    Arbin: box.Box
-    Maccor: box.Box
-    Neware: box.Box
+    Arbin: externals.box.Box
+    Maccor: externals.box.Box
+    Neware: externals.box.Box
 
 
 # Pre-defined instruments:
@@ -331,13 +331,13 @@ _Arbin = {
     "SQL_Driver": "SQL Server",
 }
 
-Arbin = box.Box(_Arbin)
+Arbin = externals.box.Box(_Arbin)
 
 _Maccor = {"default_model": "one"}
-Maccor = box.Box(_Maccor)
+Maccor = externals.box.Box(_Maccor)
 
 _Neware = {"default_model": "one"}
-Neware = box.Box(_Neware)
+Neware = externals.box.Box(_Neware)
 
 Instruments = InstrumentsClass(
     tester=None,  # TODO: moving this to DataSetClass (deprecate)

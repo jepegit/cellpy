@@ -26,8 +26,8 @@ from typing import (
     cast,
 )
 
-import fabric
-
+# import fabric
+from . import externals as externals
 from cellpy.exceptions import UnderDefined
 from cellpy.internals import otherpath
 from cellpy.internals.otherpath import (
@@ -115,7 +115,7 @@ def check_connection(
     connect_kwargs, host = p.connection_info()
 
     path_separator = "/"  # only supports unix-like systems
-    with fabric.Connection(host, connect_kwargs=connect_kwargs) as conn:
+    with externals.fabric.Connection(host, connect_kwargs=connect_kwargs) as conn:
         try:
             t1 = time.perf_counter()
             try:
@@ -147,8 +147,7 @@ def check_connection(
 
         except FileNotFoundError as e:
             print(
-                f"   - FileNotFoundError: Could not perform directory listing in {p.raw_path} on {host}."
-                f"\n     {e}"
+                f"   - FileNotFoundError: Could not perform directory listing in {p.raw_path} on {host}." f"\n     {e}"
             )
 
     return info

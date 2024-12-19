@@ -7,8 +7,8 @@ from dataclasses import dataclass, fields, asdict
 from typing import List, Optional
 
 # TODO: crashed for python 3.10 using pandas<=2.1
-import pandas as pd
-
+# import pandas as pd
+from . import externals as externals
 from cellpy import prms
 
 CELLPY_FILE_VERSION = 8
@@ -123,7 +123,7 @@ class CellpyMeta:
 
     def to_frame(self):
         """Converts to pandas dataframe"""
-        df = pd.DataFrame.from_dict(asdict(self), orient="index")
+        df = externals.pandas.DataFrame.from_dict(asdict(self), orient="index")
         df.index.name = "key"
         n_rows, n_cols = df.shape
         if n_cols == 1:
@@ -286,7 +286,7 @@ class BaseSettings(DictLikeClass):
 
     def to_frame(self):
         """Converts to pandas dataframe"""
-        df = pd.DataFrame.from_dict(asdict(self), orient="index")
+        df = externals.pandas.DataFrame.from_dict(asdict(self), orient="index")
         df.index.name = "key"
         n_rows, n_cols = df.shape
         if n_cols == 1:

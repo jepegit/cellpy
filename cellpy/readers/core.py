@@ -17,12 +17,7 @@ import time
 import warnings
 from typing import Any, Tuple, Dict, List, Union, TypeVar, Optional
 
-from . import externals
-
-# import numpy as np
-# import pandas as pd
-import pint
-from scipy import interpolate
+from . import externals as externals
 
 from cellpy.exceptions import NullData
 from cellpy.internals.core import OtherPath
@@ -1106,6 +1101,7 @@ def interpolate_y_on_x(
 
     # TODO: allow for giving a fixed interpolation range (x-values).
     #  Remember to treat extrapolation properly (e.g. replace with NaN?).
+    from scipy import interpolate
 
     if x is None:
         x = df.columns[0]

@@ -8,14 +8,10 @@ import time
 import warnings
 from dataclasses import asdict
 from datetime import datetime
+from typing import List, Optional
 
-import numpy as np
-import pandas as pd
-from typing import List
-from typing import Optional
-
+from . import externals as externals
 from cellpy.parameters import prms
-
 from cellpy.readers import core
 
 # logger = logging.getLogger(__name__)
@@ -269,8 +265,8 @@ class Reader(core.BaseDbReader):
 
     def _lookup_unit(self, label):
         units = {
-            "int": np.int32,
-            "float": np.float64,
+            "int": externals.numpy.int32,
+            "float": externals.numpy.float64,
             "str": str,
             "bol": bool,
             "cat": str,
@@ -305,7 +301,7 @@ class Reader(core.BaseDbReader):
         logging.debug(f"Trying to open the file {self.db_file}")
         logging.debug(f"Number of rows (no means all): {nrows}")
         logging.debug(f"Skipping the following rows: {rows_to_skip}")
-        work_book = pd.ExcelFile(self.db_file, engine="openpyxl")
+        work_book = externals.pandas.ExcelFile(self.db_file, engine="openpyxl")
         try:
             sheet = work_book.parse(
                 table_name,
