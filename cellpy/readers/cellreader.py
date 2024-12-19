@@ -7,8 +7,7 @@ testers and exporing them in a common hdf5-format.
 Example:
     >>> c = cellpy.get(["super_battery_run_01.res", "super_battery_run_02.res"]) # loads and merges the runs
     >>> voltage_curves = c.get_cap()
-    >>> c.save("super_battery_run.hdf")
-
+    >>> c.save("super_battery_run.h5")
 """
 
 import collections
@@ -25,15 +24,12 @@ import datetime
 import warnings
 from pathlib import Path
 from typing import Union, Sequence, List, Optional, Iterable
+from typing import TYPE_CHECKING
 from dataclasses import asdict
 
-import numpy as np
-import openpyxl
-import pandas as pd
-from pandas.errors import PerformanceWarning
-from pint.errors import DimensionalityError
-from pint import Quantity
-from scipy import interpolate
+from . import externals
+from cellpy.readers import core
+import cellpy.internals.core as internals
 
 from cellpy.exceptions import (
     DeprecatedFeature,
@@ -67,20 +63,6 @@ from cellpy.parameters.internal_settings import (
     CellpyMetaIndividualTest,
 )
 
-from cellpy.readers.core import (
-    Data,
-    FileID,
-    Q,
-    convert_from_simple_unit_label_to_string_unit_label,
-    generate_default_factory,
-    identify_last_data_point,
-    instrument_configurations,
-    interpolate_y_on_x,
-    pickle_protocol,
-    xldate_as_datetime,
-)
-from cellpy.internals.core import OtherPath
-
 DIGITS_C_RATE = 5
 
 HEADERS_NORMAL = get_headers_normal()  # TODO @jepe refactor this (not needed)
@@ -95,10 +77,16 @@ HEADERS_STEP_TABLE = get_headers_step_table()  # TODO @jepe refactor this (not n
 
 # TODO: @jepe - performance warnings - mixed types within cols (pytables)
 
-warnings.filterwarnings("ignore", category=pd.io.pytables.PerformanceWarning)
-pd.set_option("mode.chained_assignment", None)  # "raise", "warn", None
+# warnings.filterwarnings("ignore", category=externals.pandas.io.pytables.PerformanceWarning)
+# externals.pandas.set_option("mode.chained_assignment", None)  # "raise", "warn", None
 
 _module_logger = logging.getLogger(__name__)
+
+
+# def core.Q(value, *args, **kwargs):
+#     """Convert value to pint quantity."""
+#     ureg, Q = core.get_pint_unit_registry()
+#     return Q(value, *args, **kwargs)
 
 
 class CellpyCell:
@@ -230,7 +218,6 @@ class CellpyCell:
             output_units (dict): sent to cellpy.parameters.internal_settings.get_default_output_units
             debug (bool): set to True if you want to see debug messages.
         """
-
         # TODO v 1.1: move to data (allow for multiple testers for same cell)
         if tester is None:
             self.tester = prms.Instruments.tester
@@ -294,8 +281,8 @@ class CellpyCell:
         self.limit_data_points = None
         self.ensure_step_table = prms.Reader.ensure_step_table
         self.ensure_summary_table = prms.Reader.ensure_summary_table
-        self.raw_datadir = OtherPath(prms.Paths.rawdatadir)
-        self.cellpy_datadir = OtherPath(prms.Paths.cellpydatadir)
+        self.raw_datadir = internals.OtherPath(prms.Paths.rawdatadir)
+        self.cellpy_datadir = internals.OtherPath(prms.Paths.cellpydatadir)
         self.auto_dirs = prms.Reader.auto_dirs  # v2.0
 
         # - headers and instruments
@@ -316,7 +303,7 @@ class CellpyCell:
         """Initialize the CellpyCell object with empty Data instance."""
 
         logging.debug("Initializing...")
-        self._data = Data()
+        self._data = core.Data()
 
     # the batch utility might be using session name
     # the cycle and ica collector are using session name
@@ -419,7 +406,7 @@ class CellpyCell:
         logging.critical(f"Parsing {parameter} ({value})")
 
         try:
-            c = Q(value)
+            c = core.Q(value)
             c_unit = c.units
             self.cellpy_units[parameter] = f"{c_unit}"
             logging.critical(f"Updated your cellpy_units['{parameter}'] to '{c_unit}'")
@@ -593,7 +580,7 @@ class CellpyCell:
 
         if base_cycles is None:
             all_cycles = self.get_cycle_numbers()
-            base_cycles = int(np.median(all_cycles))
+            base_cycles = int(externals.numpy.median(all_cycles))
 
         cells = list()
         if not isinstance(base_cycles, (list, tuple)):
@@ -630,12 +617,12 @@ class CellpyCell:
             new_cell.data.steps = steptable0
             new_cell.data.raw = data0
             new_cell.data.summary = summary0
-            new_cell.data = identify_last_data_point(new_cell.data)
+            new_cell.data = core.identify_last_data_point(new_cell.data)
 
             old_cell.data.steps = steptable
             old_cell.data.raw = data
             old_cell.data.summary = summary
-            old_cell.data = identify_last_data_point(old_cell.data)
+            old_cell.data = core.identify_last_data_point(old_cell.data)
 
             cells.append(new_cell)
 
@@ -650,7 +637,7 @@ class CellpyCell:
     def register_instrument_readers(self):
         """Register instrument readers."""
 
-        self.instrument_factory = generate_default_factory()
+        self.instrument_factory = core.generate_default_factory()
         # instruments = find_all_instruments()
         # for instrument_id, instrument in instruments.items():
         #     self.instrument_factory.register_builder(instrument_id, instrument)
@@ -912,7 +899,7 @@ class CellpyCell:
         ids = dict()
         for f in file_names:
             logging.debug(f"checking raw file {f}")
-            fid = FileID(f)
+            fid = core.FileID(f)
             # logging.debug(fid)
             if fid.name is None:
                 warnings.warn(f"file does not exist: {f}")
@@ -931,12 +918,12 @@ class CellpyCell:
                     ids[name] = int(fid.last_modified)
         return ids
 
-    def _check_cellpy_file(self, filename: OtherPath):
+    def _check_cellpy_file(self, filename: "OtherPath"):
         """Get the file-ids for the cellpy_file."""
 
-        if not isinstance(filename, OtherPath):
+        if not isinstance(filename, internals.OtherPath):
             logging.debug("filename must be an OtherPath object")
-            filename = OtherPath(filename)
+            filename = internals.OtherPath(filename)
 
         use_full_filename_path = False
         parent_level = prms._cellpyfile_root  # noqa
@@ -954,7 +941,7 @@ class CellpyCell:
                 # copy the file to temporary directory (this will take some time, and therefore it is
                 # probably best not to put your cellpy files in a remote directory yet):
                 filename = filename.copy()
-            store = pd.HDFStore(filename)
+            store = externals.pandas.HDFStore(filename)
         except Exception as e:
             logging.debug(f"could not open cellpy-file ({e})")
             return None
@@ -1245,7 +1232,7 @@ class CellpyCell:
             logging.debug("loading raw file:")
             logging.debug(f"{file_name}")
             if is_a_file:
-                file_name = OtherPath(file_name)
+                file_name = internals.OtherPath(file_name)
                 if not file_name.is_file():
                     raise NoDataFound(f"Could not find the file {file_name}")
 
@@ -1365,8 +1352,8 @@ class CellpyCell:
             logging.debug("loading cellpy-file (hdf5):")
             logging.debug(cellpy_file)
             logging.debug(f"{type(cellpy_file)=}")
-            cellpy_file = OtherPath(cellpy_file)
-            with pickle_protocol(PICKLE_PROTOCOL):
+            cellpy_file = internals.OtherPath(cellpy_file)
+            with core.pickle_protocol(PICKLE_PROTOCOL):
                 logging.debug(f"using pickle protocol {PICKLE_PROTOCOL}")
                 data = self._load_hdf5(cellpy_file, parent_level, accept_old, selector=selector)
             logging.debug("cellpy-file loaded")
@@ -1400,7 +1387,7 @@ class CellpyCell:
         if parent_level is None:
             parent_level = prms._cellpyfile_root
 
-        with pd.HDFStore(filename) as store:
+        with externals.pandas.HDFStore(filename) as store:
             try:
                 meta_table = store.select(parent_level + meta_dir)
             except KeyError:
@@ -1496,7 +1483,7 @@ class CellpyCell:
 
         logging.debug(f"filename: {filename}")
         logging.debug(f"selector: {selector}")
-        with pd.HDFStore(filename) as store:
+        with externals.pandas.HDFStore(filename) as store:
             (
                 data,
                 meta_table,
@@ -1538,7 +1525,7 @@ class CellpyCell:
         logging.debug(f"filename: {filename}")
         logging.debug(f"selector: {selector}")
 
-        with pd.HDFStore(filename) as store:
+        with externals.pandas.HDFStore(filename) as store:
             data, meta_table = self._create_initial_data_set_from_cellpy_file(meta_dir, parent_level, store)
             self._check_keys_in_cellpy_file(meta_dir, parent_level, raw_dir, store, summary_dir)
             self._extract_summary_from_cellpy_file(data, parent_level, store, summary_dir, selector=selector)
@@ -1570,7 +1557,7 @@ class CellpyCell:
         fid_dir = "/fid"
         meta_dir = "/info"
 
-        with pd.HDFStore(filename) as store:
+        with externals.pandas.HDFStore(filename) as store:
             data, meta_table = self._create_initial_data_set_from_cellpy_file(
                 meta_dir,
                 parent_level,
@@ -1628,7 +1615,7 @@ class CellpyCell:
         fid_dir = "/fid"
         meta_dir = "/info"
 
-        with pd.HDFStore(filename) as store:
+        with externals.pandas.HDFStore(filename) as store:
             data, meta_table = self._create_initial_data_set_from_cellpy_file(meta_dir, parent_level, store)
             self._check_keys_in_cellpy_file(meta_dir, parent_level, raw_dir, store, summary_dir)
             self._extract_summary_from_cellpy_file(
@@ -1695,7 +1682,7 @@ class CellpyCell:
         _summary_dir = "/dfsummary"
         _fid_dir = "/fidtable"
 
-        with pd.HDFStore(filename) as store:
+        with externals.pandas.HDFStore(filename) as store:
             data, meta_table = self._create_initial_data_set_from_cellpy_file(meta_dir, parent_level, store)
 
             self._check_keys_in_cellpy_file(meta_dir, parent_level, _raw_dir, store, _summary_dir)
@@ -1745,11 +1732,11 @@ class CellpyCell:
         if test_dependent_meta_dir is not None:
             common_meta_table = store.select(parent_level + meta_dir)
             test_dependent_meta = store.select(parent_level + test_dependent_meta_dir)
-            data = Data()
+            data = core.Data()
             # data.cellpy_file_version = CELLPY_FILE_VERSION
             return data, common_meta_table, test_dependent_meta
 
-        data = Data()
+        data = core.Data()
         meta_table = None
 
         try:
@@ -1830,9 +1817,9 @@ class CellpyCell:
     # TODO @jepe: move this to its own module (e.g. as a cellpy-loader in instruments?):
     def _extract_summary_from_cellpy_file(
         self,
-        data: Data,
+        data: "Data",
         parent_level: str,
-        store: pd.HDFStore,
+        store: "externals.pandas.HDFStore",
         summary_dir: str,
         selector: Union[None, str] = None,
         upgrade_from_to: tuple = None,
@@ -1905,7 +1892,7 @@ class CellpyCell:
         except Exception as e:
             print(e)
             logging.debug("could not get steps from cellpy-file")
-            data.steps = pd.DataFrame()
+            data.steps = externals.pandas.DataFrame()
             warnings.warn(f"Unhandled exception raised: {e}")
 
     # TODO @jepe: move this to its own module (e.g. as a cellpy-loader in instruments?):
@@ -1930,9 +1917,9 @@ class CellpyCell:
     # TODO @jepe: move this to its own module (e.g. as a cellpy-loader in instruments?):
     def _extract_meta_from_cellpy_file(
         self,
-        data: Data,
-        meta_table: pd.DataFrame,
-        test_dependent_meta_table: pd.DataFrame,
+        data: "Data",
+        meta_table: "externals.pandas.DataFrame",
+        test_dependent_meta_table: "externals.pandas.DataFrame",
         filename: Union[Path, str],
         upgrade_from_to: tuple = None,
     ) -> None:
@@ -1974,8 +1961,8 @@ class CellpyCell:
     # TODO @jepe: move this to its own module (e.g. as a cellpy-loader in instruments?):
     def _extract_meta_from_old_cellpy_file_max_v7(
         self,
-        data: Data,
-        meta_table: pd.DataFrame,
+        data: "Data",
+        meta_table: "externals.pandas.DataFrame",
         filename: Union[Path, str],
         upgrade_from_to: tuple,
     ) -> None:
@@ -2012,7 +1999,7 @@ class CellpyCell:
                 v = v[0]
                 if not isinstance(v, str):
                     logging.debug(f"{v} is not of type string")
-                    v = convert_from_simple_unit_label_to_string_unit_label(key, v)
+                    v = core.convert_from_simple_unit_label_to_string_unit_label(key, v)
                 data.raw_units[key] = v
             except KeyError:
                 logging.critical(f"missing key in meta_table: {h5_key}")
@@ -2055,11 +2042,11 @@ class CellpyCell:
                 raise IOError(f"raw unit for {key} ({value}) must be of type string, not {type(value)}")
             new_info_table[h5_key] = value
 
-        new_info_table = pd.DataFrame.from_records([new_info_table])
-        new_info_table_test_dependent = pd.DataFrame.from_records([new_info_table_test_dependent])
+        new_info_table = externals.pandas.DataFrame.from_records([new_info_table])
+        new_info_table_test_dependent = externals.pandas.DataFrame.from_records([new_info_table_test_dependent])
 
         fidtable = self._convert2fid_table(cell)
-        fidtable = pd.DataFrame(fidtable)
+        fidtable = externals.pandas.DataFrame(fidtable)
         # TODO: test_dependent with several tests (and possibly merge with FID)
         # TODO: save
         # TODO: load old
@@ -2119,9 +2106,9 @@ class CellpyCell:
         lengths = []
         min_amount = 0
         for counter, item in enumerate(tbl["raw_data_name"]):
-            fid = FileID()
+            fid = core.FileID()
             try:
-                fid.name = OtherPath(item).name
+                fid.name = internals.OtherPath(item).name
             except NotImplementedError:
                 fid.name = item
             fid.full_name = tbl["raw_data_full_name"][counter]
@@ -2183,7 +2170,7 @@ class CellpyCell:
             start_time_2 = t2.meta_common.start_datetime
 
             if self.tester in ["arbin_res"]:
-                diff_time = xldate_as_datetime(start_time_2) - xldate_as_datetime(start_time_1)
+                diff_time = core.xldate_as_datetime(start_time_2) - core.xldate_as_datetime(start_time_1)
             else:
                 diff_time = start_time_2 - start_time_1
             diff_time = diff_time.total_seconds()
@@ -2218,7 +2205,7 @@ class CellpyCell:
             logging.debug("not doing recalc")
         # merging
         logging.debug("performing concat")
-        raw = pd.concat([t1.raw, t2.raw], ignore_index=True)
+        raw = externals.pandas.concat([t1.raw, t2.raw], ignore_index=True)
         data.raw = raw
         data.loaded_from.append(t2.loaded_from)
         step_table_made = False
@@ -2259,7 +2246,7 @@ class CellpyCell:
 
                     t2.summary[data_point_header] = t2.summary[data_point_header] + last_data_point
 
-                summary2 = pd.concat([t1.summary, t2.summary], ignore_index=True)
+                summary2 = externals.pandas.concat([t1.summary, t2.summary], ignore_index=True)
 
                 data.summary = summary2
             else:
@@ -2270,7 +2257,7 @@ class CellpyCell:
                 cycle_index_header = self.headers_normal.cycle_index_txt
                 t2.steps[self.headers_step_table.cycle] = t2.raw[self.headers_step_table.cycle] + last_cycle
 
-                steps2 = pd.concat([t1.steps, t2.steps], ignore_index=True)
+                steps2 = externals.pandas.concat([t1.steps, t2.steps], ignore_index=True)
                 data.steps = steps2
             else:
                 logging.debug("could not merge step tables " "(non-existing) -" "create them first!")
@@ -2289,9 +2276,9 @@ class CellpyCell:
         if not self.data.has_steps:
             return False
 
-        no_cycles_raw = np.amax(d[self.headers_normal.cycle_index_txt])
+        no_cycles_raw = externals.numpy.amax(d[self.headers_normal.cycle_index_txt])
         headers_step_table = self.headers_step_table
-        no_cycles_step_table = np.amax(s[headers_step_table.cycle])
+        no_cycles_step_table = externals.numpy.amax(s[headers_step_table.cycle])
 
         if simple:
             logging.debug("  (simple)")
@@ -2309,7 +2296,7 @@ class CellpyCell:
                 for j in range(1, no_cycles_raw + 1):
                     cycle_number = j
                     no_steps_raw = len(
-                        np.unique(
+                        externals.numpy.unique(
                             d.loc[
                                 d[self.headers_normal.cycle_index_txt] == cycle_number,
                                 self.headers_normal.step_index_txt,
@@ -2458,7 +2445,7 @@ class CellpyCell:
             if trim_taper_steps:
                 logging.info(
                     "Trimming taper steps is currently not"
-                    "possible when returning pd.DataFrame. "
+                    "possible when returning externals.pandas.DataFrame. "
                     "Do it manually instead."
                 )
             out = st[st[shdr.type].isin(steptypes) & st[shdr.cycle].isin(cycle_numbers)]
@@ -2517,7 +2504,7 @@ class CellpyCell:
         #     # for arbin at least).
         #     raise NotImplementedError
 
-        step_specs = pd.read_csv(file_name, sep=prms.Reader.sep)
+        step_specs = externals.pandas.read_csv(file_name, sep=prms.Reader.sep)
         if "step" not in step_specs.columns:
             logging.info("Missing column: step")
             raise IOError
@@ -2926,7 +2913,7 @@ class CellpyCell:
         y_txt = self.headers_normal.voltage_txt
         x_txt = self.headers_normal.discharge_capacity_txt  # jepe fix
 
-        # no_cycles=np.amax(test.raw[c_txt])
+        # no_cycles=externals.numpy.amax(test.raw[c_txt])
         # print d.columns
 
         if not any(test.raw.columns == c_txt):
@@ -3189,12 +3176,12 @@ class CellpyCell:
         if get_cap_kwargs is not None:
             get_cap_method_kwargs.update(get_cap_kwargs)
 
-        border = openpyxl.styles.Border()
+        border = externals.openpyxl.styles.Border()
         face_color = "00EEEEEE"
-        meta_alignment_left = openpyxl.styles.Alignment(horizontal="left", vertical="bottom")
+        meta_alignment_left = externals.openpyxl.styles.Alignment(horizontal="left", vertical="bottom")
         meta_width = 34
-        meta_alignment_right = openpyxl.styles.Alignment(horizontal="right", vertical="bottom")
-        fill = openpyxl.styles.PatternFill(start_color=face_color, end_color=face_color, fill_type="solid")
+        meta_alignment_right = externals.openpyxl.styles.Alignment(horizontal="right", vertical="bottom")
+        fill = externals.openpyxl.styles.PatternFill(start_color=face_color, end_color=face_color, fill_type="solid")
 
         if filename is None:
             pre = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -3210,9 +3197,9 @@ class CellpyCell:
         raw_units = self.raw_units.to_frame()
         raw_units.index = "raw_units_" + raw_units.index
 
-        meta_common_frame = pd.concat([meta_common_frame, cellpy_units, raw_units])
+        meta_common_frame = externals.pandas.concat([meta_common_frame, cellpy_units, raw_units])
 
-        with pd.ExcelWriter(filename, engine="openpyxl") as writer:
+        with externals.pandas.ExcelWriter(filename, engine="externals.openpyxl") as writer:
             meta_common_frame.to_excel(writer, sheet_name="meta_common", **to_excel_method_kwargs)
             meta_test_dependent_frame.to_excel(writer, sheet_name="meta_test_dependent", **to_excel_method_kwargs)
             summary_frame.to_excel(writer, sheet_name="summary", **to_excel_method_kwargs)
@@ -3417,7 +3404,7 @@ class CellpyCell:
             logging.info("If you really want to do it, use save with force=True")
             return
 
-        outfile_all = OtherPath(filename)
+        outfile_all = internals.OtherPath(filename)
         if not outfile_all.suffix:
             logging.debug("No suffix given - adding one")
             outfile_all = outfile_all.with_suffix(f".{extension}")
@@ -3466,9 +3453,9 @@ class CellpyCell:
             common_meta_dir = prms._cellpyfile_common_meta  # noqa
             fid_dir = prms._cellpyfile_fid  # noqa
             test_dependent_meta_dir = prms._cellpyfile_test_dependent_meta  # noqa
-            warnings.simplefilter("ignore", PerformanceWarning)
+            warnings.simplefilter("ignore", externals.pandas.errors.PerformanceWarning)
             try:
-                with pickle_protocol(PICKLE_PROTOCOL):
+                with core.pickle_protocol(PICKLE_PROTOCOL):
                     store = self._save_to_hdf5(
                         fid_dir,
                         fid_table,
@@ -3486,7 +3473,7 @@ class CellpyCell:
             finally:
                 store.close()
             logging.debug(" all -> hdf5 OK")
-            warnings.simplefilter("default", PerformanceWarning)
+            warnings.simplefilter("default", externals.pandas.errors.PerformanceWarning)
             # del store
         # --- finished saving to hdf5 -------------------------------
 
@@ -3505,7 +3492,7 @@ class CellpyCell:
         step_dir,
         summary_dir,
     ):
-        store = pd.HDFStore(
+        store = externals.pandas.HDFStore(
             outfile_all,
             complib=prms._cellpyfile_complib,
             complevel=prms._cellpyfile_complevel,
@@ -3573,7 +3560,7 @@ class CellpyCell:
             return
         for col in cols:
             if col not in [hst.cycle, hst.sub_step, hst.info]:
-                dataset.steps[col] = dataset.steps[col].apply(pd.to_numeric)
+                dataset.steps[col] = dataset.steps[col].apply(externals.pandas.to_numeric)
             else:
                 dataset.steps[col] = dataset.steps[col].astype("str")
         return dataset
@@ -3588,7 +3575,7 @@ class CellpyCell:
         chargecap = 0.0
         dischargecap = 0.0
 
-        # TODO: @jepe - use pd.loc[row,column]
+        # TODO: @jepe - use externals.pandas.loc[row,column]
 
         if capacity_modifier == "reset":
             for index, row in summary.iterrows():
@@ -3625,7 +3612,7 @@ class CellpyCell:
 
         if capacity_modifier == "reset":
             # discharge cycles
-            no_cycles = np.amax(raw[cycle_index_header])
+            no_cycles = externals.numpy.amax(raw[cycle_index_header])
             for j in range(1, no_cycles + 1):
                 cap_type = "discharge"
                 e_header = discharge_energy_index_header
@@ -3635,8 +3622,8 @@ class CellpyCell:
                 steps = discharge_cycles[j]
                 txt = "Cycle  %i (discharge):  " % j
                 logging.debug(txt)
-                # TODO: @jepe - use pd.loc[row,column] e.g. pd.loc[:,"charge_cap"]
-                # for col or pd.loc[(pd.["step"]==1),"x"]
+                # TODO: @jepe - use externals.pandas.loc[row,column] e.g. externals.pandas.loc[:,"charge_cap"]
+                # for col or externals.pandas.loc[(externals.pandas.["step"]==1),"x"]
                 selection = (raw[cycle_index_header] == j) & (raw[step_index_header].isin(steps))
                 c0 = raw[selection].iloc[0][cap_header]
                 e0 = raw[selection].iloc[0][e_header]
@@ -3712,7 +3699,7 @@ class CellpyCell:
         additional_headers: Optional[list] = None,
         as_frame: bool = True,
         scaler: Optional[float] = None,
-    ) -> Union[pd.DataFrame, List[np.array]]:
+    ) -> Union["externals.pandas.DataFrame", List["externals.numpy.array"]]:
         """Returns the values for column with given header (in raw units).
 
         Args:
@@ -3990,7 +3977,7 @@ class CellpyCell:
                 the factor is obtained from the self.get_converter_to_specific() method.
             mode (string): 'gravimetric', 'areal' or 'absolute'. Defaults to 'gravimetric'. Used
                 if converter is not provided (or None).
-            as_frame (bool): if True: returns pd.DataFrame instead of capacity, voltage series.
+            as_frame (bool): if True: returns externals.pandas.DataFrame instead of capacity, voltage series.
             **kwargs (dict): additional keyword arguments sent to the internal _get_cap method.
 
         Returns:
@@ -4003,7 +3990,7 @@ class CellpyCell:
 
         dc, v = self._get_cap(cycle, "discharge", converter=converter, **kwargs)
         if as_frame:
-            cycle_df = pd.concat([v, dc], axis=1)
+            cycle_df = externals.pandas.concat([v, dc], axis=1)
             return cycle_df
         else:
             return dc, v
@@ -4025,7 +4012,7 @@ class CellpyCell:
                 the factor is obtained from the self.get_converter_to_specific() method.
             mode (string): 'gravimetric', 'areal' or 'absolute'. Defaults to 'gravimetric'. Used
                 if converter is not provided (or None).
-            as_frame (bool): if True: returns pd.DataFrame instead of capacity, voltage series.
+            as_frame (bool): if True: returns externals.pandas.DataFrame instead of capacity, voltage series.
             **kwargs (dict): additional keyword arguments sent to the internal _get_cap method.
 
         Returns:
@@ -4038,7 +4025,7 @@ class CellpyCell:
         cc, v = self._get_cap(cycle, "charge", converter=converter, **kwargs)
 
         if as_frame:
-            cycle_df = pd.concat([v, cc], axis=1)
+            cycle_df = externals.pandas.concat([v, cc], axis=1)
             return cycle_df
         else:
             return cc, v
@@ -4081,7 +4068,7 @@ class CellpyCell:
                 - "forth-and-forth" - discharge (or charge) also starts at 0
                   (or shift if not shift=0.0)
 
-            insert_nan (bool): insert a np.nan between the charge and discharge curves.
+            insert_nan (bool): insert a externals.numpy.nan between the charge and discharge curves.
                 Defaults to True for "forth-and-forth", else False
             shift: start-value for charge (or discharge) (typically used when
                 plotting shifted-capacity).
@@ -4175,7 +4162,7 @@ class CellpyCell:
                 insert_nan = False
 
         if insert_nan:
-            _nan = pd.DataFrame({"capacity": [np.nan], "voltage": [np.nan]})
+            _nan = externals.pandas.DataFrame({"capacity": [externals.numpy.nan], "voltage": [externals.numpy.nan]})
 
         converter_kwargs = dict()
         if mass is not None:
@@ -4199,14 +4186,14 @@ class CellpyCell:
         capacity = None
         voltage = None
         specific_converter = self.get_converter_to_specific(mode=mode, **converter_kwargs)
-        cycle_df = pd.DataFrame()
+        cycle_df = externals.pandas.DataFrame()
 
         initial = True
         for current_cycle in cycle:
-            cc = pd.DataFrame()
-            cv = pd.DataFrame()
-            dc = pd.DataFrame()
-            dv = pd.DataFrame()
+            cc = externals.pandas.DataFrame()
+            cv = externals.pandas.DataFrame()
+            dc = externals.pandas.DataFrame()
+            dv = externals.pandas.DataFrame()
             error = False
             try:
                 cc, cv = self.get_ccap(
@@ -4322,14 +4309,14 @@ class CellpyCell:
                     try:
                         # processing first
                         if not _first_step_c.empty:
-                            _first_df = pd.DataFrame(
+                            _first_df = externals.pandas.DataFrame(
                                 {
                                     "voltage": _first_step_v,
                                     "capacity": _first_step_c,
                                 }
                             )
                             if interpolated:
-                                _first_df = interpolate_y_on_x(
+                                _first_df = core.interpolate_y_on_x(
                                     _first_df,
                                     y=y_col,
                                     x=x_col,
@@ -4338,22 +4325,22 @@ class CellpyCell:
                                     direction=first_interpolation_direction,
                                 )
                             if insert_nan:
-                                _first_df = pd.concat([_first_df, _nan])
+                                _first_df = externals.pandas.concat([_first_df, _nan])
                             if categorical_column:
                                 _first_df["direction"] = -1
                         else:
-                            _first_df = pd.DataFrame()
+                            _first_df = externals.pandas.DataFrame()
 
                         # processing last
                         if not _last_step_c.empty:
-                            _last_df = pd.DataFrame(
+                            _last_df = externals.pandas.DataFrame(
                                 {
                                     "voltage": _last_step_v.values,
                                     "capacity": _last_step_c.values,
                                 }
                             )
                             if interpolated:
-                                _last_df = interpolate_y_on_x(
+                                _last_df = core.interpolate_y_on_x(
                                     _last_df,
                                     y=y_col,
                                     x=x_col,
@@ -4362,11 +4349,11 @@ class CellpyCell:
                                     direction=last_interpolation_direction,
                                 )
                             if insert_nan:
-                                _last_df = pd.concat([_last_df, _nan])
+                                _last_df = externals.pandas.concat([_last_df, _nan])
                             if categorical_column:
                                 _last_df["direction"] = 1
                         else:
-                            _last_df = pd.DataFrame()
+                            _last_df = externals.pandas.DataFrame()
 
                         if interpolate_along_cap:
                             if method == "forth":
@@ -4378,7 +4365,7 @@ class CellpyCell:
                     except AttributeError:
                         logging.info(f"Could not extract cycle {current_cycle}")
                     else:
-                        c = pd.concat([_first_df, _last_df], axis=0)
+                        c = externals.pandas.concat([_first_df, _last_df], axis=0)
                         if label_cycle_number:
                             c.insert(0, "cycle", current_cycle)
                             # c["cycle"] = current_cycle
@@ -4386,7 +4373,7 @@ class CellpyCell:
                         if cycle_df.empty:
                             cycle_df = c
                         else:
-                            cycle_df = pd.concat([cycle_df, c], axis=0)
+                            cycle_df = externals.pandas.concat([cycle_df, c], axis=0)
                     if capacity_then_voltage:
                         cols = cycle_df.columns.to_list()
                         new_cols = [
@@ -4406,12 +4393,12 @@ class CellpyCell:
                         _non_empty_c.append(_last_step_c)
                         _non_empty_v.append(_last_step_v)
 
-                    c = pd.concat(_non_empty_c, axis=0)
-                    v = pd.concat(_non_empty_v, axis=0)
+                    c = externals.pandas.concat(_non_empty_c, axis=0)
+                    v = externals.pandas.concat(_non_empty_v, axis=0)
 
                     if not c.empty:
-                        capacity = pd.concat([capacity, c], axis=0)
-                        voltage = pd.concat([voltage, v], axis=0)
+                        capacity = externals.pandas.concat([capacity, c], axis=0)
+                        voltage = externals.pandas.concat([voltage, v], axis=0)
 
         if return_dataframe:
             return cycle_df
@@ -4465,8 +4452,8 @@ class CellpyCell:
                     _v.append(selected_step[self.headers_normal.voltage_txt])
                     _c.append(selected_step[column_txt] * converter)
             try:
-                voltage = pd.concat(_v, axis=0)
-                cap = pd.concat(_c, axis=0)
+                voltage = externals.pandas.concat(_v, axis=0)
+                cap = externals.pandas.concat(_c, axis=0)
             except Exception:
                 logging.debug("could not find any steps for this cycle")
                 raise NullData(f"no steps found (c:{cycle} s:{step} type:{cap_type})")
@@ -4486,7 +4473,7 @@ class CellpyCell:
         interpolated=False,
         dx=None,
         number_of_points=None,
-    ) -> pd.DataFrame:
+    ) -> externals.pandas.DataFrame:
         """Get the open circuit voltage relaxation curves.
 
         Args:
@@ -4512,7 +4499,7 @@ class CellpyCell:
         if cycles is None:
             cycles = self.get_cycle_numbers()
         else:
-            if not isinstance(cycles, (list, tuple, np.ndarray)):
+            if not isinstance(cycles, (list, tuple, externals.numpy.ndarray)):
                 cycles = [cycles]
             else:
                 remove_first = False
@@ -4550,7 +4537,7 @@ class CellpyCell:
             groupby_list = [cycle_label, step_label]
 
             for name, group in selected_df.groupby(groupby_list):
-                new_group = interpolate_y_on_x(
+                new_group = core.interpolate_y_on_x(
                     group,
                     x=step_time_label,
                     y=voltage_label,
@@ -4562,7 +4549,7 @@ class CellpyCell:
                     new_group[i] = j
                 new_dfs.append(new_group)
 
-            selected_df = pd.concat(new_dfs)
+            selected_df = externals.pandas.concat(new_dfs)
 
         return selected_df
 
@@ -4570,9 +4557,9 @@ class CellpyCell:
         """Get the number of cycles in the test."""
         if steptable is None:
             d = self.data.raw
-            number_of_cycles = np.amax(d[self.headers_normal.cycle_index_txt])
+            number_of_cycles = externals.numpy.amax(d[self.headers_normal.cycle_index_txt])
         else:
-            number_of_cycles = np.amax(steptable[self.headers_step_table.cycle])
+            number_of_cycles = externals.numpy.amax(steptable[self.headers_step_table.cycle])
         return number_of_cycles
 
     def get_rates(self, steptable=None, agg="first", direction=None):
@@ -4755,7 +4742,7 @@ class CellpyCell:
 
         if not col_has_date_time_dtype:
             logging.debug("converting date_time to datetime64[ns]")
-            v[date_time_hdr] = pd.to_datetime(v[date_time_hdr], format=date_time_format)
+            v[date_time_hdr] = externals.pandas.to_datetime(v[date_time_hdr], format=date_time_format)
 
         if duplicated:
             logging.debug("removing duplicated date_time values")
@@ -4815,12 +4802,12 @@ class CellpyCell:
         if value is None:
             value = self.data.nom_cap
 
-        value = Q(value, self.cellpy_units["nominal_capacity"])
+        value = core.Q(value, self.cellpy_units["nominal_capacity"])
 
         if nom_cap_specifics == "gravimetric":
-            specific = Q(specific, self.cellpy_units["mass"])
+            specific = core.Q(specific, self.cellpy_units["mass"])
         elif nom_cap_specifics == "areal":
-            specific = Q(specific, self.cellpy_units["area"])
+            specific = core.Q(specific, self.cellpy_units["area"])
         elif nom_cap_specifics == "absolute":
             specific = 1
 
@@ -4829,13 +4816,13 @@ class CellpyCell:
             raise NotImplementedError("volumetric not implemented yet")
 
         if convert_charge_units:
-            conversion_factor_charge = Q(1, self.cellpy_units["charge"]) / Q(1, self.data.raw_units["charge"])
+            conversion_factor_charge = core.Q(1, self.cellpy_units["charge"]) / core.Q(1, self.data.raw_units["charge"])
         else:
             conversion_factor_charge = 1.0
 
         try:
             absolute_value = (value * conversion_factor_charge * specific).to_reduced_units().to("Ah")
-        except DimensionalityError as e:
+        except externals.pint.errors.PerformanceWarning as e:
             print(" DimensionalityError ".center(80, "="))
             print("Could not convert nominal capacity to absolute value!")
             print(
@@ -4895,7 +4882,7 @@ class CellpyCell:
         if as_str:
             return f"{_value} {_unit}"
 
-        return Q(_value, _unit)
+        return core.Q(_value, _unit)
 
     def to_cellpy_unit(self, value, physical_property):
         """Convert value to cellpy units.
@@ -4909,12 +4896,12 @@ class CellpyCell:
             the value in cellpy units
         """
         logging.debug(f"value {value} is numeric? {isinstance(value, numbers.Number)}")
-        logging.debug(f"value {value} is a pint quantity? {isinstance(value, Quantity)}")
+        logging.debug(f"value {value} is a pint quantity? {isinstance(value, externals.pint.Quantity)}")
 
-        if not isinstance(value, Quantity):
+        if not isinstance(value, externals.pint.Quantity):
             if isinstance(value, numbers.Number):
                 try:
-                    value = Q(value, self.data.raw_units[physical_property])
+                    value = core.Q(value, self.data.raw_units[physical_property])
                     logging.debug(f"With unit from raw-units: {value}")
                 except NoDataFound:
                     raise NoDataFound(
@@ -4925,9 +4912,9 @@ class CellpyCell:
                 except KeyError as e:
                     raise KeyError("You have to provide a valid physical_property") from e
             elif isinstance(value, tuple):
-                value = Q(*value)
+                value = core.Q(*value)
             else:
-                value = Q(value)
+                value = core.Q(value)
 
         value = value.to(self.cellpy_units[physical_property])
 
@@ -4944,16 +4931,16 @@ class CellpyCell:
         Returns (numeric):
             conversion factor (scaler)
         """
-        logging.debug(f"value {unit} is a pint quantity? {isinstance(unit, Quantity)}")
+        logging.debug(f"value {unit} is a pint quantity? {isinstance(unit, externals.pint.Quantity)}")
 
         old_unit = self.data.raw_units[physical_property]
-        value = Q(1, old_unit)
+        value = core.Q(1, old_unit)
         value = value.to(unit)
         return value.m
 
     def get_converter_to_specific(
         self,
-        dataset: Data = None,
+        dataset: "Data" = None,
         value: float = None,
         from_units: CellpyUnits = None,
         to_units: CellpyUnits = None,
@@ -4985,22 +4972,22 @@ class CellpyCell:
 
         if mode == "gravimetric":
             value = value or dataset.mass
-            value = Q(value, new_units["mass"])
-            to_unit_specific = Q(1.0, new_units["specific_gravimetric"])
+            value = core.Q(value, new_units["mass"])
+            to_unit_specific = core.Q(1.0, new_units["specific_gravimetric"])
 
         elif mode == "areal":
             value = value or dataset.active_electrode_area
-            value = Q(value, new_units["area"])
-            to_unit_specific = Q(1.0, new_units["specific_areal"])
+            value = core.Q(value, new_units["area"])
+            to_unit_specific = core.Q(1.0, new_units["specific_areal"])
 
         elif mode == "volumetric":
             value = value or dataset.volume
-            value = Q(value, new_units["volume"])
-            to_unit_specific = Q(1.0, new_units["specific_volumetric"])
+            value = core.Q(value, new_units["volume"])
+            to_unit_specific = core.Q(1.0, new_units["specific_volumetric"])
 
         elif mode == "absolute":
-            value = Q(1.0, None)
-            to_unit_specific = Q(1.0, None)
+            value = core.Q(1.0, None)
+            to_unit_specific = core.Q(1.0, None)
 
         elif mode is None:
             return 1.0
@@ -5009,8 +4996,8 @@ class CellpyCell:
             logging.debug(f"mode={mode} not supported!")
             return 1.0
 
-        from_unit_cap = Q(1.0, old_units["charge"])
-        to_unit_cap = Q(1.0, new_units["charge"])
+        from_unit_cap = core.Q(1.0, old_units["charge"])
+        to_unit_cap = core.Q(1.0, new_units["charge"])
 
         # from unit is always in absolute values:
         from_unit = from_unit_cap
@@ -5202,12 +5189,12 @@ class CellpyCell:
 
     @staticmethod
     def _bounds(x):
-        return np.amin(x), np.amax(x)
+        return externals.numpy.amin(x), externals.numpy.amax(x)
 
     @staticmethod
     def _roundup(x):
         n = 1000.0
-        x = np.ceil(x * n)
+        x = externals.numpy.ceil(x * n)
         x /= n
         return x
 
@@ -5224,6 +5211,8 @@ class CellpyCell:
 
     def _select_y(self, x, y, points):
         # uses interpolation to select y = f(x)
+        from scipy import interpolate
+
         min_x, max_x = self._bounds(x)
         if x[0] > x[-1]:
             # need to reverse
@@ -5882,7 +5871,7 @@ class CellpyCell:
 
         logging.debug(f"(dt: {(time.time() - time_00):4.2f}s)")
 
-    def _generate_absolute_summary_columns(self, data, _first_step_txt, _second_step_txt) -> Data:
+    def _generate_absolute_summary_columns(self, data, _first_step_txt, _second_step_txt) -> "Data":
         summary = data.summary
         summary[self.headers_summary.coulombic_efficiency] = 100 * summary[_second_step_txt] / summary[_first_step_txt]
         summary[self.headers_summary.cumulated_coulombic_efficiency] = summary[
@@ -5955,7 +5944,7 @@ class CellpyCell:
 
         return data
 
-    def _generate_specific_summary_columns(self, data: Data, mode: str, specific_columns: Sequence) -> Data:
+    def _generate_specific_summary_columns(self, data: "Data", mode: str, specific_columns: Sequence) -> "Data":
         specific_converter = self.get_converter_to_specific(dataset=data, mode=mode)
         summary = data.summary
         for col in specific_columns:
@@ -5964,11 +5953,11 @@ class CellpyCell:
         data.summary = summary
         return data
 
-    def _c_rates_to_summary(self, data: Data) -> Data:
+    def _c_rates_to_summary(self, data: "Data") -> "Data":
         logging.debug("Extracting C-rates")
 
         def rate_to_cellpy_units(rate):
-            conversion_factor = Q(1.0, self.data.raw_units["current"]) / Q(1.0, self.cellpy_units["current"])
+            conversion_factor = core.Q(1.0, self.data.raw_units["current"]) / core.Q(1.0, self.cellpy_units["current"])
             conversion_factor = conversion_factor.to_reduced_units().magnitude
             return rate * conversion_factor
 
@@ -6012,12 +6001,12 @@ class CellpyCell:
 
     def _equivalent_cycles_to_summary(
         self,
-        data: Data,
+        data: "Data",
         _first_step_txt: str,
         _second_step_txt: str,
         nom_cap: float,
         normalization_cycles: Union[Sequence, int, None],
-    ) -> Data:
+    ) -> "Data":
         # The method currently uses the charge capacity for calculating equivalent cycles. This
         # can be easily extended to also allow for choosing the discharge capacity later on if
         # it turns out that to be needed.
@@ -6321,7 +6310,7 @@ class CellpyCell:
 
         if not t1.raw.empty:
             t1.raw = t1.raw.iloc[:-1]
-            raw2 = pd.concat([t1.raw, t2.raw], ignore_index=True)
+            raw2 = externals.pandas.concat([t1.raw, t2.raw], ignore_index=True)
             test.raw = raw2
         else:
             test = t2
@@ -6334,7 +6323,7 @@ class CellpyCell:
         # Note! hard-coding header name (might fail if changing default headers)
         from_data_point = self.data.steps.iloc[-1].point_first
         new_steps = self.make_step_table(from_data_point=from_data_point, **kwargs)
-        merged_steps = pd.concat([old_steps, new_steps]).reset_index(drop=True)
+        merged_steps = externals.pandas.concat([old_steps, new_steps]).reset_index(drop=True)
         self.data.steps = merged_steps
 
     def _dev_update_make_summary(self, **kwargs):
@@ -6348,7 +6337,7 @@ class CellpyCell:
         # For later:
         # (Remark! need to solve how to merge cumulated columns)
         # new_summary = self.make_summary(from_cycle=from_cycle)
-        # merged_summary = pd.concat([old_summary, new_summary]).reset_index(drop=True)
+        # merged_summary = externals.pandas.concat([old_summary, new_summary]).reset_index(drop=True)
         # self.data.summary = merged_summary
 
     def _dev_update_from_raw(self, file_names=None, data_points=None, **kwargs):
@@ -6547,7 +6536,7 @@ def get(
 
         else:
             load_cellpy_file = True
-            filename = OtherPath(cellpy_file)
+            filename = internals.OtherPath(cellpy_file)
 
     if isinstance(filename, (list, tuple)):
         logging.debug("got a list or tuple of names")
@@ -6555,7 +6544,7 @@ def get(
     else:
         logging.debug("got a single name")
         logging.debug(f"{filename=}")
-        filename = OtherPath(filename)
+        filename = internals.OtherPath(filename)
         if (
             auto_pick_cellpy_format
             and instrument not in instruments_with_colliding_file_suffix
@@ -6569,7 +6558,7 @@ def get(
             logging.debug(f"checked if the files were similar")
             if similar:
                 load_cellpy_file = True
-                filename = OtherPath(cellpy_file)
+                filename = internals.OtherPath(cellpy_file)
         except Exception as e:
             logging.debug(f"Error during checking if similar: {e}")
             logging.debug("Setting load_cellpy_file to False")
@@ -6700,7 +6689,7 @@ def print_instruments():
     print(80 * "=")
     print(f"Implemented instrument loaders")
     print(80 * "=")
-    for name, value in instrument_configurations().items():
+    for name, value in core.instrument_configurations().items():
         print(name)
         instrument_models = value["__all__"].copy()
         instrument_models.remove("default")
@@ -6859,8 +6848,8 @@ def _load_and_save_to_excel():
 
 
 def _check_excel():
-    import openpyxl
-    from openpyxl.styles import Border, Side
+    import externals.openpyxl
+    from externals.openpyxl.styles import Border, Side
     import pandas as pd
 
     from pathlib import Path
@@ -6869,14 +6858,14 @@ def _check_excel():
     excel_file = Path("../../tmp/nothing.xlsx")
     to_excel_method_kwargs = {"index": True, "header": True}
 
-    df = pd.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6]})
+    df = externals.pandas.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6]})
     n_rows, n_cols = df.shape
-    with pd.ExcelWriter(excel_file, engine="openpyxl") as writer:
+    with externals.pandas.ExcelWriter(excel_file, engine="externals.openpyxl") as writer:
         df.to_excel(writer, sheet_name="first", **to_excel_method_kwargs)
         ws = writer.sheets["first"]
         border = Border()
         face_color = "00EEEEEE"
-        fill = openpyxl.styles.PatternFill(start_color=face_color, end_color=face_color, fill_type="solid")
+        fill = externals.openpyxl.styles.PatternFill(start_color=face_color, end_color=face_color, fill_type="solid")
 
         for cell in ws["A"]:
             print(cell)
@@ -6905,7 +6894,7 @@ def _check_new_dot_get_methods():
     )
     # pprint(c.headers_normal)
     cycles_a = [1, 2, 3]
-    cycles_b = np.array([1, 2, 3])
+    cycles_b = externals.numpy.array([1, 2, 3])
     cycles_c = [1, 2, 3]
     a = c.get_timestamp(cycles_a, with_index=True, units="raw")
     print(f"{cycles_a=} raw".center(80, "-"))

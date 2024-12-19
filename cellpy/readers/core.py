@@ -17,8 +17,10 @@ import time
 import warnings
 from typing import Any, Tuple, Dict, List, Union, TypeVar, Optional
 
-import numpy as np
-import pandas as pd
+from . import externals
+
+# import numpy as np
+# import pandas as pd
 import pint
 from scipy import interpolate
 
@@ -41,13 +43,12 @@ HEADERS_STEP_TABLE = get_headers_step_table()  # TODO @jepe refactor this (not n
 LOADERS_NOT_READY_FOR_PROD = ["ext_nda_reader"]  # used by the instruments_configurations helper function (move?)
 
 # pint (https://pint.readthedocs.io/en/stable/)
-ureg = pint.UnitRegistry()
+ureg = externals.pint.UnitRegistry()
 try:
     ureg.formatter.default_format = "~P"
 except AttributeError:
     ureg.default_format = "~P"
 Q = ureg.Quantity
-
 
 # TODO: in future versions (maybe 1.1.0) we should "copy-paste" the whole pathlib module
 #  from CPython and add the functionality we need to it. This will make
@@ -395,9 +396,9 @@ class Data:
         self.raw_units = get_default_raw_units()
         self.raw_limits = get_default_raw_limits()
 
-        self.raw = pd.DataFrame()
-        self.summary = pd.DataFrame()
-        self.steps = pd.DataFrame()
+        self.raw = externals.pandas.DataFrame()
+        self.summary = externals.pandas.DataFrame()
+        self.steps = externals.pandas.DataFrame()
 
         self.meta_common = CellpyMetaCommon()
         # TODO: v2.0 consider making this a list of several CellpyMetaIndividualTest
@@ -590,7 +591,7 @@ class Data:
     @property
     def empty(self):
         """Check if the data object is empty."""
-        if isinstance(self, pd.DataFrame):
+        if isinstance(self, externals.pandas.DataFrame):
             raise TypeError(
                 "Data is a DataFrame (should be a Data object). "
                 "You probably have a bug in your code. "
@@ -1021,8 +1022,8 @@ def collect_capacity_curves(
         else:
             logging.warning(f"collect_capacity_curve received unknown key-word argument: {arg=}")
 
-    minimum_v_value = np.inf
-    maximum_v_value = -np.inf
+    minimum_v_value = externals.numpy.inf
+    maximum_v_value = -externals.numpy.inf
     charge_list = []
     cycles = kwargs.pop("cycle", None)
 
@@ -1055,11 +1056,11 @@ def collect_capacity_curves(
 
         except NullData as e:
             logging.warning(e)
-            d = pd.DataFrame()
+            d = externals.pandas.DataFrame()
             d.name = cycle
             charge_list.append(d)
         else:
-            d = pd.DataFrame({"q": q, "v": v})
+            d = externals.pandas.DataFrame({"q": q, "v": v})
             # d.name = f"{cycle}"
             d.name = cycle
             charge_list.append(d)
@@ -1126,9 +1127,9 @@ def interpolate_y_on_x(
     f = interpolate.interp1d(xs, ys, bounds_error=bounds_error, **kwargs)
     if new_x is None:
         if number_of_points:
-            new_x = np.linspace(x_min, x_max, number_of_points)
+            new_x = externals.numpy.linspace(x_min, x_max, number_of_points)
         else:
-            new_x = np.arange(x_min, x_max, dx)
+            new_x = externals.numpy.arange(x_min, x_max, dx)
 
     else:
         # TODO: @jepe - make this better (and safer)
@@ -1136,11 +1137,11 @@ def interpolate_y_on_x(
             logging.critical("EXPERIMENTAL FEATURE - USE WITH CAUTION")
             logging.critical(f"start, end, number_of_points = {new_x}")
             _x_min, _x_max, _number_of_points = new_x
-            new_x = np.linspace(_x_min, _x_max, _number_of_points, dtype=float)
+            new_x = externals.numpy.linspace(_x_min, _x_max, _number_of_points, dtype=float)
 
     new_y = f(new_x)
 
-    new_df = pd.DataFrame({x: new_x, y: new_y})
+    new_df = externals.pandas.DataFrame({x: new_x, y: new_y})
 
     return new_df
 
@@ -1224,9 +1225,9 @@ def group_by_interpolate(
         x_max = df[x].max()
         x_min = df[x].min()
         if number_of_points:
-            new_x = np.linspace(x_max, x_min, number_of_points)
+            new_x = externals.numpy.linspace(x_max, x_min, number_of_points)
         else:
-            new_x = np.arange(x_max, x_min, dx)
+            new_x = externals.numpy.arange(x_max, x_min, dx)
 
     new_dfs = []
     keys = []
@@ -1244,14 +1245,14 @@ def group_by_interpolate(
         new_dfs.append(new_group)
 
     if tidy:
-        new_df = pd.concat(new_dfs)
+        new_df = externals.pandas.concat(new_dfs)
     else:
         if individual_x_cols:
-            new_df = pd.concat(new_dfs, axis=1, keys=keys)
+            new_df = externals.pandas.concat(new_dfs, axis=1, keys=keys)
             group_by.append(header_name)
             new_df.columns.names = group_by
         else:
-            new_df = pd.concat(new_dfs)
+            new_df = externals.pandas.concat(new_dfs)
             new_df = new_df.pivot(index=x, columns=group_by[0], values=y)
 
     time_01 = time.time() - time_00

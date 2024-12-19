@@ -15,7 +15,8 @@ from typing import List
 from typing import Optional
 
 from cellpy.parameters import prms
-from cellpy.readers.core import BaseDbReader
+
+from cellpy.readers import core
 
 # logger = logging.getLogger(__name__)
 
@@ -38,7 +39,7 @@ class DbSheetCols:
         return f"<DbCols: {self.__dict__}>"
 
 
-class Reader(BaseDbReader):
+class Reader(core.BaseDbReader):
     def __init__(
         self,
         db_file=None,

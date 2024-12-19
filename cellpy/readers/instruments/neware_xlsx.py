@@ -1,4 +1,5 @@
 """neware xlsx exported data"""
+
 from dataclasses import dataclass
 import datetime
 import logging
@@ -9,6 +10,7 @@ import warnings
 import pandas as pd
 from dateutil.parser import parse
 
+import cellpy.readers.core
 from cellpy import prms
 from cellpy.exceptions import WrongFileVersion
 from cellpy.parameters.internal_settings import HeaderDict, get_headers_normal
@@ -47,9 +49,7 @@ class DataLoader(BaseLoader):
     def __init__(self, *args, **kwargs):
         """initiates the neware xlsx reader class"""
         self.raw_headers_normal = None  # the column headers defined by Neware
-        self.cellpy_headers_normal = (
-            get_headers_normal()
-        )  # the column headers defined by cellpy
+        self.cellpy_headers_normal = get_headers_normal()  # the column headers defined by cellpy
         self.normal_headers_renaming_dict = None  # renaming dict for the headers
         self.config_params = None  # configuration parameters
 
@@ -190,9 +190,7 @@ class DataLoader(BaseLoader):
 
         data.raw = data_df
         data.raw_data_files_length.append(len(data_df))
-        data.summary = (
-            pd.DataFrame()
-        )  # creating an empty frame - loading summary is not implemented yet
+        data.summary = pd.DataFrame()  # creating an empty frame - loading summary is not implemented yet
         data = self._post_process(data)
         data = self.identify_last_data_point(data)
 
@@ -229,13 +227,9 @@ class DataLoader(BaseLoader):
             hdr_step_time = self.cellpy_headers_normal.step_time_txt
             hdr_test_time = self.cellpy_headers_normal.test_time_txt
             if hdr_step_time in data.raw:
-                data.raw[hdr_step_time] = pd.to_timedelta(
-                    data.raw[hdr_step_time]
-                ).dt.total_seconds()
+                data.raw[hdr_step_time] = pd.to_timedelta(data.raw[hdr_step_time]).dt.total_seconds()
             if hdr_test_time in data.raw:
-                data.raw[hdr_test_time] = pd.to_timedelta(
-                    data.raw[hdr_test_time]
-                ).dt.total_seconds()
+                data.raw[hdr_test_time] = pd.to_timedelta(data.raw[hdr_test_time]).dt.total_seconds()
 
         if split_the_capacity:
             logging.debug("splitting capacity")
@@ -256,18 +250,14 @@ class DataLoader(BaseLoader):
             try:
                 # data.raw[test_time_txt] = pd.to_timedelta(data.raw[test_time_txt])  # cellpy is not ready for this
                 # data.raw[step_time_txt] = pd.to_timedelta(data.raw[step_time_txt])  # cellpy is not ready for this
-                data.raw[date_time_txt] = pd.to_datetime(
-                    data.raw[date_time_txt], format=DATE_TIME_FORMAT
-                )
+                data.raw[date_time_txt] = pd.to_datetime(data.raw[date_time_txt], format=DATE_TIME_FORMAT)
             except ValueError:
                 logging.debug("could not convert to datetime format")
 
         if set_index:
             hdr_data_point = self.cellpy_headers_normal.data_point_txt
             if data.raw.index.name != hdr_data_point:
-                data.raw = data.raw.set_index(
-                    hdr_data_point, drop=False
-                )  # TODO: check if this is standard
+                data.raw = data.raw.set_index(hdr_data_point, drop=False)  # TODO: check if this is standard
 
         if forward_fill_ir:
             logging.debug("forward filling ir")
@@ -318,27 +308,19 @@ class DataLoader(BaseLoader):
 
         if file_format == "xls":
             engine = "xlrd"
-            logging.debug(
-                f"parsing with pandas.read_excel using {engine} (old format): {self.name}"
-            )
+            logging.debug(f"parsing with pandas.read_excel using {engine} (old format): {self.name}")
             raise WrongFileVersion("reading old xls not implemented yet")
 
         elif file_format == "xlsx":
             engine = "openpyxl"
-            logging.critical(
-                f"parsing with pandas.read_excel using {engine}: {self.name}"
-            )
+            logging.critical(f"parsing with pandas.read_excel using {engine}: {self.name}")
 
         else:
-            raise IOError(
-                f"Could not read {file_name}, {file_format} not supported yet"
-            )
+            raise IOError(f"Could not read {file_name}, {file_format} not supported yet")
 
         # -------------- meta data --------------
         try:
-            unit_frame = pd.read_excel(
-                file_name, engine=engine, sheet_name=unit_sheet, header=None
-            )
+            unit_frame = pd.read_excel(file_name, engine=engine, sheet_name=unit_sheet, header=None)
         except ValueError as e:
             print(f"could not parse {unit_sheet} in file: {e}")
             print(f"most likely this file is not appropriate for cellpy")
@@ -360,9 +342,7 @@ class DataLoader(BaseLoader):
                 print(f"could not parse unit sheet: {e}")
 
         try:
-            test_frame = pd.read_excel(
-                file_name, engine=engine, sheet_name=test_sheet, header=None
-            )
+            test_frame = pd.read_excel(file_name, engine=engine, sheet_name=test_sheet, header=None)
         except ValueError as e:
             print(f"could not parse {test_sheet} in file: {e}")
             print(f"It is very likely that this file is not appropriate for cellpy!")
@@ -404,9 +384,7 @@ class DataLoader(BaseLoader):
 
         # combining the step and data frames
         data_frame[[hdr_date]] = data_frame[[hdr_date]].apply(pd.to_datetime)
-        step_frame[[hdr_start, hdr_end]] = step_frame[[hdr_start, hdr_end]].apply(
-            pd.to_datetime
-        )
+        step_frame[[hdr_start, hdr_end]] = step_frame[[hdr_start, hdr_end]].apply(pd.to_datetime)
 
         data_frame[hdr_cycle] = 0
         data_frame[hdr_step_index] = 0
@@ -419,10 +397,7 @@ class DataLoader(BaseLoader):
 
             mask = (
                 (data_frame[hdr_date] > start_date)
-                | (
-                    (data_frame[hdr_date] == start_date)
-                    & (data_frame[hdr_step] == step)
-                )
+                | ((data_frame[hdr_date] == start_date) & (data_frame[hdr_step] == step))
             ) & (
                 (data_frame[hdr_date] < end_date)
                 | ((data_frame[hdr_date] == end_date) & (data_frame[hdr_step] == step))
