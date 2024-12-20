@@ -247,6 +247,13 @@ def test_csv_exporter(updated_cycling_experiment):
     exporter.do()
 
 
+def test_csv_exporter_modified(updated_cycling_experiment):
+    exporter = batch_exporters.CSVExporter()
+    exporter.assign(updated_cycling_experiment)
+    exporter._assign_engine(engines.dq_dv_engine)
+    exporter._assign_dumper(dumpers.screen_dumper)
+
+
 def test_query():
     def mock_reader_method(cell_id):
         spec = {
@@ -321,11 +328,6 @@ def test_load_from_file(batch_instance, parameters):
     experiment.journal.from_file(pages)
 
 
-def test_csv_exporter_modified(updated_cycling_experiment):
-    exporter = batch_exporters.CSVExporter()
-    exporter.assign(updated_cycling_experiment)
-    exporter._assign_engine(engines.dq_dv_engine)
-    exporter._assign_dumper(dumpers.screen_dumper)
 
 
 def test_lab_journal(batch_instance):

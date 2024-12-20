@@ -315,7 +315,6 @@ def join_summaries(
             logging.debug(f"mitigation method {mitigation_strategy} for non-unique column names not implemented yet")
 
     summary_df = pd.concat(frames, keys=keys, axis=1, sort=True)
-    summary_df.to_clipboard()
 
     for key, value in selected_summaries_dict.items():
         _summary_df = summary_df.iloc[:, summary_df.columns.get_level_values(1) == value]

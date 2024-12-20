@@ -269,7 +269,6 @@ def _process_cellpy_object(name, c, out):
 
     print(f"loaded the file - now lets see what we got")
     raw = c.data.raw
-    raw.to_clipboard()
     print(raw.head())
     c.make_step_table()
 

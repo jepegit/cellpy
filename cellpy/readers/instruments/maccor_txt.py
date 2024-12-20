@@ -383,7 +383,6 @@ def _check_loader_from_outside_with_get2():
     )
     print(f"loaded the file - now lets see what we got")
     raw = c.data.raw
-    raw.to_clipboard()
     print(raw.head())
     c.make_step_table()
 
@@ -451,7 +450,6 @@ def _fix_bugs_now():
     )
     print(f"loaded the file - now lets see what we got")
     raw = c.data.raw
-    raw.to_clipboard()
     print(raw.head())
     c.make_step_table()
     steps = c.data.steps

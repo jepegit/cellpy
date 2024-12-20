@@ -479,9 +479,7 @@ def _check_query():
     name = ["20201106_HC03B1W_1_cc_01"]
     dd, ds = check_sql_loader(SQL_SERVER, name)
     out = pathlib.Path(r"C:\scripts\notebooks\Div")
-    dd.to_clipboard()
     input("x")
-    ds.to_clipboard()
 
 
 def _check_loader():
