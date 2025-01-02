@@ -358,6 +358,73 @@ class Data:
         loaded_from (str): name of the file where the data was loaded from.
     """
 
+    def __repr__(self):
+        return self.__str__()
+
+    def __str__(self):
+        """Return a string representation of the Data object."""
+        txt = f"Data-object (id: {hex(id(self))})\n"
+
+        # Add general attributes
+        txt += "\nAttributes:\n"
+        for p in dir(self):
+            if not p.startswith("_"):
+                if p not in [
+                    "raw",
+                    "summary", 
+                    "steps",
+                    "logger",
+                    "raw_data_files",
+                    "custom_info",
+                    "populate_defaults",
+                ]:
+                    value = self.__getattribute__(p)
+                    txt += f"{p}: {value}\n"
+            if p == "raw_data_files":
+                fid_txt = "raw data files: ["
+                fid_names = ", ".join([f.name for f in self.raw_data_files])
+                fid_txt += f"{fid_names}]\n"
+                txt += fid_txt
+
+        # Add raw dataframe info
+        txt += "\nRaw Data:\n"
+        try:
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                txt += str(self.raw.describe()) + "\n"
+                txt += str(self.raw.head()) + "\n"
+        except (AttributeError, ValueError):
+            txt += "not found!\n"
+
+        # Add summary dataframe info  
+        txt += "\nSummary Data:\n"
+        try:
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                txt += str(self.summary.describe()) + "\n"
+                txt += str(self.summary.head()) + "\n"
+        except (AttributeError, ValueError):
+            txt += "not found!\n"
+
+        # Add steps dataframe info
+        txt += "\nSteps Data:\n"
+        try:
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                txt += str(self.steps.describe()) + "\n"
+                txt += str(self.steps.head()) + "\n"
+        except (AttributeError, ValueError):
+            txt += "not found!\n"
+
+        # Add custom info
+        txt += "\nCustom Info:\n"
+        try:
+            txt += str(self.custom_info) + "\n"
+        except AttributeError:
+            txt += "not found!\n"
+
+        return txt
+
     def _repr_html_(self):
         txt = f"<h2>Data-object</h2> <b>id</b>: {hex(id(self))}"
 
@@ -546,63 +613,6 @@ class Data:
         txt += 80 * "-" + "\n"
         txt += f" {hdr} ".center(80) + "\n"
         txt += 80 * "-" + "\n"
-        return txt
-
-    def __str__(self):
-        txt = "<Data>\n"
-        txt += "loaded from file(s)\n"
-        if isinstance(self.loaded_from, (list, tuple)):
-            for f in self.loaded_from:
-                txt += str(f)
-                txt += "\n"
-
-        else:
-            txt += str(self.loaded_from)
-            txt += "\n"
-        txt += "\n* GLOBAL\n"
-        txt += f"material:            {self.meta_common.material}\n"
-        txt += f"mass (active):       {self.meta_common.mass}\n"
-        txt += f"mass (total):        {self.meta_common.tot_mass}\n"
-        txt += f"nominal capacity:    {self.meta_common.nom_cap}\n"
-        txt += f"test ID:             {self.meta_test_dependent.test_ID}\n"
-        txt += f"channel index:       {self.meta_test_dependent.channel_index}\n"
-        txt += f"creator:             {self.meta_test_dependent.creator}\n"
-        txt += f"schedule file name:  {self.meta_test_dependent.schedule_file_name}\n"
-
-        try:
-            if self.start_datetime:
-                start_datetime_str = xldate_as_datetime(self.start_datetime)
-            else:
-                start_datetime_str = "Not given"
-        except AttributeError:
-            start_datetime_str = "NOT READABLE YET"
-
-        txt += f"start-date:         {start_datetime_str}\n"
-
-        txt += self._header_str("DATA")
-        try:
-            txt += str(self.raw.describe())
-        except (AttributeError, ValueError):
-            txt += "EMPTY (Not processed yet)\n"
-
-        txt += self._header_str("SUMMARY")
-        try:
-            txt += str(self.summary.describe())
-        except (AttributeError, ValueError):
-            txt += "EMPTY (Not processed yet)\n"
-
-        txt += self._header_str("STEP TABLE")
-        try:
-            txt += str(self.steps.describe())
-            txt += str(self.steps.head())
-        except (AttributeError, ValueError):
-            txt += "EMPTY (Not processed yet)\n"
-
-        txt += self._header_str("RAW UNITS")
-        try:
-            txt += str(self.raw_units)
-        except (AttributeError, ValueError):
-            txt += "EMPTY (Not processed yet)\n"
         return txt
 
     def populate_defaults(self):

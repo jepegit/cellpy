@@ -622,6 +622,7 @@ class HeadersJournal(BaseHeaders):
     label: str = "label"
     cell_type: str = "cell_type"
     instrument: str = "instrument"
+    model: str = "model"
     raw_file_names: str = "raw_file_names"
     cellpy_file_name: str = "cellpy_file_name"
     group: str = "group"

@@ -341,18 +341,32 @@ class CyclingExperiment(BaseExperiment):
             # --- UPDATING ARGUMENTS ---
             filename = None
             instrument = None
+            model = None
+
             cellpy_file = OtherPath(row[hdr_journal.cellpy_file_name])
             if force_cellpy and not cellpy_file.is_file():
                 logging.critical(f"Cellpy file not given in the journal.pages for index={index}")
                 errors.append(index)
                 continue
             _cellpy_file = None
+
             if not force_raw and cellpy_file.is_file():
                 _cellpy_file = cellpy_file
                 logging.debug(f"Got cellpy file: {_cellpy_file}")
+
             if not force_cellpy:
                 filename = row[hdr_journal.raw_file_names]
                 instrument = row[hdr_journal.instrument]
+
+            if hdr_journal.model in row:
+                model = row[hdr_journal.model]
+
+            elif instrument and "::" in instrument:
+                # allow for model to be specified in the instrument string
+                # but only if it is not already specified in the journal
+                instrument, model = instrument.split("::")
+                cell_spec["model"] = model.strip()
+                instrument = instrument.strip()
 
             cycle_mode = row[hdr_journal.cell_type]
             mass = row[hdr_journal.mass]
@@ -360,6 +374,7 @@ class CyclingExperiment(BaseExperiment):
 
             loading = None
             area = None
+
             if hdr_journal.loading in row:
                 nom_cap_specifics = row[hdr_journal.nom_cap_specifics]
             else:
@@ -389,11 +404,13 @@ class CyclingExperiment(BaseExperiment):
                 logging.info(f"Processing {index}")
 
             logging.info("loading cell")
+
             try:
                 logging.debug("inside try: running cellpy.get")
                 cell_data = cellpy.get(
                     filename=filename,
                     instrument=instrument,
+                    model=model,
                     cellpy_file=_cellpy_file,
                     cycle_mode=cycle_mode,
                     mass=mass,
@@ -659,6 +676,7 @@ class CyclingExperiment(BaseExperiment):
                 # --- UPDATING ARGUMENTS ---
                 filename = None
                 instrument = None
+                model = None
                 cellpy_file = OtherPath(row[hdr_journal.cellpy_file_name])
                 _cellpy_file = None
                 if not force_raw and cellpy_file.is_file():
@@ -667,6 +685,16 @@ class CyclingExperiment(BaseExperiment):
                 if not force_cellpy:
                     filename = row[hdr_journal.raw_file_names]
                     instrument = row[hdr_journal.instrument]
+
+                if hdr_journal.model in row:
+                    model = row[hdr_journal.model]
+
+                elif instrument and "::" in instrument:
+                    # allow for model to be specified in the instrument string
+                    # but only if it is not already specified in the journal
+                    instrument, model = instrument.split("::")
+                    cell_spec["model"] = model.strip()
+                    instrument = instrument.strip()
 
                 cycle_mode = row[hdr_journal.cell_type]
                 mass = row[hdr_journal.mass]
@@ -704,6 +732,7 @@ class CyclingExperiment(BaseExperiment):
                     dict(
                         filename=filename,
                         instrument=instrument,
+                        model=model,
                         cellpy_file=_cellpy_file,
                         cycle_mode=cycle_mode,
                         mass=mass,
