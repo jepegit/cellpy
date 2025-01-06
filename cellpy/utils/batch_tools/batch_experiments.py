@@ -361,10 +361,10 @@ class CyclingExperiment(BaseExperiment):
             if hdr_journal.model in row:
                 model = row[hdr_journal.model]
 
-            elif instrument and "::" in instrument:
+            elif instrument and "||" in instrument:
                 # allow for model to be specified in the instrument string
                 # but only if it is not already specified in the journal
-                instrument, model = instrument.split("::")
+                instrument, model = instrument.split("||")
                 cell_spec["model"] = model.strip()
                 instrument = instrument.strip()
 
@@ -689,10 +689,10 @@ class CyclingExperiment(BaseExperiment):
                 if hdr_journal.model in row:
                     model = row[hdr_journal.model]
 
-                elif instrument and "::" in instrument:
+                elif instrument and "||" in instrument:
                     # allow for model to be specified in the instrument string
                     # but only if it is not already specified in the journal
-                    instrument, model = instrument.split("::")
+                    instrument, model = instrument.split("||")
                     cell_spec["model"] = model.strip()
                     instrument = instrument.strip()
 

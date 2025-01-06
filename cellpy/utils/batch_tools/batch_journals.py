@@ -268,9 +268,14 @@ class LabJournal(BaseJournal, ABC):
 
     @classmethod
     def read_journal_jason_file(cls, file_name, **kwargs):
-        logging.debug(f"json loader starting on {file_name}")
-        with open(file_name, "r") as infile:
-            top_level_dict = json.load(infile)
+        is_raw_bytes = kwargs.pop("is_raw_bytes", False)
+        if is_raw_bytes:
+            logging.debug(f"json loader starting on raw bytes")
+            top_level_dict = json.loads(file_name)
+        else:
+            logging.debug(f"json loader starting on {file_name}")
+            with open(file_name, "r") as infile:
+                top_level_dict = json.load(infile)
         pages_dict = top_level_dict["info_df"]
         meta = top_level_dict["metadata"]
         session = top_level_dict.get("session", None)

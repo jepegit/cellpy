@@ -216,7 +216,11 @@ def simple_db_engine(
             pages_dict[hdr_journal["nom_cap_specifics"]] = "gravimetric"
 
         try:
-            pages_dict[hdr_journal["file_name_indicator"]] = _query(reader.get_file_name_indicator, cell_ids)
+            # updated 06.01.2025: some old db files returns None for file_name_indicator
+            _file_name_indicator = _query(reader.get_file_name_indicator, cell_ids)
+            if _file_name_indicator is None:
+                _file_name_indicator = _query(reader.get_cell_name, cell_ids)
+            pages_dict[hdr_journal["file_name_indicator"]] = _file_name_indicator
         except Exception as e:
             pages_dict[hdr_journal["file_name_indicator"]] = pages_dict[
                 hdr_journal["filename"]
