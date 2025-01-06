@@ -166,6 +166,10 @@ class Data(collections.UserDict):
             logging.debug(f"Could not create accessors: {e}")
 
     def _create_accessor_label(self, cell_label):
+        if isinstance(cell_label, int):
+            logging.critical(f"cell_label is an integer: {cell_label}")
+            logging.critical("Could be due to missing 'cell' or 'cell_label' in the journal")
+            return self.accessor_pre + str(cell_label)
         return self.accessor_pre + cell_label
 
     def _create_cell_label(self, accessor_label):
