@@ -712,6 +712,8 @@ def summary_plotting_engine(**kwargs):
                 logging.debug(f"({type(experiment)})")
                 continue
             canvas = generate_summary_plots(experiment=experiment, farms=farms, **kwargs)
+            if canvas is None:
+                logging.debug("OH NO! Could not generate canvas")
             farms.append(canvas)
             if backend == "plotly":
                 if kwargs.pop("plotly_show", True):
@@ -729,6 +731,7 @@ def generate_summary_plots(experiment, **kwargs):
     }
     try:
         summaries = generate_summary_frame_for_plotting(pages, experiment, **kwargs)
+        logging.debug(f"generated summaries - shape: {summaries.shape}")
     except KeyError as e:
         logging.info(f"could not process the summaries ({e})")
         return
@@ -742,7 +745,7 @@ def generate_summary_plots(experiment, **kwargs):
     return canvas
 
 
-def generate_summary_frame_for_plotting(pages, experiment, **kwargs):
+def generate_summary_frame_for_plotting(pages, experiment, **kwargs) -> pd.DataFrame:
     trim_pages = kwargs.pop("trim_pages", False)
     capacity_specifics = kwargs.get("capacity_specifics", "gravimetric")
     keys = [df.name for df in experiment.memory_dumped["summary_engine"]]
@@ -1031,6 +1034,20 @@ def plot_cycle_life_summary_plotly(summaries: pd.DataFrame, **kwargs):
 
     if filter_by_name is not None:
         summaries = summaries.loc[summaries.cell.str.contains(filter_by_name), :]
+
+    # TODO: consider performing a sanity check here
+
+    logging.debug(f"number of cells: {number_of_cells}")
+    logging.debug(f"number of rows: {number_of_rows}")
+    logging.debug(f"data shape: {summaries.shape}")
+    logging.debug(f"data columns: {summaries.columns}")
+    logging.debug(f"x and x range: {hdr_cycle}, {x_range}")
+    logging.debug(f"color and symbol selectors: {color_selector}, {symbol_selector}")
+    logging.debug(f"labels: {labels}")
+    logging.debug(f"total height: {total_height}")
+    logging.debug(f"width: {width}")
+    logging.debug(f"plotted summaries (category_orders): {plotted_summaries}")
+
     try:
         canvas = px.line(
             summaries,
@@ -1051,6 +1068,9 @@ def plot_cycle_life_summary_plotly(summaries: pd.DataFrame, **kwargs):
     except Exception as e:
         logging.critical(f"could not create plotly plot ({e})")
         raise e
+
+    logging.debug("plotly plot created")
+    logging.debug(f"canvas: {canvas}")
 
     adjust_row_heights = True
     if number_of_rows == 1:
@@ -1225,11 +1245,14 @@ def plot_cycle_life_summary_seaborn(summaries: pd.DataFrame, **kwargs):
             else:
                 ax.set_xlabel(_x_label)
         r = ranges.get(hdr, (None, None))
+
+        # TODO: finalize update legend
         legend_handles, legend_labels = ax.get_legend_handles_labels()
-        # TODO: update legend
         if legend_handles:
             logging.debug("got legend handles")
             # ax.legend(legend_handles, legend_labels)
+            # Google it... or ChatGPT it.
+
         ax.set_title("")
         ax.set_ylabel(y_label)
         ax.set_ylim(r)

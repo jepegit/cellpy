@@ -300,6 +300,7 @@ def join_summaries(
     column_names_are_unique = all([frame.columns.is_unique for frame in frames])
 
     if not indexes_are_unique:
+        logging.debug("non-unique indexes observed in summary frames")
         if mitigation_strategy == "drop":
             logging.critical("non-unique index observed in summary frames - dropping duplicates")
             frames = [frame.loc[~frame.index.duplicated(keep=mitigation_keep_method)] for frame in frames]
@@ -308,6 +309,7 @@ def join_summaries(
             # frames = [frame.reset_index(drop=False) for frame in frames]
 
     if not column_names_are_unique:
+        logging.debug("non-unique column names observed in summary frames")
         if mitigation_strategy == "drop":
             logging.critical("non-unique column names observed in summary frames - dropping duplicates")
             frames = [frame.loc[:, ~frame.columns.duplicated(keep=mitigation_keep_method)] for frame in frames]
@@ -315,6 +317,9 @@ def join_summaries(
             logging.debug(f"mitigation method {mitigation_strategy} for non-unique column names not implemented yet")
 
     summary_df = pd.concat(frames, keys=keys, axis=1, sort=True)
+    logging.debug("Created summary_df")
+    logging.debug(f"summary_df columns: {summary_df.columns}")
+    logging.debug(f"summary_df shape: {summary_df.shape}")
 
     for key, value in selected_summaries_dict.items():
         _summary_df = summary_df.iloc[:, summary_df.columns.get_level_values(1) == value]

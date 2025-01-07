@@ -93,6 +93,7 @@ def summary_engine(**kwargs):
             selected_summaries = SELECTED_SUMMARIES
         else:
             selected_summaries = experiment.selected_summaries
+        logging.debug(f"selected summaries: {selected_summaries}")
         if reset or experiment.summary_frames is None:
             logging.debug("No summary frames found")
             logging.debug("Re-loading")
