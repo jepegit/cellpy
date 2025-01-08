@@ -74,9 +74,9 @@ class LabJournal(BaseJournal, ABC):
                 self.db_reader = dbreader.Reader()
                 self.engine = simple_db_engine
             elif db_reader == "sql_db_reader":
-                raise NotImplementedError("sql_db_reader is not implemented yet")
-                # self.db_reader = sql_dbreader.SqlReader()
-                # self.engine = sql_db_engine
+                raise NotImplementedError(
+                    "sql_db_reader is not implemented yet"
+                )  # self.db_reader = sql_dbreader.SqlReader()  # self.engine = sql_db_engine
             else:
                 raise UnderDefined(f"The db-reader '{db_reader}' is not supported")
         else:
@@ -267,7 +267,11 @@ class LabJournal(BaseJournal, ABC):
         self._prm_packer(meta_dict)
 
     @classmethod
-    def read_journal_jason_file(cls, file_name, **kwargs):
+    def read_journal_jason_file(
+        cls, file_name: Union[pathlib.Path, str, bytes, bytearray], **kwargs
+    ) -> tuple[pd.DataFrame, dict, dict]:
+        """Loads a journal file in json format."""
+
         is_raw_bytes = kwargs.pop("is_raw_bytes", False)
         if is_raw_bytes:
             logging.debug(f"json loader starting on raw bytes")
@@ -276,12 +280,13 @@ class LabJournal(BaseJournal, ABC):
             logging.debug(f"json loader starting on {file_name}")
             with open(file_name, "r") as infile:
                 top_level_dict = json.load(infile)
+
         pages_dict = top_level_dict["info_df"]
         meta = top_level_dict["metadata"]
         session = top_level_dict.get("session", None)
         pages = pd.DataFrame(pages_dict)
         if pages.empty:
-            logging.critical("could not find any pages in the journal")
+            logging.critical("could not find any pages in the journal (seems to be empty - no data)")
             raise UnderDefined
 
         pages = cls._clean_pages(pages)
@@ -362,7 +367,7 @@ class LabJournal(BaseJournal, ABC):
     @classmethod
     def _unpack_session(cls, session):
         try:
-            bcn2 = {l: list(sb["cycle_index"].values) for l, sb in session["bad_cycles"].groupby("cell_name")}
+            bcn2 = {l: sb["cycle_index"].to_list() for l, sb in session["bad_cycles"].groupby("cell_name")}
         except KeyError:
             bcn2 = []
 
@@ -395,8 +400,9 @@ class LabJournal(BaseJournal, ABC):
         return meta.to_dict()["value"]
 
     @classmethod
-    def _clean_session(cls, session, pages):
-        # include steps for cleaning up the session dict here
+    def _clean_session(cls, session: dict, pages: pd.DataFrame) -> tuple[dict, pd.DataFrame]:
+        # TODO: clean up this method
+        #   I wonder why I included pages as one of the arguments here...
         if not session:
             logging.critical("no session found in your journal file")
         for item in keys_journal_session:
@@ -407,6 +413,9 @@ class LabJournal(BaseJournal, ABC):
     @classmethod
     def _clean_pages(cls, pages: Union[pd.DataFrame, dict]) -> pd.DataFrame:
         import ast
+
+        # TODO: clean up this method
+        #  (and it is probably not suited for a class method anymore)
 
         if isinstance(pages, dict):
             pages = pd.DataFrame(pages)
@@ -424,15 +433,15 @@ class LabJournal(BaseJournal, ABC):
                         if isinstance(new_f, list):
                             f = new_f
                     except Exception as e:
-                        warnings.warn(e)
+                        logging.warning(e)
                         warnings.warn(f"Could not evaluate {f}")
 
                 new_p.append(f)
             pages[hdr_journal.raw_file_names] = new_p
-
         except KeyError:
             print("Tried but failed in converting raw_file_names into an appropriate list")
         try:
+            # TODO: the _fix_cellpy_paths method does not work with OtherPaths (yet?) - fix this
             pages[hdr_journal.cellpy_file_name] = pages[hdr_journal.cellpy_file_name].apply(cls._fix_cellpy_paths)
         except KeyError:
             # assumes it is an old type journal file
@@ -440,6 +449,7 @@ class LabJournal(BaseJournal, ABC):
             print(f"Assumes that this is an old-type journal file.")
             try:
                 pages.rename(columns=trans_dict, inplace=True)
+                # TODO: the _fix_cellpy_paths method does not work with OtherPaths (yet?) - fix this
                 pages[hdr_journal.cellpy_file_name] = pages[hdr_journal.cellpy_file_name].apply(cls._fix_cellpy_paths)
                 logging.warning("old journal file - updating")
             except KeyError:
@@ -450,7 +460,9 @@ class LabJournal(BaseJournal, ABC):
         # only keep selected cells if keep column exists
         if "keep" in pages.columns:
             logging.debug("Journal contains 'keep' - selecting only 'keep' > 0.")
-            pages = pages.loc[pages.keep > 0, :]
+            negatives = ["No", "no", "n", "False", "false", "f", "0", "0.0", 0, 0.0]
+            not_negative = ~pages.keep.isin(negatives)
+            pages = pages.loc[not_negative, :]
 
         for column_name in missing_keys:
             if column_name not in pages.columns:
@@ -475,6 +487,7 @@ class LabJournal(BaseJournal, ABC):
         else:
             file_loader = self.read_journal_jason_file
         try:
+            # Assuming that the file_loader performs the appropriate cleaning and fixing.
             out = file_loader(file_name, **kwargs)
             if out is None:
                 raise IOError(f"Error reading {file_name}.")
@@ -500,7 +513,7 @@ class LabJournal(BaseJournal, ABC):
         if project is not None:
             self.project = project
 
-        self.pages = frame  # TODO: include a check here to see if the pages are appropriate
+        self.pages = self._clean_pages(frame)
         for hdr in hdr_journal.values():
             if hdr not in self.pages.columns:
                 self.pages[hdr] = None
@@ -689,6 +702,124 @@ class LabJournal(BaseJournal, ABC):
         logging.debug(f"batch dir: {self.batch_dir}")
         logging.debug(f"project dir: {self.project_dir}")
         logging.debug(f"raw dir: {self.raw_dir}")
+
+    def _pages_add_column(self, column_name, column_data=None, overwrite=False):
+        if column_name in self.pages.columns and not overwrite:
+            logging.critical(f"column {column_name} already exists")
+            logging.critical("use overwrite=True to overwrite")
+            return
+        self.pages[column_name] = column_data
+
+    def _pages_remove_column(self, column_name):
+        if column_name in self.pages.columns:
+            self.pages.drop(column_name, axis=1, inplace=True)
+        else:
+            logging.critical(f"column {column_name} does not exist")
+
+    def _pages_rename_column(self, old_column_name, new_column_name):
+        if old_column_name in self.pages.columns:
+            self.pages.rename(columns={old_column_name: new_column_name}, inplace=True)
+        else:
+            logging.critical(f"column {old_column_name} does not exist")
+
+    def _pages_set_columns_first(self, column_names: list):
+        _column_names = []
+        number_of_columns = self.pages.shape[1]
+        for column_name in column_names:
+            if column_name not in self.pages.columns:
+                logging.critical(f"column {column_name} does not exist")
+            else:
+                _column_names.append(column_name)
+        column_names = _column_names + [col for col in self.pages.columns if col not in _column_names]
+        if number_of_columns != len(column_names):
+            logging.critical("number of columns changed")
+        else:
+            self.pages = self.pages[column_names]
+
+    def _pages_set_column_first(self, column_name):
+        if column_name not in self.pages.columns:
+            logging.critical(f"column {column_name} does not exist")
+            return
+        column_names = list(self.pages.columns)
+        column_names.remove(column_name)
+        column_names = [column_name] + column_names
+        self.pages = self.pages[column_names]
+
+    def _pages_set_value(self, cell_name, column_name, value):
+        if column_name not in self.pages.columns:
+            logging.critical(f"column {column_name} does not exist")
+            return
+        if cell_name not in self.pages.index:
+            logging.critical(f"cell {cell_name} does not exist")
+            return
+        self.pages.loc[cell_name, column_name] = value
+
+    def select_group(self, group):
+        """Toggle the selected status of a group of cells."""
+        if group not in self.pages[hdr_journal.group].unique():
+            logging.critical(f"group {group} does not exist")
+            return
+        self.pages.loc[self.pages[hdr_journal.group] == group, "selected"] = 1
+
+    def unselect_group(self, group):
+        """Toggle the selected status of a group of cells."""
+        if group not in self.pages[hdr_journal.group].unique():
+            logging.critical(f"group {group} does not exist")
+            return
+        self.pages.loc[self.pages[hdr_journal.group] == group, "selected"] = 0
+
+    def toggle_selected(self, cell_name):
+        """Toggle the selected status of a cell."""
+        if cell_name in self.pages.index:
+            if self.pages.loc[cell_name, "selected"]:
+                self.pages.loc[cell_name, "selected"] = 0
+            else:
+                self.pages.loc[cell_name, "selected"] = 1
+
+    def select_by(self, criterion: str):
+        """Select only cells based on criterion as used by the pandas query method."""
+        df = self.pages.copy()
+        try:
+            selected = df.query(criterion).index
+            df.loc[df.index.isin(selected), "selected"] = 1
+            df.loc[~df.index.isin(selected), "selected"] = 0
+        except Exception as e:
+            logging.critical(f"Could not select by {criterion}: {e}")
+            return
+        self.pages = df
+
+    def select_distinct(self, column_name, value):
+        """Select cells based on a column value."""
+        if column_name not in self.pages.columns:
+            logging.critical(f"column {column_name} does not exist")
+            return
+        criterion = self.pages[column_name] == value
+        self.pages.loc[criterion, "selected"] = 1
+
+    def _cellpy_filenames_to_cellpy_directory(self, cellpy_directory: pathlib.Path = None):
+        if cellpy_directory is None:
+            cellpy_directory = prms.Paths.cellpydatadir
+        try:
+            pages = self.pages.copy()
+            pages[hdr_journal.cellpy_file_name] = self.pages[hdr_journal.cellpy_file_name].apply(
+                lambda x: cellpy_directory / pathlib.Path(x).name
+            )
+            self.pages = pages
+        except Exception as e:
+            logging.critical(f"Could not update cellpy file names: {e}")
+
+    def _cellpy_filenames_check(self, verbose=False):
+        if hdr_journal.cellpy_file_name in self.pages.columns:
+            cellpy_files = self.pages[hdr_journal.cellpy_file_name]
+            for cellpy_file in cellpy_files:
+                if not pathlib.Path(cellpy_file).is_file():
+                    logging.debug(f"Cellpy file {cellpy_file} not found")
+                    if verbose:
+                        print(f"Cellpy file {cellpy_file} not found")
+                else:
+                    logging.debug(f"Cellpy file {cellpy_file} found")
+                    if verbose:
+                        print(f"Cellpy file {cellpy_file} found")
 
     def paginate(self):
         """Make folders where we would like to put results etc."""

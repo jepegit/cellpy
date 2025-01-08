@@ -748,8 +748,29 @@ def generate_summary_plots(experiment, **kwargs):
 def generate_summary_frame_for_plotting(pages, experiment, **kwargs) -> pd.DataFrame:
     trim_pages = kwargs.pop("trim_pages", False)
     capacity_specifics = kwargs.get("capacity_specifics", "gravimetric")
-    keys = [df.name for df in experiment.memory_dumped["summary_engine"]]
-    summaries = pd.concat(experiment.memory_dumped["summary_engine"], keys=keys, axis=1)
+    only_selected = kwargs.get("only_selected", False)
+    hdr_journal_selected = "selected"  # TODO: add this to hdr_journal
+    selected = None
+
+    if only_selected:
+        if hdr_journal_selected not in pages.columns:
+            logging.critical("no 'selected' column in pages")
+            only_selected = False
+        else:
+            selected = pages.loc[pages[hdr_journal_selected] > 0, :].index
+
+    summary_frames = []
+    keys = []
+    for df in experiment.memory_dumped["summary_engine"]:
+        if only_selected:
+            df_filtered = df.copy()
+            df_filtered = df_filtered.loc[:, selected]
+            summary_frames.append(df_filtered)
+        else:
+            summary_frames.append(df)
+        keys.append(df.name)
+
+    summaries = pd.concat(summary_frames, keys=keys, axis=1)
     summaries = summaries.reset_index()
     summaries.columns.names = ["variable", "cell"]
 

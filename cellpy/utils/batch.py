@@ -1528,7 +1528,6 @@ def init(*args, empty=False, **kwargs) -> Batch:
     # set up cellpy logger
     default_log_level = kwargs.pop("default_log_level", None)
     testing = kwargs.pop("testing", False)
-
     log.setup_logging(default_level=default_log_level, testing=testing, reset_big_log=True)
     if empty:
         logging.debug("returning naked Batch")
