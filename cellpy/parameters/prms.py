@@ -429,3 +429,15 @@ _minimum_columns_to_keep_for_raw_if_exists = [
 # used during development for testing new features
 
 _res_chunk = 0
+
+
+def _set_arbin_res_subprocess_exporter(sub_process_path: str):
+    import pathlib
+
+    # check if the sub_process_path exists:
+    if not pathlib.Path(sub_process_path).exists():
+        raise FileNotFoundError(f"Could not find the sub_process_path: {sub_process_path}")
+
+    Instruments.Arbin.use_subprocess = True
+    Instruments.Arbin.detect_subprocess_need = False
+    Instruments.Arbin.sub_process_path = sub_process_path

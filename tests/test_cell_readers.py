@@ -870,6 +870,27 @@ def test_get_advanced(parameters):
     )
 
 
+@pytest.mark.skip(reason="only run locally")
+def test_get_arbin_res_mdbtools(parameters):
+    from cellpy import prms
+
+    prms.Instruments.Arbin.use_subprocess = True
+    prms.Instruments.Arbin.sub_process_path = r"C:\scripting\cellpy_utilities\cellpy_utils\mdbtools-win\mdb-export.exe"
+    c = cellpy.get(parameters.res_file_path, instrument="arbin_res", testing=True, mass=0.035)
+    prms.Instruments.Arbin.use_subprocess = False
+
+
+@pytest.mark.skip(reason="only run locally")
+def test_get_arbin_res_mdbtools_short_cut(parameters):
+    from cellpy import prms
+
+    sub_process_path = r"C:\scripting\cellpy_utilities\cellpy_utils\mdbtools-win\mdb-export.exe"
+    prms._set_arbin_res_subprocess_exporter(sub_process_path=sub_process_path)
+    c = cellpy.get(parameters.res_file_path, instrument="arbin_res", testing=True, mass=0.035)
+    prms.Instruments.Arbin.use_subprocess = False
+    assert c.data.summary.shape == (18, 61)
+
+
 def test_get_empty():
     c_empty = cellpy.get(testing=True)
 
