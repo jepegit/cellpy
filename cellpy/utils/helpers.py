@@ -946,6 +946,18 @@ def concat_summaries(
             logging.debug(f"Processing [{cell_id}]")
             group = pages.loc[cell_id, "group"]
             sub_group = pages.loc[cell_id, "sub_group"]
+            if "group_label" in pages.columns:
+                group_label = pages.loc[cell_id, "group_label"]
+            else:
+                group_label = None
+            if "selected" in pages.columns:
+                selected = pages.loc[cell_id, "selected"]
+            else:
+                selected = None
+            if "label" in pages.columns:
+                label = pages.loc[cell_id, "label"]
+            else:
+                label = None
             try:
                 c = b.experiment.data[cell_id]
             except KeyError as e:
@@ -990,7 +1002,11 @@ def concat_summaries(
 
                 # add group and subgroup
                 if not group_it:
-                    s = s.assign(group=group, sub_group=sub_group)
+                    s = s.assign(
+                        group=group, sub_group=sub_group, group_label=group_label, selected=selected, label=label
+                    )
+                else:
+                    s = s.assign(group_label=group_label, selected=selected)
 
                 frames_sub.append(s)
                 keys_sub.append(cell_id)

@@ -5,7 +5,7 @@ import pathlib
 import platform
 import shutil
 import tempfile
-from typing import Union
+from typing import Union, Any
 import warnings
 from abc import ABC
 
@@ -703,26 +703,26 @@ class LabJournal(BaseJournal, ABC):
         logging.debug(f"project dir: {self.project_dir}")
         logging.debug(f"raw dir: {self.raw_dir}")
 
-    def _pages_add_column(self, column_name, column_data=None, overwrite=False):
+    def _pages_add_column(self, column_name: str, column_data: Any = None, overwrite=False):
         if column_name in self.pages.columns and not overwrite:
             logging.critical(f"column {column_name} already exists")
             logging.critical("use overwrite=True to overwrite")
             return
         self.pages[column_name] = column_data
 
-    def _pages_remove_column(self, column_name):
+    def _pages_remove_column(self, column_name: str) -> None:
         if column_name in self.pages.columns:
             self.pages.drop(column_name, axis=1, inplace=True)
         else:
             logging.critical(f"column {column_name} does not exist")
 
-    def _pages_rename_column(self, old_column_name, new_column_name):
+    def _pages_rename_column(self, old_column_name: str, new_column_name: str) -> None:
         if old_column_name in self.pages.columns:
             self.pages.rename(columns={old_column_name: new_column_name}, inplace=True)
         else:
             logging.critical(f"column {old_column_name} does not exist")
 
-    def _pages_set_columns_first(self, column_names: list):
+    def _pages_set_columns_first(self, column_names: list) -> None:
         _column_names = []
         number_of_columns = self.pages.shape[1]
         for column_name in column_names:
@@ -736,7 +736,7 @@ class LabJournal(BaseJournal, ABC):
         else:
             self.pages = self.pages[column_names]
 
-    def _pages_set_column_first(self, column_name):
+    def _pages_set_column_first(self, column_name: str) -> None:
         if column_name not in self.pages.columns:
             logging.critical(f"column {column_name} does not exist")
             return
@@ -754,21 +754,29 @@ class LabJournal(BaseJournal, ABC):
             return
         self.pages.loc[cell_name, column_name] = value
 
-    def select_group(self, group):
+    def select_all(self) -> None:
+        """Select all cells."""
+        self.pages["selected"] = 1
+
+    def unselect_all(self) -> None:
+        """Unselect all cells."""
+        self.pages["selected"] = 0
+
+    def select_group(self, group: int) -> None:
         """Toggle the selected status of a group of cells."""
         if group not in self.pages[hdr_journal.group].unique():
             logging.critical(f"group {group} does not exist")
             return
         self.pages.loc[self.pages[hdr_journal.group] == group, "selected"] = 1
 
-    def unselect_group(self, group):
+    def unselect_group(self, group: int) -> None:
         """Toggle the selected status of a group of cells."""
         if group not in self.pages[hdr_journal.group].unique():
             logging.critical(f"group {group} does not exist")
             return
         self.pages.loc[self.pages[hdr_journal.group] == group, "selected"] = 0
 
-    def toggle_selected(self, cell_name):
+    def toggle_selected(self, cell_name: str) -> None:
         """Toggle the selected status of a cell."""
         if cell_name in self.pages.index:
             if self.pages.loc[cell_name, "selected"]:
@@ -776,7 +784,7 @@ class LabJournal(BaseJournal, ABC):
             else:
                 self.pages.loc[cell_name, "selected"] = 1
 
-    def select_by(self, criterion: str):
+    def select_by(self, criterion: str) -> None:
         """Select only cells based on criterion as used by the pandas query method."""
         df = self.pages.copy()
         try:
@@ -788,7 +796,7 @@ class LabJournal(BaseJournal, ABC):
             return
         self.pages = df
 
-    def select_distinct(self, column_name, value):
+    def select_distinct(self, column_name: str, value: Union[str, int, float]) -> None:
         """Select cells based on a column value."""
         if column_name not in self.pages.columns:
             logging.critical(f"column {column_name} does not exist")
@@ -796,7 +804,11 @@ class LabJournal(BaseJournal, ABC):
         criterion = self.pages[column_name] == value
         self.pages.loc[criterion, "selected"] = 1
 
-    def _cellpy_filenames_to_cellpy_directory(self, cellpy_directory: pathlib.Path = None):
+    def update_group_labels(self, group_labels: dict) -> None:
+        if hdr_journal.group in self.pages.columns:
+            self.pages[hdr_journal.group] = self.pages[hdr_journal.group].apply(lambda x: group_labels.get(x, x))
+
+    def _cellpy_filenames_to_cellpy_directory(self, cellpy_directory: pathlib.Path = None) -> None:
         if cellpy_directory is None:
             cellpy_directory = prms.Paths.cellpydatadir
         try:
@@ -808,7 +820,7 @@ class LabJournal(BaseJournal, ABC):
         except Exception as e:
             logging.critical(f"Could not update cellpy file names: {e}")
 
-    def _cellpy_filenames_check(self, verbose=False):
+    def _cellpy_filenames_check(self, verbose: bool = False) -> None:
         if hdr_journal.cellpy_file_name in self.pages.columns:
             cellpy_files = self.pages[hdr_journal.cellpy_file_name]
             for cellpy_file in cellpy_files:
@@ -821,7 +833,7 @@ class LabJournal(BaseJournal, ABC):
                     if verbose:
                         print(f"Cellpy file {cellpy_file} found")
 
-    def paginate(self):
+    def paginate(self) -> tuple[str, str, str]:
         """Make folders where we would like to put results etc."""
 
         project_dir = self.project_dir
@@ -852,7 +864,7 @@ class LabJournal(BaseJournal, ABC):
 
         return project_dir, batch_dir, raw_dir
 
-    def generate_file_name(self):
+    def generate_file_name(self) -> None:
         """generate a suitable file name for the experiment"""
         if not self.project:
             raise UnderDefined("project name not given")

@@ -1263,7 +1263,8 @@ class Batch:
 
             filter_by_group (int or list of ints): show only the selected group(s)
             filter_by_name (str): show only cells containing this string
-            inverted_mode(bool): invert the colors vs symbols (only for plotly)
+            inverted_mode (bool): invert the colors vs symbols (only for plotly)
+            only_selected (bool): only show the selected cells
             capacity_specifics (str): select how to present the capacity ("gravimetric", "areal" or "absolute")
                 (defaults to "gravimetric")
 
@@ -1564,10 +1565,10 @@ def naked(name=None, project=None) -> Batch:
     return b
 
 
-def from_journal(journal_file, autolink=True, testing=False) -> Batch:
+def from_journal(journal_file, autolink=True, testing=False, **kwargs) -> Batch:
     """Create a Batch from a journal file"""
     # TODO: add option for setting max cycle number (experiment.last_cycle)
-    b = init(db_reader=None, file_name=journal_file, testing=testing)
+    b = init(db_reader=None, file_name=journal_file, testing=testing, **kwargs)
     if autolink:
         b.link()
     return b

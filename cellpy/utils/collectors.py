@@ -821,6 +821,7 @@ class BatchSummaryCollector(BatchCollector):
         cmap=None,
         spread: bool = None,
         fig_title: str = None,
+        only_selected: bool = None,
         *args,
         **kwargs,
     ):
@@ -855,6 +856,7 @@ class BatchSummaryCollector(BatchCollector):
                 key_index_bounds=[0, 2], the common label will be "cell_01". Or if they are called
                 "20230101_cell_01_01_01" and "20230101_cell_01_01_02" and you set key_index_bounds=[1, 3],
                 the common label will be "cell_01_01" (elevated data collector argument).
+            only_selected (bool): only plot selected columns (elevated plotter argument).
             markers (bool): plot points if True (elevated plotter argument).
             line (bool): plot line if True (elevated plotter argument).
             width: width of plot (elevated plotter argument).
@@ -897,6 +899,7 @@ class BatchSummaryCollector(BatchCollector):
             "marker_size": marker_size,
             "cmap": cmap,
             "spread": spread,
+            "only_selected": only_selected,
         }
 
         csv_layout = kwargs.pop("csv_layout", "wide")
@@ -2229,7 +2232,17 @@ def summary_plotter(collected_curves, cycles_to_plot=None, backend="plotly", **k
     1) long format (where variables, for example charge capacity, are in the column "variable") or
     2) mixed long and wide format where the variables are own columns.
     """
+
+    # NOTE: for implementing the "only_selected" feature, we needed to add it to elevated plotter kwargs
+    #  and then pop it here. Also, we needed to include the "selected" column in the collected_curves.
+    if kwargs.pop("only_selected", False):
+        if "selected" not in collected_curves.columns:
+            logging.critical("No 'selected' column in collected_curves")
+        else:
+            collected_curves = collected_curves.loc[collected_curves["selected"] == 1, :]
+
     col_headers = collected_curves.columns.to_list()
+    not_available_for_plotting = ["selected", "label", "group_label"]
     possible_id_vars = [
         "cell",
         "cycle",
@@ -2245,6 +2258,9 @@ def summary_plotter(collected_curves, cycles_to_plot=None, backend="plotly", **k
         if n in col_headers:
             col_headers.remove(n)
             id_vars.append(n)
+    for n in not_available_for_plotting:
+        if n in col_headers:
+            col_headers.remove(n)
 
     if "variable" not in col_headers:
         collected_curves = collected_curves.melt(id_vars=id_vars, value_vars=col_headers)
