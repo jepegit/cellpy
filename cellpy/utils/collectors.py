@@ -657,7 +657,20 @@ class BatchCollector:
 
     def preprocess_data_for_csv(self):
         logging.debug(f"the data layout {self.csv_layout} is not supported yet!")
-        return self.data
+        not_needed_columns = ["group", "sub_group", "group_label", "label", "selected"]
+        wide_data = self.data.copy()
+        if "mean" in wide_data.columns:
+            values = ["mean", "std"]
+            columns = ["cell", "variable"]
+            wide_data = wide_data.pivot(index=["cycle"], columns=columns, values=values)
+            wide_data = wide_data.reorder_levels([2, 1, 0], axis=1)
+            wide_data = wide_data.sort_index(axis=1)
+        else:
+            columns = ["cell"]
+            values = [col for col in wide_data.columns if col not in not_needed_columns]
+            wide_data = wide_data.pivot(index=["cycle"], columns=columns, values=values)
+
+        return wide_data
 
     def to_csv(self, serial_number=None):
         """Save to csv file.
