@@ -828,6 +828,14 @@ class BatchSummaryCollector(BatchCollector):
         """Collects and shows summaries.
 
         Arguments:
+            b (cellpy.utils.Batch): the batch object.
+            name (str or bool): name used for auto-generating filenames etc.
+            autorun (bool): run collector and plotter immediately if True.
+            use_templates (bool): also apply template(s) in autorun mode if True.
+            backend (str): name of plotting backend to use ("plotly" or "matplotlib").
+            data_collector_arguments (dict): keyword arguments sent to the data collector.
+            plotter_arguments (dict): keyword arguments sent to the plotter.
+            update_name (bool): update the name (using automatic name generation) based on new settings.
             backend (str): what plotting backend to use (currently only 'plotly' is supported)
             max_cycle (int): drop all cycles above this value (elevated data collector argument).
             rate (float): filter on rate (C-rate) (elevated data collector argument).
@@ -856,7 +864,7 @@ class BatchSummaryCollector(BatchCollector):
                 key_index_bounds=[0, 2], the common label will be "cell_01". Or if they are called
                 "20230101_cell_01_01_01" and "20230101_cell_01_01_02" and you set key_index_bounds=[1, 3],
                 the common label will be "cell_01_01" (elevated data collector argument).
-            only_selected (bool): only plot selected columns (elevated plotter argument).
+            only_selected (bool): only process selected cells (elevated data collector argument).
             markers (bool): plot points if True (elevated plotter argument).
             line (bool): plot line if True (elevated plotter argument).
             width: width of plot (elevated plotter argument).
@@ -886,6 +894,7 @@ class BatchSummaryCollector(BatchCollector):
             inverse=inverse,
             inverted=inverted,
             key_index_bounds=key_index_bounds,
+            only_selected=only_selected,
         )
 
         elevated_plotter_arguments = {
@@ -899,7 +908,6 @@ class BatchSummaryCollector(BatchCollector):
             "marker_size": marker_size,
             "cmap": cmap,
             "spread": spread,
-            "only_selected": only_selected,
         }
 
         csv_layout = kwargs.pop("csv_layout", "wide")
@@ -1532,6 +1540,10 @@ def legend_replacer(trace, df, group_legends=True):
 
 def spread_plot(curves, plotly_arguments, **kwargs):
     """Create a spread plot (error-bands instead of error-bars)."""
+    from plotly.subplots import make_subplots
+
+    selected_variables = curves["variable"].unique()
+    number_of_rows = len(selected_variables)
 
     colors = plotly.colors.qualitative.Plotly
     opacity = 0.2
@@ -1548,49 +1560,79 @@ def spread_plot(curves, plotly_arguments, **kwargs):
         mode = "lines"
 
     g = curves.groupby("cell")
-    fig = go.Figure()
+    fig = make_subplots(
+        rows=number_of_rows,
+        cols=1,
+        shared_xaxes=True,
+        vertical_spacing=0.05,
+    )
     for i, (cell, data) in enumerate(g):
         color = color_list[i % len(color_list)]
-        fig.add_trace(
-            go.Scatter(
-                name=cell,
-                x=data["cycle"],
-                y=data["mean"],
-                mode=mode,
-                line=dict(color=color[0]),
-            )
-        )
-        fig.add_trace(
-            go.Scatter(
-                name="Upper Bound",
-                x=data["cycle"],
-                y=data["mean"] + data["std"],
-                mode="lines",
-                marker=dict(
-                    color=color[1],
+
+        for row_number, variable in enumerate(selected_variables):
+            if row_number == 0:
+                show_legend = True
+            else:
+                show_legend = False
+            sub_data = data[data["variable"] == variable]
+            fig.add_trace(
+                go.Scatter(
+                    name=cell,
+                    x=sub_data["cycle"],
+                    y=sub_data["mean"],
+                    mode=mode,
+                    line=dict(color=color[0]),
+                    legendgroup=cell,
+                    legendgrouptitle=None,
+                    showlegend=show_legend,
                 ),
-                line=dict(width=0),
-                showlegend=False,
+                row=row_number + 1,
+                col=1,
             )
-        )
-        fig.add_trace(
-            go.Scatter(
-                name="Lower Bound",
-                x=data["cycle"],
-                y=data["mean"] - data["std"],
-                mode="lines",
-                marker=dict(
-                    color=color[1],
+            fig.add_trace(
+                go.Scatter(
+                    name=f"Upper Bound {cell}",
+                    x=sub_data["cycle"],
+                    y=sub_data["mean"] + sub_data["std"],
+                    mode="lines",
+                    marker=dict(
+                        color=color[1],
+                    ),
+                    line=dict(width=0),
+                    showlegend=False,
+                    legendgroup=cell,
                 ),
-                line=dict(width=0),
-                fillcolor=color[1],
-                fill="tonexty",
-                showlegend=False,
+                row=row_number + 1,
+                col=1,
             )
-        )
+            fig.add_trace(
+                go.Scatter(
+                    name=f"Lower Bound {cell}",
+                    x=sub_data["cycle"],
+                    y=sub_data["mean"] - sub_data["std"],
+                    mode="lines",
+                    marker=dict(
+                        color=color[1],
+                    ),
+                    line=dict(width=0),
+                    fillcolor=color[1],
+                    fill="tonexty",
+                    showlegend=False,
+                    legendgroup=cell,
+                ),
+                row=row_number + 1,
+                col=1,
+            )
+
+    fig.update_layout(legend_tracegroupgap=0)
 
     if labels := plotly_arguments.get("labels"):
-        fig.update_layout(xaxis_title=labels.get("cycle", None))
+        fig.update_xaxes(title=labels.get("cycle", None))
+
+    # Hack to remove the x-axis title that appears on the top of the plot:
+    if number_of_rows > 1:
+        fig.update_layout(xaxis_title=None)
+
     if hover_mode := kwargs.pop("hovermode", None):
         fig.update_layout(hovermode=hover_mode)
 
@@ -1883,6 +1925,7 @@ def sequence_plotter(
 
         elif method == "summary":
             if spread:
+                logging.critical("using spread is an experimental feature and might not work as expected")
                 fig = spread_plot(curves, plotly_arguments, **kwargs)
             else:
                 fig = px.line(
@@ -1890,6 +1933,7 @@ def sequence_plotter(
                     **plotly_arguments,
                     **kwargs,
                 )
+
             if group_cells:  # all cells in same group has same color
                 try:
                     fig.for_each_trace(
@@ -1924,9 +1968,15 @@ def sequence_plotter(
                         print(e)
                 else:
                     try:
-                        fig.for_each_yaxis(
-                            functools.partial(y_axis_replacer, label=y_label_mapper[0]),
-                        )
+                        if spread:
+                            for i, la in enumerate(y_label_mapper):
+                                row = i + 1
+                                fig.for_each_yaxis(functools.partial(y_axis_replacer, label=la), row=row)
+
+                        else:
+                            fig.for_each_yaxis(
+                                functools.partial(y_axis_replacer, label=y_label_mapper[0]),
+                            )
                     except Exception as e:
                         print("failed")
                         print(e)
@@ -2233,16 +2283,11 @@ def summary_plotter(collected_curves, cycles_to_plot=None, backend="plotly", **k
     2) mixed long and wide format where the variables are own columns.
     """
 
-    # NOTE: for implementing the "only_selected" feature, we needed to add it to elevated plotter kwargs
-    #  and then pop it here. Also, we needed to include the "selected" column in the collected_curves.
-    if kwargs.pop("only_selected", False):
-        if "selected" not in collected_curves.columns:
-            logging.critical("No 'selected' column in collected_curves")
-        else:
-            collected_curves = collected_curves.loc[collected_curves["selected"] == 1, :]
-
     col_headers = collected_curves.columns.to_list()
-    not_available_for_plotting = ["selected", "label", "group_label"]
+
+    # need to manually update this if new columns are added to collected_curves that should not be plotted:
+    not_available_for_plotting = ["label", "group_label", "selected"]
+
     possible_id_vars = [
         "cell",
         "cycle",

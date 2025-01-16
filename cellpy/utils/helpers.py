@@ -836,6 +836,7 @@ def concat_summaries(
     pages=None,
     recalc_summary_kwargs=None,
     recalc_step_table_kwargs=None,
+    only_selected=False,
     experimental_feature_cell_selector=None,
 ) -> pd.DataFrame:
     """Merge all summaries in a batch into a gigantic summary data frame.
@@ -867,6 +868,7 @@ def concat_summaries(
             will not recalculate the summary.
         recalc_step_table_kwargs (dict): keyword arguments to be used when recalculating the step table. If not given,
             it will not recalculate the step table.
+        only_selected (bool): only use the selected cells.
 
     Returns:
         ``pandas.DataFrame``
@@ -881,7 +883,10 @@ def concat_summaries(
         pages = b.pages
 
     if experimental_feature_cell_selector is not None:
-        pages = pages.loc[experimental_feature_cell_selector]
+        pages = pages.loc[experimental_feature_cell_selector].copy()
+
+    if only_selected and "selected" in pages.columns:
+        pages = pages.loc[pages.selected == 1, :].copy()
 
     if group_it:
         g = pages.groupby("group")
@@ -944,16 +949,20 @@ def concat_summaries(
         keys_sub = []
         for cell_id in cell_names:
             logging.debug(f"Processing [{cell_id}]")
+
+            # TODO: remove this and check if it is actually needed:
+            if "selected" in pages.columns:
+                logging.debug("This should not happen...")
+                selected = pages.loc[cell_id, "selected"]
+                if only_selected and not selected:
+                    continue
             group = pages.loc[cell_id, "group"]
             sub_group = pages.loc[cell_id, "sub_group"]
             if "group_label" in pages.columns:
                 group_label = pages.loc[cell_id, "group_label"]
             else:
                 group_label = None
-            if "selected" in pages.columns:
-                selected = pages.loc[cell_id, "selected"]
-            else:
-                selected = None
+
             if "label" in pages.columns:
                 label = pages.loc[cell_id, "label"]
             else:
@@ -1050,7 +1059,18 @@ def create_group_names(custom_group_labels, gno, key_index_bounds, keys_sub, pag
             be used to create the group name.
 
     """
+
+    # TODO: improve this one
+
     cell_id = None
+
+    # print("----------------------------------------------------------------------")
+    # print(f"custom_group_labels: {custom_group_labels}")
+    # print(f"gno: {gno}")
+    # print(f"key_index_bounds: {key_index_bounds}")
+    # print(f"keys_sub: {keys_sub}")
+    # print("----------------------------------------------------------------------")
+
     if custom_group_labels is not None:
         if isinstance(custom_group_labels, dict):
             if gno in custom_group_labels:
@@ -1105,7 +1125,6 @@ def collect_frames(frames, group_it: bool, hdr_norm_cycle: str, keys: list, norm
     sub_group_header = "sub_group"
     cell_header = "cell"
     id_vars = [cell_header, cycle_header]
-
     cdf = pd.concat(frames, keys=keys, axis=0, names=id_vars)
     cdf = cdf.reset_index(drop=False)
 
@@ -1114,6 +1133,7 @@ def collect_frames(frames, group_it: bool, hdr_norm_cycle: str, keys: list, norm
 
     if normalize_cycles:
         cdf = cdf.rename(columns={hdr_norm_cycle: normalized_cycle_header})
+
     return cdf
 
 
