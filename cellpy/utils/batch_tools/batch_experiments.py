@@ -495,8 +495,11 @@ class CyclingExperiment(BaseExperiment):
                     try:
                         cell_data.save(row.cellpy_file_name)
                     except Exception as e:
+                        logging.critical("Saving file failed")
+                        logging.critical(e)
                         logging.error("saving file failed")
                         logging.error(e)
+                        logging.debug(e)
 
                 else:
                     logging.debug("saving cell skipped (set to 'fixed' in info_df)")

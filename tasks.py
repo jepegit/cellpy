@@ -284,9 +284,7 @@ def man(c):
     print("\nremove environment:")
     print("> conda env remove --name myenv")
     print("\nadd conda env to jupyter:")
-    print(
-        "(assuming you are already in the conda env you would like to add to jupyter)"
-    )
+    print("(assuming you are already in the conda env you would like to add to jupyter)")
     print("> python -m ipykernel install --user --name=firstEnv")
 
     print("----------")
@@ -376,10 +374,7 @@ def _get_bump_tag(bump):
     }
     default_bumper = "tag-num"
 
-    if (
-        bump in ["false", "keep", "skip", "no", "no-chance", "nope", "n"]
-        or bump is False
-    ):
+    if bump in ["false", "keep", "skip", "no", "no-chance", "nope", "n"] or bump is False:
         return False
     if bump is None or bump is True:
         return default_bumper
@@ -479,15 +474,16 @@ def bump(c, bumper=None):
     if not is_ok.lower() in ["y", "yes", "ok", "sure"]:
         print("Aborting!")
         return
-
+    print(f" running bumpver ({bumper}) ".center(80, "-"))
+    print(f"Commit message: {commit_message}")
+    print(f"Running: python -m bumpver update --{bumper}")
     c.run(f"python -m bumpver update --{bumper}")
+    print(80 * "-")
     print("DONE")
 
 
 @task
-def build(
-    c, _clean=True, dist=True, docs=False, upload=True, _serve=False, browser=False
-):
+def build(c, _clean=True, dist=True, docs=False, upload=True, _serve=False, browser=False):
     """Create distribution (and optionally upload to PyPI)"""
 
     if _clean:
@@ -536,9 +532,7 @@ def build(
             print(f" - opening browser in http://{_location}")
             c.run(f"python -m webbrowser -t http://{_location}")
         else:
-            print(
-                f" - hint! you can open your browser by typing:\n       python -m webbrowser -t http://{_location}"
-            )
+            print(f" - hint! you can open your browser by typing:\n       python -m webbrowser -t http://{_location}")
         sphinx_serve()
 
 
@@ -566,8 +560,7 @@ def docs(c, _clean=True, _serve=True, browser=True):
             c.run(f"python -m webbrowser -t http://{_location}")
         else:
             print(
-                f" - hint! you can open your browser by typing:\n"
-                f"       python -m webbrowser -t http://{_location}"
+                f" - hint! you can open your browser by typing:\n" f"       python -m webbrowser -t http://{_location}"
             )
         sphinx_serve()
 
