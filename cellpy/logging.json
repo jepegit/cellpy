@@ -4,7 +4,7 @@
     "formatters": {
         "stamped": {
             "format": "%(asctime)s - %(name)s - %(levelname)s (%(funcName)s): %(message)s",
-            "datefmt": "%Y-%m-%d %H:%M"},
+            "datefmt": "%Y-%m-%d %H:%M:%S"},
         "simple": {
             "format": "(cellpy) - %(message)s"
         }

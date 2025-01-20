@@ -918,6 +918,14 @@ class CellpyCell:
                     ids[name] = int(fid.last_modified)
         return ids
 
+    def _check_HDFStore_available(self):
+        try:
+            _ = externals.pandas.HDFStore
+        except Exception as e:
+            print(f"Could not use HDFStore ({e})")
+            return False
+        return True
+
     def _check_cellpy_file(self, filename: "OtherPath"):
         """Get the file-ids for the cellpy_file."""
 
@@ -3358,6 +3366,7 @@ class CellpyCell:
         extension="h5",
         ensure_step_table=None,
         ensure_summary_table=None,
+        cellpy_file_format="hdf5",
     ):
         """Save the data structure to cellpy-format.
 
@@ -3370,6 +3379,7 @@ class CellpyCell:
             extension: (str) filename extension.
             ensure_step_table: (bool) make step-table if missing.
             ensure_summary_table: (bool) make summary-table if missing.
+            cellpy_file_format: (str) format of the cellpy-file (only hdf5 is supported so far).
 
         Returns:
             None
@@ -3378,7 +3388,9 @@ class CellpyCell:
         logging.debug(f"Trying to save cellpy-file to {filename}")
         logging.info(f" -> {filename}")
 
-        cellpy_file_format = "hdf5"
+        if cellpy_file_format.lower() != "hdf5":
+            logging.critical("Sorry, but only hdf5 is supported at the moment. Setting cellpy_file_format to hdf5.")
+            cellpy_file_format = "hdf5"
 
         # some checks to find out what you want
         if overwrite is None:
