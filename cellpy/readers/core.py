@@ -7,6 +7,7 @@ And it has the file version definitions.
 import abc
 import datetime
 import importlib
+import importlib.util
 import inspect
 import logging
 import os
@@ -371,7 +372,7 @@ class Data:
             if not p.startswith("_"):
                 if p not in [
                     "raw",
-                    "summary", 
+                    "summary",
                     "steps",
                     "logger",
                     "raw_data_files",
@@ -396,7 +397,7 @@ class Data:
         except (AttributeError, ValueError):
             txt += "not found!\n"
 
-        # Add summary dataframe info  
+        # Add summary dataframe info
         txt += "\nSummary Data:\n"
         try:
             with warnings.catch_warnings():

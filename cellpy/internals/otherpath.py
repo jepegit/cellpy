@@ -101,6 +101,8 @@ def _check_external(path_string: str) -> Tuple[str, bool, str, str]:
 
 
 class OtherPathNew(pathlib.Path):
+
+    # TODO: throws error on python 3.13 - _raw_path setter not defined
     """A pathlib.Path subclass that can handle external paths.
 
     Attributes:

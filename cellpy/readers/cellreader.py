@@ -168,13 +168,16 @@ class CellpyCell:
             txt += f"session name: {self.cell_name}\n"
         if self.tester:
             txt += f"tester: {self.tester}\n"
-        if self.data:
-            txt += "data:\n"
-            for t in str(self.data).split("\n"):
-                txt += "     "
-                txt += t
-                txt += "\n"
-            txt += "\n"
+            try:
+                if self.data:
+                    txt += "data:\n"
+                    for t in str(self.data).split("\n"):
+                        txt += "     "
+                        txt += t
+                        txt += "\n"
+                    txt += "\n"
+            except NoDataFound:
+                txt += "datasets: EMPTY\n"
         else:
             txt += "datasets: EMPTY"
         txt += "\n"
