@@ -6400,6 +6400,8 @@ def get(
     area: Union[str, numbers.Number] = None,
     estimate_area=True,
     logging_mode=None,
+    custom_log_dir=None,
+    custom_log_config_path=None,
     auto_pick_cellpy_format=True,
     auto_summary=True,
     units=None,
@@ -6508,7 +6510,7 @@ def get(
     summary_kwargs = summary_kwargs or {}
     load_cellpy_file = False
     logging_mode = "DEBUG" if testing else logging_mode
-    log.setup_logging(default_level=logging_mode, testing=testing)
+    log.setup_logging(default_level=logging_mode, testing=testing, custom_log_dir=custom_log_dir, default_json_path=custom_log_config_path)
     logging.debug("-------running-get--------")
     cellpy_instance = CellpyCell(debug=debug, initialize=initialize)
     logging.debug(f"created CellpyCell instance")
