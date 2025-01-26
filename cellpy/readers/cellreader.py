@@ -6525,7 +6525,12 @@ def get(
     summary_kwargs = summary_kwargs or {}
     load_cellpy_file = False
     logging_mode = "DEBUG" if testing else logging_mode
-    log.setup_logging(default_level=logging_mode, testing=testing, custom_log_dir=custom_log_dir, default_json_path=custom_log_config_path)
+    log.setup_logging(
+        default_level=logging_mode,
+        testing=testing,
+        custom_log_dir=custom_log_dir,
+        default_json_path=custom_log_config_path,
+    )
     logging.debug("-------running-get--------")
     cellpy_instance = CellpyCell(debug=debug, initialize=initialize)
     logging.debug(f"created CellpyCell instance")
@@ -6699,6 +6704,28 @@ def _update_meta(
         logging.critical("Volume not implemented yet")
 
     return cellpy_instance
+
+
+def instruments_dict():
+    """
+    Create a dictionary with the available instrument loaders.
+
+    The dictionary keys are the instrument names and the values are lists of the available models.
+    If no models are available, the list will be empty.
+
+    Returns:
+        dict: dictionary with the available instrument loaders.
+    """
+    instruments = dict()
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        for name, value in core.instrument_configurations().items():
+            instruments[name] = []
+            instrument_models = value["__all__"].copy()
+            instrument_models.remove("default")
+            if len(instrument_models) > 0:
+                instruments[name].extend(instrument_models)
+    return instruments
 
 
 def print_instruments():
