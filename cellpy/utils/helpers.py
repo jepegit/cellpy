@@ -890,8 +890,18 @@ def concat_summaries(
 
     if group_it:
         g = pages.groupby("group")
+        for gno, b_sub in g:
+            if len(b_sub) < 2:
+                print("Can not group with less than two cells")
+                print("Setting group_it to False")
+                group_it = False
+                break
+
+    if group_it:
+        g = pages.groupby("group")
         # this ensures that order is kept and grouping is correct
         # it is therefore ok to assume from now on that all the cells within a list belongs to the same group
+
         for gno, b_sub in g:
             cell_names_nest.append(list(b_sub.index))
             group_nest.append(gno)
