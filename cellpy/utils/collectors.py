@@ -2405,6 +2405,13 @@ def summary_plotter(collected_curves, cycles_to_plot=None, backend="plotly", **k
     )
 
     if backend == "plotly":
+        # TODO: implement having different heights of the subplots
+        height_fractions = kwargs.pop("height_fractions", [])
+        if len(height_fractions) < 0:
+            # this was suggested by CoPilot (not sure if it works):
+            for i, h in enumerate(height_fractions):
+                fig.update_yaxes(row=i + 1, matches=None, showticklabels=True, fixedrange=True)
+                fig.update_layout(height=fig.layout.height + h)
         fig.update_yaxes(matches=None, showticklabels=True)
         return fig
     if backend == "seaborn":
