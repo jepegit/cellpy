@@ -893,7 +893,7 @@ def concat_summaries(
         for gno, b_sub in g:
             if len(b_sub) < 2:
                 print("Can not group with less than two cells")
-                print("Setting group_it to False")
+                print("Setting 'group_it' to False")
                 group_it = False
                 break
 
