@@ -1038,6 +1038,7 @@ class BatchICACollector(BatchCollector):
         fig_title=None,
         cols=None,
         group_legend_muting=True,
+        only_selected: bool = False,
         *args,
         **kwargs,
     ):
@@ -1070,7 +1071,7 @@ class BatchICACollector(BatchCollector):
             fig_title (str): title (will be put above the figure) (elevated plotter argument).
             cols (int): number of columns (elevated plotter argument).
             group_legend_muting (bool): if True, the legend will be interactive (elevated plotter argument).
-
+            only_selected (bool): only process selected cells (elevated data collector argument).
 
         """
 
@@ -1086,6 +1087,7 @@ class BatchICACollector(BatchCollector):
             rate_agg=rate_agg,
             inverse=inverse,
             label_mapper=label_mapper,
+            only_selected=only_selected,
         )
         elevated_plotter_arguments = dict(
             cycles_to_plot=cycles_to_plot,
@@ -1160,6 +1162,7 @@ class BatchCyclesCollector(BatchCollector):
         fig_title=None,
         cols=None,
         group_legend_muting=True,
+        only_selected: bool = False,
         *args,
         **kwargs,
     ):
@@ -1200,6 +1203,7 @@ class BatchCyclesCollector(BatchCollector):
             fig_title (str): title (will be put above the figure) (elevated plotter argument).
             palette (str): color-map to use (elevated plotter argument).
             cols (int): number of columns (elevated plotter argument).
+            only_selected (bool): only process selected cells (elevated data collector argument).
         """
 
         elevated_data_collector_arguments = dict(
@@ -1212,6 +1216,7 @@ class BatchCyclesCollector(BatchCollector):
             rate_std=rate_std,
             rate_agg=rate_agg,
             inverse=inverse,
+            only_selected=only_selected,
         )
         elevated_plotter_arguments = dict(
             cycles_to_plot=cycles_to_plot,
@@ -1321,6 +1326,12 @@ def pick_named_cell(b, label_mapper=None):
     for n in cell_names:
         group = b.pages.loc[n, "group"]
         sub_group = b.pages.loc[n, "sub_group"]
+        logging.debug(f"processing {n} (group={group}, sub_group={sub_group})")
+        # putting this check here for backwards compatibility:
+        if "selected" in b.pages.columns:
+            selected = b.pages.loc[n, "selected"]
+        else:
+            selected = True
 
         if label_mapper is not None:
             logging.info(f"renaming {n} using label_mapper")
@@ -1346,7 +1357,7 @@ def pick_named_cell(b, label_mapper=None):
                 label = n
 
         logging.info(f"renaming {n} -> {label} (group={group}, sub_group={sub_group})")
-        yield label, group, sub_group, b.experiment.data[n]
+        yield selected, label, group, sub_group, b.experiment.data[n]
 
 
 def summary_collector(*args, **kwargs):
@@ -1369,6 +1380,7 @@ def cycles_collector(
     method="back-and-forth",
     label_mapper=None,
     mode="gravimetric",
+    only_selected=False,
 ):
     """
     Collects cycles from all the cells in the batch object.
@@ -1388,6 +1400,7 @@ def cycles_collector(
         method: how the voltage curves are given (back-and-forth, forth, forth-and-forth)
         label_mapper: function (or dict) that changes the cell names.
         mode (string): 'gravimetric', 'areal', 'volumetric' or 'absolute'.
+        only_selected (bool): only process selected cells.
 
     Returns:
         pd.DataFrame: collected data
@@ -1396,7 +1409,10 @@ def cycles_collector(
         cycles = list(range(1, max_cycle + 1))
     all_curves = []
     keys = []
-    for n, g, sg, c in pick_named_cell(b, label_mapper):
+    for selected, n, g, sg, c in pick_named_cell(b, label_mapper):
+        if only_selected and not selected:
+            logging.debug(f"skipping {n} (cell name: {c.cell_name})")
+            continue
         if rate is not None:
             filtered_cycles = c.get_cycle_numbers(
                 rate=rate,
@@ -1441,6 +1457,7 @@ def ica_collector(
     label_direction=True,
     number_of_points=None,
     label_mapper=None,
+    only_selected=False,
     **kwargs,
 ):
     """
@@ -1460,6 +1477,7 @@ def ica_collector(
         abort_on_missing: if True, abort if a cell is empty
         label_direction: how the voltage curves are given (back-and-forth, forth, forth-and-forth)
         label_mapper: function (or dict) that changes the cell names.
+        only_selected (bool): only process selected cells.
         **kwargs: passed on to ica.dqdv
 
     Returns:
@@ -1470,7 +1488,10 @@ def ica_collector(
         cycles = list(range(1, max_cycle + 1))
     all_curves = []
     keys = []
-    for n, g, sg, c in pick_named_cell(b, label_mapper):
+    for selected, n, g, sg, c in pick_named_cell(b, label_mapper):
+        if only_selected and not selected:
+            logging.debug(f"skipping {n} (cell name: {c.cell_name})")
+            continue
         if rate is not None:
             filtered_cycles = c.get_cycle_numbers(
                 rate=rate,

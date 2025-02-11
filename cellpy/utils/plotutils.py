@@ -660,6 +660,7 @@ def summary_plot(
 
 
     Args:
+
         c: cellpy object
         x: x-axis column (default: 'cycle_index')
         y: y-axis column or column set. Currently, the following predefined sets exists:
@@ -675,6 +676,7 @@ def summary_plot(
         title: title of the plot
         x_range: limits for x-axis
         y_range: limits for y-axis
+        ce_range: limits for coulombic efficiency (if present)
         split: split the plot
         auto_convert_legend_labels: convert the legend labels to a nicer format.
         interactive: use interactive plotting (plotly)
@@ -857,6 +859,9 @@ def summary_plot(
             x_axis_range_formation = [min_cycle - dd, max_cycle_formation + dd]
             x_axis_range_rest = [min_cycle_rest - dd, max_cycle + dd]
 
+            if x_range is not None:
+                x_axis_range_rest = [x_axis_range_rest[0], min(x_range[1], x_axis_range_rest[1])]
+
             if number_of_rows == 1:
                 fig.update_layout(
                     xaxis_domain=x_axis_domain_formation,
@@ -949,8 +954,9 @@ def summary_plot(
         if x_range is not None:
             if not show_formation:
                 fig.update_layout(xaxis=dict(range=x_range))
-            else:
-                print("Can not set custom x_range when showing formation cycles")
+
+            # The x_range is handled a bit differently when showing formation cycles
+            # This is done within if show_formation block
 
         if y_range is not None:
             fig.update_layout(yaxis=dict(range=y_range))
