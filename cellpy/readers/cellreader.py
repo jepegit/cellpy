@@ -117,6 +117,8 @@ class CellpyCell:
         cell_name: cell name (session name, defaults to concatenated names of the subtests)
     """
 
+    # TODO: CellpyCell contains many thousand lines of code. It needs to be simplified. Use dependency injection to
+    #   separate concerns better!
     def __repr__(self):
         txt = f"<CellpyCell> (id={hex(id(self))})"
         if self.cell_name:
@@ -402,6 +404,7 @@ class CellpyCell:
     def nominal_capacity(self, c):
         self.data.nom_cap = self._dump_cellpy_unit(c, "nominal_capacity")
 
+    # TODO: move this outside of the class
     def _dump_cellpy_unit(self, value, parameter):
         """Parse for unit, update cellpy_units class, and return magnitude."""
         if isinstance(value, numbers.Number):
@@ -467,6 +470,8 @@ class CellpyCell:
 
         return not self._validate_cell()
 
+    # TODO: consider moving splitting etc outside of CellpyCell
+    # ------------------- SPLITTING AND DROPPING -------------------
     @classmethod
     def vacant(cls, cell=None):
         """Create a CellpyCell instance.
@@ -632,6 +637,10 @@ class CellpyCell:
         cells.append(old_cell)
         return cells
 
+    # ------------------- SPLITTING AND DROPPING FINISHED -----------
+
+    # TODO: consider moving splitting etc outside of CellpyCell
+    # ----------------- Instrument handling -------------------------
     def __register_external_readers(self):
         logging.debug("Not implemented yet. Should allow registering readers " "for example installed as plug-ins.")
         self.__external_readers = dict()
@@ -770,6 +779,8 @@ class CellpyCell:
         except AttributeError:
             return str(instrument), None
 
+    # ----------------- Instrument handling finished -----------------
+
     @property
     def cycle_mode(self):
         # TODO: v2.0 edit this from scalar to list
@@ -796,6 +807,7 @@ class CellpyCell:
         except NoDataFound:
             self._cycle_mode = cycle_mode
 
+    # TODO: this probably does not need to be here
     def set_raw_datadir(self, directory=None):
         """Set the directory containing .res-files.
 
@@ -821,6 +833,7 @@ class CellpyCell:
             return
         self.raw_datadir = directory
 
+    # TODO: this probably does not need to be here
     def set_cellpy_datadir(self, directory=None):
         """Set the directory containing .hdf5-files.
 
@@ -845,6 +858,8 @@ class CellpyCell:
             return
         self.cellpy_datadir = directory
 
+    # TODO: this could be moved outside to either utility functions or to a new class:
+    # ----------------- File checking -------------------------
     def check_file_ids(self, rawfiles, cellpyfile, detailed=False):
         """Check the stats for the files (raw-data and cellpy hdf5).
 
@@ -1028,6 +1043,8 @@ class CellpyCell:
                     similar[name] = True
         return similar
 
+    # ----------------- File checking end --------------------
+
     # TODO: v2.0 - remove this
     def loadcell(
         self,
@@ -1169,6 +1186,7 @@ class CellpyCell:
 
         return self
 
+    # TODO: this could be moved outside to either utility functions or to a new class:
     def from_raw(
         self,
         file_names=None,
@@ -1328,6 +1346,8 @@ class CellpyCell:
         """
         raise NotImplementedError
 
+    # TODO: this could be moved outside to either utility functions or to a new class:
+    # -------------------- cellpy file handling -------------------------
     def load(
         self,
         cellpy_file,
@@ -1389,6 +1409,209 @@ class CellpyCell:
 
         if return_cls:
             return self
+
+    def save(
+        self,
+        filename,
+        force=False,
+        overwrite=None,
+        extension="h5",
+        ensure_step_table=None,
+        ensure_summary_table=None,
+        cellpy_file_format="hdf5",
+    ):
+        """Save the data structure to cellpy-format.
+
+        Args:
+            filename: (str or pathlib.Path) the name you want to give the file
+            force: (bool) save a file even if the summary is not made yet
+                (not recommended)
+            overwrite: (bool) save the new version of the file even if old one
+                exists.
+            extension: (str) filename extension.
+            ensure_step_table: (bool) make step-table if missing.
+            ensure_summary_table: (bool) make summary-table if missing.
+            cellpy_file_format: (str) format of the cellpy-file (only hdf5 is supported so far).
+
+        Returns:
+            None
+
+        """
+        logging.debug(f"Trying to save cellpy-file to {filename}")
+        logging.info(f" -> {filename}")
+
+        if cellpy_file_format.lower() != "hdf5":
+            logging.critical("Sorry, but only hdf5 is supported at the moment. Setting cellpy_file_format to hdf5.")
+            cellpy_file_format = "hdf5"
+
+        # some checks to find out what you want
+        if overwrite is None:
+            overwrite = self.overwrite_able
+
+        if ensure_step_table is None:
+            ensure_step_table = self.ensure_step_table
+
+        if ensure_summary_table is None:
+            ensure_summary_table = self.ensure_summary_table
+
+        my_data = self.data
+        summary_made = my_data.has_summary
+        if not summary_made and not force and not ensure_summary_table:
+            logging.info("File not saved!")
+            logging.info("You should not save datasets without making a summary first!")
+            logging.info("If you really want to do it, use save with force=True")
+            return
+
+        step_table_made = my_data.has_steps
+        if not step_table_made and not force and not ensure_step_table:
+            logging.info("File not saved!" "You should not save datasets without making a step-table first!")
+            logging.info("If you really want to do it, use save with force=True")
+            return
+
+        outfile_all = internals.OtherPath(filename)
+        if not outfile_all.suffix:
+            logging.debug("No suffix given - adding one")
+            outfile_all = outfile_all.with_suffix(f".{extension}")
+
+        if outfile_all.is_file():
+            logging.debug("Outfile exists")
+            if overwrite:
+                logging.debug("overwrite = True")
+                try:
+                    os.remove(outfile_all)
+                except PermissionError as e:
+                    logging.critical("Could not over write old file")
+                    logging.info(e)
+                    return
+            else:
+                logging.critical("File exists - did not save")
+                logging.info(outfile_all)
+                return
+
+        if ensure_step_table:
+            logging.debug("ensure_step_table is on")
+            if not my_data.has_steps:
+                logging.debug("save: creating step table")
+                self.make_step_table()
+
+        if ensure_summary_table:
+            logging.debug("ensure_summary_table is on")
+            if not my_data.has_summary:
+                logging.debug("save: creating summary table")
+                self.make_summary()
+
+        logging.debug("trying to make infotable")
+        (
+            common_meta_table,
+            test_dependent_meta_table,
+            fid_table,
+        ) = self._create_infotable()
+
+        logging.debug(f"trying to save to file: {outfile_all}")
+        if cellpy_file_format == "hdf5":
+            # --- saving to hdf5 -----------------------------------
+            root = prms._cellpyfile_root  # noqa
+            raw_dir = prms._cellpyfile_raw  # noqa
+            step_dir = prms._cellpyfile_step  # noqa
+            summary_dir = prms._cellpyfile_summary  # noqa
+            common_meta_dir = prms._cellpyfile_common_meta  # noqa
+            fid_dir = prms._cellpyfile_fid  # noqa
+            test_dependent_meta_dir = prms._cellpyfile_test_dependent_meta  # noqa
+            warnings.simplefilter("ignore", externals.pandas.errors.PerformanceWarning)
+            try:
+                with core.pickle_protocol(PICKLE_PROTOCOL):
+                    store = self._save_to_hdf5(
+                        fid_dir,
+                        fid_table,
+                        common_meta_table,
+                        common_meta_dir,
+                        test_dependent_meta_table,
+                        test_dependent_meta_dir,
+                        my_data,
+                        outfile_all,
+                        raw_dir,
+                        root,
+                        step_dir,
+                        summary_dir,
+                    )
+            finally:
+                store.close()
+            logging.debug(" all -> hdf5 OK")
+            warnings.simplefilter("default", externals.pandas.errors.PerformanceWarning)
+            # del store
+        # --- finished saving to hdf5 -------------------------------
+
+    def _save_to_hdf5(
+        self,
+        fid_dir,
+        fid_table,
+        infotbl,
+        meta_dir,
+        test_dependent_meta_table,
+        test_dependent_meta_dir,
+        my_data,
+        outfile_all,
+        raw_dir,
+        root,
+        step_dir,
+        summary_dir,
+    ):
+        store = externals.pandas.HDFStore(
+            outfile_all,
+            complib=prms._cellpyfile_complib,
+            complevel=prms._cellpyfile_complevel,
+        )
+        logging.debug("trying to put raw data")
+        logging.debug(" - lets set Data_Point as index")
+        hdr_data_point = self.headers_normal.data_point_txt
+        if my_data.raw.index.name != hdr_data_point:
+            my_data.raw = my_data.raw.set_index(hdr_data_point, drop=False)
+        store.put(root + raw_dir, my_data.raw, format=prms._cellpyfile_raw_format)
+        logging.debug(" raw -> hdf5 OK")
+        logging.debug("trying to put summary")
+        store.put(
+            root + summary_dir,
+            my_data.summary,
+            format=prms._cellpyfile_summary_format,
+        )
+        logging.debug(" summary -> hdf5 OK")
+
+        logging.debug("trying to put meta data")
+        store.put(root + meta_dir, infotbl, format=prms._cellpyfile_infotable_format)
+        logging.debug(" common meta -> hdf5 OK")
+        store.put(
+            root + test_dependent_meta_dir,
+            test_dependent_meta_table,
+            format=prms._cellpyfile_infotable_format,
+        )
+        logging.debug(" test dependent meta -> hdf5 OK")
+
+        logging.debug("trying to put fidtable")
+        store.put(root + fid_dir, fid_table, format=prms._cellpyfile_fidtable_format)
+        logging.debug(" fid -> hdf5 OK")
+        logging.debug("trying to put step")
+        try:
+            store.put(
+                root + step_dir,
+                my_data.steps,
+                format=prms._cellpyfile_stepdata_format,
+            )
+            logging.debug(" step -> hdf5 OK")
+        except TypeError:
+            my_data = self._fix_dtype_step_table(my_data)
+            store.put(
+                root + step_dir,
+                my_data.steps,
+                format=prms._cellpyfile_stepdata_format,
+            )
+            logging.debug(" fixed step -> hdf5 OK")
+        # creating indexes
+        # hdr_data_point = self.headers_normal.data_point_txt
+        # hdr_cycle_steptable = self.headers_step_table.cycle
+        # hdr_cycle_normal = self.headers_normal.cycle_index_txt
+        # store.create_table_index(root + "/raw", columns=[hdr_data_point],
+        #                          optlevel=9, kind='full')
+        return store
 
     # TODO @jepe: move this to its own module (e.g. as a cellpy-loader in instruments?):
     def _get_cellpy_file_version(self, filename, meta_dir=None, parent_level=None):
@@ -2141,6 +2364,8 @@ class CellpyCell:
         if min_amount < 1:
             logging.debug("info about raw files missing")
         return fids, lengths
+
+    # -------------------- cellpy file handling end ----------------------
 
     def merge(self, datasets: list, **kwargs):
         """This function merges datasets into one set."""
@@ -2948,6 +3173,7 @@ class CellpyCell:
         and corresponding steps (list) as values."""
         raise DeprecatedFeature
 
+    # TODO: move this out of CellpyCell
     def _export_cycles(
         self,
         setname=None,
@@ -3361,209 +3587,6 @@ class CellpyCell:
                 last_cycle=last_cycle,
             )
 
-    def save(
-        self,
-        filename,
-        force=False,
-        overwrite=None,
-        extension="h5",
-        ensure_step_table=None,
-        ensure_summary_table=None,
-        cellpy_file_format="hdf5",
-    ):
-        """Save the data structure to cellpy-format.
-
-        Args:
-            filename: (str or pathlib.Path) the name you want to give the file
-            force: (bool) save a file even if the summary is not made yet
-                (not recommended)
-            overwrite: (bool) save the new version of the file even if old one
-                exists.
-            extension: (str) filename extension.
-            ensure_step_table: (bool) make step-table if missing.
-            ensure_summary_table: (bool) make summary-table if missing.
-            cellpy_file_format: (str) format of the cellpy-file (only hdf5 is supported so far).
-
-        Returns:
-            None
-
-        """
-        logging.debug(f"Trying to save cellpy-file to {filename}")
-        logging.info(f" -> {filename}")
-
-        if cellpy_file_format.lower() != "hdf5":
-            logging.critical("Sorry, but only hdf5 is supported at the moment. Setting cellpy_file_format to hdf5.")
-            cellpy_file_format = "hdf5"
-
-        # some checks to find out what you want
-        if overwrite is None:
-            overwrite = self.overwrite_able
-
-        if ensure_step_table is None:
-            ensure_step_table = self.ensure_step_table
-
-        if ensure_summary_table is None:
-            ensure_summary_table = self.ensure_summary_table
-
-        my_data = self.data
-        summary_made = my_data.has_summary
-        if not summary_made and not force and not ensure_summary_table:
-            logging.info("File not saved!")
-            logging.info("You should not save datasets without making a summary first!")
-            logging.info("If you really want to do it, use save with force=True")
-            return
-
-        step_table_made = my_data.has_steps
-        if not step_table_made and not force and not ensure_step_table:
-            logging.info("File not saved!" "You should not save datasets without making a step-table first!")
-            logging.info("If you really want to do it, use save with force=True")
-            return
-
-        outfile_all = internals.OtherPath(filename)
-        if not outfile_all.suffix:
-            logging.debug("No suffix given - adding one")
-            outfile_all = outfile_all.with_suffix(f".{extension}")
-
-        if outfile_all.is_file():
-            logging.debug("Outfile exists")
-            if overwrite:
-                logging.debug("overwrite = True")
-                try:
-                    os.remove(outfile_all)
-                except PermissionError as e:
-                    logging.critical("Could not over write old file")
-                    logging.info(e)
-                    return
-            else:
-                logging.critical("File exists - did not save")
-                logging.info(outfile_all)
-                return
-
-        if ensure_step_table:
-            logging.debug("ensure_step_table is on")
-            if not my_data.has_steps:
-                logging.debug("save: creating step table")
-                self.make_step_table()
-
-        if ensure_summary_table:
-            logging.debug("ensure_summary_table is on")
-            if not my_data.has_summary:
-                logging.debug("save: creating summary table")
-                self.make_summary()
-
-        logging.debug("trying to make infotable")
-        (
-            common_meta_table,
-            test_dependent_meta_table,
-            fid_table,
-        ) = self._create_infotable()
-
-        logging.debug(f"trying to save to file: {outfile_all}")
-        if cellpy_file_format == "hdf5":
-            # --- saving to hdf5 -----------------------------------
-            root = prms._cellpyfile_root  # noqa
-            raw_dir = prms._cellpyfile_raw  # noqa
-            step_dir = prms._cellpyfile_step  # noqa
-            summary_dir = prms._cellpyfile_summary  # noqa
-            common_meta_dir = prms._cellpyfile_common_meta  # noqa
-            fid_dir = prms._cellpyfile_fid  # noqa
-            test_dependent_meta_dir = prms._cellpyfile_test_dependent_meta  # noqa
-            warnings.simplefilter("ignore", externals.pandas.errors.PerformanceWarning)
-            try:
-                with core.pickle_protocol(PICKLE_PROTOCOL):
-                    store = self._save_to_hdf5(
-                        fid_dir,
-                        fid_table,
-                        common_meta_table,
-                        common_meta_dir,
-                        test_dependent_meta_table,
-                        test_dependent_meta_dir,
-                        my_data,
-                        outfile_all,
-                        raw_dir,
-                        root,
-                        step_dir,
-                        summary_dir,
-                    )
-            finally:
-                store.close()
-            logging.debug(" all -> hdf5 OK")
-            warnings.simplefilter("default", externals.pandas.errors.PerformanceWarning)
-            # del store
-        # --- finished saving to hdf5 -------------------------------
-
-    def _save_to_hdf5(
-        self,
-        fid_dir,
-        fid_table,
-        infotbl,
-        meta_dir,
-        test_dependent_meta_table,
-        test_dependent_meta_dir,
-        my_data,
-        outfile_all,
-        raw_dir,
-        root,
-        step_dir,
-        summary_dir,
-    ):
-        store = externals.pandas.HDFStore(
-            outfile_all,
-            complib=prms._cellpyfile_complib,
-            complevel=prms._cellpyfile_complevel,
-        )
-        logging.debug("trying to put raw data")
-        logging.debug(" - lets set Data_Point as index")
-        hdr_data_point = self.headers_normal.data_point_txt
-        if my_data.raw.index.name != hdr_data_point:
-            my_data.raw = my_data.raw.set_index(hdr_data_point, drop=False)
-        store.put(root + raw_dir, my_data.raw, format=prms._cellpyfile_raw_format)
-        logging.debug(" raw -> hdf5 OK")
-        logging.debug("trying to put summary")
-        store.put(
-            root + summary_dir,
-            my_data.summary,
-            format=prms._cellpyfile_summary_format,
-        )
-        logging.debug(" summary -> hdf5 OK")
-
-        logging.debug("trying to put meta data")
-        store.put(root + meta_dir, infotbl, format=prms._cellpyfile_infotable_format)
-        logging.debug(" common meta -> hdf5 OK")
-        store.put(
-            root + test_dependent_meta_dir,
-            test_dependent_meta_table,
-            format=prms._cellpyfile_infotable_format,
-        )
-        logging.debug(" test dependent meta -> hdf5 OK")
-
-        logging.debug("trying to put fidtable")
-        store.put(root + fid_dir, fid_table, format=prms._cellpyfile_fidtable_format)
-        logging.debug(" fid -> hdf5 OK")
-        logging.debug("trying to put step")
-        try:
-            store.put(
-                root + step_dir,
-                my_data.steps,
-                format=prms._cellpyfile_stepdata_format,
-            )
-            logging.debug(" step -> hdf5 OK")
-        except TypeError:
-            my_data = self._fix_dtype_step_table(my_data)
-            store.put(
-                root + step_dir,
-                my_data.steps,
-                format=prms._cellpyfile_stepdata_format,
-            )
-            logging.debug(" fixed step -> hdf5 OK")
-        # creating indexes
-        # hdr_data_point = self.headers_normal.data_point_txt
-        # hdr_cycle_steptable = self.headers_step_table.cycle
-        # hdr_cycle_normal = self.headers_normal.cycle_index_txt
-        # store.create_table_index(root + "/raw", columns=[hdr_data_point],
-        #                          optlevel=9, kind='full')
-        return store
-
     # --------------helper-functions--------------------------------------------
     def _fix_dtype_step_table(self, dataset):
         # used when saving to cellpy format
@@ -3975,6 +3998,7 @@ class CellpyCell:
         header = self.headers_normal.step_index_txt
         return self._sget(cycle, step, header, usteps=False)
 
+    # TODO: the capacity getters have become so big that they deserve their own module:
     def get_dcap(
         self,
         cycle=None,
