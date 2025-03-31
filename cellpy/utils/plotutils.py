@@ -733,6 +733,8 @@ def summary_plot(
     x_axis_labels, y_axis_label = create_label_dict(c)
 
     def _auto_range(fig, axis_name_1, axis_name_2):
+        min_y = np.inf
+        max_y = -np.inf
         full_axis_name_1 = axis_name_1.replace("y", "yaxis")
         full_axis_name_2 = axis_name_2.replace("y", "yaxis")
 
@@ -747,8 +749,11 @@ def summary_plot(
         for t in deepcopy(fig.data):
             if t.yaxis in [axis_name_1, axis_name_2]:
                 y = deepcopy(t.y)
-                min_y = min(y)
-                max_y = max(y)
+                try:
+                    min_y = np.ma.masked_invalid(y).min()
+                    max_y = np.ma.masked_invalid(y).max()
+                except Exception as e:
+                    warnings.warn(f"Could not calculate min and max for y-axis: {e}")
                 _range = [min(_range[0], min_y), max(_range[1], max_y)]
         _range = [0.95 * _range[0], 1.05 * _range[1]]
         return _range
@@ -891,6 +896,7 @@ def summary_plot(
                 fig.update_layout(xaxis_domain=x_axis_domain_formation, scene_domain_x=x_axis_domain_formation)
                 range_1 = y_range or _auto_range(fig, "y", "y2")
                 range_2 = eff_lim or _auto_range(fig, "y3", "y4")
+                # seems to be problematic for plotly having a range_2 that is [value, inf] ([87.0012, inf])
                 fig.update_layout(
                     xaxis2=dict(range=x_axis_range_rest, domain=x_axis_domain_rest, matches=None),
                     xaxis3=dict(range=x_axis_range_formation, domain=x_axis_domain_formation, matches="x"),
@@ -2410,6 +2416,7 @@ def _check_summary_plotter_plotly():
         c,
         # x="normalized_cycle_index",
         y="capacities_gravimetric_coulombic_efficiency",
+        # ce_range=[0.0, 200.0],
         # ylim=[0.0, 1.0],
         # show_formation=False,
         # cut_colorbar=False,
