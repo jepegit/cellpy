@@ -885,6 +885,7 @@ def concat_summaries(
     if experimental_feature_cell_selector is not None:
         pages = pages.loc[experimental_feature_cell_selector].copy()
 
+    # selection is performed here:
     if only_selected and "selected" in pages.columns:
         pages = pages.loc[pages.selected == 1, :].copy()
 
@@ -959,13 +960,6 @@ def concat_summaries(
         keys_sub = []
         for cell_id in cell_names:
             logging.debug(f"Processing [{cell_id}]")
-
-            # TODO: remove this and check if it is actually needed:
-            if "selected" in pages.columns:
-                logging.debug("This should not happen...")
-                selected = pages.loc[cell_id, "selected"]
-                if only_selected and not selected:
-                    continue
             group = pages.loc[cell_id, "group"]
             sub_group = pages.loc[cell_id, "sub_group"]
             if "group_label" in pages.columns:
@@ -1021,11 +1015,9 @@ def concat_summaries(
 
                 # add group and subgroup
                 if not group_it:
-                    s = s.assign(
-                        group=group, sub_group=sub_group, group_label=group_label, selected=selected, label=label
-                    )
+                    s = s.assign(group=group, sub_group=sub_group, group_label=group_label, label=label)
                 else:
-                    s = s.assign(group_label=group_label, selected=selected)
+                    s = s.assign(group_label=group_label)
 
                 frames_sub.append(s)
                 keys_sub.append(cell_id)
