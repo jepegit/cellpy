@@ -1,5 +1,18 @@
 # History
 
+## 1.0.2
+
+* Batch: `only_selected` keyword added for concatenating summaries choosing only selected cells in the pages (selected==1)
+* General: Add option to specify custom_log_path and path to logging config json in get() (#326) by @morrowrasmus
+* Batch: implement wide format for collectors to csv
+* Batch: adding more columns to pages (model, selected, nom_cap_specifics)
+* General: Implemented lazy import to speed up loading of cellpy
+* General: Added _absolute cols in the summary
+* General: Add basic support for reading parquet for custom instruments (#322) by @morrowrasmus
+* Utils: General improvements in plotutils
+* General: Dropped support for python 3.9 and added support for python 3.12 (and probably beyond) by upgrading `OtherPaths`
+* Bug fixes.
+
 ## 1.0.1
 
 * Utils: `example_data` now includes auto-download of example data
