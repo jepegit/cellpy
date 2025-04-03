@@ -887,6 +887,7 @@ def concat_summaries(
 
     # selection is performed here:
     if only_selected and "selected" in pages.columns:
+        # might be too strict to use the == 1 here (consider allowing for all true values)
         pages = pages.loc[pages.selected == 1, :].copy()
 
     if group_it:
