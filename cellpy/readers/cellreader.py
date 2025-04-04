@@ -23,7 +23,7 @@ import time
 import datetime
 import warnings
 from pathlib import Path
-from typing import Union, Sequence, List, Optional, Iterable
+from typing import Union, Sequence, List, Optional, Iterable, Any
 from typing import TYPE_CHECKING
 from dataclasses import asdict
 
@@ -77,7 +77,7 @@ HEADERS_STEP_TABLE = get_headers_step_table()  # TODO @jepe refactor this (not n
 
 # TODO: @jepe - performance warnings - mixed types within cols (pytables)
 
-# warnings.filterwarnings("ignore", category=externals.pandas.io.pytables.PerformanceWarning)
+# warnings.filterwarnings("ignore", category=wq.pandas.io.pytables.PerformanceWarning)
 # externals.pandas.set_option("mode.chained_assignment", None)  # "raise", "warn", None
 
 _module_logger = logging.getLogger(__name__)
@@ -2556,14 +2556,14 @@ class CellpyCell:
 
     def get_step_numbers(
         self,
-        steptype="charge",
-        allctypes=True,
-        pdtype=False,
-        cycle_number=None,
-        trim_taper_steps=None,
-        steps_to_skip=None,
-        steptable=None,
-    ):
+        steptype: str = "charge",
+        allctypes: bool = True,
+        pdtype: bool = False,
+        cycle_number: int = None,
+        trim_taper_steps: int = None,
+        steps_to_skip: Optional[list] = None,
+        steptable: Any = None,
+    ) -> Union[dict, Any]:
         # TODO: @jepe - include sub_steps here
         # TODO: @jepe - include option for not selecting taper steps here
         # TODO: @jepe - refactor this method!
@@ -2580,7 +2580,7 @@ class CellpyCell:
             allctypes (bool): get all types of charge (or discharge).
             pdtype (bool): return results as pandas.DataFrame
             cycle_number (int): selected cycle, selects all if not set.
-            trim_taper_steps (integer): number of taper steps to skip (counted
+            trim_taper_steps (int): number of taper steps to skip (counted
                 from the end, i.e. 1 means skip last step in each cycle).
             steps_to_skip (list): step numbers that should not be included.
             steptable (pandas.DataFrame): optional steptable
@@ -2597,8 +2597,7 @@ class CellpyCell:
             {3: [5,8]}
 
         """
-        t0 = time.time()
-        # logging.debug("Trying to get step-types")
+        # TODO: @jepe Update this so that it works with u-steps (expanded step table mode)
         if steps_to_skip is None:
             steps_to_skip = []
 
@@ -2622,13 +2621,10 @@ class CellpyCell:
         steptypes = []
         helper_step_types = ["ocv", "charge_discharge"]
         valid_step_type = True
-        # logging.debug(f"dt 2: {time.time() - t0}")
         if steptype in self.list_of_step_types:
             steptypes.append(steptype)
         else:
-            txt = f"{steptype} is not a valid core steptype"
             if steptype in helper_step_types:
-                txt = "but a helper steptype"
                 if steptype == "ocv":
                     steptypes.append("ocvrlx_up")
                     steptypes.append("ocvrlx_down")
@@ -2637,7 +2633,6 @@ class CellpyCell:
                     steptypes.append("discharge")
             else:
                 valid_step_type = False
-            # logging.debug(txt)
         if not valid_step_type:
             return None
 
@@ -2653,9 +2648,6 @@ class CellpyCell:
             for st in add_these:
                 steptypes.append(st)
 
-        # logging.debug("Your steptypes:")
-        # logging.debug(steptypes)
-
         if steptable is None:
             st = self.data.steps
         else:
@@ -2663,7 +2655,6 @@ class CellpyCell:
         shdr = self.headers_step_table
 
         # retrieving cycle numbers
-        # logging.debug(f"dt 3: {time.time() - t0}")
         if cycle_number is None:
             cycle_numbers = self.get_cycle_numbers(steptable=steptable)
         else:
@@ -2674,10 +2665,9 @@ class CellpyCell:
 
         if trim_taper_steps is not None:
             trim_taper_steps = -trim_taper_steps
-            # logging.debug("taper steps to trim given")
+            logging.debug("taper steps to trim given")
 
         if pdtype:
-            # logging.debug("Return pandas dataframe.")
             if trim_taper_steps:
                 logging.info(
                     "Trimming taper steps is currently not"
@@ -2687,16 +2677,7 @@ class CellpyCell:
             out = st[st[shdr.type].isin(steptypes) & st[shdr.cycle].isin(cycle_numbers)]
             return out
 
-        # if not pdtype, return a dict instead
-        # logging.debug("out as dict; out[cycle] = [s1,s2,...]")
-        # logging.debug("(same behaviour as find_step_numbers)")
-        # logging.debug("return dict of lists")
-        # logging.warning(
-        #     "returning dict will be deprecated",
-        # )
         out = dict()
-        # logging.debug(f"return a dict")
-        # logging.debug(f"dt 4: {time.time() - t0}")
         for cycle in cycle_numbers:
             steplist = []
             for s in steptypes:
@@ -2714,7 +2695,6 @@ class CellpyCell:
             if not steplist:
                 steplist = [0]
             out[cycle] = steplist
-        # logging.debug(f"dt tot: {time.time() - t0}")
         return out
 
     def load_step_specifications(self, file_name, short=False):
