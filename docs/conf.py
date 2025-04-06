@@ -31,12 +31,18 @@ extensions = [
     # "myst_nb",
     "myst_parser",
     "sphinx.ext.graphviz",
-    # "autodoc2",
+    "sphinx.ext.autodoc",
     "nbsphinx",
-    "autoapi.extension",
+    # "autoapi.extension",
 ]
 
-# Note about myst_nb:
+# Note about autoapi.extension
+# -----------------------------
+# Due to using lazy import autoapi does not function as it should and we have reverted back to autodoc. When we have
+# solved how either not use lazy imports or make autoapi work with lazy imports we should switch back to autoapi.
+
+# Note about myst_nb
+# ------------------
 # It is possible to use myst_nb (that can parse notebooks with myst markdown)
 # instead of nbsphinx, but at the moment it is difficult to get the plotly plots to
 # work properly. Setting plotly to make the plots in iframes is a workaround, but
@@ -64,7 +70,7 @@ templates_path = ["_templates"]
 source_suffix = ".rst"
 master_doc = "index"
 project = "cellpy"
-copyright = "2024, Jan Petter Maehlen"
+copyright = "2025, Jan Petter Maehlen"
 version = version_ns["__version__"]
 release = version_ns["__version__"]
 
@@ -94,9 +100,7 @@ latex_elements = {
     # Additional stuff for the LaTeX preamble.
     #'preamble': '',
 }
-latex_documents = [
-    ("index", "cellpy.tex", "cellpy Documentation", "Jan Petter Maehlen", "manual")
-]
+latex_documents = [("index", "cellpy.tex", "cellpy Documentation", "Jan Petter Maehlen", "manual")]
 man_pages = [("index", "cellpy", "cellpy Documentation", ["Jan Petter Maehlen"], 1)]
 texinfo_documents = [
     (

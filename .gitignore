@@ -10,6 +10,7 @@ __pycache__/
 old/
 bin/
 docs/autoapi/
+_old_docs/autoapi/
 bin/mdbtools-win
 cellpy/utils/tmp
 tmp/
