@@ -7,12 +7,11 @@ build:
     jobs:
         post_install:
             - VIRTUAL_ENV=$READTHEDOCS_VIRTUALENV_PATH python -m pip install -e .
+            - VIRTUAL_ENV=$READTHEDOCS_VIRTUALENV_PATH python -m pip install - docs/requirements_doc.txt
 
 sphinx:
     configuration: docs/conf.py
 
-conda:
-    environment: docs/environment_rtd.yml
 
 
 
