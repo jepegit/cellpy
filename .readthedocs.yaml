@@ -12,6 +12,7 @@ build:
             - uv venv
         install:
             - uv pip install -r docs/requirements_doc.txt
+        pre_build:
             - uv pip install -e .
         build:
             html:
