@@ -11,4 +11,11 @@ sphinx:
 conda:
     environment: docs/environment_rtd.yml
 
+python:
+    version: 3.10
+    install:
+        - method: pip
+          path: .
 
+submodules:
+    include: all

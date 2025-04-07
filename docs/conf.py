@@ -1,7 +1,7 @@
 import os
 import sys
 
-INCLUDE_SOURCE_FILES = False
+INCLUDE_SOURCE_FILES = True
 
 project_root = os.path.abspath("../")
 name = "cellpy"
