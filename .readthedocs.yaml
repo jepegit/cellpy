@@ -4,6 +4,9 @@ build:
     os: "ubuntu-24.04"
     tools:
         python: "mambaforge-22.9"
+    jobs:
+        post_install:
+            - pip install -e .
 
 sphinx:
     configuration: docs/conf.py
@@ -11,5 +14,5 @@ sphinx:
 conda:
     environment: docs/environment_rtd.yml
 
-submodules:
-    include: all
+
+
