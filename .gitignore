@@ -110,3 +110,91 @@ dev_utils/batch_notebooks/out.png
 settings.json
 /tmp/
 .nox/
+/examples/cellpy batch utility/data/cellpyfiles/20180418_sf033_2_cc.h5
+/examples/cellpy batch utility/data/cellpyfiles/20180418_sf033_3_cc.h5
+/examples/cellpy batch utility/data/cellpyfiles/20180418_sf033_4_cc.h5
+/examples/cellpy batch utility/data/cellpyfiles/20180418_sf033_5_cc.h5
+/examples/cellpy batch utility/data/cellpyfiles/20180420_sf036_2_cc.h5
+/examples/cellpy batch utility/data/cellpyfiles/20180420_sf036_3_cc.h5
+/examples/cellpy batch utility/data/cellpyfiles/20180420_sf036_4_cc.h5
+/cellpy-environment.xlsx
+/examples/cellpy batch utility/out/cool_project/cellpy_batch_paper01.json
+/examples/cellpy batch utility/out/cellpy_batch_paper01.json
+/examples/cellpy batch utility/cellpy_batch_paper01.json
+/_old_docs/autoapi/cellpy/_version/index.rst
+/_old_docs/autoapi/cellpy/cli/index.rst
+/_old_docs/autoapi/cellpy/exceptions/index.rst
+/_old_docs/autoapi/cellpy/internals/core/index.rst
+/_old_docs/autoapi/cellpy/internals/otherpath/index.rst
+/_old_docs/autoapi/cellpy/internals/index.rst
+/_old_docs/autoapi/cellpy/libs/apipkg/index.rst
+/_old_docs/autoapi/cellpy/libs/index.rst
+/_old_docs/autoapi/cellpy/log/index.rst
+/_old_docs/autoapi/cellpy/parameters/internal_settings/index.rst
+/_old_docs/autoapi/cellpy/parameters/legacy/update_headers/index.rst
+/_old_docs/autoapi/cellpy/parameters/legacy/index.rst
+/_old_docs/autoapi/cellpy/parameters/prmreader/index.rst
+/_old_docs/autoapi/cellpy/parameters/prms/index.rst
+/_old_docs/autoapi/cellpy/parameters/index.rst
+/_old_docs/autoapi/cellpy/readers/cellreader/index.rst
+/_old_docs/autoapi/cellpy/readers/core/index.rst
+/_old_docs/autoapi/cellpy/readers/dbreader/index.rst
+/_old_docs/autoapi/cellpy/readers/do/index.rst
+/_old_docs/autoapi/cellpy/readers/filefinder/index.rst
+/_old_docs/autoapi/cellpy/readers/instruments/arbin_res/index.rst
+/_old_docs/autoapi/cellpy/readers/instruments/arbin_sql/index.rst
+/_old_docs/autoapi/cellpy/readers/instruments/arbin_sql_7/index.rst
+/_old_docs/autoapi/cellpy/readers/instruments/arbin_sql_csv/index.rst
+/_old_docs/autoapi/cellpy/readers/instruments/arbin_sql_h5/index.rst
+/_old_docs/autoapi/cellpy/readers/instruments/arbin_sql_xlsx/index.rst
+/_old_docs/autoapi/cellpy/readers/instruments/base/index.rst
+/_old_docs/autoapi/cellpy/readers/instruments/biologics_mpr/index.rst
+/_old_docs/autoapi/cellpy/readers/instruments/configurations/maccor_txt_four/index.rst
+/_old_docs/autoapi/cellpy/readers/instruments/configurations/maccor_txt_one/index.rst
+/_old_docs/autoapi/cellpy/readers/instruments/configurations/maccor_txt_three/index.rst
+/_old_docs/autoapi/cellpy/readers/instruments/configurations/maccor_txt_two/index.rst
+/_old_docs/autoapi/cellpy/readers/instruments/configurations/maccor_txt_zero/index.rst
+/_old_docs/autoapi/cellpy/readers/instruments/configurations/neware_txt_one/index.rst
+/_old_docs/autoapi/cellpy/readers/instruments/configurations/neware_txt_zero/index.rst
+/_old_docs/autoapi/cellpy/readers/instruments/configurations/index.rst
+/_old_docs/autoapi/cellpy/readers/instruments/custom/index.rst
+/_old_docs/autoapi/cellpy/readers/instruments/ext_nda_reader/index.rst
+/_old_docs/autoapi/cellpy/readers/instruments/loader_specific_modules/biologic_file_format/index.rst
+/_old_docs/autoapi/cellpy/readers/instruments/loader_specific_modules/index.rst
+/_old_docs/autoapi/cellpy/readers/instruments/local_instrument/index.rst
+/_old_docs/autoapi/cellpy/readers/instruments/maccor_txt/index.rst
+/_old_docs/autoapi/cellpy/readers/instruments/neware_txt/index.rst
+/_old_docs/autoapi/cellpy/readers/instruments/neware_xlsx/index.rst
+/_old_docs/autoapi/cellpy/readers/instruments/pec_csv/index.rst
+/_old_docs/autoapi/cellpy/readers/instruments/processors/post_processors/index.rst
+/_old_docs/autoapi/cellpy/readers/instruments/processors/pre_processors/index.rst
+/_old_docs/autoapi/cellpy/readers/instruments/processors/index.rst
+/_old_docs/autoapi/cellpy/readers/instruments/index.rst
+/_old_docs/autoapi/cellpy/readers/sql_dbreader/index.rst
+/_old_docs/autoapi/cellpy/readers/index.rst
+/_old_docs/autoapi/cellpy/utils/batch/index.rst
+/_old_docs/autoapi/cellpy/utils/batch_tools/batch_analyzers/index.rst
+/_old_docs/autoapi/cellpy/utils/batch_tools/batch_core/index.rst
+/_old_docs/autoapi/cellpy/utils/batch_tools/batch_experiments/index.rst
+/_old_docs/autoapi/cellpy/utils/batch_tools/batch_exporters/index.rst
+/_old_docs/autoapi/cellpy/utils/batch_tools/batch_helpers/index.rst
+/_old_docs/autoapi/cellpy/utils/batch_tools/batch_journals/index.rst
+/_old_docs/autoapi/cellpy/utils/batch_tools/batch_plotters/index.rst
+/_old_docs/autoapi/cellpy/utils/batch_tools/batch_reporters/index.rst
+/_old_docs/autoapi/cellpy/utils/batch_tools/dumpers/index.rst
+/_old_docs/autoapi/cellpy/utils/batch_tools/engines/index.rst
+/_old_docs/autoapi/cellpy/utils/batch_tools/sqlite_from_excel_db/index.rst
+/_old_docs/autoapi/cellpy/utils/batch_tools/index.rst
+/_old_docs/autoapi/cellpy/utils/collectors/index.rst
+/_old_docs/autoapi/cellpy/utils/diagnostics/index.rst
+/_old_docs/autoapi/cellpy/utils/easyplot/index.rst
+/_old_docs/autoapi/cellpy/utils/example_data/index.rst
+/_old_docs/autoapi/cellpy/utils/helpers/index.rst
+/_old_docs/autoapi/cellpy/utils/ica/index.rst
+/_old_docs/autoapi/cellpy/utils/live/index.rst
+/_old_docs/autoapi/cellpy/utils/ocv_rlx/index.rst
+/_old_docs/autoapi/cellpy/utils/plotutils/index.rst
+/_old_docs/autoapi/cellpy/utils/processor/index.rst
+/_old_docs/autoapi/cellpy/utils/index.rst
+/_old_docs/autoapi/cellpy/index.rst
+/_old_docs/autoapi/index.rst
