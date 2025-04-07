@@ -77,7 +77,7 @@ be set up correctly. This tells `cellpy` where to find (and save) different file
 such as the database file and raw data.
 
 Furthermore, the config file contains details about the database-file
-(see below {ref}`_Cellpy_Database_File`) to be used for cell info and metadata
+to be used for cell info and metadata
 (i.e. type and structure of the database file such as column headers etc.).
 
 ### Configuration file - example
@@ -130,7 +130,7 @@ Db:
     db_search_start_row: 2
     db_search_end_row: -1
 
-# definitions of headers for the simple_excel_reader
+# definitions of headers for the simple_excel_reader (only a part of it)
 DbCols:
     id:
     - id
@@ -144,8 +144,6 @@ DbCols:
     sub_batch_01:
     - b01
     - str
-    .
-    .
 ```
 
 This part is rather long (since it needs to define the column names used in the db excel sheet).
@@ -264,7 +262,8 @@ default "anode", then import the prms class and set new
 values:
 
 ```python
-from cellpy import parameters.prms
+
+from cellpy.parameters import prms
 
 # Changing cycle_mode to cathode
 prms.Reader.cycle_mode = 'cathode'

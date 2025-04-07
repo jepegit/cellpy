@@ -3,8 +3,6 @@
 Here we provide a few basic examples to get you started with cellpy - from reading the data to creating some basic plots. These notebooks, the used datafiles and a little more can be found in the [examples
 folder](https://github.com/jepegit/cellpy/tree/master/examples) in the cellpy GitHub repository.
 
-To exploit the full potential of cellpy, have a look at the [API](/autoapi/index).
-
 [Contributions](/contributing/contributing.md) to more example notebooks are of course very welcome!
 
 ```{toctree}

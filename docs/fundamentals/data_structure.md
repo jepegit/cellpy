@@ -46,7 +46,6 @@ Other common methods worth mentioning are:
 > - `get_cycle_numbers`: get the cycle numbers for your run.
 > - `get_ocv`: get the rest steps after each charge and discharge step.
 
-Take a look at [API](/autoapi/index) (Module index, `cellpy.readers.cellreader.CellpyCell`) for more info.
 
 ## Data
 

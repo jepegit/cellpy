@@ -42,7 +42,7 @@ on windows (e.g. `pytables`) and when using pip, you have to take care of this y
 :::{hint}
 You can take care of most of the dependencies by creating a virtual environment
 based on the provided [environment.yml](https://github.com/jepegit/cellpy/blob/master/environment.yml) file, or install using the [requirements.txt](https://github.com/jepegit/cellpy/blob/master/requirements.txt) file.
-For windows, make also sure to have the correct drivers for the .res files (see {ref}`note_windows`).
+For windows, make also sure to have the correct drivers for the .res files.
 :::
 
 (cellpy_install_linux)=
