@@ -11,7 +11,7 @@ build:
             - asdf global uv latest
             - uv venv
         install:
-            - uv pip install -r docs/requirements.txt
+            - uv pip install -r docs/requirements_doc.txt
             - uv pip install -e .
         build:
             html:
