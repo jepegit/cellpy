@@ -1,9 +1,10 @@
 [project]
 name = "cellpy"
+version = "1.0.2"
 
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
 
 [tool.pytest.ini_options]
 minversion = "6.0"
@@ -27,7 +28,9 @@ push = false
 [tool.bumpver.file_patterns]
 "pyproject.toml" = [
     'current_version = "{version}"',
+    'version = "{version}"',
 ]
+
 
 "cellpy/_version.py" = [
     '__version__ = "{version}"',
