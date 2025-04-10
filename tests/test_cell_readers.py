@@ -634,7 +634,7 @@ def test_make_step_table_all_steps(cellpy_data_instance, parameters):
     # need a new test data-file for GITT
     cellpy_data_instance.from_raw(parameters.res_file_path)
     cellpy_data_instance.mass = 1.0
-    cellpy_data_instance.make_step_table(profiling=True, all_steps=True)
+    cellpy_data_instance.make_step_table(profiling=True, usteps=True)
     assert len(cellpy_data_instance.data.steps) == 103
 
 
@@ -667,6 +667,59 @@ def test_v6(parameters):
     # c = cellpy.get(logging_mode="DEBUG", testing=True)
     c2 = cellpy.get(parameters.cellpy_file_path_v6, logging_mode="DEBUG", testing=True)
     # c.load(parameters.cellpy_file_path_v6)
+
+
+def test_get_step_number_usteps(gitt_datasett):
+    step_numbers_01 = gitt_datasett.get_step_numbers(
+        steptype="charge",
+        cycle_number=4,
+    )
+
+    gitt_datasett.make_step_table(
+        usteps=True,
+    )
+
+    step_numbers_02 = gitt_datasett.get_step_numbers(
+        steptype="charge",
+        cycle_number=4,
+        usteps=True,
+    )
+    assert len(step_numbers_01[4]) < len(step_numbers_02[4])
+    assert len(step_numbers_01[4]) == 1
+    assert len(step_numbers_02[4]) == 92
+
+
+def test_get_ccap_usteps(gitt_datasett):
+    gitt_datasett.make_step_table(
+        usteps=True,
+    )
+    df = gitt_datasett.get_ccap(cycle=4, usteps=True)
+    assert df.shape == (3104, 2)
+
+
+def test_sget_timestamp_usteps(gitt_datasett):
+    gitt_datasett.make_step_table(
+        usteps=True,
+    )
+    df = gitt_datasett.sget_timestamp(cycle=4, step=2)
+    assert df.shape == (3104,)
+
+
+def test_get_cap_usteps(gitt_datasett):
+    import matplotlib.pyplot as plt
+
+    df0 = gitt_datasett.get_cap(cycle=4)
+    assert df0.shape == (7592, 2)
+    df0 = gitt_datasett.get_cap(cycle=4, usteps=False)
+    assert df0.shape == (7592, 2)
+
+    gitt_datasett.make_step_table(
+        usteps=True,
+    )
+    df = gitt_datasett.get_cap(cycle=4)
+    assert df.shape == (7592, 2)
+    df = gitt_datasett.get_cap(cycle=4, usteps=True)
+    assert df.shape == (7592, 2)
 
 
 def test_make_summary_new_version(parameters):
