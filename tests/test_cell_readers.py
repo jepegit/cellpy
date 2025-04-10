@@ -706,8 +706,6 @@ def test_sget_timestamp_usteps(gitt_datasett):
 
 
 def test_get_cap_usteps(gitt_datasett):
-    import matplotlib.pyplot as plt
-
     df0 = gitt_datasett.get_cap(cycle=4)
     assert df0.shape == (7592, 2)
     df0 = gitt_datasett.get_cap(cycle=4, usteps=False)
