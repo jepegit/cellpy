@@ -384,7 +384,7 @@ def _get_bump_tag(bump):
     elif bump not in ["p", "patch", "m", "minor", "major", "t", "tag"]:
         bumper = bump_tags.get(bump, default_bumper)
     else:
-        bumper = bumpn
+        bumper = bump
     return bumper
 
 
@@ -451,7 +451,9 @@ def bump(c, bumper=None):
 
     """
     # raise NotImplementedError("This task is not implemented yet")
+    print(f"bumper: {bumper}")
     bumper = _get_bump_tag(bumper)
+    print(f"bumping with {bumper}")
 
     if not bumper:
         regex_current = re.compile("Current Version: (.*)")

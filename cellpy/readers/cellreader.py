@@ -27,6 +27,8 @@ from typing import Union, Sequence, List, Optional, Iterable, Any
 from typing import TYPE_CHECKING
 from dataclasses import asdict
 
+import numpy as np
+
 from . import externals as externals
 from cellpy.readers import core
 import cellpy.internals.core as internals
@@ -2563,6 +2565,7 @@ class CellpyCell:
         trim_taper_steps: int = None,
         steps_to_skip: Optional[list] = None,
         steptable: Any = None,
+        usteps: bool = False,
     ) -> Union[dict, Any]:
         # TODO: @jepe - include sub_steps here
         # TODO: @jepe - include option for not selecting taper steps here
@@ -2597,23 +2600,24 @@ class CellpyCell:
             {3: [5,8]}
 
         """
-        # TODO: @jepe Update this so that it works with u-steps (expanded step table mode)
+        if trim_taper_steps is not None and usteps:
+            logging.warning("Trimming taper steps is not possible when using usteps. Not doing any trimming.")
+            trim_taper_steps = None
+
         if steps_to_skip is None:
             steps_to_skip = []
 
         if steptable is None:
             if not self.data.has_steps:
-                logging.debug("steps is not made")
+                logging.debug("step-table is not made")
 
                 if self.force_step_table_creation or self.force_all:
-                    logging.debug("creating step_table for")
+                    logging.debug("creating step-table for")
                     logging.debug(self.data.loaded_from)
                     self.make_step_table()
 
                 else:
-                    logging.info("ERROR! Cannot use get_steps: create step_table first")
-                    logging.info("You could use find_step_numbers method instead")
-                    logging.info("(but I don't recommend it)")
+                    logging.info("ERROR! Cannot use get_step_numbers: you must create your step-table first")
                     return None
 
         # check if steptype is valid
@@ -2654,7 +2658,7 @@ class CellpyCell:
             st = steptable
         shdr = self.headers_step_table
 
-        # retrieving cycle numbers
+        # Retrieving cycle numbers (if cycle_number is None, it selects all cycles)
         if cycle_number is None:
             cycle_numbers = self.get_cycle_numbers(steptable=steptable)
         else:
@@ -2678,14 +2682,16 @@ class CellpyCell:
             return out
 
         out = dict()
+        step_hdr = shdr.ustep if usteps else shdr.step
         for cycle in cycle_numbers:
             steplist = []
             for s in steptypes:
                 mask_type_and_cycle = (st[shdr.type] == s) & (st[shdr.cycle] == cycle)
                 if not any(mask_type_and_cycle):
-                    logging.debug(f"found nothing for cycle {cycle}")
+                    logging.debug(f"Cycle {cycle} | StepType {s}: Not present!")
                 else:
-                    step = st[mask_type_and_cycle][shdr.step].tolist()
+                    # Get the step numbers
+                    step = st[mask_type_and_cycle][step_hdr].tolist()
                     for newstep in step[:trim_taper_steps]:
                         if newstep in steps_to_skip:
                             logging.debug(f"skipping step {newstep}")
@@ -2761,7 +2767,8 @@ class CellpyCell:
         override_step_types=None,
         override_raw_limits=None,
         profiling=False,
-        all_steps=False,
+        all_steps=False,  # should be deprecated
+        usteps=False,
         add_c_rate=True,
         skip_steps=None,
         sort_rows=True,
@@ -2792,7 +2799,7 @@ class CellpyCell:
             override_raw_limits (dict): override the instrument limits (resolution), for example set
                 'current_hard' to 0.1 by providing {'current_hard': 0.1}.
             profiling (bool): turn on profiling
-            all_steps (bool): investigate all steps including same steps within
+            usteps (bool): investigate all steps including same steps within
                 one cycle (this is useful for e.g. GITT).
             add_c_rate (bool): include a C-rate estimate in the steps
             skip_steps (list of integers): list of step numbers that should not
@@ -2807,6 +2814,10 @@ class CellpyCell:
         """
         # TODO: @jepe - include option for omitting steps
         # TODO: @jepe  - make it is possible to update only new data
+
+        if all_steps:
+            warnings.warn("all_steps will be deprecated, use usteps instead", FutureWarning)
+            usteps = True
 
         time_00 = time.time()
 
@@ -2864,7 +2875,7 @@ class CellpyCell:
         keep = [col for col in keep if col in df.columns]
         df = df[keep]
         # preparing for implementation of sub_steps (will come in the future):
-        df[nhdr.sub_step_index_txt] = 1
+        df = df.assign(**{f"{nhdr.sub_step_index_txt}": 1})
 
         # using headers as defined in the internal_settings.py file
         rename_dict = {
@@ -2888,7 +2899,7 @@ class CellpyCell:
             logging.debug(f"omitting steps {skip_steps}")
             df = df.loc[~df[shdr.step].isin(skip_steps)]
 
-        if all_steps:
+        if usteps:
             by.append(shdr.ustep)
             df[shdr.ustep] = self._ustep(df[shdr.step])
 
@@ -3119,28 +3130,38 @@ class CellpyCell:
         """Select steps (not documented yet)."""
         raise DeprecatedFeature
 
-    def _select_step(self, cycle, step):
+    def _select_steps(self, cycle: int, steps: Union[list, np.ndarray]):
         # TODO: @jepe - insert sub_step here
-        test = self.data
-
-        # check if columns exist
         c_txt = self.headers_normal.cycle_index_txt
         s_txt = self.headers_normal.step_index_txt
-        y_txt = self.headers_normal.voltage_txt
-        x_txt = self.headers_normal.discharge_capacity_txt  # jepe fix
+        v = self.data.raw[(self.data.raw[c_txt] == cycle) & (self.data.raw[s_txt].isin(steps))]
 
-        # no_cycles=externals.numpy.amax(test.raw[c_txt])
-        # print d.columns
+        if self._is_empty_array(v):
+            logging.debug("empty dataframe")
+            return None
+        else:
+            return v
 
-        if not any(test.raw.columns == c_txt):
-            logging.info("ERROR - cannot find %s" % c_txt)
-            sys.exit(-1)
-        if not any(test.raw.columns == s_txt):
-            logging.info("ERROR - cannot find %s" % s_txt)
-            sys.exit(-1)
+    def _select_usteps(self, cycle: int, steps: Union[list, np.ndarray]):
+        # TODO: @jepe - insert sub_step here
+        s_hdr = self.headers_step_table.step
+        us_hdr = self.headers_step_table.ustep
+        c_txt = self.headers_normal.cycle_index_txt
+        s_txt = self.headers_normal.step_index_txt
+        steps = self.data.steps.loc[self.data.steps[us_hdr].isin(steps), s_hdr].unique()
+        v = self.data.raw[(self.data.raw[c_txt] == cycle) & (self.data.raw[s_txt].isin(steps))]
 
-        # logging.debug(f"selecting cycle {cycle} step {step}")
-        v = test.raw[(test.raw[c_txt] == cycle) & (test.raw[s_txt] == step)]
+        if self._is_empty_array(v):
+            logging.debug("empty dataframe")
+            return None
+        else:
+            return v
+
+    def _select_step(self, cycle, step):
+        # TODO: @jepe - insert sub_step here
+        c_txt = self.headers_normal.cycle_index_txt
+        s_txt = self.headers_normal.step_index_txt
+        v = self.data.raw[(self.data.raw[c_txt] == cycle) & (self.data.raw[s_txt] == step)]
 
         if self._is_empty_array(v):
             logging.debug("empty dataframe")
@@ -3688,7 +3709,7 @@ class CellpyCell:
             pandas.Series or None if empty
         """
         header = self.headers_normal.voltage_txt
-        return self._sget(cycle, step, header, usteps=False)
+        return self._sget(cycle, step, header)
 
     def sget_current(self, cycle, step):
         """Returns current for cycle, step.
@@ -3705,7 +3726,7 @@ class CellpyCell:
             pandas.Series or None if empty
         """
         header = self.headers_normal.current_txt
-        return self._sget(cycle, step, header, usteps=False)
+        return self._sget(cycle, step, header)
 
     def get_raw(
         self,
@@ -3908,27 +3929,13 @@ class CellpyCell:
         """
 
         header = self.headers_normal.step_time_txt
-        return self._sget(cycle, step, header, usteps=False)
+        return self._sget(cycle, step, header)
 
-    def _sget(self, cycle, step, header, usteps=False):
+    def _sget(self, cycle, step, header):
         logging.debug(f"searching for {header}")
 
         cycle_index_header = self.headers_normal.cycle_index_txt
         step_index_header = self.headers_normal.step_index_txt
-
-        if usteps:
-            print("Using sget for usteps is not supported yet.")
-            print("I encourage you to work with the DataFrames directly instead.")
-            print(" - look up the 'ustep' in the steps DataFrame")
-            print(" - get the start and end 'data_point'")
-            print(" - look up the start and end 'data_point' in the raw DataFrame")
-            print("")
-            print(
-                "(Just remember to run make_step_table with the all_steps set to True"
-                " before you do it. And re-run it with all_steps set to False afterwards"
-                " to ensure that it behaves normally)"
-            )
-            return
 
         test = self.data.raw
 
@@ -3957,7 +3964,7 @@ class CellpyCell:
         """
 
         header = self.headers_normal.test_time_txt
-        return self._sget(cycle, step, header, usteps=False)
+        return self._sget(cycle, step, header)
 
     def sget_step_numbers(self, cycle, step):
         """Returns step number for cycle, step.
@@ -3976,7 +3983,12 @@ class CellpyCell:
         """
 
         header = self.headers_normal.step_index_txt
-        return self._sget(cycle, step, header, usteps=False)
+        return self._sget(cycle, step, header)
+
+    def _using_usteps(self):
+        if self.headers_step_table.ustep in self.data.steps.columns:
+            return True
+        return False
 
     # TODO: the capacity getters have become so big that they deserve their own module:
     def get_dcap(
@@ -3985,6 +3997,7 @@ class CellpyCell:
         converter=None,
         mode="gravimetric",
         as_frame=True,
+        usteps=False,
         **kwargs,
     ):
         """Returns discharge capacity and voltage for the selected cycle.
@@ -4007,7 +4020,7 @@ class CellpyCell:
         if converter is None:
             converter = self.get_converter_to_specific(mode=mode)
 
-        dc, v = self._get_cap(cycle, "discharge", converter=converter, **kwargs)
+        dc, v = self._get_cap(cycle, "discharge", converter=converter, usteps=usteps, **kwargs)
         if as_frame:
             cycle_df = externals.pandas.concat([v, dc], axis=1)
             return cycle_df
@@ -4020,6 +4033,7 @@ class CellpyCell:
         converter=None,
         mode="gravimetric",
         as_frame=True,
+        usteps=False,
         **kwargs,
     ):
         """Returns charge capacity and voltage for the selected cycle.
@@ -4041,7 +4055,7 @@ class CellpyCell:
 
         if converter is None:
             converter = self.get_converter_to_specific(mode=mode)
-        cc, v = self._get_cap(cycle, "charge", converter=converter, **kwargs)
+        cc, v = self._get_cap(cycle, "charge", converter=converter, usteps=usteps, **kwargs)
 
         if as_frame:
             cycle_df = externals.pandas.concat([v, cc], axis=1)
@@ -4072,6 +4086,7 @@ class CellpyCell:
         area=None,
         volume=None,
         cycle_mode=None,
+        usteps=None,
         **kwargs,
     ):
         """Gets the capacity for the run.
@@ -4148,6 +4163,10 @@ class CellpyCell:
             except TypeError:
                 return 0.0
 
+        if usteps is None:
+            usteps = self._using_usteps()
+            logging.debug(f"Since usteps is None, it is set automatically (usteps={usteps})")
+
         experimental = True
 
         cycle_mode = cycle_mode or self.cycle_mode
@@ -4219,6 +4238,7 @@ class CellpyCell:
                     current_cycle,
                     converter=specific_converter,
                     as_frame=False,
+                    usteps=usteps,
                     **kwargs,
                 )
 
@@ -4234,6 +4254,7 @@ class CellpyCell:
                     current_cycle,
                     converter=specific_converter,
                     as_frame=False,
+                    usteps=usteps,
                     **kwargs,
                 )
 
@@ -4433,18 +4454,18 @@ class CellpyCell:
         steptable=None,
         converter=None,
         usteps=False,
+        detailed=False,
     ):
-        if usteps:
-            print("Unfortunately, the ustep functionality is not implemented in this version of cellpy")
-            raise NotImplementedError("ustep == True not allowed!")
-        # used when extracting capacities (get_ccap, get_dcap)
+
         # TODO: @jepe - does not allow for constant voltage yet?
+        # TODO: @jepe - refactor this (can be done without making the individual lists first)
 
-        test = self.data
+        data_points = None
+        test_time = None
 
-        if cap_type == "charge_capacity":
+        if cap_type.lower() == "charge_capacity":
             cap_type = "charge"
-        elif cap_type == "discharge_capacity":
+        elif cap_type.lower() == "discharge_capacity":
             cap_type = "discharge"
 
         cycles = self.get_step_numbers(
@@ -4454,34 +4475,61 @@ class CellpyCell:
             trim_taper_steps=trim_taper_steps,
             steps_to_skip=steps_to_skip,
             steptable=steptable,
+            usteps=usteps,
         )
         if cap_type == "charge":
             column_txt = self.headers_normal.charge_capacity_txt
         else:
             column_txt = self.headers_normal.discharge_capacity_txt
+
         if cycle:
             steps = cycles[cycle]
             _v = []
             _c = []
+            _t = []
+            _p = []
+
             if len(set(steps)) < len(steps) and not usteps:
                 raise ValueError(f"You have duplicate step numbers!")
-            for step in sorted(steps):
-                selected_step = self._select_step(cycle, step)
-                if not self._is_empty_array(selected_step):
-                    _v.append(selected_step[self.headers_normal.voltage_txt])
-                    _c.append(selected_step[column_txt] * converter)
+
+            if usteps:
+                selected = self._select_usteps(cycle, steps)
+                if not self._is_empty_array(selected):
+                    _v.append(selected[self.headers_normal.voltage_txt])
+                    _c.append(selected[column_txt] * converter)
+                    if detailed:
+                        _t.append(selected[self.headers_normal.test_time_txt])
+                        _p.append(selected[self.headers_normal.data_point_txt])
+                else:
+                    logging.debug(f"Steps {steps} is empty")
+            else:
+                for step in sorted(steps):
+                    selected_step = self._select_step(cycle, step)
+                    if not self._is_empty_array(selected_step):
+                        _v.append(selected_step[self.headers_normal.voltage_txt])
+                        _c.append(selected_step[column_txt] * converter)
+                        if detailed:
+                            _t.append(selected_step[self.headers_normal.test_time_txt])
+                            _p.append(selected_step[self.headers_normal.data_point_txt])
+                    else:
+                        logging.debug(f"Step {step} is empty")
             try:
                 voltage = externals.pandas.concat(_v, axis=0)
                 cap = externals.pandas.concat(_c, axis=0)
+                if detailed:
+                    test_time = externals.pandas.concat(_t, axis=0)
+                    data_points = externals.pandas.concat(_p, axis=0)
             except Exception:
                 logging.debug("could not find any steps for this cycle")
-                raise NullData(f"no steps found (c:{cycle} s:{step} type:{cap_type})")
+                raise NullData(f"no steps found (c:{cycle} s:{steps} type:{cap_type})")
         else:
             # get all the discharge cycles
             # this is a dataframe filtered on step and cycle
             # This functionality is not crucial since get_cap (that uses this method) has it
             # (but it might be nice to improve performance)
             raise NotImplementedError("Not yet possible to extract without giving cycle numbers (use get_cap instead)")
+        if detailed:
+            return data_points, test_time, cap, voltage
         return cap, voltage
 
     def get_ocv(

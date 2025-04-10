@@ -1,4 +1,5 @@
 """pytest fixtures for cellpy"""
+
 import logging
 import pathlib
 
@@ -44,9 +45,7 @@ def dataset(cellpy_data_instance) -> CellpyCell:
     p = pathlib.Path(fdv.cellpy_file_path)
 
     if not p.is_file():
-        logging.info(
-            f"pytest fixture could not find {fdv.cellpy_file_path} - making it from raw and saving"
-        )
+        logging.info(f"pytest fixture could not find {fdv.cellpy_file_path} - making it from raw and saving")
         a = cellreader.CellpyCell()
         a.from_raw(fdv.res_file_path)
         a.set_mass(1.0)
@@ -54,6 +53,13 @@ def dataset(cellpy_data_instance) -> CellpyCell:
         a.save(fdv.cellpy_file_path)
 
     return cellpy_data_instance.load(fdv.cellpy_file_path)
+
+
+@pytest.fixture
+def gitt_datasett(cellpy_data_instance) -> CellpyCell:
+    """Fixture for CellpyCell instance with GITT data loaded from cellpy-file"""
+
+    return cellpy_data_instance.load(fdv.gitt_file_path)
 
 
 @pytest.fixture
@@ -65,9 +71,7 @@ def cell(cellpy_data_instance) -> CellpyCell:
     p = pathlib.Path(fdv.cellpy_file_path)
 
     if not p.is_file():
-        logging.info(
-            f"pytest fixture could not find {fdv.cellpy_file_path} - making it from raw and saving"
-        )
+        logging.info(f"pytest fixture could not find {fdv.cellpy_file_path} - making it from raw and saving")
         a = cellreader.CellpyCell()
         a.from_raw(fdv.res_file_path)
         a.make_summary(find_ir=True, find_end_voltage=True)
@@ -86,8 +90,6 @@ def raw_cell(cellpy_data_instance) -> CellpyCell:
     a.make_summary(find_ir=True, find_end_voltage=True)
 
     return a
-
-
 
 
 @pytest.fixture

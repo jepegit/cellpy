@@ -1,10 +1,10 @@
 """Tools for getting some data to play with"""
 
-import warnings
 from enum import Enum
 import logging
 import os
 from pathlib import Path
+import warnings
 
 import requests
 from tqdm.auto import tqdm
@@ -101,9 +101,7 @@ def download_file(url, local_filename):
         r.raise_for_status()
         with open(local_filename, "wb") as f:
             if prms._url_example_data_download_with_progressbar:
-                pbar = tqdm(
-                    total=int(r.headers["Content-Length"]), unit="B", unit_scale=True
-                )
+                pbar = tqdm(total=int(r.headers["Content-Length"]), unit="B", unit_scale=True)
             for chunk in r.iter_content(chunk_size=CHUNK_SIZE):
                 if chunk and prms._url_example_data_download_with_progressbar:
                     pbar.update(len(chunk))
@@ -175,9 +173,7 @@ def download_all_files():
     _download_all_files()
 
 
-def raw_file(
-    auto_summary: bool = True, testing: bool = False
-) -> cellpy.cellreader.CellpyCell:
+def raw_file(auto_summary: bool = True, testing: bool = False) -> cellpy.cellreader.CellpyCell:
     """load an example data file (arbin).
 
     Args:
@@ -190,9 +186,7 @@ def raw_file(
     """
     file_path = arbin_file_path()
     mass = 0.704
-    return cellpy.get(
-        filename=file_path, mass=mass, auto_summary=auto_summary, testing=testing
-    )
+    return cellpy.get(filename=file_path, mass=mass, auto_summary=auto_summary, testing=testing)
 
 
 def cellpy_file(testing: bool = False) -> cellpy.cellreader.CellpyCell:

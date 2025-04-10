@@ -47,9 +47,7 @@ env_file = os.path.abspath(os.path.join(data_dir, ".env_cellpy_test"))
 cellpy_file_name = "20160805_test001_45_cc.h5"
 cellpy_file_path = os.path.join(cellpy_data_dir, cellpy_file_name)
 
-cellpy_file_path_external = (
-    "scp://jepe@server.no/home/jepe/data/20160805_test001_45_cc.h5"
-)
+cellpy_file_path_external = "scp://jepe@server.no/home/jepe/data/20160805_test001_45_cc.h5"
 
 # old format (to check compatibility when upgrading cellpy format)
 cellpy_file_name_v4 = "20160805_test001_45_cc_v0.h5"
@@ -100,9 +98,7 @@ mock_file_path = os.path.join(raw_data_dir, mock_file_name)
 
 res_file_name = "20160805_test001_45_cc_01.res"
 res_file_path = os.path.join(raw_data_dir, res_file_name)
-res_file_path_external = (
-    "scp://jepe@server.no/home/jepe/data/20160805_test001_45_cc_01.res"
-)
+res_file_path_external = "scp://jepe@server.no/home/jepe/data/20160805_test001_45_cc_01.res"
 
 res_file_name2 = "20160805_test001_45_cc_02.res"
 res_file_path2 = os.path.join(raw_data_dir, res_file_name2)
@@ -185,6 +181,11 @@ custom_file_paths_3 = os.path.join(raw_data_dir, "custom_data_002.csv")
 # -------- custom new file format -------------------
 custom_instrument = "maccor_one.yml"
 custom_instrument_path = os.path.join(instrument_dir, custom_instrument)
+
+
+# ---------- gitt data -------------------------------
+gitt_file_name = "20210210_FC.h5"
+gitt_file_path = os.path.join(raw_data_dir, gitt_file_name)
 
 if __name__ == "__main__":
     files = [
