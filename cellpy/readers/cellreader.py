@@ -91,6 +91,121 @@ _module_logger = logging.getLogger(__name__)
 #     return Q(value, *args, **kwargs)
 
 
+class CellpyCellCore:
+    def __init__(
+        self,
+        filenames=None,
+        selected_scans=None,
+        profile=False,
+        filestatuschecker=None,  # "modified"
+        tester=None,
+        initialize=False,
+        cellpy_units=None,
+        output_units=None,
+        debug=False,
+    ):
+        """
+        Args:
+            filenames: list of files to load.
+            selected_scans:
+            profile: experimental feature.
+            filestatuschecker: property to compare cellpy and raw-files;
+               default read from prms-file.
+            tester: instrument used (e.g. "arbin_res") (checks prms-file as
+               default).
+            initialize: create a dummy (empty) dataset; defaults to False.
+            cellpy_units (dict): sent to cellpy.parameters.internal_settings.get_cellpy_units
+            output_units (dict): sent to cellpy.parameters.internal_settings.get_default_output_units
+            debug (bool): set to True if you want to see debug messages.
+        """
+        # TODO v 1.1: move to data (allow for multiple testers for same cell)
+        if tester is None:
+            self.tester = prms.Instruments.tester
+            logging.debug(f"reading instrument from prms: {prms.Instruments}")
+        else:
+            self.tester = tester
+
+        self.loader = None  # this will be set in the function set_instrument
+        self.debug = debug
+        logging.debug("created CellpyCell instance")
+
+        self._cell_name = None
+        self._initial_cells = None
+        self.group = None
+        self.last_uploaded_from = None
+        self.last_uploaded_at = None
+        self.cellpy_file_name = None
+        self.cellpy_object_created_at = datetime.datetime.now()
+
+        self.profile = profile
+
+        self.minimum_selection = {}
+        self.filestatuschecker = filestatuschecker or prms.Reader.filestatuschecker
+        self.forced_errors = 0
+
+        self.file_names = filenames or []
+        if not self._is_listtype(self.file_names):
+            self.file_names = [self.file_names]
+
+        self.selected_scans = selected_scans or []
+        if not self._is_listtype(self.selected_scans):
+            self.selected_scans = [self.selected_scans]
+
+        self._data = None
+        self.overwrite_able = True  # attribute that prevents saving to the same filename as loaded from if False
+
+        self.capacity_modifiers = ["reset"]
+
+        self.list_of_step_types = [
+            "charge",
+            "discharge",
+            "cv_charge",
+            "cv_discharge",
+            "taper_charge",
+            "taper_discharge",
+            "charge_cv",
+            "discharge_cv",
+            "ocvrlx_up",
+            "ocvrlx_down",
+            "ir",
+            "rest",
+            "not_known",
+        ]
+        # - options
+        self.force_step_table_creation = prms.Reader.force_step_table_creation
+        self.force_all = prms.Reader.force_all
+        self.sep = prms.Reader.sep
+        self._cycle_mode = None
+        self.select_minimal = prms.Reader.select_minimal
+        self.limit_loaded_cycles = prms.Reader.limit_loaded_cycles
+        self.limit_data_points = None
+        self.ensure_step_table = prms.Reader.ensure_step_table
+        self.ensure_summary_table = prms.Reader.ensure_summary_table
+        self.raw_datadir = internals.OtherPath(prms.Paths.rawdatadir)
+        self.cellpy_datadir = internals.OtherPath(prms.Paths.cellpydatadir)
+        self.auto_dirs = prms.Reader.auto_dirs  # v2.0
+
+        # - headers and instruments
+        self.headers_normal = headers_normal
+        self.headers_summary = headers_summary
+        self.headers_step_table = headers_step_table
+        self.instrument_factory = None
+        self.register_instrument_readers()
+        self.set_instrument()
+        # - units used by cellpy
+        self.cellpy_units = get_cellpy_units(cellpy_units)
+        self.output_units = get_default_output_units(output_units)  # v2.0
+
+        if initialize:
+            self.initialize()
+
+    def initialize(self):
+        """Initialize the CellpyCell object with empty Data instance."""
+
+        logging.debug("Initializing...")
+        self._data = core.Data()
+
+
 class CellpyCell:
     """Main class for working and storing data.
 
