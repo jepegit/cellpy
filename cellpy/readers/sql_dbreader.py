@@ -6,6 +6,7 @@ import re
 from collections import defaultdict
 from datetime import datetime
 from typing import Any, List, Optional
+import warnings
 
 from sqlalchemy import (
     Column,
@@ -298,7 +299,11 @@ class SQLReader(BaseDbReader):
         pages_dict[hdr_journal["cellpy_file_name"]] = []
 
         if include_key:
-            pages_dict[hdr_journal["id_key"]] = cell_ids
+            warnings.warn(
+                "include_key is deprecated and will be removed in a future version of cellpy",
+                DeprecationWarning,
+            )
+            pages_dict[hdr_journal["id_key"]] = cell.cell_ids
 
         if include_individual_arguments:
             pages_dict[hdr_journal["argument"]] = arguments

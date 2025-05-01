@@ -64,7 +64,7 @@ from cellpy.parameters.internal_settings import (
     CellpyMetaCommon,
     CellpyMetaIndividualTest,
 )
-
+# from cellpy.fat.core import CellpyCell
 DIGITS_C_RATE = 5
 
 HEADERS_NORMAL = get_headers_normal()  # TODO @jepe refactor this (not needed)
