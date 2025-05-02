@@ -64,6 +64,7 @@ from cellpy.parameters.internal_settings import (
     CellpyMetaCommon,
     CellpyMetaIndividualTest,
 )
+
 # from cellpy.fat.core import CellpyCell
 DIGITS_C_RATE = 5
 
@@ -116,7 +117,6 @@ class CellpyCellCore:
         self.cellpy_object_created_at = datetime.datetime.now()
         self.forced_errors = 0
 
-
         self.capacity_modifiers = ["reset"]
 
         self.list_of_step_types = [
@@ -135,7 +135,7 @@ class CellpyCellCore:
             "not_known",
         ]
         # - options
-        
+
         self._cycle_mode = None
 
         #
@@ -345,13 +345,13 @@ class CellpyCellCore:
 
     @staticmethod
     def _select_without(
-            data=None, 
-            headers_normal=None, 
-            headers_step_table=None, 
-            exclude_types=None, 
-            exclude_steps=None, 
-            replace_nan=True
-            ):
+        data=None,
+        headers_normal=None,
+        headers_step_table=None,
+        exclude_types=None,
+        exclude_steps=None,
+        replace_nan=True,
+    ):
         steps = data.steps
         raw = data.raw.copy()
 
@@ -444,26 +444,26 @@ class CellpyCellCore:
         selected = selected.drop(columns=_diff_columns)
 
         return selected
-    
+
     def create_selector(self, selector_type=None, exclude_types=None, exclude_steps=None):
-            if selector_type == "non-cv":
-                exclude_types = ["cv_"]
-            elif selector_type == "non-rest":
-                exclude_types = ["rest_"]
-            elif selector_type == "non-ocv":
-                exclude_types = ["ocv_"]
-            elif selector_type == "only-cv":
-                exclude_types = ["charge", "discharge"]
-            selector = functools.partial(
-                self._select_without,
-                data=self.data,
-                headers_normal=self.headers_normal,
-                headers_step_table=self.headers_step_table,
-                exclude_types=exclude_types,
-                exclude_steps=exclude_steps,
-            )
-            return selector
-    
+        if selector_type == "non-cv":
+            exclude_types = ["cv_"]
+        elif selector_type == "non-rest":
+            exclude_types = ["rest_"]
+        elif selector_type == "non-ocv":
+            exclude_types = ["ocv_"]
+        elif selector_type == "only-cv":
+            exclude_types = ["charge", "discharge"]
+        selector = functools.partial(
+            self._select_without,
+            data=self.data,
+            headers_normal=self.headers_normal,
+            headers_step_table=self.headers_step_table,
+            exclude_types=exclude_types,
+            exclude_steps=exclude_steps,
+        )
+        return selector
+
     def _generate_absolute_summary_columns(self, data, _first_step_txt, _second_step_txt) -> core.Data:
         summary = data.summary
         summary[self.headers_summary.coulombic_efficiency] = 100 * summary[_second_step_txt] / summary[_first_step_txt]
@@ -786,13 +786,6 @@ class CellpyCellCore:
         # ---------------- absolute -------------------------------
 
         data = self._generate_absolute_summary_columns(data, _first_step_txt, _second_step_txt)
-        data = self._equivalent_cycles_to_summary(
-            data, _first_step_txt, _second_step_txt, nom_cap_abs, normalization_cycles
-        )
-
-        # getting the C-rates, using values from step-table (so it will not be changed
-        # even though you provide make_summary with a new nom_cap unfortunately):
-        data = self._c_rates_to_summary(data)
 
         # TODO @jepe: refactor this to method:
         if find_end_voltage:
@@ -801,19 +794,24 @@ class CellpyCellCore:
         if find_ir and (self.headers_normal.internal_resistance_txt in data.raw.columns):
             data = self._ir_to_summary(data)
 
-        if sort_my_columns:
-            logging.debug("sorting columns")
-            new_first_col_list = [
-                self.headers_normal.datetime_txt,
-                self.headers_normal.test_time_txt,
-                self.headers_normal.data_point_txt,
-                self.headers_normal.cycle_index_txt,
-            ]
-            data.summary = self.set_col_first(data.summary, new_first_col_list)
+        # data = self._equivalent_cycles_to_summary(data, _first_step_txt, _second_step_txt, nom_cap_abs, normalization_cycles)
+        #
+        # # getting the C-rates, using values from step-table (so it will not be changed
+        # # even though you provide make_summary with a new nom_cap unfortunately):
+        # data = self._c_rates_to_summary(data)
+        #
+        # if sort_my_columns:
+        #     logging.debug("sorting columns")
+        #     new_first_col_list = [
+        #         self.headers_normal.datetime_txt,
+        #         self.headers_normal.test_time_txt,
+        #         self.headers_normal.data_point_txt,
+        #         self.headers_normal.cycle_index_txt,
+        #     ]
+        #     data.summary = self.set_col_first(data.summary, new_first_col_list)
 
         logging.debug(f"(dt: {(time.time() - time_00):4.2f}s)")
         return data
-    
 
     @staticmethod
     def set_col_first(df, col_names):
@@ -835,16 +833,15 @@ class CellpyCellCore:
             df = df.reindex(columns=column_headings)
             return df
 
-
     def get_cycle_numbers(
-            self,
-            steptable=None,
-            rate=None,
-            rate_on=None,
-            rate_std=None,
-            rate_agg="first",
-            inverse=False,
-        ):
+        self,
+        steptable=None,
+        rate=None,
+        rate_on=None,
+        rate_std=None,
+        rate_agg="first",
+        inverse=False,
+    ):
         """Get a array containing the cycle numbers in the test.
 
         Parameters:
@@ -902,7 +899,7 @@ class CellpyCellCore:
         filtered_cycles = filtered_rates[self.headers_step_table["cycle"]].unique()
 
         return filtered_cycles
-    
+
 
 class CellpyCell:
     """Main class for working and storing data.
@@ -6155,13 +6152,13 @@ class CellpyCell:
     #  public when it is fixed:
     @staticmethod
     def _select_without(
-            data=None, 
-            headers_normal=None, 
-            headers_step_table=None, 
-            exclude_types=None, 
-            exclude_steps=None, 
-            replace_nan=True
-            ):
+        data=None,
+        headers_normal=None,
+        headers_step_table=None,
+        exclude_types=None,
+        exclude_steps=None,
+        replace_nan=True,
+    ):
         steps = data.steps
         raw = data.raw.copy()
 
@@ -6256,6 +6253,8 @@ class CellpyCell:
         return selected
 
     # ----------making-summary------------------------------------------------------
+
+    # ----------making-summary------------------------------------------------------
     def make_summary(
         self,
         find_ir=False,
@@ -6342,45 +6341,6 @@ class CellpyCell:
                 nom_cap_specifics=nom_cap_specifics,
             )
             return self
-        
-
-        if nom_cap is None:
-            nom_cap = self.data.nom_cap
-
-        if nom_cap_specifics is None:
-            nom_cap_specifics = self.nom_cap_specifics
-
-        
-        # ensuring that a step table exists:
-        if ensure_step_table:
-            logging.debug("ensuring existence of step-table")
-            if not self.data.has_steps:
-                logging.debug("dataset.step_table_made is not True")
-                logging.info("running make_step_table")
-                
-
-                # update nom_cap in case it is given as argument to make_summary:
-                self.data.nom_cap = nom_cap
-                self.make_step_table()
-
-        if selector is None:
-            if selector_type == "non-cv":
-                exclude_types = ["cv_"]
-            elif selector_type == "non-rest":
-                exclude_types = ["rest_"]
-            elif selector_type == "non-ocv":
-                exclude_types = ["ocv_"]
-            elif selector_type == "only-cv":
-                exclude_types = ["charge", "discharge"]
-            selector = functools.partial(
-                self._select_without,
-                data=self.data,
-                headers_normal=self.headers_normal,
-                headers_step_table=self.headers_step_table,
-                exclude_types=exclude_types,
-                exclude_steps=exclude_steps,
-            )
-            
 
         data = self._make_summary(
             find_ir=find_ir,
@@ -6457,6 +6417,382 @@ class CellpyCell:
             else:
                 warnings.warn(f"Unknown keyword argument: {k}")
 
+        if selector is None:
+            if selector_type == "non-cv":
+                exclude_types = ["cv_"]
+            elif selector_type == "non-rest":
+                exclude_types = ["rest_"]
+            elif selector_type == "non-ocv":
+                exclude_types = ["ocv_"]
+            elif selector_type == "only-cv":
+                exclude_types = ["charge", "discharge"]
+            selector = functools.partial(
+                self._select_without,
+                exclude_types=exclude_types,
+                exclude_steps=exclude_steps,
+            )
+
+        # TODO: add this to arguments and possible prms:
+        if nom_cap_specifics is None:
+            nom_cap_specifics = self.nom_cap_specifics
+        specifics = ["gravimetric", "areal", "absolute"]
+        cycle_index_as_index = True
+        time_00 = time.time()
+        logging.debug("start making summary")
+
+        if create_copy:
+            data = copy.deepcopy(self.data)
+        else:
+            data = self.data
+
+        if not mass:
+            mass = data.mass or 1.0
+        else:
+            if update_mass:
+                data.mass = mass
+
+        if use_cellpy_stat_file:
+            warnings.warn("using cellpy 'statfile' - this feature is not properly supported anymore")
+
+        if nom_cap is None:
+            nom_cap = data.nom_cap
+
+        logging.info(f"Using the following nominal capacity: {nom_cap}")
+
+        # cellpy has historically assumed that the nominal capacity (nom_cap) is specific gravimetric
+        # (i.e. in units of for example mAh/g), but now we need it in absolute units (e.g. Ah). The plan
+        # is to set stuff like this during initiation of the cell (but not yet)
+
+        # generating absolute nominal capacity (this should be refactored):
+        if nom_cap_specifics == "gravimetric":
+            nom_cap_abs = self.nominal_capacity_as_absolute(nom_cap, mass, nom_cap_specifics)
+        elif nom_cap_specifics == "areal":
+            nom_cap_abs = self.nominal_capacity_as_absolute(nom_cap, data.active_electrode_area, nom_cap_specifics)
+        elif nom_cap_specifics == "absolute":
+            nom_cap_abs = self.nominal_capacity_as_absolute(nom_cap, 1.0, nom_cap_specifics)
+
+        # TODO: this will break because cell.volume (data.volume) is not set yet
+        elif nom_cap_specifics == "volumetric":
+            nom_cap_abs = self.nominal_capacity_as_absolute(nom_cap, data.volume, nom_cap_specifics)
+
+        else:
+            nom_cap_abs = self.nominal_capacity_as_absolute(nom_cap, mass, nom_cap_specifics)
+
+        # ensuring that a step table exists:
+        if ensure_step_table:
+            logging.debug("ensuring existence of step-table")
+            if not data.has_steps:
+                logging.debug("dataset.step_table_made is not True")
+                logging.info("running make_step_table")
+
+                # update nom_cap in case it is given as argument to make_summary:
+                data.nom_cap = nom_cap
+                self.make_step_table()
+
+        if not self.data.raw.index.is_unique:
+            warnings.warn(f"{self.cell_name}: index is not unique for raw data")
+            if remove_duplicates:
+                logging.debug("removing duplicates before making summary")
+                self.data.raw = self.data.raw[~self.data.raw.index.duplicated(keep="first")]
+            else:
+                warnings.warn(
+                    "You should remove the duplicates before making summary. For example using"
+                    "c.data.raw = c.data.raw[~raw.index.duplicated(keep='first')]"
+                )
+
+        if use_cellpy_stat_file:
+            summary_df = data.summary
+            try:
+                summary = self.data.raw[self.headers_normal.data_point_txt].isin(
+                    summary_df[self.headers_normal.data_point_txt]
+                )
+            except KeyError:
+                # TODO: remove this "escape" and instead raise Error asking
+                #  the user to not use the stat-file if it is not working properly:
+                logging.info("Error in stat_file (?) - using _select_last")
+                summary = selector()
+        else:
+            summary = selector()
+
+        if not summary.index.is_unique:
+            warnings.warn(f"{self.cell_name}: index is not unique for summary data")
+
+        column_names = summary.columns
+        # TODO @jepe: use pandas.DataFrame properties instead (.len, .reset_index), but maybe first
+        #  figure out if this is really needed and why it was implemented in the first place.
+        summary_length = len(summary[column_names[0]])
+        summary.index = list(range(summary_length))
+
+        if select_columns:
+            logging.debug("keeping only selected set of columns")
+            columns_to_keep = [
+                self.headers_normal.charge_capacity_txt,
+                self.headers_normal.cycle_index_txt,
+                self.headers_normal.data_point_txt,
+                self.headers_normal.datetime_txt,
+                self.headers_normal.discharge_capacity_txt,
+                self.headers_normal.test_time_txt,
+            ]
+            for cn in column_names:
+                if not columns_to_keep.count(cn):
+                    try:
+                        summary.pop(cn)
+                    except KeyError:
+                        logging.debug(f"could not pop {cn}")
+
+        data.summary = summary
+
+        # ----------------- calculated values -----------------------
+
+        if self.cycle_mode == "anode":
+            logging.info("Assuming cycling in anode half-data (discharge before charge) mode")
+            _first_step_txt = self.headers_summary.discharge_capacity
+            _second_step_txt = self.headers_summary.charge_capacity
+        else:
+            logging.info("Assuming cycling in full-data / cathode mode")
+            _first_step_txt = self.headers_summary.charge_capacity
+            _second_step_txt = self.headers_summary.discharge_capacity
+
+        # ---------------- absolute -------------------------------
+
+        data = self._generate_absolute_summary_columns(data, _first_step_txt, _second_step_txt)
+        data = self._equivalent_cycles_to_summary(
+            data, _first_step_txt, _second_step_txt, nom_cap_abs, normalization_cycles
+        )
+
+        # getting the C-rates, using values from step-table (so it will not be changed
+        # even though you provide make_summary with a new nom_cap unfortunately):
+        data = self._c_rates_to_summary(data)
+
+        # ----------------- specifics ----------------------------------------
+        specific_columns = self.headers_summary.specific_columns
+        for mode in specifics:
+            data = self._generate_specific_summary_columns(data, mode, specific_columns)
+
+        # TODO @jepe: refactor this to method:
+        if find_end_voltage:
+            data = self._end_voltage_to_summary(data)
+
+        if find_ir and (self.headers_normal.internal_resistance_txt in data.raw.columns):
+            data = self._ir_to_summary(data)
+
+        if sort_my_columns:
+            logging.debug("sorting columns")
+            new_first_col_list = [
+                self.headers_normal.datetime_txt,
+                self.headers_normal.test_time_txt,
+                self.headers_normal.data_point_txt,
+                self.headers_normal.cycle_index_txt,
+            ]
+            data.summary = self.set_col_first(data.summary, new_first_col_list)
+
+        if cycle_index_as_index:
+            index_col = self.headers_summary.cycle_index
+            try:
+                data.summary.set_index(index_col, inplace=True)
+            except KeyError:
+                logging.debug("Setting cycle_index as index failed")
+
+        logging.debug(f"(dt: {(time.time() - time_00):4.2f}s)")
+        return data
+
+    def make_summary2(
+        self,
+        find_ir=False,
+        find_end_voltage=True,
+        use_cellpy_stat_file=None,
+        ensure_step_table=True,
+        remove_duplicates=True,
+        normalization_cycles=None,
+        nom_cap=None,
+        nom_cap_specifics=None,
+        old=False,
+        create_copy=False,
+        exclude_types=None,
+        exclude_steps=None,
+        selector_type=None,
+        selector=None,
+        **kwargs,
+    ):
+        """Convenience function that makes a summary of the cycling data.
+
+        Args:
+            find_ir (bool): if True, the internal resistance will be calculated.
+            find_end_voltage (bool): if True, the end voltage will be calculated.
+            use_cellpy_stat_file (bool): if True, the summary will be made from
+                the cellpy_stat file (soon to be deprecated).
+            ensure_step_table (bool): if True, the step-table will be made if it does not exist.
+            remove_duplicates (bool): if True, duplicates will be removed from the summary.
+            normalization_cycles (int or list of int): cycles to use for normalization.
+            nom_cap (float or str): nominal capacity (if None, the nominal capacity from the data will be used).
+            nom_cap_specifics (str): gravimetric, areal, or volumetric.
+            old (bool): if True, the old summary method will be used.
+            create_copy (bool): if True, a copy of the cellpy object will be returned.
+            exclude_types (list of str): exclude these types from the summary.
+            exclude_steps (list of int): exclude these steps from the summary.
+            selector_type (str): select based on type (e.g. "non-cv", "non-rest", "non-ocv", "only-cv").
+            selector (callable): custom selector function.
+            **kwargs: additional keyword arguments sent to internal method (check source for info).
+
+        Returns:
+            cellpy.CellpyData: cellpy object with the summary added to it.
+        """
+
+        # TODO: @jepe  - make it is possible to update only new data by implementing
+        #  from_cycle (only calculate summary from a given cycle number).
+        #  Probably best to keep the old summary and make
+        #  a new one for the rest, then use pandas.concat to merge them.
+        #  Might have to create the cumulative cols etc after merging?
+
+        # first - check if we need some "instrument-specific" prms
+        if ensure_step_table is None:
+            ensure_step_table = self.ensure_step_table
+
+        if use_cellpy_stat_file is None:
+            use_cellpy_stat_file = prms.Reader.use_cellpy_stat_file
+            logging.debug("using use_cellpy_stat_file from prms")
+            logging.debug(f"use_cellpy_stat_file: {use_cellpy_stat_file}")
+
+        txt = "creating summary for file "
+        try:
+            test = self.data
+        except NoDataFound:
+            logging.info(f"Empty test (no data found)")
+            return
+
+        if isinstance(test.loaded_from, (list, tuple)):
+            for f in test.loaded_from:
+                txt += f"{f}\n"
+        else:
+            txt += str(test.loaded_from)
+
+        logging.debug(txt)
+
+        if old:
+            print("Using old summary method")
+            self._make_summar_legacy(
+                # find_ocv=find_ocv,
+                find_ir=find_ir,
+                find_end_voltage=find_end_voltage,
+                use_cellpy_stat_file=use_cellpy_stat_file,
+                ensure_step_table=ensure_step_table,
+                # add_c_rate=add_c_rate,
+                normalization_cycles=normalization_cycles,
+                nom_cap=nom_cap,
+                nom_cap_specifics=nom_cap_specifics,
+            )
+            return self
+
+        if nom_cap is None:
+            nom_cap = self.data.nom_cap
+
+        if nom_cap_specifics is None:
+            nom_cap_specifics = self.nom_cap_specifics
+
+        # ensuring that a step table exists:
+        if ensure_step_table:
+            logging.debug("ensuring existence of step-table")
+            if not self.data.has_steps:
+                logging.debug("dataset.step_table_made is not True")
+                logging.info("running make_step_table")
+
+                # update nom_cap in case it is given as argument to make_summary:
+                self.data.nom_cap = nom_cap
+                self.make_step_table()
+
+        if selector is None:
+            if selector_type == "non-cv":
+                exclude_types = ["cv_"]
+            elif selector_type == "non-rest":
+                exclude_types = ["rest_"]
+            elif selector_type == "non-ocv":
+                exclude_types = ["ocv_"]
+            elif selector_type == "only-cv":
+                exclude_types = ["charge", "discharge"]
+            selector = functools.partial(
+                self._select_without,
+                data=self.data,
+                headers_normal=self.headers_normal,
+                headers_step_table=self.headers_step_table,
+                exclude_types=exclude_types,
+                exclude_steps=exclude_steps,
+            )
+
+        data = self._make_summary(
+            find_ir=find_ir,
+            find_end_voltage=find_end_voltage,
+            use_cellpy_stat_file=use_cellpy_stat_file,
+            ensure_step_table=ensure_step_table,
+            remove_duplicates=remove_duplicates,
+            normalization_cycles=normalization_cycles,
+            nom_cap=nom_cap,
+            nom_cap_specifics=nom_cap_specifics,
+            create_copy=create_copy,
+            exclude_types=exclude_types,
+            exclude_steps=exclude_steps,
+            selector_type=selector_type,
+            selector=selector,
+            **kwargs,
+        )
+        if create_copy:
+            other = copy.deepcopy(self)
+            other.data = data
+            return other
+        else:
+            # TODO: check if anything is using this feature (returning self), if not, remove it.
+            return self
+
+    def _make_summary2(
+        self,
+        mass=None,
+        nom_cap=None,
+        nom_cap_specifics=None,
+        update_mass=False,
+        select_columns=True,
+        find_ir=True,
+        find_end_voltage=False,
+        ensure_step_table=True,
+        remove_duplicates=True,
+        sort_my_columns=True,
+        use_cellpy_stat_file=False,
+        normalization_cycles=None,
+        create_copy=True,
+        exclude_types=None,
+        exclude_steps=None,
+        selector_type=None,
+        selector=None,
+        **kwargs,
+    ):
+        # ---------------- discharge loss --------------------------------------
+        # Assume that both charge and discharge is defined as positive.
+        # The gain for cycle n (compared to cycle n-1)
+        # is then cap[n] - cap[n-1]. The loss is the negative of gain.
+        # discharge loss = discharge_cap[n-1] - discharge_cap[n]
+
+        # ---------------- charge loss -----------------------------------------
+        # charge loss = charge_cap[n-1] - charge_cap[n]
+
+        # --------- shifted capacities ------------------------------------------
+        #  as defined by J. Dahn et al.
+        # Note! Should double-check this (including checking
+        # if it is valid in cathode mode).
+
+        # --------- relative irreversible capacities -----------------------------
+        #  as defined by Gauthier et al.
+        # RIC = discharge_cap[n-1] - charge_cap[n] /  charge_cap[n-1]
+        # RIC_SEI = discharge_cap[n] - charge_cap[n-1] / charge_cap[n-1]
+        # RIC_disconnect = charge_cap[n-1] - charge_cap[n] / charge_cap[n-1]
+
+        # --------- notes --------------------------------------------------------
+        # @jepe 2022.09.11: trying to use .assign from now on
+        #   as it is recommended (but this will likely increase memory usage)
+
+        for k in kwargs:
+            if cell_type := kwargs.get("cell_type", None):
+                self.cycle_mode = cell_type.lower()
+            else:
+                warnings.warn(f"Unknown keyword argument: {k}")
+
         # if selector is None:
         #     if selector_type == "non-cv":
         #         exclude_types = ["cv_"]
@@ -6475,7 +6811,6 @@ class CellpyCell:
         #         exclude_steps=exclude_steps,
         #     )
 
-        
         specifics = ["gravimetric", "areal", "absolute"]
         cycle_index_as_index = True
         time_00 = time.time()
@@ -6557,8 +6892,7 @@ class CellpyCell:
 
         # if not summary.index.is_unique:
         #     warnings.warn(f"{self.cell_name}: index is not unique for summary data")
-        
-        
+
         data = self.core.make_core_summary(
             data=data,
             nom_cap_abs=nom_cap_abs,
@@ -6567,8 +6901,8 @@ class CellpyCell:
             find_end_voltage=find_end_voltage,
             select_columns=select_columns,
             normalization_cycles=normalization_cycles,
-            )
-        
+        )
+
         ### FROM HERE ###
         # column_names = summary.columns
         # # TODO @jepe: use pandas.DataFrame properties instead (.len, .reset_index), but maybe first
@@ -6609,15 +6943,13 @@ class CellpyCell:
         # # ---------------- absolute -------------------------------
 
         # data = self.core._generate_absolute_summary_columns(data, _first_step_txt, _second_step_txt)
-        # data = self.core._equivalent_cycles_to_summary(
-        #     data, _first_step_txt, _second_step_txt, nom_cap_abs, normalization_cycles
-        # )
+        data = self.core._equivalent_cycles_to_summary(
+            data, _first_step_txt, _second_step_txt, nom_cap_abs, normalization_cycles
+        )
 
-        # # getting the C-rates, using values from step-table (so it will not be changed
-        # # even though you provide make_summary with a new nom_cap unfortunately):
-        # data = self.core._c_rates_to_summary(data)
-
-        
+        # getting the C-rates, using values from step-table (so it will not be changed
+        # even though you provide make_summary with a new nom_cap unfortunately):
+        data = self.core._c_rates_to_summary(data)
 
         # # TODO @jepe: refactor this to method:
         # if find_end_voltage:
@@ -6625,7 +6957,6 @@ class CellpyCell:
 
         # if find_ir and (self.headers_normal.internal_resistance_txt in data.raw.columns):
         #     data = self.core._ir_to_summary(data)
-
 
         # ----------------- specifics ----------------------------------------
         specific_columns = self.headers_summary.specific_columns
