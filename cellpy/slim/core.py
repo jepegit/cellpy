@@ -1,77 +1,46 @@
 import collections
-import copy
-import csv
 import functools
-import itertools
 import logging
+
 import numbers
-import os
-import sys
 import time
 import datetime
-import warnings
-from pathlib import Path
-from typing import Union, Sequence, List, Optional, Iterable, Any
-from typing import TYPE_CHECKING
-from dataclasses import asdict
 
-import numpy as np
+from typing import Union, Sequence, Optional, Any
 
-from . import externals as externals
 from cellpy.readers import core
-import cellpy.internals.core as internals
 
 from cellpy.exceptions import (
-    DeprecatedFeature,
-    NullData,
-    WrongFileVersion,
+
     NoDataFound,
-    UnderDefined,
 )
-from cellpy.parameters import prms
-from cellpy.parameters.legacy.update_headers import (
-    rename_summary_columns,
-    rename_raw_columns,
-    rename_fid_columns,
-    rename_step_columns,
-)
+
 from cellpy.parameters.internal_settings import (
     get_cellpy_units,
-    get_headers_normal,
-    get_headers_step_table,
-    get_headers_summary,
     headers_normal,
     headers_step_table,
     headers_summary,
-    get_default_raw_units,
     get_default_output_units,
-    CELLPY_FILE_VERSION,
-    MINIMUM_CELLPY_FILE_VERSION,
-    PICKLE_PROTOCOL,
-    CellpyUnits,
-    CellpyMetaCommon,
-    CellpyMetaIndividualTest,
 )
 
-# from cellpy.fat.core import CellpyCell
-DIGITS_C_RATE = 5
-
-HEADERS_NORMAL = get_headers_normal()  # TODO @jepe refactor this (not needed)
-HEADERS_SUMMARY = get_headers_summary()  # TODO @jepe refactor this (not needed)
-HEADERS_STEP_TABLE = get_headers_step_table()  # TODO @jepe refactor this (not needed)
-
-# TODO: @jepe - new feature - method for assigning new cycle numbers and step numbers
-#   - Sometimes the user forgets to increment the cycle number and it would be good
-#   to have a method so that its possible to set new cycle numbers manually
-#   - Some testers merges different steps into one (e.g CC-CV), it would be nice to have
-#   a method for "splitting that up"
-
-# TODO: @jepe - performance warnings - mixed types within cols (pytables)
-
-# warnings.filterwarnings("ignore", category=wq.pandas.io.pytables.PerformanceWarning)
-# externals.pandas.set_option("mode.chained_assignment", None)  # "raise", "warn", None
-
 _module_logger = logging.getLogger(__name__)
+
+CAPACITY_MODIFIERS = ["reset"]
+STEP_TYPES = [
+    "charge",
+    "discharge",
+    "cv_charge",
+    "cv_discharge",
+    "taper_charge",
+    "taper_discharge",
+    "charge_cv",
+    "discharge_cv",
+    "ocvrlx_up",
+    "ocvrlx_down",
+    "ir",
+    "rest",
+    "not_known",
+]
 
 
 class CellpyCellCore:
@@ -80,6 +49,7 @@ class CellpyCellCore:
         self,
         cellpy_units=None,
         output_units=None,
+        initialize=False,
         debug=False,
     ):
         """
@@ -93,39 +63,15 @@ class CellpyCellCore:
         logging.debug("created CellpyCellCore instance")
 
         self._cell_name = None
+        self._cycle_mode = None
         self._data = None
 
         self.cellpy_file_name = None
         self.cellpy_object_created_at = datetime.datetime.now()
         self.forced_errors = 0
 
-        self.capacity_modifiers = ["reset"]
-
-        self.list_of_step_types = [
-            "charge",
-            "discharge",
-            "cv_charge",
-            "cv_discharge",
-            "taper_charge",
-            "taper_discharge",
-            "charge_cv",
-            "discharge_cv",
-            "ocvrlx_up",
-            "ocvrlx_down",
-            "ir",
-            "rest",
-            "not_known",
-        ]
-        # - options
-
-        self._cycle_mode = None
-
-        #
-        # headers_step_table = HeadersStepTable()
-        # headers_journal = HeadersJournal()
-        # headers_summary = HeadersSummary()
-        # headers_normal = HeadersNormal()
-        # cellpy_units = CellpyUnits()
+        self.capacity_modifiers = CAPACITY_MODIFIERS
+        self.list_of_step_types = STEP_TYPES
 
         # - headers
         self.headers_normal = headers_normal
@@ -134,7 +80,15 @@ class CellpyCellCore:
 
         # - units used by cellpy
         self.cellpy_units = get_cellpy_units(cellpy_units)
-        self.output_units = get_default_output_units(output_units)  # v2.0
+        self.output_units = get_default_output_units(output_units) 
+        if initialize:
+            self.initialize()
+        
+    def initialize(self):
+        """Initialize the CellpyCell object with empty Data instance."""
+
+        logging.debug("Initializing...")
+        self._data = core.Data()# v2.0
 
     @property
     def data(self):
@@ -177,6 +131,38 @@ class CellpyCellCore:
             self._cycle_mode = cycle_mode
         except NoDataFound:
             self._cycle_mode = cycle_mode
+
+    
+    def _dump_cellpy_unit(self, value, parameter):
+        """Parse for unit, update cellpy_units class, and return magnitude."""
+        import numpy as np
+
+        c_value, c_unit = self._check_value_unit(value, parameter)
+        if not isinstance(c_value, numbers.Number) or np.isnan(c_value):
+            logging.critical(f"Could not parse {parameter} ({value})")
+            logging.critical("Setting it to 1.0")
+            return 1.0
+        if c_unit is not None:
+            self.cellpy_units[parameter] = f"{c_unit}"
+            logging.debug(f"Updated your cellpy_units['{parameter}'] to '{c_unit}'")
+
+        return c_value
+
+    @staticmethod
+    def _check_value_unit(value, parameter) -> tuple:
+        """Check if value is a valid number, or a quantity with units."""
+        if isinstance(value, numbers.Number):
+            return value, None
+        logging.critical(f"Parsing {parameter} ({value})")
+
+        try:
+            c = core.Q(value)
+            c_unit = c.units
+            c_value = c.magnitude
+        except ValueError:
+            logging.debug(f"Could not parse {value}")
+            return None, None
+        return c_value, c_unit
 
     def get_step_numbers(
         self,

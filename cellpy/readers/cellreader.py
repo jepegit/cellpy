@@ -32,6 +32,7 @@ import numpy as np
 from . import externals as externals
 from cellpy.readers import core
 import cellpy.internals.core as internals
+from cellpy.slim.core import CellpyCellCore
 
 from cellpy.exceptions import (
     DeprecatedFeature,
@@ -225,6 +226,9 @@ class CellpyCell:
             output_units (dict): sent to cellpy.parameters.internal_settings.get_default_output_units
             debug (bool): set to True if you want to see debug messages.
         """
+
+        self.core = CellpyCellCore(cellpy_units=cellpy_units, output_units=output_units, initialize=initialize, debug=debug)
+
         # TODO v 1.1: move to data (allow for multiple testers for same cell)
         if tester is None:
             self.tester = prms.Instruments.tester
@@ -233,16 +237,16 @@ class CellpyCell:
             self.tester = tester
 
         self.loader = None  # this will be set in the function set_instrument
-        self.debug = debug
+        self.debug = debug  # CellpyCellCore.debug
         logging.debug("created CellpyCell instance")
 
-        self._cell_name = None
+        self._cell_name = None # CellpyCellCore._cell_name
         self._initial_cells = None
         self.group = None
         self.last_uploaded_from = None
         self.last_uploaded_at = None
-        self.cellpy_file_name = None
-        self.cellpy_object_created_at = datetime.datetime.now()
+        self.cellpy_file_name = None # CellpyCellCore.cellpy_file_name
+        self.cellpy_object_created_at = datetime.datetime.now()  # CellpyCellCore.cellpy_object_created_at
 
         self.profile = profile
 
@@ -258,10 +262,10 @@ class CellpyCell:
         if not self._is_listtype(self.selected_scans):
             self.selected_scans = [self.selected_scans]
 
-        self._data = None
+        self._data = None # CellpyCellCore._data
         self.overwrite_able = True  # attribute that prevents saving to the same filename as loaded from if False
 
-        self.capacity_modifiers = ["reset"]
+        self.capacity_modifiers = ["reset"]  # CellpyCellCore.capacity_modifiers
 
         self.list_of_step_types = [
             "charge",
@@ -277,12 +281,12 @@ class CellpyCell:
             "ir",
             "rest",
             "not_known",
-        ]
+        ]  # CellpyCellCore.list_of_step_types
         # - options
         self.force_step_table_creation = prms.Reader.force_step_table_creation
         self.force_all = prms.Reader.force_all
         self.sep = prms.Reader.sep
-        self._cycle_mode = None
+        self._cycle_mode = None  # CellpyCellCore._cycle_mode
         self.select_minimal = prms.Reader.select_minimal
         self.limit_loaded_cycles = prms.Reader.limit_loaded_cycles
         self.limit_data_points = None
@@ -299,6 +303,7 @@ class CellpyCell:
         self.instrument_factory = None
         self.register_instrument_readers()
         self.set_instrument()
+
         # - units used by cellpy
         self.cellpy_units = get_cellpy_units(cellpy_units)
         self.output_units = get_default_output_units(output_units)  # v2.0
@@ -319,39 +324,25 @@ class CellpyCell:
     def cell_name(self):
         """Returns the session name"""
 
-        if not self._cell_name:
+        if not self.core._cell_name:
             try:
                 return self.data.cell_name
             except NoDataFound:
                 return None
         else:
-            return self._cell_name
+            return self.core._cell_name
 
     @cell_name.setter
     def cell_name(self, n):
         """sets the session name"""
 
-        self._cell_name = n
+        self.core._cell_name = n
         if not self.data.cell_name:
             self.data.cell_name = n
 
     def _invent_a_cell_name(self, filename=None, override=False):
-        if filename is None:
-            self.cell_name = "nameless"
-            return
-        if self.cell_name and not override:
-            return
-        if isinstance(filename, (list, tuple)):
-            names = [Path(n).with_suffix("").name for n in filename]
-            names = [n.replace(" ", "_").replace("-", "_").replace(".", "_") for n in names]
-            names = list(set(names))
-            if len(names) == 1:
-                self.cell_name = names[0]
-            else:
-                self.cell_name = "-".join(names)
-        else:
-            self.cell_name = Path(filename).with_suffix("").name
-
+        self.cell_name = "naming-not-implemented-yet"
+            
     @property
     def mass(self):
         """Returns the mass"""
@@ -359,7 +350,7 @@ class CellpyCell:
 
     @mass.setter
     def mass(self, m):
-        self.data.mass = self._dump_cellpy_unit(m, "mass")
+        self.data.mass = self.core._dump_cellpy_unit(m, "mass")
 
     @property
     def active_mass(self):
@@ -368,7 +359,7 @@ class CellpyCell:
 
     @active_mass.setter
     def active_mass(self, m):
-        self.data.mass = self._dump_cellpy_unit(m, "mass")
+        self.data.mass = self.core._dump_cellpy_unit(m, "mass")
 
     @property
     def tot_mass(self):
@@ -377,7 +368,7 @@ class CellpyCell:
 
     @tot_mass.setter
     def tot_mass(self, m):
-        self.data.tot_mass = self._dump_cellpy_unit(m, "mass")
+        self.data.tot_mass = self.core._dump_cellpy_unit(m, "mass")
 
     @property
     def active_electrode_area(self):
@@ -386,43 +377,54 @@ class CellpyCell:
 
     @active_electrode_area.setter
     def active_electrode_area(self, a):
-        self.data.active_electrode_area = self._dump_cellpy_unit(a, "area")
+        self.data.active_electrode_area = self.core._dump_cellpy_unit(a, "area")
 
     @property
     def nom_cap(self):
         """Returns the nominal capacity"""
         return self.data.nom_cap
 
+    # TODO: check this
     @nom_cap.setter
     def nom_cap(self, c):
-        self.data.nom_cap = self._dump_cellpy_unit(c, "nominal_capacity")
+        self.data.nom_cap = self.core._dump_cellpy_unit(c, "nominal_capacity")
 
     @property
     def nominal_capacity(self):
         """Returns the nominal capacity"""
         return self.data.nom_cap
 
+    # TODO: check this
     @nominal_capacity.setter
     def nominal_capacity(self, c):
-        self.data.nom_cap = self._dump_cellpy_unit(c, "nominal_capacity")
+        self.data.nom_cap = self.core._dump_cellpy_unit(c, "nominal_capacity")
 
-    # TODO: move this outside of the class
-    def _dump_cellpy_unit(self, value, parameter):
-        """Parse for unit, update cellpy_units class, and return magnitude."""
-        if isinstance(value, numbers.Number):
-            return value
-        logging.critical(f"Parsing {parameter} ({value})")
+    # def _dump_cellpy_unit(self, value, parameter):
+    #     """Parse for unit, update cellpy_units class, and return magnitude."""
 
-        try:
-            c = core.Q(value)
-            c_unit = c.units
-            self.cellpy_units[parameter] = f"{c_unit}"
-            logging.critical(f"Updated your cellpy_units['{parameter}'] to '{c_unit}'")
-            c = c.magnitude
-        except ValueError:
-            logging.debug(f"Could not parse {value}")
-            return
-        return c
+    #     c_value, c_unit = self._check_value_unit(value, parameter)
+    #     if c_value is None:
+    #         return 1.0
+    #     if c_unit is not None:
+    #         self.cellpy_units[parameter] = f"{c_unit}"
+    #         logging.debug(f"Updated your cellpy_units['{parameter}'] to '{c_unit}'")
+    #     return c_value
+
+    # @staticmethod
+    # def _check_value_unit(value, parameter) -> tuple:
+    #     """Check if value is a valid number, or a quantity with units."""
+    #     if isinstance(value, numbers.Number):
+    #         return value, None
+    #     logging.critical(f"Parsing {parameter} ({value})")
+
+    #     try:
+    #         c = core.Q(value)
+    #         c_unit = c.units
+    #         c_value = c.magnitude
+    #     except ValueError:
+    #         logging.debug(f"Could not parse {value}")
+    #         return None, None
+    #     return c_value, c_unit
 
     @property
     def nom_cap_specifics(self):
@@ -454,17 +456,17 @@ class CellpyCell:
     def data(self):
         """Returns the DataSet instance"""
 
-        if not self._data:
+        if not self.core._data:
             logging.debug("NoDataFound - might consider defaulting to create one in the future")
             raise NoDataFound
         else:
-            return self._data
+            return self.core._data
 
     @data.setter
     def data(self, new_cell):
         """sets the DataSet instance"""
 
-        self._data = new_cell
+        self.core._data = new_cell
 
     @property
     def empty(self):

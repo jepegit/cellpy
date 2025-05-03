@@ -377,7 +377,7 @@ class CellpyCell:
 
     @mass.setter
     def mass(self, m):
-        self.data.mass = self._dump_cellpy_unit(m, "mass")
+        self.data.mass = self.core._dump_cellpy_unit(m, "mass")
 
     @property
     def active_mass(self):
@@ -386,7 +386,7 @@ class CellpyCell:
 
     @active_mass.setter
     def active_mass(self, m):
-        self.data.mass = self._dump_cellpy_unit(m, "mass")
+        self.data.mass = self.core._dump_cellpy_unit(m, "mass")
 
     @property
     def tot_mass(self):
