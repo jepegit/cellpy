@@ -16,7 +16,7 @@ import pickle
 import sys
 import time
 import warnings
-from typing import Any, Tuple, Dict, List, Union, TypeVar, Optional
+from typing import Any, Tuple, Dict, List, Union, Optional
 
 from . import externals as externals
 
@@ -31,6 +31,7 @@ from cellpy.parameters.internal_settings import (
     CellpyMetaCommon,
     CellpyMetaIndividualTest,
 )
+
 
 HEADERS_NORMAL = get_headers_normal()  # TODO @jepe refactor this (not needed)
 HEADERS_SUMMARY = get_headers_summary()  # TODO @jepe refactor this (not needed)

@@ -28,9 +28,8 @@ def test_example_data(capsys):
         print(a.data.summary.columns)
         print(a.data.summary.shape)
 
-
-    # assert a.data.summary.shape == (18, 61)
-    # assert c.data.summary.shape == (304, 61)
+    assert a.data.summary.shape == (18, 61)
+    assert c.data.summary.shape == (304, 61)
 
 
 def test_example_path_data():

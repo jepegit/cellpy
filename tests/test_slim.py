@@ -90,7 +90,7 @@ def test_create_cellpyfile(cellpy_data_instance, tmp_path, parameters, capsys):
         print(f"\nFilename: {parameters.res_file_path}")
         print("\nHERE IS THE DATA:")
         print(cellpy_data_instance.data)
-    cellpy_data_instance.set_mass(1.0)
+    cellpy_data_instance.mass = 1.0
     cellpy_data_instance.make_summary(find_ir=True, find_end_voltage=True)
     name = pathlib.Path(tmp_path) / pathlib.Path(parameters.cellpy_file_path).name
     logging.info(f"trying to save the cellpy file to {name}")

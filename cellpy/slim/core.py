@@ -6,24 +6,29 @@ import numbers
 import time
 import datetime
 
-from typing import Union, Sequence, Optional, Any
+from typing import Callable, Union, Sequence, Optional, Any, List, TypeVar
 
 from cellpy.readers import core
-
 from cellpy.exceptions import (
-
     NoDataFound,
 )
 
 from cellpy.parameters.internal_settings import (
     get_cellpy_units,
-    headers_normal,
-    headers_step_table,
-    headers_summary,
     get_default_output_units,
+    HeadersNormal,
+    HeadersStepTable,
+    HeadersSummary,
+    CellpyUnits,
 )
 
-_module_logger = logging.getLogger(__name__)
+DataFrame = TypeVar("DataFrame")
+
+logger = logging.getLogger(__name__)
+
+headers_step_table = HeadersStepTable()
+headers_summary = HeadersSummary()
+headers_normal = HeadersNormal()
 
 CAPACITY_MODIFIERS = ["reset"]
 STEP_TYPES = [
@@ -43,71 +48,74 @@ STEP_TYPES = [
 ]
 
 
-class CellpyCellCore:
+class CellpyCellCore:  # Rename to CellpyCell when cellpy core is ready
 
     def __init__(
         self,
-        cellpy_units=None,
-        output_units=None,
-        initialize=False,
-        debug=False,
+        initialize: bool = False,
+        debug: bool = False,
     ):
         """
         Args:
-            cellpy_units (dict): sent to cellpy.parameters.internal_settings.get_cellpy_units
-            output_units (dict): sent to cellpy.parameters.internal_settings.get_default_output_units
+            initialize (bool): set to True if you want to initialize the cellpy object with an empty Data instance.
             debug (bool): set to True if you want to see debug messages.
         """
 
         self.debug = debug
-        logging.debug("created CellpyCellCore instance")
+        logger.debug("created CellpyCellCore instance")
 
-        self._cell_name = None
-        self._cycle_mode = None
-        self._data = None
+        self._cell_name: Optional[str] = None
+        self._cycle_mode: Optional[str] = None
+        self._data: Optional[core.Data] = None
 
-        self.cellpy_file_name = None
-        self.cellpy_object_created_at = datetime.datetime.now()
-        self.forced_errors = 0
+        self.cellpy_file_name: Optional[str] = None
+        self.cellpy_object_created_at: datetime.datetime = datetime.datetime.now()
+        self.forced_errors: int = 0
 
-        self.capacity_modifiers = CAPACITY_MODIFIERS
-        self.list_of_step_types = STEP_TYPES
+        self.capacity_modifiers: List[str] = CAPACITY_MODIFIERS
+        self.list_of_step_types: List[str] = STEP_TYPES
 
         # - headers
-        self.headers_normal = headers_normal
-        self.headers_summary = headers_summary
-        self.headers_step_table = headers_step_table
+        self.headers_normal: HeadersNormal = headers_normal
+        self.headers_summary: HeadersSummary = headers_summary
+        self.headers_step_table: HeadersStepTable = headers_step_table
 
         # - units used by cellpy
-        self.cellpy_units = get_cellpy_units(cellpy_units)
-        self.output_units = get_default_output_units(output_units) 
+        self.cellpy_units = get_cellpy_units()
+        self.output_units = get_default_output_units() 
         if initialize:
             self.initialize()
         
     def initialize(self):
         """Initialize the CellpyCell object with empty Data instance."""
 
-        logging.debug("Initializing...")
+        logger.debug("Initializing...")
         self._data = core.Data()
 
     @property
-    def data(self):
-        """Returns the DataSet instance"""
+    def data(self) -> core.Data:
+        """Returns the DataSet instance.
+        
+        Returns:
+            DataSet instance.
+
+        Raises:
+            NoDataFound: If the CellpyCell does not have any data.
+        """
 
         if not self._data:
-            logging.debug("NoDataFound - might consider defaulting to create one in the future")
-            raise NoDataFound
+            raise NoDataFound("The CellpyCell does not have any data.")
         else:
             return self._data
 
     @data.setter
     def data(self, new_cell: core.Data):
-        """sets the DataSet instance"""
+        """Sets the Data instance"""
 
         self._data = new_cell
 
     @property
-    def cycle_mode(self):
+    def cycle_mode(self) -> str:
         # TODO: v2.0 edit this from scalar to list
         try:
             data = self.data
@@ -122,9 +130,13 @@ class CellpyCellCore:
             return self._cycle_mode
 
     @cycle_mode.setter
-    def cycle_mode(self, cycle_mode):
+    def cycle_mode(self, cycle_mode: str):
+        if isinstance(cycle_mode, (tuple, list)):
+            cycle_mode = [cycle_mode.lower() for cycle_mode in cycle_mode]
+        else:
+            cycle_mode = cycle_mode.lower()
         # TODO: v2.0 edit this from scalar to list
-        logging.debug(f"-> cycle_mode: {cycle_mode}")
+        logger.debug(f"-> cycle_mode: {cycle_mode}")
         try:
             data = self.data
             data.meta_test_dependent.cycle_mode = cycle_mode
@@ -139,12 +151,12 @@ class CellpyCellCore:
 
         c_value, c_unit = self._check_value_unit(value, parameter)
         if not isinstance(c_value, numbers.Number) or np.isnan(c_value):
-            logging.critical(f"Could not parse {parameter} ({value})")
-            logging.critical("Setting it to 1.0")
+            logger.critical(f"Could not parse {parameter} ({value})")
+            logger.critical("Setting it to 1.0")
             return 1.0
         if c_unit is not None:
             self.cellpy_units[parameter] = f"{c_unit}"
-            logging.debug(f"Updated your cellpy_units['{parameter}'] to '{c_unit}'")
+            logger.debug(f"Updated your cellpy_units['{parameter}'] to '{c_unit}'")
 
         return c_value
 
@@ -153,14 +165,14 @@ class CellpyCellCore:
         """Check if value is a valid number, or a quantity with units."""
         if isinstance(value, numbers.Number):
             return value, None
-        logging.critical(f"Parsing {parameter} ({value})")
+        logger.critical(f"Parsing {parameter} ({value})")
 
         try:
             c = core.Q(value)
             c_unit = c.units
             c_value = c.magnitude
         except ValueError:
-            logging.debug(f"Could not parse {value}")
+            logger.debug(f"Could not parse {value}")
             return None, None
         return c_value, c_unit
 
@@ -169,11 +181,13 @@ class CellpyCellCore:
         steptype: str = "charge",
         allctypes: bool = True,
         pdtype: bool = False,
-        cycle_number: int = None,
-        trim_taper_steps: int = None,
+        cycle_number: Optional[int] = None,
+        trim_taper_steps: Optional[int] = None,
         steps_to_skip: Optional[list] = None,
-        steptable: Any = None,
+        steptable: Optional[Any] = None,
         usteps: bool = False,
+        force_step_table_creation: bool = False,
+        force_all: bool = False,
     ) -> Union[dict, Any]:
         # TODO: @jepe - include sub_steps here
         # TODO: @jepe - include option for not selecting taper steps here
@@ -209,7 +223,7 @@ class CellpyCellCore:
 
         """
         if trim_taper_steps is not None and usteps:
-            logging.warning("Trimming taper steps is not possible when using usteps. Not doing any trimming.")
+            logger.warning("Trimming taper steps is not possible when using usteps. Not doing any trimming.")
             trim_taper_steps = None
 
         if steps_to_skip is None:
@@ -217,15 +231,15 @@ class CellpyCellCore:
 
         if steptable is None:
             if not self.data.has_steps:
-                logging.debug("step-table is not made")
+                logger.debug("step-table is not made")
 
-                if self.force_step_table_creation or self.force_all:
-                    logging.debug("creating step-table for")
-                    logging.debug(self.data.loaded_from)
+                if force_step_table_creation or force_all:
+                    logger.debug("creating step-table for")
+                    logger.debug(self.data.loaded_from)
                     self.make_step_table()
 
                 else:
-                    logging.info("ERROR! Cannot use get_step_numbers: you must create your step-table first")
+                    logger.info("ERROR! Cannot use get_step_numbers: you must create your step-table first")
                     return None
 
         # check if steptype is valid
@@ -277,11 +291,11 @@ class CellpyCellCore:
 
         if trim_taper_steps is not None:
             trim_taper_steps = -trim_taper_steps
-            logging.debug("taper steps to trim given")
+            logger.debug("taper steps to trim given")
 
         if pdtype:
             if trim_taper_steps:
-                logging.info(
+                logger.info(
                     "Trimming taper steps is currently not"
                     "possible when returning externals.pandas.DataFrame. "
                     "Do it manually instead."
@@ -296,13 +310,13 @@ class CellpyCellCore:
             for s in steptypes:
                 mask_type_and_cycle = (st[shdr.type] == s) & (st[shdr.cycle] == cycle)
                 if not any(mask_type_and_cycle):
-                    logging.debug(f"Cycle {cycle} | StepType {s}: Not present!")
+                    logger.debug(f"Cycle {cycle} | StepType {s}: Not present!")
                 else:
                     # Get the step numbers
                     step = st[mask_type_and_cycle][step_hdr].tolist()
                     for newstep in step[:trim_taper_steps]:
                         if newstep in steps_to_skip:
-                            logging.debug(f"skipping step {newstep}")
+                            logger.debug(f"skipping step {newstep}")
                         else:
                             steplist.append(int(newstep))
 
@@ -310,6 +324,110 @@ class CellpyCellCore:
                 steplist = [0]
             out[cycle] = steplist
         return out
+
+
+    def get_cycle_numbers(
+        self,
+        steptable=None,
+        rate=None,
+        rate_on=None,
+        rate_std=None,
+        rate_agg="first",
+        inverse=False,
+    ):
+        """Get a array containing the cycle numbers in the test.
+
+        Parameters:
+            steptable (pandas.DataFrame): the step-table to use (if None, the step-table
+                from the cellpydata object will be used).
+            rate (float): the rate to filter on. Remark that it should be given
+                as a float, i.e. you will have to convert from C-rate to
+                the actual numeric value. For example, use rate=0.05 if you want
+                to filter on cycles that has a C/20 rate.
+            rate_on (str): only select cycles if based on the rate of this step-type (e.g. on="discharge").
+            rate_std (float): allow for this inaccuracy in C-rate when selecting cycles
+            rate_agg (str): perform an aggregation on rate if more than one step of charge or discharge is found
+                (e.g. "mean", "first", "max"). For example, if agg='mean', the average rate for each cycle
+                will be returned. Set to None if you want to keep all the rates.
+            inverse (bool): select steps that does not have the given C-rate.
+
+        Returns:
+            numpy.ndarray of cycle numbers.
+        """
+
+        # TODO: add support for selecting cycles based on other criteria (for example, based on the
+        #   existence of particular step-types, or max, min values of current, voltage, etc)
+
+        logger.debug("getting cycle numbers")
+
+        if steptable is None:
+            d = self.data.raw
+            cycles = d[self.headers_normal.cycle_index_txt].dropna().unique()
+            steptable = self.data.steps
+        else:
+            logger.debug("steptable is given as input parameter")
+            cycles = steptable[self.headers_step_table.cycle].dropna().unique()
+
+        if rate is None:
+            return cycles
+
+        logger.debug("filtering on rate")
+
+        if rate is None:
+            rate = 0.05
+
+        if rate_std is None:
+            rate_std = 0.1 * rate
+
+        if rate_on is None:
+            rate_on = ["charge", "discharge"]
+        rates = self.get_rates(steptable=steptable, agg=rate_agg, direction=rate_on)
+        rate_column = self.headers_step_table.rate_avr
+        cycles_mask = (rates[rate_column] < (rate + rate_std)) & (rates[rate_column] > (rate - rate_std))
+
+        if inverse:
+            cycles_mask = ~cycles_mask
+
+        filtered_rates = rates[cycles_mask]
+        filtered_cycles = filtered_rates[self.headers_step_table["cycle"]].unique()
+
+        return filtered_cycles
+    
+    def get_rates(self, steptable: Optional[Any] = None, agg: str = "first", direction: Optional[str] = None) -> DataFrame:
+        """
+        Get the rates in the test (only valid for constant current).
+
+        Args:
+            steptable: provide custom steptable (if None, the steptable from the cellpydata object will be used).
+            agg (str): perform an aggregation if more than one step of charge or
+                discharge is found (e.g. "mean", "first", "max"). For example, if agg='mean', the average rate
+                for each cycle will be returned. Set to None if you want to keep all the rates.
+            direction (str or list of str): only select rates for this direction (e.g. "charge" or "discharge").
+
+        Returns:
+            ``pandas.DataFrame`` with cycle, type, and rate_avr (i.e. C-rate) columns.
+        """
+
+        if steptable is None:
+            steptable = self.data.steps
+        rates = steptable[
+            [
+                self.headers_step_table.cycle,
+                self.headers_step_table.type,
+                self.headers_step_table.rate_avr,
+            ]
+        ].dropna()
+
+        if agg:
+            rates = rates.groupby([self.headers_step_table.cycle, self.headers_step_table.type]).agg(agg).reset_index()
+
+        if direction is not None:
+            if not isinstance(direction, (list, tuple)):
+                direction = [direction]
+            rates = rates.loc[rates[self.headers_step_table.type].isin(direction), :]
+
+        return rates
+    
 
     @staticmethod
     def _select_without(
@@ -327,7 +445,7 @@ class CellpyCellCore:
         d_n_txt = headers_normal.data_point_txt
         v_n_txt = headers_normal.voltage_txt
         c_n_txt = headers_normal.cycle_index_txt
-        s_n_txt = headers_normal.step_index_txt
+        # s_n_txt = headers_normal.step_index_txt
         i_n_txt = headers_normal.current_txt
         ch_n_txt = headers_normal.charge_capacity_txt
         dch_n_txt = headers_normal.discharge_capacity_txt
@@ -339,7 +457,7 @@ class CellpyCellCore:
         ch_st_txt = headers_step_table.charge
         dch_st_txt = headers_step_table.discharge
         t_st_txt = headers_step_table.type
-        s_st_txt = headers_step_table.step
+        # s_st_txt = headers_step_table.step
 
         _first = "_first"
         _last = "_last"
@@ -413,7 +531,23 @@ class CellpyCellCore:
 
         return selected
 
-    def create_selector(self, selector_type=None, exclude_types=None, exclude_steps=None):
+    def create_selector(
+        self,
+        selector_type: Optional[str] = None,
+        exclude_types: Optional[List[str]] = None,
+        exclude_steps: Optional[List[str]] = None,
+    ) -> Callable:
+        """Create a selector function.
+        
+        Args:
+            selector_type: The type of selector to create.
+            exclude_types: The types to exclude from the selector.
+            exclude_steps: The steps to exclude from the selector.
+
+        Returns:
+            A selector function for the summary dataframe.
+        """
+
         if selector_type == "non-cv":
             exclude_types = ["cv_"]
         elif selector_type == "non-rest":
@@ -431,6 +565,16 @@ class CellpyCellCore:
             exclude_steps=exclude_steps,
         )
         return selector
+    
+    def _generate_specific_summary_columns(self, data: core.Data, mode: str, specific_columns: Sequence) -> core.Data:
+        specific_converter = self.get_converter_to_specific(data=data, mode=mode)
+        summary = data.summary
+        for col in specific_columns:
+            logging.debug(f"generating specific column {col}_{mode}")
+            summary[f"{col}_{mode}"] = specific_converter * summary[col]
+        data.summary = summary
+        return data
+
 
     def _generate_absolute_summary_columns(self, data, _first_step_txt, _second_step_txt) -> core.Data:
         summary = data.summary
@@ -506,7 +650,7 @@ class CellpyCellCore:
         return data
 
     def _c_rates_to_summary(self, data: core.Data) -> core.Data:
-        logging.debug("Extracting C-rates")
+        logger.debug("Extracting C-rates")
 
         def rate_to_cellpy_units(rate):
             conversion_factor = core.Q(1.0, self.data.raw_units["current"]) / core.Q(1.0, self.cellpy_units["current"])
@@ -566,7 +710,7 @@ class CellpyCellCore:
         summary = data.summary
 
         if normalization_cycles is not None:
-            logging.info(f"Using these cycles for finding the nominal capacity: {normalization_cycles}")
+            logger.info(f"Using these cycles for finding the nominal capacity: {normalization_cycles}")
             if not isinstance(normalization_cycles, (list, tuple)):
                 normalization_cycles = [normalization_cycles]
 
@@ -577,7 +721,7 @@ class CellpyCellCore:
             if not cap_ref.empty:
                 nom_cap = cap_ref.mean()
             else:
-                logging.info(f"Empty reference cycle(s)")
+                logger.info("Empty reference cycle(s)")
 
         normalized_cycle_index_column = {
             self.headers_summary.normalized_cycle_index: summary[self.headers_summary.cumulated_charge_capacity]
@@ -596,7 +740,7 @@ class CellpyCellCore:
         summary = data.summary
         raw = data.raw
 
-        logging.debug("finding ir")
+        logger.debug("finding ir")
         only_zeros = summary[self.headers_normal.discharge_capacity_txt] * 0.0
         discharge_steps = self.get_step_numbers(
             steptype="discharge",
@@ -648,20 +792,20 @@ class CellpyCellCore:
         raw = data.raw
         summary = data.summary
 
-        logging.debug("finding end-voltage")
-        logging.debug(f"dt: {time.time() - ev_t0}")
+        logger.debug("finding end-voltage")
+        logger.debug(f"dt: {time.time() - ev_t0}")
         only_zeros_discharge = summary[self.headers_normal.discharge_capacity_txt] * 0.0
         only_zeros_charge = summary[self.headers_normal.charge_capacity_txt] * 0.0
-        logging.debug("need to collect discharge steps")
+        logger.debug("need to collect discharge steps")
         discharge_steps = self.get_step_numbers(steptype="discharge", allctypes=False)
-        logging.debug(f"dt: {time.time() - ev_t0}")
-        logging.debug("need to collect charge steps")
+        logger.debug(f"dt: {time.time() - ev_t0}")
+        logger.debug("need to collect charge steps")
         charge_steps = self.get_step_numbers(steptype="charge", allctypes=False)
-        logging.debug(f"dt: {time.time() - ev_t0}")
+        logger.debug(f"dt: {time.time() - ev_t0}")
         endv_indexes = []
         endv_values_dc = []
         endv_values_c = []
-        logging.debug("starting iterating through the index")
+        logger.debug("starting iterating through the index")
         for i in summary.index:
             cycle = summary.iloc[i][self.headers_normal.cycle_index_txt]
             step = discharge_steps[cycle]
@@ -700,19 +844,28 @@ class CellpyCellCore:
 
     def make_core_summary(
         self,
-        data,
-        nom_cap_abs=1.0,
-        select_columns=True,
-        find_ir=True,
-        find_end_voltage=False,
-        sort_my_columns=True,
-        normalization_cycles=None,
-        selector=None,
-        **kwargs,
-    ):
+        data: core.Data,
+        selector: Optional[Callable] = None,
+        find_ir: bool = True,
+        find_end_voltage: bool = False,
+        select_columns: bool = True,
+    ) -> core.Data:
+        """Make the core summary.
+        
+        Args:
+            data: The data to make the summary from.
+            selector: The selector to use.
+            find_ir: Whether to find the IR.
+            find_end_voltage: Whether to find the end voltage.
+            select_columns: Whether to select only the minimum columns that are needed.
+
+        Returns:
+            Data object with the summary.
+        """
+
 
         time_00 = time.time()
-        logging.debug("start making summary")
+        logger.debug("start making summary")
 
         summary = selector()
         column_names = summary.columns
@@ -722,7 +875,7 @@ class CellpyCellCore:
         summary.index = list(range(summary_length))
 
         if select_columns:
-            logging.debug("keeping only selected set of columns")
+            logger.debug("keeping only selected set of columns")
             columns_to_keep = [
                 self.headers_normal.charge_capacity_txt,
                 self.headers_normal.cycle_index_txt,
@@ -736,18 +889,18 @@ class CellpyCellCore:
                     try:
                         summary.pop(cn)
                     except KeyError:
-                        logging.debug(f"could not pop {cn}")
+                        logger.debug(f"could not pop {cn}")
 
         data.summary = summary
 
         # ----------------- calculated values -----------------------
 
         if self.cycle_mode == "anode":
-            logging.info("Assuming cycling in anode half-data (discharge before charge) mode")
+            logger.info("Assuming cycling in anode half-data (discharge before charge) mode")
             _first_step_txt = self.headers_summary.discharge_capacity
             _second_step_txt = self.headers_summary.charge_capacity
         else:
-            logging.info("Assuming cycling in full-data / cathode mode")
+            logger.info("Assuming cycling in full-data / cathode mode")
             _first_step_txt = self.headers_summary.charge_capacity
             _second_step_txt = self.headers_summary.discharge_capacity
 
@@ -762,24 +915,54 @@ class CellpyCellCore:
         if find_ir and (self.headers_normal.internal_resistance_txt in data.raw.columns):
             data = self._ir_to_summary(data)
 
-        # data = self._equivalent_cycles_to_summary(data, _first_step_txt, _second_step_txt, nom_cap_abs, normalization_cycles)
-        #
-        # # getting the C-rates, using values from step-table (so it will not be changed
-        # # even though you provide make_summary with a new nom_cap unfortunately):
-        # data = self._c_rates_to_summary(data)
-        #
-        # if sort_my_columns:
-        #     logging.debug("sorting columns")
-        #     new_first_col_list = [
-        #         self.headers_normal.datetime_txt,
-        #         self.headers_normal.test_time_txt,
-        #         self.headers_normal.data_point_txt,
-        #         self.headers_normal.cycle_index_txt,
-        #     ]
-        #     data.summary = self.set_col_first(data.summary, new_first_col_list)
+        data = self._c_rates_to_summary(data)
 
-        logging.debug(f"(dt: {(time.time() - time_00):4.2f}s)")
+
+        logger.debug(f"(dt: {(time.time() - time_00):4.2f}s)")
         return data
+    
+    def add_scaled_summary_columns(
+            self, 
+            data: core.Data, 
+            nom_cap_abs: float,
+            normalization_cycles: Union[Sequence, int, None],
+            specifics: Optional[List[str]] = None,
+            ) -> core.Data:
+        """Add specific summary columns to the summary.
+        
+        Args:
+            data: The data to add the specific summary columns to.
+            nom_cap_abs: The nominal capacity of the cell.
+            normalization_cycles: The number of cycles to normalize the data by.
+            specifics: The specifics to add.
+
+        Returns:
+            The data with the specific summary columns added.
+        """
+        if specifics is None:
+            specifics = ["gravimetric", "areal", "absolute"]
+
+        if self.cycle_mode == "anode":
+            logging.debug("Assuming cycling in anode half-data (discharge before charge) mode")
+            _first_step_txt = self.headers_summary.discharge_capacity
+            _second_step_txt = self.headers_summary.charge_capacity
+        else:
+            logging.debug("Assuming cycling in full-data / cathode mode")
+            _first_step_txt = self.headers_summary.charge_capacity
+            _second_step_txt = self.headers_summary.discharge_capacity
+
+        data = self._equivalent_cycles_to_summary(
+            data, _first_step_txt, _second_step_txt, nom_cap_abs, normalization_cycles
+        )
+
+        specific_columns = self.headers_summary.specific_columns
+        for mode in specifics:
+            data = self._generate_specific_summary_columns(data, mode, specific_columns)
+
+        return data
+
+
+
 
     @staticmethod
     def set_col_first(df, col_names):
@@ -800,70 +983,69 @@ class CellpyCellCore:
         finally:
             df = df.reindex(columns=column_headings)
             return df
+        
+    @staticmethod
+    def get_converter_to_specific(
+        data: core.Data,
+        value: float = None,
+        from_units: CellpyUnits = None,
+        to_units: CellpyUnits = None,
+        mode: str = "gravimetric",
+    ) -> float:
+        """Convert from absolute units to specific (areal or gravimetric).
 
-    def get_cycle_numbers(
-        self,
-        steptable=None,
-        rate=None,
-        rate_on=None,
-        rate_std=None,
-        rate_agg="first",
-        inverse=False,
-    ):
-        """Get a array containing the cycle numbers in the test.
+        The method provides a conversion factor that you can multiply your
+        values with to get them into specific values.
 
-        Parameters:
-            steptable (pandas.DataFrame): the step-table to use (if None, the step-table
-                from the cellpydata object will be used).
-            rate (float): the rate to filter on. Remark that it should be given
-                as a float, i.e. you will have to convert from C-rate to
-                the actual numeric value. For example, use rate=0.05 if you want
-                to filter on cycles that has a C/20 rate.
-            rate_on (str): only select cycles if based on the rate of this step-type (e.g. on="discharge").
-            rate_std (float): allow for this inaccuracy in C-rate when selecting cycles
-            rate_agg (str): perform an aggregation on rate if more than one step of charge or discharge is found
-                (e.g. "mean", "first", "max"). For example, if agg='mean', the average rate for each cycle
-                will be returned. Set to None if you want to keep all the rates.
-            inverse (bool): select steps that does not have the given C-rate.
+        Args:
+            data: data instance
+            value: value used to scale on.
+            from_units: defaults to data.raw_units.
+            to_units: defaults to cellpy_units.
+            mode (str): gravimetric, areal or absolute
 
         Returns:
-            numpy.ndarray of cycle numbers.
+            conversion factor (float)
+
         """
+        # TODO @jepe: implement handling of edge-cases
+        # TODO @jepe: fix all the instrument readers (replace floats in raw_units with strings)
 
-        # TODO: add support for selecting cycles based on other criteria (for example, based on the
-        #   existence of particular step-types, or max, min values of current, voltage, etc)
+        new_units = to_units or get_cellpy_units()
+        old_units = from_units or data.raw_units
 
-        logging.debug("getting cycle numbers")
+        if mode == "gravimetric":
+            value = value or data.mass
+            value = core.Q(value, new_units["mass"])
+            to_unit_specific = core.Q(1.0, new_units["specific_gravimetric"])
 
-        if steptable is None:
-            d = self.data.raw
-            cycles = d[self.headers_normal.cycle_index_txt].dropna().unique()
-            steptable = self.data.steps
+        elif mode == "areal":
+            value = value or data.active_electrode_area
+            value = core.Q(value, new_units["area"])
+            to_unit_specific = core.Q(1.0, new_units["specific_areal"])
+
+        elif mode == "volumetric":
+            value = value or data.volume
+            value = core.Q(value, new_units["volume"])
+            to_unit_specific = core.Q(1.0, new_units["specific_volumetric"])
+
+        elif mode == "absolute":
+            value = core.Q(1.0, None)
+            to_unit_specific = core.Q(1.0, None)
+
         else:
-            logging.debug("steptable is given as input parameter")
-            cycles = steptable[self.headers_step_table.cycle].dropna().unique()
+            logging.debug(f"mode={mode} not supported!")
+            return 1.0
 
-        if rate is None:
-            return cycles
+        from_unit_cap = core.Q(1.0, old_units["charge"])
+        to_unit_cap = core.Q(1.0, new_units["charge"])
 
-        logging.debug("filtering on rate")
+        # from unit is always in absolute values:
+        from_unit = from_unit_cap
 
-        if rate is None:
-            rate = 0.05
+        to_unit = to_unit_cap / to_unit_specific
 
-        if rate_std is None:
-            rate_std = 0.1 * rate
+        conversion_factor = (from_unit / to_unit / value).to_reduced_units()
+        logging.debug(f"conversion factor: {conversion_factor}")
+        return conversion_factor.m
 
-        if rate_on is None:
-            rate_on = ["charge", "discharge"]
-        rates = self.get_rates(steptable=steptable, agg=rate_agg, direction=rate_on)
-        rate_column = self.headers_step_table.rate_avr
-        cycles_mask = (rates[rate_column] < (rate + rate_std)) & (rates[rate_column] > (rate - rate_std))
-
-        if inverse:
-            cycles_mask = ~cycles_mask
-
-        filtered_rates = rates[cycles_mask]
-        filtered_cycles = filtered_rates[self.headers_step_table["cycle"]].unique()
-
-        return filtered_cycles
