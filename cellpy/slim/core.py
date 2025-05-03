@@ -88,7 +88,7 @@ class CellpyCellCore:
         """Initialize the CellpyCell object with empty Data instance."""
 
         logging.debug("Initializing...")
-        self._data = core.Data()# v2.0
+        self._data = core.Data()
 
     @property
     def data(self):

@@ -5489,7 +5489,7 @@ class CellpyCell:
     # ----------making-summary------------------------------------------------------
 
     # ----------making-summary------------------------------------------------------
-    def make_summary(
+    def make_summary_1(
         self,
         find_ir=False,
         find_end_voltage=True,
@@ -5576,7 +5576,7 @@ class CellpyCell:
             )
             return self
 
-        data = self._make_summary(
+        data = self._make_summary_1(
             find_ir=find_ir,
             find_end_voltage=find_end_voltage,
             use_cellpy_stat_file=use_cellpy_stat_file,
@@ -5600,7 +5600,7 @@ class CellpyCell:
             # TODO: check if anything is using this feature (returning self), if not, remove it.
             return self
 
-    def _make_summary(
+    def _make_summary_1(
         self,
         mass=None,
         nom_cap=None,
@@ -5830,7 +5830,7 @@ class CellpyCell:
         logging.debug(f"(dt: {(time.time() - time_00):4.2f}s)")
         return data
 
-    def make_summary2(
+    def make_summary(
         self,
         find_ir=False,
         find_end_voltage=True,
@@ -5891,7 +5891,7 @@ class CellpyCell:
         try:
             test = self.data
         except NoDataFound:
-            logging.info(f"Empty test (no data found)")
+            logging.info("Empty test (no data found)")
             return
 
         if isinstance(test.loaded_from, (list, tuple)):
@@ -5976,7 +5976,7 @@ class CellpyCell:
             # TODO: check if anything is using this feature (returning self), if not, remove it.
             return self
 
-    def _make_summary2(
+    def _make_summary(
         self,
         mass=None,
         nom_cap=None,
@@ -6163,18 +6163,18 @@ class CellpyCell:
 
         # data.summary = summary
 
-        # # ----------------- calculated values -----------------------
+        # ----------------- calculated values -----------------------
 
-        # if self.cycle_mode == "anode":
-        #     logging.info("Assuming cycling in anode half-data (discharge before charge) mode")
-        #     _first_step_txt = self.headers_summary.discharge_capacity
-        #     _second_step_txt = self.headers_summary.charge_capacity
-        # else:
-        #     logging.info("Assuming cycling in full-data / cathode mode")
-        #     _first_step_txt = self.headers_summary.charge_capacity
-        #     _second_step_txt = self.headers_summary.discharge_capacity
+        if self.cycle_mode == "anode":
+            logging.info("Assuming cycling in anode half-data (discharge before charge) mode")
+            _first_step_txt = self.headers_summary.discharge_capacity
+            _second_step_txt = self.headers_summary.charge_capacity
+        else:
+            logging.info("Assuming cycling in full-data / cathode mode")
+            _first_step_txt = self.headers_summary.charge_capacity
+            _second_step_txt = self.headers_summary.discharge_capacity
 
-        # # ---------------- absolute -------------------------------
+        # ---------------- absolute -------------------------------
 
         # data = self.core._generate_absolute_summary_columns(data, _first_step_txt, _second_step_txt)
         data = self.core._equivalent_cycles_to_summary(
@@ -7253,7 +7253,7 @@ def instruments_dict():
 def print_instruments():
     """Prints out the available instrument loaders and their models."""
     print(80 * "=")
-    print(f"Implemented instrument loaders")
+    print("Implemented instrument loaders")
     print(80 * "=")
     for name, value in core.instrument_configurations().items():
         print(name)
