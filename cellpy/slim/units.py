@@ -1,13 +1,9 @@
 import logging
 from typing import TypeVar
-from cellpy.parameters.internal_settings import CellpyUnits
+
 from cellpy.readers import core
 from cellpy.parameters.internal_settings import (
     get_cellpy_units,
-    get_default_output_units,
-    HeadersNormal,
-    HeadersStepTable,
-    HeadersSummary,
     CellpyUnits,
 )
 

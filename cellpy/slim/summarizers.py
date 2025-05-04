@@ -9,7 +9,6 @@ from cellpy.parameters.internal_settings import (
     HeadersNormal,
     HeadersStepTable,
     HeadersSummary,
-    CellpyUnits,
 )
 
 from cellpy.slim import selectors, units
@@ -112,6 +111,7 @@ def generate_specific_summary_columns(data: core.Data, mode: str, specific_colum
     data.summary = summary
     return data
 
+
 def end_voltage_to_summary(data: core.Data) -> core.Data:
     # needs to be fixed so that end-voltage also can be extracted
     # from the summary
@@ -205,6 +205,7 @@ def equivalent_cycles_to_summary(
     data.summary = summary
     return data
 
+
 def c_rates_to_summary(data: core.Data) -> core.Data:
     logger.debug("Extracting C-rates")
 
@@ -250,6 +251,7 @@ def c_rates_to_summary(data: core.Data) -> core.Data:
     ).drop(columns=headers_step_table.cycle)
     data.summary = summary
     return data
+
 
 def ir_to_summary(data: core.Data) -> core.Data:
     # should check:  test.charge_steps = None,
