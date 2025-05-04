@@ -22,6 +22,7 @@ headers_step_table = HeadersStepTable()
 headers_summary = HeadersSummary()
 headers_normal = HeadersNormal()
 
+# TODO: move this to a settings file
 STEP_TYPES = [
     "charge",
     "discharge",

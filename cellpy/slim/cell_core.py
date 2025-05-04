@@ -32,6 +32,7 @@ headers_normal = HeadersNormal()
 cellpy_units = get_cellpy_units()
 output_units = get_default_output_units() 
 
+# TODO: move this to a settings file
 CAPACITY_MODIFIERS = ["reset"]
 STEP_TYPES = [
     "charge",
@@ -51,6 +52,7 @@ STEP_TYPES = [
 
 
 class CellpyCellCore:  # Rename to CellpyCell when cellpy core is ready
+    # TODO: implement make step table (utilize summarizers.py)
 
     def __init__(
         self,
@@ -147,6 +149,8 @@ class CellpyCellCore:  # Rename to CellpyCell when cellpy core is ready
             self._cycle_mode = cycle_mode
 
     
+    # Added to the CellpyCellCore class to make it easier to migrate to cellpy core.
+    # TODO: move this when cellpy core is ready.
     def _dump_cellpy_unit(self, value, parameter):
         """Parse for unit, update cellpy_units class, and return magnitude."""
         import numpy as np
@@ -162,6 +166,7 @@ class CellpyCellCore:  # Rename to CellpyCell when cellpy core is ready
 
         return c_value
 
+    # TODO: move this to units.py
     @staticmethod
     def _check_value_unit(value, parameter) -> tuple:
         """Check if value is a valid number, or a quantity with units."""
