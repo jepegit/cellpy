@@ -5368,7 +5368,7 @@ class CellpyCell:
             q = _q if q is None else q & _q
 
         if exclude_steps:
-            _q = ~steps[t_st_txt].isin(exclude_steps, na=False)
+            _q = ~steps[t_st_txt].isin(exclude_steps)
             q = _q if q is None else q & _q
 
         _delta_columns = [
