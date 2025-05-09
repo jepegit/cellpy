@@ -3414,6 +3414,8 @@ class CellpyCell:
         if get_cap_kwargs is not None:
             get_cap_method_kwargs.update(get_cap_kwargs)
 
+        print(externals)
+
         border = externals.openpyxl.styles.Border()
         face_color = "00EEEEEE"
         meta_alignment_left = externals.openpyxl.styles.Alignment(horizontal="left", vertical="bottom")
@@ -3437,7 +3439,7 @@ class CellpyCell:
 
         meta_common_frame = externals.pandas.concat([meta_common_frame, cellpy_units, raw_units])
 
-        with externals.pandas.ExcelWriter(filename, engine="externals.openpyxl") as writer:
+        with externals.pandas.ExcelWriter(filename, engine="openpyxl") as writer:
             meta_common_frame.to_excel(writer, sheet_name="meta_common", **to_excel_method_kwargs)
             meta_test_dependent_frame.to_excel(writer, sheet_name="meta_test_dependent", **to_excel_method_kwargs)
             summary_frame.to_excel(writer, sheet_name="summary", **to_excel_method_kwargs)
