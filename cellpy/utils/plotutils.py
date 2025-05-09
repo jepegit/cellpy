@@ -401,11 +401,15 @@ def set_plotly_template(template_name=None, **kwargs):
         return None
     import plotly.io as pio
 
-    if template_name is None:
-        name = create_plotly_default_template(**kwargs)
-        pio.templates.default = f"{PLOTLY_BASE_TEMPLATE}+{name}"
-    else:
-        pio.templates.default = template_name
+    try:
+        if template_name is None:
+            name = create_plotly_default_template(**kwargs)
+            pio.templates.default = f"{PLOTLY_BASE_TEMPLATE}+{name}"
+        else:
+            pio.templates.default = template_name
+    except Exception as e:
+        logging.debug(f"Could not set plotly template: {e}")
+        pio.templates.default = PLOTLY_BASE_TEMPLATE
 
 
 def create_plotly_default_template(
@@ -417,6 +421,7 @@ def create_plotly_default_template(
     marker_width=None,
     opacity=0.8,
 ):
+    # ValueError: Invalid property specified for object of type plotly.graph_objs.layout.XAxis: 'titlefont'
     if not plotly_available:
         return None
     import plotly.graph_objects as go
@@ -457,7 +462,7 @@ def create_plotly_default_template(
         gridcolor=grid_color,
         zeroline=False,
         tickformat=f"{tick_label_width}",
-        titlefont_family=axis_font,
+        title_font_family=axis_font,
         title=dict(
             standoff=axis_standoff,
             font_size=axis_font_size,
