@@ -4,7 +4,7 @@ import numbers
 import time
 import datetime
 
-from typing import Callable, Union, Sequence, Optional, List, TypeVar
+from typing import Callable, Iterable, Union, Sequence, Optional, List, TypeVar
 
 from cellpy.readers import core
 from cellpy.exceptions import (
@@ -19,7 +19,7 @@ from cellpy.parameters.internal_settings import (
     HeadersSummary,
 )
 
-from cellpy.slim import summarizers
+from cellpy.slim import selectors, summarizers
 
 DataFrame = TypeVar("DataFrame")
 
@@ -190,6 +190,7 @@ class CellpyCellCore:  # Rename to CellpyCell when cellpy core is ready
         find_ir: bool = True,
         find_end_voltage: bool = False,
         select_columns: bool = True,
+        final_data_points: Optional[Iterable[int]] = None,
     ) -> core.Data:
         """Make the core summary.
         
@@ -199,6 +200,7 @@ class CellpyCellCore:  # Rename to CellpyCell when cellpy core is ready
             find_ir: Whether to find the IR.
             find_end_voltage: Whether to find the end voltage.
             select_columns: Whether to select only the minimum columns that are needed.
+            final_data_points: The final data point for each cycle to use for the selector.
 
         Returns:
             Data object with the summary.
@@ -208,6 +210,8 @@ class CellpyCellCore:  # Rename to CellpyCell when cellpy core is ready
         time_00 = time.time()
         logger.debug("start making summary")
 
+        if selector is None:
+            selector = selectors.create_selector(data, final_data_points=final_data_points)
         summary = selector()
         column_names = summary.columns
         # TODO @jepe: use pandas.DataFrame properties instead (.len, .reset_index), but maybe first

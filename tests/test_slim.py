@@ -95,3 +95,23 @@ def test_create_cellpyfile(cellpy_data_instance, tmp_path, parameters, capsys):
     name = pathlib.Path(tmp_path) / pathlib.Path(parameters.cellpy_file_path).name
     logging.info(f"trying to save the cellpy file to {name}")
     cellpy_data_instance.save(name)
+
+
+def test_generate_absolute_summary_columns(cellpy_data_instance, capsys, parameters):
+    from cellpy.slim import summarizers, selectors
+    nom_cap = 1.0
+    mass = 1.0
+    cellpy_data_instance.from_raw(parameters.res_file_path)
+
+    nom_cap_abs = cellpy_data_instance.nominal_capacity_as_absolute(nom_cap, mass, "gravimetric")
+
+    with capsys.disabled():
+        print(cellpy_data_instance)
+    cellpy_data_instance.make_step_table()
+    data = cellpy_data_instance.core.data
+    selector = selectors.create_selector(data)
+    cellpy_data_instance.core.make_core_summary(data, selector, find_ir=True, find_end_voltage=True)
+
+    # data = summarizers.generate_absolute_summary_columns(data)
+    # cellpy_data_instance.core.generate_absolute_summary_columns(find_ir=True, find_end_voltage=True)
+    # cellpy_data_instance.core.add_scaled_summary_columns(nom_cap_abs=1.0, normalization_cycles=[1, 2, 3])

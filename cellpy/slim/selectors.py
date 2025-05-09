@@ -1,6 +1,6 @@
 import collections
 import functools
-from typing import Any, Callable, List, Optional, Union, TypeVar
+from typing import Any, Callable, Iterable, List, Optional, Union, TypeVar
 import logging
 
 from cellpy.readers import core
@@ -45,13 +45,16 @@ def create_selector(
     selector_type: Optional[str] = None,
     exclude_types: Optional[List[str]] = None,
     exclude_steps: Optional[List[str]] = None,
+    final_data_points: Optional[Iterable[int]] = None,
 ) -> Callable:
     """Create a selector function.
     
     Args:
+        data: The data to create the selector from.
         selector_type: The type of selector to create.
         exclude_types: The types to exclude from the selector.
         exclude_steps: The steps to exclude from the selector.
+        final_data_points: The final data point for each cycle to use for the selector.
 
     Returns:
         A selector function for the summary dataframe.
@@ -68,41 +71,62 @@ def create_selector(
     selector = functools.partial(
         summary_selector_exluder,
         data=data,
-        headers_normal=headers_normal,
-        headers_step_table=headers_step_table,
+        custom_headers_normal=headers_normal,
+        custom_headers_step_table=headers_step_table,
         exclude_types=exclude_types,
         exclude_steps=exclude_steps,
+        final_data_points=final_data_points,
     )
     return selector
 
 
 def summary_selector_exluder(
-    data=None,
-    headers_normal=None,
-    headers_step_table=None,
-    exclude_types=None,
-    exclude_steps=None,
-    replace_nan=True,
-):
+    data: core.Data,
+    custom_headers_normal: Optional[HeadersNormal] = None,
+    custom_headers_step_table: Optional[HeadersStepTable] = None,
+    exclude_types: Optional[Iterable[str]] = None,
+    exclude_steps: Optional[Iterable[str]] = None,
+    replace_nan: bool = True,
+    final_data_points: Optional[Iterable[int]] = None,
+) -> Callable:
+    """Create a summary selector.
+
+    This function creates a summary selector that can be used to select a subset of the raw data
+    to base the summary on. 
+    
+    Args:
+        data: The data to create the summary selector from.
+        custom_headers_normal: The custom headers to use for the summary selector.
+        custom_headers_step_table: The custom headers to use for the summary selector.
+        exclude_types: The types to exclude from the summary selector.
+        exclude_steps: The steps to exclude from the summary selector.
+        replace_nan: Whether to replace NaN values with 0.0.
+        final_data_points: The final data point for each cycle to use for the summary selector.
+    """
     steps = data.steps
     raw = data.raw.copy()
 
-    # unravel the headers:
-    d_n_txt = headers_normal.data_point_txt
-    v_n_txt = headers_normal.voltage_txt
-    c_n_txt = headers_normal.cycle_index_txt
-    # s_n_txt = headers_normal.step_index_txt
-    i_n_txt = headers_normal.current_txt
-    ch_n_txt = headers_normal.charge_capacity_txt
-    dch_n_txt = headers_normal.discharge_capacity_txt
+    if custom_headers_normal is None:
+        custom_headers_normal = headers_normal
+    if custom_headers_step_table is None:
+        custom_headers_step_table = headers_step_table
 
-    d_st_txt = headers_step_table.point
-    v_st_txt = headers_step_table.voltage
-    c_st_txt = headers_step_table.cycle
-    i_st_txt = headers_step_table.current
-    ch_st_txt = headers_step_table.charge
-    dch_st_txt = headers_step_table.discharge
-    t_st_txt = headers_step_table.type
+    # unravel the headers:
+    d_n_txt = custom_headers_normal.data_point_txt
+    v_n_txt = custom_headers_normal.voltage_txt
+    c_n_txt = custom_headers_normal.cycle_index_txt
+    # s_n_txt = headers_normal.step_index_txt
+    i_n_txt = custom_headers_normal.current_txt
+    ch_n_txt = custom_headers_normal.charge_capacity_txt
+    dch_n_txt = custom_headers_normal.discharge_capacity_txt
+
+    d_st_txt = custom_headers_step_table.point
+    v_st_txt = custom_headers_step_table.voltage
+    c_st_txt = custom_headers_step_table.cycle
+    i_st_txt = custom_headers_step_table.current
+    ch_st_txt = custom_headers_step_table.charge
+    dch_st_txt = custom_headers_step_table.discharge
+    t_st_txt = custom_headers_step_table.type
     # s_st_txt = headers_step_table.step
 
     _first = FIRST
@@ -119,8 +143,9 @@ def summary_selector_exluder(
     # TODO: @jepe - this method might be a bit slow for large datasets - consider using
     #  more "native" pandas methods and get rid of all looping (need some timing to check first)
 
-    last_data_points = steps.loc[:, [c_st_txt, d_st_txt + _last]].groupby(c_st_txt).last().values.ravel()
-    last_items = raw[d_n_txt].isin(last_data_points)
+    if final_data_points is None:
+        final_data_points = steps.loc[:, [c_st_txt, d_st_txt + _last]].groupby(c_st_txt).last().values.ravel()
+    last_items = raw[d_n_txt].isin(final_data_points)
     selected = raw[last_items]
 
     if exclude_types is None and exclude_steps is None:

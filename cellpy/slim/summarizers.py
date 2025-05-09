@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 DataFrame = TypeVar("DataFrame")
+Array = TypeVar("Array")
 
 
 headers_step_table = HeadersStepTable()
@@ -25,6 +26,27 @@ headers_normal = HeadersNormal()
 
 cellpy_units = get_cellpy_units()
 output_units = get_default_output_units() 
+
+
+def _ustep(n: Array) -> list:
+    # not tested
+    """Create u-steps from a pandas Series.
+    
+    Args:
+        n (Array): The input series.
+        
+    Returns:
+        list: The u-steps.
+    """
+    un = []
+    c = 0
+    dn = n.diff()
+    for i in dn:
+        if i != 0:
+            c += 1
+        un.append(c)
+    logger.debug("created u-steps")
+    return un
 
 
 def generate_absolute_summary_columns(data: core.Data, _first_step_txt: str, _second_step_txt: str) -> core.Data:

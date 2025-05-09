@@ -835,6 +835,19 @@ def test_save_cvs(cellpy_data_instance, parameters):
     # assert not os.path.isfile(tmp_file)
 
 
+def test_save_excel(cellpy_data_instance, parameters):
+    cellpy_data_instance.from_raw(parameters.res_file_path)
+    cellpy_data_instance.make_summary(find_ir=True)
+    cellpy_data_instance.make_step_table()
+    temp_dir = tempfile.mkdtemp()
+    cellpy_data_instance.to_excel(datadir=temp_dir)
+    shutil.rmtree(temp_dir)
+    # cellpy_data_instance.save(tmp_file)
+    # assert os.path.isfile(tmp_file)
+    # os.remove(tmp_file)
+    # assert not os.path.isfile(tmp_file)
+
+
 def test_str_cellpy_data_object(dataset):
     assert str(dataset.data).find("silicon") >= 0
     assert str(dataset.data).find("rosenborg") < 0
