@@ -5362,11 +5362,13 @@ class CellpyCell:
 
         q = None
         for exclude_type in exclude_types:
-            _q = ~steps[t_st_txt].str.startswith(exclude_type)
+            # check if it contains the type at all
+            steps[t_st_txt].str.startswith(exclude_type)
+            _q = ~steps[t_st_txt].str.startswith(exclude_type, na=False)
             q = _q if q is None else q & _q
 
         if exclude_steps:
-            _q = ~steps[t_st_txt].isin(exclude_steps)
+            _q = ~steps[t_st_txt].isin(exclude_steps, na=False)
             q = _q if q is None else q & _q
 
         _delta_columns = [
