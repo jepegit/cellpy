@@ -3472,13 +3472,17 @@ class CellpyCell:
                 if cycles is True:
                     cycles = self.get_cycle_numbers()
                 for cycle in cycles:
-                    _curves = self.get_cap(cycle=cycle, **get_cap_method_kwargs)
-                    _curves.to_excel(
-                        writer,
-                        sheet_name=f"cycle_{cycle:03}",
-                        index=False,
-                        header=True,
-                    )
+                    try:
+                        _curves = self.get_cap(cycle=cycle, **get_cap_method_kwargs)
+                        _curves.to_excel(
+                            writer,
+                            sheet_name=f"cycle_{cycle:03}",
+                            index=False,
+                            header=True,
+                        )
+                    except Exception as e:
+                        logging.debug(f"Could not export cycle {cycle}: {e}")
+                        continue
             if nice:
                 for sheet in writer.sheets.values():
                     if sheet.title.startswith("meta"):
@@ -5313,12 +5317,12 @@ class CellpyCell:
     #  public when it is fixed:
     def _select_without(self, exclude_types=None, exclude_steps=None, replace_nan=True):
         """Filter and modify cell cycling data by excluding specific step types and steps.
-        
+
         This method processes raw cell cycling data by:
         1. Selecting the last data point for each cycle
         2. Excluding specified step types and step numbers
         3. Adjusting the raw data values by subtracting the contributions from excluded steps
-        
+
         Parameters
         ----------
         exclude_types : str or list of str, optional
@@ -5327,14 +5331,14 @@ class CellpyCell:
             Step numbers to exclude. If None, no specific steps are excluded.
         replace_nan : bool, default True
             Whether to replace NaN values with 0.0 in the resulting dataframe.
-            
+
         Returns
         -------
         pandas.DataFrame
             A filtered and modified dataframe containing the cell cycling data with excluded
             steps removed and their contributions subtracted from the raw values.
 
-        
+
         """
 
         # summary_no_cv = self.make_summary(selector_type="non-cv", create_copy=True).data.summary
@@ -5389,7 +5393,9 @@ class CellpyCell:
         # TODO: @jepe - this method might be a bit slow for large datasets - consider using
         #  more "native" pandas methods and get rid of all looping (need some timing to check first)
 
-        last_data_points = steps.loc[:, [hdrst_cycle, hdrst_data_point + _last]].groupby(hdrst_cycle).last().values.ravel()
+        last_data_points = (
+            steps.loc[:, [hdrst_cycle, hdrst_data_point + _last]].groupby(hdrst_cycle).last().values.ravel()
+        )
         last_items = raw[hdrn_data_point].isin(last_data_points)
         selected = raw[last_items]
 
