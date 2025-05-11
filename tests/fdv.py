@@ -89,6 +89,9 @@ taper_cell_path = os.path.join(raw_data_dir, taper_cell_name)
 gitt_cell_name = "gitt_cell.res"
 gitt_cell_path = os.path.join(raw_data_dir, gitt_cell_name)
 
+rate_cell_name = "20231115_rate_cc.h5"
+rate_cell_path = os.path.join(raw_data_dir, rate_cell_name)
+
 # -------- mock data files  -------------------------
 
 mock_file_name = "mock_data_001.xlsx"
