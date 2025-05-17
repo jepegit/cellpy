@@ -813,7 +813,74 @@ def concatenate_summaries(
     else:
         logging.info("Empty - nothing to concatenate!")
         return pd.DataFrame()
+    
 
+def add_cv_step_columns(columns: list) -> list:
+    """Add columns for CV steps.
+    """
+    raise NotImplementedError("This function is not implemented yet")
+
+
+def partition_summary_based_on_cv_steps(
+    c,
+    x: str,
+    column_set: list,
+    split: bool = False,
+    var_name: str = "variable",
+    value_name: str = "value",
+):
+    """Partition the summary data into CV and non-CV steps.
+
+    Args:
+        c: cellpy object
+        x: x-axis column name
+        column_set: names of columns to include
+        split: add additional column that can be used to split the data when plotting.
+        var_name: name of the variable column after melting
+        value_name: name of the value column after melting
+
+    Returns:
+        ``pandas.DataFrame`` (melted with columns x, var_name, value_name, and optionally "row" if split is True)
+    """
+    raise NotImplementedError("This function is not implemented yet")
+    import pandas as pd
+
+    summary = c.data.summary
+
+    summary_no_cv = c.make_summary(selector_type="non-cv", create_copy=True).data.summary
+    summary_only_cv = c.make_summary(selector_type="only-cv", create_copy=True).data.summary
+    if x != summary.index.name:
+        summary.set_index(x, inplace=True)
+        summary_no_cv.set_index(x, inplace=True)
+        summary_only_cv.set_index(x, inplace=True)
+
+    summary = summary[column_set]
+
+    summary_no_cv = summary_no_cv[column_set]
+    summary_no_cv.columns = [col + "_non_cv" for col in summary_no_cv.columns]
+
+    summary_only_cv = summary_only_cv[column_set]
+    summary_only_cv.columns = [col + "_cv" for col in summary_only_cv.columns]
+
+    if split:
+        id_vars = [x, "row"]
+        summary_no_cv["row"] = "without CV"
+        summary_only_cv["row"] = "with CV"
+        summary["row"] = "all"
+    else:
+        id_vars = x
+
+    summary_no_cv = summary_no_cv.reset_index()
+    summary_only_cv = summary_only_cv.reset_index()
+    summary = summary.reset_index()
+    summary_no_cv = summary_no_cv.melt(id_vars, var_name=var_name, value_name=value_name)
+    summary_only_cv = summary_only_cv.melt(id_vars, var_name=var_name, value_name=value_name)
+    summary = summary.melt(id_vars, var_name=var_name, value_name=value_name)
+
+    s = pd.concat([summary, summary_no_cv, summary_only_cv], axis=0)
+    s = s.reset_index(drop=True)
+
+    return s
 
 def concat_summaries(
     b: Batch,
@@ -838,6 +905,7 @@ def concat_summaries(
     recalc_step_table_kwargs=None,
     only_selected=False,
     experimental_feature_cell_selector=None,
+    partition_by_cv=False,
 ) -> pd.DataFrame:
     """Merge all summaries in a batch into a gigantic summary data frame.
 
@@ -855,6 +923,7 @@ def concat_summaries(
         nom_cap (float): nominal capacity of the cell
         normalize_cycles (bool): perform a normalization of the cycle numbers (also called equivalent cycle index)
         group_it (bool): if True, average pr group.
+        partition_by_cv (bool): if True, partition the data by cv_step.
         custom_group_labels (dict): dictionary of custom labels (key must be the group number/name).
         rate_std (float): allow for this inaccuracy when selecting cycles based on rate
         rate_column (str): name of the column containing the C-rates.
@@ -956,6 +1025,9 @@ def concat_summaries(
         ]
         output_columns.extend(normalize_capacity_headers)
 
+    if partition_by_cv:
+        output_columns = add_cv_step_columns(output_columns)
+
     for gno, cell_names in zip(group_nest, cell_names_nest):
         frames_sub = []
         keys_sub = []
@@ -997,6 +1069,9 @@ def concat_summaries(
 
                     c = add_normalized_capacity(c, norm_cycles=normalize_capacity_on, scale=scale_by)
 
+                if partition_by_cv:
+                    print("partitioning by cv_step")
+                    s = partition_summary_based_on_cv_steps(c)
                 if rate is not None:
                     s = select_summary_based_on_rate(
                         c,
