@@ -55,6 +55,7 @@ SUPPORTED_MODELS = {
     "ONE": "neware_txt_zero",
     "UIO": "neware_txt_zero",
     "UIO_AGA": "neware_txt_one",
+    "TIOTECH": "neware_txt_two",
 }
 
 

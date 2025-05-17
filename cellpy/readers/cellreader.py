@@ -1244,7 +1244,7 @@ class CellpyCell:
         try:
             self.tester = self.loader_class.instrument_name
         except AttributeError:
-            logging.debug(f"could not set instrument name")
+            logging.debug("could not set instrument name")
 
         # TODO: include this into prms (and config-file):
         max_raw_files_to_merge = 20
