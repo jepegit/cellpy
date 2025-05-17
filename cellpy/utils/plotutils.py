@@ -581,19 +581,19 @@ def create_col_info(c):
         capacities_absolute_coulombic_efficiency=_capacities_absolute + [hdr.coulombic_efficiency],
 
         fullcell_standard_gravimetric=[
-            hdr.discharge_capacity+"_gravimetric" + "_cv",
+            hdr.charge_capacity+"_gravimetric" + "_cv",
             hdr.cumulated_discharge_capacity_loss + "_gravimetric",
             hdr.discharge_capacity+"_gravimetric",
             hdr.coulombic_efficiency,
             ],
         fullcell_standard_areal=[
-            hdr.discharge_capacity+"_areal" + "_cv",
+            hdr.charge_capacity+"_areal" + "_cv",
             hdr.cumulated_discharge_capacity_loss + "_areal",
             hdr.discharge_capacity+"_areal",
             hdr.coulombic_efficiency,
             ],
         fullcell_standard_absolute=[
-            hdr.discharge_capacity+"_absolute" + "_cv",
+            hdr.charge_capacity+"_absolute" + "_cv",
             hdr.cumulated_discharge_capacity_loss + "_absolute",
             hdr.discharge_capacity+"_absolute",
             hdr.coulombic_efficiency,
@@ -683,6 +683,7 @@ def summary_plot(
     formation_cycles=3,
     show_formation=True,
     column_separator=0.01,
+    reset_losses=True,
     **kwargs,
 ):
     """Create a summary plot.
@@ -720,6 +721,7 @@ def summary_plot(
         formation_cycles: number of formation cycles to show
         show_formation: show formation cycles
         column_separator: separation between columns when splitting the plot (only for plotly)
+        reset_losses: reset the losses to the first cycle (only for fullcell_standard plots)
         **kwargs: includes additional parameters for the plotting backend (not properly documented yet).
 
     Returns:
@@ -762,12 +764,6 @@ def summary_plot(
     x_cols, y_cols = create_col_info(c)
     x_axis_labels, y_axis_label = create_label_dict(c)
 
-    print(f"{x_cols=}")
-    print(f"{y_cols=}")
-    print(f"{x_axis_labels=}")
-    print(f"{y_axis_label=}")
-
-    # TODO: continue from here....
 
     def _auto_range(fig, axis_name_1, axis_name_2):
         min_y = np.inf
@@ -809,9 +805,45 @@ def summary_plot(
     )
 
     additional_kwargs_seaborn = dict()
+    # standard fullcell plot (ce, discharge cap, loss, cv-only)
+    if y.startswith("fullcell_standard_"):
+        if additional_kwargs_plotly.get("height") is None:
+            additional_kwargs_plotly["height"] = 800
+        column_set = y_cols.get(y, y)
+
+        summary = c.data.summary.copy()
+        if summary.index.name == x:
+            summary = summary.reset_index(drop=False)
+
+        summary_only_cv = c.make_summary(selector_type="only-cv", create_copy=True).data.summary
+        if summary_only_cv.index.name == x:
+            summary_only_cv = summary_only_cv.reset_index(drop=False)
+
+        s = summary.merge(summary_only_cv, on=x, how="outer", suffixes=("", "_cv"))
+
+        s = s.reset_index(drop=True)
+        s = s.melt(x)
+        s = s.loc[s.variable.isin(column_set)]
+        
+        number_of_rows = 4
+        s[row] = 1  # default row for capacity
+        # Set row numbers using regex patterns
+        s.loc[s["variable"].str.contains(r"_efficiency$"), row] = 0  # coulombic efficiency
+        s.loc[s["variable"].str.contains(r"cumulated.*loss"), row] = 2  # cumulated loss
+        s.loc[s["variable"].str.contains(r"_cv$"), row] = 3  # cv data
+        additional_kwargs_plotly["facet_row"] = row
+
+        
+        if reset_losses:
+            # Get the first value for each cumulated loss variable
+            first_values = s[s["variable"].str.contains(r"cumulated.*loss")].groupby("variable")["value"].transform("first")
+            # Shift all values by subtracting the first value
+            mask = s["variable"].str.contains(r"cumulated.*loss")
+            s.loc[mask, "value"] = s.loc[mask, "value"] - first_values
 
     # filter on constant voltage vs constant current
-    if y.endswith("_split_constant_voltage"):
+    # Remark! absoulte capacities are not implemented yet.
+    elif y.endswith("_split_constant_voltage"):
         cap_type = "capacities_gravimetric" if y.startswith("capacities_gravimetric") else "capacities_areal"
         column_set = y_cols[cap_type]
 
@@ -819,6 +851,9 @@ def summary_plot(
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             s = partition_summary_cv_steps(c, x, column_set, split, color, y_header)
+            print(f"{s=}")
+            print(f"{s.columns=}")
+            print(f"{split=}")
         if split:
             additional_kwargs_plotly["facet_row"] = row
             number_of_rows = 3
@@ -827,12 +862,15 @@ def summary_plot(
 
     else:
         column_set = y_cols.get(y, y)
+        print("Getting column set")
+        print(f"{column_set=}")
         if isinstance(column_set, str):
             column_set = [column_set]
         summary = c.data.summary
         summary = summary.reset_index()
         s = summary.melt(x)
         s = s.loc[s.variable.isin(column_set)]
+        print(f"{s=}")
         s = s.reset_index(drop=True)
         s[row] = 1
         if split:
@@ -985,8 +1023,63 @@ def summary_plot(
                 annotations = [_plotly_label_dict(formation_header, 0.08, 1.0)] + 5 * [PLOTLY_BLANK_LABEL]
                 fig.layout["annotations"] = annotations
 
+            elif number_of_rows == 4:
+                fig.update_yaxes(matches="y")
+                fig.update_yaxes(autorange=False)
+                if y.startswith("fullcell_standard_"):
+                    # CE
+                    space = 0.02
+                    ce_domain_start, ce_domain_end = 0.9, 1.0
+                    capacity_domain_start, capacity_domain_end = 0.6, 0.9 - space
+                    loss_domain_start, loss_domain_end = 0.3, 0.6 - space
+                    cv_domain_start, cv_domain_end = 0.0, 0.3 - space
+
+                    # Format y-axis labels with HTML for proper alignment
+                    capacity_unit = _get_capacity_unit(c, mode=y.split("_")[-1])
+                    ce_label = "Coulombic<br>Efficiency (%)"
+                    capacity_label = f"Capacity<br>({capacity_unit})"
+                    loss_label = f"Cumulated<br>Loss ({capacity_unit})"
+                    cv_label = f"CV Capacity<br>({capacity_unit})"
+
+                    fig.update_layout(
+                        yaxis8={"domain": [ce_domain_start, ce_domain_end]},
+                        yaxis7={"title": dict(text=ce_label), "domain": [ce_domain_start, ce_domain_end]},
+                        yaxis6={"domain": [capacity_domain_start, capacity_domain_end]},
+                        yaxis5={"title": dict(text=capacity_label), "domain": [capacity_domain_start, capacity_domain_end]},
+                        yaxis4={"domain": [loss_domain_start, loss_domain_end]},
+                        yaxis3={"title": dict(text=loss_label), "domain": [loss_domain_start, loss_domain_end]},
+                        yaxis2={"domain": [cv_domain_start, cv_domain_end]},
+                        yaxis1={"title": dict(text=cv_label), "domain": [cv_domain_start, cv_domain_end]},
+                    )
+                fig.update_layout(xaxis_domain=x_axis_domain_formation, scene_domain_x=x_axis_domain_formation)
+
+                range_1 = _auto_range(fig, "y", "y2")
+                range_2 = _auto_range(fig, "y3", "y4")
+                range_3 = _auto_range(fig, "y5", "y6")
+                range_4 = _auto_range(fig, "y7", "y8")
+
+                fig.update_layout(
+                    xaxis2=dict(range=x_axis_range_rest, domain=x_axis_domain_rest, matches=None),
+                    xaxis3=dict(range=x_axis_range_formation, domain=x_axis_domain_formation, matches="x"),
+                    xaxis4=dict(range=x_axis_range_rest, domain=x_axis_domain_rest, matches="x2"),
+                    xaxis5=dict(range=x_axis_range_formation, domain=x_axis_domain_formation, matches="x"),
+                    xaxis6=dict(range=x_axis_range_rest, domain=x_axis_domain_rest, matches="x2"),
+                    xaxis7=dict(range=x_axis_range_formation, domain=x_axis_domain_formation, matches="x"),
+                    xaxis8=dict(range=x_axis_range_rest, domain=x_axis_domain_rest, matches="x2"),
+                    yaxis=dict(matches="y2", range=range_1),
+                    yaxis2=dict(matches="y", showticklabels=show_y_labels_on_right_pane, range=range_1),
+                    yaxis3=dict(matches="y4", range=range_2),
+                    yaxis4=dict(matches="y3", showticklabels=show_y_labels_on_right_pane, range=range_2),
+                    yaxis5=dict(matches="y6", range=range_3),
+                    yaxis6=dict(matches="y5", showticklabels=show_y_labels_on_right_pane, range=range_3),
+                    yaxis7=dict(matches="y8", range=range_4),
+                    yaxis8=dict(matches="y7", showticklabels=show_y_labels_on_right_pane, range=range_4),
+                )
+                annotations = [_plotly_label_dict(formation_header, 0.08, 1.0)] + 7 * [PLOTLY_BLANK_LABEL]
+                fig.layout["annotations"] = annotations
+
             else:
-                raise NotImplementedError("Not implemented for more than three rows")
+                raise NotImplementedError("Not implemented for more than four rows")
         else:
             if y.endswith("_efficiency"):
                 fig.update_layout(
