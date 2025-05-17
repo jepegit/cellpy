@@ -579,6 +579,25 @@ def create_col_info(c):
         capacities_gravimetric_coulombic_efficiency=_capacities_gravimetric + [hdr.coulombic_efficiency],
         capacities_areal_coulombic_efficiency=_capacities_areal + [hdr.coulombic_efficiency],
         capacities_absolute_coulombic_efficiency=_capacities_absolute + [hdr.coulombic_efficiency],
+
+        fullcell_standard_gravimetric=[
+            hdr.discharge_capacity_gravimetric + "_cv",
+            hdr.cumulated_discharge_capacity_loss_gravimetric,
+            hdr.discharge_capacity_gravimetric,
+            hdr.coulombic_efficiency,
+            ],
+        fullcell_standard_areal=[
+            hdr.discharge_capacity_areal + "_cv",
+            hdr.cumulated_discharge_capacity_loss_areal,
+            hdr.discharge_capacity_areal,
+            hdr.coulombic_efficiency,
+            ],
+        fullcell_standard_absolute=[
+            hdr.discharge_capacity_absolute + "_cv",
+            hdr.cumulated_discharge_capacity_loss_absolute,
+            hdr.discharge_capacity_absolute,
+            hdr.coulombic_efficiency,
+            ],
     )
     return x_columns, y_cols
 
@@ -618,6 +637,9 @@ def create_label_dict(c):
         "capacities_gravimetric_coulombic_efficiency": _cap_gravimetric_label,
         "capacities_areal_coulombic_efficiency": _cap_areal_label,
         "capacities_absolute_coulombic_efficiency": _cap_absolute_label,
+        "fullcell_standard_gravimetric": _cap_gravimetric_label,
+        "fullcell_standard_areal": _cap_areal_label,
+        "fullcell_standard_absolute": _cap_absolute_label,
     }
     return x_axis_labels, y_axis_label
 
@@ -635,6 +657,7 @@ def _get_capacity_unit(c, mode="gravimetric", seperator="/"):
 # TODO: add formation cycles handling for seaborn
 # TODO: consistent parameter names (e.g. y_range vs ylim) between summary_plot, plot_cycles, raw_plot, cycle_info_plot and batchutils
 # TODO: consistent function names (raw_plot vs plot_raw etc)
+# TODO: add support for standard 4-pane plot
 def summary_plot(
     c,
     x: str = None,
@@ -673,7 +696,8 @@ def summary_plot(
             - "voltages", "capacities_gravimetric", "capacities_areal", "capacities",
               "capacities_gravimetric_split_constant_voltage", "capacities_areal_split_constant_voltage",
               "capacities_gravimetric_coulombic_efficiency", "capacities_areal_coulombic_efficiency",
-              "capacities_absolute_coulombic_efficiency"
+              "capacities_absolute_coulombic_efficiency",
+              "fullcell_standard_gravimetric", "fullcell_standard_areal", "fullcell_standard_absolute",
 
         height: height of the plot (for plotly)
         width: width of the plot (for plotly)
