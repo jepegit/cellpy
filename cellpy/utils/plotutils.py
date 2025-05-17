@@ -581,21 +581,21 @@ def create_col_info(c):
         capacities_absolute_coulombic_efficiency=_capacities_absolute + [hdr.coulombic_efficiency],
 
         fullcell_standard_gravimetric=[
-            hdr.discharge_capacity_gravimetric + "_cv",
-            hdr.cumulated_discharge_capacity_loss_gravimetric,
-            hdr.discharge_capacity_gravimetric,
+            hdr.discharge_capacity+"_gravimetric" + "_cv",
+            hdr.cumulated_discharge_capacity_loss + "_gravimetric",
+            hdr.discharge_capacity+"_gravimetric",
             hdr.coulombic_efficiency,
             ],
         fullcell_standard_areal=[
-            hdr.discharge_capacity_areal + "_cv",
-            hdr.cumulated_discharge_capacity_loss_areal,
-            hdr.discharge_capacity_areal,
+            hdr.discharge_capacity+"_areal" + "_cv",
+            hdr.cumulated_discharge_capacity_loss + "_areal",
+            hdr.discharge_capacity+"_areal",
             hdr.coulombic_efficiency,
             ],
         fullcell_standard_absolute=[
-            hdr.discharge_capacity_absolute + "_cv",
-            hdr.cumulated_discharge_capacity_loss_absolute,
-            hdr.discharge_capacity_absolute,
+            hdr.discharge_capacity+"_absolute" + "_cv",
+            hdr.cumulated_discharge_capacity_loss + "_absolute",
+            hdr.discharge_capacity+"_absolute",
             hdr.coulombic_efficiency,
             ],
     )
@@ -627,6 +627,7 @@ def create_label_dict(c):
     _cap_absolute_label = f"Capacity ({c.cellpy_units.charge})"
     _cap_label = f"Capacity ({c.data.raw_units.charge})"
 
+    # TODO: probably need to add something for cumulated discharge capacity loss also...
     y_axis_label = {
         "voltages": f"Voltage ({c.cellpy_units.voltage})",
         "capacities_gravimetric": _cap_gravimetric_label,
@@ -760,6 +761,13 @@ def summary_plot(
 
     x_cols, y_cols = create_col_info(c)
     x_axis_labels, y_axis_label = create_label_dict(c)
+
+    print(f"{x_cols=}")
+    print(f"{y_cols=}")
+    print(f"{x_axis_labels=}")
+    print(f"{y_axis_label=}")
+
+    # TODO: continue from here....
 
     def _auto_range(fig, axis_name_1, axis_name_2):
         min_y = np.inf
