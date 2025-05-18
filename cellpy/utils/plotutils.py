@@ -684,6 +684,7 @@ def summary_plot(
     show_formation=True,
     column_separator=0.01,
     reset_losses=True,
+    link_capacity_scales=False,
     **kwargs,
 ):
     """Create a summary plot.
@@ -722,6 +723,7 @@ def summary_plot(
         show_formation: show formation cycles
         column_separator: separation between columns when splitting the plot (only for plotly)
         reset_losses: reset the losses to the first cycle (only for fullcell_standard plots)
+        link_capacity_scales: link the capacity scales (only for fullcell_standard plots)
         **kwargs: includes additional parameters for the plotting backend (not properly documented yet).
 
     Returns:
@@ -790,6 +792,7 @@ def summary_plot(
                 _range = [min(_range[0], min_y), max(_range[1], max_y)]
         _range = [0.95 * _range[0], 1.05 * _range[1]]
         return _range
+    
 
     # ------------------- main --------------------------------------------
     y_header = "value"
@@ -851,9 +854,6 @@ def summary_plot(
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             s = partition_summary_cv_steps(c, x, column_set, split, color, y_header)
-            print(f"{s=}")
-            print(f"{s.columns=}")
-            print(f"{split=}")
         if split:
             additional_kwargs_plotly["facet_row"] = row
             number_of_rows = 3
@@ -862,15 +862,12 @@ def summary_plot(
 
     else:
         column_set = y_cols.get(y, y)
-        print("Getting column set")
-        print(f"{column_set=}")
         if isinstance(column_set, str):
             column_set = [column_set]
         summary = c.data.summary
         summary = summary.reset_index()
         s = summary.melt(x)
         s = s.loc[s.variable.isin(column_set)]
-        print(f"{s=}")
         s = s.reset_index(drop=True)
         s[row] = 1
         if split:
@@ -925,6 +922,9 @@ def summary_plot(
             },
             **kwargs,
         )
+        if y.startswith("fullcell_standard"):
+            print("Warning: Experimental feature - fullcell standard plot")
+            print("  - missing: does not work yet for show_formation=False")
 
         if show_formation:
             formation_header = '<span style="color:red">Formation</span>'
@@ -1026,31 +1026,6 @@ def summary_plot(
             elif number_of_rows == 4:
                 fig.update_yaxes(matches="y")
                 fig.update_yaxes(autorange=False)
-                if y.startswith("fullcell_standard_"):
-                    # CE
-                    space = 0.02
-                    ce_domain_start, ce_domain_end = 0.9, 1.0
-                    capacity_domain_start, capacity_domain_end = 0.6, 0.9 - space
-                    loss_domain_start, loss_domain_end = 0.3, 0.6 - space
-                    cv_domain_start, cv_domain_end = 0.0, 0.3 - space
-
-                    # Format y-axis labels with HTML for proper alignment
-                    capacity_unit = _get_capacity_unit(c, mode=y.split("_")[-1])
-                    ce_label = "Coulombic<br>Efficiency (%)"
-                    capacity_label = f"Capacity<br>({capacity_unit})"
-                    loss_label = f"Cumulated<br>Loss ({capacity_unit})"
-                    cv_label = f"CV Capacity<br>({capacity_unit})"
-
-                    fig.update_layout(
-                        yaxis8={"domain": [ce_domain_start, ce_domain_end]},
-                        yaxis7={"title": dict(text=ce_label), "domain": [ce_domain_start, ce_domain_end]},
-                        yaxis6={"domain": [capacity_domain_start, capacity_domain_end]},
-                        yaxis5={"title": dict(text=capacity_label), "domain": [capacity_domain_start, capacity_domain_end]},
-                        yaxis4={"domain": [loss_domain_start, loss_domain_end]},
-                        yaxis3={"title": dict(text=loss_label), "domain": [loss_domain_start, loss_domain_end]},
-                        yaxis2={"domain": [cv_domain_start, cv_domain_end]},
-                        yaxis1={"title": dict(text=cv_label), "domain": [cv_domain_start, cv_domain_end]},
-                    )
                 fig.update_layout(xaxis_domain=x_axis_domain_formation, scene_domain_x=x_axis_domain_formation)
 
                 range_1 = _auto_range(fig, "y", "y2")
@@ -1085,6 +1060,42 @@ def summary_plot(
                 fig.update_layout(
                     yaxis=dict(domain=[0.0, 0.65]),
                     yaxis2={"title": dict(text="Coulombic Efficiency"), "domain": [0.7, 1.0]},
+                )
+                
+        if y.startswith("fullcell_standard_"):
+            # CE
+            space = 0.02
+            ce_domain_start, ce_domain_end = 0.9, 1.0
+            capacity_domain_start, capacity_domain_end = 0.6, 0.9 - space
+            loss_domain_start, loss_domain_end = 0.3, 0.6 - space
+            cv_domain_start, cv_domain_end = 0.0, 0.3 - space
+
+            # Format y-axis labels with HTML for proper alignment
+            capacity_unit = _get_capacity_unit(c, mode=y.split("_")[-1])
+            ce_label = "Coulombic<br>Efficiency (%)"
+            capacity_label = f"Capacity<br>({capacity_unit})"
+            loss_label = f"Cumulated<br>Loss ({capacity_unit})"
+            cv_label = f"CV Capacity<br>({capacity_unit})"
+
+            fig.update_layout(
+                yaxis8={"domain": [ce_domain_start, ce_domain_end]},
+                yaxis7={"title": dict(text=ce_label), "domain": [ce_domain_start, ce_domain_end]},
+                yaxis6={"domain": [capacity_domain_start, capacity_domain_end]},
+                yaxis5={"title": dict(text=capacity_label), "domain": [capacity_domain_start, capacity_domain_end]},
+                yaxis4={"domain": [loss_domain_start, loss_domain_end]},
+                yaxis3={"title": dict(text=loss_label), "domain": [loss_domain_start, loss_domain_end]},
+                yaxis2={"domain": [cv_domain_start, cv_domain_end]},
+                yaxis1={"title": dict(text=cv_label), "domain": [cv_domain_start, cv_domain_end]},
+            )
+
+
+            if link_capacity_scales:
+                fig.update_layout(
+                    yaxis={"matches": "y2"},
+                    yaxis2={"matches": "y3"},
+                    yaxis3={"matches": "y4"},
+                    yaxis4={"matches": "y5"},
+                    yaxis5={"matches": "y6"},
                 )
 
         if x_range is not None:
@@ -1165,15 +1176,16 @@ def summary_plot(
                     axis_info = info_dict.get(title_text, None)
                 if axis_info is None:
                     continue
-                if xlim := axis_info["xlim"]:
+                if xlim := axis_info.get("xlim", None):
                     a.set_xlim(xlim)
-                if ylim := axis_info["ylim"]:
+                if ylim := axis_info.get("ylim", None):
                     a.set_ylim(ylim)
-                if ylabel := axis_info["ylabel"]:
+                if ylabel := axis_info.get("ylabel", None):
                     a.set_ylabel(ylabel)
-                a.set_title(axis_info["title"])
-                xticks = axis_info.get("xticks", None)
-                yticks = axis_info.get("yticks", None)
+                a.set_title(axis_info.get("title", ""))
+                xticks = axis_info.get("xticks", False)
+                yticks = axis_info.get("yticks", False)
+
                 if xticks is False:
                     a.set_xticks([])
                 if yticks is False:
@@ -1231,6 +1243,7 @@ def summary_plot(
         seaborn_plot_aspect = kwargs.pop("seaborn_plot_aspect", _default_seaborn_plot_aspect)
 
         is_efficiency_plot = y.endswith("_efficiency")
+        is_fullcell_standard_plot = y.startswith("fullcell_standard_")
         is_split_constant_voltage_plot = y.endswith("_split_constant_voltage")
         is_multi_row = number_of_rows > 1
 
@@ -1395,6 +1408,116 @@ def summary_plot(
                     )
                 info_dicts.append(_d)
 
+        elif is_fullcell_standard_plot:
+            print("Warning: Experimental feature - fullcell standard plot")
+            print("  - missing: individual scaling for coulombic efficiency")
+            print("  - missing: different heights for specific rows")
+
+            capacity_unit = _get_capacity_unit(c, mode=y.split("_")[-1])
+            ce_label = "Coulombic Efficiency (%)"
+            capacity_label = f"Capacity ({capacity_unit})"
+            loss_label = f"Cumulated Loss ({capacity_unit})"
+            cv_label = f"CV Capacity ({capacity_unit})"
+            number_of_rows = 4
+            cv_info = dict(
+                title="",
+                xlim=x_range,
+                ylim=y_range,
+                row=3,
+                col="standard",
+                yticks=False,
+                xticks=True,
+            )
+            cum_loss_info = dict(
+                title="",
+                xlim=x_range,
+                ylim=y_range,
+                row=2,
+                col="standard",
+                yticks=False,
+                xticks=False,
+            )
+            capacity_info = dict(
+                title="",
+                xlim=x_range,
+                ylim=y_range,
+                row=1,
+                col="standard",
+                yticks=False,
+                xticks=False,
+            )
+            ce_info = dict(
+                title="",
+                xlim=x_range,
+                ylim=y_range,
+                row=0,
+                col="standard",
+                yticks=False,
+                xticks=False,
+            )
+            if not show_formation:
+                cv_info["ylabel"] = cv_label
+                cum_loss_info["ylabel"] = loss_label
+                capacity_info["ylabel"] = capacity_label
+                ce_info["ylabel"] = ce_label
+
+                cv_info["yticks"] = True
+                cum_loss_info["yticks"] = True
+                capacity_info["yticks"] = True
+                ce_info["yticks"] = True
+
+            info_dicts.append(cv_info)
+            info_dicts.append(cum_loss_info)
+            info_dicts.append(capacity_info)
+            info_dicts.append(ce_info)
+
+            
+            if show_formation:
+                cv_info_formation = dict(
+                        ylabel=cv_label,
+                        title="",
+                        xlim=xlim_formation,
+                        ylim=y_range,
+                        row=3,
+                        col="formation",
+                        yticks=True,
+                        xticks=True,
+                    )
+                loss_info_formation = dict(
+                        ylabel=loss_label,
+                        title="",
+                        xlim=xlim_formation,
+                        ylim=y_range,
+                        row=2,
+                        col="formation",
+                        yticks=True,
+                        xticks=False,
+                    )
+                cap_info_formation = dict(
+                        ylabel=capacity_label,
+                        title="",
+                        xlim=xlim_formation,
+                        ylim=y_range,
+                        row=1,
+                        col="formation",
+                        yticks=True,
+                        xticks=False,
+                    )
+                ce_info_formation = dict(
+                        ylabel=ce_label,
+                        title="",
+                        xlim=xlim_formation,
+                        ylim=y_range,
+                        row=0,
+                        col="formation",
+                        yticks=True,
+                        xticks=False,
+                    )
+                info_dicts.append(cv_info_formation)
+                info_dicts.append(loss_info_formation)
+                info_dicts.append(cap_info_formation)
+                info_dicts.append(ce_info_formation)
+            
         else:
             if is_multi_row:
                 for i in range(number_of_rows):
