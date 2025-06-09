@@ -126,16 +126,6 @@ settings.json
 /examples/cellpy batch utility/data/cellpyfiles/*
 /examples/cellpy batch utility/out/*
 /docs/jupyter_execute/
-/cellpy/utils/data/20160805_test001_45_cc.h5
-/cellpy/utils/data/20160805_test001_45_cc_01.res
-/cellpy/utils/data/20180418_sf033_4_cc.h5
-/cellpy/utils/data/20231115_rate_cc.h5
-/cellpy/utils/data/aux_multi_x.res
-/cellpy/utils/data/pec.csv
+/cellpy/utils/data/*
 /import.cvs
-cellpy/utils/data/custom_data.csv
-cellpy/utils/data/custom_data.xlsx
-cellpy/utils/data/maccor_one.txt
-cellpy/utils/data/maccor_three.txt
-cellpy/utils/data/maccor_two.txt
-cellpy/utils/data/neware_uio.csv
+
