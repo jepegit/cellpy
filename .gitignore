@@ -133,3 +133,9 @@ settings.json
 /cellpy/utils/data/aux_multi_x.res
 /cellpy/utils/data/pec.csv
 /import.cvs
+cellpy/utils/data/custom_data.csv
+cellpy/utils/data/custom_data.xlsx
+cellpy/utils/data/maccor_one.txt
+cellpy/utils/data/maccor_three.txt
+cellpy/utils/data/maccor_two.txt
+cellpy/utils/data/neware_uio.csv
