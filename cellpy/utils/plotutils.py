@@ -11,6 +11,7 @@ from multiprocessing import Process
 import os
 import pickle as pkl
 import sys
+from typing import Any, Callable
 import warnings
 from io import StringIO
 from pathlib import Path
@@ -599,7 +600,41 @@ def create_col_info(c):
             hdr.coulombic_efficiency,
             ],
     )
-    return x_columns, y_cols
+
+    x_transformations = dict(
+    )
+
+    def _normalize_col(x: np.ndarray, normalization_factor: float = 1.0, normalization_type: str = "max", normalization_scaler: float = 1.0) -> np.ndarray:
+        if normalization_type == "divide":
+            return (x / normalization_factor) * normalization_scaler
+        elif normalization_type == "multiply":
+            return (x * normalization_factor) * normalization_scaler
+        elif normalization_type == "area":
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                area = np.trapzoid(x, dx=1)
+            return (x / area / normalization_factor) * normalization_scaler
+        elif normalization_type == "max":
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                x_max = x.max()
+            return (x / x_max / normalization_factor) * normalization_scaler
+        else:
+            raise ValueError(f"Invalid normalization type: {normalization_type}")
+    
+    y_transformations: dict[str, dict[str, Callable]] = dict(
+        fullcell_standard_gravimetric={
+            hdr.cumulated_discharge_capacity_loss + "_gravimetric": _normalize_col,
+        },
+        fullcell_standard_areal={
+            hdr.cumulated_discharge_capacity_loss + "_areal": _normalize_col,
+        },
+        fullcell_standard_absolute={
+            hdr.cumulated_discharge_capacity_loss + "_absolute": _normalize_col,
+        },
+    )
+
+    return x_columns, y_cols, x_transformations, y_transformations
 
 
 def create_label_dict(c):
@@ -682,26 +717,26 @@ def summary_plot(
     seaborn_style: str = "dark",
     formation_cycles=3,
     show_formation=True,
+    x_axis_domain_formation_fraction=0.2,
     column_separator=0.01,
     reset_losses=True,
     link_capacity_scales=False,
+    fullcell_standard_normalization_type="divide",
+    fullcell_standard_normalization_factor=None,
+    fullcell_standard_normalization_scaler=1.0,
     **kwargs,
 ):
     """Create a summary plot.
 
-
     Args:
-
         c: cellpy object
         x: x-axis column (default: 'cycle_index')
         y: y-axis column or column set. Currently, the following predefined sets exists:
-
-            - "voltages", "capacities_gravimetric", "capacities_areal", "capacities",
-              "capacities_gravimetric_split_constant_voltage", "capacities_areal_split_constant_voltage",
-              "capacities_gravimetric_coulombic_efficiency", "capacities_areal_coulombic_efficiency",
-              "capacities_absolute_coulombic_efficiency",
-              "fullcell_standard_gravimetric", "fullcell_standard_areal", "fullcell_standard_absolute",
-
+            "voltages", "capacities_gravimetric", "capacities_areal", "capacities",
+            "capacities_gravimetric_split_constant_voltage", "capacities_areal_split_constant_voltage",
+            "capacities_gravimetric_coulombic_efficiency", "capacities_areal_coulombic_efficiency",
+            "capacities_absolute_coulombic_efficiency",
+            "fullcell_standard_gravimetric", "fullcell_standard_areal", "fullcell_standard_absolute",
         height: height of the plot (for plotly)
         width: width of the plot (for plotly)
         markers: use markers
@@ -721,9 +756,20 @@ def summary_plot(
         seaborn_style: name of the seaborn style to use
         formation_cycles: number of formation cycles to show
         show_formation: show formation cycles
+        x_axis_domain_formation_fraction: fraction of the x-axis domain for the formation cycles (default: 0.2)
         column_separator: separation between columns when splitting the plot (only for plotly)
         reset_losses: reset the losses to the first cycle (only for fullcell_standard plots)
         link_capacity_scales: link the capacity scales (only for fullcell_standard plots)
+        fullcell_standard_normalization_type: normalization type for the fullcell standard plots (Cumulated loss) (divide, multiply, area, max, False)
+            if normalization_type is max, the normalization factor is set to the maximum value of the capacity column if not provided
+            if normalization_type is divide, the normalization is done by dividing by the normalization factor and then multiplying by the scaler
+            if normalization_type is multiply, the normalization is done by multiplying by the normalization factor and then multiplying by the scaler
+            if normalization_type is area, the normalization is done by dividing by the area and then multiplying by the scaler
+            if normalization_type is False, no normalization is done
+        fullcell_standard_normalization_factor: normalization factor for the fullcell standard plots
+        fullcell_standard_normalization_scaler: scaler for the fullcell standard plots
+        plotly_[update trace parameter]: additional parameters for the plotly traces 
+            (e.g. use plotly_marker_size=10 for updating the marker_size to 10)
         **kwargs: includes additional parameters for the plotting backend (not properly documented yet).
 
     Returns:
@@ -763,11 +809,11 @@ def summary_plot(
     if formation_cycles < 1:
         show_formation = False
 
-    x_cols, y_cols = create_col_info(c)
+    x_cols, y_cols, x_trans, y_trans = create_col_info(c)
     x_axis_labels, y_axis_label = create_label_dict(c)
 
 
-    def _auto_range(fig, axis_name_1, axis_name_2):
+    def _auto_range(fig: Any, axis_name_1: str, axis_name_2: str) -> list:
         min_y = np.inf
         max_y = -np.inf
         full_axis_name_1 = axis_name_1.replace("y", "yaxis")
@@ -781,14 +827,16 @@ def summary_plot(
             _range_2 = [np.inf, -np.inf]
         _range = [min(_range_1[0], _range_2[0]), max(_range_1[1], _range_2[1])]
 
-        for t in deepcopy(fig.data):
+        for i,t in enumerate(deepcopy(fig.data)):
             if t.yaxis in [axis_name_1, axis_name_2]:
                 y = deepcopy(t.y)
                 try:
+                    y = np.array(y, dtype=float)
                     min_y = np.ma.masked_invalid(y).min()
                     max_y = np.ma.masked_invalid(y).max()
                 except Exception as e:
-                    warnings.warn(f"Could not calculate min and max for y-axis: {e}")
+                    warnings.warn(f"Could not calculate min and max for y-axis (data set {i}): {e}")
+
                 _range = [min(_range[0], min_y), max(_range[1], max_y)]
         _range = [0.95 * _range[0], 1.05 * _range[1]]
         return _range
@@ -806,6 +854,11 @@ def summary_plot(
         title=title,
         width=width,
     )
+
+    additional_kwargs_plotly_update_traces = dict()
+    for k in list(kwargs.keys()):
+        if k.startswith("plotly_"):
+            additional_kwargs_plotly_update_traces[k.replace("plotly_", "")] = kwargs.pop(k)
 
     additional_kwargs_seaborn = dict()
     # standard fullcell plot (ce, discharge cap, loss, cv-only)
@@ -836,13 +889,36 @@ def summary_plot(
         s.loc[s["variable"].str.contains(r"_cv$"), row] = 3  # cv data
         additional_kwargs_plotly["facet_row"] = row
 
-        
         if reset_losses:
             # Get the first value for each cumulated loss variable
             first_values = s[s["variable"].str.contains(r"cumulated.*loss")].groupby("variable")["value"].transform("first")
             # Shift all values by subtracting the first value
             mask = s["variable"].str.contains(r"cumulated.*loss")
             s.loc[mask, "value"] = s.loc[mask, "value"] - first_values
+
+        if fullcell_standard_normalization_type:
+            # set normalization factor
+            if fullcell_standard_normalization_factor is None:
+                if fullcell_standard_normalization_type == "max":
+                    fullcell_standard_normalization_factor = s[s[row] == 1].max().value
+                    fullcell_standard_normalization_type = "divide"
+                elif fullcell_standard_normalization_type == "area":
+                    with warnings.catch_warnings():
+                        warnings.simplefilter("ignore")
+                        area = np.trapezoid(s[s[row] == 1].value, dx=1)
+                    fullcell_standard_normalization_factor = area
+                    fullcell_standard_normalization_type = "divide"
+                else:
+                    fullcell_standard_normalization_factor = 1.0
+
+            trans_kwargs = dict(
+                normalization_factor=fullcell_standard_normalization_factor,
+                normalization_type=fullcell_standard_normalization_type,
+                normalization_scaler=fullcell_standard_normalization_scaler,
+            )
+
+            for col, trans in y_trans.get(y, {}).items():
+                s.loc[s["variable"] == col, "value"] = trans(s.loc[s["variable"] == col, "value"].values, **trans_kwargs)
 
     # filter on constant voltage vs constant current
     # Remark! absoulte capacities are not implemented yet.
@@ -922,14 +998,13 @@ def summary_plot(
             },
             **kwargs,
         )
-        if y.startswith("fullcell_standard"):
-            print("Warning: Experimental feature - fullcell standard plot")
-            print("  - missing: does not work yet for show_formation=False")
+
+        fig.update_traces(**additional_kwargs_plotly_update_traces)
 
         if show_formation:
             formation_header = '<span style="color:red">Formation</span>'
-            x_axis_domain_formation = [0.0, 0.2 - column_separator / 2]
-            x_axis_domain_rest = [0.2 + column_separator / 2, 0.95]
+            x_axis_domain_formation = [0.0, x_axis_domain_formation_fraction - column_separator / 2]
+            x_axis_domain_rest = [x_axis_domain_formation_fraction + column_separator / 2, 0.95]
             max_cycle_formation = s.loc[formation_cycle_selector, x].max()
             min_cycle_rest = s.loc[~formation_cycle_selector, x].min()
             if x == _hdr_summary.normalized_cycle_index:
@@ -1028,9 +1103,13 @@ def summary_plot(
                 fig.update_yaxes(autorange=False)
                 fig.update_layout(xaxis_domain=x_axis_domain_formation, scene_domain_x=x_axis_domain_formation)
 
-                range_1 = _auto_range(fig, "y", "y2")
-                range_2 = _auto_range(fig, "y3", "y4")
-                range_3 = _auto_range(fig, "y5", "y6")
+                if y.startswith("fullcell_standard_") and fullcell_standard_normalization_type:
+                    range_2 = [0.0, fullcell_standard_normalization_scaler]
+                else:
+                    range_2 = _auto_range(fig, "y3", "y4") 
+
+                range_1 = _auto_range(fig, "y", "y2") 
+                range_3 = _auto_range(fig, "y5", "y6")             
                 range_4 = _auto_range(fig, "y7", "y8")
 
                 fig.update_layout(
@@ -1053,6 +1132,52 @@ def summary_plot(
                 annotations = [_plotly_label_dict(formation_header, 0.08, 1.0)] + 7 * [PLOTLY_BLANK_LABEL]
                 fig.layout["annotations"] = annotations
 
+                if y.startswith("fullcell_standard_"):
+                    space = 0.02
+                    ce_domain_start, ce_domain_end = 0.9, 1.0
+                    capacity_domain_start, capacity_domain_end = 0.6, 0.9 - space
+                    loss_domain_start, loss_domain_end = 0.3, 0.6 - space
+                    cv_domain_start, cv_domain_end = 0.0, 0.3 - space
+
+                    # Format y-axis labels with HTML for proper alignment
+                    capacity_unit = _get_capacity_unit(c, mode=y.split("_")[-1])
+                    ce_label = "Coulombic<br>Efficiency (%)"
+                    capacity_label = f"Capacity<br>({capacity_unit})"
+                    if fullcell_standard_normalization_type:
+                        _norm_label = f"[{fullcell_standard_normalization_scaler:.1f}/{fullcell_standard_normalization_factor:.1f} {capacity_unit}]"
+                        loss_label = f"Cumulated<br>Loss (norm.)<br>{_norm_label}"
+
+                    else:
+                        loss_label = f"Cumulated<br>Loss ({capacity_unit})"
+                    cv_label = f"CV Capacity<br>({capacity_unit})"
+
+                    fig.update_layout(
+                        yaxis8={"domain": [ce_domain_start, ce_domain_end]},
+                        yaxis7={"title": dict(text=ce_label), "domain": [ce_domain_start, ce_domain_end]},
+                        yaxis6={"domain": [capacity_domain_start, capacity_domain_end]},
+                        yaxis5={"title": dict(text=capacity_label), "domain": [capacity_domain_start, capacity_domain_end]},
+                        yaxis4={"domain": [loss_domain_start, loss_domain_end]},
+                        yaxis3={"title": dict(text=loss_label), "domain": [loss_domain_start, loss_domain_end]},
+                        yaxis2={"domain": [cv_domain_start, cv_domain_end]},
+                        yaxis1={"title": dict(text=cv_label), "domain": [cv_domain_start, cv_domain_end]},
+                    )
+                    if show_formation:
+                        fig.update_layout(
+                            xaxis1={"title": dict(text="")},
+                        )
+                        if x_axis_domain_formation_fraction < 0.1:
+                            fig.update_layout(
+                                xaxis1={"showticklabels": False},
+                            )
+
+                    if link_capacity_scales:
+                        fig.update_layout(
+                            yaxis={"matches": "y2"},
+                            yaxis2={"matches": "y3"},
+                            yaxis3={"matches": "y4"},
+                            yaxis4={"matches": "y5"},
+                            yaxis5={"matches": "y6"},
+                        )
             else:
                 raise NotImplementedError("Not implemented for more than four rows")
         else:
@@ -1061,43 +1186,17 @@ def summary_plot(
                     yaxis=dict(domain=[0.0, 0.65]),
                     yaxis2={"title": dict(text="Coulombic Efficiency"), "domain": [0.7, 1.0]},
                 )
-                
-        if y.startswith("fullcell_standard_"):
-            # CE
-            space = 0.02
-            ce_domain_start, ce_domain_end = 0.9, 1.0
-            capacity_domain_start, capacity_domain_end = 0.6, 0.9 - space
-            loss_domain_start, loss_domain_end = 0.3, 0.6 - space
-            cv_domain_start, cv_domain_end = 0.0, 0.3 - space
-
-            # Format y-axis labels with HTML for proper alignment
-            capacity_unit = _get_capacity_unit(c, mode=y.split("_")[-1])
-            ce_label = "Coulombic<br>Efficiency (%)"
-            capacity_label = f"Capacity<br>({capacity_unit})"
-            loss_label = f"Cumulated<br>Loss ({capacity_unit})"
-            cv_label = f"CV Capacity<br>({capacity_unit})"
-
-            fig.update_layout(
-                yaxis8={"domain": [ce_domain_start, ce_domain_end]},
-                yaxis7={"title": dict(text=ce_label), "domain": [ce_domain_start, ce_domain_end]},
-                yaxis6={"domain": [capacity_domain_start, capacity_domain_end]},
-                yaxis5={"title": dict(text=capacity_label), "domain": [capacity_domain_start, capacity_domain_end]},
-                yaxis4={"domain": [loss_domain_start, loss_domain_end]},
-                yaxis3={"title": dict(text=loss_label), "domain": [loss_domain_start, loss_domain_end]},
-                yaxis2={"domain": [cv_domain_start, cv_domain_end]},
-                yaxis1={"title": dict(text=cv_label), "domain": [cv_domain_start, cv_domain_end]},
-            )
-
-
-            if link_capacity_scales:
+            if y.startswith("fullcell_standard_"):
+                capacity_unit = _get_capacity_unit(c, mode=y.split("_")[-1])
                 fig.update_layout(
-                    yaxis={"matches": "y2"},
-                    yaxis2={"matches": "y3"},
-                    yaxis3={"matches": "y4"},
-                    yaxis4={"matches": "y5"},
-                    yaxis5={"matches": "y6"},
+                    yaxis1={"title": dict(text="CV Capacity")},
+                    yaxis2={"title": dict(text="Cumulated<br>Loss")},
+                    yaxis3={"title": dict(text=f"Capacity<br>({capacity_unit})")},
+                    yaxis4={"title": dict(text="Coulombic<br>Efficiency")},
                 )
-
+                
+                
+        
         if x_range is not None:
             if not show_formation:
                 fig.update_layout(xaxis=dict(range=x_range))
