@@ -187,6 +187,12 @@ def save_image_files(figure, name="my_figure", scale=3.0, dpi=300, backend="plot
 
 
 def _make_plotly_template(name="axis"):
+    if not plotly_available:
+        print("Plotly not available")
+        return None
+    import plotly.graph_objects as go
+    import plotly.io as pio
+
     tick_label_width = 6
     title_font_size = 22
     title_font_family = "Arial"
@@ -1511,6 +1517,8 @@ def summary_plot(
             print("Warning: Experimental feature - fullcell standard plot")
             print("  - missing: individual scaling for coulombic efficiency")
             print("  - missing: different heights for specific rows")
+            print("  - missing: individual scaling for cumulated loss if normalization is used")
+            print("  - missing: appropriate y title for cumulated loss if normalization is used")
 
             capacity_unit = _get_capacity_unit(c, mode=y.split("_")[-1])
             ce_label = "Coulombic Efficiency (%)"
