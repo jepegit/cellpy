@@ -712,6 +712,7 @@ def summary_plot(
     y_range: list = None,
     ce_range: list = None,
     norm_range: list = None,
+    cv_share_range: list = None,
     split: bool = True,
     auto_convert_legend_labels: bool = True,
     interactive: bool = True,
@@ -724,6 +725,7 @@ def summary_plot(
     seaborn_style: str = "dark",
     formation_cycles=3,
     show_formation=True,
+    show_legend=True,
     x_axis_domain_formation_fraction=0.2,
     column_separator=0.01,
     reset_losses=True,
@@ -752,6 +754,7 @@ def summary_plot(
         y_range: limits for y-axis
         ce_range: limits for coulombic efficiency (if present)
         norm_range: limits for normalized capacity (if present)
+        cv_share_range: limits for cv share (if present)
         split: split the plot
         auto_convert_legend_labels: convert the legend labels to a nicer format.
         interactive: use interactive plotting (plotly)
@@ -764,6 +767,7 @@ def summary_plot(
         seaborn_style: name of the seaborn style to use
         formation_cycles: number of formation cycles to show
         show_formation: show formation cycles
+        show_legend: show the legend
         x_axis_domain_formation_fraction: fraction of the x-axis domain for the formation cycles (default: 0.2)
         column_separator: separation between columns when splitting the plot (only for plotly)
         reset_losses: reset the losses to the first cycle (only for fullcell_standard plots)
@@ -795,6 +799,11 @@ def summary_plot(
 
     smart_link = kwargs.pop("smart_link", True)
     show_y_labels_on_right_pane = kwargs.pop("show_y_labels_on_right_pane", False)
+    seaborn_facecolor = kwargs.pop("seaborn_facecolor", "#EAEAF2")
+    seaborn_edgecolor = kwargs.pop("seaborn_edgecolor", "black")
+    seaborn_style_dict_default = {"axes.facecolor": seaborn_facecolor, "axes.edgecolor": seaborn_edgecolor}
+    seaborn_style_dict = kwargs.pop("seaborn_style_dict", seaborn_style_dict_default)
+    seaborn_marker_size = kwargs.pop("seaborn_marker_size", 7)
 
     number_of_rows = 1
     max_val_normalized_col = 0.0
@@ -1005,6 +1014,8 @@ def summary_plot(
         if show_formation:
             additional_kwargs_plotly["facet_col"] = col_id
 
+        
+
         fig = px.line(
             s,
             x=x,
@@ -1018,6 +1029,11 @@ def summary_plot(
         )
 
         fig.update_traces(**additional_kwargs_plotly_update_traces)
+        if not show_legend:
+            fig.update_layout(showlegend=False)
+
+        if y_range is not None:
+            fig.update_layout(yaxis=dict(range=y_range))
 
         if show_formation:
             formation_header = '<span style="color:red">Formation</span>'
@@ -1134,6 +1150,7 @@ def summary_plot(
 
                 if y.startswith("fullcell_standard_"):
                     range_4 = eff_lim or range_4
+                    range_1 = cv_share_range or range_1
 
                 fig.update_layout(
                     xaxis2=dict(range=x_axis_range_rest, domain=x_axis_domain_rest, matches=None),
@@ -1218,8 +1235,8 @@ def summary_plot(
                 if eff_lim is not None:
                     # update yaxis2
                     fig.update_layout(yaxis4=dict(range=eff_lim))
-
-                fig.update_layout(yaxis2=dict())
+                if cv_share_range is not None:
+                    fig.update_layout(yaxis=dict(range=cv_share_range))
 
                 capacity_unit = _get_capacity_unit(c, mode=y.split("_")[-1])
                 fig.update_layout(
@@ -1262,9 +1279,6 @@ def summary_plot(
             # The x_range is handled a bit differently when showing formation cycles
             # This is done within if show_formation block
 
-        if y_range is not None:
-            fig.update_layout(yaxis=dict(range=y_range))
-
         if split:
             if show_formation:
                 if not share_y and not smart_link:
@@ -1278,7 +1292,7 @@ def summary_plot(
             else:
                 fig.update_layout(xaxis_rangeslider_visible=True)
 
-        if auto_convert_legend_labels:
+        if auto_convert_legend_labels and show_legend:
             for trace in fig.data:
                 name = trace.name
                 name = name.replace("_", " ").title()
@@ -1348,11 +1362,6 @@ def summary_plot(
                 if yticks is False:
                     a.set_yticks([])
 
-        seaborn_facecolor = kwargs.pop("seaborn_facecolor", "#EAEAF2")
-        seaborn_edgecolor = kwargs.pop("seaborn_edgecolor", "black")
-        seaborn_style_dict_default = {"axes.facecolor": seaborn_facecolor, "axes.edgecolor": seaborn_edgecolor}
-        seaborn_style_dict = kwargs.pop("seaborn_style_dict", seaborn_style_dict_default)
-
         sns.set_style(seaborn_style, seaborn_style_dict)
         sns.set_palette(seaborn_palette)
         sns.set_context(kwargs.pop("seaborn_context", "notebook"))
@@ -1377,25 +1386,39 @@ def summary_plot(
             additional_kwargs_seaborn["row"] = row
             number_of_rows = s[row].nunique()
 
-        def _calculate_seaborn_plot_properties(number_of_rows, number_of_cols):
+        def _calculate_seaborn_plot_properties(number_of_rows, number_of_cols, plot_type="default"):
             ## Maybe implement some proper calculations later...
             # _default_seaborn_plot_height = 2.4 + 0.4 * number_of_rows
             # _default_seaborn_plot_aspect = 1.0 + 2.0 / number_of_rows
+            # seaborn_plot_height = 2.0  #  hardcoded for now
+            # seaborn_plot_aspect = 1.5 if show_formation else 3.0 #  hardcoded for now
 
-            _selector = {
-                (1, 1): (4.0, 2.05),
-                (1, 2): (4.0, 1.0),
-                (2, 1): (2.8, 2.8),
-                (2, 2): (2.8, 1.4),
-                (3, 1): (3.0, 2.7),
-                (3, 2): (3.0, 1.35),
-            }
+            if plot_type == "fullcell_standard":
+                _selector = {
+                    (4, 1): (2.0, 4.0),
+                    (4, 2): (2.0, 2.0),
+                }
+            else:
+                _selector = {
+                    (1, 1): (4.0, 2.05),
+                    (1, 2): (4.0, 1.0),
+                    (2, 1): (2.8, 2.8),
+                    (2, 2): (2.8, 1.4),
+                    (3, 1): (3.0, 2.7),
+                    (3, 2): (3.0, 1.35),
+                    (4, 1): (3.0, 2.7),
+                    (4, 2): (3.0, 1.35),
+                }
             return _selector.get((number_of_rows, number_of_cols), (4.0, 1.8))
+            
+        if y.startswith("fullcell_standard_"):
+            plot_type = "fullcell_standard"
+        else:
+            plot_type = "default"
 
         _default_seaborn_plot_height, _default_seaborn_plot_aspect = _calculate_seaborn_plot_properties(
-            number_of_rows, number_of_cols
+            number_of_rows, number_of_cols, plot_type=plot_type
         )
-
         seaborn_plot_height = kwargs.pop("seaborn_plot_height", _default_seaborn_plot_height)
         seaborn_plot_aspect = kwargs.pop("seaborn_plot_aspect", _default_seaborn_plot_aspect)
 
@@ -1505,9 +1528,9 @@ def summary_plot(
 
         elif is_split_constant_voltage_plot:
             if is_multi_row:
-                y_range_cv = kwargs.pop("y_range_cv", y_range)
+                cv_share_range = cv_share_range or y_range
                 for r, _x, _y_range in zip(
-                    ["all", "without CV", "with CV"], [False, False, None], [y_range, y_range, y_range_cv]
+                    ["all", "without CV", "with CV"], [False, False, None], [y_range, y_range, cv_share_range]
                 ):
                     _d = dict(
                         ylabel=y_label,
@@ -1569,9 +1592,6 @@ def summary_plot(
         elif is_fullcell_standard_plot:
             print("Warning: Experimental feature - fullcell standard plot")
 
-            seaborn_plot_height = 2.0  #  hardcoded for now
-            seaborn_plot_aspect = 1.5 if show_formation else 3.0 #  hardcoded for now
-
             capacity_unit = _get_capacity_unit(c, mode=y.split("_")[-1])
             ce_label = "Coulombic\nEfficiency (%)"
             capacity_label = f"Capacity\n({capacity_unit})"
@@ -1596,7 +1616,7 @@ def summary_plot(
             cv_info = dict(
                 title="",
                 xlim=x_range,
-                ylim=y_range,
+                ylim=cv_share_range or y_range,
                 row=3,
                 col="standard",
                 yticks=False,
@@ -1650,7 +1670,7 @@ def summary_plot(
                         ylabel=cv_label,
                         title="",
                         xlim=xlim_formation,
-                        ylim=y_range,
+                        ylim=cv_share_range or y_range,
                         row=3,
                         col="formation",
                         yticks=True,
@@ -1762,7 +1782,6 @@ def summary_plot(
 
         facet_kws["gridspec_kws"] = gridspec_kws
 
-
         sns_fig = sns.relplot(
             data=s,
             x=x,
@@ -1772,6 +1791,7 @@ def summary_plot(
             aspect=seaborn_plot_aspect,
             kind="line",
             marker="o" if markers else None,
+            legend=show_legend,
             **additional_kwargs_seaborn,
             facet_kws=facet_kws,
             **kwargs,
@@ -1779,7 +1799,7 @@ def summary_plot(
 
         sns_fig.set_axis_labels(x_label, y_label)
 
-        if auto_convert_legend_labels:
+        if auto_convert_legend_labels and show_legend:
             legend = sns_fig.legend
             if legend is not None:
                 for le in legend.get_texts():
@@ -1790,6 +1810,12 @@ def summary_plot(
                     name = name.replace("Non (CV)", "(without CV)")
                     le.set_text(name)
                 sns_fig.legend.set_title(None)
+
+        if markers:
+            for ax in sns_fig.axes.flat:
+                lines = ax.get_lines()
+                for line in lines:
+                    line.set_markersize(seaborn_marker_size)
 
         fig = sns_fig.figure
         _clean_up_axis(fig, info_dicts=info_dicts, row_id=row_id, col_id=col_id)
