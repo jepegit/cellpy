@@ -711,6 +711,7 @@ def summary_plot(
     x_range: list = None,
     y_range: list = None,
     ce_range: list = None,
+    norm_range: list = None,
     split: bool = True,
     auto_convert_legend_labels: bool = True,
     interactive: bool = True,
@@ -750,6 +751,7 @@ def summary_plot(
         x_range: limits for x-axis
         y_range: limits for y-axis
         ce_range: limits for coulombic efficiency (if present)
+        norm_range: limits for normalized capacity (if present)
         split: split the plot
         auto_convert_legend_labels: convert the legend labels to a nicer format.
         interactive: use interactive plotting (plotly)
@@ -795,6 +797,7 @@ def summary_plot(
     show_y_labels_on_right_pane = kwargs.pop("show_y_labels_on_right_pane", False)
 
     number_of_rows = 1
+    max_val_normalized_col = 0.0
 
     if interactive and not plotly_available:
         warnings.warn("plotly not available, and it is currently the only supported interactive backend")
@@ -820,6 +823,7 @@ def summary_plot(
 
 
     def _auto_range(fig: Any, axis_name_1: str, axis_name_2: str) -> list:
+        # only works for plotly
         min_y = np.inf
         max_y = -np.inf
         full_axis_name_1 = axis_name_1.replace("y", "yaxis")
@@ -848,7 +852,6 @@ def summary_plot(
         return _range
     
 
-    # ------------------- main --------------------------------------------
     y_header = "value"
     color = "variable"
     row = "row"
@@ -867,7 +870,9 @@ def summary_plot(
             additional_kwargs_plotly_update_traces[k.replace("plotly_", "")] = kwargs.pop(k)
 
     additional_kwargs_seaborn = dict()
-    # standard fullcell plot (ce, discharge cap, loss, cv-only)
+
+    # ------------------- collecting data -----------------------------------------
+
     if y.startswith("fullcell_standard_"):
         if additional_kwargs_plotly.get("height") is None:
             additional_kwargs_plotly["height"] = 800
@@ -877,6 +882,8 @@ def summary_plot(
         if summary.index.name == x:
             summary = summary.reset_index(drop=False)
 
+        # Remark! Possible code duplication with the 'partition_summary_cv_steps' used in 
+        # the 'if y.endswith("_split_constant_voltage")' block:
         summary_only_cv = c.make_summary(selector_type="only-cv", create_copy=True).data.summary
         if summary_only_cv.index.name == x:
             summary_only_cv = summary_only_cv.reset_index(drop=False)
@@ -902,18 +909,21 @@ def summary_plot(
             mask = s["variable"].str.contains(r"cumulated.*loss")
             s.loc[mask, "value"] = s.loc[mask, "value"] - first_values
 
-        if fullcell_standard_normalization_type:
-            # set normalization factor
+        if fullcell_standard_normalization_type is not False:
+            
             if fullcell_standard_normalization_factor is None:
+
                 if fullcell_standard_normalization_type == "max":
                     fullcell_standard_normalization_factor = s[s[row] == 1].max().value
                     fullcell_standard_normalization_type = "divide"
+
                 elif fullcell_standard_normalization_type == "area":
                     with warnings.catch_warnings():
                         warnings.simplefilter("ignore")
                         area = np.trapezoid(s[s[row] == 1].value, dx=1)
                     fullcell_standard_normalization_factor = area
                     fullcell_standard_normalization_type = "divide"
+
                 else:
                     fullcell_standard_normalization_factor = 1.0
 
@@ -925,9 +935,11 @@ def summary_plot(
 
             for col, trans in y_trans.get(y, {}).items():
                 s.loc[s["variable"] == col, "value"] = trans(s.loc[s["variable"] == col, "value"].values, **trans_kwargs)
+                max_val_normalized_col = s.loc[s["variable"] == col, "value"].max()
 
     # filter on constant voltage vs constant current
     # Remark! absoulte capacities are not implemented yet.
+    # Remark! uses the 'partition_summary_cv_steps' function - consider using that also for the fullcell standard plot to avoid code duplication
     elif y.endswith("_split_constant_voltage"):
         cap_type = "capacities_gravimetric" if y.startswith("capacities_gravimetric") else "capacities_areal"
         column_set = y_cols[cap_type]
@@ -986,7 +998,7 @@ def summary_plot(
 
     if interactive:
         import plotly.express as px
-        from plotly.subplots import make_subplots
+        # from plotly.subplots import make_subplots
 
         set_plotly_template(plotly_template)
 
@@ -1033,10 +1045,10 @@ def summary_plot(
                         domain=x_axis_domain_rest,
                         matches=None,
                     ),
-                    yaxis2=dict(matches="y", showticklabels=show_y_labels_on_right_pane),
                 )
                 annotations = [{"text": formation_header, "x": 0.08, "y": 1.02, "showarrow": False}, PLOTLY_BLANK_LABEL]
                 fig.update_layout(annotations=annotations)
+                fig.update_layout(yaxis2=dict(matches="y", showticklabels=show_y_labels_on_right_pane),)
 
             elif number_of_rows == 2:
                 fig.update_yaxes(matches="y")
@@ -1109,14 +1121,19 @@ def summary_plot(
                 fig.update_yaxes(autorange=False)
                 fig.update_layout(xaxis_domain=x_axis_domain_formation, scene_domain_x=x_axis_domain_formation)
 
-                if y.startswith("fullcell_standard_") and fullcell_standard_normalization_type:
-                    range_2 = [0.0, fullcell_standard_normalization_scaler]
+                range_1 = _auto_range(fig, "y", "y2") 
+
+                if y.startswith("fullcell_standard_") and fullcell_standard_normalization_type is not False:
+                    range_2 = [0.0, max(max_val_normalized_col, fullcell_standard_normalization_scaler)]
+                    range_2 = norm_range or range_2
                 else:
                     range_2 = _auto_range(fig, "y3", "y4") 
 
-                range_1 = _auto_range(fig, "y", "y2") 
                 range_3 = _auto_range(fig, "y5", "y6")             
                 range_4 = _auto_range(fig, "y7", "y8")
+
+                if y.startswith("fullcell_standard_"):
+                    range_4 = eff_lim or range_4
 
                 fig.update_layout(
                     xaxis2=dict(range=x_axis_range_rest, domain=x_axis_domain_rest, matches=None),
@@ -1187,12 +1204,23 @@ def summary_plot(
             else:
                 raise NotImplementedError("Not implemented for more than four rows")
         else:
+            # TODO: refactor so that we do not have specify this:
             if y.endswith("_efficiency"):
                 fig.update_layout(
                     yaxis=dict(domain=[0.0, 0.65]),
                     yaxis2={"title": dict(text="Coulombic Efficiency"), "domain": [0.7, 1.0]},
                 )
             if y.startswith("fullcell_standard_"):
+                if fullcell_standard_normalization_type is not False:
+                    range_2 = [0.0, max(max_val_normalized_col, fullcell_standard_normalization_scaler)]
+                    range_2 = norm_range or range_2
+                    fig.update_layout(yaxis2=dict(range=range_2))
+                if eff_lim is not None:
+                    # update yaxis2
+                    fig.update_layout(yaxis4=dict(range=eff_lim))
+
+                fig.update_layout(yaxis2=dict())
+
                 capacity_unit = _get_capacity_unit(c, mode=y.split("_")[-1])
                 fig.update_layout(
                     yaxis1={"title": dict(text="CV Capacity")},
@@ -1200,9 +1228,33 @@ def summary_plot(
                     yaxis3={"title": dict(text=f"Capacity<br>({capacity_unit})")},
                     yaxis4={"title": dict(text="Coulombic<br>Efficiency")},
                 )
-                
-                
-        
+                fig.layout["annotations"] = 4 * [PLOTLY_BLANK_LABEL]
+
+                space = 0.02
+                ce_domain_start, ce_domain_end = 0.9, 1.0
+                capacity_domain_start, capacity_domain_end = 0.6, 0.9 - space
+                loss_domain_start, loss_domain_end = 0.3, 0.6 - space
+                cv_domain_start, cv_domain_end = 0.0, 0.3 - space
+
+                # Format y-axis labels with HTML for proper alignment
+                capacity_unit = _get_capacity_unit(c, mode=y.split("_")[-1])
+                ce_label = "Coulombic<br>Efficiency (%)"
+                capacity_label = f"Capacity<br>({capacity_unit})"
+                if fullcell_standard_normalization_type:
+                    _norm_label = f"[{fullcell_standard_normalization_scaler:.1f}/{fullcell_standard_normalization_factor:.1f} {capacity_unit}]"
+                    loss_label = f"Cumulated<br>Loss (norm.)<br>{_norm_label}"
+
+                else:
+                    loss_label = f"Cumulated<br>Loss ({capacity_unit})"
+                cv_label = f"CV Capacity<br>({capacity_unit})"
+
+                fig.update_layout(
+                    yaxis4={"title": dict(text=ce_label), "domain": [ce_domain_start, ce_domain_end]},
+                    yaxis3={"title": dict(text=capacity_label), "domain": [capacity_domain_start, capacity_domain_end]},
+                    yaxis2={"title": dict(text=loss_label), "domain": [loss_domain_start, loss_domain_end]},
+                    yaxis1={"title": dict(text=cv_label), "domain": [cv_domain_start, cv_domain_end]},
+                )
+
         if x_range is not None:
             if not show_formation:
                 fig.update_layout(xaxis=dict(range=x_range))
@@ -1372,6 +1424,7 @@ def summary_plot(
             y_range = y_range or [min_value - 0.05 * abs(min_value), max_value + 0.05 * abs(max_value)]
 
         _efficiency_label = r"Efficiency (%)"
+
         if is_efficiency_plot:
             facet_kws["sharey"] = False
             gridspec_kws["height_ratios"] = [1, 4]
@@ -1515,17 +1568,31 @@ def summary_plot(
 
         elif is_fullcell_standard_plot:
             print("Warning: Experimental feature - fullcell standard plot")
-            print("  - missing: individual scaling for coulombic efficiency")
-            print("  - missing: different heights for specific rows")
-            print("  - missing: individual scaling for cumulated loss if normalization is used")
-            print("  - missing: appropriate y title for cumulated loss if normalization is used")
+
+            seaborn_plot_height = 2.0  #  hardcoded for now
+            seaborn_plot_aspect = 1.5 if show_formation else 3.0 #  hardcoded for now
 
             capacity_unit = _get_capacity_unit(c, mode=y.split("_")[-1])
-            ce_label = "Coulombic Efficiency (%)"
-            capacity_label = f"Capacity ({capacity_unit})"
-            loss_label = f"Cumulated Loss ({capacity_unit})"
-            cv_label = f"CV Capacity ({capacity_unit})"
+            ce_label = "Coulombic\nEfficiency (%)"
+            capacity_label = f"Capacity\n({capacity_unit})"
+
+            loss_label = f"Cumulated Loss\n({capacity_unit})"
+            if fullcell_standard_normalization_type:
+                _norm_label = f"[{fullcell_standard_normalization_scaler:.1f}/{fullcell_standard_normalization_factor:.1f} {capacity_unit}]"
+                loss_label = f"Cumulated\nLoss (norm.)\n{_norm_label}"
+            else:
+                loss_label = f"Cumulated\nLoss\n({capacity_unit})"
+
+            cv_label = f"CV Capacity\n({capacity_unit})"
+
+            facet_kws["sharey"] = False
+            gridspec_kws["height_ratios"] = [1, 3, 3, 3]
+
             number_of_rows = 4
+
+            if fullcell_standard_normalization_type is not False:
+                cum_loss_info_range = norm_range or [0.0, max(max_val_normalized_col, fullcell_standard_normalization_scaler)]
+
             cv_info = dict(
                 title="",
                 xlim=x_range,
@@ -1538,7 +1605,7 @@ def summary_plot(
             cum_loss_info = dict(
                 title="",
                 xlim=x_range,
-                ylim=y_range,
+                ylim=cum_loss_info_range,
                 row=2,
                 col="standard",
                 yticks=False,
@@ -1556,7 +1623,7 @@ def summary_plot(
             ce_info = dict(
                 title="",
                 xlim=x_range,
-                ylim=y_range,
+                ylim=eff_lim,
                 row=0,
                 col="standard",
                 yticks=False,
@@ -1578,7 +1645,6 @@ def summary_plot(
             info_dicts.append(capacity_info)
             info_dicts.append(ce_info)
 
-            
             if show_formation:
                 cv_info_formation = dict(
                         ylabel=cv_label,
@@ -1594,7 +1660,7 @@ def summary_plot(
                         ylabel=loss_label,
                         title="",
                         xlim=xlim_formation,
-                        ylim=y_range,
+                        ylim=cum_loss_info_range,
                         row=2,
                         col="formation",
                         yticks=True,
@@ -1614,7 +1680,7 @@ def summary_plot(
                         ylabel=ce_label,
                         title="",
                         xlim=xlim_formation,
-                        ylim=y_range,
+                        ylim=eff_lim,
                         row=0,
                         col="formation",
                         yticks=True,
@@ -1624,6 +1690,17 @@ def summary_plot(
                 info_dicts.append(loss_info_formation)
                 info_dicts.append(cap_info_formation)
                 info_dicts.append(ce_info_formation)
+
+            if verbose:
+                print(f"{y_header=}")
+                print(f"{color=}")
+                print(f"{seaborn_plot_height=}")
+                print(f"{seaborn_plot_aspect=}")
+                print(f"{markers=}")
+                print(f"{additional_kwargs_seaborn=}")
+                print(f"{facet_kws=}")
+                print(f"{kwargs=}")
+                print(f"{info_dicts=}")
             
         else:
             if is_multi_row:
@@ -1684,6 +1761,7 @@ def summary_plot(
                 info_dicts.append(_d)
 
         facet_kws["gridspec_kws"] = gridspec_kws
+
 
         sns_fig = sns.relplot(
             data=s,
