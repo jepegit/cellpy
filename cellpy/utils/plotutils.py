@@ -733,6 +733,7 @@ def summary_plot(
     fullcell_standard_normalization_type="divide",
     fullcell_standard_normalization_factor=None,
     fullcell_standard_normalization_scaler=1.0,
+    seaborn_line_hooks: list[tuple[str, list, dict]] = None,
     **kwargs,
 ):
     """Create a summary plot.
@@ -780,8 +781,11 @@ def summary_plot(
             if normalization_type is False, no normalization is done
         fullcell_standard_normalization_factor: normalization factor for the fullcell standard plots
         fullcell_standard_normalization_scaler: scaler for the fullcell standard plots
-        plotly_[update trace parameter]: additional parameters for the plotly traces 
+        plotly_[update trace parameter]: additional parameters for the plotly traces
             (e.g. use plotly_marker_size=10 for updating the marker_size to 10)
+        seaborn_[update line parameter]: additional parameters for the seaborn lines (not many options available yet)
+            (e.g. use seaborn_marker_size=10 for updating the marker_size to 10)
+        seaborn_line_hooks: list of functions to hook into the seaborn lines (e.g. to update the marker_size)
         **kwargs: includes additional parameters for the plotting backend (not properly documented yet).
 
     Returns:
@@ -792,6 +796,14 @@ def summary_plot(
     Hint:
         If you want to modify the non-interactive (matplotlib) plot, you can get the axes from the
         returned figure by ``axes = figure.get_axes()``.
+
+        Example:
+        >> axes = figure.get_axes()
+        >> ylabel = axes[0].get_ylabel()
+        >> if "Coulombic" in ylabel:
+        >>     axes[0].set_ylabel("C.E. (%)")
+        >> else:
+        >>     print(f"This is not the coulombic efficiency axis: {ylabel=}")
 
 
     """
@@ -1816,6 +1828,14 @@ def summary_plot(
                 lines = ax.get_lines()
                 for line in lines:
                     line.set_markersize(seaborn_marker_size)
+
+        if seaborn_line_hooks:
+            for ax in sns_fig.axes.flat:
+                lines = ax.get_lines()
+                for line in lines:
+                    for hook, args, kwargs in seaborn_line_hooks:
+                        if hasattr(line, hook):
+                            getattr(line, hook)(*args, **kwargs)
 
         fig = sns_fig.figure
         _clean_up_axis(fig, info_dicts=info_dicts, row_id=row_id, col_id=col_id)
