@@ -818,16 +818,20 @@ def concatenate_summaries(
 def add_cv_step_columns(columns: list) -> list:
     """Add columns for CV steps.
     """
-    raise NotImplementedError("This function is not implemented yet")
+    new_columns = []
+    for col in columns:
+        if "_capacity" in col:
+            new_columns.extend([col, col + "_cv", col + "_non_cv"])
+        else:
+            new_columns.append(col)
+    return new_columns
 
 
-def partition_summary_based_on_cv_steps(
+def _partition_summary_based_on_cv_steps(
     c,
-    x: str,
     column_set: list,
-    split: bool = False,
-    var_name: str = "variable",
-    value_name: str = "value",
+    x: str = None,
+    
 ):
     """Partition the summary data into CV and non-CV steps.
 
@@ -842,17 +846,22 @@ def partition_summary_based_on_cv_steps(
     Returns:
         ``pandas.DataFrame`` (melted with columns x, var_name, value_name, and optionally "row" if split is True)
     """
-    raise NotImplementedError("This function is not implemented yet")
     import pandas as pd
 
-    summary = c.data.summary
+    if not x:
+        x = hdr_summary["cycle_index"]
+
+    # in case the column set already contains cv cols:
+    column_set = [col for col in column_set if not "_cv" in col]
+
+    summary = c.data.summary.copy()
 
     summary_no_cv = c.make_summary(selector_type="non-cv", create_copy=True).data.summary
     summary_only_cv = c.make_summary(selector_type="only-cv", create_copy=True).data.summary
     if x != summary.index.name:
-        summary.set_index(x, inplace=True)
-        summary_no_cv.set_index(x, inplace=True)
-        summary_only_cv.set_index(x, inplace=True)
+        summary.set_index(x, inplace=True, drop=True)
+        summary_no_cv.set_index(x, inplace=True, drop=True)
+        summary_only_cv.set_index(x, inplace=True, drop=True)
 
     summary = summary[column_set]
 
@@ -862,23 +871,7 @@ def partition_summary_based_on_cv_steps(
     summary_only_cv = summary_only_cv[column_set]
     summary_only_cv.columns = [col + "_cv" for col in summary_only_cv.columns]
 
-    if split:
-        id_vars = [x, "row"]
-        summary_no_cv["row"] = "without CV"
-        summary_only_cv["row"] = "with CV"
-        summary["row"] = "all"
-    else:
-        id_vars = x
-
-    summary_no_cv = summary_no_cv.reset_index()
-    summary_only_cv = summary_only_cv.reset_index()
-    summary = summary.reset_index()
-    summary_no_cv = summary_no_cv.melt(id_vars, var_name=var_name, value_name=value_name)
-    summary_only_cv = summary_only_cv.melt(id_vars, var_name=var_name, value_name=value_name)
-    summary = summary.melt(id_vars, var_name=var_name, value_name=value_name)
-
-    s = pd.concat([summary, summary_no_cv, summary_only_cv], axis=0)
-    s = s.reset_index(drop=True)
+    s = pd.concat([summary, summary_no_cv, summary_only_cv], axis=1)
 
     return s
 
@@ -1069,10 +1062,12 @@ def concat_summaries(
 
                     c = add_normalized_capacity(c, norm_cycles=normalize_capacity_on, scale=scale_by)
 
-                if partition_by_cv:
-                    print("partitioning by cv_step")
-                    s = partition_summary_based_on_cv_steps(c)
                 if rate is not None:
+                    # TODO: update this so that it works with partitioned data
+                    if partition_by_cv:
+                        print("partitioning by cv_step is not possible with rate selection")
+                        print("skipping rate selection")
+                        continue
                     s = select_summary_based_on_rate(
                         c,
                         rate=rate,
@@ -1082,6 +1077,11 @@ def concat_summaries(
                         inverse=inverse,
                         inverted=inverted,
                     )
+                elif partition_by_cv:
+                    print("partitioning by cv_step")
+                    s = _partition_summary_based_on_cv_steps(c, column_set=output_columns)
+                    print("partition done")
+                    print(f"{s.columns=}")
 
                 else:
                     s = c.data.summary
