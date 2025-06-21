@@ -17,6 +17,7 @@ from io import StringIO
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+import pandas as pd
 
 from cellpy.parameters.internal_settings import (
     get_headers_journal,
@@ -587,23 +588,47 @@ def create_col_info(c):
         capacities_areal_coulombic_efficiency=_capacities_areal + [hdr.coulombic_efficiency],
         capacities_absolute_coulombic_efficiency=_capacities_absolute + [hdr.coulombic_efficiency],
 
-        fullcell_standard_gravimetric=[
+        fullcell_standard_cumloss_gravimetric=[
             hdr.charge_capacity+"_gravimetric" + "_cv",
             hdr.cumulated_discharge_capacity_loss + "_gravimetric",
             hdr.discharge_capacity+"_gravimetric",
             hdr.coulombic_efficiency,
             ],
-        fullcell_standard_areal=[
+        fullcell_standard_cumloss_areal=[
             hdr.charge_capacity+"_areal" + "_cv",
             hdr.cumulated_discharge_capacity_loss + "_areal",
             hdr.discharge_capacity+"_areal",
             hdr.coulombic_efficiency,
             ],
-        fullcell_standard_absolute=[
+        fullcell_standard_cumloss_absolute=[
             hdr.charge_capacity+"_absolute" + "_cv",
             hdr.cumulated_discharge_capacity_loss + "_absolute",
             hdr.discharge_capacity+"_absolute",
             hdr.coulombic_efficiency,
+            ],
+        fullcell_standard_gravimetric=[
+            hdr.charge_capacity+"_gravimetric" + "_cv",
+            hdr.discharge_capacity + "_gravimetric",
+            "mod_01_"+hdr.discharge_capacity+"_gravimetric",
+            hdr.coulombic_efficiency,
+            ],
+        fullcell_standard_areal=[
+            hdr.charge_capacity+"_areal" + "_cv",
+            hdr.discharge_capacity + "_areal",
+            "mod_01_"+hdr.discharge_capacity+"_areal",
+            hdr.coulombic_efficiency,
+            ],
+        fullcell_standard_absolute=[
+            hdr.charge_capacity+"_absolute" + "_cv",
+            hdr.discharge_capacity + "_absolute",
+            "mod_01_"+hdr.discharge_capacity+"_absolute",
+            hdr.coulombic_efficiency,
+            ],
+        fullcell_standard_dev=[
+            hdr.charge_capacity+"_gravimetric" + "_cv",
+            hdr.discharge_capacity + "_gravimetric",
+            hdr.coulombic_efficiency,
+            "mod_01_"+hdr.discharge_capacity+"_gravimetric",
             ],
     )
 
@@ -613,6 +638,8 @@ def create_col_info(c):
     def _normalize_col(x: np.ndarray, normalization_factor: float = 1.0, normalization_type: str = "max", normalization_scaler: float = 1.0) -> np.ndarray:
         if normalization_type == "divide":
             return (x / normalization_factor) * normalization_scaler
+        elif normalization_type == "shift-divide":
+            return ((normalization_factor - x) / normalization_factor) * normalization_scaler
         elif normalization_type == "multiply":
             return (x * normalization_factor) * normalization_scaler
         elif normalization_type == "area":
@@ -627,16 +654,43 @@ def create_col_info(c):
             return (x / x_max / normalization_factor) * normalization_scaler
         else:
             raise ValueError(f"Invalid normalization type: {normalization_type}")
-    
-    y_transformations: dict[str, dict[str, Callable]] = dict(
+        
+    # transformation info on the form: column_name: {(row_number, new_column_name): transformation_function}
+    y_transformations: dict[str, dict[tuple[int, str], dict[str, Callable]]] = dict(
+        fullcell_standard_cumloss_gravimetric={
+            hdr.cumulated_discharge_capacity_loss + "_gravimetric": {
+                (2, hdr.cumulated_discharge_capacity_loss + "_gravimetric"): _normalize_col
+                },
+        },
+        fullcell_standard_cumloss_areal={
+            hdr.cumulated_discharge_capacity_loss + "_areal": {
+                (2, hdr.cumulated_discharge_capacity_loss + "_areal"): _normalize_col
+                },
+        },
+        fullcell_standard_cumloss_absolute={
+            hdr.cumulated_discharge_capacity_loss + "_absolute": {
+                (2, hdr.cumulated_discharge_capacity_loss + "_absolute"): _normalize_col
+                },
+        },
         fullcell_standard_gravimetric={
-            hdr.cumulated_discharge_capacity_loss + "_gravimetric": _normalize_col,
+            "mod_01_"+hdr.discharge_capacity+"_gravimetric": {
+                (2, hdr.discharge_capacity + "_retention" + "_gravimetric"): _normalize_col
+                },
         },
         fullcell_standard_areal={
-            hdr.cumulated_discharge_capacity_loss + "_areal": _normalize_col,
+            "mod_01_"+hdr.discharge_capacity+"_areal": {
+                (2, hdr.discharge_capacity + "_retention" + "_areal"): _normalize_col
+                },
         },
         fullcell_standard_absolute={
-            hdr.cumulated_discharge_capacity_loss + "_absolute": _normalize_col,
+            "mod_01_"+hdr.discharge_capacity+"_absolute": {
+                (2, hdr.discharge_capacity + "_retention" + "_absolute"): _normalize_col
+                },
+        },
+        fullcell_standard_dev={
+            "mod_01_"+hdr.discharge_capacity+"_gravimetric": {
+                (2, hdr.discharge_capacity + "_retention" + "_gravimetric"): _normalize_col
+                },
         },
     )
 
@@ -730,7 +784,7 @@ def summary_plot(
     column_separator=0.01,
     reset_losses=True,
     link_capacity_scales=False,
-    fullcell_standard_normalization_type="divide",
+    fullcell_standard_normalization_type="on-max",
     fullcell_standard_normalization_factor=None,
     fullcell_standard_normalization_scaler=1.0,
     seaborn_line_hooks: list[tuple[str, list, dict]] = None,
@@ -808,6 +862,14 @@ def summary_plot(
 
     """
     from copy import deepcopy
+    import re
+
+    dev_mode = kwargs.pop("dev_mode", False)
+    if dev_mode:
+        print("DEV: dev_mode")
+        fullcell_standard_normalization_type = "shift-divide"
+        fullcell_standard_normalization_factor = 120.0
+        fullcell_standard_normalization_scaler = 100.0
 
     smart_link = kwargs.pop("smart_link", True)
     show_y_labels_on_right_pane = kwargs.pop("show_y_labels_on_right_pane", False)
@@ -913,37 +975,53 @@ def summary_plot(
 
         s = s.reset_index(drop=True)
         s = s.melt(x)
-        s = s.loc[s.variable.isin(column_set)]
-        
+        s = s.loc[s.variable.isin(column_set)]  # using strickt naming convention for "duplicated" columns ('mod_<nn>_<column_name>' so it will not be picked up here)
+        if dev_mode:
+            print(f"{column_set=} -> {s.variable.unique()}")
         number_of_rows = 4
         s[row] = 1  # default row for capacity
         # Set row numbers using regex patterns
         s.loc[s["variable"].str.contains(r"_efficiency$"), row] = 0  # coulombic efficiency
-        s.loc[s["variable"].str.contains(r"cumulated.*loss"), row] = 2  # cumulated loss
+        s.loc[s["variable"].str.contains(r"cumulated.*loss"), row] = 2  # cumulated loss [will be removed?]
+        s.loc[s["variable"].str.startswith(r"mod_01_"), row] = 2  # capacity retention
         s.loc[s["variable"].str.contains(r"_cv$"), row] = 3  # cv data
         additional_kwargs_plotly["facet_row"] = row
 
         if reset_losses:
+            if dev_mode:
+                print("DEV: reset_losses")
             # Get the first value for each cumulated loss variable
             first_values = s[s["variable"].str.contains(r"cumulated.*loss")].groupby("variable")["value"].transform("first")
             # Shift all values by subtracting the first value
             mask = s["variable"].str.contains(r"cumulated.*loss")
             s.loc[mask, "value"] = s.loc[mask, "value"] - first_values
 
+
+        # old normalization code:
         if fullcell_standard_normalization_type is not False:
+            if dev_mode:
+                print(f"{fullcell_standard_normalization_type=}")
+                print(f"{fullcell_standard_normalization_factor=}")
+                print(f"{fullcell_standard_normalization_scaler=}")
+                print("\nTransformations:")
+                print(f"{y_trans.get(y, {}).items()=}")
             
             if fullcell_standard_normalization_factor is None:
 
-                if fullcell_standard_normalization_type == "max":
+                if fullcell_standard_normalization_type == "on-max":
                     fullcell_standard_normalization_factor = s[s[row] == 1].max().value
-                    fullcell_standard_normalization_type = "divide"
+                    fullcell_standard_normalization_type = "shift-divide"
+
+                elif fullcell_standard_normalization_type == "max":
+                    fullcell_standard_normalization_factor = s[s[row] == 1].max().value
+                    fullcell_standard_normalization_type = "shift-divide"
 
                 elif fullcell_standard_normalization_type == "area":
                     with warnings.catch_warnings():
                         warnings.simplefilter("ignore")
                         area = np.trapezoid(s[s[row] == 1].value, dx=1)
                     fullcell_standard_normalization_factor = area
-                    fullcell_standard_normalization_type = "divide"
+                    fullcell_standard_normalization_type = "shift-divide"
 
                 else:
                     fullcell_standard_normalization_factor = 1.0
@@ -954,9 +1032,58 @@ def summary_plot(
                 normalization_scaler=fullcell_standard_normalization_scaler,
             )
 
-            for col, trans in y_trans.get(y, {}).items():
-                s.loc[s["variable"] == col, "value"] = trans(s.loc[s["variable"] == col, "value"].values, **trans_kwargs)
-                max_val_normalized_col = s.loc[s["variable"] == col, "value"].max()
+            if dev_mode:
+                print(f"{trans_kwargs=}")
+                print(f"{y_trans.get(y, {}).items()=}")
+
+            # transform the data
+            max_row_val = s[row].max()
+            for col, trans_dict in y_trans.get(y, {}).items():
+                
+                for (new_row_val, new_col), trans in trans_dict.items():
+
+                    if new_col in s["variable"].values:
+                        # transforming on existing column (not using the new_row_val)
+                        s.loc[s["variable"] == col, "value"] = trans(s.loc[s["variable"] == col, "value"].values, **trans_kwargs)
+                    else:
+                        # creating new column (using the new_row_val)
+                        old_col = col
+                        if new_row_val is not None:
+                            row_val = new_row_val
+                        else:
+                            row_val = s.loc[s["variable"] == col, row]
+                            if not row_val.empty:
+                                row_val = row_val.values[0]
+                            else:
+                                max_row_val += 1
+                                row_val = max_row_val
+                        if dev_mode:
+                            print(f"{row_val=}")
+                        
+                        if old_col.startswith("mod_"):
+                            old_col = re.sub(r'^mod_\d{2}_', '', old_col)
+                        new_col_frame_section = s.loc[s["variable"] == old_col].copy()
+                        new_col_frame_section["variable"] = new_col
+                        new_col_frame_section["row"] = row_val
+                        if dev_mode:
+                            print(f"{old_col=} -> {new_col_frame_section.head()=}")
+                        transformed_values = trans(new_col_frame_section["value"].values, **trans_kwargs)
+                        new_col_frame_section["value"] = transformed_values
+                        s = pd.concat([s, new_col_frame_section], ignore_index=True)
+                        s = s.reset_index(drop=True)
+                        s = s.sort_values(by=["row", "variable"])
+
+                    if dev_mode:
+                        print(f"{new_col=} -> {s.loc[s['variable'] == new_col, 'value'].values[:5]}")
+
+                    max_val_normalized_col = s.loc[s["variable"] == new_col, "value"].max()
+
+            if dev_mode:
+                print("----------------------------------------------")
+                print(f"{s.variable.unique()=}")
+                print(f"{s.variable.value_counts()=}")
+                print(f"{column_set=}")
+                print(f"{s=}")
 
     # filter on constant voltage vs constant current
     # Remark! absoulte capacities are not implemented yet.
@@ -1014,7 +1141,7 @@ def summary_plot(
         s[col_id] = "standard"
         s.loc[formation_cycle_selector, col_id] = "formation"
 
-    if verbose:
+    if verbose or dev_mode:
         _report_summary_plot_info(c, x, y, x_label, x_axis_labels, x_cols, y_label, y_axis_label, y_cols)
 
     if interactive:
@@ -1026,7 +1153,12 @@ def summary_plot(
         if show_formation:
             additional_kwargs_plotly["facet_col"] = col_id
 
-        
+        if dev_mode:
+            print(f"{y_header=}")
+            print(f"{y_label=}")
+            print(f"{additional_kwargs_plotly=}")
+            print(f"{x_label=}")
+            print(f"{kwargs=}")
 
         fig = px.line(
             s,
@@ -1039,6 +1171,16 @@ def summary_plot(
             },
             **kwargs,
         )
+        if dev_mode:
+            print("------------giving up here---------------------------")
+            # Error in row value in the data
+            print(f"{s=}")
+            print(f"{s.variable.unique()=}")
+            print(f"{s.variable.value_counts()=}")
+            print(f"{fig.data=}")
+            print(f"{fig.layout=}")
+            print("-----------------------------------------------------")
+            # return fig, s
 
         fig.update_traces(**additional_kwargs_plotly_update_traces)
         if not show_legend:
@@ -1145,6 +1287,9 @@ def summary_plot(
                 fig.layout["annotations"] = annotations
 
             elif number_of_rows == 4:
+                if dev_mode:
+                    print("DEV: number_of_rows == 4")
+                    print(f"{fig.data=}")
                 fig.update_yaxes(matches="y")
                 fig.update_yaxes(autorange=False)
                 fig.update_layout(xaxis_domain=x_axis_domain_formation, scene_domain_x=x_axis_domain_formation)
@@ -1157,7 +1302,13 @@ def summary_plot(
                 else:
                     range_2 = _auto_range(fig, "y3", "y4") 
 
-                range_3 = _auto_range(fig, "y5", "y6")             
+                range_3 = _auto_range(fig, "y5", "y6")    
+
+                if dev_mode:
+                    print(f"{range_1=}")
+                    print(f"{range_2=}")
+                    print(f"{range_3=}")
+
                 range_4 = _auto_range(fig, "y7", "y8")
 
                 if y.startswith("fullcell_standard_"):
@@ -1192,15 +1343,19 @@ def summary_plot(
                     cv_domain_start, cv_domain_end = 0.0, 0.3 - space
 
                     # Format y-axis labels with HTML for proper alignment
-                    capacity_unit = _get_capacity_unit(c, mode=y.split("_")[-1])
+                    mode = y.split("_")[-1]
+                    if dev_mode:
+                        mode = "gravimetric"
+                    capacity_unit = _get_capacity_unit(c, mode=mode)
+                
                     ce_label = "Coulombic<br>Efficiency (%)"
                     capacity_label = f"Capacity<br>({capacity_unit})"
                     if fullcell_standard_normalization_type:
                         _norm_label = f"[{fullcell_standard_normalization_scaler:.1f}/{fullcell_standard_normalization_factor:.1f} {capacity_unit}]"
-                        loss_label = f"Cumulated<br>Loss (norm.)<br>{_norm_label}"
+                        loss_label = f"Capacity<br>Retention (norm.)<br>{_norm_label}"
 
                     else:
-                        loss_label = f"Cumulated<br>Loss ({capacity_unit})"
+                        loss_label = f"Capacity<br>Retention ({capacity_unit})"
                     cv_label = f"CV Capacity<br>({capacity_unit})"
 
                     fig.update_layout(
