@@ -849,7 +849,7 @@ def summary_plot(
         c: cellpy object
         x: x-axis column (default: 'cycle_index')
         y: y-axis column or column set. Currently, the following predefined sets exists:
-            "voltages", "capacities_gravimetric", "capacities_areal", "capacities",
+            "voltages", "capacities_gravimetric", "capacities_areal", "capacities_absolute",
             "capacities_gravimetric_split_constant_voltage", "capacities_areal_split_constant_voltage",
             "capacities_gravimetric_coulombic_efficiency", "capacities_areal_coulombic_efficiency",
             "capacities_absolute_coulombic_efficiency",
@@ -880,12 +880,16 @@ def summary_plot(
         column_separator: separation between columns when splitting the plot (only for plotly)
         reset_losses: reset the losses to the first cycle (only for fullcell_standard plots)
         link_capacity_scales: link the capacity scales (only for fullcell_standard plots)
-        fullcell_standard_normalization_type: normalization type for the fullcell standard plots (capacity retention) (divide, multiply, area, max, on-max, False)
+        fullcell_standard_normalization_type: normalization type for the fullcell standard plots (capacity retention) 
+            (divide, multiply, area, max, on-max, False)
             if normalization_type is on-max, the normalization factor is set to the maximum value of the capacity column if not provided
             if normalization_type is max, the normalization factor is set to the maximum value of the capacity column if not provided
-            if normalization_type is shift-divide, the normalization is done by shifting the data by the normalization factor and then dividing by the normalization factor
-            if normalization_type is divide, the normalization is done by dividing by the normalization factor and then multiplying by the scaler
-            if normalization_type is multiply, the normalization is done by multiplying by the normalization factor and then multiplying by the scaler
+            if normalization_type is shift-divide, the normalization is done by shifting the data by the normalization factor and 
+            then dividing by the normalization factor
+            if normalization_type is divide, the normalization is done by dividing by the normalization factor and 
+            then multiplying by the scaler
+            if normalization_type is multiply, the normalization is done by multiplying by the normalization factor 
+            and then multiplying by the scaler
             if normalization_type is area, the normalization is done by dividing by the area and then multiplying by the scaler
             if normalization_type is False, no normalization is done
         fullcell_standard_normalization_factor: normalization factor for the fullcell standard plots
@@ -904,9 +908,8 @@ def summary_plot(
 
     Hint:
         If you want to modify the non-interactive (matplotlib) plot, you can get the axes from the
-        returned figure by ``axes = figure.get_axes()``.
+        returned figure by ``axes = figure.get_axes()``:
 
-        Example:
         >> axes = figure.get_axes()
         >> ylabel = axes[0].get_ylabel()
         >> if "Coulombic" in ylabel:
@@ -1125,7 +1128,6 @@ def summary_plot(
                     max_val_normalized_col = s.loc[s["variable"] == new_col, "value"].max()
 
     # filter on constant voltage vs constant current
-    # Remark! absoulte capacities are not implemented yet.
     # Remark! uses the 'partition_summary_cv_steps' function - consider using that also for the fullcell standard plot to avoid code duplication
     elif y.endswith("_split_constant_voltage"):
         cap_type = "capacities_gravimetric" if y.startswith("capacities_gravimetric") else "capacities_areal"
@@ -1326,6 +1328,7 @@ def summary_plot(
 
                 if y.startswith("fullcell_standard_"):
                     range_4 = eff_lim or range_4
+                    range_3 = y_range or range_3
                     range_1 = cv_share_range or range_1
 
                 fig.update_layout(
