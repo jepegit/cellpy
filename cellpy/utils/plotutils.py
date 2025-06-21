@@ -51,6 +51,50 @@ logging.captureWarnings(True)
 PLOTLY_BASE_TEMPLATE = "plotly"
 IMAGE_TO_FILE_TIMEOUT = 30
 
+def notebook_docstring_printer(func, default_show_docstring=False):
+    """
+    Decorator that prints the function's docstring when called from a notebook environment.
+    
+    This decorator checks if the function is being called from a Jupyter notebook
+    or IPython environment and prints the function's docstring if it is.
+    
+    Args:
+        func: The function to decorate
+        
+    Returns:
+        The decorated function
+    """
+    
+    def wrapper(*args, **kwargs):
+        # Check if we're in a notebook environment
+        show_docstring = kwargs.pop("show_docstring", default_show_docstring)
+        if show_docstring:
+            try:
+                # Check for IPython/Jupyter environment
+                import IPython
+                ipython = IPython.get_ipython()
+                if ipython is not None and hasattr(ipython, 'kernel'):
+                    # We're in a notebook environment
+                    if func.__doc__:
+                        print(f"{func.__name__} docstring:")
+                        print("-" * (len(func.__name__) + 12))
+                        print(func.__doc__)
+                        print("-" * (len(func.__name__) + 12))
+                    else:
+                        print(f"No docstring found for {func.__name__}")
+            except (ImportError, AttributeError):
+                # Not in a notebook environment, continue silently
+                pass
+        
+        # Call the original function
+        return func(*args, **kwargs)
+    
+    # Preserve the original function's metadata
+    wrapper.__name__ = func.__name__
+    wrapper.__doc__ = func.__doc__
+    wrapper.__module__ = func.__module__
+    
+    return wrapper
 
 # from collectors - tools for loading and saving plots:
 def load_figure(filename, backend=None):
@@ -134,7 +178,8 @@ def _image_exporter_plotly(figure, filename, timeout=IMAGE_TO_FILE_TIMEOUT, **kw
         print(f" - saved image file: {filename}")
 
 
-def save_image_files(figure, name="my_figure", scale=3.0, dpi=300, backend="plotly", formats: list = None):
+@notebook_docstring_printer
+def save_image_files(figure: Any, name: str = "my_figure", scale: float = 3.0, dpi: int = 300, backend: str = "plotly", formats: Optional[list] = None):
     """Save to image files (png, svg, json/pickle).
 
     Notes:
@@ -536,18 +581,42 @@ def create_colormarkerlist(groups, sub_groups, symbol_label="all", color_style_l
     return _color_list, _symbol_list
 
 
-def create_col_info(c):
+def create_col_info(c: Any) -> tuple[tuple, dict, dict, dict]:
     """Create column information for summary plots.
+
+    This function is called by summary_plot together with create_label_dict. The two functions need to be updated together.
+    Not optimal. So feel free to refactor it.
 
     Args:
         c: cellpy object
 
     Returns:
-        x_columns (tuple), y_cols (dict)
+        x_columns (tuple), y_cols (dict), x_transformations (dict), y_transformations (dict)
 
     """
+    
+    def _normalize_col(x: np.ndarray, normalization_factor: float = 1.0, normalization_type: str = "max", normalization_scaler: float = 1.0) -> np.ndarray:
+        # a bit random collection of normalization types...
 
-    # TODO: add support for more column sets and individual columns
+        if normalization_type == "divide":
+            return (x / normalization_factor) * normalization_scaler
+        elif normalization_type == "shift-divide":
+            return ((normalization_factor - x) / normalization_factor) * normalization_scaler
+        elif normalization_type == "multiply":
+            return (x * normalization_factor) * normalization_scaler
+        elif normalization_type == "area":
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                area = np.trapzoid(x, dx=1)
+            return (x / area / normalization_factor) * normalization_scaler
+        elif normalization_type == "max":
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                x_max = x.max()
+            return (x / x_max / normalization_factor) * normalization_scaler
+        else:
+            raise ValueError(f"Invalid normalization type: {normalization_type}")
+
     hdr = c.headers_summary
     _cap_cols = [hdr.charge_capacity_raw, hdr.discharge_capacity_raw]
     _capacities_gravimetric = [col + "_gravimetric" for col in _cap_cols]
@@ -635,25 +704,6 @@ def create_col_info(c):
     x_transformations = dict(
     )
 
-    def _normalize_col(x: np.ndarray, normalization_factor: float = 1.0, normalization_type: str = "max", normalization_scaler: float = 1.0) -> np.ndarray:
-        if normalization_type == "divide":
-            return (x / normalization_factor) * normalization_scaler
-        elif normalization_type == "shift-divide":
-            return ((normalization_factor - x) / normalization_factor) * normalization_scaler
-        elif normalization_type == "multiply":
-            return (x * normalization_factor) * normalization_scaler
-        elif normalization_type == "area":
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore")
-                area = np.trapzoid(x, dx=1)
-            return (x / area / normalization_factor) * normalization_scaler
-        elif normalization_type == "max":
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore")
-                x_max = x.max()
-            return (x / x_max / normalization_factor) * normalization_scaler
-        else:
-            raise ValueError(f"Invalid normalization type: {normalization_type}")
         
     # transformation info on the form: column_name: {(row_number, new_column_name): transformation_function}
     y_transformations: dict[str, dict[tuple[int, str], dict[str, Callable]]] = dict(
@@ -700,6 +750,9 @@ def create_col_info(c):
 def create_label_dict(c):
     """Create label dictionary for summary plots.
 
+    This function is called by summary_plot together with create_col_info. The two functions need to be updated together.
+    Not optimal. So feel free to refactor it.
+
     Args:
         c: cellpy object
 
@@ -722,7 +775,6 @@ def create_label_dict(c):
     _cap_absolute_label = f"Capacity ({c.cellpy_units.charge})"
     _cap_label = f"Capacity ({c.data.raw_units.charge})"
 
-    # TODO: probably need to add something for cumulated discharge capacity loss also...
     y_axis_label = {
         "voltages": f"Voltage ({c.cellpy_units.voltage})",
         "capacities_gravimetric": _cap_gravimetric_label,
@@ -752,10 +804,9 @@ def _get_capacity_unit(c, mode="gravimetric", seperator="/"):
     return specific_selector.get(mode, "-")
 
 
-# TODO: add formation cycles handling for seaborn
 # TODO: consistent parameter names (e.g. y_range vs ylim) between summary_plot, plot_cycles, raw_plot, cycle_info_plot and batchutils
 # TODO: consistent function names (raw_plot vs plot_raw etc)
-# TODO: add support for standard 4-pane plot
+@notebook_docstring_printer
 def summary_plot(
     c,
     x: Optional[str] = None,
@@ -3019,6 +3070,9 @@ def _check_summary_plotter_plotly():
     print(f"{type(fig)=}")
     # save_image_files(fig, out / "test_plot_plotly", backend="plotly")
     fig.show()
+
+
+
 
 
 if __name__ == "__main__":
