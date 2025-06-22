@@ -1,6 +1,7 @@
 import logging
 import os
 import pathlib
+from typing import Optional
 import warnings
 from copy import deepcopy
 
@@ -96,7 +97,7 @@ def _make_average(
         if col == hdr_norm_cycle and skip_st_dev_for_equivalent_cycle_index:
             if number_of_cols > 1:
                 normalized_cycle_index_frame = (
-                    new_frame[col].agg(["mean"], axis=1).rename(columns={"mean": "equivalent_cycle"})
+                    new_frame[col].agg(["mean"], skipna=True, axis=1).rename(columns={"mean": "equivalent_cycle"})
                 )
             else:
                 normalized_cycle_index_frame = new_frame[col].copy()
@@ -106,7 +107,7 @@ def _make_average(
             new_col_name_std = "std"
 
             if number_of_cols > 1:
-                avg_frame = new_frame[col].agg(["mean", "std"], axis=1)
+                avg_frame = new_frame[col].agg(["mean", "std"], skipna=True, axis=1)
             else:
                 avg_frame = pd.DataFrame(data=new_frame[col].values, columns=[new_col_name_mean])
                 avg_frame[new_col_name_std] = not_a_number
@@ -829,31 +830,23 @@ def add_cv_step_columns(columns: list) -> list:
 
 def _partition_summary_based_on_cv_steps(
     c,
-    column_set: list,
+    column_set: Optional[list] = None,
     x: str = None,
-    
 ):
-    # TODO: seems to be a bug here - probably due to concatinating (missing cycles)
     """Partition the summary data into CV and non-CV steps.
 
     Args:
         c: cellpy object
-        x: x-axis column name
         column_set: names of columns to include
-        split: add additional column that can be used to split the data when plotting.
-        var_name: name of the variable column after melting
-        value_name: name of the value column after melting
+        x: x-axis column name (default is "cycle_index")
 
     Returns:
-        ``pandas.DataFrame`` (melted with columns x, var_name, value_name, and optionally "row" if split is True)
+        ``pandas.DataFrame``
     """
     import pandas as pd
 
     if not x:
         x = hdr_summary["cycle_index"]
-
-    # in case the column set already contains cv cols:
-    column_set = [col for col in column_set if not "_cv" in col]
 
     summary = c.data.summary.copy()
 
@@ -863,6 +856,17 @@ def _partition_summary_based_on_cv_steps(
         summary.set_index(x, inplace=True, drop=True)
         summary_no_cv.set_index(x, inplace=True, drop=True)
         summary_only_cv.set_index(x, inplace=True, drop=True)
+
+    
+
+    if column_set is None:
+        column_set = summary.columns.tolist()
+    else:
+        # allow for non-existing columns in the dataframe:
+        column_set = [col for col in column_set if col in summary.columns]
+
+    # in case the column set already contains cv cols:
+    column_set = [col for col in column_set if not "_cv" in col]
 
     summary = summary[column_set]
 
@@ -875,6 +879,7 @@ def _partition_summary_based_on_cv_steps(
     s = pd.concat([summary, summary_no_cv, summary_only_cv], axis=1)
 
     return s
+
 
 def concat_summaries(
     b: Batch,
@@ -900,6 +905,11 @@ def concat_summaries(
     only_selected=False,
     experimental_feature_cell_selector=None,
     partition_by_cv=False,
+    replace_inf_with_nan=True,
+    individual_summary_hooks=None,
+    concatenated_summary_hooks=None,
+    *args,
+    **kwargs,
 ) -> pd.DataFrame:
     """Merge all summaries in a batch into a gigantic summary data frame.
 
@@ -932,12 +942,20 @@ def concat_summaries(
         recalc_step_table_kwargs (dict): keyword arguments to be used when recalculating the step table. If not given,
             it will not recalculate the step table.
         only_selected (bool): only use the selected cells.
+        experimental_feature_cell_selector (list): list of cell names to select.
+        partition_by_cv (bool): if True, partition the data by cv_step.
+        replace_inf_with_nan (bool): if True, replace inf with nan in the concatenated summary data.
+        individual_summary_hooks (list): list of functions to be applied to the individual summary data.
+        concatenated_summary_hooks (list): list of functions to be applied to the concatenated summary data.
+
+        *args,**kwargs: additional arguments to be passed to the hooks.
 
     Returns:
         ``pandas.DataFrame``
     """
 
     if key_index_bounds is None:
+        # TODO: consider changing this to [1, -1]
         key_index_bounds = [1, -2]
 
     cell_names_nest = []
@@ -1023,6 +1041,8 @@ def concat_summaries(
         output_columns = add_cv_step_columns(output_columns)
 
     for gno, cell_names in zip(group_nest, cell_names_nest):
+        # NOTE: to allow for hooks to add columns, all functions that operates in this loop 
+        # must allow for non-existing columns in the dataframe!
         frames_sub = []
         keys_sub = []
         for cell_id in cell_names:
@@ -1066,9 +1086,8 @@ def concat_summaries(
                 if rate is not None:
                     # TODO: update this so that it works with partitioned data
                     if partition_by_cv:
-                        print("partitioning by cv_step is not possible with rate selection")
-                        print("skipping rate selection")
-                        continue
+                        print("partitioning by cv_step is experimental for rate selection")
+
                     s = select_summary_based_on_rate(
                         c,
                         rate=rate,
@@ -1077,15 +1096,20 @@ def concat_summaries(
                         rate_column=rate_column,
                         inverse=inverse,
                         inverted=inverted,
+                        partition_by_cv=partition_by_cv,
                     )
                 elif partition_by_cv:
-                    print("partitioning by cv_step")
                     s = _partition_summary_based_on_cv_steps(c, column_set=output_columns)
-                    print("partition done")
-                    print(f"{s.columns=}")
 
                 else:
                     s = c.data.summary
+
+                # ADD ADDITIONAL PROCESSING HERE (e.g. copy-and-normalization)
+                if individual_summary_hooks is not None:
+                    logging.info("Experimental feature: applying individual summary hooks")
+                    for hook in individual_summary_hooks:
+                        logging.info(f"  -applying {hook.__name__} to {cell_id}")
+                        s, output_columns = hook(s, columns=output_columns, *args, **kwargs)
 
                 if columns is not None:
                     s = s.loc[:, output_columns].copy()
@@ -1118,8 +1142,10 @@ def concat_summaries(
             logging.info("Got several columns with same test-name")
             logging.info("Renaming.")
             keys = fix_group_names(keys)
+        if replace_inf_with_nan:
+            frames = [frame.replace([np.inf, -np.inf], np.nan) for frame in frames]
 
-        return collect_frames(frames, group_it, hdr_norm_cycle, keys, normalize_cycles)
+        return collect_frames(frames, group_it, hdr_norm_cycle, keys, normalize_cycles, concatenated_summary_hooks)
     else:
         logging.info("Empty - nothing to concatenate!")
         return pd.DataFrame()
@@ -1196,7 +1222,7 @@ def fix_group_names(keys):
     return keys
 
 
-def collect_frames(frames, group_it: bool, hdr_norm_cycle: str, keys: list, normalize_cycles: bool):
+def collect_frames(frames, group_it: bool, hdr_norm_cycle: str, keys: list, normalize_cycles: bool, hooks: list = None):
     """Helper function for concat_summaries."""
     cycle_header = "cycle"
     normalized_cycle_header = "equivalent_cycle"
@@ -1212,6 +1238,10 @@ def collect_frames(frames, group_it: bool, hdr_norm_cycle: str, keys: list, norm
 
     if normalize_cycles:
         cdf = cdf.rename(columns={hdr_norm_cycle: normalized_cycle_header})
+
+    if hooks is not None:
+        for hook in hooks:
+            cdf = hook(cdf)
 
     return cdf
 
@@ -1232,6 +1262,7 @@ def select_summary_based_on_rate(
     inverse=False,
     inverted=False,
     fix_index=True,
+    partition_by_cv=False,
 ):
     """Select only cycles charged or discharged with a given rate.
 
@@ -1272,7 +1303,11 @@ def select_summary_based_on_rate(
     cycle_number_header = hdr_summary["cycle_index"]
 
     step_table = cell.data.steps
-    summary = cell.data.summary
+    
+    if partition_by_cv:
+        summary = _partition_summary_based_on_cv_steps(cell.data.summary)
+    else:
+        summary = cell.data.summary
 
     if summary.index.name != cycle_number_header:
         warnings.warn(f"{cycle_number_header} not set as index\n" f"Current index :: {summary.index}\n")
