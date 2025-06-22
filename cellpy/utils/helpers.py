@@ -911,6 +911,7 @@ def concat_summaries(
     replace_inf_with_nan=True,
     individual_summary_hooks=None,
     concatenated_summary_hooks=None,
+    drop_columns=None,
     average_method="mean",
     replace_extremes_with_nan=True,
     low_limit=-10e5,
@@ -951,14 +952,15 @@ def concat_summaries(
         only_selected (bool): only use the selected cells.
         experimental_feature_cell_selector (list): list of cell names to select.
         partition_by_cv (bool): if True, partition the data by cv_step.
-        replace_inf_with_nan (bool): if True, replace inf with nan in the concatenated summary data.
+        replace_inf_with_nan (bool): if True, replace inf with nan in the summary data.
         individual_summary_hooks (list): list of functions to be applied to the individual summary data.
         concatenated_summary_hooks (list): list of functions to be applied to the concatenated summary data 
             (passed to the collect_frames function).
+        drop_columns (list): list of columns to drop before concatenation.
         average_method (str): method to be used when averaging the summary data. Remark that for backward compatibility,
             the column name will be "mean" regardless of the actual method used.
         replace_extremes_with_nan (bool): if True, replace values outside the range [low_limit, high_limit] with nan 
-            in the concatenated summary data if they are grouped.
+            in the summary data.
         low_limit (float): lower limit for replacing extremes with nan if replace_extremes_with_nan is True.
         high_limit (float): upper limit for replacing extremes with nan if replace_extremes_with_nan is True.
         *args,**kwargs: additional arguments to be passed to the hooks.
@@ -1117,15 +1119,21 @@ def concat_summaries(
                 else:
                     s = c.data.summary
 
-                # ADD ADDITIONAL PROCESSING HERE (e.g. copy-and-normalization)
                 if individual_summary_hooks is not None:
                     logging.info("Experimental feature: applying individual summary hooks")
                     for hook in individual_summary_hooks:
                         logging.info(f"  -applying {hook.__name__} to {cell_id}")
-                        s, output_columns = hook(s, columns=output_columns, *args, **kwargs)
+                        s, output_columns = hook(s, columns=output_columns.copy(), *args, **kwargs)
 
                 if columns is not None:
+                    # Filter out columns that don't exist in the dataframe to avoid KeyError
+                    output_columns = [col for col in output_columns if col in s.columns]
                     s = s.loc[:, output_columns].copy()
+                    if drop_columns:
+                        logging.debug(f"Dropping columns: {drop_columns}")
+                        logging.debug(f"Columns in s before dropping: {s.columns}")
+                        s = s.drop(columns=drop_columns, errors="ignore")
+                        logging.debug(f"Columns in s after dropping: {s.columns}")
 
                 # add group and subgroup
                 if not group_it:
@@ -1136,10 +1144,15 @@ def concat_summaries(
                 frames_sub.append(s)
                 keys_sub.append(cell_id)
 
+        
+
         if group_it:
             # TODO: update this to allow for more advanced naming of groups
             cell_id = create_group_names(custom_group_labels, gno, key_index_bounds, keys_sub, pages)
             try:
+                # if we used drop_columns, we need to remove them from the output_columns
+                if drop_columns:
+                    output_columns = [col for col in output_columns if col not in drop_columns]
                 s = _make_average(frames_sub, output_columns, average_method=average_method)
             except ValueError as e:
                 print("could not make average!")
@@ -1156,17 +1169,29 @@ def concat_summaries(
             logging.info("Got several columns with same test-name")
             logging.info("Renaming.")
             keys = fix_group_names(keys)
+
+        
         
         if replace_inf_with_nan:
             # a lot of plotting tools do not like inf values, so we replace them with nan
             frames = [frame.replace([np.inf, -np.inf], np.nan) for frame in frames]
 
-        if replace_extremes_with_nan and group_it:
-            # averaging sometimes gives extreme values, so we replace them with nan
-            logging.debug(f"Replacing extremes with nan: {low_limit} < mean < {high_limit}")
-            for frame in frames:
-                frame.loc[frame["mean"] < low_limit, "mean"] = np.nan
-                frame.loc[frame["mean"] > high_limit, "mean"] = np.nan
+        if replace_extremes_with_nan:
+            if group_it:
+                # averaging sometimes gives extreme values, so we replace them with nan
+                logging.debug(f"Replacing extremes with nan: {low_limit} < mean < {high_limit}")
+                for frame in frames:
+                    frame.loc[frame["mean"] < low_limit, "mean"] = np.nan
+                    frame.loc[frame["mean"] > high_limit, "mean"] = np.nan
+            else:
+                logging.debug(f"Replacing extremes with nan: {low_limit} < column < {high_limit}")
+                for frame in frames:
+                    # these frames can have multiple of columns that we dont now the name of so we need to iterate over them
+                    # and check if they are floats.
+                    for col in frame.columns:
+                        if pd.api.types.is_float_dtype(frame[col]):
+                            frame.loc[frame[col] < low_limit, col] = np.nan
+                            frame.loc[frame[col] > high_limit, col] = np.nan
 
         return collect_frames(frames, group_it, hdr_norm_cycle, keys, normalize_cycles, concatenated_summary_hooks)
     else:
@@ -1194,7 +1219,7 @@ def create_group_names(custom_group_labels, gno, key_index_bounds, keys_sub, pag
     """
 
     cell_id = None
-    
+
     if custom_group_labels is not None:
         if isinstance(custom_group_labels, dict):
             if gno in custom_group_labels:
