@@ -1986,6 +1986,7 @@ def sequence_plotter(
             if y_label_mapper:
                 annotations = fig.layout.annotations
                 if annotations:
+                    # TODO: THIS IS WHERE I NEED TO FIX THE LABELS
                     try:
                         # might consider a more robust method here - currently
                         # it assumes that the mapper is a list with same order
@@ -2387,9 +2388,14 @@ def summary_plotter(collected_curves, cycles_to_plot=None, backend="plotly", **k
                 u_sub = units["cellpy_units"].specific_gravimetric
             elif v.endswith("_volumetric"):
                 u_sub = units["cellpy_units"].specific_volumetric
+                
             u_top = None
             if "_capacity" in v:
                 u_top = units["cellpy_units"].charge
+            if "_norm" in v:
+                u_top = "normalized"
+            if v == "coulombic_efficiency":
+                u_top = "%"
 
             # creating label:
             u = u_top or "Value"
@@ -2399,12 +2405,15 @@ def summary_plotter(collected_curves, cycles_to_plot=None, backend="plotly", **k
                 u = f"{u}/{u_sub}"
                 v = v[:-1]
             v = " ".join(v).title()
+            if v.endswith("Cv"):
+                v = v.replace("Cv", "CV")
             label_mapper[y].append(f"{v} ({u})")
 
     # TODO: need to refactor and fix how the classes are created so that leftover kwargs are not sent to the backend
     #  (for example if another collector is used and registers a kwarg without popping it)
 
     _ = kwargs.pop("method", None)  # also set in BatchCyclesCollector
+    height_fractions = kwargs.pop("height_fractions", [])
 
     fig = _cycles_plotter(
         collected_curves,
@@ -2427,13 +2436,59 @@ def summary_plotter(collected_curves, cycles_to_plot=None, backend="plotly", **k
 
     if backend == "plotly":
         # TODO: implement having different heights of the subplots
-        height_fractions = kwargs.pop("height_fractions", [])
-        if len(height_fractions) < 0:
-            # this was suggested by CoPilot (not sure if it works):
-            for i, h in enumerate(height_fractions):
-                fig.update_yaxes(row=i + 1, matches=None, showticklabels=True, fixedrange=True)
-                fig.update_layout(height=fig.layout.height + h)
-        fig.update_yaxes(matches=None, showticklabels=True)
+        
+        if len(height_fractions) > 0:
+            # Determine number of rows in the original figure
+            print("THIS IS EXPERIMENTAL")
+            number_of_rows = len([key for key in fig.layout if key.startswith('yaxis')])
+            if number_of_rows == 0:
+                number_of_rows = 1  # Default to 1 if no y-axes found
+            
+            # Only proceed if height_fractions matches the number of rows
+            if len(height_fractions) != number_of_rows:
+                print(f"Warning: height_fractions length ({len(height_fractions)}) does not match number of rows ({number_of_rows}). Ignoring height_fractions.")
+            else:
+                # Update subplot heights using make_subplots parameters
+                from plotly.subplots import make_subplots
+                
+                # Get current figure data and layout properties
+                current_data = fig.data
+                current_layout = fig.layout
+                
+                # Create new figure with custom row heights
+                new_fig = make_subplots(
+                    rows=number_of_rows,
+                    cols=1,
+                    shared_xaxes=True,
+                    row_heights=height_fractions,
+                    vertical_spacing=0.02,
+                    subplot_titles=[ann.text for ann in current_layout.annotations] if current_layout.annotations else None
+                )
+
+                new_height_fractions = {}
+                for key in new_fig.layout:
+                    if key.startswith('yaxis'):
+                        new_height_fractions[key] = new_fig.layout[key].domain
+    
+                
+                # Add traces from original figure
+                for trace in current_data:
+                    new_fig.add_trace(trace)
+                
+                # Update layout properties from original figure (including theme)
+                new_fig.update_layout(current_layout)
+                for key in new_height_fractions:
+                    new_fig.layout[key].domain = new_height_fractions[key]
+                
+                fig = new_fig
+                # Preserve x-axis linking and only show labels on bottom row with small gaps
+                fig.update_xaxes(matches='x')
+                fig.update_yaxes(matches=None, showticklabels=True)
+                
+                # Only show x-axis labels on the bottom subplot
+                for i in range(1, len(height_fractions)):
+                    fig.update_xaxes(showticklabels=False, row=i, col=1)
+                
         return fig
     if backend == "seaborn":
         print("using seaborn (experimental feature)")
