@@ -82,6 +82,7 @@ def _make_average(
     frames,
     columns=None,
     skip_st_dev_for_equivalent_cycle_index=True,
+    average_method="mean",
 ):
     hdr_norm_cycle = hdr_summary["normalized_cycle_index"]
     not_a_number = np.nan
@@ -97,17 +98,17 @@ def _make_average(
         if col == hdr_norm_cycle and skip_st_dev_for_equivalent_cycle_index:
             if number_of_cols > 1:
                 normalized_cycle_index_frame = (
-                    new_frame[col].agg(["mean"], skipna=True, axis=1).rename(columns={"mean": "equivalent_cycle"})
+                    new_frame[col].agg([average_method], skipna=True, axis=1).rename(columns={average_method: "equivalent_cycle"})
                 )
             else:
                 normalized_cycle_index_frame = new_frame[col].copy()
 
         else:
-            new_col_name_mean = "mean"
+            new_col_name_mean = average_method
             new_col_name_std = "std"
 
             if number_of_cols > 1:
-                avg_frame = new_frame[col].agg(["mean", "std"], skipna=True, axis=1)
+                avg_frame = new_frame[col].agg([average_method, "std"], skipna=True, axis=1)
             else:
                 avg_frame = pd.DataFrame(data=new_frame[col].values, columns=[new_col_name_mean])
                 avg_frame[new_col_name_std] = not_a_number
@@ -120,12 +121,14 @@ def _make_average(
     final_frame = pd.concat(new_frames, axis=0)
     cols = final_frame.columns.to_list()
     new_cols = []
-    for n in ["variable", "mean", "std"]:
+    for n in ["variable", average_method, "std"]:
         if n in cols:
             new_cols.append(n)
             cols.remove(n)
     cols.extend(new_cols)
     final_frame = final_frame.reindex(columns=cols)
+    # rename the mean column to "mean" for backward compatibility:
+    final_frame = final_frame.rename(columns={average_method: "mean"})
     return final_frame
 
 
@@ -908,6 +911,10 @@ def concat_summaries(
     replace_inf_with_nan=True,
     individual_summary_hooks=None,
     concatenated_summary_hooks=None,
+    average_method="mean",
+    replace_extremes_with_nan=True,
+    low_limit=-10e5,
+    high_limit=10e5,
     *args,
     **kwargs,
 ) -> pd.DataFrame:
@@ -946,8 +953,14 @@ def concat_summaries(
         partition_by_cv (bool): if True, partition the data by cv_step.
         replace_inf_with_nan (bool): if True, replace inf with nan in the concatenated summary data.
         individual_summary_hooks (list): list of functions to be applied to the individual summary data.
-        concatenated_summary_hooks (list): list of functions to be applied to the concatenated summary data.
-
+        concatenated_summary_hooks (list): list of functions to be applied to the concatenated summary data 
+            (passed to the collect_frames function).
+        average_method (str): method to be used when averaging the summary data. Remark that for backward compatibility,
+            the column name will be "mean" regardless of the actual method used.
+        replace_extremes_with_nan (bool): if True, replace values outside the range [low_limit, high_limit] with nan 
+            in the concatenated summary data if they are grouped.
+        low_limit (float): lower limit for replacing extremes with nan if replace_extremes_with_nan is True.
+        high_limit (float): upper limit for replacing extremes with nan if replace_extremes_with_nan is True.
         *args,**kwargs: additional arguments to be passed to the hooks.
 
     Returns:
@@ -1124,9 +1137,10 @@ def concat_summaries(
                 keys_sub.append(cell_id)
 
         if group_it:
+            # TODO: update this to allow for more advanced naming of groups
             cell_id = create_group_names(custom_group_labels, gno, key_index_bounds, keys_sub, pages)
             try:
-                s = _make_average(frames_sub, output_columns)
+                s = _make_average(frames_sub, output_columns, average_method=average_method)
             except ValueError as e:
                 print("could not make average!")
                 print(e)
@@ -1142,8 +1156,17 @@ def concat_summaries(
             logging.info("Got several columns with same test-name")
             logging.info("Renaming.")
             keys = fix_group_names(keys)
+        
         if replace_inf_with_nan:
+            # a lot of plotting tools do not like inf values, so we replace them with nan
             frames = [frame.replace([np.inf, -np.inf], np.nan) for frame in frames]
+
+        if replace_extremes_with_nan and group_it:
+            # averaging sometimes gives extreme values, so we replace them with nan
+            logging.debug(f"Replacing extremes with nan: {low_limit} < mean < {high_limit}")
+            for frame in frames:
+                frame.loc[frame["mean"] < low_limit, "mean"] = np.nan
+                frame.loc[frame["mean"] > high_limit, "mean"] = np.nan
 
         return collect_frames(frames, group_it, hdr_norm_cycle, keys, normalize_cycles, concatenated_summary_hooks)
     else:
@@ -1153,6 +1176,11 @@ def concat_summaries(
 
 def create_group_names(custom_group_labels, gno, key_index_bounds, keys_sub, pages):
     """Helper function for concat_summaries.
+
+    The prioritisation of methods for creating the group name is as follows:
+    1. custom_group_labels (if given)
+    2. group_label in pages (if given)
+    3. key_index_bounds and keys_sub (if no other option is available)
 
     Args:
         custom_group_labels (dict): dictionary of custom labels (key must be the group number).
@@ -1165,17 +1193,8 @@ def create_group_names(custom_group_labels, gno, key_index_bounds, keys_sub, pag
 
     """
 
-    # TODO: improve this one
-
     cell_id = None
-
-    # print("----------------------------------------------------------------------")
-    # print(f"custom_group_labels: {custom_group_labels}")
-    # print(f"gno: {gno}")
-    # print(f"key_index_bounds: {key_index_bounds}")
-    # print(f"keys_sub: {keys_sub}")
-    # print("----------------------------------------------------------------------")
-
+    
     if custom_group_labels is not None:
         if isinstance(custom_group_labels, dict):
             if gno in custom_group_labels:
@@ -1199,6 +1218,7 @@ def create_group_names(custom_group_labels, gno, key_index_bounds, keys_sub, pag
                 return cell_id
 
     if cell_id is None:
+        # nothing else worked (or were chosen) - falling back to using key_index_bounds
         splitter = "_"
         cell_id = list(
             set([splitter.join(k.split(splitter)[key_index_bounds[0] : key_index_bounds[1]]) for k in keys_sub])
