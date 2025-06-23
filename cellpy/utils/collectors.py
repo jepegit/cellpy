@@ -1571,13 +1571,77 @@ def legend_replacer(trace, df, group_legends=True):
             hovertemplate=f"{cell_label}<br>{trace.hovertemplate}",
         )
 
+def _plotly_y_label_cleaner(y_label_mapper, split_at=20):
+    """Clean up the y-label mapper for plotly.
+    
+    The y-label mapper is a dictionary that maps the variable name to the y-label. The y-labels are
+    expected to be in the form of "Variable Name (unit)". If the y-label is too long, it is
+    split into multiple lines.
+    This is done to avoid the y-labels from being too long and wrapping around.
 
-def spread_plot(curves, plotly_arguments, **kwargs):
-    """Create a spread plot (error-bands instead of error-bars)."""
+    Discharge Capacity Retention Gravimetric Norm (%) should become:
+    Discharge Capacity<br>Retention Gravimetric Norm<br>(%)
+
+    Args:
+        y_label_mapper (dict): the y-label mapper.
+
+    Returns:
+        dict: the cleaned up y-label mapper.
+
+    """
+
+    new_y_label_mapper = {}
+    for k, v in y_label_mapper.items():
+        if len(v) > split_at:
+            # First split on " (" pattern
+            v = "<br>(".join(v.split(" ("))
+            
+            # Then check if any resulting line is still too long and split on spaces
+            lines = v.split("<br>")
+            final_lines = []
+            for line in lines:
+                if len(line) > split_at and " " in line:
+                    # Split long lines on spaces
+                    words = line.split(" ")
+                    current_line = ""
+                    for word in words:
+                        if len(current_line + " " + word) > split_at and current_line:
+                            final_lines.append(current_line)
+                            current_line = word
+                        else:
+                            if current_line:
+                                current_line += " " + word
+                            else:
+                                current_line = word
+                    if current_line:
+                        final_lines.append(current_line)
+                else:
+                    final_lines.append(line)
+            v = "<br>".join(final_lines)
+        new_y_label_mapper[k] = v
+    return new_y_label_mapper
+def spread_plot(curves, plotly_arguments=None, y_label_mapper=None, **kwargs):
+    """Create a spread plot (error-bands instead of error-bars).
+    
+    This is an experimental feature that is not yet fully tested. It uses make_subplots to create the figure,
+    and then adds the traces one by one. This methodology will eventually replace the use of plotly.express
+    for all the summary plots.  
+    
+    """
     from plotly.subplots import make_subplots
+
+   
+
+
+    if y_label_mapper is None:
+        y_label_mapper = {}
+    else:
+        y_label_mapper = _plotly_y_label_cleaner(y_label_mapper)
 
     selected_variables = curves["variable"].unique()
     number_of_rows = len(selected_variables)
+    # TODO: change this (only temporary fix to allow height fractions to be set by spread_plot)
+    height_fractions = kwargs.get("height_fractions_spread", [1/number_of_rows]*number_of_rows)
 
     colors = plotly.colors.qualitative.Plotly
     opacity = 0.2
@@ -1597,13 +1661,18 @@ def spread_plot(curves, plotly_arguments, **kwargs):
     fig = make_subplots(
         rows=number_of_rows,
         cols=1,
-        shared_xaxes=True,
-        vertical_spacing=0.05,
+        start_cell=plotly_arguments.get("plotly_start_cell", "top-left"),
+        shared_xaxes=plotly_arguments.get("plotly_shared_xaxes", True),
+        row_heights=height_fractions,
+        vertical_spacing=plotly_arguments.get("plotly_vertical_spacing", 0.01),
     )
+    y_labels = {}
     for i, (cell, data) in enumerate(g):
         color = color_list[i % len(color_list)]
 
         for row_number, variable in enumerate(selected_variables):
+            y_label = y_label_mapper.get(variable, variable)
+            y_labels[row_number] = y_label
             if row_number == 0:
                 show_legend = True
             else:
@@ -1657,15 +1726,18 @@ def spread_plot(curves, plotly_arguments, **kwargs):
                 row=row_number + 1,
                 col=1,
             )
+    for row_number, y_label in y_labels.items():
+        fig.update_yaxes(title_text=y_label, row=row_number + 1, col=1)
 
     fig.update_layout(legend_tracegroupgap=0)
+    # fig.update_layout(hovermode="x")
 
     if labels := plotly_arguments.get("labels"):
-        fig.update_xaxes(title=labels.get("cycle", None))
+        fig.update_xaxes(title=labels.get("cycle", None), row=number_of_rows)
 
     # Hack to remove the x-axis title that appears on the top of the plot:
-    if number_of_rows > 1:
-        fig.update_layout(xaxis_title=None)
+    # if number_of_rows > 1:
+    #     fig.update_layout(xaxis_title=None)
 
     if hover_mode := kwargs.pop("hovermode", None):
         fig.update_layout(hovermode=hover_mode)
@@ -1865,7 +1937,6 @@ def sequence_plotter(
             seaborn_arguments["style"] = z
 
     elif method == "summary":
-        logging.info("sequence-plotter - summary")
         if cycles is not None:
             curves = collected_curves.loc[collected_curves.cycle.isin(cycles), :]
         else:
@@ -1879,6 +1950,8 @@ def sequence_plotter(
         else:
             plotly_arguments["color"] = z
             seaborn_arguments["hue"] = z
+
+ 
 
     # ----------------- individual plotting calls  -----------------------------
     # TODO: move as much as possible up to the parsing of arguments
@@ -1960,14 +2033,22 @@ def sequence_plotter(
         elif method == "summary":
             if spread:
                 logging.critical("using spread is an experimental feature and might not work as expected")
-                fig = spread_plot(curves, plotly_arguments, **kwargs)
+                fig = spread_plot(curves, plotly_arguments=plotly_arguments, y_label_mapper=y_label_mapper, **kwargs)
             else:
+                # remove all kwargs that are only intended for spread_plot
+                _ = kwargs.pop("height_fractions_spread", None)
+                _ = plotly_arguments.pop("plotly_start_cell", None)
+                _ = plotly_arguments.pop("plotly_shared_xaxes", None)
+                _ = plotly_arguments.pop("plotly_vertical_spacing", None)
+                _ = kwargs.pop("plotly_start_cell", None)
+                _ = kwargs.pop("plotly_shared_xaxes", None)
+                _ = kwargs.pop("plotly_vertical_spacing", None)
+
                 fig = px.line(
                     curves,
                     **plotly_arguments,
                     **kwargs,
                 )
-
             if group_cells:  # all cells in same group has same color
                 try:
                     fig.for_each_trace(
@@ -1983,33 +2064,29 @@ def sequence_plotter(
                     print("failed")
                     print(e)
 
-            if y_label_mapper:
+            if y_label_mapper and not spread:
+                y_label_mapper = _plotly_y_label_cleaner(y_label_mapper)
                 annotations = fig.layout.annotations
                 if annotations:
-                    # TODO: THIS IS WHERE I NEED TO FIX THE LABELS
                     try:
-                        # might consider a more robust method here - currently
-                        # it assumes that the mapper is a list with same order
-                        # and length as number of rows
-                        for i, (a, la) in enumerate(zip(annotations, y_label_mapper)):
+                        for i in range(len(annotations)):
                             row = i + 1
-                            fig.for_each_yaxis(
-                                functools.partial(y_axis_replacer, label=la),
-                                row=row,
-                            )
+                            for k, v in y_label_mapper.items():
+                                if annotations[i].text.endswith(k):
+                                    fig.for_each_yaxis(
+                                        functools.partial(y_axis_replacer, label=v),
+                                        row=row,
+                                    )
+                                    break
+
                         fig.update_annotations(text="")
+
                     except Exception as e:
                         print("failed")
                         print(e)
                 else:
                     try:
-                        if spread:
-                            for i, la in enumerate(y_label_mapper):
-                                row = i + 1
-                                fig.for_each_yaxis(functools.partial(y_axis_replacer, label=la), row=row)
-
-                        else:
-                            fig.for_each_yaxis(
+                        fig.for_each_yaxis(
                                 functools.partial(y_axis_replacer, label=y_label_mapper[0]),
                             )
                     except Exception as e:
@@ -2376,8 +2453,14 @@ def summary_plotter(collected_curves, cycles_to_plot=None, backend="plotly", **k
     label_mapper = {
         f"{y}": None,
     }
+    # order the variables by a given order:
+    order_variables = kwargs.pop("order_variables", None)
+    if order_variables:
+        collected_curves[g] = collected_curves[g].astype(pd.CategoricalDtype(categories=order_variables, ordered=True))
+        collected_curves = collected_curves.sort_values(by=[g, z, x])
+    
     if units:
-        label_mapper[y] = []
+        label_mapper[y] = {}
         variables = list(collected_curves[g].unique())
         for v in variables:
             # extract units:
@@ -2399,15 +2482,15 @@ def summary_plotter(collected_curves, cycles_to_plot=None, backend="plotly", **k
 
             # creating label:
             u = u_top or "Value"
-            v = v.split("_")
+            v2 = v.split("_")
             if u_sub:
                 u_sub = u_sub.replace("**", "")
                 u = f"{u}/{u_sub}"
-                v = v[:-1]
-            v = " ".join(v).title()
-            if v.endswith("Cv"):
-                v = v.replace("Cv", "CV")
-            label_mapper[y].append(f"{v} ({u})")
+                v2 = v2[:-1]
+            v2 = " ".join(v2).title()
+            if v2.endswith("Cv"):
+                v2 = v2.replace("Cv", "CV")
+            label_mapper[y][v] = f"{v2} ({u})"
 
     # TODO: need to refactor and fix how the classes are created so that leftover kwargs are not sent to the backend
     #  (for example if another collector is used and registers a kwarg without popping it)
@@ -2459,8 +2542,9 @@ def summary_plotter(collected_curves, cycles_to_plot=None, backend="plotly", **k
                 new_fig = make_subplots(
                     rows=number_of_rows,
                     cols=1,
+                    # start_cell="bottom-left",
                     shared_xaxes=True,
-                    row_heights=height_fractions,
+                    row_heights=height_fractions[::-1],
                     vertical_spacing=0.02,
                     subplot_titles=[ann.text for ann in current_layout.annotations] if current_layout.annotations else None
                 )
