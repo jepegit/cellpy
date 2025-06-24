@@ -793,11 +793,20 @@ class BatchCollector:
         f = d / n
         return f
 
-def standard_gravimetric_collector(b, **kwargs):
+def standard_gravimetric_collector(b, norm_factor=120.0, **kwargs):
     """Create a standard gravimetric collector.
     
     This is a temporary hack to allow for making standard plot no. 1.
+
+    Args:
+        norm_factor (float): the factor to normalize the discharge capacity retention by.
+        group_it (bool): if True, group the cells by the key_index_bounds.
+        data_collector_arguments (dict): the data collector arguments.
+        plotter_arguments (dict): the plotter arguments.
+        **kwargs: additional arguments sent to the collector.
     """
+
+    from functools import partial
 
     def _copy_and_normalize(df, columns, norm_factor=120.0, *args, **kwargs):
         # modify the dataframe:
@@ -811,7 +820,10 @@ def standard_gravimetric_collector(b, **kwargs):
 
     group_it = kwargs.pop("group_it", True)
     interactive = kwargs.pop("interactive", True)
-    
+
+    _copy_and_normalize_partial = partial(_copy_and_normalize, norm_factor=norm_factor)
+    _copy_and_normalize_partial.__name__ = "copy_and_normalize"
+
     if not interactive:
         raise NotImplementedError("Only interactive mode is implemented for standard_gravimetric_collector")
     backend = kwargs.pop("backend", "plotly")
@@ -820,7 +832,7 @@ def standard_gravimetric_collector(b, **kwargs):
     columns=["charge_capacity_gravimetric", "discharge_capacity_gravimetric", "coulombic_efficiency"]
     data_collector_arguments=dict(
         partition_by_cv=True, 
-        individual_summary_hooks=[_copy_and_normalize], 
+        individual_summary_hooks=[_copy_and_normalize_partial], 
         drop_columns=["charge_capacity_gravimetric", "charge_capacity_gravimetric_non_cv", "discharge_capacity_gravimetric_cv",  "discharge_capacity_gravimetric_non_cv"],
         average_method="mean",
         key_index_bounds=[0, 4],
