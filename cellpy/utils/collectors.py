@@ -793,6 +793,47 @@ class BatchCollector:
         f = d / n
         return f
 
+def standard_gravimetric_collector(b, **kwargs):
+    """Create a standard gravimetric collector.
+    
+    This is a temporary hack to allow for making standard plot no. 1.
+    """
+
+    def _copy_and_normalize(df, columns, norm_factor=120.0, *args, **kwargs):
+        # modify the dataframe:
+        df = df.assign(
+            discharge_capacity_retention_gravimetric_norm=lambda x: 100*(norm_factor - x.discharge_capacity_gravimetric) / norm_factor,
+        )
+        # modify the output columns:
+        if "discharge_capacity_retention_gravimetric_norm" not in columns:
+            columns.append("discharge_capacity_retention_gravimetric_norm")
+        return df, columns
+
+    group_it = kwargs.pop("group_it", True)
+    interactive = kwargs.pop("interactive", True)
+    
+    if not interactive:
+        raise NotImplementedError("Only interactive mode is implemented for standard_gravimetric_collector")
+    backend = kwargs.pop("backend", "plotly")
+    if backend != "plotly":
+        raise NotImplementedError("Only plotly backend is implemented for standard_gravimetric_collector")
+    columns=["charge_capacity_gravimetric", "discharge_capacity_gravimetric", "coulombic_efficiency"]
+    data_collector_arguments=dict(
+        partition_by_cv=True, 
+        individual_summary_hooks=[_copy_and_normalize], 
+        drop_columns=["charge_capacity_gravimetric", "charge_capacity_gravimetric_non_cv", "discharge_capacity_gravimetric_cv",  "discharge_capacity_gravimetric_non_cv"],
+        average_method="mean",
+        key_index_bounds=[0, 4],
+        )
+    plotter_arguments=dict(
+        spread=group_it,
+        markers=True,
+        height_fractions_spread=[0.1, 0.3, 0.3, 0.3],
+        order_variables=["coulombic_efficiency", "discharge_capacity_gravimetric", "discharge_capacity_retention_gravimetric_norm", "charge_capacity_gravimetric_cv"],
+    )
+    data_collector_arguments.update(kwargs.pop("data_collector_arguments", {}))
+    plotter_arguments.update(kwargs.pop("plotter_arguments", {}))
+    return BatchSummaryCollector(b, group_it=group_it, interactive=interactive, backend=backend, columns=columns, data_collector_arguments=data_collector_arguments, plotter_arguments=plotter_arguments, **kwargs)
 
 class BatchSummaryCollector(BatchCollector):
     # Three main levels of arguments to the plotter and collector funcs is available:
@@ -1620,6 +1661,7 @@ def _plotly_y_label_cleaner(y_label_mapper, split_at=20):
             v = "<br>".join(final_lines)
         new_y_label_mapper[k] = v
     return new_y_label_mapper
+
 def spread_plot(curves, plotly_arguments=None, y_label_mapper=None, **kwargs):
     """Create a spread plot (error-bands instead of error-bars).
     
@@ -1631,8 +1673,6 @@ def spread_plot(curves, plotly_arguments=None, y_label_mapper=None, **kwargs):
     from plotly.subplots import make_subplots
 
    
-
-
     if y_label_mapper is None:
         y_label_mapper = {}
     else:
@@ -2463,15 +2503,16 @@ def summary_plotter(collected_curves, cycles_to_plot=None, backend="plotly", **k
         label_mapper[y] = {}
         variables = list(collected_curves[g].unique())
         for v in variables:
-            # extract units:
+
+            # unit label
             u_sub = None
-            if v.endswith("_areal"):
+            if v.endswith("_areal") or v.endswith("_areal_cv"):
                 u_sub = units["cellpy_units"].specific_areal
-            elif v.endswith("_gravimetric"):
+            elif v.endswith("_gravimetric") or v.endswith("_gravimetric_cv"):
                 u_sub = units["cellpy_units"].specific_gravimetric
-            elif v.endswith("_volumetric"):
+            elif v.endswith("_volumetric") or v.endswith("_volumetric_cv"):
                 u_sub = units["cellpy_units"].specific_volumetric
-                
+
             u_top = None
             if "_capacity" in v:
                 u_top = units["cellpy_units"].charge
@@ -2480,16 +2521,23 @@ def summary_plotter(collected_curves, cycles_to_plot=None, backend="plotly", **k
             if v == "coulombic_efficiency":
                 u_top = "%"
 
-            # creating label:
             u = u_top or "Value"
+
+            # variable label
             v2 = v.split("_")
             if u_sub:
                 u_sub = u_sub.replace("**", "")
                 u = f"{u}/{u_sub}"
-                v2 = v2[:-1]
+                if v2[-1] == "cv":
+                    v2 = v2[:-2]
+                    v2.append("cv")
+                else:
+                    v2 = v2[:-1]
             v2 = " ".join(v2).title()
+
             if v2.endswith("Cv"):
                 v2 = v2.replace("Cv", "CV")
+
             label_mapper[y][v] = f"{v2} ({u})"
 
     # TODO: need to refactor and fix how the classes are created so that leftover kwargs are not sent to the backend
