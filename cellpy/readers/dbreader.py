@@ -88,7 +88,6 @@ class Reader(core.BaseDbReader):
         self.headers = self.db_sheet_cols.headers
 
         if db_frame is not None:
-            print("Using frame instead of file")
             self.table = db_frame.copy()
         else:
             self.skiprows, self.nrows = self._find_out_what_rows_to_skip()
@@ -98,6 +97,7 @@ class Reader(core.BaseDbReader):
 
         if batch:
             self.selected_batch = self.select_batch(batch, batch_col_name=batch_col_name)
+
         logging.debug("got table")
 
     def __str__(self):
@@ -144,6 +144,7 @@ class Reader(core.BaseDbReader):
     def _select_batch(self, batch, batch_col_name=None, case_sensitive=True, drop=True, clean=False):
         if not batch_col_name:
             batch_col_name = self.db_sheet_cols.batch
+
         logging.debug("selecting batch - %s" % batch)
         sheet = self.table
         identity = self.db_sheet_cols.id
@@ -164,7 +165,8 @@ class Reader(core.BaseDbReader):
                 sheet.drop_duplicates(inplace=True)
                 sheet.dropna(inplace=True)
                 return sheet.values.astype(int)
-        return sheet.loc[:, identity].values.astype(int)
+        out = sheet.loc[:, identity].values.astype(int)
+        return out
 
     def from_batch(
         self,

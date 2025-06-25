@@ -108,6 +108,9 @@ def _make_average(
             new_col_name_std = "std"
 
             if number_of_cols > 1:
+                # sqr = _ensure_numeric((avg - values) ** 2)
+                # TODO: Fix this - RuntimeWarning: invalid value encountered in subtract
+                # Could consider using np.nanmean(new_frame[col]) instead of np.mean(new_frame[col])?
                 avg_frame = new_frame[col].agg([average_method, "std"], skipna=True, axis=1)
             else:
                 avg_frame = pd.DataFrame(data=new_frame[col].values, columns=[new_col_name_mean])

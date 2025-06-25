@@ -192,30 +192,29 @@ def simple_db_engine(
         logging.debug("No reader provided. Creating one myself.")
 
     if cell_ids is None:
+        logging.debug("cell_ids is None")
         pages_dict = reader.from_batch(
             batch_name=batch_name,
             include_key=include_key,
             include_individual_arguments=include_individual_arguments,
         )
+        logging.debug("pages_dict: {pages_dict}")
 
     else:
+        logging.debug("cell_ids is not None")
         pages_dict = dict()
         # TODO: rename this to "cell" or "cell_id" or something similar:
         pages_dict[hdr_journal["filename"]] = _query(reader.get_cell_name, cell_ids)
         if include_key:
-
             pages_dict[hdr_journal["id_key"]] = cell_ids
-
         if include_individual_arguments:
             pages_dict[hdr_journal["argument"]] = _query(reader.get_args, cell_ids)
-
         pages_dict[hdr_journal["mass"]] = _query(reader.get_mass, cell_ids)
         pages_dict[hdr_journal["total_mass"]] = _query(reader.get_total_mass, cell_ids)
         try:
             pages_dict[hdr_journal["nom_cap_specifics"]] = _query(reader.get_nom_cap_specifics, cell_ids)
         except Exception as e:
             pages_dict[hdr_journal["nom_cap_specifics"]] = "gravimetric"
-
         try:
             # updated 06.01.2025: some old db files returns None for file_name_indicator
             _file_name_indicator = _query(reader.get_file_name_indicator, cell_ids)
@@ -227,18 +226,28 @@ def simple_db_engine(
                 hdr_journal["filename"]
             ]  # TODO: use of "filename"!
 
-        pages_dict[hdr_journal["loading"]] = _query(reader.get_loading, cell_ids)
-        pages_dict[hdr_journal["nom_cap"]] = _query(reader.get_nom_cap, cell_ids)
-        pages_dict[hdr_journal["area"]] = _query(reader.get_area, cell_ids)
-        pages_dict[hdr_journal["experiment"]] = _query(reader.get_experiment_type, cell_ids)
-        pages_dict[hdr_journal["fixed"]] = _query(reader.inspect_hd5f_fixed, cell_ids)
-        pages_dict[hdr_journal["label"]] = _query(reader.get_label, cell_ids)
-        pages_dict[hdr_journal["cell_type"]] = _query(reader.get_cell_type, cell_ids)
-        pages_dict[hdr_journal["instrument"]] = _query(reader.get_instrument, cell_ids)
+        journal_fields = [
+            ("loading", reader.get_loading),
+            ("nom_cap", reader.get_nom_cap),
+            ("area", reader.get_area),
+            ("experiment", reader.get_experiment_type),
+            ("fixed", reader.inspect_hd5f_fixed),
+            ("label", reader.get_label),
+            ("cell_type", reader.get_cell_type),
+            ("instrument", reader.get_instrument),
+            ("comment", reader.get_comment),
+            ("group", reader.get_group),
+        ]
+        
+        for field_name, reader_method in journal_fields:
+            try:
+                pages_dict[hdr_journal[field_name]] = _query(reader_method, cell_ids)
+            except Exception as e:
+                logging.debug(f"Error in getting {field_name}: {e}")
+
         pages_dict[hdr_journal["raw_file_names"]] = []
         pages_dict[hdr_journal["cellpy_file_name"]] = []
-        pages_dict[hdr_journal["comment"]] = _query(reader.get_comment, cell_ids)
-        pages_dict[hdr_journal["group"]] = _query(reader.get_group, cell_ids)
+
         if additional_column_names is not None:
             for k in additional_column_names:
                 try:
@@ -250,16 +259,19 @@ def simple_db_engine(
         del reader
 
     for key in list(pages_dict.keys()):
-        logging.debug("%s: %s" % (key, str(pages_dict[key])))
+        logging.debug(f"[length: {len(pages_dict[key]):04d}] {key}: {str(pages_dict[key])}")
 
     _groups = pages_dict[hdr_journal["group"]]
     groups = helper.fix_groups(_groups)
     pages_dict[hdr_journal["group"]] = groups
     my_timer_start = time.time()
+    logging.debug("finding files")
     pages_dict = helper.find_files(pages_dict, file_list=file_list, pre_path=pre_path, **kwargs)
+    logging.debug("files found")
+    logging.debug(f"pages_dict: {pages_dict}")
     my_timer_end = time.time()
     if (my_timer_end - my_timer_start) > 5.0:
-        logging.critical(
+        logging.debug(
             "The function _find_files was very slow. "
             "Save your journal so you don't have to run it again! "
             "You can load it again using the from_journal(journal_name) method."
@@ -294,7 +306,22 @@ def simple_db_engine(
         # TODO: check if drop=False works [#index]
         pages.set_index(hdr_journal["filename"], inplace=True)  # edit this to allow for
         # non-numeric index-names (for tab completion and python-box)
+    _check_pages_frame(pages)
     return pages
+
+
+def _check_pages_frame(pages):
+    logging.debug(f"pages.columns: {pages.columns}")
+    logging.debug(f"pages.index: {pages.index}")
+    logging.debug(f"pages.index.unique(): {pages.index.unique()}")
+    logging.debug(f"pages.dtypes: {pages.dtypes}")
+    duplicates = pages.index.duplicated()
+    if duplicates.any():
+        logging.critical(f"Oh no! Found {duplicates.sum()} duplicate cell names in your db - this is not allowed!")
+        logging.critical(f"Duplicate cell names: {pages.index[duplicates].tolist()}")
+    else:
+        logging.debug("No duplicate indices found")
+    logging.debug(f"pages.shape: {pages.shape}")
 
 
 def _report_suspected_duplicate_id(e, what="do it", on=None):
@@ -303,6 +330,6 @@ def _report_suspected_duplicate_id(e, what="do it", on=None):
     logging.warning("maybe you have a corrupted db?")
     logging.warning(
         "typically happens if the cell_id is not unique (several rows or records in "
-        "your db has the same cell_id or key)"
+        "your db has the same cell_id or key) or if you have non-unique cell names"
     )
     logging.warning(e)
