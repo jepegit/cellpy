@@ -111,6 +111,10 @@ def _make_average(
                 # sqr = _ensure_numeric((avg - values) ** 2)
                 # TODO: Fix this - RuntimeWarning: invalid value encountered in subtract
                 # Could consider using np.nanmean(new_frame[col]) instead of np.mean(new_frame[col])?
+                
+                # Replace inf with nan
+                new_frame[col] = new_frame[col].replace([np.inf, -np.inf], np.nan)
+
                 avg_frame = new_frame[col].agg([average_method, "std"], skipna=True, axis=1)
             else:
                 avg_frame = pd.DataFrame(data=new_frame[col].values, columns=[new_col_name_mean])
@@ -1064,6 +1068,7 @@ def concat_summaries(
         frames_sub = []
         keys_sub = []
         for cell_id in cell_names:
+            output_columns_current_cell = output_columns.copy()
             logging.debug(f"Processing [{cell_id}]")
             group = pages.loc[cell_id, "group"]
             sub_group = pages.loc[cell_id, "sub_group"]
@@ -1102,7 +1107,6 @@ def concat_summaries(
                     c = add_normalized_capacity(c, norm_cycles=normalize_capacity_on, scale=scale_by)
 
                 if rate is not None:
-                    # TODO: update this so that it works with partitioned data
                     if partition_by_cv:
                         print("partitioning by cv_step is experimental for rate selection")
 
@@ -1117,7 +1121,7 @@ def concat_summaries(
                         partition_by_cv=partition_by_cv,
                     )
                 elif partition_by_cv:
-                    s = _partition_summary_based_on_cv_steps(c, column_set=output_columns)
+                    s = _partition_summary_based_on_cv_steps(c, column_set=output_columns_current_cell)
 
                 else:
                     s = c.data.summary
@@ -1126,17 +1130,22 @@ def concat_summaries(
                     logging.info("Experimental feature: applying individual summary hooks")
                     for hook in individual_summary_hooks:
                         logging.info(f"  -applying {hook.__name__} to {cell_id}")
-                        s, output_columns = hook(s, columns=output_columns.copy(), *args, **kwargs)
+                        s, output_columns_current_cell = hook(s, columns=output_columns_current_cell.copy(), *args, **kwargs)
+                        output_columns = output_columns_current_cell.copy()
+
 
                 if columns is not None:
-                    # Filter out columns that don't exist in the dataframe to avoid KeyError
-                    output_columns = [col for col in output_columns if col in s.columns]
+                    # Fill columns that don't exist in the dataframe with nan
+                    for col in output_columns:
+                        if col not in s.columns:
+                            s[col] = np.nan
                     s = s.loc[:, output_columns].copy()
                     if drop_columns:
                         logging.debug(f"Dropping columns: {drop_columns}")
                         logging.debug(f"Columns in s before dropping: {s.columns}")
                         s = s.drop(columns=drop_columns, errors="ignore")
                         logging.debug(f"Columns in s after dropping: {s.columns}")
+
 
                 # add group and subgroup
                 if not group_it:
@@ -1155,8 +1164,10 @@ def concat_summaries(
             try:
                 # if we used drop_columns, we need to remove them from the output_columns
                 if drop_columns:
-                    output_columns = [col for col in output_columns if col not in drop_columns]
-                s = _make_average(frames_sub, output_columns, average_method=average_method)
+                    output_columns_current_group = [col for col in output_columns if col not in drop_columns]
+                else:
+                    output_columns_current_group = output_columns.copy()
+                s = _make_average(frames_sub, output_columns_current_group, average_method=average_method)
             except ValueError as e:
                 print("could not make average!")
                 print(e)
