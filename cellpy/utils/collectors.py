@@ -8,7 +8,7 @@ import pickle as pkl
 from pprint import pprint
 from pathlib import Path
 import textwrap
-from typing import Any
+from typing import Any, Union
 import time
 from itertools import count
 from multiprocessing import Process
@@ -131,10 +131,15 @@ def generate_output_path(name, directory, serial_number=None):
     f = d / name
     return f
 
-
-def _image_exporter_plotly(figure, filename, timeout=IMAGE_TO_FILE_TIMEOUT, **kwargs):
+def incremental_image_exporter_plotly(self, filename, timeout=IMAGE_TO_FILE_TIMEOUT, **kwargs):
+    use_subprocess = kwargs.pop("use_subprocess", True)
+    
+    if not use_subprocess:
+        print(f"saving image to {filename}")
+        self.figure.write_image(filename, **kwargs)
+        return
     p = Process(
-        target=figure.write_image,
+        target=self.figure.write_image,
         args=(filename,),
         name="save_plotly_image_to_file",
         kwargs=kwargs,
@@ -146,6 +151,11 @@ def _image_exporter_plotly(figure, filename, timeout=IMAGE_TO_FILE_TIMEOUT, **kw
         print(f"Oops, {p} timeouts! Could not save {filename}")
     if p.exitcode == 0:
         print(f" - saved image file: {filename}")
+    else:
+        print(f"Oops, {p} failed with exitcode: {p.exitcode}")
+        print("Could it be that you have not installed the required packages?")
+        print("Try to install kaleido:")
+        print("pip install kaleido")
 
 
 def save_plotly_figure(figure, name=None, directory=".", serial_number=None):
@@ -171,8 +181,8 @@ def save_plotly_figure(figure, name=None, directory=".", serial_number=None):
     filename_svg = filename_pre.with_suffix(".svg")
     filename_json = filename_pre.with_suffix(".json")
 
-    _image_exporter_plotly(figure, filename_png, scale=3.0)
-    _image_exporter_plotly(figure, filename_svg)
+    incremental_image_exporter_plotly(figure, filename_png, scale=3.0)
+    incremental_image_exporter_plotly(figure, filename_svg)
     figure.write_json(filename_json)
     print(f" - saved plotly json file: {filename_json}")
 
@@ -706,10 +716,22 @@ class BatchCollector:
         filename = filename.with_suffix(".h5")
         data = self.data
 
+        # Convert categorical columns to strings to avoid HDF5 issues
+        for col in data.columns:
+            if pd.api.types.is_categorical_dtype(data[col]):
+                logging.info(f"converting categorical column {col} to string")
+                data[col] = data[col].astype(str)
+
         data.to_hdf(filename, key=HDF_KEY, mode="w")
         print(f" - saved hdf5 file: {filename}")
 
     def _image_exporter_plotly(self, filename, timeout=IMAGE_TO_FILE_TIMEOUT, **kwargs):
+        use_subprocess = kwargs.pop("use_subprocess", True)
+        
+        if not use_subprocess:
+            print(f"saving image to {filename}")
+            self.figure.write_image(filename, **kwargs)
+            return
         p = Process(
             target=self.figure.write_image,
             args=(filename,),
@@ -723,6 +745,13 @@ class BatchCollector:
             print(f"Oops, {p} timeouts! Could not save {filename}")
         if p.exitcode == 0:
             print(f" - saved image file: {filename}")
+        else:
+            print(f"Oops, {p} failed with exitcode: {p.exitcode}")
+            print("Could it be that you have not installed the required packages?")
+            print("Try to install kaleido:")
+            print("pip install kaleido")
+
+
 
     def to_image_files(self, serial_number=None):
         """Save to image files (png, svg, json).
@@ -767,19 +796,29 @@ class BatchCollector:
             print(f"TODO: implement saving {filename_svg}")
             print(f"TODO: implement saving {filename_json}")
 
-    def save(self, serial_number=None):
+    def save(self, serial_number=None, save_hdf5=True, save_image_files=True, to_csv_kwargs:Union[dict, None] = None):
         """Save to csv, hdf5 and image files.
 
         Args:
             serial_number (int): serial number to append to the filename.
+            save_hdf5 (bool): save to hdf5 file.
+            save_image_files (bool): save to image files.
+            to_csv_kwargs (dict): keyword arguments sent to the csv writer.
 
         """
 
-        self.to_csv(serial_number=serial_number)
-        self.to_hdf5(serial_number=serial_number)
+        if to_csv_kwargs is None:
+            to_csv_kwargs = {}
+        self.to_csv(serial_number=serial_number, **to_csv_kwargs)
+        if save_hdf5:
+            try:
+                self.to_hdf5(serial_number=serial_number)
+            except Exception as e:
+                print(f"Error saving hdf5 file: {e}")
 
         if self._figure_valid():
-            self.to_image_files(serial_number=serial_number)
+            if save_image_files:
+                self.to_image_files(serial_number=serial_number)
 
     def _output_path(self, serial_number=None):
         d = Path(self.figure_directory)
@@ -798,6 +837,11 @@ def standard_gravimetric_collector(b, norm_factor=120.0, **kwargs):
     
     This is a temporary hack to allow for making standard plot no. 1.
 
+    Coulombic Efficiency
+    Discharge Capacity (gravimetric)
+    Discharge Capacity Retention (Normalized)
+    CV share Charge Capacity (Normalized)
+
     Args:
         norm_factor (float): the factor to normalize the discharge capacity retention by.
         group_it (bool): if True, group the cells by the key_index_bounds.
@@ -808,21 +852,26 @@ def standard_gravimetric_collector(b, norm_factor=120.0, **kwargs):
 
     from functools import partial
 
-    def _copy_and_normalize(df, columns, norm_factor=120.0, *args, **kwargs):
+    def _copy_and_normalize(df, columns, col="discharge_capacity_gravimetric",norm_factor=120.0, *args, **kwargs):
         # modify the dataframe:
-        df = df.assign(
-            discharge_capacity_retention_gravimetric_norm=lambda x: 100*(norm_factor - x.discharge_capacity_gravimetric) / norm_factor,
-        )
+        _kwargs = {
+            f"{col}_norm": lambda x: 100*(x[col]) / norm_factor,
+        }
+        df = df.assign(**_kwargs)
+
         # modify the output columns:
-        if "discharge_capacity_retention_gravimetric_norm" not in columns:
-            columns.append("discharge_capacity_retention_gravimetric_norm")
+        if f"{col}_norm" not in columns:
+            columns.append(f"{col}_norm")
         return df, columns
 
     group_it = kwargs.pop("group_it", True)
     interactive = kwargs.pop("interactive", True)
 
-    _copy_and_normalize_partial = partial(_copy_and_normalize, norm_factor=norm_factor)
-    _copy_and_normalize_partial.__name__ = "copy_and_normalize"
+    _copy_and_normalize_discharge_capacity_gravimetric_partial = partial(_copy_and_normalize, norm_factor=norm_factor)
+    _copy_and_normalize_discharge_capacity_gravimetric_partial.__name__ = "copy_and_normalize_discharge_capacity_gravimetric"
+    
+    _copy_and_normalize_charge_capacity_gravimetric_cv_partial = partial(_copy_and_normalize, norm_factor=norm_factor, col="charge_capacity_gravimetric_cv")
+    _copy_and_normalize_charge_capacity_gravimetric_cv_partial.__name__ = "copy_and_normalize_charge_capacity_gravimetric_cv"
 
     if not interactive:
         raise NotImplementedError("Only interactive mode is implemented for standard_gravimetric_collector")
@@ -832,8 +881,8 @@ def standard_gravimetric_collector(b, norm_factor=120.0, **kwargs):
     columns=["charge_capacity_gravimetric", "discharge_capacity_gravimetric", "coulombic_efficiency"]
     data_collector_arguments=dict(
         partition_by_cv=True, 
-        individual_summary_hooks=[_copy_and_normalize_partial], 
-        drop_columns=["charge_capacity_gravimetric", "charge_capacity_gravimetric_non_cv", "discharge_capacity_gravimetric_cv",  "discharge_capacity_gravimetric_non_cv"],
+        individual_summary_hooks=[_copy_and_normalize_discharge_capacity_gravimetric_partial, _copy_and_normalize_charge_capacity_gravimetric_cv_partial], 
+        drop_columns=["charge_capacity_gravimetric_cv","charge_capacity_gravimetric", "charge_capacity_gravimetric_non_cv", "discharge_capacity_gravimetric_cv",  "discharge_capacity_gravimetric_non_cv"],
         average_method="mean",
         key_index_bounds=[0, 4],
         )
@@ -841,7 +890,7 @@ def standard_gravimetric_collector(b, norm_factor=120.0, **kwargs):
         spread=group_it,
         markers=True,
         height_fractions_spread=[0.1, 0.3, 0.3, 0.3],
-        order_variables=["coulombic_efficiency", "discharge_capacity_gravimetric", "discharge_capacity_retention_gravimetric_norm", "charge_capacity_gravimetric_cv"],
+        order_variables=["coulombic_efficiency", "discharge_capacity_gravimetric", "discharge_capacity_gravimetric_norm", "charge_capacity_gravimetric_cv_norm"],
     )
     data_collector_arguments.update(kwargs.pop("data_collector_arguments", {}))
     plotter_arguments.update(kwargs.pop("plotter_arguments", {}))
@@ -1593,7 +1642,14 @@ def _hist_eq(trace):
 
 def y_axis_replacer(ax, label):
     """Replace y-axis label in matplotlib plots."""
-    ax.update(title_text=label)
+    if isinstance(label, dict):
+
+        _label = label.get(ax.title.text, None)
+        if _label is None:
+            _label = list(label.values())[0]
+        ax.update(title_text=_label)
+    else:
+        ax.update(title_text=label)
     return ax
 
 
@@ -2067,8 +2123,7 @@ def sequence_plotter(
                     if markers is not True:
                         fig.for_each_trace(remove_markers)
                 except Exception as e:
-                    print("failed")
-                    print(e)
+                    print(f"sequence_plotter - fig_pr_cycle - failed {e} [{z}]")
 
         elif method == "film":
             fig = px.density_heatmap(curves, **plotly_arguments, **kwargs)
@@ -2084,7 +2139,7 @@ def sequence_plotter(
 
         elif method == "summary":
             if spread:
-                logging.critical("using spread is an experimental feature and might not work as expected")
+                logging.info("using spread is an experimental feature and might not work as expected")
                 fig = spread_plot(curves, plotly_arguments=plotly_arguments, y_label_mapper=y_label_mapper, **kwargs)
             else:
                 # remove all kwargs that are only intended for spread_plot
@@ -2113,8 +2168,7 @@ def sequence_plotter(
                     if markers is not True:
                         fig.for_each_trace(remove_markers)
                 except Exception as e:
-                    print("failed")
-                    print(e)
+                    print(f"sequence_plotter - summary - failed {e} [{group}]")
 
             if y_label_mapper and not spread:
                 y_label_mapper = _plotly_y_label_cleaner(y_label_mapper)
@@ -2134,16 +2188,16 @@ def sequence_plotter(
                         fig.update_annotations(text="")
 
                     except Exception as e:
-                        print("failed")
-                        print(e)
+                        print(f"sequence_plotter - summary - y-label mapper failed {e} [{group}]")
                 else:
                     try:
                         fig.for_each_yaxis(
-                                functools.partial(y_axis_replacer, label=y_label_mapper[0]),
+                                functools.partial(y_axis_replacer, label=y_label_mapper),
                             )
                     except Exception as e:
-                        print("failed")
-                        print(e)
+                        print(f"sequence_plotter - summary - y-label mapper - no annotations - failed {e} [{group}]")
+                        print(f"y_label_mapper: {y_label_mapper}")
+                        print(f"annotations: {annotations}")
 
         else:
             print(f"method '{method}' is not supported by plotly")

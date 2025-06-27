@@ -970,11 +970,14 @@ def concat_summaries(
             in the summary data.
         low_limit (float): lower limit for replacing extremes with nan if replace_extremes_with_nan is True.
         high_limit (float): upper limit for replacing extremes with nan if replace_extremes_with_nan is True.
+        remove_last (bool): if True, remove the last cycle from the summary data.
         *args,**kwargs: additional arguments to be passed to the hooks.
 
     Returns:
         ``pandas.DataFrame``
     """
+
+    remove_last = kwargs.pop("remove_last", False)
 
     if key_index_bounds is None:
         # TODO: consider changing this to [1, -1]
@@ -1126,6 +1129,10 @@ def concat_summaries(
                 else:
                     s = c.data.summary
 
+                if remove_last:
+                    s = s.iloc[:-1]
+
+
                 if individual_summary_hooks is not None:
                     logging.info("Experimental feature: applying individual summary hooks")
                     for hook in individual_summary_hooks:
@@ -1155,8 +1162,6 @@ def concat_summaries(
 
                 frames_sub.append(s)
                 keys_sub.append(cell_id)
-
-        
 
         if group_it:
             # TODO: update this to allow for more advanced naming of groups
