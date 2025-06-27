@@ -2156,7 +2156,9 @@ def sequence_plotter(
                     **plotly_arguments,
                     **kwargs,
                 )
+
             if group_cells:  # all cells in same group has same color
+
                 try:
                     fig.for_each_trace(
                         functools.partial(
@@ -2177,13 +2179,23 @@ def sequence_plotter(
                     try:
                         for i in range(len(annotations)):
                             row = i + 1
-                            for k, v in y_label_mapper.items():
-                                if annotations[i].text.endswith(k):
+                            if annotations[i].text.startswith("variable="):
+                                variable = annotations[i].text.split("=")[1]
+                                if variable in y_label_mapper:
+                                    v = y_label_mapper[variable]
                                     fig.for_each_yaxis(
                                         functools.partial(y_axis_replacer, label=v),
                                         row=row,
                                     )
-                                    break
+                            else:
+                                for k, v in y_label_mapper.items():
+                                    
+                                    if annotations[i].text.endswith(k):
+                                        fig.for_each_yaxis(
+                                            functools.partial(y_axis_replacer, label=v),
+                                            row=row,
+                                        )
+                                        break
 
                         fig.update_annotations(text="")
 
@@ -2501,6 +2513,9 @@ def summary_plotter(collected_curves, cycles_to_plot=None, backend="plotly", **k
     2) mixed long and wide format where the variables are own columns.
     """
 
+    # start_cell is used to determine the starting cell for the subplots (plotly)
+    start_cell = kwargs.pop("start_cell", "bottom-left")
+
     col_headers = collected_curves.columns.to_list()
 
     # need to manually update this if new columns are added to collected_curves that should not be plotted:
@@ -2656,7 +2671,7 @@ def summary_plotter(collected_curves, cycles_to_plot=None, backend="plotly", **k
                 new_fig = make_subplots(
                     rows=number_of_rows,
                     cols=1,
-                    # start_cell="bottom-left",
+                    start_cell=start_cell,
                     shared_xaxes=True,
                     row_heights=height_fractions[::-1],
                     vertical_spacing=0.02,
@@ -2683,9 +2698,9 @@ def summary_plotter(collected_curves, cycles_to_plot=None, backend="plotly", **k
                 fig.update_xaxes(matches='x')
                 fig.update_yaxes(matches=None, showticklabels=True)
                 
-                # Only show x-axis labels on the bottom subplot
-                for i in range(1, len(height_fractions)):
-                    fig.update_xaxes(showticklabels=False, row=i, col=1)
+                # Only show x-axis labels on the bottom subplot (not needed anymore?)
+                # for i in range(1, len(height_fractions)):
+                #     fig.update_xaxes(showticklabels=False, row=i, col=1)
                 
         return fig
     if backend == "seaborn":
