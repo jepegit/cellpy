@@ -633,7 +633,7 @@ def _check_import_pyodbc():
         elif ODBC == "pypyodbc":
             click.echo(" you stated that you prefer the pypyodbc loader")
             try:
-                import pypyodbc as dbloader
+                import pypyodbc as dbloader # type: ignore
             except ImportError:
                 click.echo(" Failed! Could not import it.")
                 click.echo(" try 'pip install pypyodbc'")
@@ -1271,7 +1271,7 @@ def _run_journals(folder_name, debug, silent, raw, cellpyfile, minimal):
 
 def _run_project(our_new_project, **kwargs):
     try:
-        import papermill as pm
+        import papermill as pm # type: ignore
     except ImportError:
         click.echo(
             "[cellpy]: You need to install papermill for automatically execute the notebooks."
@@ -1738,20 +1738,22 @@ def _new(
             else:
                 selected_project_dir = None
                 click.echo(f"Select another directory instead")
-
+    CREATE_NEW_DIR = "Create new project..."
     if not selected_project_dir:
         project_dirs = [
             d.name
             for d in directory.iterdir()
             if d.is_dir() and not d.name.startswith(".")
         ]
-        project_dirs.insert(0, "[create new dir]")
+        print(f"project_dirs: {project_dirs}")
+        project_dirs.insert(0, CREATE_NEW_DIR)
+        print(f"project_dirs: {project_dirs}")
 
         project_dir = cookiecutter.prompt.read_user_choice(
             "project folder", project_dirs
         )
 
-        if project_dir == "[create new dir]":
+        if project_dir == CREATE_NEW_DIR:
             default_name = "cellpy_project"
             temp_default_name = default_name
             for j in range(999):
@@ -1814,7 +1816,7 @@ def _new(
         click.echo("WARNING - experimental feature - use at your own risk")
         input("Press Enter to continue...")
         try:
-            import papermill as pm
+            import papermill as pm # type: ignore
         except ImportError:
             click.echo(
                 "[cellpy]: You need to install papermill for automatically execute the notebooks."
