@@ -484,36 +484,55 @@ def dqdv_cycle(cycle_df, splitter=True, label_direction=False, **kwargs):
     c_first = cycle_df.loc[cycle_df["direction"] == -1]
     c_last = cycle_df.loc[cycle_df["direction"] == 1]
 
-    converter = Converter(**kwargs)
-
-    converter.set_data(c_first["capacity"], c_first["voltage"])
-    converter.inspect_data()
-    converter.pre_process_data()
-    converter.increment_data()
-    converter.post_process_data()
-    voltage_first = converter.voltage_processed
-    incremental_capacity_first = converter.incremental_capacity
-
-    if splitter:
-        voltage_first = np.append(voltage_first, np.nan)
-        incremental_capacity_first = np.append(incremental_capacity_first, np.nan)
-
-    converter = Converter(**kwargs)
-
-    converter.set_data(c_last["capacity"], c_last["voltage"])
-    converter.inspect_data()
-    converter.pre_process_data()
-    converter.increment_data()
+    # first
     try:
-        converter.post_process_data()
-    except ValueError:
-        logging.debug("ValueError - trying again with different settings")
-        converter.post_smoothing = False
-        print(converter)
-        converter.post_process_data()
-    voltage_last = converter.voltage_processed[::-1]
-    incremental_capacity_last = converter.incremental_capacity[::-1]
+        converter = Converter(**kwargs)
+        converter.set_data(c_first["capacity"], c_first["voltage"])
+        converter.inspect_data()
+        converter.pre_process_data()
+        converter.increment_data()
+        try:
+            converter.post_process_data()
+        except ValueError:
+            logging.debug("ValueError - trying again with different settings")
+            converter.post_smoothing = False
+            print(converter)
+            converter.post_process_data()
+        voltage_first = converter.voltage_processed
+        incremental_capacity_first = converter.incremental_capacity
 
+        if splitter:
+            voltage_first = np.append(voltage_first, np.nan)
+            incremental_capacity_first = np.append(incremental_capacity_first, np.nan)
+    except Exception as e:
+        print(f"Error in dqdv_cycle - first")
+        print(f"error-message: '{e}'")
+        voltage_first = np.array([])
+        incremental_capacity_first = np.array([])
+
+    # last
+    try:
+        converter = Converter(**kwargs)
+        converter.set_data(c_last["capacity"], c_last["voltage"])
+        converter.inspect_data()
+        converter.pre_process_data()
+        converter.increment_data()
+        try:
+            converter.post_process_data()
+        except ValueError:
+            logging.debug("ValueError - trying again with different settings")
+            converter.post_smoothing = False
+            print(converter)
+            converter.post_process_data()
+        voltage_last = converter.voltage_processed[::-1]
+        incremental_capacity_last = converter.incremental_capacity[::-1]
+    except Exception as e:
+        print(f"Error in dqdv_cycle - last")
+        print(f"error-message: '{e}'")
+        voltage_last = np.array([])
+        incremental_capacity_last = np.array([])
+
+    # combine
     voltage = np.concatenate((voltage_first, voltage_last))
     incremental_capacity = np.concatenate(
         (incremental_capacity_first, incremental_capacity_last)
@@ -613,7 +632,6 @@ def dqdv_cycles(cycles_df, not_merged=False, label_direction=False, **kwargs):
                 )
                 _d = {"voltage": v, "dq": dq}
                 _cols = ["voltage", "dq"]
-
             _ica_df = pd.DataFrame(_d)
             if not not_merged:
                 _cols.insert(0, "cycle")
@@ -894,6 +912,7 @@ def _dqdv_combinded_frame(cell, tidy=True, label_direction=False, **kwargs):
         insert_nan=False,
         number_of_points=number_of_points,
     )
+
     ica_df = dqdv_cycles(
         cycles, not_merged=not tidy, label_direction=label_direction, **kwargs
     )

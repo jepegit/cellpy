@@ -1,6 +1,7 @@
 import logging
 import os
 import pathlib
+from typing import Optional
 import warnings
 from copy import deepcopy
 
@@ -81,6 +82,7 @@ def _make_average(
     frames,
     columns=None,
     skip_st_dev_for_equivalent_cycle_index=True,
+    average_method="mean",
 ):
     hdr_norm_cycle = hdr_summary["normalized_cycle_index"]
     not_a_number = np.nan
@@ -96,17 +98,24 @@ def _make_average(
         if col == hdr_norm_cycle and skip_st_dev_for_equivalent_cycle_index:
             if number_of_cols > 1:
                 normalized_cycle_index_frame = (
-                    new_frame[col].agg(["mean"], axis=1).rename(columns={"mean": "equivalent_cycle"})
+                    new_frame[col].agg([average_method], skipna=True, axis=1).rename(columns={average_method: "equivalent_cycle"})
                 )
             else:
                 normalized_cycle_index_frame = new_frame[col].copy()
 
         else:
-            new_col_name_mean = "mean"
+            new_col_name_mean = average_method
             new_col_name_std = "std"
 
             if number_of_cols > 1:
-                avg_frame = new_frame[col].agg(["mean", "std"], axis=1)
+                # sqr = _ensure_numeric((avg - values) ** 2)
+                # TODO: Fix this - RuntimeWarning: invalid value encountered in subtract
+                # Could consider using np.nanmean(new_frame[col]) instead of np.mean(new_frame[col])?
+                
+                # Replace inf with nan
+                new_frame[col] = new_frame[col].replace([np.inf, -np.inf], np.nan)
+
+                avg_frame = new_frame[col].agg([average_method, "std"], skipna=True, axis=1)
             else:
                 avg_frame = pd.DataFrame(data=new_frame[col].values, columns=[new_col_name_mean])
                 avg_frame[new_col_name_std] = not_a_number
@@ -119,12 +128,14 @@ def _make_average(
     final_frame = pd.concat(new_frames, axis=0)
     cols = final_frame.columns.to_list()
     new_cols = []
-    for n in ["variable", "mean", "std"]:
+    for n in ["variable", average_method, "std"]:
         if n in cols:
             new_cols.append(n)
             cols.remove(n)
     cols.extend(new_cols)
     final_frame = final_frame.reindex(columns=cols)
+    # rename the mean column to "mean" for backward compatibility:
+    final_frame = final_frame.rename(columns={average_method: "mean"})
     return final_frame
 
 
@@ -818,41 +829,54 @@ def concatenate_summaries(
 def add_cv_step_columns(columns: list) -> list:
     """Add columns for CV steps.
     """
-    raise NotImplementedError("This function is not implemented yet")
+    new_columns = []
+    for col in columns:
+        if "_capacity" in col:
+            new_columns.extend([col, col + "_cv", col + "_non_cv"])
+        else:
+            new_columns.append(col)
+    return new_columns
 
 
-def partition_summary_based_on_cv_steps(
+def _partition_summary_based_on_cv_steps(
     c,
-    x: str,
-    column_set: list,
-    split: bool = False,
-    var_name: str = "variable",
-    value_name: str = "value",
+    column_set: Optional[list] = None,
+    x: str = None,
 ):
     """Partition the summary data into CV and non-CV steps.
 
     Args:
         c: cellpy object
-        x: x-axis column name
         column_set: names of columns to include
-        split: add additional column that can be used to split the data when plotting.
-        var_name: name of the variable column after melting
-        value_name: name of the value column after melting
+        x: x-axis column name (default is "cycle_index")
 
     Returns:
-        ``pandas.DataFrame`` (melted with columns x, var_name, value_name, and optionally "row" if split is True)
+        ``pandas.DataFrame``
     """
-    raise NotImplementedError("This function is not implemented yet")
     import pandas as pd
 
-    summary = c.data.summary
+    if not x:
+        x = hdr_summary["cycle_index"]
+
+    summary = c.data.summary.copy()
 
     summary_no_cv = c.make_summary(selector_type="non-cv", create_copy=True).data.summary
     summary_only_cv = c.make_summary(selector_type="only-cv", create_copy=True).data.summary
     if x != summary.index.name:
-        summary.set_index(x, inplace=True)
-        summary_no_cv.set_index(x, inplace=True)
-        summary_only_cv.set_index(x, inplace=True)
+        summary.set_index(x, inplace=True, drop=True)
+        summary_no_cv.set_index(x, inplace=True, drop=True)
+        summary_only_cv.set_index(x, inplace=True, drop=True)
+
+    
+
+    if column_set is None:
+        column_set = summary.columns.tolist()
+    else:
+        # allow for non-existing columns in the dataframe:
+        column_set = [col for col in column_set if col in summary.columns]
+
+    # in case the column set already contains cv cols:
+    column_set = [col for col in column_set if not "_cv" in col]
 
     summary = summary[column_set]
 
@@ -862,25 +886,10 @@ def partition_summary_based_on_cv_steps(
     summary_only_cv = summary_only_cv[column_set]
     summary_only_cv.columns = [col + "_cv" for col in summary_only_cv.columns]
 
-    if split:
-        id_vars = [x, "row"]
-        summary_no_cv["row"] = "without CV"
-        summary_only_cv["row"] = "with CV"
-        summary["row"] = "all"
-    else:
-        id_vars = x
-
-    summary_no_cv = summary_no_cv.reset_index()
-    summary_only_cv = summary_only_cv.reset_index()
-    summary = summary.reset_index()
-    summary_no_cv = summary_no_cv.melt(id_vars, var_name=var_name, value_name=value_name)
-    summary_only_cv = summary_only_cv.melt(id_vars, var_name=var_name, value_name=value_name)
-    summary = summary.melt(id_vars, var_name=var_name, value_name=value_name)
-
-    s = pd.concat([summary, summary_no_cv, summary_only_cv], axis=0)
-    s = s.reset_index(drop=True)
+    s = pd.concat([summary, summary_no_cv, summary_only_cv], axis=1)
 
     return s
+
 
 def concat_summaries(
     b: Batch,
@@ -906,6 +915,16 @@ def concat_summaries(
     only_selected=False,
     experimental_feature_cell_selector=None,
     partition_by_cv=False,
+    replace_inf_with_nan=True,
+    individual_summary_hooks=None,
+    concatenated_summary_hooks=None,
+    drop_columns=None,
+    average_method="mean",
+    replace_extremes_with_nan=True,
+    low_limit=-10e5,
+    high_limit=10e5,
+    *args,
+    **kwargs,
 ) -> pd.DataFrame:
     """Merge all summaries in a batch into a gigantic summary data frame.
 
@@ -938,12 +957,30 @@ def concat_summaries(
         recalc_step_table_kwargs (dict): keyword arguments to be used when recalculating the step table. If not given,
             it will not recalculate the step table.
         only_selected (bool): only use the selected cells.
+        experimental_feature_cell_selector (list): list of cell names to select.
+        partition_by_cv (bool): if True, partition the data by cv_step.
+        replace_inf_with_nan (bool): if True, replace inf with nan in the summary data.
+        individual_summary_hooks (list): list of functions to be applied to the individual summary data.
+        concatenated_summary_hooks (list): list of functions to be applied to the concatenated summary data 
+            (passed to the collect_frames function).
+        drop_columns (list): list of columns to drop before concatenation.
+        average_method (str): method to be used when averaging the summary data. Remark that for backward compatibility,
+            the column name will be "mean" regardless of the actual method used.
+        replace_extremes_with_nan (bool): if True, replace values outside the range [low_limit, high_limit] with nan 
+            in the summary data.
+        low_limit (float): lower limit for replacing extremes with nan if replace_extremes_with_nan is True.
+        high_limit (float): upper limit for replacing extremes with nan if replace_extremes_with_nan is True.
+        remove_last (bool): if True, remove the last cycle from the summary data.
+        *args,**kwargs: additional arguments to be passed to the hooks.
 
     Returns:
         ``pandas.DataFrame``
     """
 
+    remove_last = kwargs.pop("remove_last", False)
+
     if key_index_bounds is None:
+        # TODO: consider changing this to [1, -1]
         key_index_bounds = [1, -2]
 
     cell_names_nest = []
@@ -1029,9 +1066,12 @@ def concat_summaries(
         output_columns = add_cv_step_columns(output_columns)
 
     for gno, cell_names in zip(group_nest, cell_names_nest):
+        # NOTE: to allow for hooks to add columns, all functions that operates in this loop 
+        # must allow for non-existing columns in the dataframe!
         frames_sub = []
         keys_sub = []
         for cell_id in cell_names:
+            output_columns_current_cell = output_columns.copy()
             logging.debug(f"Processing [{cell_id}]")
             group = pages.loc[cell_id, "group"]
             sub_group = pages.loc[cell_id, "sub_group"]
@@ -1069,10 +1109,10 @@ def concat_summaries(
 
                     c = add_normalized_capacity(c, norm_cycles=normalize_capacity_on, scale=scale_by)
 
-                if partition_by_cv:
-                    print("partitioning by cv_step")
-                    s = partition_summary_based_on_cv_steps(c)
                 if rate is not None:
+                    if partition_by_cv:
+                        print("partitioning by cv_step is experimental for rate selection")
+
                     s = select_summary_based_on_rate(
                         c,
                         rate=rate,
@@ -1081,13 +1121,38 @@ def concat_summaries(
                         rate_column=rate_column,
                         inverse=inverse,
                         inverted=inverted,
+                        partition_by_cv=partition_by_cv,
                     )
+                elif partition_by_cv:
+                    s = _partition_summary_based_on_cv_steps(c, column_set=output_columns_current_cell)
 
                 else:
                     s = c.data.summary
 
+                if remove_last:
+                    s = s.iloc[:-1]
+
+
+                if individual_summary_hooks is not None:
+                    logging.info("Experimental feature: applying individual summary hooks")
+                    for hook in individual_summary_hooks:
+                        logging.info(f"  -applying {hook.__name__} to {cell_id}")
+                        s, output_columns_current_cell = hook(s, columns=output_columns_current_cell.copy(), *args, **kwargs)
+                        output_columns = output_columns_current_cell.copy()
+
+
                 if columns is not None:
+                    # Fill columns that don't exist in the dataframe with nan
+                    for col in output_columns:
+                        if col not in s.columns:
+                            s[col] = np.nan
                     s = s.loc[:, output_columns].copy()
+                    if drop_columns:
+                        logging.debug(f"Dropping columns: {drop_columns}")
+                        logging.debug(f"Columns in s before dropping: {s.columns}")
+                        s = s.drop(columns=drop_columns, errors="ignore")
+                        logging.debug(f"Columns in s after dropping: {s.columns}")
+
 
                 # add group and subgroup
                 if not group_it:
@@ -1099,9 +1164,15 @@ def concat_summaries(
                 keys_sub.append(cell_id)
 
         if group_it:
+            # TODO: update this to allow for more advanced naming of groups
             cell_id = create_group_names(custom_group_labels, gno, key_index_bounds, keys_sub, pages)
             try:
-                s = _make_average(frames_sub, output_columns)
+                # if we used drop_columns, we need to remove them from the output_columns
+                if drop_columns:
+                    output_columns_current_group = [col for col in output_columns if col not in drop_columns]
+                else:
+                    output_columns_current_group = output_columns.copy()
+                s = _make_average(frames_sub, output_columns_current_group, average_method=average_method)
             except ValueError as e:
                 print("could not make average!")
                 print(e)
@@ -1118,7 +1189,30 @@ def concat_summaries(
             logging.info("Renaming.")
             keys = fix_group_names(keys)
 
-        return collect_frames(frames, group_it, hdr_norm_cycle, keys, normalize_cycles)
+        
+        
+        if replace_inf_with_nan:
+            # a lot of plotting tools do not like inf values, so we replace them with nan
+            frames = [frame.replace([np.inf, -np.inf], np.nan) for frame in frames]
+
+        if replace_extremes_with_nan:
+            if group_it:
+                # averaging sometimes gives extreme values, so we replace them with nan
+                logging.debug(f"Replacing extremes with nan: {low_limit} < mean < {high_limit}")
+                for frame in frames:
+                    frame.loc[frame["mean"] < low_limit, "mean"] = np.nan
+                    frame.loc[frame["mean"] > high_limit, "mean"] = np.nan
+            else:
+                logging.debug(f"Replacing extremes with nan: {low_limit} < column < {high_limit}")
+                for frame in frames:
+                    # these frames can have multiple of columns that we dont now the name of so we need to iterate over them
+                    # and check if they are floats.
+                    for col in frame.columns:
+                        if pd.api.types.is_float_dtype(frame[col]):
+                            frame.loc[frame[col] < low_limit, col] = np.nan
+                            frame.loc[frame[col] > high_limit, col] = np.nan
+
+        return collect_frames(frames, group_it, hdr_norm_cycle, keys, normalize_cycles, concatenated_summary_hooks)
     else:
         logging.info("Empty - nothing to concatenate!")
         return pd.DataFrame()
@@ -1126,6 +1220,11 @@ def concat_summaries(
 
 def create_group_names(custom_group_labels, gno, key_index_bounds, keys_sub, pages):
     """Helper function for concat_summaries.
+
+    The prioritisation of methods for creating the group name is as follows:
+    1. custom_group_labels (if given)
+    2. group_label in pages (if given)
+    3. key_index_bounds and keys_sub (if no other option is available)
 
     Args:
         custom_group_labels (dict): dictionary of custom labels (key must be the group number).
@@ -1138,16 +1237,7 @@ def create_group_names(custom_group_labels, gno, key_index_bounds, keys_sub, pag
 
     """
 
-    # TODO: improve this one
-
     cell_id = None
-
-    # print("----------------------------------------------------------------------")
-    # print(f"custom_group_labels: {custom_group_labels}")
-    # print(f"gno: {gno}")
-    # print(f"key_index_bounds: {key_index_bounds}")
-    # print(f"keys_sub: {keys_sub}")
-    # print("----------------------------------------------------------------------")
 
     if custom_group_labels is not None:
         if isinstance(custom_group_labels, dict):
@@ -1172,6 +1262,7 @@ def create_group_names(custom_group_labels, gno, key_index_bounds, keys_sub, pag
                 return cell_id
 
     if cell_id is None:
+        # nothing else worked (or were chosen) - falling back to using key_index_bounds
         splitter = "_"
         cell_id = list(
             set([splitter.join(k.split(splitter)[key_index_bounds[0] : key_index_bounds[1]]) for k in keys_sub])
@@ -1195,7 +1286,7 @@ def fix_group_names(keys):
     return keys
 
 
-def collect_frames(frames, group_it: bool, hdr_norm_cycle: str, keys: list, normalize_cycles: bool):
+def collect_frames(frames, group_it: bool, hdr_norm_cycle: str, keys: list, normalize_cycles: bool, hooks: list = None):
     """Helper function for concat_summaries."""
     cycle_header = "cycle"
     normalized_cycle_header = "equivalent_cycle"
@@ -1211,6 +1302,10 @@ def collect_frames(frames, group_it: bool, hdr_norm_cycle: str, keys: list, norm
 
     if normalize_cycles:
         cdf = cdf.rename(columns={hdr_norm_cycle: normalized_cycle_header})
+
+    if hooks is not None:
+        for hook in hooks:
+            cdf = hook(cdf)
 
     return cdf
 
@@ -1231,6 +1326,7 @@ def select_summary_based_on_rate(
     inverse=False,
     inverted=False,
     fix_index=True,
+    partition_by_cv=False,
 ):
     """Select only cycles charged or discharged with a given rate.
 
@@ -1271,7 +1367,11 @@ def select_summary_based_on_rate(
     cycle_number_header = hdr_summary["cycle_index"]
 
     step_table = cell.data.steps
-    summary = cell.data.summary
+    
+    if partition_by_cv:
+        summary = _partition_summary_based_on_cv_steps(cell.data.summary)
+    else:
+        summary = cell.data.summary
 
     if summary.index.name != cycle_number_header:
         warnings.warn(f"{cycle_number_header} not set as index\n" f"Current index :: {summary.index}\n")
