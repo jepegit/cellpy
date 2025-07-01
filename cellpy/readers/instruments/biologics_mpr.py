@@ -66,7 +66,7 @@ def _read_modules(fileobj):
     module_magic = fileobj.read(len(b"MODULE"))
     logging.debug(f"-")
     hdr_bytes = fileobj.read(hdr_dtype.itemsize)
-    hdr = np.fromstring(hdr_bytes, dtype=hdr_dtype, count=1)
+    hdr = np.frombuffer(hdr_bytes, dtype=hdr_dtype, count=1)
     hdr_dict = dict(((n, hdr[n][0]) for n in hdr_dtype.names))
     hdr_dict["offset"] = fileobj.tell()
     hdr_dict["data"] = fileobj.read(hdr_dict["length"])
@@ -346,16 +346,16 @@ class DataLoader(BaseLoader):
             raise IOError("No data module!")
 
         data_version = data_module["version"]
-        n_data_points = np.fromstring(data_module["data"][:4], dtype="<u4")
+        n_data_points = np.frombuffer(data_module["data"][:4], dtype="<u4")
         n_data_points = n_data_points[0]
-        n_columns = np.fromstring(data_module["data"][4:5], dtype="u1")
+        n_columns = np.frombuffer(data_module["data"][4:5], dtype="u1")
         n_columns = n_columns[0]
 
         logging.debug(f"data (points, cols): {n_data_points}, {n_columns}")
 
         if data_version == 0:
             logging.debug("data version 0")
-            column_types = np.fromstring(
+            column_types = np.frombuffer(
                 data_module["data"][5:], dtype="u1", count=n_columns
             )
 
@@ -364,7 +364,7 @@ class DataLoader(BaseLoader):
 
         elif data_version == 2:
             logging.debug("data version 2")
-            column_types = np.fromstring(
+            column_types = np.frombuffer(
                 data_module["data"][5:], dtype="<u2", count=n_columns
             )
             main_data = data_module["data"][405:]
@@ -397,7 +397,7 @@ class DataLoader(BaseLoader):
                 f"WARNING! You have defined {p} bytes, but it seems it should be [{len(main_data) / n_data_points}]"
             )
         bulk = main_data
-        bulk_data = np.fromstring(bulk, dtype=dtype)
+        bulk_data = np.frombuffer(bulk, dtype=dtype)
         mpr_data = pd.DataFrame(bulk_data)
 
         # ------------- log  -----------------------------------

@@ -8,7 +8,7 @@ import pickle as pkl
 from pprint import pprint
 from pathlib import Path
 import textwrap
-from typing import Any
+from typing import Any, Union
 import time
 from itertools import count
 from multiprocessing import Process
@@ -131,10 +131,15 @@ def generate_output_path(name, directory, serial_number=None):
     f = d / name
     return f
 
-
-def _image_exporter_plotly(figure, filename, timeout=IMAGE_TO_FILE_TIMEOUT, **kwargs):
+def incremental_image_exporter_plotly(self, filename, timeout=IMAGE_TO_FILE_TIMEOUT, **kwargs):
+    use_subprocess = kwargs.pop("use_subprocess", True)
+    
+    if not use_subprocess:
+        print(f"saving image to {filename}")
+        self.figure.write_image(filename, **kwargs)
+        return
     p = Process(
-        target=figure.write_image,
+        target=self.figure.write_image,
         args=(filename,),
         name="save_plotly_image_to_file",
         kwargs=kwargs,
@@ -146,6 +151,11 @@ def _image_exporter_plotly(figure, filename, timeout=IMAGE_TO_FILE_TIMEOUT, **kw
         print(f"Oops, {p} timeouts! Could not save {filename}")
     if p.exitcode == 0:
         print(f" - saved image file: {filename}")
+    else:
+        print(f"Oops, {p} failed with exitcode: {p.exitcode}")
+        print("Could it be that you have not installed the required packages?")
+        print("Try to install kaleido:")
+        print("pip install kaleido")
 
 
 def save_plotly_figure(figure, name=None, directory=".", serial_number=None):
@@ -171,8 +181,8 @@ def save_plotly_figure(figure, name=None, directory=".", serial_number=None):
     filename_svg = filename_pre.with_suffix(".svg")
     filename_json = filename_pre.with_suffix(".json")
 
-    _image_exporter_plotly(figure, filename_png, scale=3.0)
-    _image_exporter_plotly(figure, filename_svg)
+    incremental_image_exporter_plotly(figure, filename_png, scale=3.0)
+    incremental_image_exporter_plotly(figure, filename_svg)
     figure.write_json(filename_json)
     print(f" - saved plotly json file: {filename_json}")
 
@@ -706,10 +716,22 @@ class BatchCollector:
         filename = filename.with_suffix(".h5")
         data = self.data
 
+        # Convert categorical columns to strings to avoid HDF5 issues
+        for col in data.columns:
+            if pd.api.types.is_categorical_dtype(data[col]):
+                logging.info(f"converting categorical column {col} to string")
+                data[col] = data[col].astype(str)
+
         data.to_hdf(filename, key=HDF_KEY, mode="w")
         print(f" - saved hdf5 file: {filename}")
 
     def _image_exporter_plotly(self, filename, timeout=IMAGE_TO_FILE_TIMEOUT, **kwargs):
+        use_subprocess = kwargs.pop("use_subprocess", True)
+        
+        if not use_subprocess:
+            print(f"saving image to {filename}")
+            self.figure.write_image(filename, **kwargs)
+            return
         p = Process(
             target=self.figure.write_image,
             args=(filename,),
@@ -723,8 +745,15 @@ class BatchCollector:
             print(f"Oops, {p} timeouts! Could not save {filename}")
         if p.exitcode == 0:
             print(f" - saved image file: {filename}")
+        else:
+            print(f"Oops, {p} failed with exitcode: {p.exitcode}")
+            print("Could it be that you have not installed the required packages?")
+            print("Try to install kaleido:")
+            print("pip install kaleido")
 
-    def to_image_files(self, serial_number=None):
+
+
+    def to_image_files(self, serial_number=None, **kwargs):
         """Save to image files (png, svg, json).
 
         Notes:
@@ -747,8 +776,8 @@ class BatchCollector:
         filename_pickle = filename_pre.with_suffix(".pickle")
 
         if self.backend == "plotly":
-            self._image_exporter_plotly(filename_png, scale=3.0)
-            self._image_exporter_plotly(filename_svg)
+            self._image_exporter_plotly(filename_png, scale=3.0, **kwargs)
+            self._image_exporter_plotly(filename_svg, **kwargs)
             self.figure.write_json(filename_json)
             print(f" - saved plotly json file: {filename_json}")
         elif self.backend == "seaborn":
@@ -767,19 +796,29 @@ class BatchCollector:
             print(f"TODO: implement saving {filename_svg}")
             print(f"TODO: implement saving {filename_json}")
 
-    def save(self, serial_number=None):
+    def save(self, serial_number=None, save_hdf5=True, save_image_files=True, to_csv_kwargs:Union[dict, None] = None, to_image_files_kwargs:Union[dict, None] = None):
         """Save to csv, hdf5 and image files.
 
         Args:
             serial_number (int): serial number to append to the filename.
+            save_hdf5 (bool): save to hdf5 file.
+            save_image_files (bool): save to image files.
+            to_csv_kwargs (dict): keyword arguments sent to the csv writer.
 
         """
 
-        self.to_csv(serial_number=serial_number)
-        self.to_hdf5(serial_number=serial_number)
+        if to_csv_kwargs is None:
+            to_csv_kwargs = {}
+        self.to_csv(serial_number=serial_number, **to_csv_kwargs)
+        if save_hdf5:
+            try:
+                self.to_hdf5(serial_number=serial_number)
+            except Exception as e:
+                print(f"Error saving hdf5 file: {e}")
 
         if self._figure_valid():
-            self.to_image_files(serial_number=serial_number)
+            if save_image_files:
+                self.to_image_files(serial_number=serial_number, **to_image_files_kwargs)
 
     def _output_path(self, serial_number=None):
         d = Path(self.figure_directory)
@@ -793,6 +832,69 @@ class BatchCollector:
         f = d / n
         return f
 
+def standard_gravimetric_collector(b, norm_factor=120.0, **kwargs):
+    """Create a standard gravimetric collector.
+    
+    This is a temporary hack to allow for making standard plot no. 1.
+
+    Coulombic Efficiency
+    Discharge Capacity (gravimetric)
+    Discharge Capacity Retention (Normalized)
+    CV share Charge Capacity (Normalized)
+
+    Args:
+        norm_factor (float): the factor to normalize the discharge capacity retention by.
+        group_it (bool): if True, group the cells by the key_index_bounds.
+        data_collector_arguments (dict): the data collector arguments.
+        plotter_arguments (dict): the plotter arguments.
+        **kwargs: additional arguments sent to the collector.
+    """
+
+    from functools import partial
+
+    def _copy_and_normalize(df, columns, col="discharge_capacity_gravimetric",norm_factor=120.0, *args, **kwargs):
+        # modify the dataframe:
+        _kwargs = {
+            f"{col}_norm": lambda x: 100*(x[col]) / norm_factor,
+        }
+        df = df.assign(**_kwargs)
+
+        # modify the output columns:
+        if f"{col}_norm" not in columns:
+            columns.append(f"{col}_norm")
+        return df, columns
+
+    group_it = kwargs.pop("group_it", True)
+    interactive = kwargs.pop("interactive", True)
+
+    _copy_and_normalize_discharge_capacity_gravimetric_partial = partial(_copy_and_normalize, norm_factor=norm_factor)
+    _copy_and_normalize_discharge_capacity_gravimetric_partial.__name__ = "copy_and_normalize_discharge_capacity_gravimetric"
+    
+    _copy_and_normalize_charge_capacity_gravimetric_cv_partial = partial(_copy_and_normalize, norm_factor=norm_factor, col="charge_capacity_gravimetric_cv")
+    _copy_and_normalize_charge_capacity_gravimetric_cv_partial.__name__ = "copy_and_normalize_charge_capacity_gravimetric_cv"
+
+    if not interactive:
+        raise NotImplementedError("Only interactive mode is implemented for standard_gravimetric_collector")
+    backend = kwargs.pop("backend", "plotly")
+    if backend != "plotly":
+        raise NotImplementedError("Only plotly backend is implemented for standard_gravimetric_collector")
+    columns=["charge_capacity_gravimetric", "discharge_capacity_gravimetric", "coulombic_efficiency"]
+    data_collector_arguments=dict(
+        partition_by_cv=True, 
+        individual_summary_hooks=[_copy_and_normalize_discharge_capacity_gravimetric_partial, _copy_and_normalize_charge_capacity_gravimetric_cv_partial], 
+        drop_columns=["charge_capacity_gravimetric_cv","charge_capacity_gravimetric", "charge_capacity_gravimetric_non_cv", "discharge_capacity_gravimetric_cv",  "discharge_capacity_gravimetric_non_cv"],
+        average_method="mean",
+        key_index_bounds=[0, 4],
+        )
+    plotter_arguments=dict(
+        spread=group_it,
+        markers=True,
+        height_fractions_spread=[0.1, 0.3, 0.3, 0.3],
+        order_variables=["coulombic_efficiency", "discharge_capacity_gravimetric", "discharge_capacity_gravimetric_norm", "charge_capacity_gravimetric_cv_norm"],
+    )
+    data_collector_arguments.update(kwargs.pop("data_collector_arguments", {}))
+    plotter_arguments.update(kwargs.pop("plotter_arguments", {}))
+    return BatchSummaryCollector(b, group_it=group_it, interactive=interactive, backend=backend, columns=columns, data_collector_arguments=data_collector_arguments, plotter_arguments=plotter_arguments, **kwargs)
 
 class BatchSummaryCollector(BatchCollector):
     # Three main levels of arguments to the plotter and collector funcs is available:
@@ -1540,7 +1642,14 @@ def _hist_eq(trace):
 
 def y_axis_replacer(ax, label):
     """Replace y-axis label in matplotlib plots."""
-    ax.update(title_text=label)
+    if isinstance(label, dict):
+
+        _label = label.get(ax.title.text, None)
+        if _label is None:
+            _label = list(label.values())[0]
+        ax.update(title_text=_label)
+    else:
+        ax.update(title_text=label)
     return ax
 
 
@@ -1571,13 +1680,76 @@ def legend_replacer(trace, df, group_legends=True):
             hovertemplate=f"{cell_label}<br>{trace.hovertemplate}",
         )
 
+def _plotly_y_label_cleaner(y_label_mapper, split_at=20):
+    """Clean up the y-label mapper for plotly.
+    
+    The y-label mapper is a dictionary that maps the variable name to the y-label. The y-labels are
+    expected to be in the form of "Variable Name (unit)". If the y-label is too long, it is
+    split into multiple lines.
+    This is done to avoid the y-labels from being too long and wrapping around.
 
-def spread_plot(curves, plotly_arguments, **kwargs):
-    """Create a spread plot (error-bands instead of error-bars)."""
+    Discharge Capacity Retention Gravimetric Norm (%) should become:
+    Discharge Capacity<br>Retention Gravimetric Norm<br>(%)
+
+    Args:
+        y_label_mapper (dict): the y-label mapper.
+
+    Returns:
+        dict: the cleaned up y-label mapper.
+
+    """
+
+    new_y_label_mapper = {}
+    for k, v in y_label_mapper.items():
+        if len(v) > split_at:
+            # First split on " (" pattern
+            v = "<br>(".join(v.split(" ("))
+            
+            # Then check if any resulting line is still too long and split on spaces
+            lines = v.split("<br>")
+            final_lines = []
+            for line in lines:
+                if len(line) > split_at and " " in line:
+                    # Split long lines on spaces
+                    words = line.split(" ")
+                    current_line = ""
+                    for word in words:
+                        if len(current_line + " " + word) > split_at and current_line:
+                            final_lines.append(current_line)
+                            current_line = word
+                        else:
+                            if current_line:
+                                current_line += " " + word
+                            else:
+                                current_line = word
+                    if current_line:
+                        final_lines.append(current_line)
+                else:
+                    final_lines.append(line)
+            v = "<br>".join(final_lines)
+        new_y_label_mapper[k] = v
+    return new_y_label_mapper
+
+def spread_plot(curves, plotly_arguments=None, y_label_mapper=None, **kwargs):
+    """Create a spread plot (error-bands instead of error-bars).
+    
+    This is an experimental feature that is not yet fully tested. It uses make_subplots to create the figure,
+    and then adds the traces one by one. This methodology will eventually replace the use of plotly.express
+    for all the summary plots.  
+    
+    """
     from plotly.subplots import make_subplots
+
+   
+    if y_label_mapper is None:
+        y_label_mapper = {}
+    else:
+        y_label_mapper = _plotly_y_label_cleaner(y_label_mapper)
 
     selected_variables = curves["variable"].unique()
     number_of_rows = len(selected_variables)
+    # TODO: change this (only temporary fix to allow height fractions to be set by spread_plot)
+    height_fractions = kwargs.get("height_fractions_spread", [1/number_of_rows]*number_of_rows)
 
     colors = plotly.colors.qualitative.Plotly
     opacity = 0.2
@@ -1597,13 +1769,18 @@ def spread_plot(curves, plotly_arguments, **kwargs):
     fig = make_subplots(
         rows=number_of_rows,
         cols=1,
-        shared_xaxes=True,
-        vertical_spacing=0.05,
+        start_cell=plotly_arguments.get("plotly_start_cell", "top-left"),
+        shared_xaxes=plotly_arguments.get("plotly_shared_xaxes", True),
+        row_heights=height_fractions,
+        vertical_spacing=plotly_arguments.get("plotly_vertical_spacing", 0.01),
     )
+    y_labels = {}
     for i, (cell, data) in enumerate(g):
         color = color_list[i % len(color_list)]
 
         for row_number, variable in enumerate(selected_variables):
+            y_label = y_label_mapper.get(variable, variable)
+            y_labels[row_number] = y_label
             if row_number == 0:
                 show_legend = True
             else:
@@ -1657,15 +1834,18 @@ def spread_plot(curves, plotly_arguments, **kwargs):
                 row=row_number + 1,
                 col=1,
             )
+    for row_number, y_label in y_labels.items():
+        fig.update_yaxes(title_text=y_label, row=row_number + 1, col=1)
 
     fig.update_layout(legend_tracegroupgap=0)
+    # fig.update_layout(hovermode="x")
 
     if labels := plotly_arguments.get("labels"):
-        fig.update_xaxes(title=labels.get("cycle", None))
+        fig.update_xaxes(title=labels.get("cycle", None), row=number_of_rows)
 
     # Hack to remove the x-axis title that appears on the top of the plot:
-    if number_of_rows > 1:
-        fig.update_layout(xaxis_title=None)
+    # if number_of_rows > 1:
+    #     fig.update_layout(xaxis_title=None)
 
     if hover_mode := kwargs.pop("hovermode", None):
         fig.update_layout(hovermode=hover_mode)
@@ -1865,7 +2045,6 @@ def sequence_plotter(
             seaborn_arguments["style"] = z
 
     elif method == "summary":
-        logging.info("sequence-plotter - summary")
         if cycles is not None:
             curves = collected_curves.loc[collected_curves.cycle.isin(cycles), :]
         else:
@@ -1879,6 +2058,8 @@ def sequence_plotter(
         else:
             plotly_arguments["color"] = z
             seaborn_arguments["hue"] = z
+
+ 
 
     # ----------------- individual plotting calls  -----------------------------
     # TODO: move as much as possible up to the parsing of arguments
@@ -1942,8 +2123,7 @@ def sequence_plotter(
                     if markers is not True:
                         fig.for_each_trace(remove_markers)
                 except Exception as e:
-                    print("failed")
-                    print(e)
+                    print(f"sequence_plotter - fig_pr_cycle - failed {e} [{z}]")
 
         elif method == "film":
             fig = px.density_heatmap(curves, **plotly_arguments, **kwargs)
@@ -1959,9 +2139,18 @@ def sequence_plotter(
 
         elif method == "summary":
             if spread:
-                logging.critical("using spread is an experimental feature and might not work as expected")
-                fig = spread_plot(curves, plotly_arguments, **kwargs)
+                logging.info("using spread is an experimental feature and might not work as expected")
+                fig = spread_plot(curves, plotly_arguments=plotly_arguments, y_label_mapper=y_label_mapper, **kwargs)
             else:
+                # remove all kwargs that are only intended for spread_plot
+                _ = kwargs.pop("height_fractions_spread", None)
+                _ = plotly_arguments.pop("plotly_start_cell", None)
+                _ = plotly_arguments.pop("plotly_shared_xaxes", None)
+                _ = plotly_arguments.pop("plotly_vertical_spacing", None)
+                _ = kwargs.pop("plotly_start_cell", None)
+                _ = kwargs.pop("plotly_shared_xaxes", None)
+                _ = kwargs.pop("plotly_vertical_spacing", None)
+
                 fig = px.line(
                     curves,
                     **plotly_arguments,
@@ -1969,6 +2158,7 @@ def sequence_plotter(
                 )
 
             if group_cells:  # all cells in same group has same color
+
                 try:
                     fig.for_each_trace(
                         functools.partial(
@@ -1980,40 +2170,46 @@ def sequence_plotter(
                     if markers is not True:
                         fig.for_each_trace(remove_markers)
                 except Exception as e:
-                    print("failed")
-                    print(e)
+                    print(f"sequence_plotter - summary - failed {e} [{group}]")
 
-            if y_label_mapper:
+            if y_label_mapper and not spread:
+                y_label_mapper = _plotly_y_label_cleaner(y_label_mapper)
                 annotations = fig.layout.annotations
                 if annotations:
                     try:
-                        # might consider a more robust method here - currently
-                        # it assumes that the mapper is a list with same order
-                        # and length as number of rows
-                        for i, (a, la) in enumerate(zip(annotations, y_label_mapper)):
+                        for i in range(len(annotations)):
                             row = i + 1
-                            fig.for_each_yaxis(
-                                functools.partial(y_axis_replacer, label=la),
-                                row=row,
-                            )
+                            if annotations[i].text.startswith("variable="):
+                                variable = annotations[i].text.split("=")[1]
+                                if variable in y_label_mapper:
+                                    v = y_label_mapper[variable]
+                                    fig.for_each_yaxis(
+                                        functools.partial(y_axis_replacer, label=v),
+                                        row=row,
+                                    )
+                            else:
+                                for k, v in y_label_mapper.items():
+                                    
+                                    if annotations[i].text.endswith(k):
+                                        fig.for_each_yaxis(
+                                            functools.partial(y_axis_replacer, label=v),
+                                            row=row,
+                                        )
+                                        break
+
                         fig.update_annotations(text="")
+
                     except Exception as e:
-                        print("failed")
-                        print(e)
+                        print(f"sequence_plotter - summary - y-label mapper failed {e} [{group}]")
                 else:
                     try:
-                        if spread:
-                            for i, la in enumerate(y_label_mapper):
-                                row = i + 1
-                                fig.for_each_yaxis(functools.partial(y_axis_replacer, label=la), row=row)
-
-                        else:
-                            fig.for_each_yaxis(
-                                functools.partial(y_axis_replacer, label=y_label_mapper[0]),
+                        fig.for_each_yaxis(
+                                functools.partial(y_axis_replacer, label=y_label_mapper),
                             )
                     except Exception as e:
-                        print("failed")
-                        print(e)
+                        print(f"sequence_plotter - summary - y-label mapper - no annotations - failed {e} [{group}]")
+                        print(f"y_label_mapper: {y_label_mapper}")
+                        print(f"annotations: {annotations}")
 
         else:
             print(f"method '{method}' is not supported by plotly")
@@ -2317,6 +2513,9 @@ def summary_plotter(collected_curves, cycles_to_plot=None, backend="plotly", **k
     2) mixed long and wide format where the variables are own columns.
     """
 
+    # start_cell is used to determine the starting cell for the subplots (plotly)
+    start_cell = kwargs.pop("start_cell", "bottom-left")
+
     col_headers = collected_curves.columns.to_list()
 
     # need to manually update this if new columns are added to collected_curves that should not be plotted:
@@ -2375,36 +2574,58 @@ def summary_plotter(collected_curves, cycles_to_plot=None, backend="plotly", **k
     label_mapper = {
         f"{y}": None,
     }
+    # order the variables by a given order:
+    order_variables = kwargs.pop("order_variables", None)
+    if order_variables:
+        collected_curves[g] = collected_curves[g].astype(pd.CategoricalDtype(categories=order_variables, ordered=True))
+        collected_curves = collected_curves.sort_values(by=[g, z, x])
+    
     if units:
-        label_mapper[y] = []
+        label_mapper[y] = {}
         variables = list(collected_curves[g].unique())
         for v in variables:
-            # extract units:
+
+            # unit label
             u_sub = None
-            if v.endswith("_areal"):
+            if v.endswith("_areal") or v.endswith("_areal_cv"):
                 u_sub = units["cellpy_units"].specific_areal
-            elif v.endswith("_gravimetric"):
+            elif v.endswith("_gravimetric") or v.endswith("_gravimetric_cv"):
                 u_sub = units["cellpy_units"].specific_gravimetric
-            elif v.endswith("_volumetric"):
+            elif v.endswith("_volumetric") or v.endswith("_volumetric_cv"):
                 u_sub = units["cellpy_units"].specific_volumetric
+
             u_top = None
             if "_capacity" in v:
                 u_top = units["cellpy_units"].charge
+            if "_norm" in v:
+                u_top = "normalized"
+            if v == "coulombic_efficiency":
+                u_top = "%"
 
-            # creating label:
             u = u_top or "Value"
-            v = v.split("_")
+
+            # variable label
+            v2 = v.split("_")
             if u_sub:
                 u_sub = u_sub.replace("**", "")
                 u = f"{u}/{u_sub}"
-                v = v[:-1]
-            v = " ".join(v).title()
-            label_mapper[y].append(f"{v} ({u})")
+                if v2[-1] == "cv":
+                    v2 = v2[:-2]
+                    v2.append("cv")
+                else:
+                    v2 = v2[:-1]
+            v2 = " ".join(v2).title()
+
+            if v2.endswith("Cv"):
+                v2 = v2.replace("Cv", "CV")
+
+            label_mapper[y][v] = f"{v2} ({u})"
 
     # TODO: need to refactor and fix how the classes are created so that leftover kwargs are not sent to the backend
     #  (for example if another collector is used and registers a kwarg without popping it)
 
     _ = kwargs.pop("method", None)  # also set in BatchCyclesCollector
+    height_fractions = kwargs.pop("height_fractions", [])
 
     fig = _cycles_plotter(
         collected_curves,
@@ -2427,13 +2648,60 @@ def summary_plotter(collected_curves, cycles_to_plot=None, backend="plotly", **k
 
     if backend == "plotly":
         # TODO: implement having different heights of the subplots
-        height_fractions = kwargs.pop("height_fractions", [])
-        if len(height_fractions) < 0:
-            # this was suggested by CoPilot (not sure if it works):
-            for i, h in enumerate(height_fractions):
-                fig.update_yaxes(row=i + 1, matches=None, showticklabels=True, fixedrange=True)
-                fig.update_layout(height=fig.layout.height + h)
-        fig.update_yaxes(matches=None, showticklabels=True)
+        
+        if len(height_fractions) > 0:
+            # Determine number of rows in the original figure
+            print("THIS IS EXPERIMENTAL")
+            number_of_rows = len([key for key in fig.layout if key.startswith('yaxis')])
+            if number_of_rows == 0:
+                number_of_rows = 1  # Default to 1 if no y-axes found
+            
+            # Only proceed if height_fractions matches the number of rows
+            if len(height_fractions) != number_of_rows:
+                print(f"Warning: height_fractions length ({len(height_fractions)}) does not match number of rows ({number_of_rows}). Ignoring height_fractions.")
+            else:
+                # Update subplot heights using make_subplots parameters
+                from plotly.subplots import make_subplots
+                
+                # Get current figure data and layout properties
+                current_data = fig.data
+                current_layout = fig.layout
+                
+                # Create new figure with custom row heights
+                new_fig = make_subplots(
+                    rows=number_of_rows,
+                    cols=1,
+                    start_cell=start_cell,
+                    shared_xaxes=True,
+                    row_heights=height_fractions[::-1],
+                    vertical_spacing=0.02,
+                    subplot_titles=[ann.text for ann in current_layout.annotations] if current_layout.annotations else None
+                )
+
+                new_height_fractions = {}
+                for key in new_fig.layout:
+                    if key.startswith('yaxis'):
+                        new_height_fractions[key] = new_fig.layout[key].domain
+    
+                
+                # Add traces from original figure
+                for trace in current_data:
+                    new_fig.add_trace(trace)
+                
+                # Update layout properties from original figure (including theme)
+                new_fig.update_layout(current_layout)
+                for key in new_height_fractions:
+                    new_fig.layout[key].domain = new_height_fractions[key]
+                
+                fig = new_fig
+                # Preserve x-axis linking and only show labels on bottom row with small gaps
+                fig.update_xaxes(matches='x')
+                fig.update_yaxes(matches=None, showticklabels=True)
+                
+                # Only show x-axis labels on the bottom subplot (not needed anymore?)
+                # for i in range(1, len(height_fractions)):
+                #     fig.update_xaxes(showticklabels=False, row=i, col=1)
+                
         return fig
     if backend == "seaborn":
         print("using seaborn (experimental feature)")

@@ -45,3 +45,15 @@ def test_from_raw_external(cellpy_data_instance, parameters):
  ### TODO warnings
  -> test_neware.py::test_get_neware_from_h5:
   cellpy/cellpy/readers/cellreader.py:1828: UserWarning: no fid_table - you should update your cellpy-file
+
+### TODO Error
+-> File c:\scripting\cellpy\.venv\Lib\site-packages\plotly\io\_renderers.py:425, in show(fig, renderer, validate, **kwargs)
+    420     raise ValueError(
+    421         "Mime type rendering requires ipython but it is not installed"
+    422     )
+    424 if not nbformat or Version(nbformat.__version__) < Version("4.2.0"):
+--> 425     raise ValueError(
+    426         "Mime type rendering requires nbformat>=4.2.0 but it is not installed"
+    427     )
+    429 display_jupyter_version_warnings()
+    431 ipython_display.display(bundle, raw=True)

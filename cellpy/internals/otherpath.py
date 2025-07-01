@@ -143,6 +143,7 @@ class OtherPathNew(pathlib.Path):
             path_string = "."
         else:
             path_string = self.__original
+
         self._original = self.__original
         self._check_external(path_string)
         # pathlib.PurePath and Path for Python 3.12 seems to have an __init__ method
@@ -151,7 +152,6 @@ class OtherPathNew(pathlib.Path):
         # does not have a self._raw_path attribute).
         # Instead of running e.g. super().__init__(self._raw_other_path) we do this
         # instead (which is what the __init__ method does in Python 3.12):
-        self._raw_path = self._raw_other_path
         super().__init__(self._raw_other_path, *args)
         self.__doc__ += f"\nOriginal documentation:\n\n{self._pathlib_doc}"
 
@@ -1211,7 +1211,7 @@ class OtherPathLegacy(pathlib.Path):
 
 
 def _new_other_path_version():
-    python_version = sys.version_info
+    python_version = (sys.version_info.major, sys.version_info.minor)
     return python_version >= NEW_OTHER_PATH_VERSION
 
 

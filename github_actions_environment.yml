@@ -15,7 +15,7 @@ dependencies:
     - lmfit
     - matplotlib
     - nbmake
-    - numpy
+    - numpy>=2
     - openpyxl
     - pandas
     - pint

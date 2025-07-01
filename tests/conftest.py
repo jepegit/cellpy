@@ -56,6 +56,12 @@ def dataset(cellpy_data_instance) -> CellpyCell:
 
 
 @pytest.fixture
+def rate_dataset(cellpy_data_instance) -> CellpyCell:
+    """Fixture for CellpyCell instance with rate data loaded from cellpy-file"""
+
+    return cellpy_data_instance.load(fdv.rate_cell_path)
+
+@pytest.fixture
 def gitt_datasett(cellpy_data_instance) -> CellpyCell:
     """Fixture for CellpyCell instance with GITT data loaded from cellpy-file"""
 

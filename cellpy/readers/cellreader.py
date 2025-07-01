@@ -1252,7 +1252,7 @@ class CellpyCell:
         try:
             self.tester = self.loader_class.instrument_name
         except AttributeError:
-            logging.debug(f"could not set instrument name")
+            logging.debug("could not set instrument name")
 
         # TODO: include this into prms (and config-file):
         max_raw_files_to_merge = 20
@@ -3445,7 +3445,7 @@ class CellpyCell:
 
         meta_common_frame = externals.pandas.concat([meta_common_frame, cellpy_units, raw_units])
 
-        with externals.pandas.ExcelWriter(filename, engine="externals.openpyxl") as writer:
+        with externals.pandas.ExcelWriter(filename, engine="openpyxl") as writer:
             meta_common_frame.to_excel(writer, sheet_name="meta_common", **to_excel_method_kwargs)
             meta_test_dependent_frame.to_excel(writer, sheet_name="meta_test_dependent", **to_excel_method_kwargs)
             summary_frame.to_excel(writer, sheet_name="summary", **to_excel_method_kwargs)
@@ -3480,13 +3480,17 @@ class CellpyCell:
                 if cycles is True:
                     cycles = self.get_cycle_numbers()
                 for cycle in cycles:
-                    _curves = self.get_cap(cycle=cycle, **get_cap_method_kwargs)
-                    _curves.to_excel(
-                        writer,
-                        sheet_name=f"cycle_{cycle:03}",
-                        index=False,
-                        header=True,
-                    )
+                    try:
+                        _curves = self.get_cap(cycle=cycle, **get_cap_method_kwargs)
+                        _curves.to_excel(
+                            writer,
+                            sheet_name=f"cycle_{cycle:03}",
+                            index=False,
+                            header=True,
+                        )
+                    except Exception as e:
+                        logging.debug(f"Could not export cycle {cycle}: {e}")
+                        continue
             if nice:
                 for sheet in writer.sheets.values():
                     if sheet.title.startswith("meta"):
@@ -5317,29 +5321,71 @@ class CellpyCell:
         last_items = raw[d_txt].isin(steps)
         return last_items
 
-    # # TODO: @jepe - this method might be valuable for users and could be made
-    # #  public when it is fixed:
-    # def _select_without(self, exclude_types=None, exclude_steps=None, replace_nan=True):
-    #     steps = self.data.steps
-    #     raw = self.data.raw.copy()
+    # TODO: @jepe - this method might be valuable for users and could be made
+    #  public when it is fixed:
+    def _select_without(self, exclude_types=None, exclude_steps=None, replace_nan=True):
+        """Filter and modify cell cycling data by excluding specific step types and steps.
 
-    #     # unravel the headers:
-    #     d_n_txt = self.headers_normal.data_point_txt
-    #     v_n_txt = self.headers_normal.voltage_txt
-    #     c_n_txt = self.headers_normal.cycle_index_txt
-    #     s_n_txt = self.headers_normal.step_index_txt
-    #     i_n_txt = self.headers_normal.current_txt
-    #     ch_n_txt = self.headers_normal.charge_capacity_txt
-    #     dch_n_txt = self.headers_normal.discharge_capacity_txt
+        This method processes raw cell cycling data by:
+        1. Selecting the last data point for each cycle
+        2. Excluding specified step types and step numbers
+        3. Adjusting the raw data values by subtracting the contributions from excluded steps
 
-    #     d_st_txt = self.headers_step_table.point
-    #     v_st_txt = self.headers_step_table.voltage
-    #     c_st_txt = self.headers_step_table.cycle
-    #     i_st_txt = self.headers_step_table.current
-    #     ch_st_txt = self.headers_step_table.charge
-    #     dch_st_txt = self.headers_step_table.discharge
-    #     t_st_txt = self.headers_step_table.type
-    #     s_st_txt = self.headers_step_table.step
+        Parameters
+        ----------
+        exclude_types : str or list of str, optional
+            Step types to exclude (e.g., 'charge', 'discharge'). If None, no step types are excluded.
+        exclude_steps : int or list of int, optional
+            Step numbers to exclude. If None, no specific steps are excluded.
+        replace_nan : bool, default True
+            Whether to replace NaN values with 0.0 in the resulting dataframe.
+
+        Returns
+        -------
+        pandas.DataFrame
+            A filtered and modified dataframe containing the cell cycling data with excluded
+            steps removed and their contributions subtracted from the raw values.
+
+
+        """
+
+        # summary_no_cv = self.make_summary(selector_type="non-cv", create_copy=True).data.summary
+        # summary_only_cv = self.make_summary(selector_type="only-cv", create_copy=True).data.summary
+        # if selector is None:
+        #     if selector_type == "non-cv":
+        #         exclude_types = ["cv_"]
+        #     elif selector_type == "non-rest":
+        #         exclude_types = ["rest_"]
+        #     elif selector_type == "non-ocv":
+        #         exclude_types = ["ocv_"]
+        #     elif selector_type == "only-cv":
+        #         exclude_types = ["charge", "discharge"]
+        #     selector = functools.partial(
+        #         self._select_without,
+        #         exclude_types=exclude_types,
+        #         exclude_steps=exclude_steps,
+        #     )
+
+        steps = self.data.steps
+        raw = self.data.raw.copy()
+
+        # unravel the headers:
+        hdrn_data_point = self.headers_normal.data_point_txt
+        hdrn_voltage = self.headers_normal.voltage_txt
+        hdrn_cycle_index = self.headers_normal.cycle_index_txt
+        hdrn_step_index = self.headers_normal.step_index_txt
+        hdrn_current = self.headers_normal.current_txt
+        hdrn_charge_capacity = self.headers_normal.charge_capacity_txt
+        hdrn_discharge_capacity = self.headers_normal.discharge_capacity_txt
+
+        hdrst_data_point = self.headers_step_table.point
+        hdrst_voltage = self.headers_step_table.voltage
+        hdrst_cycle = self.headers_step_table.cycle
+        hdrst_current = self.headers_step_table.current
+        hdrst_charge = self.headers_step_table.charge
+        hdrst_discharge = self.headers_step_table.discharge
+        hdrst_type = self.headers_step_table.type
+        hdrst_step = self.headers_step_table.step
 
     #     _first = "_first"
     #     _last = "_last"
@@ -5355,61 +5401,75 @@ class CellpyCell:
     #     # TODO: @jepe - this method might be a bit slow for large datasets - consider using
     #     #  more "native" pandas methods and get rid of all looping (need some timing to check first)
 
-    #     last_data_points = steps.loc[:, [c_st_txt, d_st_txt + _last]].groupby(c_st_txt).last().values.ravel()
-    #     last_items = raw[d_n_txt].isin(last_data_points)
-    #     selected = raw[last_items]
+        last_data_points = (
+            steps.loc[:, [hdrst_cycle, hdrst_data_point + _last]].groupby(hdrst_cycle).last().values.ravel()
+        )
+        last_items = raw[hdrn_data_point].isin(last_data_points)
+        selected = raw[last_items]
 
     #     if exclude_types is None and exclude_steps is None:
     #         return selected
 
-    #     if not isinstance(exclude_types, (list, tuple)):
-    #         exclude_types = [exclude_types]
+        if not isinstance(exclude_types, (list, tuple)):
+            if exclude_types is None:
+                exclude_types = []
+            else:
+                exclude_types = [exclude_types]
 
-    #     if not isinstance(exclude_steps, (list, tuple)):
-    #         exclude_steps = [exclude_steps]
+        if not isinstance(exclude_steps, (list, tuple)):
+            if exclude_steps is None:
+                exclude_steps = []
+            else:
+                exclude_steps = [exclude_steps]
 
-    #     q = None
-    #     for exclude_type in exclude_types:
-    #         _q = ~steps[t_st_txt].str.startswith(exclude_type)
-    #         q = _q if q is None else q & _q
+        if not exclude_types and not exclude_steps:
+            return selected
 
-    #     if exclude_steps:
-    #         _q = ~steps[t_st_txt].isin(exclude_steps)
-    #         q = _q if q is None else q & _q
+        # create the selector for the not excluded steps (selecting ~q will then select the data points that are excluded):
+        q = None
+        for exclude_type in exclude_types:
+            _q = ~steps[hdrst_type].str.startswith(exclude_type, na=False)
+            q = _q if q is None else q & _q
 
-    #     _delta_columns = [
-    #         i_st_txt,
-    #         v_st_txt,
-    #         ch_st_txt,
-    #         dch_st_txt,
-    #     ]
-    #     _raw_columns = [
-    #         i_n_txt,
-    #         v_n_txt,
-    #         ch_n_txt,
-    #         dch_n_txt,
-    #     ]
-    #     _diff_columns = [f"{col}{_delta_label}" for col in _delta_columns]
+        if exclude_steps:
+            _q = ~steps[hdrst_step].isin(exclude_steps)
+            q = _q if q is None else q & _q
+
+        # create the deltas (to be subtracted from the raw data) due to the excluded steps:
+        _delta_columns = [
+            hdrst_current,
+            hdrst_voltage,
+            hdrst_charge,
+            hdrst_discharge,
+        ]
+        _raw_columns = [
+            hdrn_current,
+            hdrn_voltage,
+            hdrn_charge_capacity,
+            hdrn_discharge_capacity,
+        ]
+        _diff_columns = [f"{col}{_delta_label}" for col in _delta_columns]
 
     #     delta_first = [f"{col}{_first}" for col in _delta_columns]
     #     delta_last = [f"{col}{_last}" for col in _delta_columns]
     #     delta_columns = delta_first + delta_last
 
-    #     delta = steps.loc[~q, [c_st_txt, d_st_txt + _last, *delta_columns]].copy()
+        # select the data points that are excluded:
+        delta = steps.loc[~q, [hdrst_type, hdrst_cycle, hdrst_data_point + _last, *delta_columns]].copy()
 
-    #     for col in _delta_columns:
-    #         delta[col + _delta_label] = delta[col + _last] - delta[col + _first]
-    #     delta = delta.drop(columns=delta_columns)
-    #     delta = delta.groupby(c_st_txt).sum()
-    #     delta = delta.reset_index()
+        for col in _delta_columns:
+            delta[col + _delta_label] = delta[col + _last] - delta[col + _first]
+        delta = delta.drop(columns=delta_columns)
+        delta = delta.groupby(hdrst_cycle).sum()
+        delta = delta.reset_index()
 
-    #     selected = selected.merge(delta, how="left", left_on=c_n_txt, right_on=c_st_txt)
-    #     if replace_nan:
-    #         selected = selected.fillna(0.0)
+        selected = selected.merge(delta, how="left", left_on=hdrn_cycle_index, right_on=hdrst_cycle)
+        if replace_nan:
+            selected = selected.fillna(0.0)
 
-    #     for col_n, col_diff in zip(_raw_columns, _diff_columns):
-    #         selected[col_n] -= selected[col_diff]
-    #     selected = selected.drop(columns=_diff_columns)
+        for col_n, col_diff in zip(_raw_columns, _diff_columns):
+            selected[col_n] -= selected[col_diff]
+        selected = selected.drop(columns=_diff_columns + [hdrst_cycle, hdrst_data_point + _last, hdrst_type])
 
     #     return selected
     

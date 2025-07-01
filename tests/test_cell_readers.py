@@ -739,6 +739,72 @@ def test_make_summary_new_version(parameters):
     print(s2.columns)
 
 
+def test_select_without(rate_dataset):
+    """Test the _select_without method for filtering and modifying cell cycling data.
+    
+    This test verifies that:
+    1. The method returns correct data when no exclusions are specified
+    2. It properly excludes specified step types
+    3. It properly excludes specified steps
+    4. It correctly adjusts the data values by subtracting excluded step contributions
+    5. It handles NaN values appropriately
+    """
+
+    print("\n=== TEST SELECT WITHOUT ===")
+    # Test 1: No exclusions
+    result1 = rate_dataset._select_without()
+    print("\nResult 1 (no exclusions):")
+    print(f"Number of rows: {len(result1)}")
+    assert not result1.empty
+    assert len(result1) > 0   
+    
+    # Test 2: non-cv
+    exclude_types = ["cv_"]
+    result2 = rate_dataset._select_without(exclude_types=exclude_types)
+    print("\nResult 2 (exclude charge):")
+    print(f"Number of rows: {len(result2)}")
+    assert not result2.empty
+    assert len(result2) > 0
+
+    # Test 3: only-cv
+    exclude_types = ["charge", "discharge"]
+    result2 = rate_dataset._select_without(exclude_types=exclude_types)
+    print("\nResult 3 (exclude charge):")
+    print(f"Number of rows: {len(result2)}")
+    assert not result2.empty
+    assert len(result2) > 0
+    
+    # Test 3: Exclude specific steps
+    result3 = rate_dataset._select_without(exclude_steps=[1, 2])
+    assert not result3.empty
+    assert len(result3) > 0
+    
+    # Test 4: Exclude both types and steps
+    result4 = rate_dataset._select_without(exclude_types="charge", exclude_steps=[1, 2])
+    assert not result4.empty
+    assert len(result4) > 0
+    
+    # Test 5: Verify data adjustments
+    # Get original data for a cycle
+    cycle = 1
+    original_data = rate_dataset.data.raw[rate_dataset.data.raw.cycle_index == cycle]
+    
+    # Get data with exclusions
+    excluded_data = rate_dataset._select_without(exclude_types="charge")
+    excluded_cycle_data = excluded_data[excluded_data.cycle_index == cycle]
+    
+    # Verify that the data has been adjusted
+    assert not original_data.equals(excluded_cycle_data)
+    
+    # Test 6: NaN handling
+    result6 = rate_dataset._select_without(replace_nan=True)
+    assert result6.isna().sum().sum() == 0  # No NaN values when replace_nan=True
+    
+    result7 = rate_dataset._select_without(replace_nan=False)
+    # We don't assert anything about NaN values here as they might or might not exist
+    # depending on the data
+
+
 def test_summary_from_cellpyfile(parameters):
     c_cellpy = cellpy.get(testing=True)
     c_cellpy.load(parameters.cellpy_file_path)
@@ -839,8 +905,17 @@ def test_save_excel(cellpy_data_instance, parameters):
     cellpy_data_instance.from_raw(parameters.res_file_path)
     cellpy_data_instance.make_summary(find_ir=True)
     cellpy_data_instance.make_step_table()
-    temp_dir = tempfile.mkdtemp()
-    cellpy_data_instance.to_excel(datadir=temp_dir)
+    temp_dir = pathlib.Path(tempfile.mkdtemp())
+    filename = temp_dir / "test.xlsx"
+    cellpy_data_instance.to_excel(
+        filename=filename,
+        cycles=None,
+        raw=False,
+        steps=True,
+        nice=True,
+        get_cap_kwargs=None,
+        to_excel_kwargs=None,
+    )
     shutil.rmtree(temp_dir)
     # cellpy_data_instance.save(tmp_file)
     # assert os.path.isfile(tmp_file)

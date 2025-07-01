@@ -201,10 +201,17 @@ class LabJournal(BaseJournal, ABC):
             dbreader_kwargs = {}
 
         logging.debug(f"batch_name, batch_col, dbreader_kwargs: {name}, {batch_col}, {dbreader_kwargs}")
-
         if self.db_reader is not None:
             if isinstance(self.db_reader, dbreader.Reader):  # Simple excel-db
                 id_keys = self.db_reader.select_batch(name, batch_col, **dbreader_kwargs)
+
+                # Check for duplicates in id_keys
+                if len(id_keys) != len(set(id_keys)):
+                    duplicates = [x for x in id_keys if id_keys.count(x) > 1]
+                    unique_duplicates = list(set(duplicates))
+                    logging.warning(f"Found duplicate id_keys: {unique_duplicates}")
+                else:
+                    logging.debug("No duplicates found in id_keys")
                 logging.debug(f"id_keys: {id_keys}")
                 self.pages = self.engine(self.db_reader, id_keys, **kwargs)
             else:

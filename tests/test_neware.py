@@ -15,6 +15,7 @@ def neware_cell(cellpy_data_instance, parameters):
 
 
 def test_get_neware_from_csv(parameters):
+    print(parameters.nw_file_path)
     c = get(
         filename=parameters.nw_file_path,
         instrument="neware_txt",
