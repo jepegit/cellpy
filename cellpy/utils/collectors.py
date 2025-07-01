@@ -753,7 +753,7 @@ class BatchCollector:
 
 
 
-    def to_image_files(self, serial_number=None):
+    def to_image_files(self, serial_number=None, **kwargs):
         """Save to image files (png, svg, json).
 
         Notes:
@@ -776,8 +776,8 @@ class BatchCollector:
         filename_pickle = filename_pre.with_suffix(".pickle")
 
         if self.backend == "plotly":
-            self._image_exporter_plotly(filename_png, scale=3.0)
-            self._image_exporter_plotly(filename_svg)
+            self._image_exporter_plotly(filename_png, scale=3.0, **kwargs)
+            self._image_exporter_plotly(filename_svg, **kwargs)
             self.figure.write_json(filename_json)
             print(f" - saved plotly json file: {filename_json}")
         elif self.backend == "seaborn":
@@ -796,7 +796,7 @@ class BatchCollector:
             print(f"TODO: implement saving {filename_svg}")
             print(f"TODO: implement saving {filename_json}")
 
-    def save(self, serial_number=None, save_hdf5=True, save_image_files=True, to_csv_kwargs:Union[dict, None] = None):
+    def save(self, serial_number=None, save_hdf5=True, save_image_files=True, to_csv_kwargs:Union[dict, None] = None, to_image_files_kwargs:Union[dict, None] = None):
         """Save to csv, hdf5 and image files.
 
         Args:
@@ -818,7 +818,7 @@ class BatchCollector:
 
         if self._figure_valid():
             if save_image_files:
-                self.to_image_files(serial_number=serial_number)
+                self.to_image_files(serial_number=serial_number, **to_image_files_kwargs)
 
     def _output_path(self, serial_number=None):
         d = Path(self.figure_directory)
