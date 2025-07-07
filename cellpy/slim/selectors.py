@@ -3,6 +3,7 @@ import functools
 from typing import Any, Callable, Iterable, List, Optional, Union, TypeVar
 import logging
 
+# old cellpy modules that are still not ported to slim:
 from cellpy.readers import core
 from cellpy.parameters.internal_settings import (
     HeadersNormal,

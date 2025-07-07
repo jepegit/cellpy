@@ -6,11 +6,11 @@ import datetime
 
 from typing import Callable, Iterable, Union, Sequence, Optional, List, TypeVar
 
+# old cellpy modules that are still not ported to slim:
 from cellpy.readers import core
 from cellpy.exceptions import (
     NoDataFound,
 )
-
 from cellpy.parameters.internal_settings import (
     get_cellpy_units,
     get_default_output_units,
@@ -30,7 +30,7 @@ headers_summary = HeadersSummary()
 headers_normal = HeadersNormal()
 
 cellpy_units = get_cellpy_units()
-output_units = get_default_output_units() 
+output_units = get_default_output_units()
 
 # TODO: move this to a settings file
 CAPACITY_MODIFIERS = ["reset"]
@@ -80,16 +80,24 @@ class CellpyCellCore:  # Rename to CellpyCell when cellpy core is ready
         self.list_of_step_types: List[str] = STEP_TYPES
 
         # - headers
-        self.headers_normal: HeadersNormal = headers_normal  # remove this when cellpy core is ready
-        self.headers_summary: HeadersSummary = headers_summary  # remove this when cellpy core is ready
-        self.headers_step_table: HeadersStepTable = headers_step_table  # remove this when cellpy core is ready
+        self.headers_normal: HeadersNormal = (
+            headers_normal  # remove this when cellpy core is ready
+        )
+        self.headers_summary: HeadersSummary = (
+            headers_summary  # remove this when cellpy core is ready
+        )
+        self.headers_step_table: HeadersStepTable = (
+            headers_step_table  # remove this when cellpy core is ready
+        )
 
         # - units used by cellpy
         self.cellpy_units = get_cellpy_units()  # remove this when cellpy core is ready?
-        self.output_units = get_default_output_units()  # remove this when cellpy core is ready?
+        self.output_units = (
+            get_default_output_units()
+        )  # remove this when cellpy core is ready?
         if initialize:
             self.initialize()
-        
+
     def initialize(self):
         """Initialize the CellpyCell object with empty Data instance."""
 
@@ -99,7 +107,7 @@ class CellpyCellCore:  # Rename to CellpyCell when cellpy core is ready
     @property
     def data(self) -> core.Data:
         """Returns the DataSet instance.
-        
+
         Returns:
             DataSet instance.
 
@@ -148,7 +156,6 @@ class CellpyCellCore:  # Rename to CellpyCell when cellpy core is ready
         except NoDataFound:
             self._cycle_mode = cycle_mode
 
-    
     # Added to the CellpyCellCore class to make it easier to migrate to cellpy core.
     # TODO: move this when cellpy core is ready.
     def _dump_cellpy_unit(self, value, parameter):
@@ -193,7 +200,7 @@ class CellpyCellCore:  # Rename to CellpyCell when cellpy core is ready
         final_data_points: Optional[Iterable[int]] = None,
     ) -> core.Data:
         """Make the core summary.
-        
+
         Args:
             data: The data to make the summary from.
             selector: The selector to use.
@@ -206,12 +213,13 @@ class CellpyCellCore:  # Rename to CellpyCell when cellpy core is ready
             Data object with the summary.
         """
 
-
         time_00 = time.time()
         logger.debug("start making summary")
 
         if selector is None:
-            selector = selectors.create_selector(data, final_data_points=final_data_points)
+            selector = selectors.create_selector(
+                data, final_data_points=final_data_points
+            )
         summary = selector()
         column_names = summary.columns
         # TODO @jepe: use pandas.DataFrame properties instead (.len, .reset_index), but maybe first
@@ -239,7 +247,9 @@ class CellpyCellCore:  # Rename to CellpyCell when cellpy core is ready
         data.summary = summary
 
         if self.cycle_mode == "anode":
-            logger.info("Assuming cycling in anode half-data (discharge before charge) mode")
+            logger.info(
+                "Assuming cycling in anode half-data (discharge before charge) mode"
+            )
             _first_step_txt = headers_summary.discharge_capacity
             _second_step_txt = headers_summary.charge_capacity
         else:
@@ -249,7 +259,9 @@ class CellpyCellCore:  # Rename to CellpyCell when cellpy core is ready
 
         # ---------------- absolute -------------------------------
 
-        data = summarizers.generate_absolute_summary_columns(data, _first_step_txt, _second_step_txt)
+        data = summarizers.generate_absolute_summary_columns(
+            data, _first_step_txt, _second_step_txt
+        )
 
         # TODO @jepe: refactor this to method:
         if find_end_voltage:
@@ -260,23 +272,24 @@ class CellpyCellCore:  # Rename to CellpyCell when cellpy core is ready
 
         data = summarizers.c_rates_to_summary(data)
 
-
         logger.debug(f"(dt: {(time.time() - time_00):4.2f}s)")
         return data
-    
+
     def add_scaled_summary_columns(
-            self, 
-            data: core.Data, 
-            nom_cap_abs: float,
-            normalization_cycles: Union[Sequence, int, None],
-            specifics: Optional[List[str]] = None,
-            ) -> core.Data:
+        self,
+        data: core.Data,
+        nom_cap_abs: float,
+        normalization_cycles: Union[Sequence, int, None],
+        step_txt: Optional[str] = None,
+        specifics: Optional[List[str]] = None,
+    ) -> core.Data:
         """Add specific summary columns to the summary.
-        
+
         Args:
             data: The data to add the specific summary columns to.
             nom_cap_abs: The nominal capacity of the cell.
             normalization_cycles: The number of cycles to normalize the data by.
+            step_txt: The step text to use (charge or discharge capacity, will pick 'first' based on cycle mode if not provided)
             specifics: The specifics to add.
 
         Returns:
@@ -285,22 +298,25 @@ class CellpyCellCore:  # Rename to CellpyCell when cellpy core is ready
         if specifics is None:
             specifics = ["gravimetric", "areal", "absolute"]
 
-        if self.cycle_mode == "anode":
-            logging.debug("Assuming cycling in anode half-data (discharge before charge) mode")
-            _first_step_txt = headers_summary.discharge_capacity
-            _second_step_txt = headers_summary.charge_capacity
-        else:
-            logging.debug("Assuming cycling in full-data / cathode mode")
-            _first_step_txt = headers_summary.charge_capacity
-            _second_step_txt = headers_summary.discharge_capacity
+        if step_txt is None:
+            if self.cycle_mode == "anode":
+                step_txt = headers_summary.discharge_capacity
+            else:
+                step_txt = headers_summary.charge_capacity
 
         data = summarizers.equivalent_cycles_to_summary(
-            data, _first_step_txt, _second_step_txt, nom_cap_abs, normalization_cycles
+            data, nom_cap_abs, normalization_cycles, step_txt
+        )
+
+        data = summarizers.c_rates_to_summary(
+            data, nom_cap_abs, normalization_cycles, step_txt
         )
 
         specific_columns = headers_summary.specific_columns
         for mode in specifics:
-            data = summarizers.generate_specific_summary_columns(data, mode, specific_columns)
+            data = summarizers.generate_specific_summary_columns(
+                data, mode, specific_columns
+            )
 
         return data
 
@@ -324,7 +340,7 @@ def set_col_first(df, col_names):
     finally:
         df = df.reindex(columns=column_headings)
         return df
-        
+
     # @staticmethod
     # def get_converter_to_specific(
     #     data: core.Data,
@@ -389,4 +405,3 @@ def set_col_first(df, col_names):
     #     conversion_factor = (from_unit / to_unit / value).to_reduced_units()
     #     logging.debug(f"conversion factor: {conversion_factor}")
     #     return conversion_factor.m
-

@@ -61,11 +61,17 @@ def test_create_cellpyfile(cpi, tmp_path, clp_params, capsys):
     cpi.save(name)
 
 
-def test_generate_absolute_summary_columns(cpi, capsys, clp_params):
+def test_generate_absolute_summary_columns(capsys, clp_params):
     from cellpy.slim import summarizers, selectors
+    from cellpy import cellreader, log
+
+    log.setup_logging(default_level="DEBUG", testing=True)
+
+    cpi = cellreader.CellpyCell()
 
     nom_cap = 1.0
     mass = 1.0
+    cpi.set_instrument("arbin_res")
     cpi.from_raw(clp_params.res_file_path)
 
     nom_cap_abs = cpi.nominal_capacity_as_absolute(nom_cap, mass, "gravimetric")

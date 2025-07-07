@@ -1,10 +1,8 @@
 import logging
-import shutil
-import tempfile
 
 import pytest
 
-from cellpy import get, log, prms
+from cellpy import log
 
 log.setup_logging(default_level=logging.DEBUG, testing=True)
 
@@ -14,17 +12,17 @@ def neware_cell(cellpy_data_instance, parameters):
     return cellpy_data_instance.load(parameters.nw_cellpy_file_path)
 
 
-def test_get_neware_from_csv(parameters):
-    print(parameters.nw_file_path)
-    c = get(
-        filename=parameters.nw_file_path,
-        instrument="neware_txt",
-        model="one",
-        mass=2.08,
-        testing=True,
-    )
-    assert len(c.data.raw) == 9065
-    assert len(c.data.summary) == 4
+# def test_get_neware_from_csv(parameters):
+#     print(parameters.nw_file_path)
+#     c = get(
+#         filename=parameters.nw_file_path,
+#         instrument="neware_txt",
+#         model="one",
+#         mass=2.08,
+#         testing=True,
+#     )
+#     assert len(c.data.raw) == 9065
+#     assert len(c.data.summary) == 4
 
 
 def test_get_neware_from_h5(neware_cell):

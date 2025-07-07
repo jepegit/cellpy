@@ -1,6 +1,7 @@
 import logging
-from typing import TypeVar
+from typing import Optional, TypeVar
 
+# old cellpy modules that are still not ported to slim:
 from cellpy.readers import core
 from cellpy.parameters.internal_settings import (
     get_cellpy_units,
@@ -8,6 +9,7 @@ from cellpy.parameters.internal_settings import (
 )
 
 DataFrame = TypeVar("DataFrame")
+
 
 def get_converter_to_specific(
     data: core.Data,
@@ -72,3 +74,60 @@ def get_converter_to_specific(
     conversion_factor = (from_unit / to_unit / value).to_reduced_units()
     logging.debug(f"conversion factor: {conversion_factor}")
     return conversion_factor.m
+
+
+def nominal_capacity_as_absolute(
+    data: core.Data,
+    value: Optional[float] = None,
+    specific: Optional[float] = None,
+    nom_cap_specifics: Optional[str] = None,
+    convert_charge_units: bool = False,
+) -> float:
+    """Get the nominal capacity as absolute value."""
+
+    cellpy_units = get_cellpy_units()
+
+    if nom_cap_specifics is None:
+        nom_cap_specifics = data.nom_cap_specifics
+
+    if specific is None:
+        if nom_cap_specifics == "gravimetric":
+            specific = data.mass
+        elif nom_cap_specifics == "areal":
+            specific = data.active_electrode_area
+
+        # TODO: implement volumetric
+        elif nom_cap_specifics == "volumetric":
+            raise NotImplementedError("volumetric not implemented yet")
+
+    if value is None:
+        value = data.nom_cap
+
+    value = core.Q(value, cellpy_units["nominal_capacity"])
+
+    if nom_cap_specifics == "gravimetric":
+        specific = core.Q(specific, cellpy_units["mass"])
+    elif nom_cap_specifics == "areal":
+        specific = core.Q(specific, cellpy_units["area"])
+    elif nom_cap_specifics == "absolute":
+        specific = 1
+
+    # TODO: implement volumetric
+    elif nom_cap_specifics == "volumetric":
+        raise NotImplementedError("volumetric not implemented yet")
+
+    if convert_charge_units:
+        conversion_factor_charge = core.Q(1, cellpy_units["charge"]) / core.Q(
+            1, data.raw_units["charge"]
+        )
+    else:
+        conversion_factor_charge = 1.0
+
+    try:
+        absolute_value = (
+            (value * conversion_factor_charge * specific).to_reduced_units().to("Ah")
+        )
+    except Exception as e:
+        raise e
+
+    return absolute_value.m
