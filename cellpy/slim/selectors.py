@@ -47,8 +47,8 @@ def create_selector(
     exclude_steps: Optional[List[str]] = None,
     final_data_points: Optional[Iterable[int]] = None,
 ) -> Callable:
-    """Create a selector function.
-    
+    """Create a simple summary selector function.
+
     Args:
         data: The data to create the selector from.
         selector_type: The type of selector to create.
@@ -92,8 +92,8 @@ def summary_selector_exluder(
     """Create a summary selector.
 
     This function creates a summary selector that can be used to select a subset of the raw data
-    to base the summary on. 
-    
+    to base the summary on.
+
     Args:
         data: The data to create the summary selector from.
         custom_headers_normal: The custom headers to use for the summary selector.
@@ -144,7 +144,12 @@ def summary_selector_exluder(
     #  more "native" pandas methods and get rid of all looping (need some timing to check first)
 
     if final_data_points is None:
-        final_data_points = steps.loc[:, [c_st_txt, d_st_txt + _last]].groupby(c_st_txt).last().values.ravel()
+        final_data_points = (
+            steps.loc[:, [c_st_txt, d_st_txt + _last]]
+            .groupby(c_st_txt)
+            .last()
+            .values.ravel()
+        )
     last_items = raw[d_n_txt].isin(final_data_points)
     selected = raw[last_items]
 
@@ -203,7 +208,6 @@ def summary_selector_exluder(
     return selected
 
 
-
 def get_step_numbers(
     data: core.Data,
     steptype: str = "charge",
@@ -249,7 +253,9 @@ def get_step_numbers(
 
     """
     if trim_taper_steps is not None and usteps:
-        logger.warning("Trimming taper steps is not possible when using usteps. Not doing any trimming.")
+        logger.warning(
+            "Trimming taper steps is not possible when using usteps. Not doing any trimming."
+        )
         trim_taper_steps = None
 
     if steps_to_skip is None:
@@ -258,8 +264,12 @@ def get_step_numbers(
     if steptable is None:
         if not data.has_steps:
             logger.debug("step-table is not made")
-            logger.info("ERROR! Cannot use get_step_numbers: you must create your step-table first")
-            raise ValueError("Cannot use get_step_numbers: you must create your step-table first")
+            logger.info(
+                "ERROR! Cannot use get_step_numbers: you must create your step-table first"
+            )
+            raise ValueError(
+                "Cannot use get_step_numbers: you must create your step-table first"
+            )
 
     # check if steptype is valid
     steptype = steptype.lower()
@@ -402,7 +412,9 @@ def get_cycle_numbers(
         rate_on = ["charge", "discharge"]
     rates = get_rates(data, steptable=steptable, agg=rate_agg, direction=rate_on)
     rate_column = headers_step_table.rate_avr
-    cycles_mask = (rates[rate_column] < (rate + rate_std)) & (rates[rate_column] > (rate - rate_std))
+    cycles_mask = (rates[rate_column] < (rate + rate_std)) & (
+        rates[rate_column] > (rate - rate_std)
+    )
 
     if inverse:
         cycles_mask = ~cycles_mask
@@ -412,7 +424,13 @@ def get_cycle_numbers(
 
     return filtered_cycles
 
-def get_rates(data: core.Data, steptable: Optional[Any] = None, agg: str = "first", direction: Optional[str] = None) -> DataFrame:
+
+def get_rates(
+    data: core.Data,
+    steptable: Optional[Any] = None,
+    agg: str = "first",
+    direction: Optional[str] = None,
+) -> DataFrame:
     """
     Get the rates in the test (only valid for constant current).
 
@@ -438,7 +456,11 @@ def get_rates(data: core.Data, steptable: Optional[Any] = None, agg: str = "firs
     ].dropna()
 
     if agg:
-        rates = rates.groupby([headers_step_table.cycle, headers_step_table.type]).agg(agg).reset_index()
+        rates = (
+            rates.groupby([headers_step_table.cycle, headers_step_table.type])
+            .agg(agg)
+            .reset_index()
+        )
 
     if direction is not None:
         if not isinstance(direction, (list, tuple)):
