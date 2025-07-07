@@ -33,6 +33,7 @@ from . import externals as externals
 from cellpy.readers import core
 import cellpy.internals.core as internals
 from cellpy.slim.cell_core import CellpyCellCore
+
 # from cellpy.slim.selectors import get_cycle_numbers, get_step_numbers, get_rates
 from cellpy.slim import selectors
 
@@ -41,7 +42,6 @@ from cellpy.exceptions import (
     NullData,
     WrongFileVersion,
     NoDataFound,
-
 )
 from cellpy.parameters import prms
 from cellpy.parameters.legacy.update_headers import (
@@ -246,12 +246,12 @@ class CellpyCell:
         self.debug = debug  # CellpyCellCore.debug
         logging.debug("created CellpyCell instance")
 
-        self._cell_name = None # CellpyCellCore._cell_name
+        self._cell_name = None  # CellpyCellCore._cell_name
         self._initial_cells = None
         self.group = None
         self.last_uploaded_from = None
         self.last_uploaded_at = None
-        self.cellpy_file_name = None # CellpyCellCore.cellpy_file_name
+        self.cellpy_file_name = None  # CellpyCellCore.cellpy_file_name
         self.cellpy_object_created_at = datetime.datetime.now()  # CellpyCellCore.cellpy_object_created_at
 
         self.profile = profile
@@ -268,7 +268,7 @@ class CellpyCell:
         if not self._is_listtype(self.selected_scans):
             self.selected_scans = [self.selected_scans]
 
-        self._data = None # CellpyCellCore._data
+        self._data = None  # CellpyCellCore._data
         self.overwrite_able = True  # attribute that prevents saving to the same filename as loaded from if False
 
         self.capacity_modifiers = ["reset"]  # CellpyCellCore.capacity_modifiers
@@ -348,7 +348,7 @@ class CellpyCell:
 
     def _invent_a_cell_name(self, filename=None, override=False):
         self.cell_name = "naming-not-implemented-yet"
-            
+
     @property
     def mass(self):
         """Returns the mass"""
@@ -1728,11 +1728,7 @@ class CellpyCell:
         logging.debug(f"filename: {filename}")
         logging.debug(f"selector: {selector}")
         with externals.pandas.HDFStore(filename) as store:
-            (
-                data,
-                meta_table,
-                test_dependent_meta_table,
-            ) = self._create_initial_data_set_from_cellpy_file(
+            (data, meta_table, test_dependent_meta_table,) = self._create_initial_data_set_from_cellpy_file(
                 common_meta_dir,
                 parent_level,
                 store,
@@ -5387,19 +5383,19 @@ class CellpyCell:
         hdrst_type = self.headers_step_table.type
         hdrst_step = self.headers_step_table.step
 
-    #     _first = "_first"
-    #     _last = "_last"
-    #     _delta_label = "_diff"
+        _first = "_first"
+        _last = "_last"
+        _delta_label = "_diff"
 
-    #     # TODO: implement also for energy and power (and probably others as well) - this will
-    #     #  require changing step-table to also include energy and power etc. If implementing
-    #     #  this, you should also include diff in the step-table. You should preferably also use this
-    #     #  opportunity to also make both the headers in the tables as well as the names used for
-    #     #  the headers more aligned (e.g. for header_normal.data_point_txt -> header_normal.point;
-    #     #  "cycle_index" -> "cycle")
+        # TODO: implement also for energy and power (and probably others as well) - this will
+        #  require changing step-table to also include energy and power etc. If implementing
+        #  this, you should also include diff in the step-table. You should preferably also use this
+        #  opportunity to also make both the headers in the tables as well as the names used for
+        #  the headers more aligned (e.g. for header_normal.data_point_txt -> header_normal.point;
+        #  "cycle_index" -> "cycle")
 
-    #     # TODO: @jepe - this method might be a bit slow for large datasets - consider using
-    #     #  more "native" pandas methods and get rid of all looping (need some timing to check first)
+        # TODO: @jepe - this method might be a bit slow for large datasets - consider using
+        #  more "native" pandas methods and get rid of all looping (need some timing to check first)
 
         last_data_points = (
             steps.loc[:, [hdrst_cycle, hdrst_data_point + _last]].groupby(hdrst_cycle).last().values.ravel()
@@ -5407,8 +5403,8 @@ class CellpyCell:
         last_items = raw[hdrn_data_point].isin(last_data_points)
         selected = raw[last_items]
 
-    #     if exclude_types is None and exclude_steps is None:
-    #         return selected
+        if exclude_types is None and exclude_steps is None:
+            return selected
 
         if not isinstance(exclude_types, (list, tuple)):
             if exclude_types is None:
@@ -5450,9 +5446,9 @@ class CellpyCell:
         ]
         _diff_columns = [f"{col}{_delta_label}" for col in _delta_columns]
 
-    #     delta_first = [f"{col}{_first}" for col in _delta_columns]
-    #     delta_last = [f"{col}{_last}" for col in _delta_columns]
-    #     delta_columns = delta_first + delta_last
+        delta_first = [f"{col}{_first}" for col in _delta_columns]
+        delta_last = [f"{col}{_last}" for col in _delta_columns]
+        delta_columns = delta_first + delta_last
 
         # select the data points that are excluded:
         delta = steps.loc[~q, [hdrst_type, hdrst_cycle, hdrst_data_point + _last, *delta_columns]].copy()
@@ -5471,9 +5467,8 @@ class CellpyCell:
             selected[col_n] -= selected[col_diff]
         selected = selected.drop(columns=_diff_columns + [hdrst_cycle, hdrst_data_point + _last, hdrst_type])
 
-    #     return selected
-    
-    
+        return selected
+
     def make_summary(
         self,
         find_ir=False,
@@ -5606,7 +5601,6 @@ class CellpyCell:
         selector=None,
         **kwargs,
     ):
-       
 
         for k in kwargs:
             if cell_type := kwargs.get("cell_type", None):
@@ -5656,7 +5650,6 @@ class CellpyCell:
 
         else:
             nom_cap_abs = self.nominal_capacity_as_absolute(nom_cap, mass, nom_cap_specifics)
-
 
         if not self.data.raw.index.is_unique:
             warnings.warn(f"{self.cell_name}: index is not unique for raw data")

@@ -1,3 +1,6 @@
+# TODO: remove dependencies on conftest and fdv
+
+
 import logging
 import pathlib
 import tempfile
@@ -74,7 +77,6 @@ def updated_cycling_experiment(cycling_experiment):
     return cycling_experiment
 
 
-
 def test_csv_exporter(updated_cycling_experiment):
     logging.info(f"using pandas {pandas.__version__}")
     exporter = batch_exporters.CSVExporter()
@@ -99,6 +101,7 @@ def test_create_cellpyfile(cellpy_data_instance, tmp_path, parameters, capsys):
 
 def test_generate_absolute_summary_columns(cellpy_data_instance, capsys, parameters):
     from cellpy.slim import summarizers, selectors
+
     nom_cap = 1.0
     mass = 1.0
     cellpy_data_instance.from_raw(parameters.res_file_path)
