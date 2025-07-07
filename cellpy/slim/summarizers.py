@@ -25,16 +25,16 @@ headers_summary = HeadersSummary()
 headers_normal = HeadersNormal()
 
 cellpy_units = get_cellpy_units()
-output_units = get_default_output_units() 
+output_units = get_default_output_units()
 
 
 def _ustep(n: Array) -> list:
     # not tested
     """Create u-steps from a pandas Series.
-    
+
     Args:
         n (Array): The input series.
-        
+
     Returns:
         list: The u-steps.
     """
@@ -49,21 +49,31 @@ def _ustep(n: Array) -> list:
     return un
 
 
-def generate_absolute_summary_columns(data: core.Data, _first_step_txt: str, _second_step_txt: str) -> core.Data:
+def generate_absolute_summary_columns(
+    data: core.Data,
+    _first_step_txt: str = headers_normal.charge_capacity_txt,
+    _second_step_txt: str = headers_normal.discharge_capacity_txt,
+) -> core.Data:
     summary = data.summary
-    summary[headers_summary.coulombic_efficiency] = 100 * summary[_second_step_txt] / summary[_first_step_txt]
+    summary[headers_summary.coulombic_efficiency] = (
+        100 * summary[_second_step_txt] / summary[_first_step_txt]
+    )
     summary[headers_summary.cumulated_coulombic_efficiency] = summary[
         headers_summary.coulombic_efficiency
     ].cumsum()
 
     capacity_columns = {
         headers_summary.charge_capacity: summary[headers_normal.charge_capacity_txt],
-        headers_summary.discharge_capacity: summary[headers_normal.discharge_capacity_txt],
+        headers_summary.discharge_capacity: summary[
+            headers_normal.discharge_capacity_txt
+        ],
     }
     summary = summary.assign(**capacity_columns)
 
     calculated_from_capacity_columns = {
-        headers_summary.cumulated_charge_capacity: summary[headers_summary.charge_capacity].cumsum(),
+        headers_summary.cumulated_charge_capacity: summary[
+            headers_summary.charge_capacity
+        ].cumsum(),
         headers_summary.cumulated_discharge_capacity: summary[
             headers_summary.discharge_capacity
         ].cumsum(),
@@ -72,9 +82,12 @@ def generate_absolute_summary_columns(data: core.Data, _first_step_txt: str, _se
             - summary[headers_summary.discharge_capacity]
         ),
         headers_summary.charge_capacity_loss: (
-            summary[headers_summary.charge_capacity].shift(1) - summary[headers_summary.charge_capacity]
+            summary[headers_summary.charge_capacity].shift(1)
+            - summary[headers_summary.charge_capacity]
         ),
-        headers_summary.coulombic_difference: (summary[_first_step_txt] - summary[_second_step_txt]),
+        headers_summary.coulombic_difference: (
+            summary[_first_step_txt] - summary[_second_step_txt]
+        ),
     }
 
     summary = summary.assign(**calculated_from_capacity_columns)
@@ -103,28 +116,37 @@ def generate_absolute_summary_columns(data: core.Data, _first_step_txt: str, _se
     summary = summary.assign(**shifted_charge_capacity_column)
 
     shifted_discharge_capacity_column = {
-        headers_summary.shifted_discharge_capacity: summary[headers_summary.shifted_charge_capacity]
+        headers_summary.shifted_discharge_capacity: summary[
+            headers_summary.shifted_charge_capacity
+        ]
         + summary[_first_step_txt],
     }
     summary = summary.assign(**shifted_discharge_capacity_column)
-    ric = (summary[_first_step_txt].shift(1) - summary[_second_step_txt]) / summary[_second_step_txt].shift(1)
+    ric = (summary[_first_step_txt].shift(1) - summary[_second_step_txt]) / summary[
+        _second_step_txt
+    ].shift(1)
     ric_column = {headers_summary.cumulated_ric: ric.cumsum()}
     summary = summary.assign(**ric_column)
     summary[headers_summary.cumulated_ric] = ric.cumsum()
-    ric_sei = (summary[_first_step_txt] - summary[_second_step_txt].shift(1)) / summary[_second_step_txt].shift(1)
-    ric_sei_column = {headers_summary.cumulated_ric_sei: ric_sei.cumsum()}
-    summary = summary.assign(**ric_sei_column)
-    ric_disconnect = (summary[_second_step_txt].shift(1) - summary[_second_step_txt]) / summary[
+    ric_sei = (summary[_first_step_txt] - summary[_second_step_txt].shift(1)) / summary[
         _second_step_txt
     ].shift(1)
-    ric_disconnect_column = {headers_summary.cumulated_ric_disconnect: ric_disconnect.cumsum()}
+    ric_sei_column = {headers_summary.cumulated_ric_sei: ric_sei.cumsum()}
+    summary = summary.assign(**ric_sei_column)
+    ric_disconnect = (
+        summary[_second_step_txt].shift(1) - summary[_second_step_txt]
+    ) / summary[_second_step_txt].shift(1)
+    ric_disconnect_column = {
+        headers_summary.cumulated_ric_disconnect: ric_disconnect.cumsum()
+    }
     data.summary = summary.assign(**ric_disconnect_column)
 
     return data
 
 
-
-def generate_specific_summary_columns(data: core.Data, mode: str, specific_columns: Sequence) -> core.Data:
+def generate_specific_summary_columns(
+    data: core.Data, mode: str, specific_columns: Sequence
+) -> core.Data:
     specific_converter = units.get_converter_to_specific(data=data, mode=mode)
     summary = data.summary
     for col in specific_columns:
@@ -146,7 +168,9 @@ def end_voltage_to_summary(data: core.Data) -> core.Data:
     only_zeros_discharge = summary[headers_normal.discharge_capacity_txt] * 0.0
     only_zeros_charge = summary[headers_normal.charge_capacity_txt] * 0.0
     logger.debug("need to collect discharge steps")
-    discharge_steps = selectors.get_step_numbers(data, steptype="discharge", allctypes=False)
+    discharge_steps = selectors.get_step_numbers(
+        data, steptype="discharge", allctypes=False
+    )
     logger.debug(f"dt: {time.time() - ev_t0}")
     logger.debug("need to collect charge steps")
     charge_steps = selectors.get_step_numbers(data, steptype="charge", allctypes=False)
@@ -186,7 +210,9 @@ def end_voltage_to_summary(data: core.Data) -> core.Data:
 
     ir_frame_dc = only_zeros_discharge + endv_values_dc
     ir_frame_c = only_zeros_charge + endv_values_c
-    data.summary.insert(0, column=headers_summary.end_voltage_discharge, value=ir_frame_dc)
+    data.summary.insert(
+        0, column=headers_summary.end_voltage_discharge, value=ir_frame_dc
+    )
     data.summary.insert(0, column=headers_summary.end_voltage_charge, value=ir_frame_c)
 
     return data
@@ -206,7 +232,9 @@ def equivalent_cycles_to_summary(
     summary = data.summary
 
     if normalization_cycles is not None:
-        logger.info(f"Using these cycles for finding the nominal capacity: {normalization_cycles}")
+        logger.info(
+            f"Using these cycles for finding the nominal capacity: {normalization_cycles}"
+        )
         if not isinstance(normalization_cycles, (list, tuple)):
             normalization_cycles = [normalization_cycles]
 
@@ -220,7 +248,9 @@ def equivalent_cycles_to_summary(
             logger.info("Empty reference cycle(s)")
 
     normalized_cycle_index_column = {
-        headers_summary.normalized_cycle_index: summary[headers_summary.cumulated_charge_capacity]
+        headers_summary.normalized_cycle_index: summary[
+            headers_summary.cumulated_charge_capacity
+        ]
         / nom_cap
     }
     summary = summary.assign(**normalized_cycle_index_column)
@@ -232,7 +262,9 @@ def c_rates_to_summary(data: core.Data) -> core.Data:
     logger.debug("Extracting C-rates")
 
     def rate_to_cellpy_units(rate):
-        conversion_factor = core.Q(1.0, data.raw_units["current"]) / core.Q(1.0, cellpy_units["current"])
+        conversion_factor = core.Q(1.0, data.raw_units["current"]) / core.Q(
+            1.0, cellpy_units["current"]
+        )
         conversion_factor = conversion_factor.to_reduced_units().magnitude
         return rate * conversion_factor
 
@@ -244,7 +276,9 @@ def c_rates_to_summary(data: core.Data) -> core.Data:
         [headers_step_table.cycle, headers_step_table.rate_avr],
     ].rename(columns={headers_step_table.rate_avr: headers_summary.charge_c_rate})
 
-    charge_steps = charge_steps.drop_duplicates(subset=[headers_step_table.cycle], keep="first")
+    charge_steps = charge_steps.drop_duplicates(
+        subset=[headers_step_table.cycle], keep="first"
+    )
     charge_steps[headers_summary.charge_c_rate] = rate_to_cellpy_units(
         charge_steps[headers_summary.charge_c_rate]
     )
@@ -261,7 +295,9 @@ def c_rates_to_summary(data: core.Data) -> core.Data:
         [headers_step_table.cycle, headers_step_table.rate_avr],
     ].rename(columns={headers_step_table.rate_avr: headers_summary.discharge_c_rate})
 
-    discharge_steps = discharge_steps.drop_duplicates(subset=[headers_step_table.cycle], keep="first")
+    discharge_steps = discharge_steps.drop_duplicates(
+        subset=[headers_step_table.cycle], keep="first"
+    )
     discharge_steps[headers_summary.discharge_c_rate] = rate_to_cellpy_units(
         discharge_steps[headers_summary.discharge_c_rate]
     )
