@@ -1,5 +1,3 @@
-# TODO: remove dependencies on conftest and fdv
-
 import logging
 import pathlib
 import os
