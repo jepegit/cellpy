@@ -5,7 +5,9 @@ repos:
     -   id: check-yaml
     -   id: end-of-file-fixer
     -   id: trailing-whitespace
--   repo: https://github.com/psf/black
-    rev: 22.10.0
+-   repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.12.2 # Use the latest stable version of Ruff
     hooks:
-    -   id: black
+    -   id: ruff # Run the linter
+        args: [--fix] # Optional: automatically fix linting issues
+    -   id: ruff-format # Run the formatter
