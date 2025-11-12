@@ -1369,7 +1369,7 @@ def select_summary_based_on_rate(
     step_table = cell.data.steps
     
     if partition_by_cv:
-        summary = _partition_summary_based_on_cv_steps(cell.data.summary)
+        summary = _partition_summary_based_on_cv_steps(cell)
     else:
         summary = cell.data.summary
 
@@ -1380,7 +1380,7 @@ def select_summary_based_on_rate(
             summary.set_index(cycle_number_header, drop=True, inplace=True)
         else:
             print(f"{cycle_number_header} not set as index!")
-            print(f"Please, set the cycle index header as index before proceeding!")
+            print("Please, set the cycle index header as index before proceeding!")
             return summary
 
     if on:
@@ -1437,7 +1437,7 @@ def add_normalized_capacity(cell, norm_cycles=None, individual_normalization=Fal
     try:
         norm_val_charge = cell.data.summary.loc[norm_cycles, col_name_charge].mean()
     except KeyError as e:
-        print(f"Oh no! Are you sure these cycle indexes exist?")
+        print("Oh no! Are you sure these cycle indexes exist?")
         print(f"  norm_cycles: {norm_cycles}")
         print(f"  cycle indexes: {list(cell.data.summary.index)}")
         raise KeyError from e
