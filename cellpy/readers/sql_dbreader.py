@@ -24,7 +24,7 @@ from cellpy.parameters.internal_settings import (
     BATCH_ATTRS_TO_IMPORT_FROM_EXCEL_SQLITE,
     get_headers_journal,
 )
-from cellpy.readers.core import BaseDbReader
+from cellpy.readers.core import BaseSimpleDbReader
 
 # ----------------- USED WHEN CONVERTING FROM EXCEL -----------------
 DB_FILE_EXCEL = prms.Paths.db_filename
@@ -158,7 +158,7 @@ class Batch(Base):
         return f"batch: '{self.name}' (#{self.pk})"
 
 
-class SQLReader(BaseDbReader):
+class SQLReader(BaseSimpleDbReader):
     """A custom database reader for the batch utility in cellpy."""
 
     def __init__(self, db_connection: str = None, batch: str = None, **kwargs) -> None:
