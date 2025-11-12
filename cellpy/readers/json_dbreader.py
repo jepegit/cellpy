@@ -34,6 +34,7 @@ if __name__ == "__main__":
     import pandas as pd
 
     pd.set_option("display.max_columns", None)
+    print(f"pandas version: {pd.__version__}")
 
     local_dir = Path(__file__).parent.parent.parent / "local"
     json_file = local_dir / "cellpy_journal_table.json"
