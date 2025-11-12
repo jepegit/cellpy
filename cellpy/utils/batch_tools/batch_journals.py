@@ -219,7 +219,7 @@ class LabJournal(BaseJournal, ABC):
                 self.pages = self.engine(self.db_reader, batch_name=name, **kwargs)
 
             if self.pages.empty:
-                logging.critical(f"EMPTY JOURNAL: are you sure you have provided correct input to batch?")
+                logging.critical("EMPTY JOURNAL: are you sure you have provided correct input to batch?")
                 logging.critical(f"name: {name}")
                 logging.critical(f"project: {self.project}")
                 logging.critical(f"batch_col: {batch_col}")
