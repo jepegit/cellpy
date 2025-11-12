@@ -119,6 +119,30 @@ class BaseDbReader(metaclass=abc.ABCMeta):
     """Base class for database readers."""
 
     @abc.abstractmethod
+    def from_batch(
+        self, batch_name: str|None=None, 
+        include_key: bool=False, 
+        include_individual_arguments: bool=False,
+        **kwargs: Any
+        ) -> dict:
+        """Get a dictionary with the data from a batch for the journal.
+
+        Args:
+            batch: name of the batch.
+            include_key: include the key (the cell ids).
+            include_individual_arguments: include the individual arguments.
+
+        Returns:
+            dict: dictionary with the data.
+        """
+        pass
+
+
+
+class BaseSimpleDbReader(metaclass=abc.ABCMeta):
+    """Base class for database readers."""
+
+    @abc.abstractmethod
     def select_batch(self, batch: str) -> List[int]:
         pass
 

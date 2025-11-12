@@ -11,6 +11,7 @@ import warnings
 import pandas as pd
 
 from cellpy import dbreader
+from cellpy.readers import json_dbreader
 from cellpy.parameters.internal_settings import get_headers_journal, get_headers_summary
 from cellpy.utils.batch_tools import batch_helpers as helper
 
@@ -190,6 +191,15 @@ def simple_db_engine(
     if reader is None:
         reader = dbreader.Reader()
         logging.debug("No reader provided. Creating one myself.")
+
+    if isinstance(reader, str):
+        match reader:
+            case "simple_excel_reader":
+                reader = dbreader.Reader()
+            case "batbase_json_reader":
+                reader = json_dbreader.BatbaseJSONReader()
+            case _:
+                raise ValueError(f"Invalid reader: {reader}")
 
     if cell_ids is None:
         logging.debug("cell_ids is None")

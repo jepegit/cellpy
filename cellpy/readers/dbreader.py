@@ -35,7 +35,7 @@ class DbSheetCols:
         return f"<DbCols: {self.__dict__}>"
 
 
-class Reader(core.BaseDbReader):
+class Reader(core.BaseSimpleDbReader):
     def __init__(
         self,
         db_file=None,
