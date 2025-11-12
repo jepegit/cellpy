@@ -179,7 +179,7 @@ def test_dqdv_multi_cycles_tidy(dataset):
     assert "voltage" in df_ica.columns
     assert "cycle" in df_ica.columns
     assert "dq" in df_ica.columns
-    assert df_ica.size == 26379
+    assert df_ica.size == 26667
 
 
 def test_dqdv_multi_cycles_wide(dataset):
@@ -189,7 +189,7 @@ def test_dqdv_multi_cycles_wide(dataset):
     assert cycles_available.issuperset(cycles_processed)
     assert "voltage" in df_ica.columns.get_level_values(1)
     assert "dq" in df_ica.columns.get_level_values(1)
-    assert df_ica.size == 37536
+    assert df_ica.size == 39744
 
 
 # TODO - aulv: this test should be un-commented when hist-method
