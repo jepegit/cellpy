@@ -1737,7 +1737,7 @@ def _new(
 
             else:
                 selected_project_dir = None
-                click.echo(f"Select another directory instead")
+                click.echo("Select another directory instead")
     CREATE_NEW_DIR = "Create new project..."
     if not selected_project_dir:
         project_dirs = [
@@ -1745,9 +1745,7 @@ def _new(
             for d in directory.iterdir()
             if d.is_dir() and not d.name.startswith(".")
         ]
-        print(f"project_dirs: {project_dirs}")
         project_dirs.insert(0, CREATE_NEW_DIR)
-        print(f"project_dirs: {project_dirs}")
 
         project_dir = cookiecutter.prompt.read_user_choice(
             "project folder", project_dirs

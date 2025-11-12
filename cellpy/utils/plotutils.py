@@ -1782,6 +1782,8 @@ def summary_plot(
 
             if fullcell_standard_normalization_type is not False:
                 cum_loss_info_range = norm_range or [0.0, max(max_val_normalized_col, fullcell_standard_normalization_scaler)]
+            else:
+                cum_loss_info_range = norm_range or y_range
 
             cv_info = dict(
                 title="",

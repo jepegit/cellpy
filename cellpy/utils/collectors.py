@@ -131,15 +131,15 @@ def generate_output_path(name, directory, serial_number=None):
     f = d / name
     return f
 
-def incremental_image_exporter_plotly(self, filename, timeout=IMAGE_TO_FILE_TIMEOUT, **kwargs):
+def incremental_image_exporter_plotly(figure, filename, timeout=IMAGE_TO_FILE_TIMEOUT, **kwargs):
     use_subprocess = kwargs.pop("use_subprocess", True)
     
     if not use_subprocess:
         print(f"saving image to {filename}")
-        self.figure.write_image(filename, **kwargs)
+        figure.write_image(filename, **kwargs)
         return
     p = Process(
-        target=self.figure.write_image,
+        target=figure.write_image,
         args=(filename,),
         name="save_plotly_image_to_file",
         kwargs=kwargs,
@@ -818,6 +818,8 @@ class BatchCollector:
 
         if self._figure_valid():
             if save_image_files:
+                if to_image_files_kwargs is None:
+                    to_image_files_kwargs = {}
                 self.to_image_files(serial_number=serial_number, **to_image_files_kwargs)
 
     def _output_path(self, serial_number=None):
