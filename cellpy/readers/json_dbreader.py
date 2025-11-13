@@ -23,7 +23,7 @@ class BaseJSONReader(BaseDbReader):
 
 
     Example:
-    
+
     import pandas as pd
 
     list_of_dicts = [
@@ -39,9 +39,13 @@ class BaseJSONReader(BaseDbReader):
     """
 
 
-    def __init__(self, json_file: str):
+    def __init__(self, json_file: str, store_raw_data: bool = False):
         self.json_file = json_file
-        self.data = self.load_data()
+        if store_raw_data:
+            self.json_data = self._load_raw_data()
+        else:
+            self.json_data = None
+        self.data = self._load_to_pandas_dataframe()
 
     def _load_raw_data(self):
         with open(self.json_file, "r") as f:
@@ -49,8 +53,12 @@ class BaseJSONReader(BaseDbReader):
 
     # TODO: from_batch needs to return a dictionary - maybe using pandas is not the correct approach?
 
-    def load_data(self):
+    def _load_to_pandas_dataframe(self):
         return pd.read_json(self.json_file)
+
+    @property
+    def raw_info_dict(self) -> dict:
+        return self.data.to_dict(orient='list')
 
 
 class BattBaseJSONReader(BaseJSONReader):
@@ -65,10 +73,16 @@ class BattBaseJSONReader(BaseJSONReader):
     ) -> dict:
         raise NotImplementedError("This method is not implemented for this reader")
 
+    @property
+    def info_dict(self) -> dict:
+        return self.raw_info_dict
+
 
 if __name__ == "__main__":
     from pathlib import Path
     import pandas as pd
+
+    from pprint import pprint
 
     pd.set_option("display.max_columns", None)
     print(f"pandas version: {pd.__version__}")
@@ -76,5 +90,12 @@ if __name__ == "__main__":
     local_dir = Path(__file__).parent.parent.parent / "local"
     json_file = local_dir / "cellpy_journal_table.json"
     print(json_file.exists())
-    reader = BattBaseJSONReader(json_file)
-    print(reader.from_batch())
+    reader = BattBaseJSONReader(json_file, store_raw_data=True)
+    print(80 * "=")
+    pprint(reader.json_data)
+    print(80 * "=")
+    print(reader.data)
+    print(80 * "=")
+    pprint(reader.info_dict)
+    print(80 * "=")
+
