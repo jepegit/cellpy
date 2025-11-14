@@ -1,7 +1,8 @@
 from typing import Any
-from cellpy.readers.core import BaseDbReader
+from cellpy.readers.core import BaseDbReader, PagesDictBase
 import json
 
+PagesDict = PagesDictBase
 
 class BaseJSONReader(BaseDbReader):
     """
@@ -63,6 +64,51 @@ class BaseJSONReader(BaseDbReader):
 
 class BattBaseJSONReader(BaseJSONReader):
     _version = "1.0.0"
+    _key_translator = dict(
+            filename = "Test Name",
+            id_key = None,
+            argument= None,
+            mass= "Mass (mg)",
+            total_mass = "Total Mass (mg)",
+            nom_cap_specifics = "Unit",
+            file_name_indicator = "Test Name",
+            loading = "Loading (mg/cm2)",
+            nom_cap = "Nominal Capacity",
+            area = "Area (cm2)",
+            experiment = None,
+            fixed = None,
+            label = None,
+            cell_type = "Cell Type",  # TODO: fix in batbase
+            instrument = "Channel",  # TODO: fix in batbase
+            comment = None,  # TODO: add to batbase
+            group = None,  # TODO: add to batbase
+            raw_file_names = None,
+            cellpy_file_name = None,
+        )
+    def __init__(self, json_file: str, store_raw_data: bool = False):
+        super().__init__(json_file, store_raw_data)
+        # TODO: add to batbase
+        self._instrument_translator = dict(
+            Arbin01 = "arbin_res",
+            Arbin02 = "arbin_res",
+            Arbin03 = "arbin_res",
+            Arbin04 = "arbin_res",
+            Arbin05 = "arbin_sql_h5",
+            Arbin06 = "arbin_sql_h5",
+            other = "other",
+        )
+        self._value_fixers = dict(
+            nom_cap_specifics = lambda x: x.lower(),
+            cell_type = lambda x: "anode" if x == "hci" else "cathode",
+            instrument = self._translate_instrument,
+        )
+
+    def _translate_instrument(self, instrument: str) -> str:
+        for key, value in self._instrument_translator.items():
+            if instrument.startswith(key):
+                print(f"translating {instrument} to {value}")
+                return value
+        return "other"
 
     def from_batch(
         self,
@@ -74,8 +120,21 @@ class BattBaseJSONReader(BaseJSONReader):
         raise NotImplementedError("This method is not implemented for this reader")
 
     @property
-    def info_dict(self) -> dict:
-        return self.raw_info_dict
+    def info_dict(self) -> PagesDict:
+        info_dict = dict()
+
+        # fixing keys:
+        for cellpy_key, json_key in self._key_translator.items():
+            if json_key is not None:
+                info_dict[cellpy_key] = self.raw_info_dict[json_key]
+            else:
+                info_dict[cellpy_key] = []
+
+        # fixing values:
+        for key, fixer in self._value_fixers.items():
+            if key in info_dict:
+                info_dict[key] = [fixer(x) for x in info_dict[key]]
+        return info_dict
 
 
 if __name__ == "__main__":
@@ -98,4 +157,5 @@ if __name__ == "__main__":
     print(80 * "=")
     pprint(reader.info_dict)
     print(80 * "=")
+
 

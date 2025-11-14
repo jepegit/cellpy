@@ -7,16 +7,24 @@
 import logging
 import time
 import warnings
+from typing import List, Any, Optional
 
 import pandas as pd
 
 from cellpy import dbreader
+from cellpy.readers.core import PagesDictBase
 from cellpy.readers import json_dbreader
 from cellpy.parameters.internal_settings import get_headers_journal, get_headers_summary
 from cellpy.utils.batch_tools import batch_helpers as helper
 
 hdr_journal = get_headers_journal()
 hdr_summary = get_headers_summary()
+
+PagesDict = PagesDictBase
+
+
+# For allowing additional keys beyond the base structure:
+# PagesDict = Dict[str, List[Union[str, float, int, None]]] for flexibility
 
 SELECTED_SUMMARIES = [
     hdr_summary["discharge_capacity_gravimetric"],
@@ -142,6 +150,94 @@ def _query(reader_method, cell_ids, column_name=None):
     return result
 
 
+def _create_pages_dict(
+    reader,
+    cell_ids: Optional[List[Any]] = None,
+    batch_name: Optional[str] = None,
+    include_key: bool = False,
+    include_individual_arguments: bool = True,
+    additional_column_names: Optional[List[str]] = None,
+) -> PagesDict:
+    """Create pages_dict from reader and cell_ids.
+    
+    Args:
+        reader: a reader object (dbreader.Reader or json_dbreader.BatbaseJSONReader)
+        cell_ids: keys (cell IDs) or None to use batch_name
+        batch_name: name of the batch (used if cell_ids are not given)
+        include_key: include the key col in the pages (the cell IDs)
+        include_individual_arguments: include the argument column in the pages
+        additional_column_names: list of additional column names to include in the pages
+        
+    Returns:
+        pages_dict: dictionary with journal data (PagesDict type)
+    """
+    if cell_ids is None:
+        logging.debug("cell_ids is None")
+        pages_dict = reader.from_batch(
+            batch_name=batch_name,
+            include_key=include_key,
+            include_individual_arguments=include_individual_arguments,
+        )
+        logging.debug("pages_dict: {pages_dict}")
+
+    else:
+        logging.debug("cell_ids is not None")
+        pages_dict = dict()
+        # TODO: rename this to "cell" or "cell_id" or something similar:
+        pages_dict[hdr_journal["filename"]] = _query(reader.get_cell_name, cell_ids)
+        if include_key:
+            pages_dict[hdr_journal["id_key"]] = cell_ids
+        if include_individual_arguments:
+            pages_dict[hdr_journal["argument"]] = _query(reader.get_args, cell_ids)
+        pages_dict[hdr_journal["mass"]] = _query(reader.get_mass, cell_ids)
+        pages_dict[hdr_journal["total_mass"]] = _query(reader.get_total_mass, cell_ids)
+        try:
+            pages_dict[hdr_journal["nom_cap_specifics"]] = _query(reader.get_nom_cap_specifics, cell_ids)
+        except Exception as e:
+            pages_dict[hdr_journal["nom_cap_specifics"]] = "gravimetric"
+        try:
+            # updated 06.01.2025: some old db files returns None for file_name_indicator
+            _file_name_indicator = _query(reader.get_file_name_indicator, cell_ids)
+            if _file_name_indicator is None:
+                _file_name_indicator = _query(reader.get_cell_name, cell_ids)
+            pages_dict[hdr_journal["file_name_indicator"]] = _file_name_indicator
+        except Exception as e:
+            pages_dict[hdr_journal["file_name_indicator"]] = pages_dict[
+                hdr_journal["filename"]
+            ]  # TODO: use of "filename"!
+
+        journal_fields = [
+            ("loading", reader.get_loading),
+            ("nom_cap", reader.get_nom_cap),
+            ("area", reader.get_area),
+            ("experiment", reader.get_experiment_type),
+            ("fixed", reader.inspect_hd5f_fixed),
+            ("label", reader.get_label),
+            ("cell_type", reader.get_cell_type),
+            ("instrument", reader.get_instrument),
+            ("comment", reader.get_comment),
+            ("group", reader.get_group),
+        ]
+        
+        for field_name, reader_method in journal_fields:
+            try:
+                pages_dict[hdr_journal[field_name]] = _query(reader_method, cell_ids)
+            except Exception as e:
+                logging.debug(f"Error in getting {field_name}: {e}")
+
+        if additional_column_names is not None:
+            for k in additional_column_names:
+                try:
+                    pages_dict[k] = _query(reader.get_by_column_label, cell_ids, k)
+                except Exception as e:
+                    logging.info(f"Could not retrieve from column {k} ({e})")
+
+        pages_dict[hdr_journal["raw_file_names"]] = []
+        pages_dict[hdr_journal["cellpy_file_name"]] = []
+
+    return pages_dict
+
+
 def sql_db_engine(*args, **kwargs) -> pd.DataFrame:
     print("sql_db_engine")
     print(f"args: {args}")
@@ -200,78 +296,21 @@ def simple_db_engine(
                 reader = json_dbreader.BatbaseJSONReader()
             case _:
                 raise ValueError(f"Invalid reader: {reader}")
-
-    if cell_ids is None:
-        logging.debug("cell_ids is None")
-        pages_dict = reader.from_batch(
+                
+    if isinstance(reader, dbreader.Reader):
+        pages_dict = _create_pages_dict(
+            reader=reader,
+            cell_ids=cell_ids,
             batch_name=batch_name,
             include_key=include_key,
             include_individual_arguments=include_individual_arguments,
+            additional_column_names=additional_column_names,
         )
-        logging.debug("pages_dict: {pages_dict}")
+    elif isinstance(reader, json_dbreader.BatbaseJSONReader):
+        pages_dict = reader.info_dict
 
-    else:
-        logging.debug("cell_ids is not None")
-        if isinstance(reader, dbreader.Reader):
-            pages_dict = dict()
-            # TODO: rename this to "cell" or "cell_id" or something similar:
-            pages_dict[hdr_journal["filename"]] = _query(reader.get_cell_name, cell_ids)
-            if include_key:
-                pages_dict[hdr_journal["id_key"]] = cell_ids
-            if include_individual_arguments:
-                pages_dict[hdr_journal["argument"]] = _query(reader.get_args, cell_ids)
-            pages_dict[hdr_journal["mass"]] = _query(reader.get_mass, cell_ids)
-            pages_dict[hdr_journal["total_mass"]] = _query(reader.get_total_mass, cell_ids)
-            try:
-                pages_dict[hdr_journal["nom_cap_specifics"]] = _query(reader.get_nom_cap_specifics, cell_ids)
-            except Exception as e:
-                pages_dict[hdr_journal["nom_cap_specifics"]] = "gravimetric"
-            try:
-                # updated 06.01.2025: some old db files returns None for file_name_indicator
-                _file_name_indicator = _query(reader.get_file_name_indicator, cell_ids)
-                if _file_name_indicator is None:
-                    _file_name_indicator = _query(reader.get_cell_name, cell_ids)
-                pages_dict[hdr_journal["file_name_indicator"]] = _file_name_indicator
-            except Exception as e:
-                pages_dict[hdr_journal["file_name_indicator"]] = pages_dict[
-                    hdr_journal["filename"]
-                ]  # TODO: use of "filename"!
-
-            journal_fields = [
-                ("loading", reader.get_loading),
-                ("nom_cap", reader.get_nom_cap),
-                ("area", reader.get_area),
-                ("experiment", reader.get_experiment_type),
-                ("fixed", reader.inspect_hd5f_fixed),
-                ("label", reader.get_label),
-                ("cell_type", reader.get_cell_type),
-                ("instrument", reader.get_instrument),
-                ("comment", reader.get_comment),
-                ("group", reader.get_group),
-            ]
-            
-            for field_name, reader_method in journal_fields:
-                try:
-                    pages_dict[hdr_journal[field_name]] = _query(reader_method, cell_ids)
-                except Exception as e:
-                    logging.debug(f"Error in getting {field_name}: {e}")
-
-            if additional_column_names is not None:
-                for k in additional_column_names:
-                    try:
-                        pages_dict[k] = _query(reader.get_by_column_label, cell_ids, k)
-                    except Exception as e:
-                        logging.info(f"Could not retrieve from column {k} ({e})")
-                        
-        elif isinstance(reader, json_dbreader.BatbaseJSONReader):
-            pages_dict = reader.info_dict
-
-        pages_dict[hdr_journal["raw_file_names"]] = []
-        pages_dict[hdr_journal["cellpy_file_name"]] = []
-
-
-        logging.debug(f"created info-dict from {reader.db_file}:")
-        del reader
+    logging.debug(f"created info-dict from {reader.db_file}:")
+    del reader
 
     for key in list(pages_dict.keys()):
         logging.debug(f"[length: {len(pages_dict[key]):04d}] {key}: {str(pages_dict[key])}")

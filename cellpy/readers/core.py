@@ -17,6 +17,7 @@ import sys
 import time
 import warnings
 from typing import Any, Tuple, Dict, List, Union, TypeVar, Optional
+from typing import TypedDict, List, Union, Any
 
 from . import externals as externals
 
@@ -113,6 +114,29 @@ class PickleProtocol:
 
 def pickle_protocol(level):
     return PickleProtocol(level)
+
+
+class PagesDictBase(TypedDict, total=False):
+    """Base structure for pages_dict with known journal columns."""
+    filename: List[Union[str, None]]
+    id_key: List[Union[int, float, str, None]]
+    argument: List[Union[str, None]]
+    mass: List[Union[float, None]]
+    total_mass: List[Union[float, None]]
+    nom_cap_specifics: List[Union[str, None]]
+    file_name_indicator: List[Union[str, None]]
+    loading: List[Union[float, None]]
+    nom_cap: List[Union[float, None]]
+    area: List[Union[float, None]]
+    experiment: List[Union[str, None]]
+    fixed: List[Union[Any, None]]
+    label: List[Union[str, None]]
+    cell_type: List[Union[str, None]]
+    instrument: List[Union[str, None]]
+    comment: List[Union[str, None]]
+    group: List[Union[str, None]]
+    raw_file_names: List[Union[str, None]]
+    cellpy_file_name: List[Union[str, None]]
 
 
 class BaseDbReader(metaclass=abc.ABCMeta):
