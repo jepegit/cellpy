@@ -245,7 +245,6 @@ def sql_db_engine(*args, **kwargs) -> pd.DataFrame:
     return pd.DataFrame()
 
 
-# TODO-246: load area
 def simple_db_engine(
     reader=None,
     cell_ids=None,

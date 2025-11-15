@@ -2,6 +2,8 @@ from typing import Any
 from cellpy.readers.core import BaseDbReader, PagesDictBase
 import json
 
+
+# TODO: use journal headers in stead of this
 PagesDict = PagesDictBase
 
 class BaseJSONReader(BaseDbReader):
@@ -120,7 +122,7 @@ class BattBaseJSONReader(BaseJSONReader):
         raise NotImplementedError("This method is not implemented for this reader")
 
     @property
-    def info_dict(self) -> PagesDict:
+    def info_dict(self) -> PagesDict:  # TODO: rename to pages_dict
         info_dict = dict()
 
         # fixing keys:
@@ -157,5 +159,6 @@ if __name__ == "__main__":
     print(80 * "=")
     pprint(reader.info_dict)
     print(80 * "=")
+
 
 
