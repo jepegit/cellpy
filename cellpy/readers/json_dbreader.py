@@ -227,7 +227,7 @@ class BatBaseJSONReader(BaseJSONReader):
         Headers are expected to be in the format "Header Name (unit)", 
         for example "Total Mass (mg)" or "Area (cm2)".
         """
-
+        # exposing internal method for unit extraction
         return self._extract_unit_from_header(header)
 
 
@@ -249,7 +249,7 @@ class BatBaseJSONReader(BaseJSONReader):
         for cellpy_key, json_key in self._key_translator.items():
             if json_key is not None:
                 _pages_dict[hdr_journal[cellpy_key]] = self.raw_pages_dict[json_key]
-                unit = self.get_unit_from_header(json_key)
+                unit = self._extract_unit_from_header(json_key)
             elif cellpy_key in ["raw_file_names", "cellpy_file_name"]:
                 _pages_dict[hdr_journal[cellpy_key]] = []
             else:
@@ -294,23 +294,9 @@ if __name__ == "__main__":
     local_dir = pathlib.Path(__file__).parent.parent.parent / "local"
     json_file = local_dir / "cellpy_journal_table.json"
     reader = BatBaseJSONReader(json_file, store_raw_data=True)
-    # print(80 * "=")
-    # pprint(reader.json_data)
-    # print(80 * "=")
-    # print(reader.data)
-    # print(80 * "=")
-    # pprint(reader.raw_pages_dict)
-    print(80 * "=")
-    reader.pages_dict
     print(80 * "=")
     pprint(reader.pages_dict)
-    # Test unit extraction (new structured approach)
-    # print(80 * "=")
-    # print("Testing unit extraction (structured approach):")
-    # print(80 * "=")
-   
-    # print("\nExample: Get unit for 'total_mass' key:")
-    # print(80 * "=")
+
 
 
 
