@@ -334,6 +334,7 @@ def simple_db_engine(
             "Save your journal so you don't have to run it again! "
             "You can load it again using the from_journal(journal_name) method."
         )
+
     pages = pd.DataFrame(pages_dict)
     if clean_journal:
         if hdr_journal["file_name_indicator"] in pages.columns:

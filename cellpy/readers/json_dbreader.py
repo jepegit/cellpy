@@ -278,7 +278,7 @@ class BatBaseJSONReader(BaseJSONReader):
                 for value in values:
                     if value is not None:
                         new_value = value * conversion_factor
-                        new_values.append(new_value)
+                    new_values.append(new_value)
                 _pages_dict[hdr_journal[cellpy_key]] = new_values
         return _pages_dict
 
