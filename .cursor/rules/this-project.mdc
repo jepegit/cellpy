@@ -1,0 +1,4 @@
+---
+alwaysApply: true
+---
+This project is called "cellpy" and it uses a python environment (.venv). Rember to activate it! We also have uv installed. Use it if you want.

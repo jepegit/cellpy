@@ -1,7 +1,11 @@
 import json
+import logging
 import pathlib
+import re
+from typing import Optional, Dict
 from cellpy.readers.core import BaseDbReader, PagesDictBase
-from cellpy.parameters.internal_settings import get_headers_journal
+from cellpy.readers import core
+from cellpy.parameters.internal_settings import get_headers_journal, cellpy_units
 
 
 hdr_journal = get_headers_journal()
@@ -44,6 +48,32 @@ class BaseJSONReader(BaseDbReader):
 
 
 class BatBaseJSONReader(BaseJSONReader):
+    """
+    The cellpy journal uses the following headers:
+        - filename: str = "filename"
+        - file_name_indicator: str = "file_name_indicator"
+        - mass: str = "mass"
+        - total_mass: str = "total_mass"
+        - loading: str = "loading"
+        - area: str = "area"
+        - nom_cap: str = "nom_cap"
+        - experiment: str = "experiment"
+        - fixed: str = "fixed"
+        - label: str = "label"
+        - cell_type: str = "cell_type"
+        - instrument: str = "instrument"
+        - model: str = "model"
+        - raw_file_names: str = "raw_file_names"
+        - cellpy_file_name: str = "cellpy_file_name"
+        - group: str = "group"
+        - sub_group: str = "sub_group"
+        - group_label: str = "group_label"
+        - comment: str = "comment"
+        - argument: str = "argument"
+        - id_key: str = "id_key"
+        - nom_cap_specifics: str = "nom_cap_specifics"
+        - selected: str = "selected"
+    """
     _version = "1.0.0"
     _key_translator = dict(
             filename = "Test Name",
@@ -67,6 +97,31 @@ class BatBaseJSONReader(BaseJSONReader):
             cellpy_file_name = None,
         )
 
+    _property_mapper = dict(
+        mass = "mass",
+        total_mass = "mass",
+        area = "area",
+        # loading = "loading",
+        nom_cap = "nominal_capacity",
+        length = "length",
+        volume = "volume",
+        temperature = "temperature",
+        pressure = "pressure",
+    )
+
+    _nominal_capacity_unit_key = "Unit"
+    _nominal_capacity_unit_regex = r"\[([^]]+)\]"
+
+    def _convert_nominal_capacity_unit(self, info: str, value: float) -> float:
+        try:
+            unit = re.search(self._nominal_capacity_unit_regex, info).group(1)
+            unit = self._clean_unit(unit)
+            value = core.Q(value, unit).to(cellpy_units["nominal_capacity"]).m
+        except Exception as e:
+            logging.error(f"Error converting nominal capacity unit: {e}")
+            logging.error(f"Using original value: {value}")
+        return value
+
     def _specific_fixer(self, x: str) -> str:
         x = x.lower()
         specific = x.split(" ")[0]
@@ -75,6 +130,24 @@ class BatBaseJSONReader(BaseJSONReader):
         if specific == "specific": 
             return "gravimetric"
         return specific
+
+    @staticmethod
+    def _clean_unit(unit: str) -> str:
+        unit = unit.replace("m2", "m**2")
+        unit = unit.replace("m3", "m**3")
+        return unit
+
+    def _extract_unit_from_header(self, header_name: str) -> Optional[str]:
+        """Extract unit from header name like 'Total Mass (mg)' -> 'mg'."""
+        if not header_name:
+            return None
+        # Match pattern: "Header Name (unit)"
+        match = re.search(r'\(([^)]+)\)', header_name)
+        if match:
+            unit = match.group(1).strip()
+            unit = self._clean_unit(unit)
+            return unit
+        return None
 
     def __init__(self, json_file: str|None|pathlib.Path = None, store_raw_data: bool = False, **kwargs):
         super().__init__(json_file, store_raw_data, **kwargs)
@@ -85,9 +158,78 @@ class BatBaseJSONReader(BaseJSONReader):
             loading = lambda x: float(x) if x != "null" else None,
         )
 
-
     def _get_number_of_cells(self) -> int:
         return len(self.data)
+
+    def _get_unit_for_key(self, cellpy_key: str) -> Optional[str]:
+        """Get the unit for a given cellpy_key by extracting it from the corresponding JSON key.
+
+        The cellpy library uses the following units as default:
+            - current: str = "A"
+            - charge: str = "mAh"
+            - voltage: str = "V"
+            - time: str = "sec"
+            - resistance: str = "ohm"
+            - power: str = "W"
+            - energy: str = "Wh"
+            - frequency: str = "hz"
+            - mass: str = "mg"  # for mass
+            - nominal_capacity: str = "mAh/g"
+            - specific_gravimetric: str = "g"  # g in specific capacity etc
+            - specific_areal: str = "cm**2"  # m2 in specific capacity etc
+            - specific_volumetric: str = "cm**3"  # m3 in specific capacity etc
+            - length: str = "cm"
+            - area: str = "cm**2"
+            - volume: str = "cm**3"
+            - temperature: str = "C"
+            - pressure: str = "bar"
+        
+        Args:
+            cellpy_key: The cellpy key (e.g., 'mass', 'total_mass')
+        
+        Returns:
+            The unit string (e.g., 'mg') if found, None otherwise.
+        """
+        json_key = self._key_translator.get(cellpy_key)
+
+        if json_key is None:
+            return None
+        return self._extract_unit_from_header(json_key)
+
+    @property
+    def units_dict(self) -> Dict[str, Optional[str]]:
+        """Get units for all cellpy keys, following the same structure as pages_dict.
+        
+        Returns:
+            Dictionary mapping cellpy_key -> unit string (or None if no unit found).
+        """
+        _units_dict = {}
+        for cellpy_key in self._key_translator.keys():
+            _units_dict[cellpy_key] = self._get_unit_for_key(cellpy_key)
+        return _units_dict
+
+
+    def get_conversion_factor(self, value, old_unit, property_name):
+        property = self._property_mapper.get(property_name)
+        if property is None:
+            return 1
+        new_unit = cellpy_units[property]
+        value = core.Q(1, old_unit)
+        value = value.to(new_unit)
+        return value.m
+
+    def get_unit_from_header(
+        self, 
+        header: Optional[str] = None,
+    ) -> str:
+        """Parse units from headers (keys) in the JSON data.
+        
+        Headers are expected to be in the format "Header Name (unit)", 
+        for example "Total Mass (mg)" or "Area (cm2)".
+        """
+
+        return self._extract_unit_from_header(header)
+
 
     def from_batch(
         self,
@@ -99,24 +241,45 @@ class BatBaseJSONReader(BaseJSONReader):
         raise NotImplementedError("This method is not implemented for this reader")
 
     @property
-    def pages_dict(self) -> PagesDict:  # TODO: rename to pages_dict
+    def pages_dict(self) -> PagesDict:
         _pages_dict = dict()
         _number_of_cells = self._get_number_of_cells()
 
         # fixing keys:
         for cellpy_key, json_key in self._key_translator.items():
             if json_key is not None:
-                _pages_dict[cellpy_key] = self.raw_pages_dict[json_key]
-            elif cellpy_key in [hdr_journal["raw_file_names"], hdr_journal["cellpy_file_name"]]:
-                _pages_dict[cellpy_key] = []
+                _pages_dict[hdr_journal[cellpy_key]] = self.raw_pages_dict[json_key]
+                unit = self.get_unit_from_header(json_key)
+            elif cellpy_key in ["raw_file_names", "cellpy_file_name"]:
+                _pages_dict[hdr_journal[cellpy_key]] = []
             else:
-                print(f"cellpy_key: {cellpy_key}")
-                _pages_dict[cellpy_key] = [None] * _number_of_cells
+                _pages_dict[hdr_journal[cellpy_key]] = [None] * _number_of_cells
 
         # fixing values:
         for key, fixer in self._value_fixers.items():
             if key in _pages_dict:
-                _pages_dict[key] = [fixer(x) for x in _pages_dict[key]]
+                _pages_dict[hdr_journal[key]] = [fixer(x) for x in _pages_dict[hdr_journal[key]]]
+
+        # extract nominal capacity unit and convert to cellpy units if available
+        if self._nominal_capacity_unit_key is not None:
+            info_list = self.raw_pages_dict[self._nominal_capacity_unit_key]
+            nom_cap_values = _pages_dict[hdr_journal["nom_cap"]]
+            new_nom_cap_values = []
+            for info, value in zip(info_list, nom_cap_values):
+                new_nom_cap_values.append(self._convert_nominal_capacity_unit(info, value))
+            _pages_dict[hdr_journal["nom_cap"]] = new_nom_cap_values
+
+        # fixing general units:
+        for cellpy_key, unit in self.units_dict.items():
+            if unit is not None:
+                conversion_factor = self.get_conversion_factor(1, unit, cellpy_key)
+                values = _pages_dict[hdr_journal[cellpy_key]]
+                new_values = []
+                for value in values:
+                    if value is not None:
+                        new_value = value * conversion_factor
+                        new_values.append(new_value)
+                _pages_dict[hdr_journal[cellpy_key]] = new_values
         return _pages_dict
 
 
@@ -130,17 +293,24 @@ if __name__ == "__main__":
 
     local_dir = pathlib.Path(__file__).parent.parent.parent / "local"
     json_file = local_dir / "cellpy_journal_table.json"
-    print(json_file.exists())
     reader = BatBaseJSONReader(json_file, store_raw_data=True)
+    # print(80 * "=")
+    # pprint(reader.json_data)
+    # print(80 * "=")
+    # print(reader.data)
+    # print(80 * "=")
+    # pprint(reader.raw_pages_dict)
     print(80 * "=")
-    pprint(reader.json_data)
-    print(80 * "=")
-    print(reader.data)
-    print(80 * "=")
-    pprint(reader.raw_pages_dict)
+    reader.pages_dict
     print(80 * "=")
     pprint(reader.pages_dict)
-    print(80 * "=")
+    # Test unit extraction (new structured approach)
+    # print(80 * "=")
+    # print("Testing unit extraction (structured approach):")
+    # print(80 * "=")
+   
+    # print("\nExample: Get unit for 'total_mass' key:")
+    # print(80 * "=")
 
 
 
