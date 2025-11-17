@@ -137,6 +137,14 @@ def find_files(info_dict, file_list=None, pre_path=None, sub_folders=None, **kwa
     # searches for the raw data files and the cellpyfile-name
     # TODO: implement faster file searching
     # TODO: implement option for not searching for raw-file names if force_cellpy is True
+
+    # Make sure that the raw_file_names and cellpy_file_name keys are in the info_dict
+    # (I know, could have used DefaultDict...):
+    if hdr_journal["raw_file_names"] not in info_dict:
+        info_dict[hdr_journal["raw_file_names"]] = []
+    if hdr_journal["cellpy_file_name"] not in info_dict:
+        info_dict[hdr_journal["cellpy_file_name"]] = []
+
     for i, run_name in enumerate(file_name_indicators):
         try:
             instrument = info_dict[hdr_journal["instrument"]][i]

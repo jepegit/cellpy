@@ -80,6 +80,7 @@ class Batch:
             file_name (str or pathlib.Path): journal file name to load.
             db_reader (str): data-base reader to use (defaults to "default" as given
               in the config-file or prm-class).
+            db_reader_path (str or pathlib.Path): path to send to the db_reader.
             frame (pandas.DataFrame): load from given dataframe.
             default_log_level (str): custom log-level (defaults to None (i.e. default log-level in cellpy)).
             custom_log_dir (str or pathlib.Path): custom folder for putting the log-files.
@@ -104,6 +105,7 @@ class Batch:
             self._init_new(*args, **kwargs)
 
     def _init_old(self, *args, **kwargs):
+        logging.warning("Initializing new-mode batch object")
         default_log_level = kwargs.pop("default_log_level", None)
         custom_log_dir = kwargs.pop("custom_log_dir", None)
         if default_log_level is not None or custom_log_dir is not None:
@@ -118,6 +120,7 @@ class Batch:
             db_reader = kwargs.pop("db_reader", None)
         else:
             db_reader = kwargs.pop("db_reader", "default")
+
 
         logging.debug("creating CyclingExperiment")
         self.experiment = CyclingExperiment(db_reader=db_reader)
@@ -179,7 +182,12 @@ class Batch:
             )
         self._initial_cells = cells  # used for making a batch object from a list of cellpy cell objects
         self._cells = None  # not used yet - but will be used for the accessors
-        self.experiment = CyclingExperiment(db_reader=None)
+
+        db_reader = kwargs.pop("db_reader", "default")
+        db_file = kwargs.pop("db_file", None)
+        self.experiment = CyclingExperiment(db_reader=db_reader, db_file=db_file)
+        print("Created CyclingExperiment")
+
         self.experiment.force_cellpy = kwargs.pop("force_cellpy", False)
         self.experiment.force_raw = kwargs.pop("force_raw_file", False)
         self.experiment.force_recalc = kwargs.pop("force_recalc", False)
@@ -205,17 +213,19 @@ class Batch:
         self.headers_step_table = headers_step_table
         self.experiment.journal.pages = self.experiment.journal.create_empty_pages()
 
+
         if self._initial_cells is not None:
             self.collect()
+        print("Finalized Batch object setup")
 
     def __str__(self):
         return str(self.experiment)
 
     def _repr_html_(self):
         txt = f"<h2>Batch-object</h2> id={hex(id(self))}"
-        txt += f"<h3>batch.journal</h3>"
+        txt += "<h3>batch.journal</h3>"
         txt += f"<blockquote>{self.journal._repr_html_()}</blockquote>"
-        txt += f"<h3>batch.experiment</h3>"
+        txt += "<h3>batch.experiment</h3>"
         txt += f"<blockquote>{self.experiment._repr_html_()}</blockquote>"
 
         return txt
@@ -238,7 +248,6 @@ class Batch:
 
         """
         from collections import defaultdict
-        from pprint import pprint
 
         if cells is not None:
             self._initial_cells = cells
@@ -688,11 +697,11 @@ class Batch:
         try:
             cell_labels = self.journal.session["bad_cells"]
         except AttributeError:
-            logging.critical(f"could not find 'bad_cells' session info")
+            logging.critical("could not find 'bad_cells' session info")
             return
 
         if not cell_labels:
-            logging.critical(f"nothing to remove - found nothing marked as 'bad_cells'")
+            logging.critical("nothing to remove - found nothing marked as 'bad_cells'")
             return
 
         if cell_label in cell_labels:
@@ -1388,6 +1397,8 @@ def load(
     allow_from_journal=True,
     drop_bad_cells=True,
     force_reload=False,
+    reader=None,
+    reader_path=None,
     **kwargs,
 ):
     """
@@ -1402,6 +1413,8 @@ def load(
         drop_bad_cells (bool): if True, bad cells will be dropped (only apply if journal file is loaded)
         auto_use_file_list (bool): Experimental feature. If True, a file list will be generated and used
             instead of searching for files in the folders.
+        reader (str): reader to use (defaults to "simple_excel_reader").
+        reader_path (str): path to the reader file (if not using "simple_excel_reader").
         **kwargs: sent to Batch during initialization
 
     Keyword Args:
@@ -1442,10 +1455,10 @@ def load(
                 print(f" - loading journal file {journal_file}")
                 b.experiment.journal.from_file(journal_file)
                 if force_reload:
-                    print(f" - reloading")
+                    print(" - reloading")
                     b.update()
                 else:
-                    print(f" - linking")
+                    print(" - linking")
                     b.link(
                         max_cycle=kwargs.pop("max_cycle", None),
                         mark_bad=True,
@@ -1453,13 +1466,13 @@ def load(
                     )
 
                 if drop_bad_cells:
-                    print(f" - dropping cells marked as bad")
+                    print(" - dropping cells marked as bad")
                     b.drop_cells_marked_bad()
                 print("OK!")
                 return b
 
             else:
-                print(f" - journal file not found")
+                print(" - journal file not found")
 
     auto_use_file_list = kwargs.pop("auto_use_file_list", None)
     try:
@@ -1467,13 +1480,17 @@ def load(
         if batch_col is None:
             batch_col = "b01"  # this is needed due to a bug in cellpy (will be fixed when new db reader is ready)
         print("initializing batch object")
-        b = init(name=name, project=project, batch_col=batch_col, **kwargs)
+        b = init(name=name, project=project, batch_col=batch_col, db_reader=reader, db_file=reader_path, **kwargs)
     except Exception as e:
         print(f"could not initialize batch: {e}")
         return None
     print("processing batch")
     try:
         print("creating journal")
+        
+        if reader is not None:
+            print(f"reader: {reader}")
+            print(f"reader_path: {reader_path}")
         b.create_journal(auto_use_file_list=auto_use_file_list)
         print(" - created journal")
     except Exception as e:
@@ -1672,7 +1689,7 @@ def process_batch(*args, **kwargs) -> Batch:
                 else:
                     raise e
 
-        pbar.set_description(f"final")
+        pbar.set_description("final")
         pbar.update(10)
 
     return b
@@ -1742,7 +1759,7 @@ def iterate_batches(folder, extension=".json", glob_pattern=None, **kwargs):
             try:
                 process_batch(file, **kwargs)
                 output_str += " [OK]"
-                logging.debug(f"No errors detected.")
+                logging.debug("No errors detected.")
             except Exception as e:
                 output_str += " [FAILED!]"
                 failed.append(str(file))

@@ -1,6 +1,5 @@
 import ast
 import logging
-import os
 import pathlib
 import tempfile
 import time
@@ -15,7 +14,6 @@ from cellpy.utils.batch_tools import (
     batch_experiments,
     batch_exporters,
     batch_journals,
-    batch_plotters,
     dumpers,
     engines,
 )
@@ -88,6 +86,36 @@ def test_reading_db(batch_instance):
     b = batch_instance.init("test", "ProjectOfRun", default_log_level="DEBUG", batch_col="b01", testing=True)
 
     b.create_journal(duplicate_to_local_folder=False)
+
+
+def test_reading_json_db(batch_instance, parameters):
+    from pathlib import Path
+    from cellpy.readers import json_dbreader
+    local_dir = Path(__file__).parent.parent / "local"
+    json_file = local_dir / "cellpy_journal_table.json"
+    assert json_file.exists()
+
+    reader = json_dbreader.BatBaseJSONReader(json_file, store_raw_data=True)
+    assert reader.pages_dict is not None
+    assert "filename" in reader.pages_dict
+    assert "id_key" in reader.pages_dict
+    assert "mass" in reader.pages_dict
+    assert "total_mass" in reader.pages_dict
+
+    number_of_cells = len(reader.pages_dict["filename"])
+
+    pages = engines.simple_db_engine(reader=reader)
+    assert len(pages) == number_of_cells
+    assert "raw_file_names" in pages.columns
+    assert "cellpy_file_name" in pages.columns
+    assert "group" in pages.columns
+    assert "sub_group" in pages.columns
+    assert "label" in pages.columns
+    assert "cell_type" in pages.columns
+    assert "instrument" in pages.columns
+    assert "label" in pages.columns
+    assert "cell_type" in pages.columns
+    assert "instrument" in pages.columns
 
 
 def test_reading_cell_specs(batch_instance):
@@ -268,9 +296,9 @@ def test_update_time(cycling_experiment):
         cycles = cell.get_cycle_numbers()
 
         for cycle in cycles:
-            capacity, voltage = cell.get_cap(cycle=cycle)
+            capacity, _ = cell.get_cap(cycle=cycle)
             try:
-                l = len(capacity)
+                len(capacity)
             except TypeError as e:
                 print(e)
     t1 = time.time()
@@ -289,9 +317,9 @@ def test_link_time(cycling_experiment):
         cycles = cell.get_cycle_numbers()
 
         for cycle in cycles:
-            capacity, voltage = cell.get_cap(cycle=cycle)
+            capacity, _ = cell.get_cap(cycle=cycle)
             try:
-                l = len(capacity)
+                len(capacity)
             except TypeError as e:
                 print(e)
     t1 = time.time()
@@ -315,6 +343,7 @@ def test_load_from_file(batch_instance, parameters):
 
 def test_lab_journal(batch_instance):
     lab_journal = batch_journals.LabJournal()
+    print(lab_journal)
 
 
 def test_cycling_experiment_to_file(cycling_experiment):

@@ -185,6 +185,9 @@ def _create_pages_dict(
         pages_dict = dict()
         # TODO: rename this to "cell" or "cell_id" or something similar:
         pages_dict[hdr_journal["filename"]] = _query(reader.get_cell_name, cell_ids)
+        # How many cells are in the batch?
+        number_of_cells = len(pages_dict[hdr_journal["filename"]])
+        logging.debug(f"number of cells in the batch: {number_of_cells}")
         if include_key:
             pages_dict[hdr_journal["id_key"]] = cell_ids
         if include_individual_arguments:
@@ -194,6 +197,7 @@ def _create_pages_dict(
         try:
             pages_dict[hdr_journal["nom_cap_specifics"]] = _query(reader.get_nom_cap_specifics, cell_ids)
         except Exception as e:
+            logging.debug(f"Error in getting nom_cap_specifics: {e}")
             pages_dict[hdr_journal["nom_cap_specifics"]] = "gravimetric"
         try:
             # updated 06.01.2025: some old db files returns None for file_name_indicator
@@ -202,6 +206,7 @@ def _create_pages_dict(
                 _file_name_indicator = _query(reader.get_cell_name, cell_ids)
             pages_dict[hdr_journal["file_name_indicator"]] = _file_name_indicator
         except Exception as e:
+            logging.debug(f"Error in getting file_name_indicator: {e}")
             pages_dict[hdr_journal["file_name_indicator"]] = pages_dict[
                 hdr_journal["filename"]
             ]  # TODO: use of "filename"!
@@ -279,8 +284,6 @@ def simple_db_engine(
         pages (pandas.DataFrame)
     """
 
-    new_version = False
-
     # This is not really a proper Do-er engine. But not sure where to put it.
     logging.debug("simple_db_engine")
     if reader is None:
@@ -292,7 +295,7 @@ def simple_db_engine(
             case "simple_excel_reader":
                 reader = dbreader.Reader()
             case "batbase_json_reader":
-                reader = json_dbreader.BatbaseJSONReader()
+                reader = json_dbreader.BatBaseJSONReader()
             case _:
                 raise ValueError(f"Invalid reader: {reader}")
                 
@@ -305,8 +308,10 @@ def simple_db_engine(
             include_individual_arguments=include_individual_arguments,
             additional_column_names=additional_column_names,
         )
-    elif isinstance(reader, json_dbreader.BatbaseJSONReader):
-        pages_dict = reader.info_dict
+    elif isinstance(reader, json_dbreader.BatBaseJSONReader):
+        pages_dict = reader.pages_dict
+        logging.debug(f"pages_dict: {pages_dict}")
+        logging.debug(f"number of cells in the batch: {len(pages_dict[hdr_journal['filename']])}")
 
     logging.debug(f"created info-dict from {reader.db_file}:")
     del reader

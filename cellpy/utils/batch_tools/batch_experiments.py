@@ -63,8 +63,9 @@ class CyclingExperiment(BaseExperiment):
 
     def __init__(self, *args, **kwargs):
         db_reader = kwargs.pop("db_reader", "default")
+        db_file = kwargs.pop("db_file", None)
         super().__init__(*args)
-        self.journal = LabJournal(db_reader=db_reader)
+        self.journal = LabJournal(db_reader=db_reader, db_file=db_file)
         self.errors = dict()
         self.log = dict()
 
@@ -164,7 +165,7 @@ class CyclingExperiment(BaseExperiment):
                         logging.debug(f"Using ast.literal_eval to convert cell-spec value from str '{cell_spec[spec]}'")
                         cell_spec[spec] = ast.literal_eval(cell_spec[spec])
                     except ValueError as e:
-                        logging.warning(f"ERROR! Could not convert from str to python object!")
+                        logging.warning("ERROR! Could not convert from str to python object!")
                         logging.debug(e)
         return cell_spec
 

@@ -20,7 +20,7 @@ from cellpy.parameters.internal_settings import (
 from cellpy.parameters.legacy.update_headers import (
     headers_journal_v0 as hdr_journal_old,
 )
-from cellpy.readers import dbreader
+from cellpy.readers import dbreader, json_dbreader
 from cellpy.utils.batch_tools.batch_core import BaseJournal
 from cellpy.utils.batch_tools.engines import simple_db_engine, sql_db_engine
 from cellpy.utils.batch_tools import batch_helpers
@@ -37,7 +37,7 @@ for key in hdr_journal:
 
 
 class LabJournal(BaseJournal, ABC):
-    def __init__(self, db_reader="default", engine=None, batch_col=None, **kwargs):
+    def __init__(self, db_reader="default", engine=None, batch_col=None, db_file=None, **kwargs):
         """Journal for selected batch.
 
         The journal contains pages (pandas.DataFrame) with prms for
@@ -52,10 +52,10 @@ class LabJournal(BaseJournal, ABC):
                     self.pages = simple_db_engine(
                         self.db_reader, id_keys, **kwargs
                     )
+            db_file: the file name of the json file to use as the db (used by batbase_json_reader).
             batch_col: the column name for the batch column in the db (used by simple_db_engine).
             **kwargs: passed to the db_reader
         """
-
         super().__init__()
         self.db_reader = None
         self.engine = None
@@ -70,9 +70,19 @@ class LabJournal(BaseJournal, ABC):
                 return
             if db_reader == "default":
                 db_reader = prms.Db.db_type
+            
             if db_reader == "simple_excel_reader":
                 self.db_reader = dbreader.Reader()
                 self.engine = simple_db_engine
+
+            elif db_reader == "batbase_json_reader":
+                if db_file is None:
+                    raise UnderDefined("db_file is not provided")
+                if not os.path.exists(db_file):
+                    raise FileNotFoundError(f"The file {db_file} does not exist")
+                self.db_reader = json_dbreader.BatBaseJSONReader(json_file=db_file)
+                self.engine = simple_db_engine
+
             elif db_reader == "sql_db_reader":
                 raise NotImplementedError(
                     "sql_db_reader is not implemented yet"
@@ -85,6 +95,11 @@ class LabJournal(BaseJournal, ABC):
 
         if engine is None:
             self.engine = simple_db_engine
+
+        print(f"engine: {self.engine}")
+        print(f"db_reader: {self.db_reader}")
+        print(f"batch_col: {batch_col}")
+        print(f"kwargs: {kwargs}")
 
         self.batch_col = batch_col or "b01"
 
@@ -261,7 +276,7 @@ class LabJournal(BaseJournal, ABC):
         pages = self._clean_pages(pages_dict)
 
         if session is None:
-            logging.debug(f"no session - generating empty one")
+            logging.debug("no session - generating empty one")
             session = dict()
 
         session, pages = self._clean_session(session, pages)
@@ -281,7 +296,7 @@ class LabJournal(BaseJournal, ABC):
 
         is_raw_bytes = kwargs.pop("is_raw_bytes", False)
         if is_raw_bytes:
-            logging.debug(f"json loader starting on raw bytes")
+            logging.debug("json loader starting on raw bytes")
             top_level_dict = json.loads(file_name)
         else:
             logging.debug(f"json loader starting on {file_name}")
@@ -299,7 +314,7 @@ class LabJournal(BaseJournal, ABC):
         pages = cls._clean_pages(pages)
 
         if session is None:
-            logging.debug(f"no session - generating empty one")
+            logging.debug("no session - generating empty one")
             session = dict()
 
         session, pages = cls._clean_session(session, pages)
@@ -362,7 +377,7 @@ class LabJournal(BaseJournal, ABC):
             meta = cls._unpack_meta(meta) or _meta
 
         if session is None:
-            logging.debug(f"no session - generating empty one")
+            logging.debug("no session - generating empty one")
             session = dict()
         else:
             session = cls._unpack_session(session)
@@ -374,7 +389,7 @@ class LabJournal(BaseJournal, ABC):
     @classmethod
     def _unpack_session(cls, session):
         try:
-            bcn2 = {l: sb["cycle_index"].to_list() for l, sb in session["bad_cycles"].groupby("cell_name")}
+            bcn2 = {n: sb["cycle_index"].to_list() for n, sb in session["bad_cycles"].groupby("cell_name")}
         except KeyError:
             bcn2 = []
 
@@ -453,7 +468,7 @@ class LabJournal(BaseJournal, ABC):
         except KeyError:
             # assumes it is an old type journal file
             print(f"The key '{hdr_journal.cellpy_file_name}' is missing!")
-            print(f"Assumes that this is an old-type journal file.")
+            print("Assumes that this is an old-type journal file.")
             try:
                 pages.rename(columns=trans_dict, inplace=True)
                 # TODO: the _fix_cellpy_paths method does not work with OtherPaths (yet?) - fix this
@@ -503,7 +518,7 @@ class LabJournal(BaseJournal, ABC):
             logging.critical(f"could not load {file_name}")
             raise UnderDefined from e
 
-        logging.debug(f"got pages and meta_dict")
+        logging.debug("got pages and meta_dict")
 
         self.pages = pages
         self.session = session

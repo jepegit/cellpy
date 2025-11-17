@@ -57,3 +57,8 @@ def test_from_raw_external(cellpy_data_instance, parameters):
     427     )
     429 display_jupyter_version_warnings()
     431 ipython_display.display(bundle, raw=True)
+
+### TODO Batch stuff
+
+- need to fix recalc
+- need to fix yanking
