@@ -6645,7 +6645,7 @@ def get(
     )
     logging.debug("-------running-get--------")
     cellpy_instance = CellpyCell(debug=debug, initialize=initialize)
-    logging.debug(f"created CellpyCell instance")
+    logging.debug("created CellpyCell instance")
 
     logging.debug(f"{cellpy_file=}")
     logging.debug(f"{filename=}")
@@ -6701,11 +6701,23 @@ def get(
         logging.info(f"Loading cellpy-file: {filename}")
         if kwargs.pop("post_processor_hook", None) is not None:
             logging.warning("post_processor_hook is not allowed when loading cellpy-files")
+
         cellpy_instance.load(filename, selector=selector, **kwargs)
+        cellpy_instance = _update_meta(
+        cellpy_instance,
+        cycle_mode=cycle_mode,
+        mass=mass,
+        nominal_capacity=nominal_capacity,
+        nom_cap_specifics=nom_cap_specifics,
+        area=area,
+        loading=loading,
+        estimate_area=estimate_area,
+        units=units,
+        )
         return cellpy_instance
 
     logging.debug("Prepare for loading raw-file(s)")
-    logging.debug(f"checking instrument and instrument_file")
+    logging.debug("checking instrument and instrument_file")
 
     if instrument_file is not None:
         logging.debug(f"got instrument file {instrument_file=}")
@@ -6731,8 +6743,6 @@ def get(
     # fix for allowing for setting nom_cap_specifics the "old" way:
     if nom_cap_specifics is None:
         nom_cap_specifics = summary_kwargs.pop("nom_cap_specifics", None)
-        if nom_cap_specifics is None:
-            nom_cap_specifics = step_kwargs.pop("nom_cap_specifics", None)
 
     cellpy_instance = _update_meta(
         cellpy_instance,

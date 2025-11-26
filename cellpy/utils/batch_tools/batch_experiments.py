@@ -247,7 +247,6 @@ class CyclingExperiment(BaseExperiment):
         """
         # TODO: implement experiment.last_cycle
         accept_errors = accept_errors or self.accept_errors
-
         debugging = kwargs.pop("debug", False)
         testing = kwargs.pop("testing", False)
         skip_bad_cells = kwargs.pop("skip_bad_cells", False)
@@ -262,6 +261,7 @@ class CyclingExperiment(BaseExperiment):
         # --- cleaning up attributes / arguments etc ---
         force_cellpy = kwargs.pop("force_cellpy", self.force_cellpy)
         force_raw = kwargs.pop("force_raw", self.force_raw)
+        force_recalc = kwargs.pop("force_recalc", self.force_recalc)
 
         logging.info("[update experiment]")
         if all_in_memory is not None:
@@ -376,7 +376,7 @@ class CyclingExperiment(BaseExperiment):
             loading = None
             area = None
 
-            if hdr_journal.loading in row:
+            if hdr_journal.nom_cap_specifics in row:
                 nom_cap_specifics = row[hdr_journal.nom_cap_specifics]
             else:
                 nom_cap_specifics = prms.Materials.default_nom_cap_specifics
@@ -451,13 +451,14 @@ class CyclingExperiment(BaseExperiment):
             summary_tmp = cell_data.data.summary
             logging.info("Trying to get summary_data")
 
-            if cell_data.data.steps is None or self.force_recalc:
+            if cell_data.data.steps is None or force_recalc:
                 logging.info("Running make_step_table")
                 n_txt = f"steps {counter}"
                 pbar.set_description(n_txt, refresh=True)
                 cell_data.make_step_table()
 
-            if summary_tmp is None or self.force_recalc:
+            if summary_tmp is None or force_recalc:
+                print("RECALCING")
                 logging.info("Running make_summary")
                 n_txt = f"summary {counter}"
                 pbar.set_description(n_txt, refresh=True)
@@ -615,6 +616,8 @@ class CyclingExperiment(BaseExperiment):
         # --- cleaning up attributes / arguments etc ---
         force_cellpy = kwargs.pop("force_cellpy", self.force_cellpy)
         force_raw = kwargs.pop("force_raw", self.force_raw)
+        force_recalc = kwargs.pop("force_recalc", self.force_recalc)
+
         find_ir = kwargs.pop("find_ir", True)
         find_end_voltage = kwargs.pop("find_end_voltage", True)
 
@@ -764,11 +767,11 @@ class CyclingExperiment(BaseExperiment):
                 summary_tmp = cell_data.data.summary
                 logging.info("Trying to get summary_data")
 
-                if cell_data.data.steps is None or self.force_recalc:
+                if cell_data.data.steps is None or force_recalc:
                     logging.info("Running make_step_table")
                     cell_data.make_step_table()
 
-                if summary_tmp is None or self.force_recalc:
+                if summary_tmp is None or force_recalc:
                     logging.info("Running make_summary")
                     cell_data.make_summary(find_end_voltage=find_end_voltage, find_ir=find_ir)
 
