@@ -18,11 +18,11 @@ __email__ = (
 )
 
 import logging
-import warnings
 
 import cellpy._version
 
-
+from cellpy import parameters
+from cellpy import readers
 from cellpy.parameters import prms  # TODO: this might give circular ref
 from cellpy.parameters import prmreader
 
