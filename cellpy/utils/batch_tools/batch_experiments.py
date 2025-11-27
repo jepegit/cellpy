@@ -458,7 +458,6 @@ class CyclingExperiment(BaseExperiment):
                 cell_data.make_step_table()
 
             if summary_tmp is None or force_recalc:
-                print("RECALCING")
                 logging.info("Running make_summary")
                 n_txt = f"summary {counter}"
                 pbar.set_description(n_txt, refresh=True)
