@@ -150,13 +150,16 @@ class BatBaseJSONReader(BaseJSONReader):
         return None
 
     def __init__(self, json_file: str|None|pathlib.Path = None, store_raw_data: bool = False, **kwargs):
+        instrument = kwargs.pop("instrument", None)
         super().__init__(json_file, store_raw_data, **kwargs)
         # TODO: add to batbase
         self._value_fixers = dict(
             nom_cap_specifics = self._specific_fixer,
             cell_type = lambda x: "anode" if x == "hci" else "standard",
             loading = lambda x: float(x) if x != "null" else None,
+            instrument = lambda x: f"{instrument}" if instrument is not None else x,
         )
+        self._pages_dict = {}
 
     def _get_number_of_cells(self) -> int:
         return len(self.data)
@@ -240,8 +243,8 @@ class BatBaseJSONReader(BaseJSONReader):
     ) -> dict:
         raise NotImplementedError("This method is not implemented for this reader")
 
-    @property
-    def pages_dict(self) -> PagesDict:
+
+    def _create_pages_dict(self) -> PagesDict:
         _pages_dict = dict()
         _number_of_cells = self._get_number_of_cells()
 
@@ -282,6 +285,15 @@ class BatBaseJSONReader(BaseJSONReader):
                 _pages_dict[hdr_journal[cellpy_key]] = new_values
         return _pages_dict
 
+    @property
+    def pages_dict(self) -> PagesDict:
+        if not self._pages_dict:
+            self._pages_dict = self._create_pages_dict()
+        return self._pages_dict
+
+    @pages_dict.setter
+    def pages_dict(self, value: PagesDict):
+        self._pages_dict = value
 
 if __name__ == "__main__":
     import pandas as pd

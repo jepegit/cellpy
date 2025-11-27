@@ -99,6 +99,7 @@ class Batch:
         # TODO: add option for setting max cycle number
         #   use self.experiment.last_cycle = xxx
         version = kwargs.pop("mode", "old")
+
         if version == "old":
             self._init_old(*args, **kwargs)
         else:
@@ -1586,6 +1587,97 @@ def from_journal(journal_file, autolink=True, testing=False, **kwargs) -> Batch:
     """Create a Batch from a journal file"""
     # TODO: add option for setting max cycle number (experiment.last_cycle)
     b = init(db_reader=None, file_name=journal_file, testing=testing, **kwargs)
+    if autolink:
+        b.link()
+    return b
+
+
+
+def init2(*args, empty=False, **kwargs) -> Batch:
+    """Returns an initialized instance of the Batch class.
+
+    Args:
+        empty (bool): if True, the batch will not be linked to any database and
+            an empty batch is returned
+        *args: passed directly to Batch()
+
+            - **name**: name of batch.
+            - **project**: name of project.
+            - **batch_col**: batch column identifier.
+
+    Keyword Args:
+        file_name: json file if loading from pages (journal).
+        default_log_level: "INFO" or "DEBUG". Defaults to "CRITICAL".
+
+    Other keyword arguments are sent to the Batch object.
+
+    Examples:
+        >>> empty_batch = Batch.init(db_reader=None)
+        >>> batch_from_file = Batch.init(file_name="cellpy_batch_my_experiment.json")
+        >>> normal_init_of_batch = Batch.init()
+
+    """
+    # TODO: add option for setting max cycle number (experiment.last_cycle)
+    # TODO: promote most used kwargs to named arguments
+    # set up cellpy logger
+    mode = "new"
+    default_log_level = kwargs.pop("default_log_level", None)
+    testing = kwargs.pop("testing", False)
+    log.setup_logging(default_level=default_log_level, testing=testing, reset_big_log=True)
+    if empty:
+        logging.debug("returning naked Batch")
+        return naked(*args, **kwargs)
+
+    file_name = kwargs.pop("file_name", None)
+    frame = kwargs.pop("frame", None)
+
+    print(f"file_name: {file_name}")
+    print(f"frame: {frame}")
+    print(f"kwargs: {kwargs}")
+    print(f"args: {args}")
+    print(f"empty: {empty}")
+    print(f"version: {mode}")
+    print(f"testing: {testing}")
+    print(f"default_log_level: {default_log_level}")
+
+    logging.debug(f"returning Batch(kwargs: {kwargs})")
+    if file_name is not None:
+        return Batch(*args, db_file=file_name, mode=mode,**kwargs)
+    if frame is not None:
+        kwargs.pop("db_reader", None)
+        return Batch(*args, file_name=None, db_reader=None, frame=frame, **kwargs)
+
+    return Batch(*args, **kwargs)
+
+
+def from_journal2(journal_file, autolink=True, testing=False, **kwargs) -> Batch:
+    """Create a Batch from a journal file
+    
+    This function will be renamed to from_journal in the future. It uses the "new" mode of the Batch class.
+
+    Args:
+        journal_file: the path to the journal file
+        autolink: if True, the batch will be linked automatically
+        testing: should be set to True in test mode
+        **kwargs: additional keyword arguments
+            - db_reader: the reader to use (defaults to "default")
+            - testing: if True, the batch will be tested
+            - default_log_level: the default log level (defaults to "CRITICAL")
+            - custom_log_dir: the directory to save the log file (defaults to None)
+            - reset_big_log: if True, the big log will be reset (defaults to True)
+
+    Returns:
+        Batch object (``cellpy.utils.batch.Batch``)
+
+    Examples:
+        >>> b = batch.from_journal2("cellpy_journal_one.json", testing=True, db_reader="batbase_json_reader")
+        >>> b.create_journal()
+        >>> b.update()
+        >>> b.plot()
+        
+    """
+    # TODO: add option for setting max cycle number (experiment.last_cycle)
+    b = init2(file_name=journal_file, testing=testing, **kwargs)
     if autolink:
         b.link()
     return b

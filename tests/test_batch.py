@@ -116,6 +116,10 @@ def test_reading_json_db(batch_instance, parameters):
     assert "label" in pages.columns
     assert "cell_type" in pages.columns
     assert "instrument" in pages.columns
+    assert pages.raw_file_names.iloc[0] == [
+        "data/raw/20160805_test001_45_cc_01.res",
+        "data/raw/20160805_test001_45_cc_02.res",
+    ]
 
 
 def test_reading_cell_specs(batch_instance):
