@@ -1418,6 +1418,7 @@ def load(
     project,
     batch_col=None,
     allow_from_journal=True,
+    allow_using_backup_journal=False,
     drop_bad_cells=True,
     force_reload=False,
     reader=None,
@@ -1474,13 +1475,16 @@ def load(
             print(f" - checking current directory: {journal_file}")
             
             if not pathlib.Path(journal_file).is_file():
-                # Fall back to project folder if not found in current directory
-                print(" - not found in current directory, checking project folder")
-                b.experiment.journal.generate_file_name(to_project_folder=True)
-                journal_file = b.experiment.journal.file_name
-                print(f" - checking project folder: {journal_file}")
+                if allow_using_backup_journal:
+                    # Fall back to project folder if not found in current directory
+                    print(" - not found in current directory, checking project folder")
+                    b.experiment.journal.generate_file_name(to_project_folder=True)
+                    journal_file = b.experiment.journal.file_name
+                    print(f" - checking project folder: {journal_file}")
+                else:
+                    raise FileNotFoundError("Journal file not found")
         except Exception as e:
-            print(f"could not generate journal file name: {e}")
+            print(f"could not load journal file: {e}")
         else:
             if pathlib.Path(journal_file).is_file():
                 print(f" - loading journal file {journal_file}")

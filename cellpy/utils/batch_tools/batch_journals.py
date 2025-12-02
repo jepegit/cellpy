@@ -313,6 +313,10 @@ class LabJournal(BaseJournal, ABC):
         pages = pd.DataFrame(pages_dict)
         if pages.empty:
             logging.critical("could not find any pages in the journal (seems to be empty - no data)")
+            logging.critical(f"file_name: {file_name}")
+            logging.critical(
+                "Tips: If using the load function with allow_using_backup_journal=True, "
+                "try deleting the journal file and try again.")
             raise UnderDefined
 
         pages = cls._clean_pages(pages)
