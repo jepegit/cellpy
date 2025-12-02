@@ -88,6 +88,7 @@ def test_reading_db(batch_instance):
     b.create_journal(duplicate_to_local_folder=False)
 
 
+@pytest.mark.skip(reason="This test only works on the local machine for now")
 def test_reading_json_db(batch_instance, parameters):
     from pathlib import Path
     from cellpy.readers import json_dbreader
