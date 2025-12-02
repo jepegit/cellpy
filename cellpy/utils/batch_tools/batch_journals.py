@@ -36,11 +36,13 @@ for key in hdr_journal:
         missing_keys.append(key)
 
 # Default output directory name for batch processing
-DEFAULT_OUTPUT_DIR_NAME = "out"
+DEFAULT_OUTPUT_DIR_NAME = "dump"
 
 
 class LabJournal(BaseJournal, ABC):
-    def __init__(self, db_reader="default", engine=None, batch_col=None, db_file=None, **kwargs):
+    def __init__(
+        self, db_reader="default", engine=None, batch_col=None, db_file=None, **kwargs
+    ):
         """Journal for selected batch.
 
         The journal contains pages (pandas.DataFrame) with prms for
@@ -73,7 +75,7 @@ class LabJournal(BaseJournal, ABC):
                 return
             if db_reader == "default":
                 db_reader = prms.Db.db_type
-            
+
             if db_reader == "simple_excel_reader":
                 self.db_reader = dbreader.Reader()
                 self.engine = simple_db_engine
@@ -170,7 +172,9 @@ class LabJournal(BaseJournal, ABC):
         self.file_name = file_name  # updates object (maybe not smart)
         return file_name
 
-    def from_db(self, project=None, name=None, batch_col=None, dbreader_kwargs=None, **kwargs):
+    def from_db(
+        self, project=None, name=None, batch_col=None, dbreader_kwargs=None, **kwargs
+    ):
         """populate journal from db.
 
         Args:
@@ -219,10 +223,14 @@ class LabJournal(BaseJournal, ABC):
         if dbreader_kwargs is None:
             dbreader_kwargs = {}
 
-        logging.debug(f"batch_name, batch_col, dbreader_kwargs: {name}, {batch_col}, {dbreader_kwargs}")
+        logging.debug(
+            f"batch_name, batch_col, dbreader_kwargs: {name}, {batch_col}, {dbreader_kwargs}"
+        )
         if self.db_reader is not None:
             if isinstance(self.db_reader, dbreader.Reader):  # Simple excel-db
-                id_keys = self.db_reader.select_batch(name, batch_col, **dbreader_kwargs)
+                id_keys = self.db_reader.select_batch(
+                    name, batch_col, **dbreader_kwargs
+                )
 
                 # Check for duplicates in id_keys
                 if len(id_keys) != len(set(id_keys)):
@@ -234,11 +242,15 @@ class LabJournal(BaseJournal, ABC):
                 logging.debug(f"id_keys: {id_keys}")
                 self.pages = self.engine(self.db_reader, id_keys, **kwargs)
             else:
-                logging.debug("creating journal pages using advanced reader methods (not simple excel-db)")
+                logging.debug(
+                    "creating journal pages using advanced reader methods (not simple excel-db)"
+                )
                 self.pages = self.engine(self.db_reader, batch_name=name, **kwargs)
 
             if self.pages.empty:
-                logging.critical("EMPTY JOURNAL: are you sure you have provided correct input to batch?")
+                logging.critical(
+                    "EMPTY JOURNAL PAGES: are you sure you have provided correct input to batch?"
+                )
                 logging.critical(f"name: {name}")
                 logging.critical(f"project: {self.project}")
                 logging.critical(f"batch_col: {batch_col}")
@@ -312,11 +324,14 @@ class LabJournal(BaseJournal, ABC):
         session = top_level_dict.get("session", None)
         pages = pd.DataFrame(pages_dict)
         if pages.empty:
-            logging.critical("could not find any pages in the journal (seems to be empty - no data)")
+            logging.critical(
+                "could not find any pages in the journal (seems to be empty - no data)"
+            )
             logging.critical(f"file_name: {file_name}")
             logging.critical(
                 "Tips: If using the load function with allow_using_backup_journal=True, "
-                "try deleting the journal file and try again.")
+                "try deleting the journal file and try again."
+            )
             raise UnderDefined
 
         pages = cls._clean_pages(pages)
@@ -350,7 +365,9 @@ class LabJournal(BaseJournal, ABC):
         temporary_directory = tempfile.mkdtemp()
         temporary_file_name = shutil.copy(file_name, temporary_directory)
         try:
-            pages = pd.read_excel(temporary_file_name, engine="openpyxl", sheet_name=pages_sheet_name)
+            pages = pd.read_excel(
+                temporary_file_name, engine="openpyxl", sheet_name=pages_sheet_name
+            )
         except KeyError:
             print(f"Worksheet '{pages_sheet_name}' does not exist.")
             return None
@@ -367,7 +384,9 @@ class LabJournal(BaseJournal, ABC):
             session = None
 
         try:
-            meta = pd.read_excel(temporary_file_name, sheet_name=meta_sheet_name, engine="openpyxl")
+            meta = pd.read_excel(
+                temporary_file_name, sheet_name=meta_sheet_name, engine="openpyxl"
+            )
 
         except (KeyError, ValueError):
             print(f"Worksheet '{meta_sheet_name}' does not exist.")
@@ -397,7 +416,10 @@ class LabJournal(BaseJournal, ABC):
     @classmethod
     def _unpack_session(cls, session):
         try:
-            bcn2 = {n: sb["cycle_index"].to_list() for n, sb in session["bad_cycles"].groupby("cell_name")}
+            bcn2 = {
+                n: sb["cycle_index"].to_list()
+                for n, sb in session["bad_cycles"].groupby("cell_name")
+            }
         except KeyError:
             bcn2 = []
 
@@ -430,7 +452,9 @@ class LabJournal(BaseJournal, ABC):
         return meta.to_dict()["value"]
 
     @classmethod
-    def _clean_session(cls, session: dict, pages: pd.DataFrame) -> tuple[dict, pd.DataFrame]:
+    def _clean_session(
+        cls, session: dict, pages: pd.DataFrame
+    ) -> tuple[dict, pd.DataFrame]:
         # TODO: clean up this method
         #   I wonder why I included pages as one of the arguments here...
         if not session:
@@ -469,10 +493,14 @@ class LabJournal(BaseJournal, ABC):
                 new_p.append(f)
             pages[hdr_journal.raw_file_names] = new_p
         except KeyError:
-            print("Tried but failed in converting raw_file_names into an appropriate list")
+            print(
+                "Tried but failed in converting raw_file_names into an appropriate list"
+            )
         try:
             # TODO: the _fix_cellpy_paths method does not work with OtherPaths (yet?) - fix this
-            pages[hdr_journal.cellpy_file_name] = pages[hdr_journal.cellpy_file_name].apply(cls._fix_cellpy_paths)
+            pages[hdr_journal.cellpy_file_name] = pages[
+                hdr_journal.cellpy_file_name
+            ].apply(cls._fix_cellpy_paths)
         except KeyError:
             # assumes it is an old type journal file
             print(f"The key '{hdr_journal.cellpy_file_name}' is missing!")
@@ -480,7 +508,9 @@ class LabJournal(BaseJournal, ABC):
             try:
                 pages.rename(columns=trans_dict, inplace=True)
                 # TODO: the _fix_cellpy_paths method does not work with OtherPaths (yet?) - fix this
-                pages[hdr_journal.cellpy_file_name] = pages[hdr_journal.cellpy_file_name].apply(cls._fix_cellpy_paths)
+                pages[hdr_journal.cellpy_file_name] = pages[
+                    hdr_journal.cellpy_file_name
+                ].apply(cls._fix_cellpy_paths)
                 logging.warning("old journal file - updating")
             except KeyError:
                 print("Error! Could still not parse the pages.")
@@ -570,7 +600,9 @@ class LabJournal(BaseJournal, ABC):
 
         pages_dict = top_level_dict["info_df"]
         pages = pd.DataFrame(pages_dict)
-        pages[hdr_journal.cellpy_file_name] = pages[hdr_journal.cellpy_file_name].apply(self._fix_cellpy_paths)
+        pages[hdr_journal.cellpy_file_name] = pages[hdr_journal.cellpy_file_name].apply(
+            self._fix_cellpy_paths
+        )
         self.pages = pages
         self.file_name = file_name
         self._prm_packer(top_level_dict["metadata"])
@@ -641,11 +673,13 @@ class LabJournal(BaseJournal, ABC):
                 "The default behavior now saves to current directory. "
                 "Use duplicate_to_project_folder=True to copy to project folder.",
                 DeprecationWarning,
-                stacklevel=2
+                stacklevel=2,
             )
             # Old parameter is ignored since new default (save to current directory) matches old behavior
-        
-        file_name = self._check_file_name(file_name, to_project_folder=to_project_folder)
+
+        file_name = self._check_file_name(
+            file_name, to_project_folder=to_project_folder
+        )
 
         pages = self.pages
         session = self.session
@@ -671,22 +705,25 @@ class LabJournal(BaseJournal, ABC):
                     pages.to_excel(writer, sheet_name="pages", engine="openpyxl")
                     # no index is not supported for multi-index (update to index=False when pandas implement it):
                     df_session.to_excel(writer, sheet_name="session", engine="openpyxl")
-                    df_meta.to_excel(writer, sheet_name="meta", engine="openpyxl", index=False)
+                    df_meta.to_excel(
+                        writer, sheet_name="meta", engine="openpyxl", index=False
+                    )
             except PermissionError as e:
                 print(f"Could not load journal to xlsx ({e})")
 
         if is_json:
+
             def json_default_handler(obj):
                 """Handle objects that can't be serialized by default JSON encoder."""
                 if isinstance(obj, pathlib.Path):
                     return str(obj)
-                elif hasattr(obj, 'to_json'):
+                elif hasattr(obj, "to_json"):
                     # For pandas DataFrames and Series
                     return json.loads(obj.to_json(default_handler=str))
                 else:
                     # Fallback to string representation
                     return str(obj)
-            
+
             jason_string = json.dumps(
                 top_level_dict,
                 default=json_default_handler,
@@ -727,7 +764,9 @@ class LabJournal(BaseJournal, ABC):
                 l_bad_cycle_numbers.append(pd.DataFrame(data=v, columns=[k]))
 
             df_bad_cycle_numbers = (
-                pd.concat(l_bad_cycle_numbers, axis=1).melt(var_name="cell_name", value_name="cycle_index").dropna()
+                pd.concat(l_bad_cycle_numbers, axis=1)
+                .melt(var_name="cell_name", value_name="cycle_index")
+                .dropna()
             )
             frames.append(df_bad_cycle_numbers)
             keys.append("bad_cycles")
@@ -751,46 +790,63 @@ class LabJournal(BaseJournal, ABC):
 
     @staticmethod
     def _pack_meta(meta):
-        meta = pd.DataFrame(meta, index=[0]).melt(var_name="parameter", value_name="value")
+        meta = pd.DataFrame(meta, index=[0]).melt(
+            var_name="parameter", value_name="value"
+        )
         return meta
 
     def generate_folder_names(self, use_outdatadir=False):
         """Set appropriate folder names.
-        
+
         Args:
-            use_outdatadir (bool): if True, use prms.Paths.outdatadir as base,
-                otherwise use current_directory / DEFAULT_OUTPUT_DIR_NAME (default False)
+            use_outdatadir (bool): if True, use prms.Paths.outdatadir as base for all directories,
+                otherwise use current_directory as base.
         """
         logging.debug("creating folder names")
-        
-        if use_outdatadir:
-            # Legacy behavior: use prms.Paths.outdatadir
+
+        if use_outdatadir:  # Deprecated: for backward compatibility only
             if self.project and isinstance(self.project, (pathlib.Path, str)):
                 logging.debug("got project name")
                 logging.debug(self.project)
                 self.project_dir = os.path.join(prms.Paths.outdatadir, self.project)
             else:
-                logging.critical("Could not create project dir (missing project definition)")
-        else:
-            # Default: use current_directory / DEFAULT_OUTPUT_DIR_NAME
-            if self.project and isinstance(self.project, (pathlib.Path, str)):
-                logging.debug("got project name")
-                logging.debug(self.project)
-                base_dir = pathlib.Path.cwd() / DEFAULT_OUTPUT_DIR_NAME
-                self.project_dir = base_dir / self.project
+                logging.critical(
+                    "Could not create project dir (missing project definition)"
+                )
+            if self.name and self.project_dir:
+                self.batch_dir = os.path.join(self.project_dir, self.name)
+                self.raw_dir = os.path.join(self.batch_dir, "raw_data")
             else:
-                logging.critical("Could not create project dir (missing project definition)")
-        
-        if self.name:
-            self.batch_dir = pathlib.Path(self.project_dir) / self.name
-            self.raw_dir = self.batch_dir / "raw_data"
+                logging.critical(
+                    "Could not create batch_dir and raw_dir (missing batch name or project directory)"
+                )
         else:
-            logging.critical("Could not create batch_dir and raw_dir", "(missing batch name)")
+            self.project_dir = pathlib.Path.cwd()
+            if self.project and isinstance(self.project, (pathlib.Path, str)):
+                self.legacy_project_dir = os.path.join(
+                    prms.Paths.outdatadir, self.project
+                )
+            else:
+                logging.critical(
+                    "Could not create legacy project directory (missing project definition)"
+                )
+            if self.name and self.project_dir:
+                self.batch_dir = (
+                    pathlib.Path(self.project_dir) / DEFAULT_OUTPUT_DIR_NAME
+                )
+                self.raw_dir = self.batch_dir / "raw_data"
+
+            else:
+                logging.critical(
+                    "Could not create batch_dir and raw_dir (missing batch name or project directory)"
+                )
         logging.debug(f"batch dir: {self.batch_dir}")
         logging.debug(f"project dir: {self.project_dir}")
         logging.debug(f"raw dir: {self.raw_dir}")
 
-    def _pages_add_column(self, column_name: str, column_data: Any = None, overwrite=False):
+    def _pages_add_column(
+        self, column_name: str, column_data: Any = None, overwrite=False
+    ):
         if column_name in self.pages.columns and not overwrite:
             logging.critical(f"column {column_name} already exists")
             logging.critical("use overwrite=True to overwrite")
@@ -817,7 +873,9 @@ class LabJournal(BaseJournal, ABC):
                 logging.critical(f"column {column_name} does not exist")
             else:
                 _column_names.append(column_name)
-        column_names = _column_names + [col for col in self.pages.columns if col not in _column_names]
+        column_names = _column_names + [
+            col for col in self.pages.columns if col not in _column_names
+        ]
         if number_of_columns != len(column_names):
             logging.critical("number of columns changed")
         else:
@@ -893,16 +951,20 @@ class LabJournal(BaseJournal, ABC):
 
     def update_group_labels(self, group_labels: dict) -> None:
         if hdr_journal.group in self.pages.columns:
-            self.pages[hdr_journal.group] = self.pages[hdr_journal.group].apply(lambda x: group_labels.get(x, x))
+            self.pages[hdr_journal.group] = self.pages[hdr_journal.group].apply(
+                lambda x: group_labels.get(x, x)
+            )
 
-    def _cellpy_filenames_to_cellpy_directory(self, cellpy_directory: pathlib.Path = None) -> None:
+    def _cellpy_filenames_to_cellpy_directory(
+        self, cellpy_directory: pathlib.Path = None
+    ) -> None:
         if cellpy_directory is None:
             cellpy_directory = prms.Paths.cellpydatadir
         try:
             pages = self.pages.copy()
-            pages[hdr_journal.cellpy_file_name] = self.pages[hdr_journal.cellpy_file_name].apply(
-                lambda x: cellpy_directory / pathlib.Path(x).name
-            )
+            pages[hdr_journal.cellpy_file_name] = self.pages[
+                hdr_journal.cellpy_file_name
+            ].apply(lambda x: cellpy_directory / pathlib.Path(x).name)
             self.pages = pages
         except Exception as e:
             logging.critical(f"Could not update cellpy file names: {e}")
@@ -924,6 +986,7 @@ class LabJournal(BaseJournal, ABC):
         """Make folders where we would like to put results etc."""
 
         project_dir = self.project_dir
+        legacy_project_dir = self.legacy_project_dir
         raw_dir = self.raw_dir
         batch_dir = self.batch_dir
 
@@ -933,6 +996,8 @@ class LabJournal(BaseJournal, ABC):
             raise UnderDefined("no raw directory defined")
         if batch_dir is None:
             raise UnderDefined("no batch directory defined")
+        if legacy_project_dir is None:
+            logging.debug("no legacy project directory defined")
 
         # create the folders (use makedirs to create parent directories if needed)
         if not os.path.isdir(project_dir):
@@ -944,6 +1009,9 @@ class LabJournal(BaseJournal, ABC):
         if not os.path.isdir(raw_dir):
             os.makedirs(raw_dir, exist_ok=True)
             logging.info(f"created folder {raw_dir}")
+        if not os.path.isdir(legacy_project_dir):
+            os.makedirs(legacy_project_dir, exist_ok=True)
+            logging.info(f"created folder {legacy_project_dir}")
 
         self.project_dir = project_dir
         self.batch_dir = batch_dir
@@ -953,16 +1021,16 @@ class LabJournal(BaseJournal, ABC):
 
     def generate_file_name(self, to_project_folder=False) -> None:
         """generate a suitable file name for the experiment
-        
+
         Args:
             to_project_folder (bool): if True, save to prms.Paths.outdatadir/project/,
                 otherwise save to current directory (default False)
         """
         if not self.name:
             raise UnderDefined("batch name not given")
-        
+
         file_name = f"cellpy_batch_{self.name}.json"
-        
+
         if to_project_folder:
             if not self.project:
                 raise UnderDefined("project name not given")
@@ -1007,7 +1075,9 @@ def _dev_journal_loading():
     from cellpy import log
 
     log.setup_logging(default_level="DEBUG")
-    journal_file = pathlib.Path("../../../testdata/batch_project/test_project.json").resolve()
+    journal_file = pathlib.Path(
+        "../../../testdata/batch_project/test_project.json"
+    ).resolve()
     assert journal_file.is_file()
 
     logging.debug(f"reading journal file {journal_file}")

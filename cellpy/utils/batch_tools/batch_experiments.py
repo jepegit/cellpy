@@ -299,7 +299,7 @@ class CyclingExperiment(BaseExperiment):
             pages[hdr_journal.instrument] = x
 
         if pages.empty:
-            raise Exception("your journal is empty")
+            raise Exception("your journal pages are empty")
 
         # --- init ---
         summary_frames = dict()
@@ -649,7 +649,7 @@ class CyclingExperiment(BaseExperiment):
             pages[hdr_journal.instrument] = x
 
         if pages.empty:
-            raise Exception("your journal is empty")
+            raise Exception("your journal pages are empty")
 
         # --- init ---
         summary_frames = dict()

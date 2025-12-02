@@ -10,6 +10,7 @@ from typing import Optional
 
 import pandas as pd
 from pandas import Index
+# from tables.exceptions import traceback
 from tqdm.auto import tqdm
 
 import cellpy.exceptions
@@ -1546,8 +1547,10 @@ def load(
         print("OK!")
     except Exception as e:
         print("something went wrong")
-        print(e)
-        print("returning possibly incomplete batch")
+        print(f" - error message: {e}")
+        # print(f" - traceback: {traceback.format_exc()}")
+        # print(f" - traceback type: {type(traceback)}")
+        print("returning most likely an incomplete batch")
 
     return b
 

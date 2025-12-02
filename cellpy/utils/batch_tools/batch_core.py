@@ -407,11 +407,11 @@ class BaseJournal:
            for making folder names).
         file_name (str or path): the file name used in the to_file method.
         project_dir: folder where to put the batch (or experiment) files and
-           information.
+           information (will be deprecated in future versions).
         batch_dir: folder in project_dir where summary-files and information
-            and results related to the current experiment are stored.
+            and results related to the current experiment are stored (will be deprecated in future versions).
         raw_dir: folder in batch_dir where cell-specific information and results
-            are stored (e.g. raw-data, dq/dv data, voltage-capacity cycles).
+            are stored (e.g. raw-data, dq/dv data, voltage-capacity cycles) (will be deprecated in future versions).
 
     """
 
@@ -427,6 +427,7 @@ class BaseJournal:
         self.project_dir = None
         self.batch_dir = None
         self.raw_dir = None
+        self.legacy_project_dir = None  # Deprecated: for backward compatibility only
 
     def __str__(self):
         return (
