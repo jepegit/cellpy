@@ -4822,7 +4822,9 @@ class CellpyCell:
             v = v.loc[~v[date_time_hdr].duplicated(), :]
 
         v = v.set_index(date_time_hdr, drop=True)
-        v = v.resample(sampling_unit).ffill().bfill()
+        # Convert 'S' to 's' to avoid pandas FutureWarning about deprecated frequency alias
+        resample_unit = "s" if sampling_unit == "S" else sampling_unit
+        v = v.resample(resample_unit).ffill().bfill()
         v["is_at_target"] = 0
 
         if at == "low":

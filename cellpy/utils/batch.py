@@ -851,8 +851,28 @@ class Batch:
         if auto_use_file_list is None:
             auto_use_file_list = prms.Batch.auto_use_file_list
 
-        to_project_folder = kwargs.pop("to_project_folder", True)
-        duplicate_to_local_folder = kwargs.pop("duplicate_to_local_folder", True)
+        to_project_folder = kwargs.pop("to_project_folder", False)
+        # Backward compatibility: accept both old and new parameter names
+        duplicate_to_project_folder = kwargs.pop("duplicate_to_project_folder", None)
+        if duplicate_to_project_folder is None:
+            # Check for old parameter name for backward compatibility
+            if "duplicate_to_local_folder" in kwargs:
+                _ = kwargs.pop("duplicate_to_local_folder", False)  # Intentionally unused - just removing from kwargs
+                warnings.warn(
+                    "duplicate_to_local_folder is deprecated. "
+                    "The default behavior now saves to current directory. "
+                    "Use duplicate_to_project_folder=True to copy to project folder.",
+                    DeprecationWarning,
+                    stacklevel=2
+                )
+                # Old behavior: duplicate_to_local_folder=True meant copy to current folder (after saving to project)
+                # New behavior: we save to current folder by default, so duplicate_to_local_folder is now irrelevant
+                # If old param was True, it meant "also copy to local", which is now the default behavior
+                # If old param was False, it meant "don't copy to local", which matches new default (no copy to project)
+                # So we just set duplicate_to_project_folder to False (no copy to project folder)
+                duplicate_to_project_folder = False
+            else:
+                duplicate_to_project_folder = False
 
         if description is not None:
             from_db = False
@@ -884,12 +904,12 @@ class Batch:
                     )
                     raise e
             self.experiment.journal.from_db(**kwargs)
-            self.experiment.journal.to_file(duplicate_to_local_folder=duplicate_to_local_folder)
+            self.experiment.journal.to_file(
+                to_project_folder=to_project_folder,
+                duplicate_to_project_folder=duplicate_to_project_folder
+            )
 
-            # TODO: remove these:
-            if duplicate_to_local_folder:
-                self.experiment.journal.duplicate_journal()
-            if to_project_folder:
+            if to_project_folder and pathlib.Path(prms.Paths.batchfiledir).is_dir():
                 self.duplicate_journal(prms.Paths.batchfiledir)
 
         else:
@@ -975,10 +995,14 @@ class Batch:
                     logging.info("did not understand the option - creating empty journal pages")
 
             # finally
-            self.experiment.journal.to_file(duplicate_to_local_folder=duplicate_to_local_folder)
-            self.experiment.journal.generate_folder_names()
+            self.experiment.journal.to_file(
+                to_project_folder=to_project_folder,
+                duplicate_to_project_folder=duplicate_to_project_folder
+            )
+            self.experiment.journal.generate_folder_names(use_outdatadir=False)
             self.experiment.journal.paginate()
-            self.duplicate_journal(prms.Paths.batchfiledir)
+            if to_project_folder and pathlib.Path(prms.Paths.batchfiledir).is_dir():
+                self.duplicate_journal(prms.Paths.batchfiledir)
 
     def _create_folder_structure(self) -> None:
         warnings.warn("Deprecated - use paginate instead.", DeprecationWarning)
@@ -1004,31 +1028,31 @@ class Batch:
         self.save_journal()
         self.experiment.save_cells()
 
-    def save_journal(self, paginate=False, duplicate_journal=True) -> None:
+    def save_journal(self, paginate=False, duplicate_to_project_folder=False) -> None:
         """Save the journal (json-format).
 
-        The journal file will be saved in the project directory and in the
-        batch-file-directory (``prms.Paths.batchfiledir``). The latter is useful
-        for processing several batches using the ``iterate_batches`` functionality.
+        The journal file will be saved to the current directory by default. Optionally,
+        it can be copied to the project directory in prms.Paths.outdatadir and/or
+        the batch-file-directory (``prms.Paths.batchfiledir``).
 
         Args:
             paginate (bool): paginate the journal pages, i.e. create a project folder structure inside your
-                'out' folder (defined in your settings) (default False).
-            duplicate_journal (bool): duplicate the journal pages to the 'batch' directory (defined in your settings)
-                and the current directory (default True).
+                'out' folder (default False).
+            duplicate_to_project_folder (bool): if True, copy the journal to prms.Paths.outdatadir/project/
+                (default False).
         """
 
         # Remark! Got a recursive error when running on Mac.
-        self.experiment.journal.to_file(to_project_folder=True, paginate=paginate)
-        logging.info("saved journal pages to project folder")
-        if pathlib.Path(prms.Paths.batchfiledir).is_dir() and duplicate_journal:
+        # Default: save to current directory
+        self.experiment.journal.to_file(to_project_folder=False, paginate=paginate, duplicate_to_project_folder=duplicate_to_project_folder)
+        logging.info("saved journal pages to current directory")
+        
+        if duplicate_to_project_folder:
+            logging.info("copied journal pages to project folder")
+        
+        if pathlib.Path(prms.Paths.batchfiledir).is_dir() and duplicate_to_project_folder:
             self.duplicate_journal(prms.Paths.batchfiledir)
             logging.info("duplicated journal pages to batch dir")
-        else:
-            logging.info("batch dir not found")
-
-        self.duplicate_journal()
-        logging.info("duplicated journal pages to current dir")
 
     def export_journal(self, filename=None) -> None:
         """Export the journal to xlsx.
@@ -1444,9 +1468,17 @@ def load(
         b = Batch(name=name, project=project, batch_col=batch_col, db_reader=None)
         try:
             print("checking if it is possible to load from journal file")
-            b.experiment.journal.generate_file_name()
+            # First check current directory (default location)
+            b.experiment.journal.generate_file_name(to_project_folder=False)
             journal_file = b.experiment.journal.file_name
-            print(f" - journal file name: {journal_file}")
+            print(f" - checking current directory: {journal_file}")
+            
+            if not pathlib.Path(journal_file).is_file():
+                # Fall back to project folder if not found in current directory
+                print(" - not found in current directory, checking project folder")
+                b.experiment.journal.generate_file_name(to_project_folder=True)
+                journal_file = b.experiment.journal.file_name
+                print(f" - checking project folder: {journal_file}")
         except Exception as e:
             print(f"could not generate journal file name: {e}")
         else:
@@ -1471,7 +1503,7 @@ def load(
                 return b
 
             else:
-                print(" - journal file not found")
+                print(" - journal file not found in current directory or project folder")
 
     auto_use_file_list = kwargs.pop("auto_use_file_list", None)
     try:

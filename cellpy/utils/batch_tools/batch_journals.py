@@ -35,6 +35,9 @@ for key in hdr_journal:
     else:
         missing_keys.append(key)
 
+# Default output directory name for batch processing
+DEFAULT_OUTPUT_DIR_NAME = "out"
+
 
 class LabJournal(BaseJournal, ABC):
     def __init__(self, db_reader="default", engine=None, batch_col=None, db_file=None, **kwargs):
@@ -153,15 +156,16 @@ class LabJournal(BaseJournal, ABC):
     def _check_file_name(self, file_name, to_project_folder=False):
         if file_name is None:
             if not self.file_name:
-                self.generate_file_name()
+                self.generate_file_name(to_project_folder=to_project_folder)
             file_name = pathlib.Path(self.file_name)
 
         else:
             file_name = pathlib.Path(file_name)
         if to_project_folder:
+            # When saving to project folder, use prms.Paths.outdatadir
             file_name = file_name.with_suffix(".json").name
-            project_dir = pathlib.Path(self.project_dir)
-
+            out_data_dir = prms.Paths.outdatadir
+            project_dir = pathlib.Path(out_data_dir) / self.project
             file_name = project_dir / file_name
         self.file_name = file_name  # updates object (maybe not smart)
         return file_name
@@ -607,20 +611,36 @@ class LabJournal(BaseJournal, ABC):
         self,
         file_name=None,
         paginate=True,
-        to_project_folder=True,
-        duplicate_to_local_folder=True,
+        to_project_folder=False,
+        duplicate_to_project_folder=False,
+        duplicate_to_local_folder=None,  # Deprecated: for backward compatibility
     ):
         """Saves a DataFrame with all the needed info about the experiment.
 
         Args:
             file_name (str or pathlib.Path): journal file name (.json or .xlsx)
             paginate (bool): make project folders
-            to_project_folder (bool): save journal file to the folder containing your cellpy projects
-            duplicate_to_local_folder (bool): save journal file to the folder you are in now also
+            to_project_folder (bool): if True, save journal file to prms.Paths.outdatadir/project/
+                (default False, saves to current directory)
+            duplicate_to_project_folder (bool): if True, copy journal file to prms.Paths.outdatadir/project/
+                after saving to current directory (default False)
+            duplicate_to_local_folder (bool): Deprecated. For backward compatibility only.
+                If provided, it is ignored since the default behavior now saves to current directory.
 
         Returns:
             None
         """
+        # Backward compatibility: handle deprecated parameter
+        if duplicate_to_local_folder is not None:
+            warnings.warn(
+                "duplicate_to_local_folder is deprecated. "
+                "The default behavior now saves to current directory. "
+                "Use duplicate_to_project_folder=True to copy to project folder.",
+                DeprecationWarning,
+                stacklevel=2
+            )
+            # Old parameter is ignored since new default (save to current directory) matches old behavior
+        
         file_name = self._check_file_name(file_name, to_project_folder=to_project_folder)
 
         pages = self.pages
@@ -652,9 +672,20 @@ class LabJournal(BaseJournal, ABC):
                 print(f"Could not load journal to xlsx ({e})")
 
         if is_json:
+            def json_default_handler(obj):
+                """Handle objects that can't be serialized by default JSON encoder."""
+                if isinstance(obj, pathlib.Path):
+                    return str(obj)
+                elif hasattr(obj, 'to_json'):
+                    # For pandas DataFrames and Series
+                    return json.loads(obj.to_json(default_handler=str))
+                else:
+                    # Fallback to string representation
+                    return str(obj)
+            
             jason_string = json.dumps(
                 top_level_dict,
-                default=lambda info_df: json.loads(info_df.to_json(default_handler=str)),
+                default=json_default_handler,
             )
 
             with open(file_name, "w") as outfile:
@@ -666,8 +697,20 @@ class LabJournal(BaseJournal, ABC):
         if paginate:
             self.paginate()
 
-        if duplicate_to_local_folder:
-            self.duplicate_journal()
+        if duplicate_to_project_folder:
+            # Copy to prms.Paths.outdatadir/project/ if requested
+            if self.project:
+                out_data_dir = prms.Paths.outdatadir
+                project_dir = pathlib.Path(out_data_dir) / self.project
+                project_dir.mkdir(parents=True, exist_ok=True)
+                target_file = project_dir / file_name.name
+                try:
+                    shutil.copy(file_name, target_file)
+                    logging.info(f"Copied journal to project folder: {target_file}")
+                except shutil.SameFileError:
+                    logging.debug("same file exception encountered")
+                except Exception as e:
+                    logging.warning(f"Could not copy journal to project folder: {e}")
 
     @staticmethod
     def _pack_session(session):
@@ -707,18 +750,36 @@ class LabJournal(BaseJournal, ABC):
         meta = pd.DataFrame(meta, index=[0]).melt(var_name="parameter", value_name="value")
         return meta
 
-    def generate_folder_names(self):
-        """Set appropriate folder names."""
+    def generate_folder_names(self, use_outdatadir=False):
+        """Set appropriate folder names.
+        
+        Args:
+            use_outdatadir (bool): if True, use prms.Paths.outdatadir as base,
+                otherwise use current_directory / DEFAULT_OUTPUT_DIR_NAME (default False)
+        """
         logging.debug("creating folder names")
-        if self.project and isinstance(self.project, (pathlib.Path, str)):
-            logging.debug("got project name")
-            logging.debug(self.project)
-            self.project_dir = os.path.join(prms.Paths.outdatadir, self.project)
+        
+        if use_outdatadir:
+            # Legacy behavior: use prms.Paths.outdatadir
+            if self.project and isinstance(self.project, (pathlib.Path, str)):
+                logging.debug("got project name")
+                logging.debug(self.project)
+                self.project_dir = os.path.join(prms.Paths.outdatadir, self.project)
+            else:
+                logging.critical("Could not create project dir (missing project definition)")
         else:
-            logging.critical("Could not create project dir (missing project definition)")
+            # Default: use current_directory / DEFAULT_OUTPUT_DIR_NAME
+            if self.project and isinstance(self.project, (pathlib.Path, str)):
+                logging.debug("got project name")
+                logging.debug(self.project)
+                base_dir = pathlib.Path.cwd() / DEFAULT_OUTPUT_DIR_NAME
+                self.project_dir = base_dir / self.project
+            else:
+                logging.critical("Could not create project dir (missing project definition)")
+        
         if self.name:
-            self.batch_dir = os.path.join(self.project_dir, self.name)
-            self.raw_dir = os.path.join(self.batch_dir, "raw_data")
+            self.batch_dir = pathlib.Path(self.project_dir) / self.name
+            self.raw_dir = self.batch_dir / "raw_data"
         else:
             logging.critical("Could not create batch_dir and raw_dir", "(missing batch name)")
         logging.debug(f"batch dir: {self.batch_dir}")
@@ -869,15 +930,15 @@ class LabJournal(BaseJournal, ABC):
         if batch_dir is None:
             raise UnderDefined("no batch directory defined")
 
-        # create the folders
+        # create the folders (use makedirs to create parent directories if needed)
         if not os.path.isdir(project_dir):
-            os.mkdir(project_dir)
+            os.makedirs(project_dir, exist_ok=True)
             logging.info(f"created folder {project_dir}")
         if not os.path.isdir(batch_dir):
-            os.mkdir(batch_dir)
+            os.makedirs(batch_dir, exist_ok=True)
             logging.info(f"created folder {batch_dir}")
         if not os.path.isdir(raw_dir):
-            os.mkdir(raw_dir)
+            os.makedirs(raw_dir, exist_ok=True)
             logging.info(f"created folder {raw_dir}")
 
         self.project_dir = project_dir
@@ -886,14 +947,27 @@ class LabJournal(BaseJournal, ABC):
 
         return project_dir, batch_dir, raw_dir
 
-    def generate_file_name(self) -> None:
-        """generate a suitable file name for the experiment"""
-        if not self.project:
-            raise UnderDefined("project name not given")
-        out_data_dir = prms.Paths.outdatadir
-        project_dir = os.path.join(out_data_dir, self.project)
+    def generate_file_name(self, to_project_folder=False) -> None:
+        """generate a suitable file name for the experiment
+        
+        Args:
+            to_project_folder (bool): if True, save to prms.Paths.outdatadir/project/,
+                otherwise save to current directory (default False)
+        """
+        if not self.name:
+            raise UnderDefined("batch name not given")
+        
         file_name = f"cellpy_batch_{self.name}.json"
-        self.file_name = os.path.join(project_dir, file_name)
+        
+        if to_project_folder:
+            if not self.project:
+                raise UnderDefined("project name not given")
+            out_data_dir = prms.Paths.outdatadir
+            project_dir = pathlib.Path(out_data_dir) / self.project
+            self.file_name = project_dir / file_name
+        else:
+            # Default: save to current directory
+            self.file_name = pathlib.Path.cwd() / file_name
 
     # v.1.3.0:
     def look_for_file(self):

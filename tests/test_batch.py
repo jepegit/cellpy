@@ -1,5 +1,6 @@
 import ast
 import logging
+import os
 import pathlib
 import tempfile
 import time
@@ -35,19 +36,27 @@ def clean_dir():
 
 @pytest.fixture
 def batch_instance(clean_dir, parameters):
-    prms.Paths.db_filename = parameters.db_file_name
-    prms.Paths.cellpydatadir = clean_dir
-    prms.Paths.outdatadir = clean_dir
-    prms.Paths.rawdatadir = parameters.raw_data_dir
-    prms.Paths.db_path = parameters.db_dir
-    prms.Paths.filelogdir = clean_dir
-    prms.Paths.batchfiledir = clean_dir
-    prms.Paths.notebookdir = clean_dir
-    prms.Paths.instrumentdir = parameters.instrument_dir
-    prms.Paths.templatedir = parameters.template_dir
-    prms.Paths.examplesdir = parameters.examples_dir
-    prms.Batch.auto_use_file_list = False
-    return batch
+    # Change to temporary directory so that files are saved there
+    original_cwd = os.getcwd()
+    os.chdir(clean_dir)
+    
+    try:
+        prms.Paths.db_filename = parameters.db_file_name
+        prms.Paths.cellpydatadir = clean_dir
+        prms.Paths.outdatadir = clean_dir
+        prms.Paths.rawdatadir = parameters.raw_data_dir
+        prms.Paths.db_path = parameters.db_dir
+        prms.Paths.filelogdir = clean_dir
+        prms.Paths.batchfiledir = clean_dir
+        prms.Paths.notebookdir = clean_dir
+        prms.Paths.instrumentdir = parameters.instrument_dir
+        prms.Paths.templatedir = parameters.template_dir
+        prms.Paths.examplesdir = parameters.examples_dir
+        prms.Batch.auto_use_file_list = False
+        yield batch
+    finally:
+        # Restore original working directory
+        os.chdir(original_cwd)
 
 
 @pytest.fixture
@@ -352,7 +361,7 @@ def test_lab_journal(batch_instance):
 
 
 def test_cycling_experiment_to_file(cycling_experiment):
-    cycling_experiment.journal.to_file(duplicate_to_local_folder=False)
+    cycling_experiment.journal.to_file(duplicate_to_project_folder=False)
 
 
 def test_interact_with_cellpydata_get_cap(updated_cycling_experiment, parameters):
