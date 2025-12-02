@@ -6,7 +6,7 @@ import pathlib
 import shutil
 import sys
 import warnings
-from typing import List, Optional, Any
+from typing import Optional
 
 import pandas as pd
 from pandas import Index
@@ -24,9 +24,7 @@ from cellpy.internals.core import OtherPath
 from cellpy.readers.cellreader import CellpyCell
 from cellpy.utils.batch_tools.batch_analyzers import (
     BaseSummaryAnalyzer,
-    OCVRelaxationAnalyzer,
 )
-from cellpy.utils.batch_tools.batch_core import Data
 from cellpy.utils.batch_tools.batch_experiments import CyclingExperiment
 from cellpy.utils.batch_tools.batch_exporters import CSVExporter
 from cellpy.utils.batch_tools.batch_journals import LabJournal
@@ -1358,7 +1356,7 @@ class Batch:
 
         if backend == "bokeh":
             try:
-                import bokeh.plotting
+                import bokeh.plotting  # pyright: ignore[reportMissingImports]
 
                 prms.Batch.backend = "bokeh"
 
@@ -1909,7 +1907,7 @@ def _check_standard():
     logging.info("*make summaries*")
     try:
         b.combine_summaries()
-        summaries = b.experiment.memory_dumped
+        summaries = b.experiment.memory_dumped  # noqa: F841
     except cellpy.exeptions.NullData:
         print("NO DATA")
         return

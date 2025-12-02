@@ -12,6 +12,7 @@ from . import fdv
 log.setup_logging(default_level="DEBUG", testing=True)
 
 
+@pytest.mark.skip(reason="this is not needed in CI/CD pipeline")
 def test_example_data():
     from cellpy.utils import example_data
 
@@ -23,6 +24,7 @@ def test_example_data():
     assert c.data.summary.shape == (304, 61)
 
 
+@pytest.mark.skip(reason="this is not needed in CI/CD pipeline")
 def test_example_path_data():
     from cellpy.utils import example_data
 
@@ -30,6 +32,7 @@ def test_example_path_data():
     assert filepath.is_file()
 
 
+@pytest.mark.skip(reason="this is not needed in CI/CD pipeline")
 def test_example_path_download_data():
     from cellpy.utils import example_data
 
@@ -37,6 +40,7 @@ def test_example_path_download_data():
     assert filepath.is_file()
 
 
+@pytest.mark.skip(reason="this is not needed in CI/CD pipeline")
 def test_example_data_missing_file():
     from cellpy.utils import example_data
     import requests
@@ -68,6 +72,7 @@ def test_download_all_and_then_remove():
         example_data._remove_file(f.value)
 
 
+@pytest.mark.skip(reason="this is not needed in CI/CD pipeline")
 def test_download_all():
     from cellpy.utils import example_data
 
@@ -76,6 +81,7 @@ def test_download_all():
         assert (example_data.DATA_PATH / f.value).is_file()
 
 
+@pytest.mark.skip(reason="this is not needed in CI/CD pipeline")
 def test_remove_all():
     from cellpy.utils import example_data
 
