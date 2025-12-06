@@ -23,6 +23,7 @@ from cellpy.parameters.internal_settings import (
 )
 from cellpy.internals.core import OtherPath
 from cellpy.readers.cellreader import CellpyCell
+from cellpy.exceptions import NullData
 from cellpy.utils.batch_tools.batch_analyzers import (
     BaseSummaryAnalyzer,
 )
@@ -760,6 +761,7 @@ class Batch:
         from_db=True,
         auto_use_file_list=None,
         file_list_kwargs=None,
+        abort_on_empty=True,
         **kwargs,
     ):
         """Create journal pages.
@@ -784,6 +786,7 @@ class Batch:
             auto_use_file_list (bool): Experimental feature. If True, a file list will be generated and used
                 instead of searching for files in the folders.
             file_list_kwargs (dict): Experimental feature. Keyword arguments to be sent to the file list generator.
+            abort_on_empty (bool): If True, the function will raise a cellpy.exceptions.NullData if no journal pages are found.
 
             **kwargs: sent to sub-function(s) (*e.g.* ``from_db`` -> ``simple_db_reader`` -> ``find_files`` ->
                 ``filefinder.search_for_files``).
@@ -886,12 +889,18 @@ class Batch:
         if from_db:
             if auto_use_file_list:
                 logging.critical("auto_use_file_list is True - this is an experimental feature")
+                logging.debug("The file_list will be used for searching for files")
+                logging.debug("in stead of doing individual glob searches in the raw-file directory")
+                logging.debug("reducing the number of ssh-connections to the remote servers.")
                 if file_list_kwargs is None:
                     file_list_kwargs = {}
-
+                logging.debug(f"file_list_kwargs: {file_list_kwargs}")
                 file_list = filefinder.find_in_raw_file_directory(**file_list_kwargs)
+                logging.debug("done running filefinder.find_in_raw_file_directory")
+                logging.debug(f"recieved file_list from filefinder with {len(file_list)} items")
                 if file_list is None:
                     raise cellpy.exceptions.SearchError("Could not create any file list.")
+
                 try:
                     kwargs["file_list"] = file_list
 
@@ -904,13 +913,23 @@ class Batch:
                         "(e.g. b.create_journal(auto_use_file_list=False))."
                     )
                     raise e
+            logging.debug(f"running from_db with kwargs: {kwargs.keys()}")
             self.experiment.journal.from_db(**kwargs)
+            logging.debug("done running from_db")
+            logging.debug(f"recieved journal pages from from_db with {len(self.experiment.journal.pages)} items")
+            if abort_on_empty and len(self.experiment.journal.pages) == 0:
+                logging.critical("No journal pages found - something went wrong")
+                logging.critical("Please check the parameters you have provided")
+                logging.critical("and try again.")
+                raise NullData("No journal pages found - something went wrong")
+            logging.debug("saving journal pages to file")
             self.experiment.journal.to_file(
                 to_project_folder=to_project_folder,
                 duplicate_to_project_folder=duplicate_to_project_folder
             )
 
             if to_project_folder and pathlib.Path(prms.Paths.batchfiledir).is_dir():
+                logging.debug("duplicating journal to batch directory (will be a deprecated feature in the future)")
                 self.duplicate_journal(prms.Paths.batchfiledir)
 
         else:
@@ -1422,7 +1441,7 @@ def load(
     allow_using_backup_journal=False,
     drop_bad_cells=True,
     force_reload=False,
-    reader=None,
+    reader="default",
     reader_path=None,
     **kwargs,
 ):
@@ -1434,11 +1453,12 @@ def load(
         project (str): name of project
         batch_col (str): batch column identifier (only used for loading from db with simple_db_reader)
         allow_from_journal (bool): if True, the journal file will be loaded if it exists
+        allow_using_backup_journal (bool): if True, the backup journal file will be used if the journal file does not exist
         force_reload (bool): if True, the batch will be reloaded even if the journal file exists
         drop_bad_cells (bool): if True, bad cells will be dropped (only apply if journal file is loaded)
         auto_use_file_list (bool): Experimental feature. If True, a file list will be generated and used
             instead of searching for files in the folders.
-        reader (str): reader to use (defaults to "simple_excel_reader").
+        reader (str): reader to use (defaults to "default" as given in the config-file or prm-class).
         reader_path (str): path to the reader file (if not using "simple_excel_reader").
         **kwargs: sent to Batch during initialization
 
@@ -1516,6 +1536,12 @@ def load(
         if batch_col is None:
             batch_col = "b01"  # this is needed due to a bug in cellpy (will be fixed when new db reader is ready)
         print("initializing batch object")
+        print(f" - name: {name}")
+        print(f" - project: {project}")
+        print(f" - batch_col: {batch_col}")
+        print(f" - reader: {reader}")
+        print(f" - reader_path: {reader_path}")
+        print(f" - kwargs: {kwargs}")
         b = init(name=name, project=project, batch_col=batch_col, db_reader=reader, db_file=reader_path, **kwargs)
     except Exception as e:
         print(f"could not initialize batch: {e}")
@@ -1525,8 +1551,8 @@ def load(
         print("creating journal")
         
         if reader is not None:
-            print(f"reader: {reader}")
-            print(f"reader_path: {reader_path}")
+            logging.debug(f"reader: {reader}")
+            logging.debug(f"reader_path: {reader_path}")
         b.create_journal(auto_use_file_list=auto_use_file_list)
         print(" - created journal")
     except Exception as e:

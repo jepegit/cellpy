@@ -100,6 +100,7 @@ def find_in_raw_file_directory(
     platform = sys.platform
     logging.info(f"Searching for files matching: {glob_txt}")
     for d in raw_file_dir:
+        logging.debug(f"searching in folder: {d}")
         connect_kwargs, host = d.connection_info()
         if not host and platform == "win32":
             logging.info("Windows platform detected - assuming 'find' is not available")

@@ -101,10 +101,10 @@ class LabJournal(BaseJournal, ABC):
         if engine is None:
             self.engine = simple_db_engine
 
-        print(f"engine: {self.engine}")
-        print(f"db_reader: {self.db_reader}")
-        print(f"batch_col: {batch_col}")
-        print(f"kwargs: {kwargs}")
+        logging.debug(f"engine: {self.engine}")
+        logging.debug(f"db_reader: {self.db_reader}")
+        logging.debug(f"batch_col: {batch_col}")
+        logging.debug(f"kwargs: {kwargs}")
 
         self.batch_col = batch_col or "b01"
 
@@ -224,9 +224,10 @@ class LabJournal(BaseJournal, ABC):
             dbreader_kwargs = {}
 
         logging.debug(
-            f"batch_name, batch_col, dbreader_kwargs: {name}, {batch_col}, {dbreader_kwargs}"
+            f"batch_name, batch_col, dbreader, dbreader_kwargs: {name}, {batch_col}, {self.db_reader}, {dbreader_kwargs}"
         )
         if self.db_reader is not None:
+            logging.debug("running db_reader.select_batch")
             if isinstance(self.db_reader, dbreader.Reader):  # Simple excel-db
                 id_keys = self.db_reader.select_batch(
                     name, batch_col, **dbreader_kwargs
