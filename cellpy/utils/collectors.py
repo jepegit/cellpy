@@ -131,9 +131,12 @@ def generate_output_path(name, directory, serial_number=None):
     f = d / name
     return f
 
-def incremental_image_exporter_plotly(figure, filename, timeout=IMAGE_TO_FILE_TIMEOUT, **kwargs):
+
+def incremental_image_exporter_plotly(
+    figure, filename, timeout=IMAGE_TO_FILE_TIMEOUT, **kwargs
+):
     use_subprocess = kwargs.pop("use_subprocess", True)
-    
+
     if not use_subprocess:
         print(f"saving image to {filename}")
         figure.write_image(filename, **kwargs)
@@ -306,7 +309,9 @@ class BatchCollector:
         self._update_arguments(data_collector_arguments, plotter_arguments)
 
         # Elevated arguments have preference above the data_collector and plotter argument dicts:
-        self._parse_elevated_arguments(elevated_data_collector_arguments, elevated_plotter_arguments)
+        self._parse_elevated_arguments(
+            elevated_data_collector_arguments, elevated_plotter_arguments
+        )
 
         self._set_attributes(**kwargs)
 
@@ -366,7 +371,10 @@ class BatchCollector:
         txt += f"{bullet_start}figure_directory: {self.figure_directory}" + sep
         txt += f"{bullet_start}data_directory: {self.data_directory}" + sep
         txt += f"{bullet_start}batch-instance: {self.b.name}" + sep
-        txt += f"{bullet_start}data_collector_arguments: {self.data_collector_arguments}" + sep
+        txt += (
+            f"{bullet_start}data_collector_arguments: {self.data_collector_arguments}"
+            + sep
+        )
         txt += f"{bullet_start}plotter_arguments: {self.plotter_arguments}" + sep
         return txt
 
@@ -470,14 +478,18 @@ class BatchCollector:
             **kwargs,
         )
 
-    def _parse_elevated_arguments(self, data_collector_arguments: dict = None, plotter_arguments: dict = None):
+    def _parse_elevated_arguments(
+        self, data_collector_arguments: dict = None, plotter_arguments: dict = None
+    ):
         if data_collector_arguments is not None:
             logging.info(f"Updating elevated arguments")
             elevated_data_collector_arguments = {}
             for k, v in data_collector_arguments.items():
                 if v is not None:
                     elevated_data_collector_arguments[k] = v
-            self._update_arguments(elevated_data_collector_arguments, None, set_as_defaults=True)
+            self._update_arguments(
+                elevated_data_collector_arguments, None, set_as_defaults=True
+            )
 
         if plotter_arguments is not None:
             logging.info(f"Updating elevated arguments")
@@ -485,7 +497,9 @@ class BatchCollector:
             for k, v in plotter_arguments.items():
                 if v is not None:
                     elevated_plotter_arguments[k] = v
-            self._update_arguments(None, elevated_plotter_arguments, set_as_defaults=True)
+            self._update_arguments(
+                None, elevated_plotter_arguments, set_as_defaults=True
+            )
 
     def _update_arguments(
         self,
@@ -516,11 +530,15 @@ class BatchCollector:
 
     def _check_plotter_arguments(self):
         if "plot_type" in self.plotter_arguments:
-            print("WARNING - using possible difficult option (future versions will fix this)")
+            print(
+                "WARNING - using possible difficult option (future versions will fix this)"
+            )
             print("*** 'plot_type' TRANSLATED TO 'method'")
             self.plotter_arguments["method"] = self.plotter_arguments.pop("plot_type")
 
-    def reset_arguments(self, data_collector_arguments: dict = None, plotter_arguments: dict = None):
+    def reset_arguments(
+        self, data_collector_arguments: dict = None, plotter_arguments: dict = None
+    ):
         """Reset the arguments to the defaults.
 
         Args:
@@ -561,7 +579,9 @@ class BatchCollector:
 
     def collect(self, *args, **kwargs):
         """Collect data."""
-        self.data = self.data_collector(self.b, **self.data_collector_arguments, **kwargs)
+        self.data = self.data_collector(
+            self.b, **self.data_collector_arguments, **kwargs
+        )
         self.post_collect(*args, **kwargs)
 
     def post_collect(self, *args, **kwargs):
@@ -658,7 +678,9 @@ class BatchCollector:
         if self.backend == "seaborn":
             if not skip_render_for_seaborn:
                 return self.figure.figure
-            print("WARNING: skipping rendering for seaborn, assuming it is already rendered during the plotter call")
+            print(
+                "WARNING: skipping rendering for seaborn, assuming it is already rendered during the plotter call"
+            )
             print(
                 "WARNING: if you want to show the figure, provide `skip_render_for_seaborn=False` as keyword argument"
             )
@@ -727,7 +749,7 @@ class BatchCollector:
 
     def _image_exporter_plotly(self, filename, timeout=IMAGE_TO_FILE_TIMEOUT, **kwargs):
         use_subprocess = kwargs.pop("use_subprocess", True)
-        
+
         if not use_subprocess:
             print(f"saving image to {filename}")
             self.figure.write_image(filename, **kwargs)
@@ -750,8 +772,6 @@ class BatchCollector:
             print("Could it be that you have not installed the required packages?")
             print("Try to install kaleido:")
             print("pip install kaleido")
-
-
 
     def to_image_files(self, serial_number=None, **kwargs):
         """Save to image files (png, svg, json).
@@ -796,7 +816,14 @@ class BatchCollector:
             print(f"TODO: implement saving {filename_svg}")
             print(f"TODO: implement saving {filename_json}")
 
-    def save(self, serial_number=None, save_hdf5=True, save_image_files=True, to_csv_kwargs:Union[dict, None] = None, to_image_files_kwargs:Union[dict, None] = None):
+    def save(
+        self,
+        serial_number=None,
+        save_hdf5=True,
+        save_image_files=True,
+        to_csv_kwargs: Union[dict, None] = None,
+        to_image_files_kwargs: Union[dict, None] = None,
+    ):
         """Save to csv, hdf5 and image files.
 
         Args:
@@ -820,7 +847,9 @@ class BatchCollector:
             if save_image_files:
                 if to_image_files_kwargs is None:
                     to_image_files_kwargs = {}
-                self.to_image_files(serial_number=serial_number, **to_image_files_kwargs)
+                self.to_image_files(
+                    serial_number=serial_number, **to_image_files_kwargs
+                )
 
     def _output_path(self, serial_number=None):
         d = Path(self.figure_directory)
@@ -834,9 +863,10 @@ class BatchCollector:
         f = d / n
         return f
 
+
 def standard_gravimetric_collector(b, norm_factor=120.0, **kwargs):
     """Create a standard gravimetric collector.
-    
+
     This is a temporary hack to allow for making standard plot no. 1.
 
     Coulombic Efficiency
@@ -854,10 +884,17 @@ def standard_gravimetric_collector(b, norm_factor=120.0, **kwargs):
 
     from functools import partial
 
-    def _copy_and_normalize(df, columns, col="discharge_capacity_gravimetric",norm_factor=120.0, *args, **kwargs):
+    def _copy_and_normalize(
+        df,
+        columns,
+        col="discharge_capacity_gravimetric",
+        norm_factor=120.0,
+        *args,
+        **kwargs,
+    ):
         # modify the dataframe:
         _kwargs = {
-            f"{col}_norm": lambda x: 100*(x[col]) / norm_factor,
+            f"{col}_norm": lambda x: 100 * (x[col]) / norm_factor,
         }
         df = df.assign(**_kwargs)
 
@@ -869,34 +906,76 @@ def standard_gravimetric_collector(b, norm_factor=120.0, **kwargs):
     group_it = kwargs.pop("group_it", True)
     interactive = kwargs.pop("interactive", True)
 
-    _copy_and_normalize_discharge_capacity_gravimetric_partial = partial(_copy_and_normalize, norm_factor=norm_factor)
-    _copy_and_normalize_discharge_capacity_gravimetric_partial.__name__ = "copy_and_normalize_discharge_capacity_gravimetric"
-    
-    _copy_and_normalize_charge_capacity_gravimetric_cv_partial = partial(_copy_and_normalize, norm_factor=norm_factor, col="charge_capacity_gravimetric_cv")
-    _copy_and_normalize_charge_capacity_gravimetric_cv_partial.__name__ = "copy_and_normalize_charge_capacity_gravimetric_cv"
+    _copy_and_normalize_discharge_capacity_gravimetric_partial = partial(
+        _copy_and_normalize, norm_factor=norm_factor
+    )
+    _copy_and_normalize_discharge_capacity_gravimetric_partial.__name__ = (
+        "copy_and_normalize_discharge_capacity_gravimetric"
+    )
+
+    _copy_and_normalize_charge_capacity_gravimetric_cv_partial = partial(
+        _copy_and_normalize,
+        norm_factor=norm_factor,
+        col="charge_capacity_gravimetric_cv",
+    )
+    _copy_and_normalize_charge_capacity_gravimetric_cv_partial.__name__ = (
+        "copy_and_normalize_charge_capacity_gravimetric_cv"
+    )
 
     if not interactive:
-        raise NotImplementedError("Only interactive mode is implemented for standard_gravimetric_collector")
+        raise NotImplementedError(
+            "Only interactive mode is implemented for standard_gravimetric_collector"
+        )
     backend = kwargs.pop("backend", "plotly")
     if backend != "plotly":
-        raise NotImplementedError("Only plotly backend is implemented for standard_gravimetric_collector")
-    columns=["charge_capacity_gravimetric", "discharge_capacity_gravimetric", "coulombic_efficiency"]
-    data_collector_arguments=dict(
-        partition_by_cv=True, 
-        individual_summary_hooks=[_copy_and_normalize_discharge_capacity_gravimetric_partial, _copy_and_normalize_charge_capacity_gravimetric_cv_partial], 
-        drop_columns=["charge_capacity_gravimetric_cv","charge_capacity_gravimetric", "charge_capacity_gravimetric_non_cv", "discharge_capacity_gravimetric_cv",  "discharge_capacity_gravimetric_non_cv"],
+        raise NotImplementedError(
+            "Only plotly backend is implemented for standard_gravimetric_collector"
+        )
+    columns = [
+        "charge_capacity_gravimetric",
+        "discharge_capacity_gravimetric",
+        "coulombic_efficiency",
+    ]
+    data_collector_arguments = dict(
+        partition_by_cv=True,
+        individual_summary_hooks=[
+            _copy_and_normalize_discharge_capacity_gravimetric_partial,
+            _copy_and_normalize_charge_capacity_gravimetric_cv_partial,
+        ],
+        drop_columns=[
+            "charge_capacity_gravimetric_cv",
+            "charge_capacity_gravimetric",
+            "charge_capacity_gravimetric_non_cv",
+            "discharge_capacity_gravimetric_cv",
+            "discharge_capacity_gravimetric_non_cv",
+        ],
         average_method="mean",
         key_index_bounds=[0, 4],
-        )
-    plotter_arguments=dict(
+    )
+    plotter_arguments = dict(
         spread=group_it,
         markers=True,
         height_fractions_spread=[0.1, 0.3, 0.3, 0.3],
-        order_variables=["coulombic_efficiency", "discharge_capacity_gravimetric", "discharge_capacity_gravimetric_norm", "charge_capacity_gravimetric_cv_norm"],
+        order_variables=[
+            "coulombic_efficiency",
+            "discharge_capacity_gravimetric",
+            "discharge_capacity_gravimetric_norm",
+            "charge_capacity_gravimetric_cv_norm",
+        ],
     )
     data_collector_arguments.update(kwargs.pop("data_collector_arguments", {}))
     plotter_arguments.update(kwargs.pop("plotter_arguments", {}))
-    return BatchSummaryCollector(b, group_it=group_it, interactive=interactive, backend=backend, columns=columns, data_collector_arguments=data_collector_arguments, plotter_arguments=plotter_arguments, **kwargs)
+    return BatchSummaryCollector(
+        b,
+        group_it=group_it,
+        interactive=interactive,
+        backend=backend,
+        columns=columns,
+        data_collector_arguments=data_collector_arguments,
+        plotter_arguments=plotter_arguments,
+        **kwargs,
+    )
+
 
 class BatchSummaryCollector(BatchCollector):
     # Three main levels of arguments to the plotter and collector funcs is available:
@@ -1098,7 +1177,9 @@ class BatchSummaryCollector(BatchCollector):
             logging.debug(f"index={index}")
             logging.debug(f"columns={wide_cols}")
             logging.debug(f"values={value_cols}")
-            data = pd.pivot(self.data, index=index, columns=wide_cols, values=value_cols)
+            data = pd.pivot(
+                self.data, index=index, columns=wide_cols, values=value_cols
+            )
         except Exception as e:
             print("Could not make wide:")
             print(e)
@@ -1358,15 +1439,15 @@ class BatchCyclesCollector(BatchCollector):
         if m := self.data_collector_arguments.get("mode"):
             if m == "gravimetric":
                 self.plotter_arguments["x_unit"] = (
-                    f'{self.units["cellpy_units"].charge}/{self.units["cellpy_units"].gravimetric}'
+                    f"{self.units['cellpy_units'].charge}/{self.units['cellpy_units'].gravimetric}"
                 )
             elif m == "areal":
                 self.plotter_arguments["x_unit"] = (
-                    f'{self.units["cellpy_units"].charge}/{self.units["cellpy_units"].areal}'
+                    f"{self.units['cellpy_units'].charge}/{self.units['cellpy_units'].areal}"
                 )
             elif m == "volumetric":
                 self.plotter_arguments["x_unit"] = (
-                    f'{self.units["cellpy_units"].charge}/{self.units["cellpy_units"].volumetric}'
+                    f"{self.units['cellpy_units'].charge}/{self.units['cellpy_units'].volumetric}"
                 )
             elif m == "absolute":
                 self.plotter_arguments["x_unit"] = self.units["cellpy_units"].charge
@@ -1453,7 +1534,9 @@ def pick_named_cell(b, label_mapper=None):
                 label = b.pages.loc[n, "label"]
 
                 if label is None:
-                    logging.info(f"label from journal.pages: {label} -> using original name ({n})")
+                    logging.info(
+                        f"label from journal.pages: {label} -> using original name ({n})"
+                    )
                     label = n
             except Exception as e:
                 logging.info(f"lookup in pages failed: could not rename cell {n}")
@@ -1543,7 +1626,9 @@ def cycles_collector(
             if abort_on_missing:
                 raise ValueError(f"{n} is empty - aborting!")
             logging.critical(f"[{n} (cell name: {c.cell_name}) empty]")
-    collected_curves = pd.concat(all_curves, keys=keys, axis=0, names=["cell", "point"]).reset_index(level="cell")
+    collected_curves = pd.concat(
+        all_curves, keys=keys, axis=0, names=["cell", "point"]
+    ).reset_index(level="cell")
     return collected_curves
 
 
@@ -1622,7 +1707,9 @@ def ica_collector(
             if abort_on_missing:
                 raise ValueError(f"{n} is empty - aborting!")
             logging.critical(f"[{n} (cell name: {c.cell_name}) empty]")
-    collected_curves = pd.concat(all_curves, keys=keys, axis=0, names=["cell", "point"]).reset_index(level="cell")
+    collected_curves = pd.concat(
+        all_curves, keys=keys, axis=0, names=["cell", "point"]
+    ).reset_index(level="cell")
     return collected_curves
 
 
@@ -1645,7 +1732,6 @@ def _hist_eq(trace):
 def y_axis_replacer(ax, label):
     """Replace y-axis label in matplotlib plots."""
     if isinstance(label, dict):
-
         _label = label.get(ax.title.text, None)
         if _label is None:
             _label = list(label.values())[0]
@@ -1664,11 +1750,15 @@ def legend_replacer(trace, df, group_legends=True):
         group = int(parts[0])
         subgroup = int(parts[1])
     else:
-        print("Have not implemented replacing legend labels that are not on the form a,b yet.")
+        print(
+            "Have not implemented replacing legend labels that are not on the form a,b yet."
+        )
         print(f"legend label: {name}")
         return trace
 
-    cell_label = df.loc[(df["group"] == group) & (df["sub_group"] == subgroup), "cell"].values[0]
+    cell_label = df.loc[
+        (df["group"] == group) & (df["sub_group"] == subgroup), "cell"
+    ].values[0]
     if group_legends:
         trace.update(
             name=cell_label,
@@ -1682,9 +1772,10 @@ def legend_replacer(trace, df, group_legends=True):
             hovertemplate=f"{cell_label}<br>{trace.hovertemplate}",
         )
 
+
 def _plotly_y_label_cleaner(y_label_mapper, split_at=20):
     """Clean up the y-label mapper for plotly.
-    
+
     The y-label mapper is a dictionary that maps the variable name to the y-label. The y-labels are
     expected to be in the form of "Variable Name (unit)". If the y-label is too long, it is
     split into multiple lines.
@@ -1706,7 +1797,7 @@ def _plotly_y_label_cleaner(y_label_mapper, split_at=20):
         if len(v) > split_at:
             # First split on " (" pattern
             v = "<br>(".join(v.split(" ("))
-            
+
             # Then check if any resulting line is still too long and split on spaces
             lines = v.split("<br>")
             final_lines = []
@@ -1732,17 +1823,17 @@ def _plotly_y_label_cleaner(y_label_mapper, split_at=20):
         new_y_label_mapper[k] = v
     return new_y_label_mapper
 
+
 def spread_plot(curves, plotly_arguments=None, y_label_mapper=None, **kwargs):
     """Create a spread plot (error-bands instead of error-bars).
-    
+
     This is an experimental feature that is not yet fully tested. It uses make_subplots to create the figure,
     and then adds the traces one by one. This methodology will eventually replace the use of plotly.express
-    for all the summary plots.  
-    
+    for all the summary plots.
+
     """
     from plotly.subplots import make_subplots
 
-   
     if y_label_mapper is None:
         y_label_mapper = {}
     else:
@@ -1751,7 +1842,9 @@ def spread_plot(curves, plotly_arguments=None, y_label_mapper=None, **kwargs):
     selected_variables = curves["variable"].unique()
     number_of_rows = len(selected_variables)
     # TODO: change this (only temporary fix to allow height fractions to be set by spread_plot)
-    height_fractions = kwargs.get("height_fractions_spread", [1/number_of_rows]*number_of_rows)
+    height_fractions = kwargs.get(
+        "height_fractions_spread", [1 / number_of_rows] * number_of_rows
+    )
 
     colors = plotly.colors.qualitative.Plotly
     opacity = 0.2
@@ -1759,7 +1852,9 @@ def spread_plot(curves, plotly_arguments=None, y_label_mapper=None, **kwargs):
     for color in colors:
         color_rgb = plotly.colors.hex_to_rgb(color)
         color_rgb_main = f"rgb({color_rgb[0]}, {color_rgb[1]}, {color_rgb[2]})"
-        color_rgba_spread = f"rgba({color_rgb[0]}, {color_rgb[1]}, {color_rgb[2]}, {opacity})"
+        color_rgba_spread = (
+            f"rgba({color_rgb[0]}, {color_rgb[1]}, {color_rgb[2]}, {opacity})"
+        )
         color_list.append((color_rgb_main, color_rgba_spread))
 
     if plotly_arguments.get("markers"):
@@ -2061,8 +2156,6 @@ def sequence_plotter(
             plotly_arguments["color"] = z
             seaborn_arguments["hue"] = z
 
- 
-
     # ----------------- individual plotting calls  -----------------------------
     # TODO: move as much as possible up to the parsing of arguments
     #   (i.e. prepare for future refactoring)
@@ -2075,12 +2168,16 @@ def sequence_plotter(
             unique_cycle_numbers = curves[z].unique()
             number_of_colors = len(unique_cycle_numbers)
             if number_of_colors > 1:
-                selected_colors = px.colors.sample_colorscale(palette_continuous, number_of_colors, low=start, high=end)
+                selected_colors = px.colors.sample_colorscale(
+                    palette_continuous, number_of_colors, low=start, high=end
+                )
                 plotly_arguments["color_discrete_sequence"] = selected_colors
         elif method == "fig_pr_cycle":
             if palette_discrete is not None:
                 # plotly_arguments["color_discrete_sequence"] = getattr(px.colors.sequential, palette_discrete)
-                logging.debug(f"palette_discrete is not implemented yet ({palette_discrete})")
+                logging.debug(
+                    f"palette_discrete is not implemented yet ({palette_discrete})"
+                )
 
         elif method == "film":
             number_of_colors = 10
@@ -2096,8 +2193,12 @@ def sequence_plotter(
 
         abs_facet_row_spacing = kwargs.pop("abs_facet_row_spacing", 20)
         abs_facet_col_spacing = kwargs.pop("abs_facet_col_spacing", 20)
-        facet_row_spacing = kwargs.pop("facet_row_spacing", abs_facet_row_spacing / height if height else 0.1)
-        facet_col_spacing = kwargs.pop("facet_col_spacing", abs_facet_col_spacing / (width or 1000))
+        facet_row_spacing = kwargs.pop(
+            "facet_row_spacing", abs_facet_row_spacing / height if height else 0.1
+        )
+        facet_col_spacing = kwargs.pop(
+            "facet_col_spacing", abs_facet_col_spacing / (width or 1000)
+        )
 
         plotly_arguments["facet_row_spacing"] = facet_row_spacing
         plotly_arguments["facet_col_spacing"] = facet_col_spacing
@@ -2141,8 +2242,15 @@ def sequence_plotter(
 
         elif method == "summary":
             if spread:
-                logging.info("using spread is an experimental feature and might not work as expected")
-                fig = spread_plot(curves, plotly_arguments=plotly_arguments, y_label_mapper=y_label_mapper, **kwargs)
+                logging.info(
+                    "using spread is an experimental feature and might not work as expected"
+                )
+                fig = spread_plot(
+                    curves,
+                    plotly_arguments=plotly_arguments,
+                    y_label_mapper=y_label_mapper,
+                    **kwargs,
+                )
             else:
                 # remove all kwargs that are only intended for spread_plot
                 _ = kwargs.pop("height_fractions_spread", None)
@@ -2160,7 +2268,6 @@ def sequence_plotter(
                 )
 
             if group_cells:  # all cells in same group has same color
-
                 try:
                     fig.for_each_trace(
                         functools.partial(
@@ -2191,7 +2298,6 @@ def sequence_plotter(
                                     )
                             else:
                                 for k, v in y_label_mapper.items():
-                                    
                                     if annotations[i].text.endswith(k):
                                         fig.for_each_yaxis(
                                             functools.partial(y_axis_replacer, label=v),
@@ -2202,14 +2308,18 @@ def sequence_plotter(
                         fig.update_annotations(text="")
 
                     except Exception as e:
-                        print(f"sequence_plotter - summary - y-label mapper failed {e} [{group}]")
+                        print(
+                            f"sequence_plotter - summary - y-label mapper failed {e} [{group}]"
+                        )
                 else:
                     try:
                         fig.for_each_yaxis(
-                                functools.partial(y_axis_replacer, label=y_label_mapper),
-                            )
+                            functools.partial(y_axis_replacer, label=y_label_mapper),
+                        )
                     except Exception as e:
-                        print(f"sequence_plotter - summary - y-label mapper - no annotations - failed {e} [{group}]")
+                        print(
+                            f"sequence_plotter - summary - y-label mapper - no annotations - failed {e} [{group}]"
+                        )
                         print(f"y_label_mapper: {y_label_mapper}")
                         print(f"annotations: {annotations}")
 
@@ -2245,16 +2355,26 @@ def sequence_plotter(
             aspect = seaborn_arguments.get("aspect", 1)
 
             if palette_discrete is not None:
-                seaborn_arguments["palette"] = getattr(sns.color_palette, palette_discrete)
+                seaborn_arguments["palette"] = getattr(
+                    sns.color_palette, palette_discrete
+                )
 
             number_of_columns = len(curves[col].unique())
             if number_of_columns > 6:
-                print(f"WARNING! {number_of_columns} columns is a lot for seaborn to plot")
-                print(f"  - consider making the plot manually (use the `.data` attribute to get the data)")
+                print(
+                    f"WARNING! {number_of_columns} columns is a lot for seaborn to plot"
+                )
+                print(
+                    f"  - consider making the plot manually (use the `.data` attribute to get the data)"
+                )
 
             legend_items = curves[hue].unique()
             number_of_legends = len(legend_items)
-            palette = seaborn_arguments.get("palette", "viridis") if number_of_legends > 10 else None
+            palette = (
+                seaborn_arguments.get("palette", "viridis")
+                if number_of_legends > 10
+                else None
+            )
 
             g = sns.FacetGrid(
                 curves,
@@ -2269,11 +2389,12 @@ def sequence_plotter(
             g.map(plt.plot, x, y)
 
             if number_of_legends > 10:
-
                 vmin = legend_items.min()
                 vmax = legend_items.max()
 
-                sm = plt.cm.ScalarMappable(cmap=palette, norm=plt.Normalize(vmin=vmin, vmax=vmax))
+                sm = plt.cm.ScalarMappable(
+                    cmap=palette, norm=plt.Normalize(vmin=vmin, vmax=vmax)
+                )
                 cbar = g.figure.colorbar(
                     sm,
                     ax=g.figure.axes,
@@ -2543,7 +2664,9 @@ def summary_plotter(collected_curves, cycles_to_plot=None, backend="plotly", **k
             col_headers.remove(n)
 
     if "variable" not in col_headers:
-        collected_curves = collected_curves.melt(id_vars=id_vars, value_vars=col_headers)
+        collected_curves = collected_curves.melt(
+            id_vars=id_vars, value_vars=col_headers
+        )
 
     normalize_cycles = True if "equivalent_cycle" in id_vars else False
     group_it = False if "group" in id_vars else True
@@ -2579,14 +2702,15 @@ def summary_plotter(collected_curves, cycles_to_plot=None, backend="plotly", **k
     # order the variables by a given order:
     order_variables = kwargs.pop("order_variables", None)
     if order_variables:
-        collected_curves[g] = collected_curves[g].astype(pd.CategoricalDtype(categories=order_variables, ordered=True))
+        collected_curves[g] = collected_curves[g].astype(
+            pd.CategoricalDtype(categories=order_variables, ordered=True)
+        )
         collected_curves = collected_curves.sort_values(by=[g, z, x])
-    
+
     if units:
         label_mapper[y] = {}
         variables = list(collected_curves[g].unique())
         for v in variables:
-
             # unit label
             u_sub = None
             if v.endswith("_areal") or v.endswith("_areal_cv"):
@@ -2650,25 +2774,27 @@ def summary_plotter(collected_curves, cycles_to_plot=None, backend="plotly", **k
 
     if backend == "plotly":
         # TODO: implement having different heights of the subplots
-        
+
         if len(height_fractions) > 0:
             # Determine number of rows in the original figure
             print("THIS IS EXPERIMENTAL")
-            number_of_rows = len([key for key in fig.layout if key.startswith('yaxis')])
+            number_of_rows = len([key for key in fig.layout if key.startswith("yaxis")])
             if number_of_rows == 0:
                 number_of_rows = 1  # Default to 1 if no y-axes found
-            
+
             # Only proceed if height_fractions matches the number of rows
             if len(height_fractions) != number_of_rows:
-                print(f"Warning: height_fractions length ({len(height_fractions)}) does not match number of rows ({number_of_rows}). Ignoring height_fractions.")
+                print(
+                    f"Warning: height_fractions length ({len(height_fractions)}) does not match number of rows ({number_of_rows}). Ignoring height_fractions."
+                )
             else:
                 # Update subplot heights using make_subplots parameters
                 from plotly.subplots import make_subplots
-                
+
                 # Get current figure data and layout properties
                 current_data = fig.data
                 current_layout = fig.layout
-                
+
                 # Create new figure with custom row heights
                 new_fig = make_subplots(
                     rows=number_of_rows,
@@ -2677,33 +2803,34 @@ def summary_plotter(collected_curves, cycles_to_plot=None, backend="plotly", **k
                     shared_xaxes=True,
                     row_heights=height_fractions[::-1],
                     vertical_spacing=0.02,
-                    subplot_titles=[ann.text for ann in current_layout.annotations] if current_layout.annotations else None
+                    subplot_titles=[ann.text for ann in current_layout.annotations]
+                    if current_layout.annotations
+                    else None,
                 )
 
                 new_height_fractions = {}
                 for key in new_fig.layout:
-                    if key.startswith('yaxis'):
+                    if key.startswith("yaxis"):
                         new_height_fractions[key] = new_fig.layout[key].domain
-    
-                
+
                 # Add traces from original figure
                 for trace in current_data:
                     new_fig.add_trace(trace)
-                
+
                 # Update layout properties from original figure (including theme)
                 new_fig.update_layout(current_layout)
                 for key in new_height_fractions:
                     new_fig.layout[key].domain = new_height_fractions[key]
-                
+
                 fig = new_fig
                 # Preserve x-axis linking and only show labels on bottom row with small gaps
-                fig.update_xaxes(matches='x')
+                fig.update_xaxes(matches="x")
                 fig.update_yaxes(matches=None, showticklabels=True)
-                
+
                 # Only show x-axis labels on the bottom subplot (not needed anymore?)
                 # for i in range(1, len(height_fractions)):
                 #     fig.update_xaxes(showticklabels=False, row=i, col=1)
-                
+
         return fig
     if backend == "seaborn":
         print("using seaborn (experimental feature)")
@@ -2879,5 +3006,36 @@ def _check():
     print("Ended OK")
 
 
+def _make_a_new_feature():
+    from pathlib import Path
+    import cellpy
+    from cellpy.utils import batch, helpers, plotutils
+    from cellpy.utils import collectors
+
+    import plotly.io as pio
+    pio.renderers.default = "browser"
+
+    journal = Path(r"C:\Users\jepe\processor_project/journal.json")
+    assert journal.is_file()
+    b = batch.from_journal(journal)
+    b.link()
+
+    coll = collectors.BatchSummaryCollector(
+        b,
+        max_cycle=100,
+        columns=[
+            "charge_capacity_gravimetric",
+            "discharge_capacity_gravimetric",
+            "coulombic_efficiency",
+        ],
+        data_collector_arguments=dict(
+            partition_by_cv=True
+        ),  # NOTE! currently, partition_by_cv is "dumb" and does the partition for all selected columns.
+    )
+
+    print(coll.data.columns)
+    coll.figure.show()
+
+
 if __name__ == "__main__":
-    _check()
+    _make_a_new_feature()

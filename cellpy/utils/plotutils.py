@@ -4,6 +4,7 @@ Utilities for helping to plot cellpy-data.
 """
 
 import collections
+import dataclasses
 import importlib
 import itertools
 import logging
@@ -51,20 +52,21 @@ logging.captureWarnings(True)
 PLOTLY_BASE_TEMPLATE = "plotly"
 IMAGE_TO_FILE_TIMEOUT = 30
 
+
 def notebook_docstring_printer(func, default_show_docstring=False):
     """
     Decorator that prints the function's docstring when called from a notebook environment.
-    
+
     This decorator checks if the function is being called from a Jupyter notebook
     or IPython environment and prints the function's docstring if it is.
-    
+
     Args:
         func: The function to decorate
-        
+
     Returns:
         The decorated function
     """
-    
+
     def wrapper(*args, **kwargs):
         # Check if we're in a notebook environment
         show_docstring = kwargs.pop("show_docstring", default_show_docstring)
@@ -72,8 +74,9 @@ def notebook_docstring_printer(func, default_show_docstring=False):
             try:
                 # Check for IPython/Jupyter environment
                 import IPython
+
                 ipython = IPython.get_ipython()
-                if ipython is not None and hasattr(ipython, 'kernel'):
+                if ipython is not None and hasattr(ipython, "kernel"):
                     # We're in a notebook environment
                     if func.__doc__:
                         print(f"{func.__name__} docstring:")
@@ -85,16 +88,17 @@ def notebook_docstring_printer(func, default_show_docstring=False):
             except (ImportError, AttributeError):
                 # Not in a notebook environment, continue silently
                 pass
-        
+
         # Call the original function
         return func(*args, **kwargs)
-    
+
     # Preserve the original function's metadata
     wrapper.__name__ = func.__name__
     wrapper.__doc__ = func.__doc__
     wrapper.__module__ = func.__module__
-    
+
     return wrapper
+
 
 # from collectors - tools for loading and saving plots:
 def load_figure(filename, backend=None):
@@ -179,7 +183,14 @@ def _image_exporter_plotly(figure, filename, timeout=IMAGE_TO_FILE_TIMEOUT, **kw
 
 
 @notebook_docstring_printer
-def save_image_files(figure: Any, name: str = "my_figure", scale: float = 3.0, dpi: int = 300, backend: str = "plotly", formats: Optional[list] = None):
+def save_image_files(
+    figure: Any,
+    name: str = "my_figure",
+    scale: float = 3.0,
+    dpi: int = 300,
+    backend: str = "plotly",
+    formats: Optional[list] = None,
+):
     """Save to image files (png, svg, json/pickle).
 
     Notes:
@@ -293,11 +304,15 @@ def _plotly_legend_replacer(trace, df, group_legends=True):
         group = int(parts[0])
         subgroup = int(parts[1])
     else:
-        print("Have not implemented replacing legend labels that are not on the form a,b yet.")
+        print(
+            "Have not implemented replacing legend labels that are not on the form a,b yet."
+        )
         print(f"legend label: {name}")
         return trace
 
-    cell_label = df.loc[(df["group"] == group) & (df["sub_group"] == subgroup), "cell"].values[0]
+    cell_label = df.loc[
+        (df["group"] == group) & (df["sub_group"] == subgroup), "cell"
+    ].values[0]
     if group_legends:
         trace.update(
             name=cell_label,
@@ -532,11 +547,15 @@ def create_plotly_default_template(
     data = dict(
         scatter=[go.Scatter(marker=marker, line=line, opacity=opacity)],
     )
-    pio.templates[name] = go.layout.Template(layout=dict(title=title, xaxis=axis, yaxis=axis), data=data)
+    pio.templates[name] = go.layout.Template(
+        layout=dict(title=title, xaxis=axis, yaxis=axis), data=data
+    )
     return name
 
 
-def create_colormarkerlist_for_journal(journal, symbol_label="all", color_style_label="seaborn-colorblind"):
+def create_colormarkerlist_for_journal(
+    journal, symbol_label="all", color_style_label="seaborn-colorblind"
+):
     """Fetch lists with color names and marker types of correct length for a journal.
 
     Args:
@@ -554,7 +573,9 @@ def create_colormarkerlist_for_journal(journal, symbol_label="all", color_style_
     return create_colormarkerlist(groups, sub_groups, symbol_label, color_style_label)
 
 
-def create_colormarkerlist(groups, sub_groups, symbol_label="all", color_style_label="seaborn-colorblind"):
+def create_colormarkerlist(
+    groups, sub_groups, symbol_label="all", color_style_label="seaborn-colorblind"
+):
     """Fetch lists with color names and marker types of correct length.
 
     Args:
@@ -594,14 +615,21 @@ def create_col_info(c: Any) -> tuple[tuple, dict, dict, dict]:
         x_columns (tuple), y_cols (dict), x_transformations (dict), y_transformations (dict)
 
     """
-    
-    def _normalize_col(x: np.ndarray, normalization_factor: float = 1.0, normalization_type: str = "max", normalization_scaler: float = 1.0) -> np.ndarray:
+
+    def _normalize_col(
+        x: np.ndarray,
+        normalization_factor: float = 1.0,
+        normalization_type: str = "max",
+        normalization_scaler: float = 1.0,
+    ) -> np.ndarray:
         # a bit random collection of normalization types...
 
         if normalization_type == "divide":
             return (x / normalization_factor) * normalization_scaler
         elif normalization_type == "shift-divide":
-            return ((normalization_factor - x) / normalization_factor) * normalization_scaler
+            return (
+                (normalization_factor - x) / normalization_factor
+            ) * normalization_scaler
         elif normalization_type == "multiply":
             return (x * normalization_factor) * normalization_scaler
         elif normalization_type == "area":
@@ -627,7 +655,9 @@ def create_col_info(c: Any) -> tuple[tuple, dict, dict, dict]:
     )
     _capacities_areal = [col + "_areal" for col in _cap_cols]
     _capacities_areal_split = (
-        _capacities_areal + [col + "_cv" for col in _capacities_areal] + [col + "_non_cv" for col in _capacities_areal]
+        _capacities_areal
+        + [col + "_cv" for col in _capacities_areal]
+        + [col + "_non_cv" for col in _capacities_areal]
     )
     _capacities_absolute = [col + "_absolute" for col in _cap_cols]
     _capacities_absolute_split = (
@@ -653,94 +683,103 @@ def create_col_info(c: Any) -> tuple[tuple, dict, dict, dict]:
         capacities=_cap_cols,
         capacities_gravimetric_split_constant_voltage=_capacities_gravimetric_split,
         capacities_areal_split_constant_voltage=_capacities_areal_split,
-        capacities_gravimetric_coulombic_efficiency=_capacities_gravimetric + [hdr.coulombic_efficiency],
-        capacities_areal_coulombic_efficiency=_capacities_areal + [hdr.coulombic_efficiency],
-        capacities_absolute_coulombic_efficiency=_capacities_absolute + [hdr.coulombic_efficiency],
-
+        capacities_gravimetric_coulombic_efficiency=_capacities_gravimetric
+        + [hdr.coulombic_efficiency],
+        capacities_areal_coulombic_efficiency=_capacities_areal
+        + [hdr.coulombic_efficiency],
+        capacities_absolute_coulombic_efficiency=_capacities_absolute
+        + [hdr.coulombic_efficiency],
         fullcell_standard_cumloss_gravimetric=[
-            hdr.charge_capacity+"_gravimetric" + "_cv",
+            hdr.charge_capacity + "_gravimetric" + "_cv",
             hdr.cumulated_discharge_capacity_loss + "_gravimetric",
-            hdr.discharge_capacity+"_gravimetric",
+            hdr.discharge_capacity + "_gravimetric",
             hdr.coulombic_efficiency,
-            ],
+        ],
         fullcell_standard_cumloss_areal=[
-            hdr.charge_capacity+"_areal" + "_cv",
+            hdr.charge_capacity + "_areal" + "_cv",
             hdr.cumulated_discharge_capacity_loss + "_areal",
-            hdr.discharge_capacity+"_areal",
-            hdr.coulombic_efficiency,
-            ],
-        fullcell_standard_cumloss_absolute=[
-            hdr.charge_capacity+"_absolute" + "_cv",
-            hdr.cumulated_discharge_capacity_loss + "_absolute",
-            hdr.discharge_capacity+"_absolute",
-            hdr.coulombic_efficiency,
-            ],
-        fullcell_standard_gravimetric=[
-            hdr.charge_capacity+"_gravimetric" + "_cv",
-            hdr.discharge_capacity + "_gravimetric",
-            "mod_01_"+hdr.discharge_capacity+"_gravimetric",
-            hdr.coulombic_efficiency,
-            ],
-        fullcell_standard_areal=[
-            hdr.charge_capacity+"_areal" + "_cv",
             hdr.discharge_capacity + "_areal",
-            "mod_01_"+hdr.discharge_capacity+"_areal",
             hdr.coulombic_efficiency,
-            ],
-        fullcell_standard_absolute=[
-            hdr.charge_capacity+"_absolute" + "_cv",
+        ],
+        fullcell_standard_cumloss_absolute=[
+            hdr.charge_capacity + "_absolute" + "_cv",
+            hdr.cumulated_discharge_capacity_loss + "_absolute",
             hdr.discharge_capacity + "_absolute",
-            "mod_01_"+hdr.discharge_capacity+"_absolute",
             hdr.coulombic_efficiency,
-            ],
+        ],
+        fullcell_standard_gravimetric=[
+            hdr.charge_capacity + "_gravimetric" + "_cv",
+            hdr.discharge_capacity + "_gravimetric",
+            "mod_01_" + hdr.discharge_capacity + "_gravimetric",
+            hdr.coulombic_efficiency,
+        ],
+        fullcell_standard_areal=[
+            hdr.charge_capacity + "_areal" + "_cv",
+            hdr.discharge_capacity + "_areal",
+            "mod_01_" + hdr.discharge_capacity + "_areal",
+            hdr.coulombic_efficiency,
+        ],
+        fullcell_standard_absolute=[
+            hdr.charge_capacity + "_absolute" + "_cv",
+            hdr.discharge_capacity + "_absolute",
+            "mod_01_" + hdr.discharge_capacity + "_absolute",
+            hdr.coulombic_efficiency,
+        ],
         fullcell_standard_dev=[
-            hdr.charge_capacity+"_gravimetric" + "_cv",
+            hdr.charge_capacity + "_gravimetric" + "_cv",
             hdr.discharge_capacity + "_gravimetric",
             hdr.coulombic_efficiency,
-            "mod_01_"+hdr.discharge_capacity+"_gravimetric",
-            ],
+            "mod_01_" + hdr.discharge_capacity + "_gravimetric",
+        ],
     )
 
-    x_transformations = dict(
-    )
+    x_transformations = dict()
 
-        
     # transformation info on the form: column_name: {(row_number, new_column_name): transformation_function}
     y_transformations: dict[str, dict[tuple[int, str], dict[str, Callable]]] = dict(
         fullcell_standard_cumloss_gravimetric={
             hdr.cumulated_discharge_capacity_loss + "_gravimetric": {
-                (2, hdr.cumulated_discharge_capacity_loss + "_gravimetric"): _normalize_col
-                },
+                (
+                    2,
+                    hdr.cumulated_discharge_capacity_loss + "_gravimetric",
+                ): _normalize_col
+            },
         },
         fullcell_standard_cumloss_areal={
             hdr.cumulated_discharge_capacity_loss + "_areal": {
                 (2, hdr.cumulated_discharge_capacity_loss + "_areal"): _normalize_col
-                },
+            },
         },
         fullcell_standard_cumloss_absolute={
             hdr.cumulated_discharge_capacity_loss + "_absolute": {
                 (2, hdr.cumulated_discharge_capacity_loss + "_absolute"): _normalize_col
-                },
+            },
         },
         fullcell_standard_gravimetric={
-            "mod_01_"+hdr.discharge_capacity+"_gravimetric": {
-                (2, hdr.discharge_capacity + "_retention" + "_gravimetric"): _normalize_col
-                },
+            "mod_01_" + hdr.discharge_capacity + "_gravimetric": {
+                (
+                    2,
+                    hdr.discharge_capacity + "_retention" + "_gravimetric",
+                ): _normalize_col
+            },
         },
         fullcell_standard_areal={
-            "mod_01_"+hdr.discharge_capacity+"_areal": {
+            "mod_01_" + hdr.discharge_capacity + "_areal": {
                 (2, hdr.discharge_capacity + "_retention" + "_areal"): _normalize_col
-                },
+            },
         },
         fullcell_standard_absolute={
-            "mod_01_"+hdr.discharge_capacity+"_absolute": {
+            "mod_01_" + hdr.discharge_capacity + "_absolute": {
                 (2, hdr.discharge_capacity + "_retention" + "_absolute"): _normalize_col
-                },
+            },
         },
         fullcell_standard_dev={
-            "mod_01_"+hdr.discharge_capacity+"_gravimetric": {
-                (2, hdr.discharge_capacity + "_retention" + "_gravimetric"): _normalize_col
-                },
+            "mod_01_" + hdr.discharge_capacity + "_gravimetric": {
+                (
+                    2,
+                    hdr.discharge_capacity + "_retention" + "_gravimetric",
+                ): _normalize_col
+            },
         },
     )
 
@@ -770,8 +809,12 @@ def create_label_dict(c):
         hdr.normalized_cycle_index: "Equivalent Full Cycle",  # hdr.normalized_cycle_index: "Normalized Cycle Number",
     }
 
-    _cap_gravimetric_label = f"Capacity ({c.cellpy_units.charge}/{c.cellpy_units.specific_gravimetric})"
-    _cap_areal_label = f"Capacity ({c.cellpy_units.charge}/{c.cellpy_units.specific_areal})"
+    _cap_gravimetric_label = (
+        f"Capacity ({c.cellpy_units.charge}/{c.cellpy_units.specific_gravimetric})"
+    )
+    _cap_areal_label = (
+        f"Capacity ({c.cellpy_units.charge}/{c.cellpy_units.specific_areal})"
+    )
     _cap_absolute_label = f"Capacity ({c.cellpy_units.charge})"
     _cap_label = f"Capacity ({c.data.raw_units.charge})"
 
@@ -806,8 +849,506 @@ def _get_capacity_unit(c, mode="gravimetric", seperator="/"):
 
 # TODO: consistent parameter names (e.g. y_range vs ylim) between summary_plot, plot_cycles, raw_plot, cycle_info_plot and batchutils
 # TODO: consistent function names (raw_plot vs plot_raw etc)
+
+
+@dataclasses.dataclass
+class SummaryPlotConfig:
+    """Configuration dataclass for summary_plot parameters.
+
+    Encapsulates all parameters for summary_plot to improve maintainability
+    and enable easier refactoring.
+    """
+
+    # Core parameters
+    x: Optional[str] = None
+    y: str = "capacities_gravimetric_coulombic_efficiency"
+
+    # Plot dimensions
+    height: Optional[int] = None
+    width: int = 900
+
+    # Plot styling
+    markers: bool = True
+    title: Optional[str] = None
+
+    # Axis ranges
+    x_range: Optional[list] = None
+    y_range: Optional[list] = None
+    ce_range: Optional[list] = None
+    norm_range: Optional[list] = None
+    cv_share_range: Optional[list] = None
+
+    # Plot layout
+    split: bool = True
+    auto_convert_legend_labels: bool = True
+    interactive: bool = True
+    share_y: bool = False
+    rangeslider: bool = False
+
+    # Return options
+    return_data: bool = False
+    verbose: bool = False
+
+    # Backend-specific
+    plotly_template: Optional[str] = None
+    seaborn_palette: str = "deep"
+    seaborn_style: str = "dark"
+
+    # Formation cycles
+    formation_cycles: int = 3
+    show_formation: bool = True
+    show_legend: bool = True
+    x_axis_domain_formation_fraction: float = 0.2
+    column_separator: float = 0.01
+
+    # Fullcell standard specific
+    reset_losses: bool = True
+    link_capacity_scales: bool = False
+    fullcell_standard_normalization_type: str = "on-max"
+    fullcell_standard_normalization_factor: Optional[float] = None
+    fullcell_standard_normalization_scaler: float = 1.0
+
+    # Seaborn hooks
+    seaborn_line_hooks: Optional[list[tuple[str, list, dict]]] = None
+
+    # Additional kwargs (stored as dict)
+    additional_kwargs: dict = dataclasses.field(default_factory=dict)
+
+    @classmethod
+    def from_kwargs(cls, **kwargs) -> "SummaryPlotConfig":
+        """Create SummaryPlotConfig from keyword arguments.
+
+        Extracts known parameters and stores remaining kwargs in additional_kwargs.
+        """
+        # Known parameter names
+        known_params = {
+            "x",
+            "y",
+            "height",
+            "width",
+            "markers",
+            "title",
+            "x_range",
+            "y_range",
+            "ce_range",
+            "norm_range",
+            "cv_share_range",
+            "split",
+            "auto_convert_legend_labels",
+            "interactive",
+            "share_y",
+            "rangeslider",
+            "return_data",
+            "verbose",
+            "plotly_template",
+            "seaborn_palette",
+            "seaborn_style",
+            "formation_cycles",
+            "show_formation",
+            "show_legend",
+            "x_axis_domain_formation_fraction",
+            "column_separator",
+            "reset_losses",
+            "link_capacity_scales",
+            "fullcell_standard_normalization_type",
+            "fullcell_standard_normalization_factor",
+            "fullcell_standard_normalization_scaler",
+            "seaborn_line_hooks",
+        }
+
+        # Separate known params from additional kwargs
+        config_params = {k: v for k, v in kwargs.items() if k in known_params}
+        additional_kwargs = {k: v for k, v in kwargs.items() if k not in known_params}
+
+        # Create config with known params
+        config_params["additional_kwargs"] = additional_kwargs
+        return cls(**config_params)
+
+    def to_kwargs(self) -> dict:
+        """Convert config back to kwargs dict for passing to legacy function."""
+        kwargs = dataclasses.asdict(self)
+        # Extract additional_kwargs and merge them
+        additional = kwargs.pop("additional_kwargs", {})
+        # Remove None values to match legacy function behavior
+        kwargs = {
+            k: v
+            for k, v in kwargs.items()
+            if v is not None
+            or k
+            in [
+                "x",
+                "height",
+                "title",
+                "plotly_template",
+                "fullcell_standard_normalization_factor",
+            ]
+        }
+        kwargs.update(additional)
+        return kwargs
+
+
+class SummaryPlotDataPreparer:
+    """Handles data collection and transformation for summary plots.
+
+    This class extracts the data preparation logic from summary_plot_legacy
+    to improve maintainability and testability.
+    """
+
+    def __init__(self):
+        self.y_header = "value"
+        self.color = "variable"
+        self.row = "row"
+        self.col_id = "cycle_type"
+
+    def prepare_data(
+        self,
+        c: Any,
+        config: SummaryPlotConfig,
+        x_cols: tuple,
+        y_cols: dict,
+        x_trans: dict,
+        y_trans: dict,
+        x_axis_labels: dict,
+        y_axis_label: dict,
+    ) -> dict:
+        """Prepare data for plotting.
+
+        Args:
+            c: cellpy object
+            config: SummaryPlotConfig with all parameters
+            x_cols: x column information from create_col_info
+            y_cols: y column information from create_col_info
+            x_trans: x transformation information from create_col_info
+            y_trans: y transformation information from create_col_info
+            x_axis_labels: x axis labels from create_label_dict
+            y_axis_label: y axis labels from create_label_dict
+
+        Returns:
+            Dictionary with keys:
+                - data: prepared DataFrame
+                - number_of_rows: number of rows for subplot layout
+                - x_label: x-axis label
+                - y_label: y-axis label
+                - max_cycle: maximum cycle number
+                - min_cycle: minimum cycle number
+                - max_val_normalized_col: max value for normalized columns
+                - formation_cycle_selector: boolean selector for formation cycles
+        """
+        from copy import deepcopy
+        import re
+        import numpy as np
+
+        x = config.x if config.x is not None else "cycle_index"
+        y = config.y
+
+        number_of_rows = 1
+        max_val_normalized_col = 0.0
+
+        # Prepare data based on plot type
+        if y.startswith("fullcell_standard_"):
+            s, number_of_rows = self._prepare_fullcell_standard_data(
+                c, x, y, y_cols, y_trans, config
+            )
+            max_val_normalized_col = (
+                s.loc[s["variable"].str.contains("retention"), "value"].max()
+                if len(s.loc[s["variable"].str.contains("retention")]) > 0
+                else 0.0
+            )
+        elif y.endswith("_split_constant_voltage"):
+            s, number_of_rows = self._prepare_cv_split_data(c, x, y, y_cols, config)
+        else:
+            s, number_of_rows = self._prepare_standard_data(c, x, y, y_cols, config)
+
+        # Calculate cycle ranges
+        max_cycle = s[x].max()
+        min_cycle = s[x].min()
+
+        # Get labels
+        x_label = x_axis_labels.get(x, x)
+        if y in y_axis_label:
+            y_label = y_axis_label.get(y, y)
+        else:
+            y_label = y.replace("_", " ").title()
+
+        # Mark formation cycles
+        formation_cycle_selector = self._mark_formation_cycles(
+            s, x, config.formation_cycles, self.col_id
+        )
+
+        return {
+            "data": s,
+            "number_of_rows": number_of_rows,
+            "x_label": x_label,
+            "y_label": y_label,
+            "max_cycle": max_cycle,
+            "min_cycle": min_cycle,
+            "max_val_normalized_col": max_val_normalized_col,
+            "formation_cycle_selector": formation_cycle_selector,
+        }
+
+    def _prepare_fullcell_standard_data(
+        self, c, x, y, y_cols, y_trans, config
+    ) -> tuple:
+        """Prepare data for fullcell_standard plots."""
+        from copy import deepcopy
+        import re
+        import numpy as np
+        import warnings
+
+        column_set = y_cols.get(y, y)
+
+        summary = c.data.summary.copy()
+        if summary.index.name == x:
+            summary = summary.reset_index(drop=False)
+
+        # Get CV-only summary
+        summary_only_cv = c.make_summary(
+            selector_type="only-cv", create_copy=True
+        ).data.summary
+        if summary_only_cv.index.name == x:
+            summary_only_cv = summary_only_cv.reset_index(drop=False)
+
+        # Merge summaries
+        s = summary.merge(summary_only_cv, on=x, how="outer", suffixes=("", "_cv"))
+        s = s.reset_index(drop=True)
+        s = s.melt(x)
+        s = s.loc[s.variable.isin(column_set)]
+
+        number_of_rows = 4
+        s[self.row] = 1  # default row for capacity
+
+        # Set row numbers using regex patterns
+        s.loc[s["variable"].str.contains(r"_efficiency$"), self.row] = (
+            0  # coulombic efficiency
+        )
+        s.loc[s["variable"].str.contains(r"cumulated.*loss"), self.row] = (
+            2  # cumulated loss
+        )
+        s.loc[s["variable"].str.startswith(r"mod_01_"), self.row] = (
+            2  # capacity retention
+        )
+        s.loc[s["variable"].str.contains(r"_cv$"), self.row] = 3  # cv data
+
+        # Reset losses if requested
+        if config.reset_losses:
+            first_values = (
+                s[s["variable"].str.contains(r"cumulated.*loss")]
+                .groupby("variable")["value"]
+                .transform("first")
+            )
+            mask = s["variable"].str.contains(r"cumulated.*loss")
+            s.loc[mask, "value"] = s.loc[mask, "value"] - first_values
+
+        # Apply normalization if requested
+        if config.fullcell_standard_normalization_type is not False:
+            s, max_val_normalized_col = self._apply_normalization(
+                s, y, y_trans, config, self.row
+            )
+
+        return s, number_of_rows
+
+    def _prepare_cv_split_data(self, c, x, y, y_cols, config) -> tuple:
+        """Prepare data for CV split plots."""
+        import warnings
+
+        cap_type = (
+            "capacities_gravimetric"
+            if y.startswith("capacities_gravimetric")
+            else "capacities_areal"
+        )
+        column_set = y_cols[cap_type]
+
+        # Use partition_summary_cv_steps function
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            s = partition_summary_cv_steps(
+                c, x, column_set, config.split, self.color, self.y_header
+            )
+
+        number_of_rows = 3 if config.split else 1
+
+        return s, number_of_rows
+
+    def _prepare_standard_data(self, c, x, y, y_cols, config) -> tuple:
+        """Prepare data for standard plots."""
+        column_set = y_cols.get(y, y)
+        if isinstance(column_set, str):
+            column_set = [column_set]
+
+        summary = c.data.summary
+        summary = summary.reset_index()
+        s = summary.melt(x)
+        s = s.loc[s.variable.isin(column_set)]
+        s = s.reset_index(drop=True)
+        s[self.row] = 1
+
+        number_of_rows = 1
+        if config.split:
+            if y.endswith("_efficiency"):
+                s[self.row] = 1
+                s.loc[s["variable"].str.contains("efficiency"), self.row] = 0
+                number_of_rows = 2
+
+        return s, number_of_rows
+
+    def _apply_normalization(self, s, y, y_trans, config, row_col) -> tuple:
+        """Apply normalization transformations to data."""
+        from copy import deepcopy
+        import re
+        import numpy as np
+        import warnings
+
+        max_val_normalized_col = 0.0
+        normalization_factor = config.fullcell_standard_normalization_factor
+        normalization_type = config.fullcell_standard_normalization_type
+
+        # Determine normalization factor if not provided
+        if normalization_factor is None:
+            if y.startswith("fullcell_standard_cumloss_"):
+                print("only allowing for 'divide' for cumloss plots")
+                normalization_factor = s[s[row_col] == 1].max().value
+                normalization_type = "divide"
+            else:
+                if normalization_type == "on-max":
+                    normalization_factor = s[s[row_col] == 1].max().value
+                    normalization_type = "shift-divide"
+                elif normalization_type == "max":
+                    normalization_factor = s[s[row_col] == 1].max().value
+                    normalization_type = "shift-divide"
+                elif normalization_type == "area":
+                    with warnings.catch_warnings():
+                        warnings.simplefilter("ignore")
+                        area = np.trapezoid(s[s[row_col] == 1].value, dx=1)
+                    normalization_factor = area
+                    normalization_type = "shift-divide"
+                else:
+                    normalization_factor = 1.0
+
+        trans_kwargs = dict(
+            normalization_factor=normalization_factor,
+            normalization_type=normalization_type,
+            normalization_scaler=config.fullcell_standard_normalization_scaler,
+        )
+
+        # Transform the data
+        max_row_val = s[row_col].max()
+        for col, trans_dict in y_trans.get(y, {}).items():
+            for (new_row_val, new_col), trans in trans_dict.items():
+                if new_col in s["variable"].values:
+                    # Transforming on existing column
+                    s.loc[s["variable"] == col, "value"] = trans(
+                        s.loc[s["variable"] == col, "value"].values, **trans_kwargs
+                    )
+                else:
+                    # Creating new column
+                    old_col = col
+                    if new_row_val is not None:
+                        row_val = new_row_val
+                    else:
+                        row_val = s.loc[s["variable"] == col, row_col]
+                        if not row_val.empty:
+                            row_val = row_val.values[0]
+                        else:
+                            max_row_val += 1
+                            row_val = max_row_val
+
+                    if old_col.startswith("mod_"):
+                        old_col = re.sub(r"^mod_\d{2}_", "", old_col)
+                    new_col_frame_section = s.loc[s["variable"] == old_col].copy()
+                    new_col_frame_section["variable"] = new_col
+                    new_col_frame_section[row_col] = row_val
+                    transformed_values = trans(
+                        new_col_frame_section["value"].values, **trans_kwargs
+                    )
+                    new_col_frame_section["value"] = transformed_values
+                    s = pd.concat([s, new_col_frame_section], ignore_index=True)
+                    s = s.reset_index(drop=True)
+                    s = s.sort_values(by=[row_col, "variable"])
+
+                max_val_normalized_col = s.loc[s["variable"] == new_col, "value"].max()
+
+        return s, max_val_normalized_col
+
+    def _mark_formation_cycles(self, s, x, formation_cycles, col_id):
+        """Mark formation cycles in the data."""
+        formation_cycle_selector = slice(None, None)
+        if formation_cycles > 0:
+            formation_cycle_selector = s[x] <= formation_cycles
+            s[col_id] = "standard"
+            s.loc[formation_cycle_selector, col_id] = "formation"
+        return formation_cycle_selector
+
+
+class PlotlyPlotBuilder:
+    """Handles Plotly-specific plotting logic for summary plots.
+
+    This class extracts the Plotly plotting logic from summary_plot_legacy
+    to improve maintainability and testability.
+    """
+
+    def build_plot(
+        self,
+        data: pd.DataFrame,
+        prepared_data_info: dict,
+        config: SummaryPlotConfig,
+        additional_kwargs: dict,
+    ) -> Any:
+        """Build Plotly figure from prepared data.
+
+        Args:
+            data: Prepared DataFrame from SummaryPlotDataPreparer
+            prepared_data_info: Dictionary with metadata from data preparer
+            config: SummaryPlotConfig with all parameters
+            additional_kwargs: Additional kwargs for plotly (from legacy function)
+
+        Returns:
+            Plotly figure object
+        """
+        # For now, delegate to legacy implementation
+        # This will be gradually replaced during refactoring
+        # The full implementation would extract logic from lines 1565-1800+ of legacy function
+        raise NotImplementedError(
+            "PlotlyPlotBuilder.build_plot is not yet fully implemented. "
+            "Using legacy function for now."
+        )
+
+
+class SeabornPlotBuilder:
+    """Handles Seaborn-specific plotting logic for summary plots.
+
+    This class extracts the Seaborn plotting logic from summary_plot_legacy
+    to improve maintainability and testability.
+    """
+
+    def build_plot(
+        self,
+        data: pd.DataFrame,
+        prepared_data_info: dict,
+        config: SummaryPlotConfig,
+        additional_kwargs: dict,
+    ) -> Any:
+        """Build Seaborn/Matplotlib figure from prepared data.
+
+        Args:
+            data: Prepared DataFrame from SummaryPlotDataPreparer
+            prepared_data_info: Dictionary with metadata from data preparer
+            config: SummaryPlotConfig with all parameters
+            additional_kwargs: Additional kwargs for seaborn (from legacy function)
+
+        Returns:
+            Matplotlib figure object
+        """
+        # For now, delegate to legacy implementation
+        # This will be gradually replaced during refactoring
+        # The full implementation would extract logic from lines 1800-2100+ of legacy function
+        raise NotImplementedError(
+            "SeabornPlotBuilder.build_plot is not yet fully implemented. "
+            "Using legacy function for now."
+        )
+
+
 @notebook_docstring_printer
-def summary_plot(
+def summary_plot_legacy(
     c,
     x: Optional[str] = None,
     y: str = "capacities_gravimetric_coulombic_efficiency",  # Consider setting default to 'fullcell_standard_gravimetric'
@@ -880,15 +1421,15 @@ def summary_plot(
         column_separator: separation between columns when splitting the plot (only for plotly)
         reset_losses: reset the losses to the first cycle (only for fullcell_standard plots)
         link_capacity_scales: link the capacity scales (only for fullcell_standard plots)
-        fullcell_standard_normalization_type: normalization type for the fullcell standard plots (capacity retention) 
+        fullcell_standard_normalization_type: normalization type for the fullcell standard plots (capacity retention)
             (divide, multiply, area, max, on-max, False)
             if normalization_type is on-max, the normalization factor is set to the maximum value of the capacity column if not provided
             if normalization_type is max, the normalization factor is set to the maximum value of the capacity column if not provided
-            if normalization_type is shift-divide, the normalization is done by shifting the data by the normalization factor and 
+            if normalization_type is shift-divide, the normalization is done by shifting the data by the normalization factor and
             then dividing by the normalization factor
-            if normalization_type is divide, the normalization is done by dividing by the normalization factor and 
+            if normalization_type is divide, the normalization is done by dividing by the normalization factor and
             then multiplying by the scaler
-            if normalization_type is multiply, the normalization is done by multiplying by the normalization factor 
+            if normalization_type is multiply, the normalization is done by multiplying by the normalization factor
             and then multiplying by the scaler
             if normalization_type is area, the normalization is done by dividing by the area and then multiplying by the scaler
             if normalization_type is False, no normalization is done
@@ -930,12 +1471,17 @@ def summary_plot(
     show_y_labels_on_right_pane = kwargs.pop("show_y_labels_on_right_pane", False)
     seaborn_facecolor = kwargs.pop("seaborn_facecolor", "#EAEAF2")
     seaborn_edgecolor = kwargs.pop("seaborn_edgecolor", "black")
-    seaborn_style_dict_default = {"axes.facecolor": seaborn_facecolor, "axes.edgecolor": seaborn_edgecolor}
+    seaborn_style_dict_default = {
+        "axes.facecolor": seaborn_facecolor,
+        "axes.edgecolor": seaborn_edgecolor,
+    }
     seaborn_style_dict = kwargs.pop("seaborn_style_dict", seaborn_style_dict_default)
     seaborn_marker_size = kwargs.pop("seaborn_marker_size", 7)
 
     # only used for fullcell_standard plots in interactive mode for now
-    plotly_row_ratios = kwargs.pop("fullcell_standard_row_height_ratios", [0.3, 0.6, 0.9])
+    plotly_row_ratios = kwargs.pop(
+        "fullcell_standard_row_height_ratios", [0.3, 0.6, 0.9]
+    )
     plotly_row_space = kwargs.pop("fullcell_standard_row_space", 0.02)
     # fullcell_standard does not respect the split parameter
     if y.startswith("fullcell_standard_") and not split:
@@ -945,7 +1491,9 @@ def summary_plot(
     max_val_normalized_col = 0.0
 
     if interactive and not plotly_available:
-        warnings.warn("plotly not available, and it is currently the only supported interactive backend")
+        warnings.warn(
+            "plotly not available, and it is currently the only supported interactive backend"
+        )
         return None
 
     if title is None:
@@ -966,7 +1514,6 @@ def summary_plot(
     x_cols, y_cols, x_trans, y_trans = create_col_info(c)
     x_axis_labels, y_axis_label = create_label_dict(c)
 
-
     def _auto_range(fig: Any, axis_name_1: str, axis_name_2: str) -> list:
         # only works for plotly
         min_y = np.inf
@@ -982,7 +1529,7 @@ def summary_plot(
             _range_2 = [np.inf, -np.inf]
         _range = [min(_range_1[0], _range_2[0]), max(_range_1[1], _range_2[1])]
 
-        for i,t in enumerate(deepcopy(fig.data)):
+        for i, t in enumerate(deepcopy(fig.data)):
             if t.yaxis in [axis_name_1, axis_name_2]:
                 y = deepcopy(t.y)
                 try:
@@ -990,12 +1537,13 @@ def summary_plot(
                     min_y = np.ma.masked_invalid(y).min()
                     max_y = np.ma.masked_invalid(y).max()
                 except Exception as e:
-                    warnings.warn(f"Could not calculate min and max for y-axis (data set {i}): {e}")
+                    warnings.warn(
+                        f"Could not calculate min and max for y-axis (data set {i}): {e}"
+                    )
 
                 _range = [min(_range[0], min_y), max(_range[1], max_y)]
         _range = [0.95 * _range[0], 1.05 * _range[1]]
         return _range
-    
 
     y_header = "value"
     color = "variable"
@@ -1012,7 +1560,9 @@ def summary_plot(
     additional_kwargs_plotly_update_traces = dict()
     for k in list(kwargs.keys()):
         if k.startswith("plotly_"):
-            additional_kwargs_plotly_update_traces[k.replace("plotly_", "")] = kwargs.pop(k)
+            additional_kwargs_plotly_update_traces[k.replace("plotly_", "")] = (
+                kwargs.pop(k)
+            )
 
     additional_kwargs_seaborn = dict()
 
@@ -1027,9 +1577,11 @@ def summary_plot(
         if summary.index.name == x:
             summary = summary.reset_index(drop=False)
 
-        # Remark! Possible code duplication with the 'partition_summary_cv_steps' used in 
+        # Remark! Possible code duplication with the 'partition_summary_cv_steps' used in
         # the 'if y.endswith("_split_constant_voltage")' block:
-        summary_only_cv = c.make_summary(selector_type="only-cv", create_copy=True).data.summary
+        summary_only_cv = c.make_summary(
+            selector_type="only-cv", create_copy=True
+        ).data.summary
         if summary_only_cv.index.name == x:
             summary_only_cv = summary_only_cv.reset_index(drop=False)
 
@@ -1037,29 +1589,36 @@ def summary_plot(
 
         s = s.reset_index(drop=True)
         s = s.melt(x)
-        s = s.loc[s.variable.isin(column_set)]  # using strickt naming convention for "duplicated" columns ('mod_<nn>_<column_name>' so it will not be picked up here)
+        s = s.loc[
+            s.variable.isin(column_set)
+        ]  # using strickt naming convention for "duplicated" columns ('mod_<nn>_<column_name>' so it will not be picked up here)
 
         number_of_rows = 4
         s[row] = 1  # default row for capacity
         # Set row numbers using regex patterns
-        s.loc[s["variable"].str.contains(r"_efficiency$"), row] = 0  # coulombic efficiency
-        s.loc[s["variable"].str.contains(r"cumulated.*loss"), row] = 2  # cumulated loss [will be removed?]
+        s.loc[s["variable"].str.contains(r"_efficiency$"), row] = (
+            0  # coulombic efficiency
+        )
+        s.loc[s["variable"].str.contains(r"cumulated.*loss"), row] = (
+            2  # cumulated loss [will be removed?]
+        )
         s.loc[s["variable"].str.startswith(r"mod_01_"), row] = 2  # capacity retention
         s.loc[s["variable"].str.contains(r"_cv$"), row] = 3  # cv data
         additional_kwargs_plotly["facet_row"] = row
 
         if reset_losses:
             # Get the first value for each cumulated loss variable
-            first_values = s[s["variable"].str.contains(r"cumulated.*loss")].groupby("variable")["value"].transform("first")
+            first_values = (
+                s[s["variable"].str.contains(r"cumulated.*loss")]
+                .groupby("variable")["value"]
+                .transform("first")
+            )
             # Shift all values by subtracting the first value
             mask = s["variable"].str.contains(r"cumulated.*loss")
             s.loc[mask, "value"] = s.loc[mask, "value"] - first_values
 
-
         if fullcell_standard_normalization_type is not False:
-            
             if fullcell_standard_normalization_factor is None:
-
                 # need a special case for the cumloss plots
                 if y.startswith("fullcell_standard_cumloss_"):
                     print("only allowing for 'divide' for cumloss plots")
@@ -1068,11 +1627,15 @@ def summary_plot(
 
                 else:
                     if fullcell_standard_normalization_type == "on-max":
-                        fullcell_standard_normalization_factor = s[s[row] == 1].max().value
+                        fullcell_standard_normalization_factor = (
+                            s[s[row] == 1].max().value
+                        )
                         fullcell_standard_normalization_type = "shift-divide"
 
                     elif fullcell_standard_normalization_type == "max":
-                        fullcell_standard_normalization_factor = s[s[row] == 1].max().value
+                        fullcell_standard_normalization_factor = (
+                            s[s[row] == 1].max().value
+                        )
                         fullcell_standard_normalization_type = "shift-divide"
 
                     elif fullcell_standard_normalization_type == "area":
@@ -1091,16 +1654,15 @@ def summary_plot(
                 normalization_scaler=fullcell_standard_normalization_scaler,
             )
 
-
             # transform the data
             max_row_val = s[row].max()
             for col, trans_dict in y_trans.get(y, {}).items():
-                
                 for (new_row_val, new_col), trans in trans_dict.items():
-
                     if new_col in s["variable"].values:
                         # transforming on existing column (not using the new_row_val)
-                        s.loc[s["variable"] == col, "value"] = trans(s.loc[s["variable"] == col, "value"].values, **trans_kwargs)
+                        s.loc[s["variable"] == col, "value"] = trans(
+                            s.loc[s["variable"] == col, "value"].values, **trans_kwargs
+                        )
                     else:
                         # creating new column (using the new_row_val)
                         old_col = col
@@ -1113,24 +1675,32 @@ def summary_plot(
                             else:
                                 max_row_val += 1
                                 row_val = max_row_val
-                        
+
                         if old_col.startswith("mod_"):
-                            old_col = re.sub(r'^mod_\d{2}_', '', old_col)
+                            old_col = re.sub(r"^mod_\d{2}_", "", old_col)
                         new_col_frame_section = s.loc[s["variable"] == old_col].copy()
                         new_col_frame_section["variable"] = new_col
                         new_col_frame_section["row"] = row_val
-                        transformed_values = trans(new_col_frame_section["value"].values, **trans_kwargs)
+                        transformed_values = trans(
+                            new_col_frame_section["value"].values, **trans_kwargs
+                        )
                         new_col_frame_section["value"] = transformed_values
                         s = pd.concat([s, new_col_frame_section], ignore_index=True)
                         s = s.reset_index(drop=True)
                         s = s.sort_values(by=["row", "variable"])
 
-                    max_val_normalized_col = s.loc[s["variable"] == new_col, "value"].max()
+                    max_val_normalized_col = s.loc[
+                        s["variable"] == new_col, "value"
+                    ].max()
 
     # filter on constant voltage vs constant current
     # Remark! uses the 'partition_summary_cv_steps' function - consider using that also for the fullcell standard plot to avoid code duplication
     elif y.endswith("_split_constant_voltage"):
-        cap_type = "capacities_gravimetric" if y.startswith("capacities_gravimetric") else "capacities_areal"
+        cap_type = (
+            "capacities_gravimetric"
+            if y.startswith("capacities_gravimetric")
+            else "capacities_areal"
+        )
         column_set = y_cols[cap_type]
 
         # turning off warnings when splitting the data
@@ -1183,7 +1753,9 @@ def summary_plot(
         s.loc[formation_cycle_selector, col_id] = "formation"
 
     if verbose or dev_mode:
-        _report_summary_plot_info(c, x, y, x_label, x_axis_labels, x_cols, y_label, y_axis_label, y_cols)
+        _report_summary_plot_info(
+            c, x, y, x_label, x_axis_labels, x_cols, y_label, y_axis_label, y_cols
+        )
 
     if interactive:
         import plotly.express as px
@@ -1215,8 +1787,14 @@ def summary_plot(
 
         if show_formation:
             formation_header = '<span style="color:red">Formation</span>'
-            x_axis_domain_formation = [0.0, x_axis_domain_formation_fraction - column_separator / 2]
-            x_axis_domain_rest = [x_axis_domain_formation_fraction + column_separator / 2, 0.95]
+            x_axis_domain_formation = [
+                0.0,
+                x_axis_domain_formation_fraction - column_separator / 2,
+            ]
+            x_axis_domain_rest = [
+                x_axis_domain_formation_fraction + column_separator / 2,
+                0.95,
+            ]
             max_cycle_formation = s.loc[formation_cycle_selector, x].max()
             min_cycle_rest = s.loc[~formation_cycle_selector, x].min()
             if x == _hdr_summary.normalized_cycle_index:
@@ -1227,7 +1805,10 @@ def summary_plot(
             x_axis_range_rest = [min_cycle_rest - dd, max_cycle + dd]
 
             if x_range is not None:
-                x_axis_range_rest = [x_axis_range_rest[0], min(x_range[1], x_axis_range_rest[1])]
+                x_axis_range_rest = [
+                    x_axis_range_rest[0],
+                    min(x_range[1], x_axis_range_rest[1]),
+                ]
 
             if number_of_rows == 1:
                 fig.update_layout(
@@ -1240,29 +1821,55 @@ def summary_plot(
                         matches=None,
                     ),
                 )
-                annotations = [{"text": formation_header, "x": 0.08, "y": 1.02, "showarrow": False}, PLOTLY_BLANK_LABEL]
+                annotations = [
+                    {
+                        "text": formation_header,
+                        "x": 0.08,
+                        "y": 1.02,
+                        "showarrow": False,
+                    },
+                    PLOTLY_BLANK_LABEL,
+                ]
                 fig.update_layout(annotations=annotations)
-                fig.update_layout(yaxis2=dict(matches="y", showticklabels=show_y_labels_on_right_pane),)
+                fig.update_layout(
+                    yaxis2=dict(
+                        matches="y", showticklabels=show_y_labels_on_right_pane
+                    ),
+                )
 
             elif number_of_rows == 2:
                 fig.update_yaxes(matches="y")
                 fig.update_yaxes(autorange=False)
                 if y.endswith("_efficiency"):
                     fig.update_layout(
-                        yaxis3={"title": dict(text="Coulombic Efficiency"), "domain": [0.7, 1.0]},
+                        yaxis3={
+                            "title": dict(text="Coulombic Efficiency"),
+                            "domain": [0.7, 1.0],
+                        },
                         yaxis1=dict(domain=[0.0, 0.65]),
                         yaxis2=dict(domain=[0.0, 0.65]),
                         yaxis4=dict(domain=[0.70, 1.0]),
                     )
 
-                fig.update_layout(xaxis_domain=x_axis_domain_formation, scene_domain_x=x_axis_domain_formation)
+                fig.update_layout(
+                    xaxis_domain=x_axis_domain_formation,
+                    scene_domain_x=x_axis_domain_formation,
+                )
                 range_1 = y_range or _auto_range(fig, "y", "y2")
                 range_2 = eff_lim or _auto_range(fig, "y3", "y4")
                 # seems to be problematic for plotly having a range_2 that is [value, inf] ([87.0012, inf])
                 fig.update_layout(
-                    xaxis2=dict(range=x_axis_range_rest, domain=x_axis_domain_rest, matches=None),
-                    xaxis3=dict(range=x_axis_range_formation, domain=x_axis_domain_formation, matches="x"),
-                    xaxis4=dict(range=x_axis_range_rest, domain=x_axis_domain_rest, matches="x2"),
+                    xaxis2=dict(
+                        range=x_axis_range_rest, domain=x_axis_domain_rest, matches=None
+                    ),
+                    xaxis3=dict(
+                        range=x_axis_range_formation,
+                        domain=x_axis_domain_formation,
+                        matches="x",
+                    ),
+                    xaxis4=dict(
+                        range=x_axis_range_rest, domain=x_axis_domain_rest, matches="x2"
+                    ),
                     yaxis=dict(
                         matches="y2",
                         range=range_1,
@@ -1282,48 +1889,93 @@ def summary_plot(
                         range=range_2,
                     ),
                 )
-                annotations = [_plotly_label_dict(formation_header, 0.08, 1.0)] + 3 * [PLOTLY_BLANK_LABEL]
+                annotations = [_plotly_label_dict(formation_header, 0.08, 1.0)] + 3 * [
+                    PLOTLY_BLANK_LABEL
+                ]
                 fig.layout["annotations"] = annotations
 
             elif number_of_rows == 3:
                 fig.update_yaxes(matches="y")
                 fig.update_yaxes(autorange=False)
-                fig.update_layout(xaxis_domain=x_axis_domain_formation, scene_domain_x=x_axis_domain_formation)
+                fig.update_layout(
+                    xaxis_domain=x_axis_domain_formation,
+                    scene_domain_x=x_axis_domain_formation,
+                )
 
                 range_1 = _auto_range(fig, "y", "y2")
                 range_2 = _auto_range(fig, "y3", "y4")
                 range_3 = _auto_range(fig, "y5", "y6")
 
                 fig.update_layout(
-                    xaxis2=dict(range=x_axis_range_rest, domain=x_axis_domain_rest, matches=None),
-                    xaxis3=dict(range=x_axis_range_formation, domain=x_axis_domain_formation, matches="x"),
-                    xaxis4=dict(range=x_axis_range_rest, domain=x_axis_domain_rest, matches="x2"),
-                    xaxis5=dict(range=x_axis_range_formation, domain=x_axis_domain_formation, matches="x"),
-                    xaxis6=dict(range=x_axis_range_rest, domain=x_axis_domain_rest, matches="x2"),
+                    xaxis2=dict(
+                        range=x_axis_range_rest, domain=x_axis_domain_rest, matches=None
+                    ),
+                    xaxis3=dict(
+                        range=x_axis_range_formation,
+                        domain=x_axis_domain_formation,
+                        matches="x",
+                    ),
+                    xaxis4=dict(
+                        range=x_axis_range_rest, domain=x_axis_domain_rest, matches="x2"
+                    ),
+                    xaxis5=dict(
+                        range=x_axis_range_formation,
+                        domain=x_axis_domain_formation,
+                        matches="x",
+                    ),
+                    xaxis6=dict(
+                        range=x_axis_range_rest, domain=x_axis_domain_rest, matches="x2"
+                    ),
                     yaxis=dict(matches="y2", range=range_1),
-                    yaxis2=dict(matches="y", showticklabels=show_y_labels_on_right_pane, range=range_1),
+                    yaxis2=dict(
+                        matches="y",
+                        showticklabels=show_y_labels_on_right_pane,
+                        range=range_1,
+                    ),
                     yaxis3=dict(matches="y4", range=range_2),
-                    yaxis4=dict(matches="y3", showticklabels=show_y_labels_on_right_pane, range=range_2),
+                    yaxis4=dict(
+                        matches="y3",
+                        showticklabels=show_y_labels_on_right_pane,
+                        range=range_2,
+                    ),
                     yaxis5=dict(matches="y6", range=range_3),
-                    yaxis6=dict(matches="y5", showticklabels=show_y_labels_on_right_pane, range=range_3),
+                    yaxis6=dict(
+                        matches="y5",
+                        showticklabels=show_y_labels_on_right_pane,
+                        range=range_3,
+                    ),
                 )
-                annotations = [_plotly_label_dict(formation_header, 0.08, 1.0)] + 5 * [PLOTLY_BLANK_LABEL]
+                annotations = [_plotly_label_dict(formation_header, 0.08, 1.0)] + 5 * [
+                    PLOTLY_BLANK_LABEL
+                ]
                 fig.layout["annotations"] = annotations
 
             elif number_of_rows == 4:
                 fig.update_yaxes(matches="y")
                 fig.update_yaxes(autorange=False)
-                fig.update_layout(xaxis_domain=x_axis_domain_formation, scene_domain_x=x_axis_domain_formation)
+                fig.update_layout(
+                    xaxis_domain=x_axis_domain_formation,
+                    scene_domain_x=x_axis_domain_formation,
+                )
 
-                range_1 = _auto_range(fig, "y", "y2") 
+                range_1 = _auto_range(fig, "y", "y2")
 
-                if y.startswith("fullcell_standard_") and fullcell_standard_normalization_type is not False:
-                    range_2 = [0.0, max(max_val_normalized_col, fullcell_standard_normalization_scaler)]
+                if (
+                    y.startswith("fullcell_standard_")
+                    and fullcell_standard_normalization_type is not False
+                ):
+                    range_2 = [
+                        0.0,
+                        max(
+                            max_val_normalized_col,
+                            fullcell_standard_normalization_scaler,
+                        ),
+                    ]
                     range_2 = norm_range or range_2
                 else:
-                    range_2 = _auto_range(fig, "y3", "y4") 
+                    range_2 = _auto_range(fig, "y3", "y4")
 
-                range_3 = _auto_range(fig, "y5", "y6")    
+                range_3 = _auto_range(fig, "y5", "y6")
                 range_4 = _auto_range(fig, "y7", "y8")
 
                 if y.startswith("fullcell_standard_"):
@@ -1332,35 +1984,82 @@ def summary_plot(
                     range_1 = cv_share_range or range_1
 
                 fig.update_layout(
-                    xaxis2=dict(range=x_axis_range_rest, domain=x_axis_domain_rest, matches=None),
-                    xaxis3=dict(range=x_axis_range_formation, domain=x_axis_domain_formation, matches="x"),
-                    xaxis4=dict(range=x_axis_range_rest, domain=x_axis_domain_rest, matches="x2"),
-                    xaxis5=dict(range=x_axis_range_formation, domain=x_axis_domain_formation, matches="x"),
-                    xaxis6=dict(range=x_axis_range_rest, domain=x_axis_domain_rest, matches="x2"),
-                    xaxis7=dict(range=x_axis_range_formation, domain=x_axis_domain_formation, matches="x"),
-                    xaxis8=dict(range=x_axis_range_rest, domain=x_axis_domain_rest, matches="x2"),
+                    xaxis2=dict(
+                        range=x_axis_range_rest, domain=x_axis_domain_rest, matches=None
+                    ),
+                    xaxis3=dict(
+                        range=x_axis_range_formation,
+                        domain=x_axis_domain_formation,
+                        matches="x",
+                    ),
+                    xaxis4=dict(
+                        range=x_axis_range_rest, domain=x_axis_domain_rest, matches="x2"
+                    ),
+                    xaxis5=dict(
+                        range=x_axis_range_formation,
+                        domain=x_axis_domain_formation,
+                        matches="x",
+                    ),
+                    xaxis6=dict(
+                        range=x_axis_range_rest, domain=x_axis_domain_rest, matches="x2"
+                    ),
+                    xaxis7=dict(
+                        range=x_axis_range_formation,
+                        domain=x_axis_domain_formation,
+                        matches="x",
+                    ),
+                    xaxis8=dict(
+                        range=x_axis_range_rest, domain=x_axis_domain_rest, matches="x2"
+                    ),
                     yaxis=dict(matches="y2", range=range_1),
-                    yaxis2=dict(matches="y", showticklabels=show_y_labels_on_right_pane, range=range_1),
+                    yaxis2=dict(
+                        matches="y",
+                        showticklabels=show_y_labels_on_right_pane,
+                        range=range_1,
+                    ),
                     yaxis3=dict(matches="y4", range=range_2),
-                    yaxis4=dict(matches="y3", showticklabels=show_y_labels_on_right_pane, range=range_2),
+                    yaxis4=dict(
+                        matches="y3",
+                        showticklabels=show_y_labels_on_right_pane,
+                        range=range_2,
+                    ),
                     yaxis5=dict(matches="y6", range=range_3),
-                    yaxis6=dict(matches="y5", showticklabels=show_y_labels_on_right_pane, range=range_3),
+                    yaxis6=dict(
+                        matches="y5",
+                        showticklabels=show_y_labels_on_right_pane,
+                        range=range_3,
+                    ),
                     yaxis7=dict(matches="y8", range=range_4),
-                    yaxis8=dict(matches="y7", showticklabels=show_y_labels_on_right_pane, range=range_4),
+                    yaxis8=dict(
+                        matches="y7",
+                        showticklabels=show_y_labels_on_right_pane,
+                        range=range_4,
+                    ),
                 )
-                annotations = [_plotly_label_dict(formation_header, 0.08, 1.0)] + 7 * [PLOTLY_BLANK_LABEL]
+                annotations = [_plotly_label_dict(formation_header, 0.08, 1.0)] + 7 * [
+                    PLOTLY_BLANK_LABEL
+                ]
                 fig.layout["annotations"] = annotations
 
                 if y.startswith("fullcell_standard_"):
                     ce_domain_start, ce_domain_end = plotly_row_ratios[2], 1.0
-                    capacity_domain_start, capacity_domain_end = plotly_row_ratios[1], plotly_row_ratios[2] - plotly_row_space
-                    loss_domain_start, loss_domain_end = plotly_row_ratios[0], plotly_row_ratios[1] - plotly_row_space
-                    cv_domain_start, cv_domain_end = 0.0, plotly_row_ratios[0] - plotly_row_space
+                    capacity_domain_start, capacity_domain_end = (
+                        plotly_row_ratios[1],
+                        plotly_row_ratios[2] - plotly_row_space,
+                    )
+                    loss_domain_start, loss_domain_end = (
+                        plotly_row_ratios[0],
+                        plotly_row_ratios[1] - plotly_row_space,
+                    )
+                    cv_domain_start, cv_domain_end = (
+                        0.0,
+                        plotly_row_ratios[0] - plotly_row_space,
+                    )
 
                     # Format y-axis labels with HTML for proper alignment
                     mode = y.split("_")[-1]
                     capacity_unit = _get_capacity_unit(c, mode=mode)
-                
+
                     ce_label = "Coulombic<br>Efficiency (%)"
                     capacity_label = f"Capacity<br>({capacity_unit})"
                     if fullcell_standard_normalization_type:
@@ -1373,13 +2072,25 @@ def summary_plot(
 
                     fig.update_layout(
                         yaxis8={"domain": [ce_domain_start, ce_domain_end]},
-                        yaxis7={"title": dict(text=ce_label), "domain": [ce_domain_start, ce_domain_end]},
+                        yaxis7={
+                            "title": dict(text=ce_label),
+                            "domain": [ce_domain_start, ce_domain_end],
+                        },
                         yaxis6={"domain": [capacity_domain_start, capacity_domain_end]},
-                        yaxis5={"title": dict(text=capacity_label), "domain": [capacity_domain_start, capacity_domain_end]},
+                        yaxis5={
+                            "title": dict(text=capacity_label),
+                            "domain": [capacity_domain_start, capacity_domain_end],
+                        },
                         yaxis4={"domain": [loss_domain_start, loss_domain_end]},
-                        yaxis3={"title": dict(text=loss_label), "domain": [loss_domain_start, loss_domain_end]},
+                        yaxis3={
+                            "title": dict(text=loss_label),
+                            "domain": [loss_domain_start, loss_domain_end],
+                        },
                         yaxis2={"domain": [cv_domain_start, cv_domain_end]},
-                        yaxis1={"title": dict(text=cv_label), "domain": [cv_domain_start, cv_domain_end]},
+                        yaxis1={
+                            "title": dict(text=cv_label),
+                            "domain": [cv_domain_start, cv_domain_end],
+                        },
                     )
                     if show_formation:
                         fig.update_layout(
@@ -1405,23 +2116,41 @@ def summary_plot(
             if y.endswith("_efficiency"):
                 fig.update_layout(
                     yaxis=dict(domain=[0.0, 0.65]),
-                    yaxis2={"title": dict(text="Coulombic Efficiency"), "domain": [0.7, 1.0]},
+                    yaxis2={
+                        "title": dict(text="Coulombic Efficiency"),
+                        "domain": [0.7, 1.0],
+                    },
                 )
             if y.startswith("fullcell_standard_"):
                 range_1 = eff_lim or _auto_range(fig, "y4", "y4")
                 range_2 = y_range or _auto_range(fig, "y3", "y3")
                 range_3 = _auto_range(fig, "y2", "y2")
                 if fullcell_standard_normalization_type is not False:
-                    range_3 = [0.0, max(max_val_normalized_col, fullcell_standard_normalization_scaler)]
+                    range_3 = [
+                        0.0,
+                        max(
+                            max_val_normalized_col,
+                            fullcell_standard_normalization_scaler,
+                        ),
+                    ]
                 range_3 = norm_range or range_3
-                
+
                 range_4 = cv_share_range or _auto_range(fig, "y", "y")
                 fig.layout["annotations"] = 4 * [PLOTLY_BLANK_LABEL]
 
                 ce_domain_start, ce_domain_end = plotly_row_ratios[2], 1.0
-                capacity_domain_start, capacity_domain_end = plotly_row_ratios[1], plotly_row_ratios[2] - plotly_row_space
-                loss_domain_start, loss_domain_end = plotly_row_ratios[0], plotly_row_ratios[1] - plotly_row_space
-                cv_domain_start, cv_domain_end = 0.0, plotly_row_ratios[0] - plotly_row_space
+                capacity_domain_start, capacity_domain_end = (
+                    plotly_row_ratios[1],
+                    plotly_row_ratios[2] - plotly_row_space,
+                )
+                loss_domain_start, loss_domain_end = (
+                    plotly_row_ratios[0],
+                    plotly_row_ratios[1] - plotly_row_space,
+                )
+                cv_domain_start, cv_domain_end = (
+                    0.0,
+                    plotly_row_ratios[0] - plotly_row_space,
+                )
 
                 # Format y-axis labels with HTML for proper alignment
                 capacity_unit = _get_capacity_unit(c, mode=y.split("_")[-1])
@@ -1436,10 +2165,30 @@ def summary_plot(
                 cv_label = f"CV Capacity<br>({capacity_unit})"
 
                 fig.update_layout(
-                    yaxis4={"title": dict(text=ce_label), "domain": [ce_domain_start, ce_domain_end], "matches": None, "range": range_1},
-                    yaxis3={"title": dict(text=capacity_label), "domain": [capacity_domain_start, capacity_domain_end], "matches": None, "range": range_2},
-                    yaxis2={"title": dict(text=loss_label), "domain": [loss_domain_start, loss_domain_end], "matches": None, "range": range_3},
-                    yaxis={"title": dict(text=cv_label), "domain": [cv_domain_start, cv_domain_end], "matches": None, "range": range_4},
+                    yaxis4={
+                        "title": dict(text=ce_label),
+                        "domain": [ce_domain_start, ce_domain_end],
+                        "matches": None,
+                        "range": range_1,
+                    },
+                    yaxis3={
+                        "title": dict(text=capacity_label),
+                        "domain": [capacity_domain_start, capacity_domain_end],
+                        "matches": None,
+                        "range": range_2,
+                    },
+                    yaxis2={
+                        "title": dict(text=loss_label),
+                        "domain": [loss_domain_start, loss_domain_end],
+                        "matches": None,
+                        "range": range_3,
+                    },
+                    yaxis={
+                        "title": dict(text=cv_label),
+                        "domain": [cv_domain_start, cv_domain_end],
+                        "matches": None,
+                        "range": range_4,
+                    },
                 )
 
         if x_range is not None:
@@ -1485,9 +2234,10 @@ def summary_plot(
         return fig
 
     else:
-
         if not seaborn_available:
-            warnings.warn("seaborn not available, returning only the data so that you can plot it yourself instead")
+            warnings.warn(
+                "seaborn not available, returning only the data so that you can plot it yourself instead"
+            )
             return s
 
         import seaborn as sns
@@ -1498,12 +2248,14 @@ def summary_plot(
             for info in info_dicts:
                 if col_id is not None:
                     if row_id is not None:
-                        info_text = f'{row_id} = {info["row"]} | {col_id} = {info["col"]}'
+                        info_text = (
+                            f"{row_id} = {info['row']} | {col_id} = {info['col']}"
+                        )
                     else:
-                        info_text = f'{col_id} = {info["col"]}'
+                        info_text = f"{col_id} = {info['col']}"
                 else:
                     if row_id is not None:
-                        info_text = f'{row_id} = {info["row"]}'
+                        info_text = f"{row_id} = {info['row']}"
                     else:
                         info_text = "single axis"
                 info_dict[info_text] = info
@@ -1556,7 +2308,9 @@ def summary_plot(
             additional_kwargs_seaborn["row"] = row
             number_of_rows = s[row].nunique()
 
-        def _calculate_seaborn_plot_properties(number_of_rows, number_of_cols, plot_type="default"):
+        def _calculate_seaborn_plot_properties(
+            number_of_rows, number_of_cols, plot_type="default"
+        ):
             ## Maybe implement some proper calculations later...
             # _default_seaborn_plot_height = 2.4 + 0.4 * number_of_rows
             # _default_seaborn_plot_aspect = 1.0 + 2.0 / number_of_rows
@@ -1580,17 +2334,23 @@ def summary_plot(
                     (4, 2): (3.0, 1.35),
                 }
             return _selector.get((number_of_rows, number_of_cols), (4.0, 1.8))
-            
+
         if y.startswith("fullcell_standard_"):
             plot_type = "fullcell_standard"
         else:
             plot_type = "default"
 
-        _default_seaborn_plot_height, _default_seaborn_plot_aspect = _calculate_seaborn_plot_properties(
-            number_of_rows, number_of_cols, plot_type=plot_type
+        _default_seaborn_plot_height, _default_seaborn_plot_aspect = (
+            _calculate_seaborn_plot_properties(
+                number_of_rows, number_of_cols, plot_type=plot_type
+            )
         )
-        seaborn_plot_height = kwargs.pop("seaborn_plot_height", _default_seaborn_plot_height)
-        seaborn_plot_aspect = kwargs.pop("seaborn_plot_aspect", _default_seaborn_plot_aspect)
+        seaborn_plot_height = kwargs.pop(
+            "seaborn_plot_height", _default_seaborn_plot_height
+        )
+        seaborn_plot_aspect = kwargs.pop(
+            "seaborn_plot_aspect", _default_seaborn_plot_aspect
+        )
 
         is_efficiency_plot = y.endswith("_efficiency")
         is_fullcell_standard_plot = y.startswith("fullcell_standard_")
@@ -1601,7 +2361,11 @@ def summary_plot(
 
         # axis limits:
         if eff_lim is None:
-            eff_vals = s.loc[s[color].str.contains("_efficiency"), y_header].replace([np.inf, -np.inf], np.nan).dropna()
+            eff_vals = (
+                s.loc[s[color].str.contains("_efficiency"), y_header]
+                .replace([np.inf, -np.inf], np.nan)
+                .dropna()
+            )
             eff_min, eff_max = eff_vals.min(), eff_vals.max()
             eff_lim = [eff_min - 0.05 * abs(eff_min), eff_max + 0.05 * abs(eff_max)]
 
@@ -1609,12 +2373,22 @@ def summary_plot(
             cycle_range = max_cycle - formation_cycles
             if cycle_range <= 0:
                 cycle_range = 10  # arbitrary value
-            x_range = (formation_cycles + 1 - 0.02 * abs(cycle_range), max_cycle + 0.02 * abs(cycle_range))
+            x_range = (
+                formation_cycles + 1 - 0.02 * abs(cycle_range),
+                max_cycle + 0.02 * abs(cycle_range),
+            )
 
         if y_range is None:
-            y_vals = s.loc[~s[color].str.contains("_efficiency"), y_header].replace([np.inf, -np.inf], np.nan).dropna()
+            y_vals = (
+                s.loc[~s[color].str.contains("_efficiency"), y_header]
+                .replace([np.inf, -np.inf], np.nan)
+                .dropna()
+            )
             min_value, max_value = y_vals.min(), y_vals.max()
-            y_range = y_range or [min_value - 0.05 * abs(min_value), max_value + 0.05 * abs(max_value)]
+            y_range = y_range or [
+                min_value - 0.05 * abs(min_value),
+                max_value + 0.05 * abs(max_value),
+            ]
 
         _efficiency_label = r"Efficiency (%)"
 
@@ -1700,7 +2474,9 @@ def summary_plot(
             if is_multi_row:
                 cv_share_range = cv_share_range or y_range
                 for r, _x, _y_range in zip(
-                    ["all", "without CV", "with CV"], [False, False, None], [y_range, y_range, cv_share_range]
+                    ["all", "without CV", "with CV"],
+                    [False, False, None],
+                    [y_range, y_range, cv_share_range],
                 ):
                     _d = dict(
                         ylabel=y_label,
@@ -1760,8 +2536,6 @@ def summary_plot(
                 info_dicts.append(_d)
 
         elif is_fullcell_standard_plot:
-
-
             capacity_unit = _get_capacity_unit(c, mode=y.split("_")[-1])
             ce_label = "Coulombic\nEfficiency (%)"
             capacity_label = f"Capacity\n({capacity_unit})"
@@ -1781,7 +2555,10 @@ def summary_plot(
             number_of_rows = 4
 
             if fullcell_standard_normalization_type is not False:
-                cum_loss_info_range = norm_range or [0.0, max(max_val_normalized_col, fullcell_standard_normalization_scaler)]
+                cum_loss_info_range = norm_range or [
+                    0.0,
+                    max(max_val_normalized_col, fullcell_standard_normalization_scaler),
+                ]
             else:
                 cum_loss_info_range = norm_range or y_range
 
@@ -1839,45 +2616,45 @@ def summary_plot(
 
             if show_formation:
                 cv_info_formation = dict(
-                        ylabel=cv_label,
-                        title="",
-                        xlim=xlim_formation,
-                        ylim=cv_share_range or y_range,
-                        row=3,
-                        col="formation",
-                        yticks=True,
-                        xticks=True,
-                    )
+                    ylabel=cv_label,
+                    title="",
+                    xlim=xlim_formation,
+                    ylim=cv_share_range or y_range,
+                    row=3,
+                    col="formation",
+                    yticks=True,
+                    xticks=True,
+                )
                 loss_info_formation = dict(
-                        ylabel=loss_label,
-                        title="",
-                        xlim=xlim_formation,
-                        ylim=cum_loss_info_range,
-                        row=2,
-                        col="formation",
-                        yticks=True,
-                        xticks=False,
-                    )
+                    ylabel=loss_label,
+                    title="",
+                    xlim=xlim_formation,
+                    ylim=cum_loss_info_range,
+                    row=2,
+                    col="formation",
+                    yticks=True,
+                    xticks=False,
+                )
                 cap_info_formation = dict(
-                        ylabel=capacity_label,
-                        title="",
-                        xlim=xlim_formation,
-                        ylim=y_range,
-                        row=1,
-                        col="formation",
-                        yticks=True,
-                        xticks=False,
-                    )
+                    ylabel=capacity_label,
+                    title="",
+                    xlim=xlim_formation,
+                    ylim=y_range,
+                    row=1,
+                    col="formation",
+                    yticks=True,
+                    xticks=False,
+                )
                 ce_info_formation = dict(
-                        ylabel=ce_label,
-                        title="",
-                        xlim=xlim_formation,
-                        ylim=eff_lim,
-                        row=0,
-                        col="formation",
-                        yticks=True,
-                        xticks=False,
-                    )
+                    ylabel=ce_label,
+                    title="",
+                    xlim=xlim_formation,
+                    ylim=eff_lim,
+                    row=0,
+                    col="formation",
+                    yticks=True,
+                    xticks=False,
+                )
                 info_dicts.append(cv_info_formation)
                 info_dicts.append(loss_info_formation)
                 info_dicts.append(cap_info_formation)
@@ -1893,7 +2670,7 @@ def summary_plot(
                 print(f"{facet_kws=}")
                 print(f"{kwargs=}")
                 print(f"{info_dicts=}")
-            
+
         else:
             if is_multi_row:
                 for i in range(number_of_rows):
@@ -1952,7 +2729,6 @@ def summary_plot(
                     )
                 info_dicts.append(_d)
 
-
         facet_kws["gridspec_kws"] = gridspec_kws
 
         sns_fig = sns.relplot(
@@ -2010,7 +2786,161 @@ def summary_plot(
         return fig
 
 
-def _report_summary_plot_info(c, x, y, x_label, x_axis_labels, x_cols, y_label, y_axis_label, y_cols):
+@notebook_docstring_printer
+def summary_plot(
+    c,
+    x: Optional[str] = None,
+    y: str = "capacities_gravimetric_coulombic_efficiency",
+    height: Optional[int] = None,
+    width: int = 900,
+    markers: bool = True,
+    title: Optional[str] = None,
+    x_range: Optional[list] = None,
+    y_range: Optional[list] = None,
+    ce_range: Optional[list] = None,
+    norm_range: Optional[list] = None,
+    cv_share_range: Optional[list] = None,
+    split: bool = True,
+    auto_convert_legend_labels: bool = True,
+    interactive: bool = True,
+    share_y: bool = False,
+    rangeslider: bool = False,
+    return_data: bool = False,
+    verbose: bool = False,
+    plotly_template: Optional[str] = None,
+    seaborn_palette: str = "deep",
+    seaborn_style: str = "dark",
+    formation_cycles: int = 3,
+    show_formation: bool = True,
+    show_legend: bool = True,
+    x_axis_domain_formation_fraction: float = 0.2,
+    column_separator: float = 0.01,
+    reset_losses: bool = True,
+    link_capacity_scales: bool = False,
+    fullcell_standard_normalization_type: str = "on-max",
+    fullcell_standard_normalization_factor: Optional[float] = None,
+    fullcell_standard_normalization_scaler: float = 1.0,
+    seaborn_line_hooks: Optional[list[tuple[str, list, dict]]] = None,
+    **kwargs,
+) -> Any:
+    """Create a summary plot.
+
+    This is a wrapper around summary_plot_legacy for backwards compatibility.
+    During refactoring, this will be gradually replaced with a new implementation.
+
+    Args:
+        c: cellpy object
+        x: x-axis column (default: 'cycle_index')
+        y: y-axis column or column set. Currently, the following predefined sets exists:
+            "voltages", "capacities_gravimetric", "capacities_areal", "capacities_absolute",
+            "capacities_gravimetric_split_constant_voltage", "capacities_areal_split_constant_voltage",
+            "capacities_gravimetric_coulombic_efficiency", "capacities_areal_coulombic_efficiency",
+            "capacities_absolute_coulombic_efficiency",
+            "fullcell_standard_gravimetric", "fullcell_standard_areal", "fullcell_standard_absolute",
+        height: height of the plot (for plotly)
+        width: width of the plot (for plotly)
+        markers: use markers
+        title: title of the plot
+        x_range: limits for x-axis
+        y_range: limits for y-axis
+        ce_range: limits for coulombic efficiency (if present)
+        norm_range: limits for normalized capacity (if present)
+        cv_share_range: limits for cv share (if present)
+        split: split the plot
+        auto_convert_legend_labels: convert the legend labels to a nicer format.
+        interactive: use interactive plotting (plotly)
+        rangeslider: add a range slider to the x-axis (only for plotly)
+        share_y: share y-axis (only for plotly)
+        return_data: return the data used for plotting
+        verbose: print out some extra information to make it easier to find out what to plot next time
+        plotly_template: name of the plotly template to use
+        seaborn_palette: name of the seaborn palette to use
+        seaborn_style: name of the seaborn style to use
+        formation_cycles: number of formation cycles to show
+        show_formation: show formation cycles
+        show_legend: show the legend
+        x_axis_domain_formation_fraction: fraction of the x-axis domain for the formation cycles (default: 0.2)
+        column_separator: separation between columns when splitting the plot (only for plotly)
+        reset_losses: reset the losses to the first cycle (only for fullcell_standard plots)
+        link_capacity_scales: link the capacity scales (only for fullcell_standard plots)
+        fullcell_standard_normalization_type: normalization type for the fullcell standard plots (capacity retention)
+            (divide, multiply, area, max, on-max, False)
+        fullcell_standard_normalization_factor: normalization factor for the fullcell standard plots
+        fullcell_standard_normalization_scaler: scaler for the fullcell standard plots
+        seaborn_line_hooks: list of functions to hook into the seaborn lines (e.g. to update the marker_size)
+        **kwargs: includes additional parameters for the plotting backend (not properly documented yet).
+
+    Returns:
+        if ``return_data`` is True, returns a tuple with the figure and the data used for plotting.
+        Otherwise, it returns only the figure. If ``interactive`` is True, the figure is a ``plotly`` figure,
+        else it is a ``matplotlib`` figure.
+    """
+    # Create config from parameters
+    config = SummaryPlotConfig.from_kwargs(
+        x=x,
+        y=y,
+        height=height,
+        width=width,
+        markers=markers,
+        title=title,
+        x_range=x_range,
+        y_range=y_range,
+        ce_range=ce_range,
+        norm_range=norm_range,
+        cv_share_range=cv_share_range,
+        split=split,
+        auto_convert_legend_labels=auto_convert_legend_labels,
+        interactive=interactive,
+        share_y=share_y,
+        rangeslider=rangeslider,
+        return_data=return_data,
+        verbose=verbose,
+        plotly_template=plotly_template,
+        seaborn_palette=seaborn_palette,
+        seaborn_style=seaborn_style,
+        formation_cycles=formation_cycles,
+        show_formation=show_formation,
+        show_legend=show_legend,
+        x_axis_domain_formation_fraction=x_axis_domain_formation_fraction,
+        column_separator=column_separator,
+        reset_losses=reset_losses,
+        link_capacity_scales=link_capacity_scales,
+        fullcell_standard_normalization_type=fullcell_standard_normalization_type,
+        fullcell_standard_normalization_factor=fullcell_standard_normalization_factor,
+        fullcell_standard_normalization_scaler=fullcell_standard_normalization_scaler,
+        seaborn_line_hooks=seaborn_line_hooks,
+        **kwargs,
+    )
+
+    # TODO: Once PlotlyPlotBuilder and SeabornPlotBuilder are fully implemented,
+    # replace this with the new implementation:
+    #
+    # # Prepare data
+    # x_cols, y_cols, x_trans, y_trans = create_col_info(c)
+    # x_axis_labels, y_axis_label = create_label_dict(c)
+    # preparer = SummaryPlotDataPreparer()
+    # prepared_data_info = preparer.prepare_data(c, config, x_cols, y_cols, x_trans, y_trans, x_axis_labels, y_axis_label)
+    #
+    # # Build plot
+    # if config.interactive:
+    #     builder = PlotlyPlotBuilder()
+    #     fig = builder.build_plot(prepared_data_info["data"], prepared_data_info, config, config.additional_kwargs)
+    # else:
+    #     builder = SeabornPlotBuilder()
+    #     fig = builder.build_plot(prepared_data_info["data"], prepared_data_info, config, config.additional_kwargs)
+    #
+    # if config.return_data:
+    #     return fig, prepared_data_info["data"]
+    # return fig
+
+    # For now, delegate to legacy implementation
+    # This maintains backwards compatibility while refactoring
+    return summary_plot_legacy(c, **config.to_kwargs())
+
+
+def _report_summary_plot_info(
+    c, x, y, x_label, x_axis_labels, x_cols, y_label, y_axis_label, y_cols
+):
     from pprint import pprint, pformat
     import textwrap
 
@@ -2071,8 +3001,12 @@ def partition_summary_cv_steps(
 
     summary = c.data.summary
 
-    summary_no_cv = c.make_summary(selector_type="non-cv", create_copy=True).data.summary
-    summary_only_cv = c.make_summary(selector_type="only-cv", create_copy=True).data.summary
+    summary_no_cv = c.make_summary(
+        selector_type="non-cv", create_copy=True
+    ).data.summary
+    summary_only_cv = c.make_summary(
+        selector_type="only-cv", create_copy=True
+    ).data.summary
     if x != summary.index.name:
         summary.set_index(x, inplace=True)
         summary_no_cv.set_index(x, inplace=True)
@@ -2097,8 +3031,12 @@ def partition_summary_cv_steps(
     summary_no_cv = summary_no_cv.reset_index()
     summary_only_cv = summary_only_cv.reset_index()
     summary = summary.reset_index()
-    summary_no_cv = summary_no_cv.melt(id_vars, var_name=var_name, value_name=value_name)
-    summary_only_cv = summary_only_cv.melt(id_vars, var_name=var_name, value_name=value_name)
+    summary_no_cv = summary_no_cv.melt(
+        id_vars, var_name=var_name, value_name=value_name
+    )
+    summary_only_cv = summary_only_cv.melt(
+        id_vars, var_name=var_name, value_name=value_name
+    )
     summary = summary.melt(id_vars, var_name=var_name, value_name=value_name)
 
     s = pd.concat([summary, summary_no_cv, summary_only_cv], axis=0)
@@ -2356,8 +3294,9 @@ def raw_plot(
         ax_c.tick_params(axis="y", labelcolor=color)
         ax_v.set_xlim(xlim)
     else:
-
-        fig, axes = plt.subplots(nrows=number_of_rows, ncols=1, figsize=figsize, sharex=True)
+        fig, axes = plt.subplots(
+            nrows=number_of_rows, ncols=1, figsize=figsize, sharex=True
+        )
 
         for i in range(number_of_rows):
             axes[i].plot(raw[x], raw[y[i]])
@@ -2589,8 +3528,12 @@ def _get_info(table, cycle, step):
     m_table = (table.cycle == cycle) & (table.step == step)
     p1, p2 = table.loc[m_table, ["point_min", "point_max"]].values[0]
     c1, c2 = table.loc[m_table, ["current_min", "current_max"]].abs().values[0]
-    d_voltage, d_current = table.loc[m_table, ["voltage_delta", "current_delta"]].values[0]
-    d_discharge, d_charge = table.loc[m_table, ["discharge_delta", "charge_delta"]].values[0]
+    d_voltage, d_current = table.loc[
+        m_table, ["voltage_delta", "current_delta"]
+    ].values[0]
+    d_discharge, d_charge = table.loc[
+        m_table, ["discharge_delta", "charge_delta"]
+    ].values[0]
     current_max = (c1 + c2) / 2
     rate = table.loc[m_table, "rate_avr"].values[0]
     step_type = table.loc[m_table, "type"].values[0]
@@ -2652,7 +3595,9 @@ def _cycle_info_plot_matplotlib(
         c = data.loc[m, "current"] * i_scaler
         v = data.loc[m, "voltage"] * v_scaler
         t = data.loc[m, "test_time"] * t_scaler
-        step_type, rate, current_max, dv, dc, d_discharge, d_charge = _get_info(table, cycle, s)
+        step_type, rate, current_max, dv, dc, d_discharge, d_charge = _get_info(
+            table, cycle, s
+        )
         if len(t) > 1:
             fcolor = next(color)
 
@@ -2813,8 +3758,13 @@ def cycles_plot(
 
             seaborn_facecolor = kwargs.pop("seaborn_facecolor", "#EAEAF2")
             seaborn_edgecolor = kwargs.pop("seaborn_edgecolor", "black")
-            seaborn_style_dict_default = {"axes.facecolor": seaborn_facecolor, "axes.edgecolor": seaborn_edgecolor}
-            seaborn_style_dict = kwargs.pop("seaborn_style_dict", seaborn_style_dict_default)
+            seaborn_style_dict_default = {
+                "axes.facecolor": seaborn_facecolor,
+                "axes.edgecolor": seaborn_edgecolor,
+            }
+            seaborn_style_dict = kwargs.pop(
+                "seaborn_style_dict", seaborn_style_dict_default
+            )
 
             sns.set_style(seaborn_style, seaborn_style_dict)
             sns.set_palette(seaborn_palette)
@@ -2837,8 +3787,14 @@ def cycles_plot(
 
             shrink = min(1.0, (1 / 8) * n_form_cycles)
 
-            c_m_formation = ListedColormap(plt.get_cmap(formation_colormap, 2 * len(cycle_sequence))(cycle_sequence))
-            s_m_formation = matplotlib.cm.ScalarMappable(cmap=c_m_formation, norm=norm_formation)
+            c_m_formation = ListedColormap(
+                plt.get_cmap(formation_colormap, 2 * len(cycle_sequence))(
+                    cycle_sequence
+                )
+            )
+            s_m_formation = matplotlib.cm.ScalarMappable(
+                cmap=c_m_formation, norm=norm_formation
+            )
             for name, group in form_cycles.groupby("cycle"):
                 ax.plot(
                     group["capacity"],
@@ -2866,9 +3822,13 @@ def cycles_plot(
                 labelpad=12,
             )
 
-        norm = Normalize(vmin=rest_cycles["cycle"].min(), vmax=rest_cycles["cycle"].max())
+        norm = Normalize(
+            vmin=rest_cycles["cycle"].min(), vmax=rest_cycles["cycle"].max()
+        )
         if cut_colorbar:
-            cycle_sequence = np.arange(rest_cycles["cycle"].min(), rest_cycles["cycle"].max() + 1, 1)
+            cycle_sequence = np.arange(
+                rest_cycles["cycle"].min(), rest_cycles["cycle"].max() + 1, 1
+            )
             n = int(np.round(1.2 * rest_cycles["cycle"].max()))
             c_m = ListedColormap(plt.get_cmap(colormap, n)(cycle_sequence))
         else:
@@ -2911,7 +3871,6 @@ def cycles_plot(
             plt.close(fig)
             return fig
     else:
-
         import plotly.express as px
         import plotly.graph_objects as go
 
@@ -3075,9 +4034,6 @@ def _check_summary_plotter_plotly():
     print(f"{type(fig)=}")
     # save_image_files(fig, out / "test_plot_plotly", backend="plotly")
     fig.show()
-
-
-
 
 
 if __name__ == "__main__":

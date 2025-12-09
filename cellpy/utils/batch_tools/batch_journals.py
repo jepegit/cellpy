@@ -1010,7 +1010,7 @@ class LabJournal(BaseJournal, ABC):
         if not os.path.isdir(raw_dir):
             os.makedirs(raw_dir, exist_ok=True)
             logging.info(f"created folder {raw_dir}")
-        if not os.path.isdir(legacy_project_dir):
+        if legacy_project_dir and not os.path.isdir(legacy_project_dir):
             os.makedirs(legacy_project_dir, exist_ok=True)
             logging.info(f"created folder {legacy_project_dir}")
 

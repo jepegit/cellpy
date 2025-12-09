@@ -120,3 +120,28 @@ def mock_env_cellpy_key_filename(monkeypatch, parameters):
 def mock_env_cellpy_password(monkeypatch, parameters):
     """Mock the environment variables for cellpy"""
     monkeypatch.setenv("CELLPY_PASSWORD", parameters.env_cellpy_password)
+
+
+@pytest.fixture
+def cell_with_summary(cell):
+    """Fixture for CellpyCell with pre-computed summary (alias for cell)."""
+    # Ensure summary exists
+    if cell.data.summary is None or len(cell.data.summary) == 0:
+        cell.make_summary(find_ir=True, find_end_voltage=True)
+    return cell
+
+
+@pytest.fixture
+def cell_with_cv_data(cell):
+    """Fixture for CellpyCell with CV step data.
+    
+    Note: This uses the same cell fixture but ensures step table is made
+    which is needed for CV-related plots.
+    """
+    # Ensure step table exists for CV detection
+    if cell.data.steps is None or len(cell.data.steps) == 0:
+        cell.make_step_table()
+    # Ensure summary exists
+    if cell.data.summary is None or len(cell.data.summary) == 0:
+        cell.make_summary(find_ir=True, find_end_voltage=True)
+    return cell
