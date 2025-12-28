@@ -1602,16 +1602,17 @@ class PlotlyPlotBuilder:
                 matches=None,
             ),
         )
+        # Clear all existing annotations (including automatic facet column headers)
+        # to prevent both vertical and horizontal formation headers from appearing
+        # For number_of_rows == 1, Plotly creates 3 annotations (2 facet columns + 1 row label)
+        # We need to replace all of them with only the 2 we want
+        # Use _plotly_label_dict to create proper annotation with all required properties
         annotations = [
-            {
-                "text": formation_header,
-                "x": 0.08,
-                "y": 1.02,
-                "showarrow": False,
-            },
+            _plotly_label_dict(formation_header, 0.08, 1.02),
             PLOTLY_BLANK_LABEL,
         ]
-        fig.update_layout(annotations=annotations)
+        fig.layout["annotations"] = annotations
+        
         fig.update_layout(
             yaxis2=dict(matches="y", showticklabels=show_y_labels_on_right_pane),
         )
