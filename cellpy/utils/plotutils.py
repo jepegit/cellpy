@@ -602,241 +602,6 @@ def create_colormarkerlist(
     return _color_list, _symbol_list
 
 
-def create_col_info(c: Any) -> tuple[tuple, dict, dict, dict]:
-    """Create column information for summary plots.
-
-    This function is called by summary_plot together with create_label_dict. The two functions need to be updated together.
-    Not optimal. So feel free to refactor it.
-
-    Args:
-        c: cellpy object
-
-    Returns:
-        x_columns (tuple), y_cols (dict), x_transformations (dict), y_transformations (dict)
-
-    """
-
-    def _normalize_col(
-        x: np.ndarray,
-        normalization_factor: float = 1.0,
-        normalization_type: str = "max",
-        normalization_scaler: float = 1.0,
-    ) -> np.ndarray:
-        # a bit random collection of normalization types...
-
-        if normalization_type == "divide":
-            return (x / normalization_factor) * normalization_scaler
-        elif normalization_type == "shift-divide":
-            return (
-                (normalization_factor - x) / normalization_factor
-            ) * normalization_scaler
-        elif normalization_type == "multiply":
-            return (x * normalization_factor) * normalization_scaler
-        elif normalization_type == "area":
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore")
-                area = np.trapzoid(x, dx=1)
-            return (x / area / normalization_factor) * normalization_scaler
-        elif normalization_type == "max":
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore")
-                x_max = x.max()
-            return (x / x_max / normalization_factor) * normalization_scaler
-        else:
-            raise ValueError(f"Invalid normalization type: {normalization_type}")
-
-    hdr = c.headers_summary
-    _cap_cols = [hdr.charge_capacity_raw, hdr.discharge_capacity_raw]
-    _capacities_gravimetric = [col + "_gravimetric" for col in _cap_cols]
-    _capacities_gravimetric_split = (
-        _capacities_gravimetric
-        + [col + "_cv" for col in _capacities_gravimetric]
-        + [col + "_non_cv" for col in _capacities_gravimetric]
-    )
-    _capacities_areal = [col + "_areal" for col in _cap_cols]
-    _capacities_areal_split = (
-        _capacities_areal
-        + [col + "_cv" for col in _capacities_areal]
-        + [col + "_non_cv" for col in _capacities_areal]
-    )
-    _capacities_absolute = [col + "_absolute" for col in _cap_cols]
-    _capacities_absolute_split = (
-        _capacities_absolute
-        + [col + "_cv" for col in _capacities_absolute]
-        + [col + "_non_cv" for col in _capacities_absolute]
-    )
-
-    x_columns = (
-        [
-            hdr.cycle_index,
-            hdr.data_point,
-            hdr.test_time,
-            hdr.datetime,
-            hdr.normalized_cycle_index,
-        ],
-    )
-    y_cols = dict(
-        voltages=[hdr.end_voltage_charge, hdr.end_voltage_discharge],
-        capacities_gravimetric=_capacities_gravimetric,
-        capacities_areal=_capacities_areal,
-        capacities_absolute=_capacities_absolute,
-        capacities=_cap_cols,
-        capacities_gravimetric_split_constant_voltage=_capacities_gravimetric_split,
-        capacities_areal_split_constant_voltage=_capacities_areal_split,
-        capacities_gravimetric_coulombic_efficiency=_capacities_gravimetric
-        + [hdr.coulombic_efficiency],
-        capacities_areal_coulombic_efficiency=_capacities_areal
-        + [hdr.coulombic_efficiency],
-        capacities_absolute_coulombic_efficiency=_capacities_absolute
-        + [hdr.coulombic_efficiency],
-        fullcell_standard_cumloss_gravimetric=[
-            hdr.charge_capacity + "_gravimetric" + "_cv",
-            hdr.cumulated_discharge_capacity_loss + "_gravimetric",
-            hdr.discharge_capacity + "_gravimetric",
-            hdr.coulombic_efficiency,
-        ],
-        fullcell_standard_cumloss_areal=[
-            hdr.charge_capacity + "_areal" + "_cv",
-            hdr.cumulated_discharge_capacity_loss + "_areal",
-            hdr.discharge_capacity + "_areal",
-            hdr.coulombic_efficiency,
-        ],
-        fullcell_standard_cumloss_absolute=[
-            hdr.charge_capacity + "_absolute" + "_cv",
-            hdr.cumulated_discharge_capacity_loss + "_absolute",
-            hdr.discharge_capacity + "_absolute",
-            hdr.coulombic_efficiency,
-        ],
-        fullcell_standard_gravimetric=[
-            hdr.charge_capacity + "_gravimetric" + "_cv",
-            hdr.discharge_capacity + "_gravimetric",
-            "mod_01_" + hdr.discharge_capacity + "_gravimetric",
-            hdr.coulombic_efficiency,
-        ],
-        fullcell_standard_areal=[
-            hdr.charge_capacity + "_areal" + "_cv",
-            hdr.discharge_capacity + "_areal",
-            "mod_01_" + hdr.discharge_capacity + "_areal",
-            hdr.coulombic_efficiency,
-        ],
-        fullcell_standard_absolute=[
-            hdr.charge_capacity + "_absolute" + "_cv",
-            hdr.discharge_capacity + "_absolute",
-            "mod_01_" + hdr.discharge_capacity + "_absolute",
-            hdr.coulombic_efficiency,
-        ],
-        fullcell_standard_dev=[
-            hdr.charge_capacity + "_gravimetric" + "_cv",
-            hdr.discharge_capacity + "_gravimetric",
-            hdr.coulombic_efficiency,
-            "mod_01_" + hdr.discharge_capacity + "_gravimetric",
-        ],
-    )
-
-    x_transformations = dict()
-
-    # transformation info on the form: column_name: {(row_number, new_column_name): transformation_function}
-    y_transformations: dict[str, dict[tuple[int, str], dict[str, Callable]]] = dict(
-        fullcell_standard_cumloss_gravimetric={
-            hdr.cumulated_discharge_capacity_loss + "_gravimetric": {
-                (
-                    2,
-                    hdr.cumulated_discharge_capacity_loss + "_gravimetric",
-                ): _normalize_col
-            },
-        },
-        fullcell_standard_cumloss_areal={
-            hdr.cumulated_discharge_capacity_loss + "_areal": {
-                (2, hdr.cumulated_discharge_capacity_loss + "_areal"): _normalize_col
-            },
-        },
-        fullcell_standard_cumloss_absolute={
-            hdr.cumulated_discharge_capacity_loss + "_absolute": {
-                (2, hdr.cumulated_discharge_capacity_loss + "_absolute"): _normalize_col
-            },
-        },
-        fullcell_standard_gravimetric={
-            "mod_01_" + hdr.discharge_capacity + "_gravimetric": {
-                (
-                    2,
-                    hdr.discharge_capacity + "_retention" + "_gravimetric",
-                ): _normalize_col
-            },
-        },
-        fullcell_standard_areal={
-            "mod_01_" + hdr.discharge_capacity + "_areal": {
-                (2, hdr.discharge_capacity + "_retention" + "_areal"): _normalize_col
-            },
-        },
-        fullcell_standard_absolute={
-            "mod_01_" + hdr.discharge_capacity + "_absolute": {
-                (2, hdr.discharge_capacity + "_retention" + "_absolute"): _normalize_col
-            },
-        },
-        fullcell_standard_dev={
-            "mod_01_" + hdr.discharge_capacity + "_gravimetric": {
-                (
-                    2,
-                    hdr.discharge_capacity + "_retention" + "_gravimetric",
-                ): _normalize_col
-            },
-        },
-    )
-
-    return x_columns, y_cols, x_transformations, y_transformations
-
-
-def create_label_dict(c):
-    """Create label dictionary for summary plots.
-
-    This function is called by summary_plot together with create_col_info. The two functions need to be updated together.
-    Not optimal. So feel free to refactor it.
-
-    Args:
-        c: cellpy object
-
-    Returns:
-        x_axis_labels (dict), y_axis_label (dict)
-
-    """
-
-    hdr = c.headers_summary
-    x_axis_labels = {
-        hdr.cycle_index: "Cycle Number",
-        hdr.data_point: "Point",
-        hdr.test_time: f"Test Time ({c.cellpy_units.time})",
-        hdr.datetime: "Date",
-        hdr.normalized_cycle_index: "Equivalent Full Cycle",  # hdr.normalized_cycle_index: "Normalized Cycle Number",
-    }
-
-    _cap_gravimetric_label = (
-        f"Capacity ({c.cellpy_units.charge}/{c.cellpy_units.specific_gravimetric})"
-    )
-    _cap_areal_label = (
-        f"Capacity ({c.cellpy_units.charge}/{c.cellpy_units.specific_areal})"
-    )
-    _cap_absolute_label = f"Capacity ({c.cellpy_units.charge})"
-    _cap_label = f"Capacity ({c.data.raw_units.charge})"
-
-    y_axis_label = {
-        "voltages": f"Voltage ({c.cellpy_units.voltage})",
-        "capacities_gravimetric": _cap_gravimetric_label,
-        "capacities_areal": _cap_areal_label,
-        "capacities_absolute": _cap_absolute_label,
-        "capacities": _cap_label,
-        "capacities_gravimetric_split_constant_voltage": _cap_gravimetric_label,
-        "capacities_areal_split_constant_voltage": _cap_areal_label,
-        "capacities_absolute_split_constant_voltage": _cap_absolute_label,
-        "capacities_gravimetric_coulombic_efficiency": _cap_gravimetric_label,
-        "capacities_areal_coulombic_efficiency": _cap_areal_label,
-        "capacities_absolute_coulombic_efficiency": _cap_absolute_label,
-        "fullcell_standard_gravimetric": _cap_gravimetric_label,
-        "fullcell_standard_areal": _cap_areal_label,
-        "fullcell_standard_absolute": _cap_absolute_label,
-    }
-    return x_axis_labels, y_axis_label
-
-
 def _get_capacity_unit(c, mode="gravimetric", seperator="/"):
     specific_selector = {
         "gravimetric": f"{c.cellpy_units.charge}{seperator}{c.cellpy_units.specific_gravimetric}",
@@ -956,6 +721,266 @@ class SummaryPlotConfig:
         return kwargs
 
 
+class SummaryPlotInfo:
+    x_cols: Optional[tuple] = None
+    y_cols: Optional[dict] = None
+    x_trans: Optional[dict] = None
+    y_trans: Optional[dict] = None
+    x_axis_labels: Optional[dict] = None
+    y_axis_label: Optional[dict] = None
+
+    def __init__(self, c: Any):
+        self._create_col_info(c)
+        self._create_label_dict(c)
+
+    def _create_label_dict(self, c: Any) -> tuple[dict, dict]:
+        """Create label dictionary for summary plots.
+
+        Args:
+            c: cellpy object
+
+        Returns:
+            x_axis_labels (dict), y_axis_label (dict)
+
+        """
+
+        hdr = c.headers_summary
+        x_axis_labels = {
+            hdr.cycle_index: "Cycle Number",
+            hdr.data_point: "Point",
+            hdr.test_time: f"Test Time ({c.cellpy_units.time})",
+            hdr.datetime: "Date",
+            hdr.normalized_cycle_index: "Equivalent Full Cycle",  # hdr.normalized_cycle_index: "Normalized Cycle Number",
+        }
+
+        _cap_gravimetric_label = (
+            f"Capacity ({c.cellpy_units.charge}/{c.cellpy_units.specific_gravimetric})"
+        )
+        _cap_areal_label = (
+            f"Capacity ({c.cellpy_units.charge}/{c.cellpy_units.specific_areal})"
+        )
+        _cap_absolute_label = f"Capacity ({c.cellpy_units.charge})"
+        _cap_label = f"Capacity ({c.data.raw_units.charge})"
+
+        y_axis_label = {
+            "voltages": f"Voltage ({c.cellpy_units.voltage})",
+            "capacities_gravimetric": _cap_gravimetric_label,
+            "capacities_areal": _cap_areal_label,
+            "capacities_absolute": _cap_absolute_label,
+            "capacities": _cap_label,
+            "capacities_gravimetric_split_constant_voltage": _cap_gravimetric_label,
+            "capacities_areal_split_constant_voltage": _cap_areal_label,
+            "capacities_absolute_split_constant_voltage": _cap_absolute_label,
+            "capacities_gravimetric_coulombic_efficiency": _cap_gravimetric_label,
+            "capacities_areal_coulombic_efficiency": _cap_areal_label,
+            "capacities_absolute_coulombic_efficiency": _cap_absolute_label,
+            "fullcell_standard_gravimetric": _cap_gravimetric_label,
+            "fullcell_standard_areal": _cap_areal_label,
+            "fullcell_standard_absolute": _cap_absolute_label,
+        }
+
+        self.x_axis_labels = x_axis_labels
+        self.y_axis_label = y_axis_label
+
+    def _create_col_info(self, c: Any) -> tuple[tuple, dict, dict, dict]:
+        """Create column information for summary plots.
+
+        This function is called by summary_plot together with create_label_dict. The two functions need to be updated together.
+        Not optimal. So feel free to refactor it.
+
+        Args:
+            c: cellpy object
+
+        Returns:
+            x_columns (tuple), y_cols (dict), x_transformations (dict), y_transformations (dict)
+
+        """
+
+        def _normalize_col(
+            x: np.ndarray,
+            normalization_factor: float = 1.0,
+            normalization_type: str = "max",
+            normalization_scaler: float = 1.0,
+        ) -> np.ndarray:
+            # a bit random collection of normalization types...
+
+            if normalization_type == "divide":
+                return (x / normalization_factor) * normalization_scaler
+            elif normalization_type == "shift-divide":
+                return (
+                    (normalization_factor - x) / normalization_factor
+                ) * normalization_scaler
+            elif normalization_type == "multiply":
+                return (x * normalization_factor) * normalization_scaler
+            elif normalization_type == "area":
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore")
+                    area = np.trapzoid(x, dx=1)
+                return (x / area / normalization_factor) * normalization_scaler
+            elif normalization_type == "max":
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore")
+                    x_max = x.max()
+                return (x / x_max / normalization_factor) * normalization_scaler
+            else:
+                raise ValueError(f"Invalid normalization type: {normalization_type}")
+
+        hdr = c.headers_summary
+        _cap_cols = [hdr.charge_capacity_raw, hdr.discharge_capacity_raw]
+        _capacities_gravimetric = [col + "_gravimetric" for col in _cap_cols]
+        _capacities_gravimetric_split = (
+            _capacities_gravimetric
+            + [col + "_cv" for col in _capacities_gravimetric]
+            + [col + "_non_cv" for col in _capacities_gravimetric]
+        )
+        _capacities_areal = [col + "_areal" for col in _cap_cols]
+        _capacities_areal_split = (
+            _capacities_areal
+            + [col + "_cv" for col in _capacities_areal]
+            + [col + "_non_cv" for col in _capacities_areal]
+        )
+        _capacities_absolute = [col + "_absolute" for col in _cap_cols]
+        _capacities_absolute_split = (
+            _capacities_absolute
+            + [col + "_cv" for col in _capacities_absolute]
+            + [col + "_non_cv" for col in _capacities_absolute]
+        )
+
+        x_columns = (
+            [
+                hdr.cycle_index,
+                hdr.data_point,
+                hdr.test_time,
+                hdr.datetime,
+                hdr.normalized_cycle_index,
+            ],
+        )
+        y_cols = dict(
+            voltages=[hdr.end_voltage_charge, hdr.end_voltage_discharge],
+            capacities_gravimetric=_capacities_gravimetric,
+            capacities_areal=_capacities_areal,
+            capacities_absolute=_capacities_absolute,
+            capacities=_cap_cols,
+            capacities_gravimetric_split_constant_voltage=_capacities_gravimetric_split,
+            capacities_areal_split_constant_voltage=_capacities_areal_split,
+            capacities_gravimetric_coulombic_efficiency=_capacities_gravimetric
+            + [hdr.coulombic_efficiency],
+            capacities_areal_coulombic_efficiency=_capacities_areal
+            + [hdr.coulombic_efficiency],
+            capacities_absolute_coulombic_efficiency=_capacities_absolute
+            + [hdr.coulombic_efficiency],
+            fullcell_standard_cumloss_gravimetric=[
+                hdr.charge_capacity + "_gravimetric" + "_cv",
+                hdr.cumulated_discharge_capacity_loss + "_gravimetric",
+                hdr.discharge_capacity + "_gravimetric",
+                hdr.coulombic_efficiency,
+            ],
+            fullcell_standard_cumloss_areal=[
+                hdr.charge_capacity + "_areal" + "_cv",
+                hdr.cumulated_discharge_capacity_loss + "_areal",
+                hdr.discharge_capacity + "_areal",
+                hdr.coulombic_efficiency,
+            ],
+            fullcell_standard_cumloss_absolute=[
+                hdr.charge_capacity + "_absolute" + "_cv",
+                hdr.cumulated_discharge_capacity_loss + "_absolute",
+                hdr.discharge_capacity + "_absolute",
+                hdr.coulombic_efficiency,
+            ],
+            fullcell_standard_gravimetric=[
+                hdr.charge_capacity + "_gravimetric" + "_cv",
+                hdr.discharge_capacity + "_gravimetric",
+                "mod_01_" + hdr.discharge_capacity + "_gravimetric",
+                hdr.coulombic_efficiency,
+            ],
+            fullcell_standard_areal=[
+                hdr.charge_capacity + "_areal" + "_cv",
+                hdr.discharge_capacity + "_areal",
+                "mod_01_" + hdr.discharge_capacity + "_areal",
+                hdr.coulombic_efficiency,
+            ],
+            fullcell_standard_absolute=[
+                hdr.charge_capacity + "_absolute" + "_cv",
+                hdr.discharge_capacity + "_absolute",
+                "mod_01_" + hdr.discharge_capacity + "_absolute",
+                hdr.coulombic_efficiency,
+            ],
+            fullcell_standard_dev=[
+                hdr.charge_capacity + "_gravimetric" + "_cv",
+                hdr.discharge_capacity + "_gravimetric",
+                hdr.coulombic_efficiency,
+                "mod_01_" + hdr.discharge_capacity + "_gravimetric",
+            ],
+        )
+
+        x_transformations = dict()
+
+        # transformation info on the form: column_name: {(row_number, new_column_name): transformation_function}
+        y_transformations: dict[str, dict[tuple[int, str], dict[str, Callable]]] = dict(
+            fullcell_standard_cumloss_gravimetric={
+                hdr.cumulated_discharge_capacity_loss + "_gravimetric": {
+                    (
+                        2,
+                        hdr.cumulated_discharge_capacity_loss + "_gravimetric",
+                    ): _normalize_col
+                },
+            },
+            fullcell_standard_cumloss_areal={
+                hdr.cumulated_discharge_capacity_loss + "_areal": {
+                    (
+                        2,
+                        hdr.cumulated_discharge_capacity_loss + "_areal",
+                    ): _normalize_col
+                },
+            },
+            fullcell_standard_cumloss_absolute={
+                hdr.cumulated_discharge_capacity_loss + "_absolute": {
+                    (
+                        2,
+                        hdr.cumulated_discharge_capacity_loss + "_absolute",
+                    ): _normalize_col
+                },
+            },
+            fullcell_standard_gravimetric={
+                "mod_01_" + hdr.discharge_capacity + "_gravimetric": {
+                    (
+                        2,
+                        hdr.discharge_capacity + "_retention" + "_gravimetric",
+                    ): _normalize_col
+                },
+            },
+            fullcell_standard_areal={
+                "mod_01_" + hdr.discharge_capacity + "_areal": {
+                    (
+                        2,
+                        hdr.discharge_capacity + "_retention" + "_areal",
+                    ): _normalize_col
+                },
+            },
+            fullcell_standard_absolute={
+                "mod_01_" + hdr.discharge_capacity + "_absolute": {
+                    (
+                        2,
+                        hdr.discharge_capacity + "_retention" + "_absolute",
+                    ): _normalize_col
+                },
+            },
+            fullcell_standard_dev={
+                "mod_01_" + hdr.discharge_capacity + "_gravimetric": {
+                    (
+                        2,
+                        hdr.discharge_capacity + "_retention" + "_gravimetric",
+                    ): _normalize_col
+                },
+            },
+        )
+
+        self.x_cols = x_columns
+        self.y_cols = y_cols
+        self.x_trans = x_transformations
+        self.y_trans = y_transformations
+
+
 class SummaryPlotDataPreparer:
     """Handles data collection and transformation for summary plots.
 
@@ -973,25 +998,14 @@ class SummaryPlotDataPreparer:
         self,
         c: Any,
         config: SummaryPlotConfig,
-        x_cols: tuple,
-        y_cols: dict,
-        x_trans: dict,
-        y_trans: dict,
-        x_axis_labels: dict,
-        y_axis_label: dict,
+        plot_info: SummaryPlotInfo,
     ) -> dict:
         """Prepare data for plotting.
 
         Args:
             c: cellpy object
             config: SummaryPlotConfig with all parameters
-            x_cols: x column information from create_col_info
-            y_cols: y column information from create_col_info
-            x_trans: x transformation information from create_col_info
-            y_trans: y transformation information from create_col_info
-            x_axis_labels: x axis labels from create_label_dict
-            y_axis_label: y axis labels from create_label_dict
-
+            summary_plot_info: SummaryPlotInfo containing information about pre-defined columns and labels
         Returns:
             Dictionary with keys:
                 - data: prepared DataFrame
@@ -1008,11 +1022,10 @@ class SummaryPlotDataPreparer:
 
         number_of_rows = 1
         max_val_normalized_col = 0.0
-
         # Prepare data based on plot type
         if y.startswith("fullcell_standard_"):
             s, number_of_rows = self._prepare_fullcell_standard_data(
-                c, x, y, y_cols, y_trans, config
+                c, x, y, plot_info.y_cols, plot_info.y_trans, config
             )
             max_val_normalized_col = (
                 s.loc[s["variable"].str.contains("retention"), "value"].max()
@@ -1020,18 +1033,22 @@ class SummaryPlotDataPreparer:
                 else 0.0
             )
         elif y.endswith("_split_constant_voltage"):
-            s, number_of_rows = self._prepare_cv_split_data(c, x, y, y_cols, config)
+            s, number_of_rows = self._prepare_cv_split_data(
+                c, x, y, plot_info.y_cols, config
+            )
         else:
-            s, number_of_rows = self._prepare_standard_data(c, x, y, y_cols, config)
+            s, number_of_rows = self._prepare_standard_data(
+                c, x, y, plot_info.y_cols, config
+            )
 
         # Calculate cycle ranges
         max_cycle = s[x].max()
         min_cycle = s[x].min()
 
         # Get labels
-        x_label = x_axis_labels.get(x, x)
-        if y in y_axis_label:
-            y_label = y_axis_label.get(y, y)
+        x_label = plot_info.x_axis_labels.get(x, x)
+        if y in plot_info.y_axis_label:
+            y_label = plot_info.y_axis_label.get(y, y)
         else:
             y_label = y.replace("_", " ").title()
 
@@ -1120,7 +1137,7 @@ class SummaryPlotDataPreparer:
             cap_type = "capacities_absolute"
         else:
             raise ValueError(f"Unknown capacity type for CV split: {y}")
-        
+
         column_set = y_cols[cap_type]
 
         # Use partition_summary_cv_steps function
@@ -1142,13 +1159,13 @@ class SummaryPlotDataPreparer:
 
         summary = c.data.summary
         summary = summary.reset_index()
-        
+
         # Check if requested columns exist in summary
         # For absolute capacities, fall back to base columns if _absolute columns don't exist
         available_columns = set(summary.columns)
         requested_columns = set(column_set)
         missing_columns = requested_columns - available_columns
-        
+
         if missing_columns and y == "capacities_absolute":
             # For absolute capacities, if _absolute columns don't exist, use base columns
             hdr = c.headers_summary
@@ -1164,11 +1181,11 @@ class SummaryPlotDataPreparer:
             # For other capacity types, if columns are missing, keep original column_set
             # This will result in empty DataFrame, which will be handled downstream
             pass
-        
+
         s = summary.melt(x)
         s = s.loc[s.variable.isin(column_set)]
         s = s.reset_index(drop=True)
-        
+
         # Check if we have any data after filtering
         if len(s) == 0:
             raise ValueError(
@@ -1176,7 +1193,7 @@ class SummaryPlotDataPreparer:
                 f"Requested columns: {column_set}. "
                 f"Available columns in summary: {list(available_columns)}"
             )
-        
+
         s[self.row] = 1
 
         number_of_rows = 1
@@ -1309,10 +1326,12 @@ class PlotlyPlotBuilder:
             Plotly figure object
         """
         import plotly.express as px
-        
+
         # Extract plotly-specific parameters from additional_kwargs
         smart_link = additional_kwargs.pop("smart_link", True)
-        show_y_labels_on_right_pane = additional_kwargs.pop("show_y_labels_on_right_pane", False)
+        show_y_labels_on_right_pane = additional_kwargs.pop(
+            "show_y_labels_on_right_pane", False
+        )
         plotly_row_ratios = additional_kwargs.pop(
             "fullcell_standard_row_height_ratios", [0.3, 0.6, 0.9]
         )
@@ -1322,7 +1341,9 @@ class PlotlyPlotBuilder:
         plotly_update_traces = {}
         for k in list(additional_kwargs.keys()):
             if k.startswith("plotly_"):
-                plotly_update_traces[k.replace("plotly_", "")] = additional_kwargs.pop(k)
+                plotly_update_traces[k.replace("plotly_", "")] = additional_kwargs.pop(
+                    k
+                )
 
         # Set default title if not provided
         title = config.title
@@ -1612,7 +1633,7 @@ class PlotlyPlotBuilder:
             PLOTLY_BLANK_LABEL,
         ]
         fig.layout["annotations"] = annotations
-        
+
         fig.update_layout(
             yaxis2=dict(matches="y", showticklabels=show_y_labels_on_right_pane),
         )
@@ -1778,10 +1799,16 @@ class PlotlyPlotBuilder:
 
         range_1 = self._auto_range(fig, "y", "y2")
 
-        if y.startswith("fullcell_standard_") and config.fullcell_standard_normalization_type is not False:
+        if (
+            y.startswith("fullcell_standard_")
+            and config.fullcell_standard_normalization_type is not False
+        ):
             range_2 = [
                 0.0,
-                max(max_val_normalized_col, config.fullcell_standard_normalization_scaler),
+                max(
+                    max_val_normalized_col,
+                    config.fullcell_standard_normalization_scaler,
+                ),
             ]
             range_2 = config.norm_range or range_2
         else:
@@ -1893,7 +1920,10 @@ class PlotlyPlotBuilder:
 
         ce_label = "Coulombic<br>Efficiency (%)"
         capacity_label = f"Capacity<br>({capacity_unit})"
-        if config.fullcell_standard_normalization_type and config.fullcell_standard_normalization_factor is not None:
+        if (
+            config.fullcell_standard_normalization_type
+            and config.fullcell_standard_normalization_factor is not None
+        ):
             _norm_label = f"[{config.fullcell_standard_normalization_scaler:.1f}/{config.fullcell_standard_normalization_factor:.1f} {capacity_unit}]"
             loss_label = f"Capacity<br>Retention (norm.)<br>{_norm_label}"
         else:
@@ -1969,7 +1999,10 @@ class PlotlyPlotBuilder:
             if config.fullcell_standard_normalization_type is not False:
                 range_3 = [
                     0.0,
-                    max(max_val_normalized_col, config.fullcell_standard_normalization_scaler),
+                    max(
+                        max_val_normalized_col,
+                        config.fullcell_standard_normalization_scaler,
+                    ),
                 ]
             range_3 = config.norm_range or range_3
 
@@ -1994,7 +2027,10 @@ class PlotlyPlotBuilder:
             capacity_unit = _get_capacity_unit(c, mode=y.split("_")[-1])
             ce_label = "Coulombic<br>Efficiency (%)"
             capacity_label = f"Capacity<br>({capacity_unit})"
-            if config.fullcell_standard_normalization_type and config.fullcell_standard_normalization_factor is not None:
+            if (
+                config.fullcell_standard_normalization_type
+                and config.fullcell_standard_normalization_factor is not None
+            ):
                 _norm_label = f"[{config.fullcell_standard_normalization_scaler:.1f}/{config.fullcell_standard_normalization_factor:.1f} {capacity_unit}]"
                 loss_label = f"Capacity<br>Retention (norm.)<br>{_norm_label}"
             else:
@@ -2099,9 +2135,13 @@ class SeabornPlotBuilder:
             "axes.facecolor": seaborn_facecolor,
             "axes.edgecolor": seaborn_edgecolor,
         }
-        seaborn_style_dict = additional_kwargs.pop("seaborn_style_dict", seaborn_style_dict_default)
+        seaborn_style_dict = additional_kwargs.pop(
+            "seaborn_style_dict", seaborn_style_dict_default
+        )
         seaborn_marker_size = additional_kwargs.pop("seaborn_marker_size", 7)
-        xlim_formation = additional_kwargs.pop("xlim_formation", (0.6, config.formation_cycles + 0.4))
+        xlim_formation = additional_kwargs.pop(
+            "xlim_formation", (0.6, config.formation_cycles + 0.4)
+        )
 
         # Set default title if not provided
         title = config.title
@@ -2155,7 +2195,9 @@ class SeabornPlotBuilder:
                         f"but data has {actual_number_of_rows} unique row values. Using {actual_number_of_rows}."
                     )
                 number_of_rows = actual_number_of_rows
-                logging.debug(f"split=True, row column '{self.row}' found, number_of_rows={number_of_rows}")
+                logging.debug(
+                    f"split=True, row column '{self.row}' found, number_of_rows={number_of_rows}"
+                )
             else:
                 # If split=True but row column doesn't exist, fall back to 1 row
                 logging.warning(
@@ -2163,15 +2205,25 @@ class SeabornPlotBuilder:
                     f"Expected {number_of_rows} rows but falling back to 1 row."
                 )
                 number_of_rows = 1
-                logging.debug(f"split=True but row column '{self.row}' not found, setting number_of_rows=1")
+                logging.debug(
+                    f"split=True but row column '{self.row}' not found, setting number_of_rows=1"
+                )
 
         # Calculate plot properties
-        plot_type = "fullcell_standard" if y.startswith("fullcell_standard_") else "default"
-        seaborn_plot_height, seaborn_plot_aspect = self._calculate_seaborn_plot_properties(
-            number_of_rows, number_of_cols, plot_type
+        plot_type = (
+            "fullcell_standard" if y.startswith("fullcell_standard_") else "default"
         )
-        seaborn_plot_height = additional_kwargs.pop("seaborn_plot_height", seaborn_plot_height)
-        seaborn_plot_aspect = additional_kwargs.pop("seaborn_plot_aspect", seaborn_plot_aspect)
+        seaborn_plot_height, seaborn_plot_aspect = (
+            self._calculate_seaborn_plot_properties(
+                number_of_rows, number_of_cols, plot_type
+            )
+        )
+        seaborn_plot_height = additional_kwargs.pop(
+            "seaborn_plot_height", seaborn_plot_height
+        )
+        seaborn_plot_aspect = additional_kwargs.pop(
+            "seaborn_plot_aspect", seaborn_plot_aspect
+        )
 
         # Calculate axis limits
         eff_lim = config.ce_range
@@ -2224,33 +2276,46 @@ class SeabornPlotBuilder:
 
         # Log configuration for debugging
         logging.debug(f"Seaborn plot configuration:")
-        logging.debug(f"  y={y}, split={config.split}, number_of_rows={number_of_rows}, number_of_cols={number_of_cols}")
+        logging.debug(
+            f"  y={y}, split={config.split}, number_of_rows={number_of_rows}, number_of_cols={number_of_cols}"
+        )
         logging.debug(f"  row_id={row_id}, col_id={col_id}")
         logging.debug(f"  is_efficiency_plot={is_efficiency_plot}")
         logging.debug(f"  gridspec_kws={gridspec_kws}")
         logging.debug(f"  additional_kwargs keys: {list(additional_kwargs.keys())}")
         if config.verbose:
             logging.info(f"Seaborn plot configuration:")
-            logging.info(f"  y={y}, number_of_rows={number_of_rows}, number_of_cols={number_of_cols}")
+            logging.info(
+                f"  y={y}, number_of_rows={number_of_rows}, number_of_cols={number_of_cols}"
+            )
             logging.info(f"  row_id={row_id}, col_id={col_id}")
             logging.info(f"  is_efficiency_plot={is_efficiency_plot}")
             logging.info(f"  gridspec_kws={gridspec_kws}")
             logging.info(f"  additional_kwargs keys: {list(additional_kwargs.keys())}")
 
         # Create the plot
-        sns_fig = sns.relplot(
-            data=data,
-            x=x,
-            y=self.y_header,
-            hue=self.color,
-            height=seaborn_plot_height,
-            aspect=seaborn_plot_aspect,
-            kind="line",
-            marker="o" if config.markers else None,
-            legend=config.show_legend,
-            **additional_kwargs,
-            facet_kws=facet_kws,
-        )
+        # Suppress tight_layout warning from seaborn when using gridspec_kws
+        # (seaborn calls tight_layout internally on axes that may be incompatible)
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore",
+                message=".*tight_layout.*",
+                category=UserWarning,
+                module="seaborn.axisgrid",
+            )
+            sns_fig = sns.relplot(
+                data=data,
+                x=x,
+                y=self.y_header,
+                hue=self.color,
+                height=seaborn_plot_height,
+                aspect=seaborn_plot_aspect,
+                kind="line",
+                marker="o" if config.markers else None,
+                legend=config.show_legend,
+                **additional_kwargs,
+                facet_kws=facet_kws,
+            )
 
         sns_fig.set_axis_labels(x_label, y_label)
 
@@ -2310,8 +2375,7 @@ class SeabornPlotBuilder:
         """Calculate efficiency axis limits from data."""
         eff_vals = (
             data.loc[data[self.color].str.contains("_efficiency"), self.y_header]
-            .replace([np.inf, -np.inf], np.nan)
-            .infer_objects(copy=False)
+            .pipe(pd.to_numeric, errors="coerce")
             .dropna()
         )
         if len(eff_vals) == 0:
@@ -2323,8 +2387,7 @@ class SeabornPlotBuilder:
         """Calculate y-axis range from data."""
         y_vals = (
             data.loc[~data[self.color].str.contains("_efficiency"), self.y_header]
-            .replace([np.inf, -np.inf], np.nan)
-            .infer_objects(copy=False)
+            .pipe(pd.to_numeric, errors="coerce")
             .dropna()
         )
         if len(y_vals) == 0:
@@ -2366,7 +2429,12 @@ class SeabornPlotBuilder:
         elif is_split_constant_voltage_plot:
             info_dicts.extend(
                 self._build_cv_split_info_dicts(
-                    config, x_range, y_range, config.cv_share_range, xlim_formation, y_label
+                    config,
+                    x_range,
+                    y_range,
+                    config.cv_share_range,
+                    xlim_formation,
+                    y_label,
                 )
             )
         elif is_fullcell_standard_plot:
@@ -2537,7 +2605,10 @@ class SeabornPlotBuilder:
         capacity_label = f"Capacity\n({capacity_unit})"
 
         loss_label = f"Capacity\nRetention\n({capacity_unit})"
-        if config.fullcell_standard_normalization_type and config.fullcell_standard_normalization_factor is not None:
+        if (
+            config.fullcell_standard_normalization_type
+            and config.fullcell_standard_normalization_factor is not None
+        ):
             _norm_label = f"[{config.fullcell_standard_normalization_scaler:.1f}/{config.fullcell_standard_normalization_factor:.1f} {capacity_unit}]"
             loss_label = f"Capacity\nRetention (norm.)\n{_norm_label}"
         else:
@@ -2548,7 +2619,10 @@ class SeabornPlotBuilder:
         if config.fullcell_standard_normalization_type is not False:
             cum_loss_info_range = norm_range or [
                 0.0,
-                max(max_val_normalized_col, config.fullcell_standard_normalization_scaler),
+                max(
+                    max_val_normalized_col,
+                    config.fullcell_standard_normalization_scaler,
+                ),
             ]
         else:
             cum_loss_info_range = norm_range or y_range
@@ -2722,9 +2796,7 @@ class SeabornPlotBuilder:
 
         return info_dicts
 
-    def _clean_up_axis(
-        self, fig, info_dicts=None, row_id="row", col_id="cycle_type"
-    ):
+    def _clean_up_axis(self, fig, info_dicts=None, row_id="row", col_id="cycle_type"):
         """Clean up and configure axes based on info_dicts."""
         if info_dicts is None:
             return
@@ -2734,9 +2806,7 @@ class SeabornPlotBuilder:
         for info in info_dicts:
             if col_id is not None:
                 if row_id is not None:
-                    info_text = (
-                        f"{row_id} = {info['row']} | {col_id} = {info['col']}"
-                    )
+                    info_text = f"{row_id} = {info['row']} | {col_id} = {info['col']}"
                 else:
                     info_text = f"{col_id} = {info['col']}"
             else:
@@ -4358,11 +4428,12 @@ def summary_plot(
             return None
 
     # Prepare data
-    x_cols, y_cols, x_trans, y_trans = create_col_info(c)
-    x_axis_labels, y_axis_label = create_label_dict(c)
+    plot_info = SummaryPlotInfo(c)
     preparer = SummaryPlotDataPreparer()
     prepared_data_info = preparer.prepare_data(
-        c, config, x_cols, y_cols, x_trans, y_trans, x_axis_labels, y_axis_label
+        c,
+        config,
+        plot_info,
     )
 
     # Build plot using new builder classes
@@ -5463,6 +5534,7 @@ def _check_summary_plotter_plotly():
     import pathlib
 
     import cellpy
+
     print("Checking summary_plotter_plotly")
     print(f"{pathlib.Path(__file__).parent.parent.parent=}")
     print(f"{pathlib.Path.cwd()=}")
@@ -5490,10 +5562,10 @@ def _check_summary_plotter_plotly():
     print("saving figure")
     print(f"{fig=}")
     print(f"{type(fig)=}")
-    save_image_files(fig, out / "test_plot_plotly", backend="plotly")
+    # save_image_files(fig, out / "test_plot_plotly", backend="plotly")
     fig.show(renderer="browser")
 
-   
+
 if __name__ == "__main__":
     # _check_plotter_plotly()
     # _check_plotter_matplotlib()
