@@ -11,6 +11,7 @@ import logging
 from multiprocessing import Process
 import os
 import pickle as pkl
+import pprint
 import sys
 from typing import Any, Callable, Optional
 import warnings
@@ -679,6 +680,15 @@ class SummaryPlotConfig:
     # Additional kwargs (stored as dict)
     additional_kwargs: dict = dataclasses.field(default_factory=dict)
 
+    def __str__(self) -> str:
+        variables = vars(self)
+        outputs = ["SummaryPlotConfig:"]
+        outputs.extend([f"{k}: {pprint.pformat(v)}" for k, v in variables.items()])
+        return "\n".join(outputs)
+
+    def __repr__(self) -> str:
+        return self.__str__()
+
     @classmethod
     def from_kwargs(cls, **kwargs) -> "SummaryPlotConfig":
         """Create SummaryPlotConfig from keyword arguments.
@@ -732,6 +742,15 @@ class SummaryPlotInfo:
     def __init__(self, c: Any):
         self._create_col_info(c)
         self._create_label_dict(c)
+
+    def __str__(self) -> str:
+        variables = vars(self)
+        outputs = ["SummaryPlotInfo:"]
+        outputs.extend([f"{k}: {pprint.pformat(v)}" for k, v in variables.items()])
+        return "\n".join(outputs)
+
+    def __repr__(self) -> str:
+        return self.__str__()
 
     def _create_label_dict(self, c: Any) -> tuple[dict, dict]:
         """Create label dictionary for summary plots.
@@ -5546,6 +5565,13 @@ def _check_summary_plotter_plotly():
     assert p.exists()
     assert out.exists()
     c = cellpy.get(p)
+    plot_info = SummaryPlotInfo(c)
+    config = SummaryPlotConfig()
+    print("\n==============================================================================")
+    print(f"{plot_info=}")
+    print("\n==============================================================================")
+    print(f"{config=}")
+    print("\n==============================================================================")
     fig = summary_plot(
         c,
         # x="normalized_cycle_index",
@@ -5560,8 +5586,8 @@ def _check_summary_plotter_plotly():
         show_formation=True,  # return_figure=True,
     )
     print("saving figure")
-    print(f"{fig=}")
-    print(f"{type(fig)=}")
+    # print(f"{fig=}")
+    # print(f"{type(fig)=}")
     # save_image_files(fig, out / "test_plot_plotly", backend="plotly")
     fig.show(renderer="browser")
 
