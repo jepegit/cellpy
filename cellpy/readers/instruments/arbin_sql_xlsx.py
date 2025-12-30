@@ -1,4 +1,5 @@
 """arbin MS SQL Server csv data"""
+
 import logging
 import pathlib
 import sys

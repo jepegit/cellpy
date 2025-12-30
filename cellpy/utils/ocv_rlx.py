@@ -7,7 +7,7 @@ try:
     from lmfit import Model, Parameters, minimize, report_ci, report_fit
 except ImportError as e:
     logging.warning(
-        "Could not import lmfit. This is needed " "for fitting (run pip install lmfit)."
+        "Could not import lmfit. This is needed for fitting (run pip install lmfit)."
     )
     logging.debug(e)
 
@@ -153,7 +153,7 @@ def select_ocv_points(
 
         if report_times:
             print(f"Cycle {cycle}:", end=" ")
-            print(f"dt = {str(t)}, dv = {first-last:6.3f}")
+            print(f"dt = {str(t)}, dv = {first - last:6.3f}")
 
         for i, j in enumerate(range(max(1, iter_range))):
             if selection_method == "martin":
@@ -697,7 +697,7 @@ class OcvFit(object):
 
             _delta = taus[i] - taus[i - 1]
             _delta_label = f"delta{i}"
-            _delta_expression = f"delta{i}+t{i-1}"
+            _delta_expression = f"delta{i}+t{i - 1}"
             _t_label = f"t{i}"
             _w_label = f"w{i}"
             _w = weights[i]

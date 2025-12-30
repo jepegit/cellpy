@@ -12,6 +12,7 @@ import pandas as pd
 # Set matplotlib to use non-interactive backend for testing
 # This must be done before importing anything that uses matplotlib
 import matplotlib
+
 matplotlib.use("Agg")  # Use non-interactive backend
 
 from cellpy.utils.plotutils import summary_plot
@@ -418,4 +419,3 @@ class TestSummaryPlotGoldenReference:
         assert hasattr(fig, "get_axes")
         axes = fig.get_axes()
         assert len(axes) > 0  # Should have at least one axis
-

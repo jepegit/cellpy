@@ -1,4 +1,4 @@
-""" Very simple implementation of a plugin-like infrastructure"""
+"""Very simple implementation of a plugin-like infrastructure"""
 
 from dataclasses import dataclass, field
 from importlib import import_module

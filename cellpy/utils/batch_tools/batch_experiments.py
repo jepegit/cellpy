@@ -162,10 +162,14 @@ class CyclingExperiment(BaseExperiment):
                     cell_spec[spec] = None
                 else:
                     try:
-                        logging.debug(f"Using ast.literal_eval to convert cell-spec value from str '{cell_spec[spec]}'")
+                        logging.debug(
+                            f"Using ast.literal_eval to convert cell-spec value from str '{cell_spec[spec]}'"
+                        )
                         cell_spec[spec] = ast.literal_eval(cell_spec[spec])
                     except ValueError as e:
-                        logging.warning("ERROR! Could not convert from str to python object!")
+                        logging.warning(
+                            "ERROR! Could not convert from str to python object!"
+                        )
                         logging.debug(e)
         return cell_spec
 
@@ -346,7 +350,9 @@ class CyclingExperiment(BaseExperiment):
 
             cellpy_file = OtherPath(row[hdr_journal.cellpy_file_name])
             if force_cellpy and not cellpy_file.is_file():
-                logging.critical(f"Cellpy file not given in the journal.pages for index={index}")
+                logging.critical(
+                    f"Cellpy file not given in the journal.pages for index={index}"
+                )
                 errors.append(index)
                 continue
             _cellpy_file = None
@@ -392,12 +398,16 @@ class CyclingExperiment(BaseExperiment):
 
             step_kwargs = {}
             if not filename and not force_cellpy:
-                logging.info(f"Raw file(s) not given in the journal.pages for index={index}")
+                logging.info(
+                    f"Raw file(s) not given in the journal.pages for index={index}"
+                )
                 errors.append(index)
                 continue
 
             elif not cellpy_file and force_cellpy:
-                logging.info(f"Cellpy file not given in the journal.pages for index={index}")
+                logging.info(
+                    f"Cellpy file not given in the journal.pages for index={index}"
+                )
                 errors.append(index)
                 continue
 
@@ -461,7 +471,9 @@ class CyclingExperiment(BaseExperiment):
                 logging.info("Running make_summary")
                 n_txt = f"summary {counter}"
                 pbar.set_description(n_txt, refresh=True)
-                cell_data.make_summary(find_end_voltage=find_end_voltage, find_ir=find_ir)
+                cell_data.make_summary(
+                    find_end_voltage=find_end_voltage, find_ir=find_ir
+                )
 
             # some clean-ups (might not be needed anymore):
             if not summary_tmp.index.name == hdr_summary.cycle_index:
@@ -469,7 +481,9 @@ class CyclingExperiment(BaseExperiment):
                 # check if it is a byte-string
                 if b"Cycle_Index" in summary_tmp.columns:
                     logging.debug("Seems to be a byte-string in the column-headers")
-                    summary_tmp.rename(columns={b"Cycle_Index": "Cycle_Index"}, inplace=True)
+                    summary_tmp.rename(
+                        columns={b"Cycle_Index": "Cycle_Index"}, inplace=True
+                    )
                 try:
                     summary_tmp.set_index("cycle_index", inplace=True)
                 except KeyError:
@@ -508,7 +522,9 @@ class CyclingExperiment(BaseExperiment):
                 logging.info("You opted to not save to cellpy-format")
                 logging.info("It is usually recommended to save to cellpy-format:")
                 logging.info(" >>> b.experiment.save_cellpy = True")
-                logging.info("Without the cellpy-files, you cannot select specific cells")
+                logging.info(
+                    "Without the cellpy-files, you cannot select specific cells"
+                )
                 logging.info("if you did not opt to store all in memory")
 
             if self.export_raw or self.export_cycles:
@@ -540,14 +556,18 @@ class CyclingExperiment(BaseExperiment):
                     )
                 except Exception as e:
                     logging.error("Could not make/export dq/dv data")
-                    logging.debug("Failed to make/export " "dq/dv data (%s): %s" % (index, str(e)))
+                    logging.debug(
+                        "Failed to make/export dq/dv data (%s): %s" % (index, str(e))
+                    )
                     errors.append("ica:" + str(index))
 
         self.errors["update"] = errors
         self.summary_frames = summary_frames
         self.cell_data_frames = cell_data_frames
 
-    def parallel_update(self, all_in_memory=None, cell_specs=None, logging_mode=None, **kwargs):
+    def parallel_update(
+        self, all_in_memory=None, cell_specs=None, logging_mode=None, **kwargs
+    ):
         """Updates the selected datasets in parallel.
 
         Args:
@@ -721,12 +741,16 @@ class CyclingExperiment(BaseExperiment):
 
                 step_kwargs = {}
                 if not filename and not force_cellpy:
-                    logging.info(f"Raw file(s) not given in the journal.pages for index={index}")
+                    logging.info(
+                        f"Raw file(s) not given in the journal.pages for index={index}"
+                    )
                     errors.append(index)
                     continue
 
                 elif not cellpy_file and force_cellpy:
-                    logging.info(f"Cellpy file not given in the journal.pages for index={index}")
+                    logging.info(
+                        f"Cellpy file not given in the journal.pages for index={index}"
+                    )
                     errors.append(index)
                     continue
 
@@ -772,7 +796,9 @@ class CyclingExperiment(BaseExperiment):
 
                 if summary_tmp is None or force_recalc:
                     logging.info("Running make_summary")
-                    cell_data.make_summary(find_end_voltage=find_end_voltage, find_ir=find_ir)
+                    cell_data.make_summary(
+                        find_end_voltage=find_end_voltage, find_ir=find_ir
+                    )
 
                 # some clean-ups (might not be needed anymore):
                 if not summary_tmp.index.name == hdr_summary.cycle_index:
@@ -780,7 +806,9 @@ class CyclingExperiment(BaseExperiment):
                     # check if it is a byte-string
                     if b"Cycle_Index" in summary_tmp.columns:
                         logging.debug("Seems to be a byte-string in the column-headers")
-                        summary_tmp.rename(columns={b"Cycle_Index": "Cycle_Index"}, inplace=True)
+                        summary_tmp.rename(
+                            columns={b"Cycle_Index": "Cycle_Index"}, inplace=True
+                        )
                     try:
                         summary_tmp.set_index("cycle_index", inplace=True)
                     except KeyError:
@@ -816,7 +844,9 @@ class CyclingExperiment(BaseExperiment):
                     logging.info("You opted to not save to cellpy-format")
                     logging.info("It is usually recommended to save to cellpy-format:")
                     logging.info(" >>> b.experiment.save_cellpy = True")
-                    logging.info("Without the cellpy-files, you cannot select specific cells")
+                    logging.info(
+                        "Without the cellpy-files, you cannot select specific cells"
+                    )
                     logging.info("if you did not opt to store all in memory")
 
                 if self.export_raw or self.export_cycles:
@@ -848,7 +878,10 @@ class CyclingExperiment(BaseExperiment):
                         )
                     except Exception as e:
                         logging.error("Could not make/export dq/dv data")
-                        logging.debug("Failed to make/export " "dq/dv data (%s): %s" % (index, str(e)))
+                        logging.debug(
+                            "Failed to make/export "
+                            "dq/dv data (%s): %s" % (index, str(e))
+                        )
                         errors.append("ica:" + str(index))
 
         self.errors["update"] = errors
@@ -872,7 +905,9 @@ class CyclingExperiment(BaseExperiment):
         path = pathlib.Path(path)
         cell_names = self.cell_names
         for cell_name in cell_names:
-            cellpy_file_name = self.journal.pages.loc[cell_name, hdr_journal.cellpy_file_name]
+            cellpy_file_name = self.journal.pages.loc[
+                cell_name, hdr_journal.cellpy_file_name
+            ]
             cellpy_file_name = path / pathlib.Path(cellpy_file_name).name
             print(f"Exporting {cell_name} to {cellpy_file_name}")
             try:
@@ -996,7 +1031,9 @@ class CyclingExperiment(BaseExperiment):
                 leave=False,
             )
         else:
-            pbar = tqdm(list(self.journal.pages.iterrows()), file=sys.stdout, leave=False)
+            pbar = tqdm(
+                list(self.journal.pages.iterrows()), file=sys.stdout, leave=False
+            )
         for indx, row in pbar:
             nom_cap = row[hdr_journal.nom_cap]
             mass = row[hdr_journal.mass]
@@ -1008,7 +1045,9 @@ class CyclingExperiment(BaseExperiment):
                 errors.append(e_txt)
                 warnings.warn(e_txt)
             except TypeError as e:
-                e_txt = f"could not extract data for {indx} - have you forgotten to link?"
+                e_txt = (
+                    f"could not extract data for {indx} - have you forgotten to link?"
+                )
                 errors.append(e_txt)
                 warnings.warn(e_txt)
 

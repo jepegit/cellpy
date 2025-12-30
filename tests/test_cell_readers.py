@@ -75,7 +75,9 @@ def test_raw_data_from_data_point(cellpy_data_instance, parameters):
 def test_raw_data_data_point(cellpy_data_instance, parameters):
     # TODO @jepe: refactor and use col names directly from HeadersNormal instead
     data_point_header = "data_point"
-    cellpy_data_instance.from_raw(parameters.res_file_path, data_points=(10_000, 10_200))
+    cellpy_data_instance.from_raw(
+        parameters.res_file_path, data_points=(10_000, 10_200)
+    )
 
     p1 = cellpy_data_instance.data.raw[data_point_header].iloc[0]
     p2 = cellpy_data_instance.data.raw[data_point_header].iloc[-1]
@@ -280,7 +282,9 @@ def test_get_timestamp(dataset, cycle, units, expected):
     assert x.iloc[0, -1] == pytest.approx(expected, 0.001)
 
 
-@pytest.mark.parametrize("cycle, units, as_frame, expected", [(None, "seconds", False, 300.01048193)])
+@pytest.mark.parametrize(
+    "cycle, units, as_frame, expected", [(None, "seconds", False, 300.01048193)]
+)
 def test_get_timestamp_list(dataset, cycle, units, as_frame, expected):
     from pprint import pprint
 
@@ -520,16 +524,22 @@ def test_check_file_ids_external_not_accessible(parameters):
         pytest.param(1, 8, "ocvrlx_up", "good", marks=pytest.mark.xfail),
     ],
 )
-def test_load_step_specs_short(cellpy_data_instance, cycle, step, expected_type, expected_info, parameters):
+def test_load_step_specs_short(
+    cellpy_data_instance, cycle, step, expected_type, expected_info, parameters
+):
     cellpy_data_instance.from_raw(parameters.res_file_path)
     cellpy_data_instance.set_mass(1.0)
     file_name = parameters.short_step_table_file_path
     assert os.path.isfile(file_name)
     cellpy_data_instance.load_step_specifications(file_name, short=True)
     step_table = cellpy_data_instance.data.steps
-    t = step_table.loc[(step_table.cycle == cycle) & (step_table.step == step), "type"].values[0]
+    t = step_table.loc[
+        (step_table.cycle == cycle) & (step_table.step == step), "type"
+    ].values[0]
     assert t == expected_type
-    i = step_table.loc[(step_table.cycle == cycle) & (step_table.step == step), "info"].values[0]
+    i = step_table.loc[
+        (step_table.cycle == cycle) & (step_table.step == step), "info"
+    ].values[0]
     assert str(i) == expected_info
 
 
@@ -563,7 +573,9 @@ def test_extract_fids_from_cellpy_file(parameters, tmp_path):
 
     c = cellreader.CellpyCell()
     with pd.HDFStore(cellpy_file) as store:
-        fid_table, fid_table_selected = c._extract_fids_from_cellpy_file(fid_dir, parent_level, store)
+        fid_table, fid_table_selected = c._extract_fids_from_cellpy_file(
+            fid_dir, parent_level, store
+        )
 
     raw_file = OtherPath(parameters.res_file_path)
     new_cellpy_file_path = tmp_path / cellpy_file.name
@@ -573,7 +585,9 @@ def test_extract_fids_from_cellpy_file(parameters, tmp_path):
     fids0 = c0.data.raw_data_files
 
     with pd.HDFStore(new_cellpy_file_path) as store:
-        fid_table2, fid_table_selected2 = c._extract_fids_from_cellpy_file(fid_dir, parent_level, store)
+        fid_table2, fid_table_selected2 = c._extract_fids_from_cellpy_file(
+            fid_dir, parent_level, store
+        )
     assert fid_table["raw_data_name"][0] == fid_table2["raw_data_name"][0]
     assert fid_table2["raw_data_name"][0] == fids0[0].name
 
@@ -586,7 +600,9 @@ def test_load_step_specs(cellpy_data_instance, parameters):
     assert os.path.isfile(file_name)
     cellpy_data_instance.load_step_specifications(file_name)
     step_table = cellpy_data_instance.data.steps
-    t = step_table.loc[(step_table.cycle == 1) & (step_table.step == 8), "type"].values[0]
+    t = step_table.loc[(step_table.cycle == 1) & (step_table.step == 8), "type"].values[
+        0
+    ]
     assert t == "ocvrlx_down"
 
 
@@ -741,7 +757,7 @@ def test_make_summary_new_version(parameters):
 
 def test_select_without(rate_dataset):
     """Test the _select_without method for filtering and modifying cell cycling data.
-    
+
     This test verifies that:
     1. The method returns correct data when no exclusions are specified
     2. It properly excludes specified step types
@@ -756,8 +772,8 @@ def test_select_without(rate_dataset):
     print("\nResult 1 (no exclusions):")
     print(f"Number of rows: {len(result1)}")
     assert not result1.empty
-    assert len(result1) > 0   
-    
+    assert len(result1) > 0
+
     # Test 2: non-cv
     exclude_types = ["cv_"]
     result2 = rate_dataset._select_without(exclude_types=exclude_types)
@@ -773,33 +789,33 @@ def test_select_without(rate_dataset):
     print(f"Number of rows: {len(result2)}")
     assert not result2.empty
     assert len(result2) > 0
-    
+
     # Test 3: Exclude specific steps
     result3 = rate_dataset._select_without(exclude_steps=[1, 2])
     assert not result3.empty
     assert len(result3) > 0
-    
+
     # Test 4: Exclude both types and steps
     result4 = rate_dataset._select_without(exclude_types="charge", exclude_steps=[1, 2])
     assert not result4.empty
     assert len(result4) > 0
-    
+
     # Test 5: Verify data adjustments
     # Get original data for a cycle
     cycle = 1
     original_data = rate_dataset.data.raw[rate_dataset.data.raw.cycle_index == cycle]
-    
+
     # Get data with exclusions
     excluded_data = rate_dataset._select_without(exclude_types="charge")
     excluded_cycle_data = excluded_data[excluded_data.cycle_index == cycle]
-    
+
     # Verify that the data has been adjusted
     assert not original_data.equals(excluded_cycle_data)
-    
+
     # Test 6: NaN handling
     result6 = rate_dataset._select_without(replace_nan=True)
     assert result6.isna().sum().sum() == 0  # No NaN values when replace_nan=True
-    
+
     result7 = rate_dataset._select_without(replace_nan=False)
     # We don't assert anything about NaN values here as they might or might not exist
     # depending on the data
@@ -831,7 +847,9 @@ def test_load_cellpyfile(cellpy_data_instance, parameters):
     assert any(map(lambda v: v in unique_cycles_read, unique_cycles))
     assert my_test.summary.loc[cycle_number, "data_point"] == data_point
     assert step_time == pytest.approx(my_test.raw.loc[5, "step_time"], 0.1)
-    assert sum_test_time == pytest.approx(my_test.summary.loc[:, "test_time"].sum(), 0.1)
+    assert sum_test_time == pytest.approx(
+        my_test.summary.loc[:, "test_time"].sum(), 0.1
+    )
 
 
 def test_get_current_voltage(dataset):
@@ -936,7 +954,9 @@ def test_check_cellpy_file(cellpy_data_instance, parameters):
 def test_cellpyfile_roundtrip(tmp_path, parameters):
     from cellpy import cellreader
 
-    cellpy_file_name = pathlib.Path(tmp_path) / pathlib.Path(parameters.cellpy_file_path).name
+    cellpy_file_name = (
+        pathlib.Path(tmp_path) / pathlib.Path(parameters.cellpy_file_path).name
+    )
     cdi = cellreader.CellpyCell()
 
     # create a cellpy file from the res-file
@@ -992,12 +1012,16 @@ def test_group_by_interpolate(dataset):
     data = dataset.data.raw
     interpolated_data1 = cellpy.readers.core.group_by_interpolate(data)
     interpolated_data2 = cellpy.readers.core.group_by_interpolate(data, tidy=True)
-    interpolated_data3 = cellpy.readers.core.group_by_interpolate(data, individual_x_cols=True)
+    interpolated_data3 = cellpy.readers.core.group_by_interpolate(
+        data, individual_x_cols=True
+    )
 
 
 def test_get(parameters):
     c_h5 = cellpy.get(parameters.cellpy_file_path, testing=True)
-    c_res = cellpy.get(parameters.res_file_path, instrument="arbin_res", mass=0.045, testing=True)
+    c_res = cellpy.get(
+        parameters.res_file_path, instrument="arbin_res", mass=0.045, testing=True
+    )
 
 
 def test_get_advanced(parameters):
@@ -1014,8 +1038,12 @@ def test_get_arbin_res_mdbtools(parameters):
     from cellpy import prms
 
     prms.Instruments.Arbin.use_subprocess = True
-    prms.Instruments.Arbin.sub_process_path = r"C:\scripting\cellpy_utilities\cellpy_utils\mdbtools-win\mdb-export.exe"
-    c = cellpy.get(parameters.res_file_path, instrument="arbin_res", testing=True, mass=0.035)
+    prms.Instruments.Arbin.sub_process_path = (
+        r"C:\scripting\cellpy_utilities\cellpy_utils\mdbtools-win\mdb-export.exe"
+    )
+    c = cellpy.get(
+        parameters.res_file_path, instrument="arbin_res", testing=True, mass=0.035
+    )
     prms.Instruments.Arbin.use_subprocess = False
 
 
@@ -1023,9 +1051,13 @@ def test_get_arbin_res_mdbtools(parameters):
 def test_get_arbin_res_mdbtools_short_cut(parameters):
     from cellpy import prms
 
-    sub_process_path = r"C:\scripting\cellpy_utilities\cellpy_utils\mdbtools-win\mdb-export.exe"
+    sub_process_path = (
+        r"C:\scripting\cellpy_utilities\cellpy_utils\mdbtools-win\mdb-export.exe"
+    )
     prms._set_arbin_res_subprocess_exporter(sub_process_path=sub_process_path)
-    c = cellpy.get(parameters.res_file_path, instrument="arbin_res", testing=True, mass=0.035)
+    c = cellpy.get(
+        parameters.res_file_path, instrument="arbin_res", testing=True, mass=0.035
+    )
     prms.Instruments.Arbin.use_subprocess = False
     assert c.data.summary.shape == (18, 61)
 
@@ -1116,8 +1148,22 @@ def test_cellpy_get_update_units(parameters):
         ("arbin_res", "arbin_res", None, None, None, None),
         ("maccor_txt::some_file", "maccor_txt", "some_file", None, None, None),
         ("maccor_txt::model=some_model", "maccor_txt", None, "some_model", None, None),
-        ("maccor_txt::model=some_model", "maccor_txt", "some_file.yml", "some_model", "some_file.yml", None),
-        ("maccor_txt", "maccor_txt", "some_file.yml", "some_model", "some_file.yml", "some_model"),
+        (
+            "maccor_txt::model=some_model",
+            "maccor_txt",
+            "some_file.yml",
+            "some_model",
+            "some_file.yml",
+            None,
+        ),
+        (
+            "maccor_txt",
+            "maccor_txt",
+            "some_file.yml",
+            "some_model",
+            "some_file.yml",
+            "some_model",
+        ),
     ],
 )
 def test_instrument_str_splitter(

@@ -8,5 +8,4 @@ from cellpy import prms
 from cellpy.exceptions import NullData
 
 
-def first_cycle_irreversible_capacity():
-    ...
+def first_cycle_irreversible_capacity(): ...

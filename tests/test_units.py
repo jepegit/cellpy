@@ -25,13 +25,27 @@ def test_to_cellpy_unit_from_cellpy_instance(cellpy_data_instance):
 def test_to_cellpy_unit_from_cellpy_instance_with_cell(dataset):
     value = 12.2
     new_value = dataset.to_cellpy_unit(value, physical_property="length")
-    assert new_value == Q(12.2, dataset.data.raw_units["length"]).to(dataset.cellpy_units["length"]).m
+    assert (
+        new_value
+        == Q(12.2, dataset.data.raw_units["length"])
+        .to(dataset.cellpy_units["length"])
+        .m
+    )
 
-    new_value = dataset.to_cellpy_unit(f"12.2 {dataset.cellpy_units['length']}", physical_property="length")
+    new_value = dataset.to_cellpy_unit(
+        f"12.2 {dataset.cellpy_units['length']}", physical_property="length"
+    )
     assert new_value == 12.2
 
-    new_value = dataset.to_cellpy_unit((12.2, dataset.data.raw_units["length"]), physical_property="length")
-    assert new_value == Q(12.2, dataset.data.raw_units["length"]).to(dataset.cellpy_units["length"]).m
+    new_value = dataset.to_cellpy_unit(
+        (12.2, dataset.data.raw_units["length"]), physical_property="length"
+    )
+    assert (
+        new_value
+        == Q(12.2, dataset.data.raw_units["length"])
+        .to(dataset.cellpy_units["length"])
+        .m
+    )
 
 
 @pytest.mark.parametrize(
@@ -57,8 +71,14 @@ def test_get_converter_to_specific(dataset, test_input, expected):
     physical_unit = value_unit[test_input[1]]
 
     specific_conv = {
-        "gravimetric": lambda x: Q(x, physical_unit).to(dataset.cellpy_units[specific_unit]).to_reduced_units().m,
-        "areal": lambda x: Q(x, physical_unit).to(dataset.cellpy_units[specific_unit]).to_reduced_units().m,
+        "gravimetric": lambda x: Q(x, physical_unit)
+        .to(dataset.cellpy_units[specific_unit])
+        .to_reduced_units()
+        .m,
+        "areal": lambda x: Q(x, physical_unit)
+        .to(dataset.cellpy_units[specific_unit])
+        .to_reduced_units()
+        .m,
         "absolute": lambda x: x,
     }
 
@@ -78,7 +98,9 @@ def test_nominal_capacity(dataset):
     mass = 0.47
     nom_cap_specifics = None  # dataset.data._nom_cap_specifics
 
-    absolute_nom_cap = dataset.nominal_capacity_as_absolute(nom_cap, mass, nom_cap_specifics)
+    absolute_nom_cap = dataset.nominal_capacity_as_absolute(
+        nom_cap, mass, nom_cap_specifics
+    )
     print(nom_cap)
     print(absolute_nom_cap)
 

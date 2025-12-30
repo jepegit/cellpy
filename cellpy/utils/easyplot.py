@@ -4,7 +4,6 @@ Author: Amund M. Raniseth
 Date: 01.07.2021
 """
 
-
 import logging
 import os
 import warnings
@@ -1888,9 +1887,7 @@ def get_effective_C_rates_and_caps(steptable):
     newdf = steptable[
         ["step_time_avr", "cycle", "type", "charge_avr", "discharge_last"]
     ]
-    chglist = (
-        []
-    )  # [[cycle, chg_crate, chg_cap], [cycle increase with crates and capacities for this cycle]]
+    chglist = []  # [[cycle, chg_crate, chg_cap], [cycle increase with crates and capacities for this cycle]]
     dchglist = []
     for i, elem in enumerate(newdf.iterrows()):
         cyc = elem[1]["cycle"]

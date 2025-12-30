@@ -45,7 +45,9 @@ def dataset(cellpy_data_instance) -> CellpyCell:
     p = pathlib.Path(fdv.cellpy_file_path)
 
     if not p.is_file():
-        logging.info(f"pytest fixture could not find {fdv.cellpy_file_path} - making it from raw and saving")
+        logging.info(
+            f"pytest fixture could not find {fdv.cellpy_file_path} - making it from raw and saving"
+        )
         a = cellreader.CellpyCell()
         a.from_raw(fdv.res_file_path)
         a.set_mass(1.0)
@@ -60,6 +62,7 @@ def rate_dataset(cellpy_data_instance) -> CellpyCell:
     """Fixture for CellpyCell instance with rate data loaded from cellpy-file"""
 
     return cellpy_data_instance.load(fdv.rate_cell_path)
+
 
 @pytest.fixture
 def gitt_datasett(cellpy_data_instance) -> CellpyCell:
@@ -77,7 +80,9 @@ def cell(cellpy_data_instance) -> CellpyCell:
     p = pathlib.Path(fdv.cellpy_file_path)
 
     if not p.is_file():
-        logging.info(f"pytest fixture could not find {fdv.cellpy_file_path} - making it from raw and saving")
+        logging.info(
+            f"pytest fixture could not find {fdv.cellpy_file_path} - making it from raw and saving"
+        )
         a = cellreader.CellpyCell()
         a.from_raw(fdv.res_file_path)
         a.make_summary(find_ir=True, find_end_voltage=True)
@@ -134,7 +139,7 @@ def cell_with_summary(cell):
 @pytest.fixture
 def cell_with_cv_data(cell):
     """Fixture for CellpyCell with CV step data.
-    
+
     Note: This uses the same cell fixture but ensures step table is made
     which is needed for CV-related plots.
     """

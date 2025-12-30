@@ -3013,6 +3013,7 @@ def _make_a_new_feature():
     from cellpy.utils import collectors
 
     import plotly.io as pio
+
     pio.renderers.default = "browser"
 
     journal = Path(r"C:\Users\jepe\processor_project/journal.json")

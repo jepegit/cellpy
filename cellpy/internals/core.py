@@ -147,7 +147,8 @@ def check_connection(
 
         except FileNotFoundError as e:
             print(
-                f"   - FileNotFoundError: Could not perform directory listing in {p.raw_path} on {host}." f"\n     {e}"
+                f"   - FileNotFoundError: Could not perform directory listing in {p.raw_path} on {host}."
+                f"\n     {e}"
             )
 
     return info
