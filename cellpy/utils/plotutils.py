@@ -2815,6 +2815,20 @@ class SeabornPlotBuilder:
 
         return info_dicts
 
+    def _valid_number_or_none(self, x: float) -> Optional[float]:
+        """Clean up a number (convert NaN and Inf to None)"""
+        import numbers
+        if isinstance(x, numbers.Number):
+            if not (np.isnan(x) or np.isinf(x)):
+                return x
+        return None
+
+
+    def _to_numbers_or_nones(self, x: list) -> list:
+        """Clean up a list of numbers (convert NaN and Inf to None)"""
+        return [self._valid_number_or_none(i) for i in x]
+
+
     def _clean_up_axis(self, fig, info_dicts=None, row_id="row", col_id="cycle_type"):
         """Clean up and configure axes based on info_dicts."""
         if info_dicts is None:
@@ -2844,10 +2858,12 @@ class SeabornPlotBuilder:
                 axis_info = info_dict.get(title_text, None)
             if axis_info is None:
                 continue
+
             if xlim := axis_info.get("xlim", None):
-                a.set_xlim(xlim)
+                a.set_xlim(self._to_numbers_or_nones(xlim))
             if ylim := axis_info.get("ylim", None):
-                a.set_ylim(ylim)
+                a.set_ylim(self._to_numbers_or_nones(ylim))
+
             if ylabel := axis_info.get("ylabel", None):
                 a.set_ylabel(ylabel)
             a.set_title(axis_info.get("title", ""))

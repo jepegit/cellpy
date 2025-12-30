@@ -8,6 +8,7 @@ import importlib
 import logging
 import pytest
 import pandas as pd
+from cellpy.exceptions import NoDataFound
 
 # Set matplotlib to use non-interactive backend for testing
 # This must be done before importing anything that uses matplotlib
@@ -72,13 +73,13 @@ class TestSummaryPlotBasic:
         assert fig is not None
 
 
+@pytest.mark.skipif(
+    not plotly_available,
+    reason="Plotly not available",
+)
 class TestSummaryPlotInteractive:
     """Test interactive (Plotly) mode."""
 
-    @pytest.mark.skipif(
-        not plotly_available,
-        reason="Plotly not available",
-    )
     def test_interactive_mode(self, cell):
         """Test interactive plotting with Plotly."""
         fig = summary_plot(
@@ -91,10 +92,6 @@ class TestSummaryPlotInteractive:
         # Plotly figure should have show method
         assert hasattr(fig, "show")
 
-    @pytest.mark.skipif(
-        not plotly_available,
-        reason="Plotly not available",
-    )
     def test_interactive_with_formation(self, cell):
         """Test interactive plotting with formation cycles."""
         fig = summary_plot(
@@ -107,13 +104,13 @@ class TestSummaryPlotInteractive:
         assert fig is not None
 
 
+@pytest.mark.skipif(
+    not seaborn_available,
+    reason="Seaborn not available",
+)
 class TestSummaryPlotSeaborn:
     """Test non-interactive (Seaborn) mode."""
 
-    @pytest.mark.skipif(
-        not seaborn_available,
-        reason="Seaborn not available",
-    )
     def test_seaborn_mode(self, cell):
         """Test seaborn plotting."""
         fig = summary_plot(
@@ -126,14 +123,6 @@ class TestSummaryPlotSeaborn:
         # Seaborn returns matplotlib figure
         assert hasattr(fig, "get_axes")
 
-
-class TestSummaryPlotFormationCycles:
-    """Test formation cycle handling."""
-
-    @pytest.mark.skipif(
-        not seaborn_available,
-        reason="Seaborn not available",
-    )
     def test_formation_cycles_seaborn(self, cell):
         """Test formation cycles in seaborn mode."""
         fig = summary_plot(
@@ -145,10 +134,6 @@ class TestSummaryPlotFormationCycles:
         )
         assert fig is not None
 
-    @pytest.mark.skipif(
-        not seaborn_available,
-        reason="Seaborn not available",
-    )
     def test_formation_cycles_disabled(self, cell):
         """Test with formation cycles disabled."""
         fig = summary_plot(
@@ -159,14 +144,6 @@ class TestSummaryPlotFormationCycles:
         )
         assert fig is not None
 
-
-class TestSummaryPlotParameters:
-    """Test various parameter combinations."""
-
-    @pytest.mark.skipif(
-        not seaborn_available,
-        reason="Seaborn not available",
-    )
     def test_custom_x_axis(self, cell):
         """Test custom x-axis parameter."""
         fig = summary_plot(
@@ -177,10 +154,6 @@ class TestSummaryPlotParameters:
         )
         assert fig is not None
 
-    @pytest.mark.skipif(
-        not seaborn_available,
-        reason="Seaborn not available",
-    )
     def test_custom_ranges(self, cell):
         """Test custom axis ranges."""
         fig = summary_plot(
@@ -192,10 +165,6 @@ class TestSummaryPlotParameters:
         )
         assert fig is not None
 
-    @pytest.mark.skipif(
-        not seaborn_available,
-        reason="Seaborn not available",
-    )
     def test_markers(self, cell):
         """Test marker parameter."""
         fig = summary_plot(
@@ -208,10 +177,6 @@ class TestSummaryPlotParameters:
         )
         assert fig_no_markers is not None
 
-    @pytest.mark.skipif(
-        not seaborn_available,
-        reason="Seaborn not available",
-    )
     def test_title(self, cell):
         """Test custom title."""
         fig = summary_plot(
@@ -222,14 +187,6 @@ class TestSummaryPlotParameters:
         )
         assert fig is not None
 
-
-class TestSummaryPlotReturnData:
-    """Test return_data parameter."""
-
-    @pytest.mark.skipif(
-        not seaborn_available,
-        reason="Seaborn not available",
-    )
     def test_return_data(self, cell):
         """Test that return_data returns both figure and data."""
         result = summary_plot(
@@ -246,10 +203,6 @@ class TestSummaryPlotReturnData:
         # Data should have expected columns
         assert "cycle_index" in data.columns or "value" in data.columns
 
-    @pytest.mark.skipif(
-        not seaborn_available,
-        reason="Seaborn not available",
-    )
     def test_return_data_structure(self, cell):
         """Test structure of returned data."""
         _, data = summary_plot(
@@ -261,14 +214,6 @@ class TestSummaryPlotReturnData:
         # Should have variable and value columns after melting
         assert "variable" in data.columns or "value" in data.columns
 
-
-class TestSummaryPlotFullcellStandard:
-    """Test fullcell standard plot specific features."""
-
-    @pytest.mark.skipif(
-        not seaborn_available,
-        reason="Seaborn not available",
-    )
     def test_fullcell_standard_normalization(self, cell):
         """Test fullcell standard with normalization."""
         fig = summary_plot(
@@ -279,10 +224,6 @@ class TestSummaryPlotFullcellStandard:
         )
         assert fig is not None
 
-    @pytest.mark.skipif(
-        not seaborn_available,
-        reason="Seaborn not available",
-    )
     def test_fullcell_standard_reset_losses(self, cell):
         """Test fullcell standard with reset_losses."""
         fig = summary_plot(
@@ -294,6 +235,10 @@ class TestSummaryPlotFullcellStandard:
         assert fig is not None
 
 
+@pytest.mark.skipif(
+    not seaborn_available,
+    reason="Seaborn not available",
+)
 class TestSummaryPlotEdgeCases:
     """Test edge cases and error handling."""
 
@@ -302,52 +247,49 @@ class TestSummaryPlotEdgeCases:
         # Create empty cell
         cell = cellpy_data_instance
         # Don't make summary - should handle gracefully
-        try:
-            # This might raise an error, which is acceptable
-            with pytest.raises((AttributeError, KeyError, ValueError)):
-                summary_plot(cell, y="capacities_gravimetric", interactive=False)
-        except Exception:
-            # If it doesn't raise, that's also fine
-            pass
+        with pytest.raises(NoDataFound):
+            print(f"This should raise NoDataFound: {len(cell.data.summary)=}")
+        with pytest.raises(NoDataFound):
+            summary_plot(cell, y="capacities_gravimetric", interactive=False)
 
-    @pytest.mark.skipif(
-        not seaborn_available,
-        reason="Seaborn not available",
-    )
     def test_single_cycle(self, cell):
         """Test with minimal data (if possible)."""
-        try:
-            # Filter to first cycle if possible
-            fig = summary_plot(
-                cell,
-                y="capacities_gravimetric",
-                x_range=[1, 1],
-                interactive=False,
-            )
-            # Should still create a figure (might be empty)
-            assert fig is not None
-        except Exception:
-            # Some edge cases might fail, which is acceptable
-            pass
+        # Filter to first cycle if possible
+        fig = summary_plot(
+            cell,
+            y="capacities_gravimetric",
+            x_range=[1, 2],
+            interactive=False,
+        )
+        # Should still create a figure (might be empty)
+        assert fig is not None
 
-    @pytest.mark.skipif(
-        not seaborn_available,
-        reason="Seaborn not available",
-    )
+        fig = summary_plot(
+            cell,
+            y="capacities_gravimetric",
+            x_range=[100000, 100001],
+            interactive=False,
+            show_formation=False,
+        )
+        # Should still create a figure (might be empty)
+        assert fig is not None
+
     def test_invalid_y_parameter(self, cell):
         """Test with invalid y parameter."""
-        # Should handle gracefully or raise informative error
-        with pytest.raises((KeyError, ValueError, AttributeError)):
+        # Should raise ValueError since invalid_plot_type is not within the allowed columns
+        # TODO: replace with NoDataFound
+        # TODO: add test for other invalid parameters
+        with pytest.raises(ValueError):
             summary_plot(cell, y="invalid_plot_type", interactive=False)
 
 
+@pytest.mark.skipif(
+    not seaborn_available,
+    reason="Seaborn not available",
+)
 class TestSummaryPlotGoldenReference:
     """Golden reference tests to compare outputs during refactoring."""
 
-    @pytest.mark.skipif(
-        not seaborn_available,
-        reason="Seaborn not available",
-    )
     def test_golden_reference_data_structure(self, cell):
         """Capture expected data structure for regression testing."""
         _, data = summary_plot(
@@ -366,10 +308,6 @@ class TestSummaryPlotGoldenReference:
             "cycle" in str(col).lower() for col in data.columns
         )
 
-    @pytest.mark.skipif(
-        not seaborn_available,
-        reason="Seaborn not available",
-    )
     def test_golden_reference_columns(self, cell):
         """Capture expected columns in returned data."""
         _, data = summary_plot(
@@ -384,10 +322,6 @@ class TestSummaryPlotGoldenReference:
         for col in expected_cols:
             assert col in data.columns, f"Expected column {col} not found"
 
-    @pytest.mark.skipif(
-        not plotly_available,
-        reason="Plotly not available",
-    )
     def test_golden_reference_figure_properties_plotly(self, cell):
         """Capture expected Plotly figure properties."""
         fig = summary_plot(
@@ -402,10 +336,6 @@ class TestSummaryPlotGoldenReference:
         assert hasattr(fig, "layout")
         assert len(fig.data) > 0  # Should have at least one trace
 
-    @pytest.mark.skipif(
-        not seaborn_available,
-        reason="Seaborn not available",
-    )
     def test_golden_reference_figure_properties_seaborn(self, cell):
         """Capture expected Seaborn figure properties."""
         fig = summary_plot(
