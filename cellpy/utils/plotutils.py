@@ -670,9 +670,10 @@ class SummaryPlotConfig:
     # Fullcell standard specific
     reset_losses: bool = True
     link_capacity_scales: bool = False
-    fullcell_standard_normalization_type: str = "on-max"
+    fullcell_standard_normalization_type: str = "max"
     fullcell_standard_normalization_factor: Optional[float] = None
     fullcell_standard_normalization_scaler: float = 1.0
+    fullcell_standard_normalization_cycle_numbers: Optional[list[int]] = None
 
     # Seaborn hooks
     seaborn_line_hooks: Optional[list[tuple[str, list, dict]]] = None
@@ -740,6 +741,14 @@ class SummaryPlotInfo:
     y_axis_label: Optional[dict] = None
 
     def __init__(self, c: Any):
+        """Initialize SummaryPlotInfo.
+
+        This class contains information about the summary plot. 
+        It is used to store the information about the columns and labels.
+
+        Args:
+            c: cellpy object
+        """
         self._create_col_info(c)
         self._create_label_dict(c)
 
@@ -801,6 +810,89 @@ class SummaryPlotInfo:
         self.x_axis_labels = x_axis_labels
         self.y_axis_label = y_axis_label
 
+    @staticmethod
+    def normalize_col(
+            x: np.ndarray,
+            normalization_factor: Optional[float] = None,
+            normalization_type: str = "max",
+            normalization_scaler: float = 1.0,
+            normalization_indexes: list[int] = [1],
+        ) -> np.ndarray:
+            """Normalize a column.
+
+            Args:
+                x: column to normalize
+                normalization_factor: normalization factor
+                normalization_type: normalization type
+                normalization_scaler: normalization scaler
+                normalization_indexes: indexes to use for normalization
+
+            Normalization types:
+                - divide: divide by normalization factor and then multiply by normalization scaler
+                - shift-divide: shift by normalization factor and then
+                    divide by normalization factor and then multiply by normalization scaler
+                - multiply: multiply by normalization factor and normalization scaler
+                - area: divide by area (integrated using trapezoid rule) and then multiply by normalization scaler
+                - max: divide by maximum value and then multiply by normalization scaler
+                - on-max: divide by maximum value over normalization factor and then multiply by normalization scaler
+                - on-cycles: divide by mean value of the cycles in normalization_indexes and then multiply by normalization scaler
+                - false: no normalization is done
+
+            Returns:
+                normalized column
+            """
+            # These normalization types do NOT require a normalization factor:
+            if normalization_type == "area":
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore")
+                    area = np.trapzoid(x, dx=1)
+                return (x / area ) * normalization_scaler
+
+            elif normalization_type == "max":
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore")
+                    x_max = x.max()
+                return (x / x_max ) * normalization_scaler
+
+            elif normalization_type == "on-cycles":
+                x_on_cycles = []
+                for cycle in normalization_indexes:
+                    try:
+                        x_on_cycles.append(x[cycle])
+                    except KeyError:
+                        logging.warning(f"Cycle number {cycle} not found in data")
+                if len(x_on_cycles) == 0:
+                    raise ValueError(f"No cycle numbers found in data: {normalization_indexes}")
+                x_on_cycles_mean = np.mean(x_on_cycles)
+                return (x / x_on_cycles_mean ) * normalization_scaler
+
+            elif normalization_type == "false":
+                return x
+
+            # These normalization types require a normalization factor:
+            if normalization_factor is None:
+                raise ValueError(f"Normalization factor is required for this normalization type: {normalization_type}")
+
+            elif normalization_type == "divide":
+                return (x / normalization_factor) * normalization_scaler
+
+            elif normalization_type == "shift-divide":
+                return (
+                    (normalization_factor - x) / normalization_factor
+                ) * normalization_scaler
+
+            elif normalization_type == "multiply":
+                return (x * normalization_factor) * normalization_scaler
+            
+            elif normalization_type == "on-max":
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore")
+                    x_max = x.max()
+                return (x / x_max / normalization_factor) * normalization_scaler
+
+            else:
+                raise ValueError(f"Invalid normalization type: {normalization_type}")
+
     def _create_col_info(self, c: Any) -> tuple[tuple, dict, dict, dict]:
         """Create column information for summary plots.
 
@@ -815,34 +907,7 @@ class SummaryPlotInfo:
 
         """
 
-        def _normalize_col(
-            x: np.ndarray,
-            normalization_factor: float = 1.0,
-            normalization_type: str = "max",
-            normalization_scaler: float = 1.0,
-        ) -> np.ndarray:
-            # a bit random collection of normalization types...
-
-            if normalization_type == "divide":
-                return (x / normalization_factor) * normalization_scaler
-            elif normalization_type == "shift-divide":
-                return (
-                    (normalization_factor - x) / normalization_factor
-                ) * normalization_scaler
-            elif normalization_type == "multiply":
-                return (x * normalization_factor) * normalization_scaler
-            elif normalization_type == "area":
-                with warnings.catch_warnings():
-                    warnings.simplefilter("ignore")
-                    area = np.trapzoid(x, dx=1)
-                return (x / area / normalization_factor) * normalization_scaler
-            elif normalization_type == "max":
-                with warnings.catch_warnings():
-                    warnings.simplefilter("ignore")
-                    x_max = x.max()
-                return (x / x_max / normalization_factor) * normalization_scaler
-            else:
-                raise ValueError(f"Invalid normalization type: {normalization_type}")
+        
 
         hdr = c.headers_summary
         _cap_cols = [hdr.charge_capacity_raw, hdr.discharge_capacity_raw]
@@ -931,6 +996,8 @@ class SummaryPlotInfo:
                 "mod_01_" + hdr.discharge_capacity + "_gravimetric",
             ],
         )
+
+        _normalize_col = self.normalize_col
 
         x_transformations = dict()
 
@@ -1092,6 +1159,8 @@ class SummaryPlotDataPreparer:
     ) -> tuple:
         """Prepare data for fullcell_standard plots."""
 
+        # The figure has 4 rows: coulombic efficiency, capacity, capacity retention, and CV capacity
+        number_of_rows = 4
         column_set = y_cols.get(y, y)
 
         summary = c.data.summary.copy()
@@ -1111,7 +1180,6 @@ class SummaryPlotDataPreparer:
         s = s.melt(x)
         s = s.loc[s.variable.isin(column_set)]
 
-        number_of_rows = 4
         s[self.row] = 1  # default row for capacity
 
         # Set row numbers using regex patterns
@@ -1128,6 +1196,7 @@ class SummaryPlotDataPreparer:
 
         # Reset losses if requested
         if config.reset_losses:
+            logging.debug("Resetting losses")
             first_values = (
                 s[s["variable"].str.contains(r"cumulated.*loss")]
                 .groupby("variable")["value"]
@@ -1138,6 +1207,7 @@ class SummaryPlotDataPreparer:
 
         # Apply normalization if requested
         if config.fullcell_standard_normalization_type is not False:
+            logging.debug("Applying normalization")
             s, max_val_normalized_col = self._apply_normalization(
                 s, y, y_trans, config, self.row
             )
@@ -1227,40 +1297,38 @@ class SummaryPlotDataPreparer:
     def _apply_normalization(self, s, y, y_trans, config, row_col) -> tuple:
         """Apply normalization transformations to data."""
         import re
-        import numpy as np
-        import warnings
+        from collections.abc import Iterable
 
         max_val_normalized_col = 0.0
         normalization_factor = config.fullcell_standard_normalization_factor
         normalization_type = config.fullcell_standard_normalization_type
+        normalization_cycle_numbers = config.fullcell_standard_normalization_cycle_numbers
 
+        # TODO: check if this is really needed!!
         # Determine normalization factor if not provided
         if normalization_factor is None:
-            if y.startswith("fullcell_standard_cumloss_"):
-                print("only allowing for 'divide' for cumloss plots")
-                normalization_factor = s[s[row_col] == 1].max().value
-                normalization_type = "divide"
+            logging.debug(f"No normalization factor provided for {y}, using {normalization_type}")
+
+        if y.startswith("fullcell_standard_cumloss_") and normalization_type != "max":
+            logging.debug("only allowing for 'max' for cumloss plots")
+            normalization_type = "max"
+
+        if normalization_type in ["on-cycles", "on-cycle"]:
+            if normalization_cycle_numbers is None:
+                raise ValueError("Normalization cycle numbers are required for on-cycles normalization")
+            if isinstance(normalization_cycle_numbers, Iterable):
+                cycle_numbers = [cycle - 1 for cycle in normalization_cycle_numbers]
             else:
-                if normalization_type == "on-max":
-                    normalization_factor = s[s[row_col] == 1].max().value
-                    normalization_type = "shift-divide"
-                elif normalization_type == "max":
-                    normalization_factor = s[s[row_col] == 1].max().value
-                    normalization_type = "shift-divide"
-                elif normalization_type == "area":
-                    with warnings.catch_warnings():
-                        warnings.simplefilter("ignore")
-                        area = np.trapezoid(s[s[row_col] == 1].value, dx=1)
-                    normalization_factor = area
-                    normalization_type = "shift-divide"
-                else:
-                    normalization_factor = 1.0
+                cycle_numbers = [normalization_cycle_numbers - 1]
+            normalization_cycle_numbers = cycle_numbers
 
         trans_kwargs = dict(
             normalization_factor=normalization_factor,
             normalization_type=normalization_type,
             normalization_scaler=config.fullcell_standard_normalization_scaler,
+            normalization_indexes=normalization_cycle_numbers,
         )
+
 
         # Transform the data
         max_row_val = s[row_col].max()
@@ -1481,7 +1549,7 @@ class PlotlyPlotBuilder:
         # Add rangeslider if requested
         if config.rangeslider:
             if config.show_formation:
-                print("Can not add rangeslider when showing formation cycles")
+                logging.critical("Can not add rangeslider when showing formation cycles")
             else:
                 fig.update_layout(xaxis_rangeslider_visible=True)
 
@@ -3749,7 +3817,7 @@ def summary_plot_legacy(
 
         if rangeslider:
             if show_formation:
-                print("Can not add rangeslider when showing formation cycles")
+                logging.critical("Can not add rangeslider when showing formation cycles")
             else:
                 fig.update_layout(xaxis_rangeslider_visible=True)
 
@@ -4359,9 +4427,10 @@ def summary_plot(
     column_separator: float = 0.01,
     reset_losses: bool = True,
     link_capacity_scales: bool = False,
-    fullcell_standard_normalization_type: str = "on-max",
+    fullcell_standard_normalization_type: str = "max",
     fullcell_standard_normalization_factor: Optional[float] = None,
     fullcell_standard_normalization_scaler: float = 1.0,
+    fullcell_standard_normalization_cycle_numbers: Optional[list[int]] = None,
     seaborn_line_hooks: Optional[list[tuple[str, list, dict]]] = None,
     **kwargs,
 ) -> Any:
@@ -4409,6 +4478,7 @@ def summary_plot(
             (divide, multiply, area, max, on-max, False)
         fullcell_standard_normalization_factor: normalization factor for the fullcell standard plots
         fullcell_standard_normalization_scaler: scaler for the fullcell standard plots
+        fullcell_standard_normalization_cycle_numbers: cycle numbers to use for normalization (only for fullcell_standard plots)
         seaborn_line_hooks: list of functions to hook into the seaborn lines (e.g. to update the marker_size)
         **kwargs: includes additional parameters for the plotting backend (not properly documented yet).
 
@@ -4450,6 +4520,7 @@ def summary_plot(
         fullcell_standard_normalization_type=fullcell_standard_normalization_type,
         fullcell_standard_normalization_factor=fullcell_standard_normalization_factor,
         fullcell_standard_normalization_scaler=fullcell_standard_normalization_scaler,
+        fullcell_standard_normalization_cycle_numbers=fullcell_standard_normalization_cycle_numbers,
         seaborn_line_hooks=seaborn_line_hooks,
         **kwargs,
     )
@@ -5333,9 +5404,9 @@ def cycles_plot(
 
         if not form_cycles.empty and show_formation:
             if fig_width < 6:
-                print("Warning: try setting the figsize to (6, 4) or larger")
+                logging.critical("Warning: try setting the figsize to (6, 4) or larger for better visualization")
             if fig_width > 8:
-                print("Warning: try setting the figsize to (8, 4) or smaller")
+                logging.critical("Warning: try setting the figsize to (8, 4) or smaller for better visualization")
             min_cycle, max_cycle = (
                 form_cycles["cycle"].min(),
                 form_cycles["cycle"].max(),
@@ -5581,23 +5652,26 @@ def _check_summary_plotter_plotly():
     assert p.exists()
     assert out.exists()
     c = cellpy.get(p)
-    plot_info = SummaryPlotInfo(c)
-    config = SummaryPlotConfig()
-    print(
-        "\n=============================================================================="
-    )
-    print(f"{plot_info=}")
-    print(
-        "\n=============================================================================="
-    )
-    print(f"{config=}")
-    print(
-        "\n=============================================================================="
-    )
+    # plot_info = SummaryPlotInfo(c)
+    # config = SummaryPlotConfig()
+    # print(
+    #     "\n=============================================================================="
+    # )
+    # print(f"{plot_info=}")
+    # print(
+    #     "\n=============================================================================="
+    # )
+    # print(f"{config=}")
+    # print(
+    #     "\n=============================================================================="
+    # )
     fig = summary_plot(
         c,
         # x="normalized_cycle_index",
         y="fullcell_standard_gravimetric",
+        fullcell_standard_normalization_type="on-cycles",
+        # fullcell_standard_normalization_factor=1500.0,
+        fullcell_standard_normalization_cycle_numbers=[ 18],
         # ce_range=[0.0, 200.0],
         # ylim=[0.0, 1.0],
         # show_formation=False,
@@ -5607,11 +5681,12 @@ def _check_summary_plotter_plotly():
         interactive=True,  # rangeslider=True,
         show_formation=True,  # return_figure=True,
     )
-    print("saving figure")
+    # print("saving figure")
     # print(f"{fig=}")
     # print(f"{type(fig)=}")
     # save_image_files(fig, out / "test_plot_plotly", backend="plotly")
     fig.show(renderer="browser")
+    print("DONE")
 
 
 if __name__ == "__main__":

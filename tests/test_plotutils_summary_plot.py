@@ -219,7 +219,8 @@ class TestSummaryPlotSeaborn:
         fig = summary_plot(
             cell,
             y="fullcell_standard_gravimetric",
-            fullcell_standard_normalization_type="on-max",
+            fullcell_standard_normalization_type="divide",
+            fullcell_standard_normalization_factor=1500.0,
             interactive=False,
         )
         assert fig is not None
