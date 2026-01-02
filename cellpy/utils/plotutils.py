@@ -743,7 +743,7 @@ class SummaryPlotInfo:
     def __init__(self, c: Any):
         """Initialize SummaryPlotInfo.
 
-        This class contains information about the summary plot. 
+        This class contains information about the summary plot.
         It is used to store the information about the columns and labels.
 
         Args:
@@ -812,86 +812,90 @@ class SummaryPlotInfo:
 
     @staticmethod
     def normalize_col(
-            x: np.ndarray,
-            normalization_factor: Optional[float] = None,
-            normalization_type: str = "max",
-            normalization_scaler: float = 1.0,
-            normalization_indexes: list[int] = [1],
-        ) -> np.ndarray:
-            """Normalize a column.
+        x: np.ndarray,
+        normalization_factor: Optional[float] = None,
+        normalization_type: str = "max",
+        normalization_scaler: float = 1.0,
+        normalization_indexes: list[int] = [1],
+    ) -> np.ndarray:
+        """Normalize a column.
 
-            Args:
-                x: column to normalize
-                normalization_factor: normalization factor
-                normalization_type: normalization type
-                normalization_scaler: normalization scaler
-                normalization_indexes: indexes to use for normalization
+        Args:
+            x: column to normalize
+            normalization_factor: normalization factor
+            normalization_type: normalization type
+            normalization_scaler: normalization scaler
+            normalization_indexes: indexes to use for normalization
 
-            Normalization types:
-                - divide: divide by normalization factor and then multiply by normalization scaler
-                - shift-divide: shift by normalization factor and then
-                    divide by normalization factor and then multiply by normalization scaler
-                - multiply: multiply by normalization factor and normalization scaler
-                - area: divide by area (integrated using trapezoid rule) and then multiply by normalization scaler
-                - max: divide by maximum value and then multiply by normalization scaler
-                - on-max: divide by maximum value over normalization factor and then multiply by normalization scaler
-                - on-cycles: divide by mean value of the cycles in normalization_indexes and then multiply by normalization scaler
-                - false: no normalization is done
+        Normalization types:
+            - divide: divide by normalization factor and then multiply by normalization scaler
+            - shift-divide: shift by normalization factor and then
+                divide by normalization factor and then multiply by normalization scaler
+            - multiply: multiply by normalization factor and normalization scaler
+            - area: divide by area (integrated using trapezoid rule) and then multiply by normalization scaler
+            - max: divide by maximum value and then multiply by normalization scaler
+            - on-max: divide by maximum value over normalization factor and then multiply by normalization scaler
+            - on-cycles: divide by mean value of the cycles in normalization_indexes and then multiply by normalization scaler
+            - false: no normalization is done
 
-            Returns:
-                normalized column
-            """
-            # These normalization types do NOT require a normalization factor:
-            if normalization_type == "area":
-                with warnings.catch_warnings():
-                    warnings.simplefilter("ignore")
-                    area = np.trapzoid(x, dx=1)
-                return (x / area ) * normalization_scaler
+        Returns:
+            normalized column
+        """
+        # These normalization types do NOT require a normalization factor:
+        if normalization_type == "area":
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                area = np.trapzoid(x, dx=1)
+            return (x / area) * normalization_scaler
 
-            elif normalization_type == "max":
-                with warnings.catch_warnings():
-                    warnings.simplefilter("ignore")
-                    x_max = x.max()
-                return (x / x_max ) * normalization_scaler
+        elif normalization_type == "max":
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                x_max = x.max()
+            return (x / x_max) * normalization_scaler
 
-            elif normalization_type == "on-cycles":
-                x_on_cycles = []
-                for cycle in normalization_indexes:
-                    try:
-                        x_on_cycles.append(x[cycle])
-                    except KeyError:
-                        logging.warning(f"Cycle number {cycle} not found in data")
-                if len(x_on_cycles) == 0:
-                    raise ValueError(f"No cycle numbers found in data: {normalization_indexes}")
-                x_on_cycles_mean = np.mean(x_on_cycles)
-                return (x / x_on_cycles_mean ) * normalization_scaler
+        elif normalization_type == "on-cycles":
+            x_on_cycles = []
+            for cycle in normalization_indexes:
+                try:
+                    x_on_cycles.append(x[cycle])
+                except KeyError:
+                    logging.warning(f"Cycle number {cycle} not found in data")
+            if len(x_on_cycles) == 0:
+                raise ValueError(
+                    f"No cycle numbers found in data: {normalization_indexes}"
+                )
+            x_on_cycles_mean = np.mean(x_on_cycles)
+            return (x / x_on_cycles_mean) * normalization_scaler
 
-            elif normalization_type == "false":
-                return x
+        elif normalization_type == "false":
+            return x
 
-            # These normalization types require a normalization factor:
-            if normalization_factor is None:
-                raise ValueError(f"Normalization factor is required for this normalization type: {normalization_type}")
+        # These normalization types require a normalization factor:
+        if normalization_factor is None:
+            raise ValueError(
+                f"Normalization factor is required for this normalization type: {normalization_type}"
+            )
 
-            elif normalization_type == "divide":
-                return (x / normalization_factor) * normalization_scaler
+        elif normalization_type == "divide":
+            return (x / normalization_factor) * normalization_scaler
 
-            elif normalization_type == "shift-divide":
-                return (
-                    (normalization_factor - x) / normalization_factor
-                ) * normalization_scaler
+        elif normalization_type == "shift-divide":
+            return (
+                (normalization_factor - x) / normalization_factor
+            ) * normalization_scaler
 
-            elif normalization_type == "multiply":
-                return (x * normalization_factor) * normalization_scaler
-            
-            elif normalization_type == "on-max":
-                with warnings.catch_warnings():
-                    warnings.simplefilter("ignore")
-                    x_max = x.max()
-                return (x / x_max / normalization_factor) * normalization_scaler
+        elif normalization_type == "multiply":
+            return (x * normalization_factor) * normalization_scaler
 
-            else:
-                raise ValueError(f"Invalid normalization type: {normalization_type}")
+        elif normalization_type == "on-max":
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                x_max = x.max()
+            return (x / x_max / normalization_factor) * normalization_scaler
+
+        else:
+            raise ValueError(f"Invalid normalization type: {normalization_type}")
 
     def _create_col_info(self, c: Any) -> tuple[tuple, dict, dict, dict]:
         """Create column information for summary plots.
@@ -906,8 +910,6 @@ class SummaryPlotInfo:
             x_columns (tuple), y_cols (dict), x_transformations (dict), y_transformations (dict)
 
         """
-
-        
 
         hdr = c.headers_summary
         _cap_cols = [hdr.charge_capacity_raw, hdr.discharge_capacity_raw]
@@ -1302,12 +1304,16 @@ class SummaryPlotDataPreparer:
         max_val_normalized_col = 0.0
         normalization_factor = config.fullcell_standard_normalization_factor
         normalization_type = config.fullcell_standard_normalization_type
-        normalization_cycle_numbers = config.fullcell_standard_normalization_cycle_numbers
+        normalization_cycle_numbers = (
+            config.fullcell_standard_normalization_cycle_numbers
+        )
 
         # TODO: check if this is really needed!!
         # Determine normalization factor if not provided
         if normalization_factor is None:
-            logging.debug(f"No normalization factor provided for {y}, using {normalization_type}")
+            logging.debug(
+                f"No normalization factor provided for {y}, using {normalization_type}"
+            )
 
         if y.startswith("fullcell_standard_cumloss_") and normalization_type != "max":
             logging.debug("only allowing for 'max' for cumloss plots")
@@ -1315,7 +1321,9 @@ class SummaryPlotDataPreparer:
 
         if normalization_type in ["on-cycles", "on-cycle"]:
             if normalization_cycle_numbers is None:
-                raise ValueError("Normalization cycle numbers are required for on-cycles normalization")
+                raise ValueError(
+                    "Normalization cycle numbers are required for on-cycles normalization"
+                )
             if isinstance(normalization_cycle_numbers, Iterable):
                 cycle_numbers = [cycle - 1 for cycle in normalization_cycle_numbers]
             else:
@@ -1328,7 +1336,6 @@ class SummaryPlotDataPreparer:
             normalization_scaler=config.fullcell_standard_normalization_scaler,
             normalization_indexes=normalization_cycle_numbers,
         )
-
 
         # Transform the data
         max_row_val = s[row_col].max()
@@ -1549,7 +1556,9 @@ class PlotlyPlotBuilder:
         # Add rangeslider if requested
         if config.rangeslider:
             if config.show_formation:
-                logging.critical("Can not add rangeslider when showing formation cycles")
+                logging.critical(
+                    "Can not add rangeslider when showing formation cycles"
+                )
             else:
                 fig.update_layout(xaxis_rangeslider_visible=True)
 
@@ -2362,7 +2371,7 @@ class SeabornPlotBuilder:
         facet_kws["gridspec_kws"] = gridspec_kws
 
         # Log configuration for debugging
-        logging.debug(f"Seaborn plot configuration:")
+        logging.debug("Seaborn plot configuration:")
         logging.debug(
             f"  y={y}, split={config.split}, number_of_rows={number_of_rows}, number_of_cols={number_of_cols}"
         )
@@ -2371,7 +2380,7 @@ class SeabornPlotBuilder:
         logging.debug(f"  gridspec_kws={gridspec_kws}")
         logging.debug(f"  additional_kwargs keys: {list(additional_kwargs.keys())}")
         if config.verbose:
-            logging.info(f"Seaborn plot configuration:")
+            logging.info("Seaborn plot configuration:")
             logging.info(
                 f"  y={y}, number_of_rows={number_of_rows}, number_of_cols={number_of_cols}"
             )
@@ -2517,6 +2526,7 @@ class SeabornPlotBuilder:
             info_dicts.extend(
                 self._build_cv_split_info_dicts(
                     config,
+                    number_of_rows,
                     x_range,
                     y_range,
                     config.cv_share_range,
@@ -2634,6 +2644,7 @@ class SeabornPlotBuilder:
     def _build_cv_split_info_dicts(
         self,
         config: SummaryPlotConfig,
+        number_of_rows: int,
         x_range: tuple,
         y_range: list,
         cv_share_range: Optional[list],
@@ -2642,34 +2653,84 @@ class SeabornPlotBuilder:
     ) -> list:
         """Build info dicts for CV split plots."""
         info_dicts = []
-        # This is a simplified version - the full implementation would handle multi-row cases
-        _d = dict(
-            ylabel=y_label,
-            title="",
-            xlim=x_range,
-            ylim=cv_share_range or y_range,
-            row=None,
-            col=None,
-            yticks=None,
-            xticks=None,
-        )
-        if config.show_formation:
-            _d["col"] = "standard"
-            _d["yticks"] = False
-            _d["ylabel"] = ""
-            info_dicts.append(
-                dict(
-                    ylabel=y_label,
-                    title="",
-                    xlim=xlim_formation,
-                    ylim=cv_share_range or y_range,
-                    row=None,
-                    col="formation",
-                    yticks=None,
-                    xticks=None,
-                )
+        
+        # Row names for CV split plots when split=True
+        row_names = ["all", "without CV", "with CV"]
+        
+        # If split=False, we only have one row
+        if number_of_rows == 1:
+            _d = dict(
+                ylabel=y_label,
+                title="",
+                xlim=x_range,
+                ylim=cv_share_range or y_range,
+                row=None,
+                col=None,
+                yticks=None,
+                xticks=None,
             )
-        info_dicts.append(_d)
+            if config.show_formation:
+                _d["col"] = "standard"
+                _d["yticks"] = False
+                _d["ylabel"] = ""
+                info_dicts.append(
+                    dict(
+                        ylabel=y_label,
+                        title="",
+                        xlim=xlim_formation,
+                        ylim=cv_share_range or y_range,
+                        row=None,
+                        col="formation",
+                        yticks=None,
+                        xticks=None,
+                    )
+                )
+            info_dicts.append(_d)
+        else:
+            # Handle 3-row case (all, without CV, with CV)
+            for row_name in row_names[:number_of_rows]:
+                if config.show_formation:
+                    # Standard column (second column) - no y-axis labels
+                    info_dicts.append(
+                        dict(
+                            ylabel="",
+                            title="",
+                            xlim=x_range,
+                            ylim=cv_share_range or y_range,
+                            row=row_name,
+                            col="standard",
+                            yticks=False,
+                            xticks=True if row_name == row_names[-1] else False,
+                        )
+                    )
+                    # Formation column (first column) - with y-axis labels
+                    info_dicts.append(
+                        dict(
+                            ylabel=y_label,
+                            title="",
+                            xlim=xlim_formation,
+                            ylim=cv_share_range or y_range,
+                            row=row_name,
+                            col="formation",
+                            yticks=True,
+                            xticks=True if row_name == row_names[-1] else False,
+                        )
+                    )
+                else:
+                    # No formation column, single column plot
+                    info_dicts.append(
+                        dict(
+                            ylabel=y_label if row_name == row_names[0] else "",
+                            title="",
+                            xlim=x_range,
+                            ylim=cv_share_range or y_range,
+                            row=row_name,
+                            col=None,
+                            yticks=True if row_name == row_names[0] else None,
+                            xticks=True if row_name == row_names[-1] else False,
+                        )
+                    )
+        
         return info_dicts
 
     def _build_fullcell_standard_info_dicts(
@@ -2886,16 +2947,15 @@ class SeabornPlotBuilder:
     def _valid_number_or_none(self, x: float) -> Optional[float]:
         """Clean up a number (convert NaN and Inf to None)"""
         import numbers
+
         if isinstance(x, numbers.Number):
             if not (np.isnan(x) or np.isinf(x)):
                 return x
         return None
 
-
     def _to_numbers_or_nones(self, x: list) -> list:
         """Clean up a list of numbers (convert NaN and Inf to None)"""
         return [self._valid_number_or_none(i) for i in x]
-
 
     def _clean_up_axis(self, fig, info_dicts=None, row_id="row", col_id="cycle_type"):
         """Clean up and configure axes based on info_dicts."""
@@ -3817,7 +3877,9 @@ def summary_plot_legacy(
 
         if rangeslider:
             if show_formation:
-                logging.critical("Can not add rangeslider when showing formation cycles")
+                logging.critical(
+                    "Can not add rangeslider when showing formation cycles"
+                )
             else:
                 fig.update_layout(xaxis_rangeslider_visible=True)
 
@@ -5404,9 +5466,13 @@ def cycles_plot(
 
         if not form_cycles.empty and show_formation:
             if fig_width < 6:
-                logging.critical("Warning: try setting the figsize to (6, 4) or larger for better visualization")
+                logging.critical(
+                    "Warning: try setting the figsize to (6, 4) or larger for better visualization"
+                )
             if fig_width > 8:
-                logging.critical("Warning: try setting the figsize to (8, 4) or smaller for better visualization")
+                logging.critical(
+                    "Warning: try setting the figsize to (8, 4) or smaller for better visualization"
+                )
             min_cycle, max_cycle = (
                 form_cycles["cycle"].min(),
                 form_cycles["cycle"].max(),
@@ -5671,7 +5737,7 @@ def _check_summary_plotter_plotly():
         y="fullcell_standard_gravimetric",
         fullcell_standard_normalization_type="on-cycles",
         # fullcell_standard_normalization_factor=1500.0,
-        fullcell_standard_normalization_cycle_numbers=[ 18],
+        fullcell_standard_normalization_cycle_numbers=[18],
         # ce_range=[0.0, 200.0],
         # ylim=[0.0, 1.0],
         # show_formation=False,
@@ -5689,7 +5755,54 @@ def _check_summary_plotter_plotly():
     print("DONE")
 
 
+def _check_summary_plotter_seaborn():
+    import pathlib
+    import matplotlib
+
+    import cellpy
+
+    print("Checking summary_plotter_plotly")
+    print(f"{pathlib.Path(__file__).parent.parent.parent=}")
+    print(f"{pathlib.Path.cwd()=}")
+
+    # Set non-interactive backend for VS Code/Cursor compatibility
+    matplotlib.use("Agg")
+
+    this_file = pathlib.Path(__file__)
+
+    p = this_file.parent.parent.parent / "testdata/hdf5/20160805_test001_45_cc.h5"
+    out = this_file.parent.parent.parent / "tmp"
+    assert p.exists()
+    assert out.exists()
+    c = cellpy.get(p)
+    fig = summary_plot(
+        c,
+        # x="normalized_cycle_index",
+        y="capacities_gravimetric_split_constant_voltage",
+        # fullcell_standard_normalization_type="on-cycles",
+        # fullcell_standard_normalization_factor=1500.0,
+        # fullcell_standard_normalization_cycle_numbers=[18],
+        # ce_range=[0.0, 200.0],
+        # ylim=[0.0, 1.0],
+        # show_formation=False,
+        # cut_colorbar=False,
+        # split=True,
+        title="My nice plot",
+        interactive=False,  # rangeslider=True,
+        show_formation=True,  # return_figure=True,
+    )
+    # print("saving figure")
+    # print(f"{fig=}")
+    # print(f"{type(fig)=}")
+    # save_image_files(fig, out / "test_plot_plotly", backend="plotly")
+    # Note: In VS Code/Cursor, use save_image_files instead of show()
+    # fig.figure.show()  # This doesn't work in VS Code/Cursor
+    save_image_files(fig, out / "test_plot_seaborn", backend="seaborn")
+    print("DONE")
+
+
 if __name__ == "__main__":
     # _check_plotter_plotly()
     # _check_plotter_matplotlib()
-    _check_summary_plotter_plotly()
+    # _check_summary_plotter_plotly()
+    _check_summary_plotter_seaborn()
