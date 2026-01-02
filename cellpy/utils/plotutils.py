@@ -2653,10 +2653,10 @@ class SeabornPlotBuilder:
     ) -> list:
         """Build info dicts for CV split plots."""
         info_dicts = []
-        
+
         # Row names for CV split plots when split=True
         row_names = ["all", "without CV", "with CV"]
-        
+
         # If split=False, we only have one row
         if number_of_rows == 1:
             _d = dict(
@@ -2730,7 +2730,7 @@ class SeabornPlotBuilder:
                             xticks=True if row_name == row_names[-1] else False,
                         )
                     )
-        
+
         return info_dicts
 
     def _build_fullcell_standard_info_dicts(
@@ -5329,6 +5329,57 @@ def _cycle_info_plot_matplotlib(
         return ax1, ax2, ax2, ax4
 
 
+@dataclasses.dataclass
+class CyclesPlotterConfig:
+    """Configuration dataclass for cycles_plot parameters.
+    
+    Encapsulates all parameters for cycles_plot to improve maintainability
+    and enable easier refactoring. Note that 'c' (cellpy object) and 'df' 
+    (dataframe) are passed separately as they are data objects, not configuration.
+    """
+    
+    # Data objects (computed during function execution)
+    form_cycles: Optional[pd.DataFrame] = None
+    rest_cycles: Optional[pd.DataFrame] = None
+    
+    # Plot metadata
+    fig_title: Optional[str] = None
+    capacity_unit: Optional[str] = None
+    
+    # Plotly-specific
+    plotly_template: Optional[str] = None
+    force_colorbar: bool = False
+    force_nonbar: bool = False
+    
+    # Matplotlib-specific
+    figsize: tuple = (6, 4)
+    cbar_aspect: int = 30
+    
+    # Common styling
+    colormap: str = "Blues_r"
+    formation_colormap: str = "autumn"
+    cut_colorbar: bool = True
+    width: int = 600
+    height: int = 400
+    marker_size: int = 5
+    formation_line_color: str = "rgba(152, 0, 0, .8)"
+    xlim: Optional[list[float]] = None
+    ylim: Optional[list[float]] = None
+    
+    # Cycle information
+    n_rest_cycles: Optional[int] = None
+    n_form_cycles: Optional[int] = None
+    show_formation: bool = True
+    
+    # Seaborn-specific (for matplotlib backend)
+    seaborn_style_dict: Optional[dict] = None
+    seaborn_context: str = "notebook"
+    seaborn_facecolor: str = "#EAEAF2"
+    seaborn_edgecolor: str = "black"
+    seaborn_style: str = "dark"
+    seaborn_palette: str = "deep"
+
+
 def cycles_plot(
     c,
     cycles=None,
@@ -5398,10 +5449,6 @@ def cycles_plot(
         matplotlib.figure.Figure or plotly.graph_objects.Figure: The generated plot figure.
     """
 
-    import numpy as np
-    import matplotlib
-    from matplotlib.colors import Normalize, ListedColormap
-
     if interactive and not plotly_available:
         warnings.warn("Can not perform interactive plotting. Plotly is not available.")
         interactive = False
@@ -5412,14 +5459,20 @@ def cycles_plot(
     if cycles is None:
         cycles = c.get_cycle_numbers()
 
-    if interactive and title is None:
-        fig_title = f"Capacity plots for <b>{c.cell_name}</b>"
-        fig_title += f"<br>{mode} mode"
+    if title is None:
+        _bold = "<b>" if interactive else "'"
+        _end_bold = "</b>" if interactive else "'"
+        _newline = "<br>" if interactive else "\n"
+        _small = '<span style="font-size: 14px;">' if interactive else ""
+        _end_small = "</span>" if interactive else ""
+        top_title_line = f"Capacity plots for {_bold}{c.cell_name}{_end_bold}"
+        second_title_line = f"{_small} - {mode} mode"
         if interpolated:
-            fig_title += f", interpolated ({number_of_points} points)"
+            second_title_line = f"{second_title_line}, interpolated ({number_of_points} points){_end_small}"
+        else:
+            second_title_line = f"{second_title_line}{_end_small}"
 
-    else:
-        fig_title = title or f"Capacity plots for {c.cell_name}"
+        title = _newline.join([top_title_line, second_title_line])
 
     kw_arguments = dict(
         method=method,
@@ -5441,210 +5494,284 @@ def cycles_plot(
 
     capacity_unit = _get_capacity_unit(c, mode=mode)
 
-    cbar_aspect = 30
+    # Extracting seaborn-specific parameters from kwargs (for matplotlib backend):
+    seaborn_context = kwargs.pop("seaborn_context", "notebook")
+    seaborn_facecolor = kwargs.pop("seaborn_facecolor", "#EAEAF2")
+    seaborn_edgecolor = kwargs.pop("seaborn_edgecolor", "black")
+    seaborn_style_dict = kwargs.pop("seaborn_style_dict", None)
 
-    if not interactive:
-        if seaborn_available:
-            import seaborn as sns
+    config = CyclesPlotterConfig(
+        form_cycles=form_cycles,
+        rest_cycles=rest_cycles,
+        fig_title=title,
+        capacity_unit=capacity_unit,
+        plotly_template=plotly_template,
+        colormap=colormap,
+        formation_colormap=formation_colormap,
+        cut_colorbar=cut_colorbar,
+        cbar_aspect=30,
+        figsize=figsize,
+        force_colorbar=force_colorbar,
+        force_nonbar=force_nonbar,
+        n_rest_cycles=n_rest_cycles,
+        n_form_cycles=n_form_cycles,
+        show_formation=show_formation,
+        width=width,
+        height=height,
+        marker_size=marker_size,
+        formation_line_color=formation_line_color,
+        xlim=xlim,
+        ylim=ylim,
+        seaborn_style=seaborn_style,
+        seaborn_palette=seaborn_palette,
+        seaborn_context=seaborn_context,
+        seaborn_facecolor=seaborn_facecolor,
+        seaborn_edgecolor=seaborn_edgecolor,
+        seaborn_style_dict=seaborn_style_dict,
+    )
 
-            seaborn_facecolor = kwargs.pop("seaborn_facecolor", "#EAEAF2")
-            seaborn_edgecolor = kwargs.pop("seaborn_edgecolor", "black")
-            seaborn_style_dict_default = {
-                "axes.facecolor": seaborn_facecolor,
-                "axes.edgecolor": seaborn_edgecolor,
-            }
-            seaborn_style_dict = kwargs.pop(
-                "seaborn_style_dict", seaborn_style_dict_default
-            )
-
-            sns.set_style(seaborn_style, seaborn_style_dict)
-            sns.set_palette(seaborn_palette)
-            sns.set_context(kwargs.pop("seaborn_context", "notebook"))
-
-        fig, ax = plt.subplots(1, 1, figsize=figsize)
-        fig_width, fig_height = figsize
-
-        if not form_cycles.empty and show_formation:
-            if fig_width < 6:
-                logging.critical(
-                    "Warning: try setting the figsize to (6, 4) or larger for better visualization"
-                )
-            if fig_width > 8:
-                logging.critical(
-                    "Warning: try setting the figsize to (8, 4) or smaller for better visualization"
-                )
-            min_cycle, max_cycle = (
-                form_cycles["cycle"].min(),
-                form_cycles["cycle"].max(),
-            )
-            norm_formation = Normalize(vmin=min_cycle, vmax=max_cycle)
-            cycle_sequence = np.arange(min_cycle, max_cycle + 1, 1)
-
-            shrink = min(1.0, (1 / 8) * n_form_cycles)
-
-            c_m_formation = ListedColormap(
-                plt.get_cmap(formation_colormap, 2 * len(cycle_sequence))(
-                    cycle_sequence
-                )
-            )
-            s_m_formation = matplotlib.cm.ScalarMappable(
-                cmap=c_m_formation, norm=norm_formation
-            )
-            for name, group in form_cycles.groupby("cycle"):
-                ax.plot(
-                    group["capacity"],
-                    group["voltage"],
-                    lw=2,  # alpha=0.7,
-                    color=s_m_formation.to_rgba(name),
-                    label=f"Cycle {name}",
-                )
-            cbar_formation = fig.colorbar(
-                s_m_formation,
-                ax=ax,  # label="Formation Cycle",
-                ticks=np.arange(
-                    form_cycles["cycle"].min(),
-                    form_cycles["cycle"].max() + 1,
-                    1,
-                ),
-                shrink=shrink,
-                aspect=cbar_aspect * shrink,
-                location="right",
-                anchor=(0.0, 0.0),
-            )
-            cbar_formation.set_label(
-                "Form. Cycle",
-                rotation=270,
-                labelpad=12,
-            )
-
-        norm = Normalize(
-            vmin=rest_cycles["cycle"].min(), vmax=rest_cycles["cycle"].max()
-        )
-        if cut_colorbar:
-            cycle_sequence = np.arange(
-                rest_cycles["cycle"].min(), rest_cycles["cycle"].max() + 1, 1
-            )
-            n = int(np.round(1.2 * rest_cycles["cycle"].max()))
-            c_m = ListedColormap(plt.get_cmap(colormap, n)(cycle_sequence))
-        else:
-            c_m = plt.get_cmap(colormap)
-
-        s_m = matplotlib.cm.ScalarMappable(cmap=c_m, norm=norm)
-        for name, group in rest_cycles.groupby("cycle"):
-            ax.plot(
-                group["capacity"],
-                group["voltage"],
-                lw=1,
-                color=s_m.to_rgba(name),
-                label=f"Cycle {name}",
-            )
-        cbar = fig.colorbar(
-            s_m,
-            ax=ax,
-            label="Cycle",
-            aspect=cbar_aspect,
-            location="right",
-        )
-        cbar.set_label(
-            "Cycle",
-            rotation=270,
-            labelpad=12,
-        )
-        # cbar.ax.yaxis.set_ticks_position("left")
-
-        ax.set_xlabel(f"Capacity ({capacity_unit})")
-        ax.set_ylabel(f"Voltage ({c.cellpy_units.voltage})")
-
-        ax.set_title(fig_title)
-
-        if xlim:
-            ax.set_xlim(xlim)
-        if ylim:
-            ax.set_ylim(ylim)
-
-        if return_figure:
-            plt.close(fig)
-            return fig
-    else:
-        import plotly.express as px
-        import plotly.graph_objects as go
-
-        set_plotly_template(plotly_template)
-
-        color_scales = px.colors.named_colorscales()
-        if colormap not in color_scales:
-            colormap = "Blues_r"
-
-        if cut_colorbar:
-            range_color = [df["cycle"].min(), 1.2 * df["cycle"].max()]
-        else:
-            range_color = [df["cycle"].min(), df["cycle"].max()]
-        if (n_rest_cycles < 8 and not force_colorbar) or force_nonbar:
-            show_formation_legend = True
-            cmap = px.colors.sample_colorscale(
-                colorscale=colormap,
-                samplepoints=n_rest_cycles,
-                low=0.0,
-                high=0.8,
-                colortype="rgb",
-            )
-
-            fig = px.line(
-                rest_cycles,
-                x="capacity",
-                y="voltage",
-                color="cycle",
-                title=fig_title,
-                labels={
-                    "capacity": f"Capacity ({capacity_unit})",
-                    "voltage": f"Voltage ({c.cellpy_units.voltage})",
-                },
-                color_discrete_sequence=cmap,
-            )
-
-        else:
-            show_formation_legend = False
-            fig = px.scatter(
-                rest_cycles,
-                x="capacity",
-                y="voltage",
-                color="cycle",
-                title=fig_title,
-                labels={
-                    "capacity": f"Capacity ({capacity_unit})",
-                    "voltage": f"Voltage ({c.cellpy_units.voltage})",
-                },
-                color_continuous_scale=colormap,
-                range_color=range_color,
-            )
-            fig.update_traces(mode="lines+markers", line_color="white", line_width=1)
-
-        if not form_cycles.empty and show_formation:
-            for name, group in form_cycles.groupby("cycle"):
-                trace = go.Scatter(
-                    x=group["capacity"],
-                    y=group["voltage"],
-                    name=f"{name} (f.c.)",
-                    hovertemplate=f"Formation Cycle {name}<br>Capacity: %{{x}}<br>Voltage: %{{y}}",
-                    mode="lines",
-                    marker=dict(color=formation_line_color),
-                    showlegend=show_formation_legend,
-                    legendrank=1,
-                    legendgroup="formation",
-                )
-
-                fig.add_trace(trace)
-
-        fig.update_traces(marker=dict(size=marker_size))
-        fig.update_layout(height=height, width=width)
-        if xlim:
-            fig.update_xaxes(range=xlim)
-        if ylim:
-            fig.update_yaxes(range=ylim)
-
+    if interactive:     
+        fig = _cycles_plotter_plotly(c, df, config, **kwargs)
         if return_figure:
             return fig
         fig.show()
+
+    else:
+        fig = _cycles_plotter_matplotlib(c, df, config, **kwargs)
+        if return_figure:
+            plt.close(fig)
+            return fig
+
+
+def _cycles_plotter_matplotlib(
+    c,
+    df,
+    config: CyclesPlotterConfig,
+    **kwargs,
+):
+    import numpy as np
+    import matplotlib
+    from matplotlib.colors import Normalize, ListedColormap
+
+    if seaborn_available:
+        import seaborn as sns
+
+        seaborn_style_dict = config.seaborn_style_dict or {
+                "axes.facecolor": config.seaborn_facecolor,
+                "axes.edgecolor": config.seaborn_edgecolor,
+            }
+        sns.set_style(config.seaborn_style, seaborn_style_dict)
+        sns.set_palette(config.seaborn_palette)
+        sns.set_context(config.seaborn_context)
+
+    fig, ax = plt.subplots(1, 1, figsize=config.figsize)
+    fig_width, fig_height = config.figsize
+
+    if not config.form_cycles.empty and config.show_formation:
+        if fig_width < 6:
+            logging.critical(
+                "Warning: try setting the figsize to (6, 4) or larger for better visualization"
+            )
+        if fig_width > 8:
+            logging.critical(
+                "Warning: try setting the figsize to (8, 4) or smaller for better visualization"
+            )
+        min_cycle, max_cycle = (
+            config.form_cycles["cycle"].min(),
+            config.form_cycles["cycle"].max(),
+        )
+        norm_formation = Normalize(vmin=min_cycle, vmax=max_cycle)
+        cycle_sequence = np.arange(min_cycle, max_cycle + 1, 1)
+
+        shrink = min(1.0, (1 / 8) * config.n_form_cycles)
+
+        c_m_formation = ListedColormap(
+            plt.get_cmap(config.formation_colormap, 2 * len(cycle_sequence))(
+                cycle_sequence
+            )
+        )
+        s_m_formation = matplotlib.cm.ScalarMappable(
+            cmap=c_m_formation, norm=norm_formation
+        )
+        for name, group in config.form_cycles.groupby("cycle"):
+            ax.plot(
+                group["capacity"],
+                group["voltage"],
+                lw=2,  # alpha=0.7,
+                color=s_m_formation.to_rgba(name),
+                label=f"Cycle {name}",
+            )
+        cbar_formation = fig.colorbar(
+            s_m_formation,
+            ax=ax,  # label="Formation Cycle",
+            ticks=np.arange(
+                config.form_cycles["cycle"].min(),
+                config.form_cycles["cycle"].max() + 1,
+                1,
+            ),
+            shrink=shrink,
+            aspect=config.cbar_aspect * shrink,
+            location="right",
+            anchor=(0.0, 0.0),
+        )
+        cbar_formation.set_label(
+            "Form. Cycle",
+            rotation=270,
+            labelpad=12,
+        )
+
+    norm = Normalize(
+        vmin=config.rest_cycles["cycle"].min(), vmax=config.rest_cycles["cycle"].max()
+    )
+    if config.cut_colorbar:
+        cycle_sequence = np.arange(
+            config.rest_cycles["cycle"].min(), config.rest_cycles["cycle"].max() + 1, 1
+        )
+        n = int(np.round(1.2 * config.rest_cycles["cycle"].max()))
+        c_m = ListedColormap(plt.get_cmap(config.colormap, n)(cycle_sequence))
+    else:
+        c_m = plt.get_cmap(config.colormap)
+
+    s_m = matplotlib.cm.ScalarMappable(cmap=c_m, norm=norm)
+    for name, group in config.rest_cycles.groupby("cycle"):
+        ax.plot(
+            group["capacity"],
+            group["voltage"],
+            lw=1,
+            color=s_m.to_rgba(name),
+            label=f"Cycle {name}",
+        )
+    cbar = fig.colorbar(
+        s_m,
+        ax=ax,
+        label="Cycle",
+        aspect=config.cbar_aspect,
+        location="right",
+    )
+    cbar.set_label(
+        "Cycle",
+        rotation=270,
+        labelpad=12,
+    )
+    # cbar.ax.yaxis.set_ticks_position("left")
+
+    ax.set_xlabel(f"Capacity ({config.capacity_unit})")
+    ax.set_ylabel(f"Voltage ({c.cellpy_units.voltage})")
+
+    ax.set_title(config.fig_title, loc='left')
+
+    fig.tight_layout()
+
+    if config.xlim:
+        ax.set_xlim(config.xlim)
+    if config.ylim:
+        ax.set_ylim(config.ylim)
+
+    return fig
+
+def _cycles_plotter_plotly(
+    c,
+    df,
+    config: CyclesPlotterConfig,
+    **kwargs,
+):
+    import plotly.express as px
+    import plotly.graph_objects as go
+
+    set_plotly_template(config.plotly_template)
+
+    color_scales = px.colors.named_colorscales()
+    if config.colormap not in color_scales:
+        colormap = "Blues_r"
+    else:
+        colormap = config.colormap
+
+    if config.cut_colorbar:
+        range_color = [df["cycle"].min(), 1.2 * df["cycle"].max()]
+    else:
+        range_color = [df["cycle"].min(), df["cycle"].max()]
+    if (config.n_rest_cycles is not None and config.n_rest_cycles < 8 and not config.force_colorbar) or config.force_nonbar:
+        show_formation_legend = True
+        cmap = px.colors.sample_colorscale(
+            colorscale=colormap,
+            samplepoints=config.n_rest_cycles,
+            low=0.0,
+            high=0.8,
+            colortype="rgb",
+        )
+
+        fig = px.line(
+            config.rest_cycles,
+            x="capacity",
+            y="voltage",
+            color="cycle",
+            title=config.fig_title,
+            labels={
+                "capacity": f"Capacity ({config.capacity_unit})",
+                "voltage": f"Voltage ({c.cellpy_units.voltage})",
+            },
+            color_discrete_sequence=cmap,
+        )
+
+    else:
+        show_formation_legend = False
+        fig = px.scatter(
+            config.rest_cycles,
+            x="capacity",
+            y="voltage",
+            color="cycle",
+            title=config.fig_title,
+            labels={
+                "capacity": f"Capacity ({config.capacity_unit})",
+                "voltage": f"Voltage ({c.cellpy_units.voltage})",
+            },
+            color_continuous_scale=colormap,
+            range_color=range_color,
+        )
+        fig.update_traces(mode="lines+markers", line_color="white", line_width=1)
+
+    if not config.form_cycles.empty and config.show_formation:
+        for name, group in config.form_cycles.groupby("cycle"):
+            trace = go.Scatter(
+                x=group["capacity"],
+                y=group["voltage"],
+                name=f"{name} (f.c.)",
+                hovertemplate=f"Formation Cycle {name}<br>Capacity: %{{x}}<br>Voltage: %{{y}}",
+                mode="lines",
+                marker=dict(color=config.formation_line_color),
+                showlegend=show_formation_legend,
+                legendrank=1,
+                legendgroup="formation",
+            )
+
+            fig.add_trace(trace)
+
+    fig.update_traces(marker=dict(size=config.marker_size))
+    fig.update_layout(height=config.height, width=config.width)
+    if config.xlim:
+        fig.update_xaxes(range=config.xlim)
+    if config.ylim:
+        fig.update_yaxes(range=config.ylim)
+
+    return fig
+
+
+def _cell_and_output_path():
+    import pathlib
+    import cellpy
+
+    this_file = pathlib.Path(__file__)
+    p = this_file.parent.parent.parent / "testdata/hdf5/20160805_test001_45_cc.h5"
+    out = this_file.parent.parent.parent / "tmp"
+
+    print(f"{p=}")
+    print(f"{out=}")
+
+    print(f"{p.exists()=}")
+    print(f"{out.exists()=}")
+
+    c = cellpy.get(p)
+    return c, out
 
 
 def _check_plotter_plotly():
@@ -5703,34 +5830,8 @@ def _check_plotter_matplotlib():
 
 
 def _check_summary_plotter_plotly():
-    import pathlib
-
-    import cellpy
-
+    c, out = _cell_and_output_path()
     print("Checking summary_plotter_plotly")
-    print(f"{pathlib.Path(__file__).parent.parent.parent=}")
-    print(f"{pathlib.Path.cwd()=}")
-
-    this_file = pathlib.Path(__file__)
-
-    p = this_file.parent.parent.parent / "testdata/hdf5/20160805_test001_45_cc.h5"
-    out = this_file.parent.parent.parent / "tmp"
-    assert p.exists()
-    assert out.exists()
-    c = cellpy.get(p)
-    # plot_info = SummaryPlotInfo(c)
-    # config = SummaryPlotConfig()
-    # print(
-    #     "\n=============================================================================="
-    # )
-    # print(f"{plot_info=}")
-    # print(
-    #     "\n=============================================================================="
-    # )
-    # print(f"{config=}")
-    # print(
-    #     "\n=============================================================================="
-    # )
     fig = summary_plot(
         c,
         # x="normalized_cycle_index",
@@ -5745,7 +5846,8 @@ def _check_summary_plotter_plotly():
         # split=True,
         title="My nice plot",
         interactive=True,  # rangeslider=True,
-        show_formation=True,  # return_figure=True,
+        show_formation=True,
+        # return_data=False,
     )
     # print("saving figure")
     # print(f"{fig=}")
@@ -5756,25 +5858,13 @@ def _check_summary_plotter_plotly():
 
 
 def _check_summary_plotter_seaborn():
-    import pathlib
     import matplotlib
 
-    import cellpy
-
-    print("Checking summary_plotter_plotly")
-    print(f"{pathlib.Path(__file__).parent.parent.parent=}")
-    print(f"{pathlib.Path.cwd()=}")
-
-    # Set non-interactive backend for VS Code/Cursor compatibility
     matplotlib.use("Agg")
+    print("Checking summary_plotter_seaborn")
 
-    this_file = pathlib.Path(__file__)
-
-    p = this_file.parent.parent.parent / "testdata/hdf5/20160805_test001_45_cc.h5"
-    out = this_file.parent.parent.parent / "tmp"
-    assert p.exists()
-    assert out.exists()
-    c = cellpy.get(p)
+    c, out = _cell_and_output_path()
+    # Set non-interactive backend for VS Code/Cursor compatibility
     fig = summary_plot(
         c,
         # x="normalized_cycle_index",
@@ -5801,8 +5891,39 @@ def _check_summary_plotter_seaborn():
     print("DONE")
 
 
+def _check_cycles_plotter_plotly():
+    c, out = _cell_and_output_path()
+    print("Checking cycle_plotter_plotly")
+    fig = cycles_plot(
+        c,
+        y="capacities_gravimetric",
+        interactive=True,
+        return_figure=True,
+    )
+    save_image_files(fig, out / "test_plot_cycles_plotly", backend="plotly")
+    print("DONE")
+
+
+def _check_cycles_plotter_matplotlib():
+    import matplotlib
+
+    matplotlib.use("Agg")
+    c, out = _cell_and_output_path()
+    print("Checking cycle_plotter_matplotlib")
+    fig = cycles_plot(
+        c,
+        y="capacities_gravimetric",
+        interactive=False,
+        return_figure=True,
+    )
+    save_image_files(fig, out / "test_plot_cycles_matplotlib", backend="matplotlib")
+    print("DONE")
+
+
 if __name__ == "__main__":
     # _check_plotter_plotly()
     # _check_plotter_matplotlib()
     # _check_summary_plotter_plotly()
-    _check_summary_plotter_seaborn()
+    # _check_summary_plotter_seaborn()
+    _check_cycles_plotter_plotly()
+    _check_cycles_plotter_matplotlib()
