@@ -5332,29 +5332,29 @@ def _cycle_info_plot_matplotlib(
 @dataclasses.dataclass
 class CyclesPlotterConfig:
     """Configuration dataclass for cycles_plot parameters.
-    
+
     Encapsulates all parameters for cycles_plot to improve maintainability
-    and enable easier refactoring. Note that 'c' (cellpy object) and 'df' 
+    and enable easier refactoring. Note that 'c' (cellpy object) and 'df'
     (dataframe) are passed separately as they are data objects, not configuration.
     """
-    
+
     # Data objects (computed during function execution)
     form_cycles: Optional[pd.DataFrame] = None
     rest_cycles: Optional[pd.DataFrame] = None
-    
+
     # Plot metadata
     fig_title: Optional[str] = None
     capacity_unit: Optional[str] = None
-    
+
     # Plotly-specific
     plotly_template: Optional[str] = None
     force_colorbar: bool = False
     force_nonbar: bool = False
-    
+
     # Matplotlib-specific
     figsize: tuple = (6, 4)
     cbar_aspect: int = 30
-    
+
     # Common styling
     colormap: str = "Blues_r"
     formation_colormap: str = "autumn"
@@ -5365,12 +5365,12 @@ class CyclesPlotterConfig:
     formation_line_color: str = "rgba(152, 0, 0, .8)"
     xlim: Optional[list[float]] = None
     ylim: Optional[list[float]] = None
-    
+
     # Cycle information
     n_rest_cycles: Optional[int] = None
     n_form_cycles: Optional[int] = None
     show_formation: bool = True
-    
+
     # Seaborn-specific (for matplotlib backend)
     seaborn_style_dict: Optional[dict] = None
     seaborn_context: str = "notebook"
@@ -5380,6 +5380,7 @@ class CyclesPlotterConfig:
     seaborn_palette: str = "deep"
 
 
+@notebook_docstring_printer
 def cycles_plot(
     c,
     cycles=None,
@@ -5394,12 +5395,14 @@ def cycles_plot(
     cut_colorbar=True,
     title=None,
     figsize=(6, 4),
+    x_range=None,
+    y_range=None,
     xlim=None,
     ylim=None,
     interactive=True,
     return_figure=None,
-    width=600,
-    height=400,
+    width=800,
+    height=600,
     marker_size=5,
     formation_line_color="rgba(152, 0, 0, .8)",
     force_colorbar=False,
@@ -5494,6 +5497,12 @@ def cycles_plot(
 
     capacity_unit = _get_capacity_unit(c, mode=mode)
 
+    # Preparing for more homogeneous parameters:
+    if x_range is not None:
+        xlim = x_range
+    if y_range is not None:
+        ylim = y_range
+
     # Extracting seaborn-specific parameters from kwargs (for matplotlib backend):
     seaborn_context = kwargs.pop("seaborn_context", "notebook")
     seaborn_facecolor = kwargs.pop("seaborn_facecolor", "#EAEAF2")
@@ -5530,7 +5539,7 @@ def cycles_plot(
         seaborn_style_dict=seaborn_style_dict,
     )
 
-    if interactive:     
+    if interactive:
         fig = _cycles_plotter_plotly(c, df, config, **kwargs)
         if return_figure:
             return fig
@@ -5557,9 +5566,9 @@ def _cycles_plotter_matplotlib(
         import seaborn as sns
 
         seaborn_style_dict = config.seaborn_style_dict or {
-                "axes.facecolor": config.seaborn_facecolor,
-                "axes.edgecolor": config.seaborn_edgecolor,
-            }
+            "axes.facecolor": config.seaborn_facecolor,
+            "axes.edgecolor": config.seaborn_edgecolor,
+        }
         sns.set_style(config.seaborn_style, seaborn_style_dict)
         sns.set_palette(config.seaborn_palette)
         sns.set_context(config.seaborn_context)
@@ -5658,7 +5667,7 @@ def _cycles_plotter_matplotlib(
     ax.set_xlabel(f"Capacity ({config.capacity_unit})")
     ax.set_ylabel(f"Voltage ({c.cellpy_units.voltage})")
 
-    ax.set_title(config.fig_title, loc='left')
+    ax.set_title(config.fig_title, loc="left", wrap=True)
 
     fig.tight_layout()
 
@@ -5668,6 +5677,7 @@ def _cycles_plotter_matplotlib(
         ax.set_ylim(config.ylim)
 
     return fig
+
 
 def _cycles_plotter_plotly(
     c,
@@ -5690,7 +5700,12 @@ def _cycles_plotter_plotly(
         range_color = [df["cycle"].min(), 1.2 * df["cycle"].max()]
     else:
         range_color = [df["cycle"].min(), df["cycle"].max()]
-    if (config.n_rest_cycles is not None and config.n_rest_cycles < 8 and not config.force_colorbar) or config.force_nonbar:
+    if (
+        config.n_rest_cycles is not None
+        and config.n_rest_cycles < 8
+        and not config.force_colorbar
+    ) or config.force_nonbar:
+        logging.critical("using px.line for non-formation cycles")
         show_formation_legend = True
         cmap = px.colors.sample_colorscale(
             colorscale=colormap,
@@ -5714,13 +5729,14 @@ def _cycles_plotter_plotly(
         )
 
     else:
+        logging.critical("using px.scatter for non-formation cycles")
         show_formation_legend = False
         fig = px.scatter(
             config.rest_cycles,
             x="capacity",
             y="voltage",
-            color="cycle",
             title=config.fig_title,
+            color="cycle",
             labels={
                 "capacity": f"Capacity ({config.capacity_unit})",
                 "voltage": f"Voltage ({c.cellpy_units.voltage})",
@@ -5728,10 +5744,12 @@ def _cycles_plotter_plotly(
             color_continuous_scale=colormap,
             range_color=range_color,
         )
+
         fig.update_traces(mode="lines+markers", line_color="white", line_width=1)
 
     if not config.form_cycles.empty and config.show_formation:
         for name, group in config.form_cycles.groupby("cycle"):
+            logging.info(f"using go.Scatter for formation cycle(s) {name}")
             trace = go.Scatter(
                 x=group["capacity"],
                 y=group["voltage"],
@@ -5747,11 +5765,26 @@ def _cycles_plotter_plotly(
             fig.add_trace(trace)
 
     fig.update_traces(marker=dict(size=config.marker_size))
-    fig.update_layout(height=config.height, width=config.width)
+
     if config.xlim:
         fig.update_xaxes(range=config.xlim)
     if config.ylim:
         fig.update_yaxes(range=config.ylim)
+
+    plotly_xaxes_kwargs = kwargs.pop("plotly_xaxes_kwargs", {})
+    plotly_yaxes_kwargs = kwargs.pop("plotly_yaxes_kwargs", {})
+    if plotly_xaxes_kwargs:
+        fig.update_xaxes(**plotly_xaxes_kwargs)
+    if plotly_yaxes_kwargs:
+        fig.update_yaxes(**plotly_yaxes_kwargs)
+
+    plotly_layout_kwargs = kwargs.pop("plotly_layout_kwargs", {})
+
+    fig.update_layout(
+        height=config.height,
+        width=config.width,
+        **plotly_layout_kwargs,
+    )
 
     return fig
 
