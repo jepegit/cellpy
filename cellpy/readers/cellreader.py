@@ -4335,7 +4335,6 @@ class CellpyCell:
         dx=0.1,
         number_of_points=None,
         ignore_errors=True,
-        dynamic=False,
         inter_cycle_shift=True,
         interpolate_along_cap=False,
         capacity_then_voltage=False,
@@ -4345,6 +4344,7 @@ class CellpyCell:
         volume=None,
         cycle_mode=None,
         usteps=None,
+        dynamic=False,
         **kwargs,
     ):
         """Gets the capacity for the run.
@@ -4380,8 +4380,6 @@ class CellpyCell:
             number_of_points (int): number of points to use (over-rides dx)
                 for interpolation (i.e. the length of the interpolated data).
             ignore_errors (bool): don't break out of loop if an error occurs.
-            dynamic: for dynamic retrieving data from cellpy-file.
-                [NOT IMPLEMENTED YET]
             inter_cycle_shift (bool): cumulative shifts between consecutive
                 cycles. Defaults to True.
             interpolate_along_cap (bool): interpolate along capacity axis instead
@@ -4395,6 +4393,8 @@ class CellpyCell:
             volume (float): volume of electrode (in set cellpy units, typically cm3).
             cycle_mode (string): if 'anode' the first step is assumed to be the discharge,
                 else charge (defaults to ``CellpyCell.cycle_mode``).
+            dynamic: for dynamic retrieving data from cellpy-file.
+                [NOT IMPLEMENTED YET]
             **kwargs: sent to ``get_ccap`` and ``get_dcap``.
 
         Returns:
@@ -4489,7 +4489,7 @@ class CellpyCell:
             mode = "volumetric"
 
         if mode == "absolute":
-            logging.info(f"absolute mode - no conversion")
+            logging.info("absolute mode - no conversion")
 
         capacity = None
         voltage = None

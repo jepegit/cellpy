@@ -5384,6 +5384,8 @@ class CyclesPlotterConfig:
 def cycles_plot(
     c,
     cycles=None,
+    inter_cycle_shift=True,
+    cycle_mode=None,
     formation_cycles=3,
     show_formation=True,
     mode="gravimetric",
@@ -5422,6 +5424,8 @@ def cycles_plot(
     Args:
         c: cellpy object containing the data to plot.
         cycles (list, optional): List of cycle numbers to plot. If None, all cycles are plotted.
+        inter_cycle_shift (bool, optional): Whether to shift the cycles by one. Default is True.
+        cycle_mode (str, optional): Mode for the test (anode or other). Default is None (i.e. use the cellpy cell object's cycle_mode).
         formation_cycles (int, optional): Number of formation cycles to highlight. Default is 3.
         show_formation (bool, optional): Whether to show formation cycles. Default is True.
         mode (str, optional): Mode for capacity ('gravimetric', 'areal', etc.). Default is 'gravimetric'.
@@ -5444,9 +5448,15 @@ def cycles_plot(
         force_colorbar (bool, optional): Whether to force the colorbar to be shown. Default is False.
         force_nonbar (bool, optional): Whether to force the colorbar to be hidden. Default is False.
         plotly_template (str, optional): Plotly template to use (uses default template if None).
-        seaborn_palette: name of the seaborn palette to use (only if seaborn is available)
-        seaborn_style: name of the seaborn style to use (only if seaborn is available)
+        seaborn_palette: name of the seaborn palette to use (only if seaborn is available).
+        seaborn_style: name of the seaborn style to use (only if seaborn is available).
         **kwargs: Additional keyword arguments for the plotting backend.
+
+    Additional keyword arguments for Plotly:
+        plotly_max_individual_traces_for_lines (int, optional): Maximum number of individual traces (not including formation cycles) for lines in Plotly. Default is 8.
+        plotly_xaxes_kwargs (dict, optional): propagated to plotly.update_xaxes.
+        plotly_yaxes_kwargs (dict, optional): propagated to plotly.update_yaxes.
+        plotly_layout_kwargs (dict, optional): propagated to plotly.update_layout.
 
     Returns:
         matplotlib.figure.Figure or plotly.graph_objects.Figure: The generated plot figure.
@@ -5485,8 +5495,12 @@ def cycles_plot(
         number_of_points=number_of_points,
         insert_nan=True,
         mode=mode,
+        cycle_mode=cycle_mode,
+        inter_cycle_shift=inter_cycle_shift,
     )
     df = c.get_cap(cycles=cycles, **kw_arguments)
+    # Temporary fix to ensure that the cycles are plotted in the correct order:
+    df = df.sort_values(by=["cycle", "direction"])
 
     selector = df["cycle"] <= formation_cycles
     form_cycles = df.loc[selector, :]
@@ -5547,6 +5561,7 @@ def cycles_plot(
 
     else:
         fig = _cycles_plotter_matplotlib(c, df, config, **kwargs)
+        print(type(fig))
         if return_figure:
             plt.close(fig)
             return fig
@@ -5691,6 +5706,7 @@ def _cycles_plotter_plotly(
     set_plotly_template(config.plotly_template)
 
     color_scales = px.colors.named_colorscales()
+    plotly_max_individual_traces_for_lines = kwargs.pop("plotly_max_individual_traces_for_lines", 8)
     if config.colormap not in color_scales:
         colormap = "Blues_r"
     else:
@@ -5702,10 +5718,10 @@ def _cycles_plotter_plotly(
         range_color = [df["cycle"].min(), df["cycle"].max()]
     if (
         config.n_rest_cycles is not None
-        and config.n_rest_cycles < 8
+        and config.n_rest_cycles < plotly_max_individual_traces_for_lines
         and not config.force_colorbar
     ) or config.force_nonbar:
-        logging.critical("using px.line for non-formation cycles")
+        logging.info("using px.line for non-formation cycles")
         show_formation_legend = True
         cmap = px.colors.sample_colorscale(
             colorscale=colormap,
@@ -5729,7 +5745,7 @@ def _cycles_plotter_plotly(
         )
 
     else:
-        logging.critical("using px.scatter for non-formation cycles")
+        logging.info("using px.scatter for non-formation cycles")
         show_formation_legend = False
         fig = px.scatter(
             config.rest_cycles,
@@ -5794,7 +5810,8 @@ def _cell_and_output_path():
     import cellpy
 
     this_file = pathlib.Path(__file__)
-    p = this_file.parent.parent.parent / "testdata/hdf5/20160805_test001_45_cc.h5"
+    # p = this_file.parent.parent.parent / "testdata/hdf5/20160805_test001_45_cc.h5"
+    p = pathlib.Path(r"C:\scripting\cellpy\local\20240516_nor000_01_fccc_01.h5")
     out = this_file.parent.parent.parent / "tmp"
 
     print(f"{p=}")
@@ -5803,7 +5820,10 @@ def _cell_and_output_path():
     print(f"{p.exists()=}")
     print(f"{out.exists()=}")
 
-    c = cellpy.get(p)
+    # c = cellpy.get(p)
+    c = cellpy.get(
+        p, instrument="arbin_sql_h5", cycle_mode="fullcell", 
+        mass=15.5, area=1.767, loading=8.8, nominal_capacity=150.0)
     return c, out
 
 
@@ -5930,6 +5950,7 @@ def _check_cycles_plotter_plotly():
     fig = cycles_plot(
         c,
         y="capacities_gravimetric",
+        cycles=[1, 2, 3, 4, 5, 20, 40, 60],
         interactive=True,
         return_figure=True,
     )
@@ -5959,4 +5980,4 @@ if __name__ == "__main__":
     # _check_summary_plotter_plotly()
     # _check_summary_plotter_seaborn()
     _check_cycles_plotter_plotly()
-    _check_cycles_plotter_matplotlib()
+    # _check_cycles_plotter_matplotlib()
