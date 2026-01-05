@@ -4604,25 +4604,15 @@ def summary_plot(
         plot_info,
     )
 
-    # Build plot using new builder classes
-    if config.interactive:
-        builder = PlotlyPlotBuilder()
-        fig = builder.build_plot(
-            prepared_data_info["data"],
-            prepared_data_info,
-            config,
-            config.additional_kwargs,
-            c,
-        )
-    else:
-        builder = SeabornPlotBuilder()
-        fig = builder.build_plot(
-            prepared_data_info["data"],
-            prepared_data_info,
-            config,
-            config.additional_kwargs,
-            c,
-        )
+    builder = PlotlyPlotBuilder() if config.interactive else SeabornPlotBuilder()
+
+    fig = builder.build_plot(
+        prepared_data_info["data"],
+        prepared_data_info,
+        config,
+        config.additional_kwargs,
+        c,
+    )
 
     if config.return_data:
         return fig, prepared_data_info["data"]
@@ -5412,6 +5402,7 @@ def cycles_plot(
     plotly_template=None,
     seaborn_palette: str = "deep",
     seaborn_style: str = "dark",
+    return_data=False,
     **kwargs,
 ):
     """
@@ -5450,6 +5441,7 @@ def cycles_plot(
         plotly_template (str, optional): Plotly template to use (uses default template if None).
         seaborn_palette: name of the seaborn palette to use (only if seaborn is available).
         seaborn_style: name of the seaborn style to use (only if seaborn is available).
+        return_data (bool, optional): Whether to return the data used for the plot. Default is False.
         **kwargs: Additional keyword arguments for the plotting backend.
 
     Additional keyword arguments for Plotly:
@@ -5459,7 +5451,13 @@ def cycles_plot(
         plotly_layout_kwargs (dict, optional): propagated to plotly.update_layout.
 
     Returns:
-        matplotlib.figure.Figure or plotly.graph_objects.Figure: The generated plot figure.
+        The figure is a matplotlib.figure.Figure or a plotly.graph_objects.Figure, depending on the backend used.
+        If return_data is True:
+            tuple: (figure, data)
+        If return_figure is True:
+            figure: The generated plot figure (same as the return value).
+        Else:
+            None: The plot is shown in the default browser.
     """
 
     if interactive and not plotly_available:
@@ -5555,15 +5553,20 @@ def cycles_plot(
 
     if interactive:
         fig = _cycles_plotter_plotly(c, df, config, **kwargs)
-        if return_figure:
+        if return_data:
+            return fig, df
+        elif return_figure:
             return fig
-        fig.show()
+        else:
+            fig.show()
 
     else:
         fig = _cycles_plotter_matplotlib(c, df, config, **kwargs)
-        print(type(fig))
-        if return_figure:
+        if return_figure or return_data:
             plt.close(fig)
+        if return_data:
+            return fig, df
+        elif return_figure:
             return fig
 
 
@@ -5921,10 +5924,11 @@ def _check_summary_plotter_seaborn():
     fig = summary_plot(
         c,
         # x="normalized_cycle_index",
-        y="capacities_gravimetric_split_constant_voltage",
-        # fullcell_standard_normalization_type="on-cycles",
+        # y="capacities_gravimetric_split_constant_voltage",
+        y="fullcell_standard_gravimetric",
+        fullcell_standard_normalization_type="on-cycles",
         # fullcell_standard_normalization_factor=1500.0,
-        # fullcell_standard_normalization_cycle_numbers=[18],
+        fullcell_standard_normalization_cycle_numbers=[18],
         # ce_range=[0.0, 200.0],
         # ylim=[0.0, 1.0],
         # show_formation=False,
@@ -5978,6 +5982,6 @@ if __name__ == "__main__":
     # _check_plotter_plotly()
     # _check_plotter_matplotlib()
     # _check_summary_plotter_plotly()
-    # _check_summary_plotter_seaborn()
-    _check_cycles_plotter_plotly()
+    _check_summary_plotter_seaborn()
+    # _check_cycles_plotter_plotly()
     # _check_cycles_plotter_matplotlib()
