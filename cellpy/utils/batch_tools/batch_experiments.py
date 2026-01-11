@@ -312,6 +312,22 @@ class CyclingExperiment(BaseExperiment):
         logging.debug(f"You have {number_of_runs} cells in your journal")
         counter = 0
         errors = []
+        pbar_labels = []
+        if force_cellpy:
+            pbar_labels.append("+fc")
+        if force_raw:
+            pbar_labels.append("+fr")
+        if force_recalc:
+            pbar_labels.append("+rc")
+        if skip_bad_cells:
+            pbar_labels.append("+sb")
+        if experimental:
+            pbar_labels.append("+ex")
+        if find_ir:
+            pbar_labels.append("+ir")
+        if find_end_voltage:
+            pbar_labels.append("+ev")
+        pbar_label = "".join(pbar_labels)
 
         pbar = tqdm(list(pages.iterrows()), file=sys.stdout, leave=False)
 
@@ -323,14 +339,14 @@ class CyclingExperiment(BaseExperiment):
         for index, row in pbar:
             counter += 1
             h_txt = f"{index}"
-            n_txt = f"loading {counter}"
+            n_txt = f"loading {counter} [{pbar_label}]"
             l_txt = f"starting to process file # {counter} ({index})"
 
             if skip_bad_cells:
                 if index in bad_cells:
                     logging.info(f"Skipping bad cell: {index}")
                     continue
-
+            
             pbar.set_description(n_txt, refresh=True)
             cell_spec_page = self._get_cell_spec_from_page(index, row)
 
