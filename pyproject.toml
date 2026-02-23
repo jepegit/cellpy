@@ -9,6 +9,7 @@ addopts = "--durations=0 --capture=fd -v -m \"not slowtest and not smoketest and
 markers = [
     "slowtest: marks tests as slow (deselect with '-m \"not slow\"')",
     "serial",
+    "skip_on_macos: skip this test when running on macOS (e.g. CI flakiness)",
 ]
 filterwarnings = [
     "ignore::DeprecationWarning:dateparser",

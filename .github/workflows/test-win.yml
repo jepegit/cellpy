@@ -6,7 +6,7 @@ jobs:
   Install-exe:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v6
       - name: find out where we are
         shell: cmd
         run: dir

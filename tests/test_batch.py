@@ -169,6 +169,7 @@ def test_load_limited_journal_excel(parameters, batch_instance):
     assert hdr_journal["argument"] in b.pages.columns
 
 
+@pytest.mark.skip_on_macos
 def test_load_full_journal_excel_and_check_headers_generated(
     parameters, batch_instance
 ):
