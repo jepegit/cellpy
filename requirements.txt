@@ -16,7 +16,7 @@ matplotlib>=1.5.3
 notebook
 numpy>=2.0
 openpyxl
-pandas<=2.1
+pandas
 pint
 plotly
 pyodbc>=4.0.16
