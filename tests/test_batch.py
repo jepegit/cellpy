@@ -307,6 +307,70 @@ def test_load_journal_json_from_labjournal_class(parameters):
     assert len(journal.pages) == 5
 
 
+def test_load_with_explicit_cellpy_journal_file(parameters, batch_instance):
+    """Test load() with journal_file= path to cellpy journal (info_df format)."""
+    b = batch_instance.load(
+        "test_batch",
+        "test_project",
+        journal_file=parameters.journal_file_json_path,
+        allow_from_journal=False,
+        drop_bad_cells=False,
+        testing=True,
+    )
+    assert b is not None
+    assert len(b.pages) == 5
+    assert hdr_journal["argument"] in b.pages.columns
+
+
+def test_load_with_explicit_custom_json(parameters, batch_instance):
+    """Test load() with journal_file= and reader='custom_json_reader'."""
+    fixture_path = pathlib.Path(__file__).parent / "fixtures" / "custom_json_batch_like.json"
+    assert fixture_path.exists()
+
+    column_map = {
+        "cell_id": "filename",
+        "mass_mg": "mass",
+        "total_mass_mg": "total_mass",
+        "instrument_name": "instrument",
+    }
+    b = batch_instance.load(
+        "test_batch",
+        "test_project",
+        journal_file=str(fixture_path),
+        reader="custom_json_reader",
+        column_map=column_map,
+        allow_from_journal=False,
+        testing=True,
+        raw_file_dir=parameters.raw_data_dir,
+        cellpy_file_dir=parameters.cellpy_data_dir,
+    )
+    assert b is not None
+    assert len(b.pages) == 1
+    assert b.pages.index[0] == "20160805_test001_45_cc"
+    assert hdr_journal["raw_file_names"] in b.pages.columns
+    assert hdr_journal["cellpy_file_name"] in b.pages.columns
+
+
+def test_load_with_explicit_batbase_json(parameters, batch_instance):
+    """Test load() with journal_file= and reader='batbase_json_reader'."""
+    fixture_path = pathlib.Path(__file__).parent / "fixtures" / "cellpy_batbase_like.json"
+    assert fixture_path.exists()
+
+    b = batch_instance.load(
+        "test_batch",
+        "test_project",
+        journal_file=str(fixture_path),
+        reader="batbase_json_reader",
+        allow_from_journal=False,
+        testing=True,
+        raw_file_dir=parameters.raw_data_dir,
+        cellpy_file_dir=parameters.cellpy_data_dir,
+    )
+    assert b is not None
+    assert len(b.pages) == 1
+    assert b.pages.index[0] == "20160805_test001_45_cc"
+
+
 # TODO: make this test
 def test_update_with_cellspecs(parameters, batch_instance):
     # from journal and as argument (see batch_experiment.py, update).

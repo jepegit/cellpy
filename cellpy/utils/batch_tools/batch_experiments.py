@@ -65,7 +65,9 @@ class CyclingExperiment(BaseExperiment):
         db_reader = kwargs.pop("db_reader", "default")
         db_file = kwargs.pop("db_file", None)
         super().__init__(*args)
-        self.journal = LabJournal(db_reader=db_reader, db_file=db_file)
+        self.journal = LabJournal(
+            db_reader=db_reader, db_file=db_file, **kwargs
+        )
         self.errors = dict()
         self.log = dict()
 

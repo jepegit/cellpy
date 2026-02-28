@@ -122,9 +122,12 @@ class Batch:
             db_reader = kwargs.pop("db_reader", None)
         else:
             db_reader = kwargs.pop("db_reader", "default")
+        db_file = kwargs.pop("db_file", None)
 
         logging.debug("creating CyclingExperiment")
-        self.experiment = CyclingExperiment(db_reader=db_reader)
+        self.experiment = CyclingExperiment(
+            db_reader=db_reader, db_file=db_file, **kwargs
+        )
         logging.info("created CyclingExperiment")
 
         self.experiment.force_cellpy = kwargs.pop("force_cellpy", False)
@@ -1515,6 +1518,7 @@ def load(
     force_reload=False,
     reader="default",
     reader_path=None,
+    journal_file=None,
     **kwargs,
 ):
     """
@@ -1532,6 +1536,12 @@ def load(
             instead of searching for files in the folders.
         reader (str): reader to use (defaults to "default" as given in the config-file or prm-class).
         reader_path (str): path to the reader file (if not using "simple_excel_reader").
+            When ``journal_file`` is provided with a JSON reader, ``journal_file`` is used as the
+            DB source and overrides ``reader_path``.
+        journal_file (str or pathlib.Path, optional): explicit path to a journal/JSON file. When
+            provided, load from this file instead of the derived path or DB-only path. If ``reader``
+            is ``"batbase_json_reader"`` or ``"custom_json_reader"``, this file is used as the DB
+            source (no need to set ``reader_path``).
         **kwargs: sent to Batch during initialization
 
     Keyword Args:
@@ -1551,12 +1561,101 @@ def load(
           the one given in the config-file or prm-class.
         max_cycle (int or None): maximum number of cycles to link up to (defaults to None).
         force_combine_summaries (bool): automatically run combine_summaries when linking.
-
+        column_map (dict): for ``reader="custom_json_reader"``, map from JSON column names to
+            cellpy journal keys (e.g. ``{"cell_id": "filename", "mass_mg": "mass"}``).
 
     Returns:
         populated Batch object (``cellpy.utils.batch.Batch``)
 
+    Examples:
+        Load from derived journal (default): look for ``cellpy_batch_{name}.json`` in cwd or project::
+
+            b = load("my_batch", "my_project")
+
+        Load from an explicit cellpy journal file::
+
+            b = load("my_batch", "my_project", journal_file="path/to/cellpy_batch_my_batch.json")
+
+        Load from a custom JSON file using a column map::
+
+            b = load(
+                "my_batch", "my_project",
+                journal_file="path/to/cells.json",
+                reader="custom_json_reader",
+                column_map={"cell_id": "filename", "mass_mg": "mass"},
+            )
+
+        Load from a BatBase-format JSON file::
+
+            b = load("my_batch", "my_project", journal_file="path/to/batbase.json", reader="batbase_json_reader")
     """
+
+    # Explicit journal/file path takes precedence
+    if journal_file is not None:
+        journal_file = pathlib.Path(journal_file)
+        if not journal_file.is_file():
+            logging.critical(f"journal_file not found: {journal_file}")
+            return None
+
+        json_readers = ("batbase_json_reader", "custom_json_reader")
+        if reader in json_readers:
+            # Load from custom/BatBase JSON via reader; journal_file is the DB source
+            auto_use_file_list = kwargs.pop("auto_use_file_list", None)
+            if batch_col is None:
+                batch_col = "b01"
+            try:
+                print("loading from JSON file (reader=%s)" % reader)
+                b = init(
+                    name=name,
+                    project=project,
+                    batch_col=batch_col,
+                    db_reader=reader,
+                    db_file=str(journal_file),
+                    **kwargs,
+                )
+            except Exception as e:
+                print(f"could not initialize batch: {e}")
+                return None
+            try:
+                b.create_journal(auto_use_file_list=auto_use_file_list)
+                b.duplicate_journal()
+                b.paginate()
+                b.update()
+                b.combine_summaries()
+                print("OK!")
+                return b
+            except Exception as e:
+                print(f"something went wrong: {e}")
+                return b
+
+        # Treat as cellpy journal (info_df format) for any other reader
+        try:
+            print("loading from journal file %s" % journal_file)
+            b = init(
+                name=name,
+                project=project,
+                batch_col=batch_col,
+                file_name=str(journal_file),
+                db_reader=None,
+                **kwargs,
+            )
+        except Exception as e:
+            print(f"could not load journal file: {e}")
+            return None
+        if force_reload:
+            print(" - reloading")
+            b.update()
+        else:
+            b.link(
+                max_cycle=kwargs.pop("max_cycle", None),
+                mark_bad=True,
+                force_combine_summaries=kwargs.pop("force_combine_summaries", False),
+            )
+        if drop_bad_cells:
+            print(" - dropping cells marked as bad")
+            b.drop_cells_marked_bad()
+        print("OK!")
+        return b
 
     if allow_from_journal:
         b = Batch(name=name, project=project, batch_col=batch_col, db_reader=None)
