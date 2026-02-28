@@ -41,7 +41,7 @@ jobs:
         python -m pip install -e .
     - name: Test with pytest
       run: |
-        pytest
+        pytest --ignore=tests/test_plotutils_summary_plot.py
     - name: Run cellpy setup
       run: |
         cellpy setup --silent

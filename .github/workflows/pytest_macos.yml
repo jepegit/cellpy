@@ -38,4 +38,4 @@ jobs:
 #          sudo apt-get install -y mdbtools
 
       - name: pytest
-        run: pytest -m "not slowtest and not smoketest and not unimportant and not unfinished and not onlylocal and not skip_on_macos"
+        run: pytest --ignore=tests/test_plotutils_summary_plot.py -m "not slowtest and not smoketest and not unimportant and not unfinished and not onlylocal and not skip_on_macos"

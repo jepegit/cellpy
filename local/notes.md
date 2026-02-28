@@ -62,3 +62,17 @@ def test_from_raw_external(cellpy_data_instance, parameters):
 
 - need to fix recalc
 - need to fix yanking
+
+
+## DIV
+
+Seems not to work (so removed it from .bash_profile):
+
+```bash
+# >>> mamba initialize >>>
+# !! Contents within this block are managed by 'micromamba shell init' !!
+export MAMBA_EXE="/c/Users/jepe/.local/bin/micromamba";
+export MAMBA_ROOT_PREFIX="/c/Users/jepe/micromamba";
+eval "$("$MAMBA_EXE" shell hook --shell bash --root-prefix "$MAMBA_ROOT_PREFIX")"
+# <<< mamba initialize <<<
+```
