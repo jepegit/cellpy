@@ -310,14 +310,18 @@ def simple_db_engine(
             include_individual_arguments=include_individual_arguments,
             additional_column_names=additional_column_names,
         )
-    elif isinstance(reader, json_dbreader.BatBaseJSONReader):
+    elif hasattr(reader, "pages_dict"):
         pages_dict = reader.pages_dict
-        logging.debug(f"pages_dict: {pages_dict}")
-        logging.debug(
-            f"number of cells in the batch: {len(pages_dict[hdr_journal['filename']])}"
-        )
+        logging.debug(f"pages_dict from reader (number of cells): {len(pages_dict.get(hdr_journal['filename'], []))}")
+    else:
+        from cellpy.exceptions import UnderDefined
+        raise UnderDefined(f"Unsupported reader (must be dbreader.Reader or provide pages_dict): {type(reader)}")
 
-    logging.debug(f"created info-dict from {reader.db_file}:")
+    try:
+        db_file = getattr(reader, "db_file", None)
+        logging.debug(f"created info-dict from {db_file}:")
+    except Exception:
+        logging.debug("created info-dict from reader:")
     del reader
 
     for key in list(pages_dict.keys()):

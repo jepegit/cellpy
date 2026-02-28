@@ -2,7 +2,7 @@ import json
 import logging
 import pathlib
 import re
-from typing import Optional, Dict
+from typing import Optional, Dict, Mapping
 from cellpy.readers.core import BaseDbReader, PagesDictBase
 from cellpy.readers import core
 from cellpy.parameters.internal_settings import get_headers_journal, cellpy_units
@@ -293,6 +293,100 @@ class BatBaseJSONReader(BaseJSONReader):
                         new_value = value * conversion_factor
                     new_values.append(new_value)
                 _pages_dict[hdr_journal[cellpy_key]] = new_values
+        return _pages_dict
+
+    @property
+    def pages_dict(self) -> PagesDict:
+        if not self._pages_dict:
+            self._pages_dict = self._create_pages_dict()
+        return self._pages_dict
+
+    @pages_dict.setter
+    def pages_dict(self, value: PagesDict):
+        self._pages_dict = value
+
+
+class CustomJSONReader(BaseJSONReader):
+    """JSON reader with configurable column mapping for arbitrary JSON schemas.
+
+    Use this when your JSON has different column names than the cellpy journal.
+    Provide a column_map from your JSON key names to cellpy journal key names
+    (e.g. {"cell_id": "filename", "mass_mg": "mass"}). Unmapped journal columns
+    are filled with None or empty lists (raw_file_names, cellpy_file_name).
+    """
+
+    def __init__(
+        self,
+        json_file: str | None | pathlib.Path = None,
+        column_map: Optional[Mapping[str, str]] = None,
+        store_raw_data: bool = False,
+        **kwargs,
+    ):
+        """
+        Args:
+            json_file: Path to the JSON file (pandas-readable, e.g. dict of lists).
+            column_map: Map from JSON column name to cellpy journal key name
+                (e.g. {"Test ID": "filename", "Mass (mg)": "mass"}).
+                Cellpy keys are: filename, file_name_indicator, mass, total_mass,
+                loading, area, nom_cap, experiment, fixed, label, cell_type,
+                instrument, raw_file_names, cellpy_file_name, group, etc.
+            store_raw_data: If True, load and keep raw JSON in memory.
+        """
+        super().__init__(json_file, store_raw_data, **kwargs)
+        self.column_map = dict(column_map) if column_map else {}
+        self._pages_dict = {}
+
+    def from_batch(
+        self,
+        batch_name: str | None = None,
+        project_name: str | None = None,
+        include_key: bool = False,
+        include_individual_arguments: bool = False,
+    ) -> dict:
+        raise NotImplementedError("This method is not implemented for this reader")
+
+    def _create_pages_dict(self) -> PagesDict:
+        raw = self.raw_pages_dict
+        n = len(next(iter(raw.values()))) if raw else 0
+        inverse_map = {v: k for k, v in self.column_map.items()}
+
+        _pages_dict = {}
+        for cellpy_key in [
+            "filename",
+            "file_name_indicator",
+            "mass",
+            "total_mass",
+            "loading",
+            "area",
+            "nom_cap",
+            "experiment",
+            "fixed",
+            "label",
+            "cell_type",
+            "instrument",
+            "comment",
+            "group",
+            "id_key",
+            "nom_cap_specifics",
+            "argument",
+        ]:
+            json_key = inverse_map.get(cellpy_key)
+            if json_key is not None and json_key in raw:
+                val = raw[json_key]
+                if not isinstance(val, list):
+                    val = [val] * n if n else []
+                _pages_dict[hdr_journal[cellpy_key]] = val
+            else:
+                _pages_dict[hdr_journal[cellpy_key]] = [None] * n
+
+        _pages_dict[hdr_journal["raw_file_names"]] = []
+        _pages_dict[hdr_journal["cellpy_file_name"]] = []
+
+        fi = _pages_dict.get(hdr_journal["file_name_indicator"])
+        fn = _pages_dict.get(hdr_journal["filename"])
+        if fn and (not fi or all(x is None for x in fi)):
+            _pages_dict[hdr_journal["file_name_indicator"]] = fn
+
         return _pages_dict
 
     @property

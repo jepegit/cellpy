@@ -101,40 +101,145 @@ def test_reading_db(batch_instance):
     b.create_journal(duplicate_to_local_folder=False)
 
 
-@pytest.mark.skip(reason="This test only works on the local machine for now")
-def test_reading_json_db(batch_instance, parameters):
+def test_batbase_json_reader_pages_dict_shape():
+    """Test BatBaseJSONReader produces pages_dict with expected journal keys (no file search)."""
     from pathlib import Path
     from cellpy.readers import json_dbreader
 
-    local_dir = Path(__file__).parent.parent / "local"
-    json_file = local_dir / "cellpy_journal_table.json"
-    assert json_file.exists()
+    fixture_dir = Path(__file__).parent / "fixtures"
+    json_file = fixture_dir / "cellpy_batbase_like.json"
+    assert json_file.exists(), f"Fixture missing: {json_file}"
+
+    reader = json_dbreader.BatBaseJSONReader(json_file, store_raw_data=False)
+    assert reader.pages_dict is not None
+    assert hdr_journal["filename"] in reader.pages_dict
+    assert hdr_journal["id_key"] in reader.pages_dict
+    assert hdr_journal["mass"] in reader.pages_dict
+    assert hdr_journal["total_mass"] in reader.pages_dict
+
+    number_of_cells = len(reader.pages_dict[hdr_journal["filename"]])
+    assert number_of_cells == 1
+    assert reader.pages_dict[hdr_journal["filename"]][0] == "20160805_test001_45_cc"
+
+
+def test_reading_json_db(batch_instance, parameters):
+    """Test batch journal from BatBase-like JSON and file search (uses testdata paths)."""
+    from pathlib import Path
+    from cellpy.readers import json_dbreader
+
+    fixture_dir = Path(__file__).parent / "fixtures"
+    json_file = fixture_dir / "cellpy_batbase_like.json"
+    assert json_file.exists(), f"Fixture missing: {json_file}"
 
     reader = json_dbreader.BatBaseJSONReader(json_file, store_raw_data=True)
     assert reader.pages_dict is not None
-    assert "filename" in reader.pages_dict
-    assert "id_key" in reader.pages_dict
-    assert "mass" in reader.pages_dict
-    assert "total_mass" in reader.pages_dict
+    assert hdr_journal["filename"] in reader.pages_dict
+    assert hdr_journal["mass"] in reader.pages_dict
+    assert hdr_journal["total_mass"] in reader.pages_dict
 
-    number_of_cells = len(reader.pages_dict["filename"])
+    number_of_cells = len(reader.pages_dict[hdr_journal["filename"]])
 
-    pages = engines.simple_db_engine(reader=reader)
+    pages = engines.simple_db_engine(
+        reader=reader,
+        raw_file_dir=parameters.raw_data_dir,
+        cellpy_file_dir=parameters.cellpy_data_dir,
+    )
     assert len(pages) == number_of_cells
-    assert "raw_file_names" in pages.columns
-    assert "cellpy_file_name" in pages.columns
-    assert "group" in pages.columns
-    assert "sub_group" in pages.columns
-    assert "label" in pages.columns
-    assert "cell_type" in pages.columns
-    assert "instrument" in pages.columns
-    assert "label" in pages.columns
-    assert "cell_type" in pages.columns
-    assert "instrument" in pages.columns
-    assert pages.raw_file_names.iloc[0] == [
-        "data/raw/20160805_test001_45_cc_01.res",
-        "data/raw/20160805_test001_45_cc_02.res",
-    ]
+    assert hdr_journal["raw_file_names"] in pages.columns
+    assert hdr_journal["cellpy_file_name"] in pages.columns
+    assert hdr_journal["group"] in pages.columns
+    assert hdr_journal["sub_group"] in pages.columns
+    assert hdr_journal["label"] in pages.columns
+    assert hdr_journal["cell_type"] in pages.columns
+    assert hdr_journal["instrument"] in pages.columns
+
+    # File search should have populated paths (exact paths depend on testdata layout)
+    raw_names = pages[hdr_journal["raw_file_names"]].iloc[0]
+    cellpy_name = pages[hdr_journal["cellpy_file_name"]].iloc[0]
+    run_name = "20160805_test001_45_cc"
+    assert raw_names is not None and len(raw_names) >= 1
+    assert any(run_name in str(p) for p in (raw_names if isinstance(raw_names, list) else [raw_names]))
+    assert cellpy_name is not None and run_name in str(cellpy_name)
+
+
+def test_custom_json_reader_pages_dict_and_engine(batch_instance, parameters):
+    """Test CustomJSONReader with column map and simple_db_engine (file search)."""
+    from pathlib import Path
+    from cellpy.readers import json_dbreader
+
+    fixture_dir = Path(__file__).parent / "fixtures"
+    json_file = fixture_dir / "custom_json_batch_like.json"
+    assert json_file.exists(), f"Fixture missing: {json_file}"
+
+    column_map = {
+        "cell_id": "filename",
+        "mass_mg": "mass",
+        "total_mass_mg": "total_mass",
+        "instrument_name": "instrument",
+    }
+    reader = json_dbreader.CustomJSONReader(
+        json_file, column_map=column_map, store_raw_data=False
+    )
+    assert reader.pages_dict is not None
+    assert hdr_journal["filename"] in reader.pages_dict
+    assert reader.pages_dict[hdr_journal["filename"]][0] == "20160805_test001_45_cc"
+
+    pages = engines.simple_db_engine(
+        reader=reader,
+        raw_file_dir=parameters.raw_data_dir,
+        cellpy_file_dir=parameters.cellpy_data_dir,
+    )
+    assert len(pages) == 1
+    assert hdr_journal["raw_file_names"] in pages.columns
+    assert hdr_journal["cellpy_file_name"] in pages.columns
+    raw_names = pages[hdr_journal["raw_file_names"]].iloc[0]
+    assert raw_names is not None
+    assert not isinstance(raw_names, list) or len(raw_names) >= 1
+
+
+def test_labjournal_custom_json_reader_by_name(parameters):
+    """Test LabJournal accepts db_reader='custom_json_reader' with db_file and column_map."""
+    from pathlib import Path
+    from cellpy.utils.batch_tools.batch_journals import LabJournal
+
+    fixture_dir = Path(__file__).parent / "fixtures"
+    json_file = fixture_dir / "custom_json_batch_like.json"
+    assert json_file.exists()
+
+    column_map = {
+        "cell_id": "filename",
+        "mass_mg": "mass",
+        "instrument_name": "instrument",
+    }
+    journal = LabJournal(
+        db_reader="custom_json_reader",
+        db_file=str(json_file),
+        column_map=column_map,
+    )
+    journal.from_db(
+        name="test_batch",
+        project="test_project",
+        raw_file_dir=parameters.raw_data_dir,
+        cellpy_file_dir=parameters.cellpy_data_dir,
+    )
+    assert journal.pages is not None and len(journal.pages) == 1
+    assert journal.pages.index[0] == "20160805_test001_45_cc"
+
+
+def test_find_files_skip_file_search():
+    """Test that find_files(skip_file_search=True) leaves existing paths unchanged."""
+    from cellpy.utils.batch_tools import batch_helpers
+
+    info_dict = {
+        hdr_journal["filename"]: ["cell_a"],
+        hdr_journal["file_name_indicator"]: ["cell_a"],
+        hdr_journal["raw_file_names"]: [["/path/to/raw.res"]],
+        hdr_journal["cellpy_file_name"]: ["/path/to/cell_a.h5"],
+        hdr_journal["instrument"]: [None],
+    }
+    out = batch_helpers.find_files(info_dict, skip_file_search=True)
+    assert out[hdr_journal["raw_file_names"]] == [["/path/to/raw.res"]]
+    assert out[hdr_journal["cellpy_file_name"]] == ["/path/to/cell_a.h5"]
 
 
 def test_reading_cell_specs(batch_instance):

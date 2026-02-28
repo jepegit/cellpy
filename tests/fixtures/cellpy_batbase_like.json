@@ -1,0 +1,13 @@
+{
+  "Test Name": ["20160805_test001_45_cc"],
+  "ID Key": [1],
+  "Mass (mg)": [1.0],
+  "Total Mass (mg)": [1.0],
+  "Loading (mg/cm2)": [1.0],
+  "Nominal Capacity": [2.0],
+  "Area (cm2)": [1.0],
+  "Cell Type": ["standard"],
+  "Instrument": ["arbin_res"],
+  "Unit": ["mAh/g"],
+  "Group": [1]
+}

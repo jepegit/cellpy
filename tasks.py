@@ -290,6 +290,13 @@ def man(c):
     print("> python -m ipykernel install --user --name=firstEnv")
 
     print("----------")
+    print("Create a tag:")
+    print('> git tag -a v0.1.0 -m "Release v0.1.0')
+    print("> git push origin v0.1.0")
+    print("----------")
+
+
+    print("----------")
     print("JUPYTERLAB")
     print("----------")
     print("This info is probably not relevant anymore")

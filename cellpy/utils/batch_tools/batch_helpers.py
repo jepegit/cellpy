@@ -98,7 +98,14 @@ def create_factory():
     return instrument_factory
 
 
-def find_files(info_dict, file_list=None, pre_path=None, sub_folders=None, **kwargs):
+def find_files(
+    info_dict,
+    file_list=None,
+    pre_path=None,
+    sub_folders=None,
+    skip_file_search=False,
+    **kwargs,
+):
     """Find files using cellpy.filefinder.
 
     Args:
@@ -106,6 +113,9 @@ def find_files(info_dict, file_list=None, pre_path=None, sub_folders=None, **kwa
         file_list: list of files names to search through.
         pre_path: path to prepend found files from file_list (if file_list is given).
         sub_folders (bool): perform search also in sub-folders.
+        skip_file_search (bool): if True, do not search for files; use existing
+            raw_file_names and cellpy_file_name in info_dict if present (e.g. when
+            custom JSON already contains paths). Default False.
 
     **kwargs (filefinder.search_for_files):
         run_name(str): run-file identification.
@@ -131,6 +141,9 @@ def find_files(info_dict, file_list=None, pre_path=None, sub_folders=None, **kwa
     Returns:
         info_dict
     """
+    if skip_file_search:
+        return info_dict
+
     sub_folders = sub_folders or prms.FileNames.sub_folders
     instrument_factory = create_factory()
     file_name_indicators = info_dict.get(

@@ -805,6 +805,11 @@ class Batch:
             **kwargs: sent to sub-function(s) (*e.g.* ``from_db`` -> ``simple_db_reader`` -> ``find_files`` ->
                 ``filefinder.search_for_files``).
 
+        When using a custom JSON reader (e.g. ``batbase_json_reader`` or ``custom_json_reader``),
+        file search is performed after reading the JSON, using the filename/file_name_indicator
+        column as run name. Use ``file_list`` and ``pre_path`` to control search, or
+        ``skip_file_search=True`` to leave existing raw/cellpy paths unchanged.
+
         The following keyword arguments are picked up by ``from_db``:
 
         Transferred Parameters:

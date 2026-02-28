@@ -88,6 +88,17 @@ class LabJournal(BaseJournal, ABC):
                 self.db_reader = json_dbreader.BatBaseJSONReader(json_file=db_file)
                 self.engine = simple_db_engine
 
+            elif db_reader == "custom_json_reader":
+                if db_file is None:
+                    raise UnderDefined("db_file is not provided")
+                if not os.path.exists(db_file):
+                    raise FileNotFoundError(f"The file {db_file} does not exist")
+                column_map = kwargs.pop("column_map", None)
+                self.db_reader = json_dbreader.CustomJSONReader(
+                    json_file=db_file, column_map=column_map
+                )
+                self.engine = simple_db_engine
+
             elif db_reader == "sql_db_reader":
                 raise NotImplementedError(
                     "sql_db_reader is not implemented yet"
