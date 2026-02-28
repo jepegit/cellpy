@@ -35,10 +35,10 @@ dependencies:
     - scipy
     - setuptools
     - sqlalchemy
-    - sqlalchemy-access
     - tqdm
     - xlrd
     - pip:
+        - sqlalchemy-access
         - jinja2_time
 
 
