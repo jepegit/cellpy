@@ -5,12 +5,32 @@ alwaysApply: true
 
 # Best practices for cellpy
 
-This project is called "cellpy" and it uses a python environment (.venv). Rember to activate it! 
+This project is called "cellpy". 
+It is supposed to work an many platforms.
 
-We also have uv installed. Use it if you want.
+We have several python environments
+
+conda: cellpy_dev_321
+python: .venv
+
+Rember to activate it! 
+
+We also have uv installed. Use it if you want (uv run python).
+
 
 ## Working on issues
 
-After each iteration, update the documents in 01_current_issue (should contain one file labelled _original that should consist of the original issue description, and supplementary md files informing what has been done, what is the current status of the issues, and what should be done more.)
+### Setting up
 
-When the issue is solved, summarize what was done, challenges met, and smart solutions and hints for future developers into a markdown file inside 02_issue_history (should be named as `[issue number]_[issue short text]_learnings_[date].md`)
+We have a slash command available for setting things up when starting working on an issue: /create-original-issue-file
+
+### When working
+
+After each iteration, update the documents in `01-current-issues` (should contain one file labelled `_original` that consists of the original issue description, and supplementary status files describing what has been done, current status, and remaining work).
+Use an explicit status checkbox in the status file:
+- `- [x] Done` when fully resolved
+- `- [ ] Done` when not fully resolved
+
+### When finishing an issue
+
+If the issue is fully resolved (no additional subtasks present), move the original and status markdown files to `03-solved-issues`. Else, move them to `02-partly-solved-issues`.
