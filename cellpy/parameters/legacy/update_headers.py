@@ -268,7 +268,9 @@ class HeadersSummaryV7(BaseHeaders):
     cumulated_coulombic_difference: str = "cumulated_coulombic_difference_gravimetric"
     discharge_capacity_loss: str = "discharge_capacity_loss_gravimetric"
     charge_capacity_loss: str = "charge_capacity_loss_gravimetric"
-    cumulated_discharge_capacity_loss: str = "cumulated_discharge_capacity_loss_gravimetric"
+    cumulated_discharge_capacity_loss: str = (
+        "cumulated_discharge_capacity_loss_gravimetric"
+    )
     cumulated_charge_capacity_loss: str = "cumulated_charge_capacity_loss_gravimetric"
 
     areal_charge_capacity: str = "charge_capacity_areal"
@@ -480,7 +482,9 @@ def rename_fid_columns(
     **kwargs,
 ) -> "externals.pandas.DataFrame":
     logging.debug("renaming headers")
-    logging.critical("RENAMING NOT IMPLEMENTED YET -> Please, create an issue on Github")
+    logging.critical(
+        "RENAMING NOT IMPLEMENTED YET -> Please, create an issue on Github"
+    )
     return fid_table
 
 
@@ -550,7 +554,9 @@ def rename_columns(
 
 def _create_dummy_summary(columns):
     df = externals.pandas.DataFrame(
-        data=externals.numpy.random.rand(5, len(columns) - 1), index=range(1, 6), columns=columns[1:]
+        data=externals.numpy.random.rand(5, len(columns) - 1),
+        index=range(1, 6),
+        columns=columns[1:],
     )
     df.index.name = columns[0]
     return df

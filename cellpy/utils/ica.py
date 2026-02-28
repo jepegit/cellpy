@@ -494,9 +494,11 @@ def dqdv_cycle(cycle_df, splitter=True, label_direction=False, **kwargs):
         try:
             converter.post_process_data()
         except ValueError:
-            logging.debug("ValueError - trying again with different settings")
+            logging.warning(
+                "ValueError during post-processing of first half-cycle - trying again with different settings"
+            )
             converter.post_smoothing = False
-            print(converter)
+            logging.debug(converter)
             converter.post_process_data()
         voltage_first = converter.voltage_processed
         incremental_capacity_first = converter.incremental_capacity
@@ -505,8 +507,8 @@ def dqdv_cycle(cycle_df, splitter=True, label_direction=False, **kwargs):
             voltage_first = np.append(voltage_first, np.nan)
             incremental_capacity_first = np.append(incremental_capacity_first, np.nan)
     except Exception as e:
-        print(f"Error in dqdv_cycle - first")
-        print(f"error-message: '{e}'")
+        logging.warning("Error in dqdv_cycle - first half-cycle")
+        logging.warning(f" - error-message: '{e}'")
         voltage_first = np.array([])
         incremental_capacity_first = np.array([])
 
@@ -520,15 +522,17 @@ def dqdv_cycle(cycle_df, splitter=True, label_direction=False, **kwargs):
         try:
             converter.post_process_data()
         except ValueError:
-            logging.debug("ValueError - trying again with different settings")
+            logging.warning(
+                "ValueError during post-processing of last half-cycle - trying again with different settings"
+            )
             converter.post_smoothing = False
-            print(converter)
+            logging.debug(converter)
             converter.post_process_data()
         voltage_last = converter.voltage_processed[::-1]
         incremental_capacity_last = converter.incremental_capacity[::-1]
     except Exception as e:
-        print(f"Error in dqdv_cycle - last")
-        print(f"error-message: '{e}'")
+        logging.warning("Error in dqdv_cycle - last half-cycle")
+        logging.warning(f" - error-message: '{e}'")
         voltage_last = np.array([])
         incremental_capacity_last = np.array([])
 
@@ -777,6 +781,7 @@ def dqdv_np(
     converter.post_process_data()
 
     return converter.voltage_processed, converter.incremental_capacity
+
 
 def dqdv(cell, split=False, tidy=True, label_direction=False, **kwargs):
     """Calculates dq-dv data for all cycles contained in

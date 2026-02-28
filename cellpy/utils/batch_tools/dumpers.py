@@ -66,9 +66,7 @@ def ram_dumper(**kwargs):
 
     accepted_engines = ["summary_engine"]
     if engine_name in accepted_engines:
-        logging.debug(
-            "found the engine that I will try to dump from: " f"{engine_name}"
-        )
+        logging.debug(f"found the engine that I will try to dump from: {engine_name}")
 
         for experiment, farm in zip(experiments, farms):
             name = experiment.journal.name

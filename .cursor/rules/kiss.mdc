@@ -1,0 +1,101 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+
+<!-- 
+Description: Global KISS development rules to prevent over-engineering and enforce simple, maintainable solutions across all projects.
+Auto-attach: true
+-->
+
+KISS PRIME DIRECTIVE
+Keep every change simple, evidence-based, and reproducible.
+
+Solution Design and Scope Control
+- **Scope-First Principle**: Before coding, ask "What's the simplest thing that could work?"
+- **File Budget**: For tasks <50 lines total, use MAX 1 existing file or create MAX 1 new file
+- **Dependency Budget**: Don't add dependencies for stdlib-solvable operations
+- **Abstraction Budget**: No classes/modules/frameworks for one-time operations  
+- **Research Time-Box**: MAX 10 minutes researching before trying obvious solution
+
+Complexity Prevention
+- **Start with stdlib**: Can `shutil`, `pathlib`, `os`, `json` solve this? Do that first.
+- **Question every layer**: Do I need a function/class/module? Usually no for <20 line operations.
+- **Match project scale**: Small codebases get small solutions; don't over-architect.
+- **Prototype first**: Write inline/script before creating abstractions.
+
+Before Creating Any New File:
+1. Can this be 5-10 lines added to existing file?
+2. Am I solving a problem that doesn't exist yet?  
+3. Would a junior developer understand immediately?
+4. Does this match existing codebase complexity?
+
+- No invented data or code to mask failures; focus on root cause and add tests.
+- Remove dead or duplicated code promptly.
+- Use Conventional Commits; prefer squash merges for clean history.
+
+Dependencies
+- Make dependencies explicit; update requirements.txt, pyproject.toml or lockfiles immediately on changes.
+- List only third-party packages (exclude standard library).
+- Pin minimum compatible versions for stability; use a lockfile (e.g., pip-tools/uv) when reproducibility is required.
+
+Testing
+- Run tests after substantive edits; keep the suite green.
+- Add tests for new behavior and edge cases before or with the change.
+- Use automated testing (unit/integration/e2e as appropriate); prefer CI to enforce.
+
+Logging and Error Handling
+- Use project loggers, not prints; include actionable context (counts, paths, IDs).
+- Fail fast on invalid config or inputs; never silently auto-correct.
+- Follow log levels best practices (debug, info, warning, error, critical).
+
+IO and Artifacts
+- Treat input data directories as read-only; write derived artifacts to an output/ folder.
+- Avoid committing large generated files or runtime outputs to version control.
+- Project rules may redefine exact paths and modes (dry-run/live, backups).
+
+Platform and Paths
+- Avoid hard-coded, user-specific absolute paths; externalize to config.
+- Use cross-platform path APIs for portability.
+
+Code Style and Quality
+- Match project style consistently; use automated tools (linters/formatters) when available.
+- Prefer early returns, shallow nesting, and meaningful naming.
+- Avoid bare except; handle exceptions explicitly.
+- Maintain concise docstrings focused on behavior and intent.
+
+Operational Safeguards (minimal)
+- Dry-run and backups
+  - Do: provide a dry-run that exercises the flow without mutating prod; create and verify a backup before writes; log backup paths and intended changes.
+  - Don't: modify prod without a backup/restore path; label runs "dry" if they mutate state.
+- Feature-gated behavior
+  - Do: ship new behavior behind a default-off flag; add tests for old/new paths; document enable/disable steps.
+  - Don't: change defaults silently; ship behavior that cannot be turned off.
+- Config/schema safety
+  - Do: validate config strictly (types, required keys, unknown keys = error); version config/schema when behavior changes; make migrations reversible and tested.
+  - Don't: auto-migrate without backups/logs; accept unknown config keys; make irreversible schema changes.
+
+Collaboration and Workflow
+- Read project docs and tests before changes; preserve stated invariants.
+- Encourage peer reviews for risky or substantial changes.
+- Propose and document plans for risky IO/DB changes; provide OS-appropriate, non-interactive commands.
+
+Security and Scalability
+- Integrate basic security hygiene (e.g., dependency scans like pip-audit/dependabot).
+- Patch vulnerabilities promptly; remove unused deps.
+- Prefer simple, modular designs; avoid microservices or heavy patterns unless clearly justified.
+
+Documentation Standards
+1) Project-Level README
+- Include: purpose/scope, setup, example usage, directory structure, and ownership/contact.
+
+2) Configuration Reference and Runbook
+- Include: config keys with types/defaults, example configs, dry-run/live procedures, backup/restore steps, and common recovery actions.
+
+3) Change Logs and Versioning
+- Maintain a CHANGELOG.md or use tags/releases to track features, fixes, and breaking changes.
+
+Conflict Resolution
+- This global rule is the default. Project rules in .cursor/rules may override specifics (paths, workflows, tooling).
+

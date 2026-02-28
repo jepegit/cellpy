@@ -45,7 +45,9 @@ def dataset(cellpy_data_instance) -> CellpyCell:
     p = pathlib.Path(fdv.cellpy_file_path)
 
     if not p.is_file():
-        logging.info(f"pytest fixture could not find {fdv.cellpy_file_path} - making it from raw and saving")
+        logging.info(
+            f"pytest fixture could not find {fdv.cellpy_file_path} - making it from raw and saving"
+        )
         a = cellreader.CellpyCell()
         a.from_raw(fdv.res_file_path)
         a.set_mass(1.0)
@@ -60,6 +62,7 @@ def rate_dataset(cellpy_data_instance) -> CellpyCell:
     """Fixture for CellpyCell instance with rate data loaded from cellpy-file"""
 
     return cellpy_data_instance.load(fdv.rate_cell_path)
+
 
 @pytest.fixture
 def gitt_datasett(cellpy_data_instance) -> CellpyCell:
@@ -77,7 +80,9 @@ def cell(cellpy_data_instance) -> CellpyCell:
     p = pathlib.Path(fdv.cellpy_file_path)
 
     if not p.is_file():
-        logging.info(f"pytest fixture could not find {fdv.cellpy_file_path} - making it from raw and saving")
+        logging.info(
+            f"pytest fixture could not find {fdv.cellpy_file_path} - making it from raw and saving"
+        )
         a = cellreader.CellpyCell()
         a.from_raw(fdv.res_file_path)
         a.make_summary(find_ir=True, find_end_voltage=True)
@@ -120,3 +125,28 @@ def mock_env_cellpy_key_filename(monkeypatch, parameters):
 def mock_env_cellpy_password(monkeypatch, parameters):
     """Mock the environment variables for cellpy"""
     monkeypatch.setenv("CELLPY_PASSWORD", parameters.env_cellpy_password)
+
+
+@pytest.fixture
+def cell_with_summary(cell):
+    """Fixture for CellpyCell with pre-computed summary (alias for cell)."""
+    # Ensure summary exists
+    if cell.data.summary is None or len(cell.data.summary) == 0:
+        cell.make_summary(find_ir=True, find_end_voltage=True)
+    return cell
+
+
+@pytest.fixture
+def cell_with_cv_data(cell):
+    """Fixture for CellpyCell with CV step data.
+
+    Note: This uses the same cell fixture but ensures step table is made
+    which is needed for CV-related plots.
+    """
+    # Ensure step table exists for CV detection
+    if cell.data.steps is None or len(cell.data.steps) == 0:
+        cell.make_step_table()
+    # Ensure summary exists
+    if cell.data.summary is None or len(cell.data.summary) == 0:
+        cell.make_summary(find_ir=True, find_end_voltage=True)
+    return cell

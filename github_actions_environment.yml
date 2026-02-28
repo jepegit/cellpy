@@ -17,7 +17,7 @@ dependencies:
     - nbmake
     - numpy>=2
     - openpyxl
-    - pandas
+    - pandas<3
     - pint
     - pip
     - plotly

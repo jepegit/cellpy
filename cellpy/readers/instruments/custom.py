@@ -50,7 +50,7 @@ class DataLoader(AutoLoader, ABC):
             if not instrument_file_in_instrument_dir.is_file():
                 logging.debug(f"Could not find {instrument_file_in_instrument_dir}")
                 raise FileExistsError(
-                    "Instrument definition file not found! " f"({instrument_file})"
+                    f"Instrument definition file not found! ({instrument_file})"
                 )
             instrument_file = instrument_file_in_instrument_dir
 
@@ -114,7 +114,9 @@ class DataLoader(AutoLoader, ABC):
             )
 
         elif self.file_format == "parquet":
-            self.engine = self._config_sub_parser("engine", default_value='auto', **kwargs)
+            self.engine = self._config_sub_parser(
+                "engine", default_value="auto", **kwargs
+            )
 
         elif self.file_format == "json":
             print("json not implemented yet")
@@ -183,13 +185,12 @@ class DataLoader(AutoLoader, ABC):
                 return raw_frame[matching[0]]
             raise IOError(f"Could not find the sheet {sheet_name} in {name}")
 
-        elif self.file_format == 'parquet':
+        elif self.file_format == "parquet":
             logging.debug(f"parsing with pandas.read_parquet: {name}")
-            logging.critical(
-                f"{self.engine=}"
-            )
+            logging.critical(f"{self.engine=}")
             data_df = pd.read_parquet(
-                path=name, engine=self.engine,
+                path=name,
+                engine=self.engine,
             )
 
         elif self.file_format == "json":

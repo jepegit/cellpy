@@ -434,7 +434,6 @@ class DataLoader(BaseLoader):
         # )
 
     def _unpack_flags(self):
-
         df = self.mpr_data
         flags_dict = self.flags_dict
 
@@ -489,7 +488,6 @@ class DataLoader(BaseLoader):
         ]
 
     def _generate_step_index(self, cellpy_header_lookup=None, b_header=None):
-
         if b_header in self.mpr_data.columns:
             self.mpr_data[self.cellpy_headers["step_index_txt"]] = (
                 self.mpr_data[b_header].astype(int) + 1
@@ -509,7 +507,6 @@ class DataLoader(BaseLoader):
             self.mpr_data.loc[i:, self.cellpy_headers["step_index_txt"]] += 1
 
     def _generate_step_time(self, cellpy_header_lookup=None, b_header=None):
-
         self.mpr_data[self.cellpy_headers["step_time_txt"]] = np.nan
         if b_header is not None:
             logging.debug("Not implemented yet")
@@ -574,7 +571,6 @@ class DataLoader(BaseLoader):
             b_header = bl_dtypes[key][1]
 
             if cellpy_header_lookup:
-
                 if cellpy_header_lookup not in protected:
                     self._rename_header(cellpy_header_lookup, b_header)
 
@@ -629,7 +625,7 @@ class DataLoader(BaseLoader):
         # TODO: @jepe - finalise making summary of mpr-files
         # after figuring out steps etc
         logging.debug(
-            "Creating summary data for biologics mpr-files" " is not implemented yet"
+            "Creating summary data for biologics mpr-files is not implemented yet"
         )
         self.logger.info(mpr_settings)
         self.logger.info(mpr_log)

@@ -633,7 +633,7 @@ def _check_import_pyodbc():
         elif ODBC == "pypyodbc":
             click.echo(" you stated that you prefer the pypyodbc loader")
             try:
-                import pypyodbc as dbloader # type: ignore
+                import pypyodbc as dbloader  # type: ignore
             except ImportError:
                 click.echo(" Failed! Could not import it.")
                 click.echo(" try 'pip install pypyodbc'")
@@ -1271,7 +1271,7 @@ def _run_journals(folder_name, debug, silent, raw, cellpyfile, minimal):
 
 def _run_project(our_new_project, **kwargs):
     try:
-        import papermill as pm # type: ignore
+        import papermill as pm  # type: ignore
     except ImportError:
         click.echo(
             "[cellpy]: You need to install papermill for automatically execute the notebooks."
@@ -1814,7 +1814,7 @@ def _new(
         click.echo("WARNING - experimental feature - use at your own risk")
         input("Press Enter to continue...")
         try:
-            import papermill as pm # type: ignore
+            import papermill as pm  # type: ignore
         except ImportError:
             click.echo(
                 "[cellpy]: You need to install papermill for automatically execute the notebooks."

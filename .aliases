@@ -1,0 +1,3 @@
+alias inv="uv run --no-project inv"
+alias conda="C:/Users/jepe/AppData/Local/miniconda3/Scripts/conda.exe"
+eval "$(conda shell.bash hook)"

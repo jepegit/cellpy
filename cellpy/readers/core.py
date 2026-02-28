@@ -1,4 +1,4 @@
-""" This module contains several of the most important classes used in cellpy.
+"""This module contains several of the most important classes used in cellpy.
 
 It also contains functions that are used by readers and utils.
 And it has the file version definitions.
@@ -37,7 +37,9 @@ HEADERS_NORMAL = get_headers_normal()  # TODO @jepe refactor this (not needed)
 HEADERS_SUMMARY = get_headers_summary()  # TODO @jepe refactor this (not needed)
 HEADERS_STEP_TABLE = get_headers_step_table()  # TODO @jepe refactor this (not needed)
 
-LOADERS_NOT_READY_FOR_PROD = ["ext_nda_reader"]  # used by the instruments_configurations helper function (move?)
+LOADERS_NOT_READY_FOR_PROD = [
+    "ext_nda_reader"
+]  # used by the instruments_configurations helper function (move?)
 UNIT_REGISTER_LOADED = False
 _ureg = None
 
@@ -118,6 +120,7 @@ def pickle_protocol(level):
 
 class PagesDictBase(TypedDict, total=False):
     """Base structure for pages_dict with known journal columns."""
+
     filename: List[Union[str, None]]
     id_key: List[Union[int, float, str, None]]
     argument: List[Union[str, None]]
@@ -144,11 +147,12 @@ class BaseDbReader(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def from_batch(
-        self, batch_name: str|None=None, 
-        include_key: bool=False, 
-        include_individual_arguments: bool=False,
-        **kwargs: Any
-        ) -> dict:
+        self,
+        batch_name: str | None = None,
+        include_key: bool = False,
+        include_individual_arguments: bool = False,
+        **kwargs: Any,
+    ) -> dict:
         """Get a dictionary with the data from a batch for the journal.
 
         Args:
@@ -160,7 +164,6 @@ class BaseDbReader(metaclass=abc.ABCMeta):
             dict: dictionary with the data.
         """
         pass
-
 
 
 class BaseSimpleDbReader(metaclass=abc.ABCMeta):
@@ -511,14 +514,14 @@ class Data:
         try:
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
-                summary_txt = (
-                    f"<p><b>summary data-frame (summary)</b><br>{self.summary.describe()._repr_html_()}</p>"  # noqa
-                )
+                summary_txt = f"<p><b>summary data-frame (summary)</b><br>{self.summary.describe()._repr_html_()}</p>"  # noqa
                 summary_txt += f"<p><b>summary data-frame (head)</b><br>{self.summary.head()._repr_html_()}</p>"  # noqa
         except AttributeError:
             summary_txt = "<p><b>summary data-frame </b><br> not found!</p>"
         except ValueError:
-            summary_txt = "<p><b>summary data-frame </b><br> does not contain any columns!</p>"
+            summary_txt = (
+                "<p><b>summary data-frame </b><br> does not contain any columns!</p>"
+            )
 
         try:
             with warnings.catch_warnings():
@@ -528,7 +531,9 @@ class Data:
         except AttributeError:
             steps_txt = "<p><b>steps data-frame </b><br> not found!</p>"
         except ValueError:
-            steps_txt = "<p><b>steps data-frame </b><br> does not contain any columns!</p>"
+            steps_txt = (
+                "<p><b>steps data-frame </b><br> does not contain any columns!</p>"
+            )
 
         try:
             custom_info_txt = f"<p><b>custom info</b><br>{self.custom_info}</p>"  # noqa
@@ -614,7 +619,9 @@ class Data:
     @tot_mass.setter
     def tot_mass(self, n):
         if n < self.meta_common.mass:
-            logging.debug(f"POSSIBLE BUG: TOTAL MASS LESS THAN MASS ({n} < {self.meta_common.mass}).")
+            logging.debug(
+                f"POSSIBLE BUG: TOTAL MASS LESS THAN MASS ({n} < {self.meta_common.mass})."
+            )
             n = self.meta_common.mass
         self.meta_common.tot_mass = n
 
@@ -672,7 +679,9 @@ class Data:
 
         if not self.active_electrode_area:
             self.active_electrode_area = 1.0
-            logging.debug(f"active_electrode_area not set -> setting to: {self.active_electrode_area}")
+            logging.debug(
+                f"active_electrode_area not set -> setting to: {self.active_electrode_area}"
+            )
 
         if not self.mass:
             self.mass = 1.0
@@ -680,7 +689,9 @@ class Data:
 
         if not self.tot_mass:
             self.tot_mass = self.mass
-            logging.debug(f"total mass not set -> setting to same as mass: {self.tot_mass}")
+            logging.debug(
+                f"total mass not set -> setting to same as mass: {self.tot_mass}"
+            )
 
         return True
 
@@ -809,7 +820,6 @@ class InstrumentFactory:
 
     @staticmethod
     def _get_models(loader):
-
         try:
             models = loader.get_params("supported_models")
             return models
@@ -942,7 +952,9 @@ def find_all_instruments(
     instruments_found = {}
     logging.debug("Searching for modules in base instrument folder:")
 
-    hard_coded_instruments_site = pathlib.Path(hard_coded_instruments_site.__file__).parent
+    hard_coded_instruments_site = pathlib.Path(
+        hard_coded_instruments_site.__file__
+    ).parent
     modules_in_hard_coded_instruments_site = [
         s
         for s in hard_coded_instruments_site.glob(glob_txt)
@@ -1066,7 +1078,9 @@ def xldate_as_datetime(xldate, datemode=0, option="to_datetime"):
         d = (xldate - 25589) * 86400.0
     else:
         try:
-            d = datetime.datetime(1899, 12, 30) + datetime.timedelta(days=xldate + 1462 * datemode)
+            d = datetime.datetime(1899, 12, 30) + datetime.timedelta(
+                days=xldate + 1462 * datemode
+            )
             # date_format = "%Y-%m-%d %H:%M:%S:%f" # with microseconds,
             # Excel cannot cope with this!
             if option == "to_string":
@@ -1114,9 +1128,13 @@ def collect_capacity_curves(
     #  The cycle keyword will not break the method but raise a warning:
     for arg in kwargs:
         if arg in ["cycle", "cycles"]:
-            logging.warning(f"{arg} is not implemented yet, but might exist in newer versions of cellpy.")
+            logging.warning(
+                f"{arg} is not implemented yet, but might exist in newer versions of cellpy."
+            )
         else:
-            logging.warning(f"collect_capacity_curve received unknown key-word argument: {arg=}")
+            logging.warning(
+                f"collect_capacity_curve received unknown key-word argument: {arg=}"
+            )
 
     minimum_v_value = externals.numpy.inf
     maximum_v_value = -externals.numpy.inf
@@ -1234,7 +1252,9 @@ def interpolate_y_on_x(
             logging.critical("EXPERIMENTAL FEATURE - USE WITH CAUTION")
             logging.critical(f"start, end, number_of_points = {new_x}")
             _x_min, _x_max, _number_of_points = new_x
-            new_x = externals.numpy.linspace(_x_min, _x_max, _number_of_points, dtype=float)
+            new_x = externals.numpy.linspace(
+                _x_min, _x_max, _number_of_points, dtype=float
+            )
 
     new_y = f(new_x)
 
@@ -1334,7 +1354,9 @@ def group_by_interpolate(
         if not isinstance(name, (list, tuple)):
             name = [name]
 
-        new_group = interpolate_y_on_x(group, x=x, y=y, new_x=new_x, number_of_points=number_of_points, dx=dx)
+        new_group = interpolate_y_on_x(
+            group, x=x, y=y, new_x=new_x, number_of_points=number_of_points, dx=dx
+        )
 
         if tidy or (not tidy and not individual_x_cols):
             for i, j in zip(group_by, name):

@@ -100,7 +100,9 @@ latex_elements = {
     # Additional stuff for the LaTeX preamble.
     #'preamble': '',
 }
-latex_documents = [("index", "cellpy.tex", "cellpy Documentation", "Jan Petter Maehlen", "manual")]
+latex_documents = [
+    ("index", "cellpy.tex", "cellpy Documentation", "Jan Petter Maehlen", "manual")
+]
 man_pages = [("index", "cellpy", "cellpy Documentation", ["Jan Petter Maehlen"], 1)]
 texinfo_documents = [
     (

@@ -14,9 +14,11 @@ hdr_journal = get_headers_journal()
 # TODO: use journal headers in stead of this
 PagesDict = PagesDictBase
 
+
 class BaseJSONReader(BaseDbReader):
-    
-    def __init__(self, json_file: str | None | pathlib.Path = None, store_raw_data: bool = False):
+    def __init__(
+        self, json_file: str | None | pathlib.Path = None, store_raw_data: bool = False
+    ):
         self.json_file = json_file
         if store_raw_data:
             self.json_data = self._load_raw_data()
@@ -40,11 +42,12 @@ class BaseJSONReader(BaseDbReader):
 
     def _load_to_pandas_dataframe(self):
         import pandas as pd
+
         return pd.read_json(self.json_file)
 
     @property
     def raw_pages_dict(self) -> dict:
-        return self.data.to_dict(orient='list')
+        return self.data.to_dict(orient="list")
 
 
 class BatBaseJSONReader(BaseJSONReader):
@@ -74,39 +77,40 @@ class BatBaseJSONReader(BaseJSONReader):
         - nom_cap_specifics: str = "nom_cap_specifics"
         - selected: str = "selected"
     """
+
     _version = "1.0.0"
     _key_translator = dict(
-            filename = "Test Name",
-            id_key = "ID Key",
-            argument= None,
-            mass= "Mass (mg)",
-            total_mass = "Total Mass (mg)",
-            nom_cap_specifics = "Unit",
-            file_name_indicator = "Test Name",
-            loading = "Loading (mg/cm2)",
-            nom_cap = "Nominal Capacity",
-            area = "Area (cm2)",
-            experiment = None,
-            fixed = None,
-            label = None,
-            cell_type = "Cell Type",  # TODO: fix in batbase
-            instrument = "Instrument",
-            comment = None,  # TODO: add to batbase
-            group = "Group",  # TODO: add to batbase
-            raw_file_names = None,
-            cellpy_file_name = None,
-        )
+        filename="Test Name",
+        id_key="ID Key",
+        argument=None,
+        mass="Mass (mg)",
+        total_mass="Total Mass (mg)",
+        nom_cap_specifics="Unit",
+        file_name_indicator="Test Name",
+        loading="Loading (mg/cm2)",
+        nom_cap="Nominal Capacity",
+        area="Area (cm2)",
+        experiment=None,
+        fixed=None,
+        label=None,
+        cell_type="Cell Type",  # TODO: fix in batbase
+        instrument="Instrument",
+        comment=None,  # TODO: add to batbase
+        group="Group",  # TODO: add to batbase
+        raw_file_names=None,
+        cellpy_file_name=None,
+    )
 
     _property_mapper = dict(
-        mass = "mass",
-        total_mass = "mass",
-        area = "area",
+        mass="mass",
+        total_mass="mass",
+        area="area",
         # loading = "loading",
-        nom_cap = "nominal_capacity",
-        length = "length",
-        volume = "volume",
-        temperature = "temperature",
-        pressure = "pressure",
+        nom_cap="nominal_capacity",
+        length="length",
+        volume="volume",
+        temperature="temperature",
+        pressure="pressure",
     )
 
     _nominal_capacity_unit_key = "Unit"
@@ -125,9 +129,9 @@ class BatBaseJSONReader(BaseJSONReader):
     def _specific_fixer(self, x: str) -> str:
         x = x.lower()
         specific = x.split(" ")[0]
-        if specific == "null": 
+        if specific == "null":
             return None
-        if specific == "specific": 
+        if specific == "specific":
             return "gravimetric"
         return specific
 
@@ -142,22 +146,27 @@ class BatBaseJSONReader(BaseJSONReader):
         if not header_name:
             return None
         # Match pattern: "Header Name (unit)"
-        match = re.search(r'\(([^)]+)\)', header_name)
+        match = re.search(r"\(([^)]+)\)", header_name)
         if match:
             unit = match.group(1).strip()
             unit = self._clean_unit(unit)
             return unit
         return None
 
-    def __init__(self, json_file: str|None|pathlib.Path = None, store_raw_data: bool = False, **kwargs):
+    def __init__(
+        self,
+        json_file: str | None | pathlib.Path = None,
+        store_raw_data: bool = False,
+        **kwargs,
+    ):
         instrument = kwargs.pop("instrument", None)
         super().__init__(json_file, store_raw_data, **kwargs)
         # TODO: add to batbase
         self._value_fixers = dict(
-            nom_cap_specifics = self._specific_fixer,
-            cell_type = lambda x: "anode" if x == "hci" else "standard",
-            loading = lambda x: float(x) if x != "null" else None,
-            instrument = lambda x: f"{instrument}" if instrument is not None else x,
+            nom_cap_specifics=self._specific_fixer,
+            cell_type=lambda x: "anode" if x == "hci" else "standard",
+            loading=lambda x: float(x) if x != "null" else None,
+            instrument=lambda x: f"{instrument}" if instrument is not None else x,
         )
         self._pages_dict = {}
 
@@ -186,10 +195,10 @@ class BatBaseJSONReader(BaseJSONReader):
             - volume: str = "cm**3"
             - temperature: str = "C"
             - pressure: str = "bar"
-        
+
         Args:
             cellpy_key: The cellpy key (e.g., 'mass', 'total_mass')
-        
+
         Returns:
             The unit string (e.g., 'mg') if found, None otherwise.
         """
@@ -202,7 +211,7 @@ class BatBaseJSONReader(BaseJSONReader):
     @property
     def units_dict(self) -> Dict[str, Optional[str]]:
         """Get units for all cellpy keys, following the same structure as pages_dict.
-        
+
         Returns:
             Dictionary mapping cellpy_key -> unit string (or None if no unit found).
         """
@@ -210,7 +219,6 @@ class BatBaseJSONReader(BaseJSONReader):
         for cellpy_key in self._key_translator.keys():
             _units_dict[cellpy_key] = self._get_unit_for_key(cellpy_key)
         return _units_dict
-
 
     def get_conversion_factor(self, value, old_unit, property_name):
         property = self._property_mapper.get(property_name)
@@ -222,17 +230,16 @@ class BatBaseJSONReader(BaseJSONReader):
         return value.m
 
     def get_unit_from_header(
-        self, 
+        self,
         header: Optional[str] = None,
     ) -> str:
         """Parse units from headers (keys) in the JSON data.
-        
-        Headers are expected to be in the format "Header Name (unit)", 
+
+        Headers are expected to be in the format "Header Name (unit)",
         for example "Total Mass (mg)" or "Area (cm2)".
         """
         # exposing internal method for unit extraction
         return self._extract_unit_from_header(header)
-
 
     def from_batch(
         self,
@@ -242,7 +249,6 @@ class BatBaseJSONReader(BaseJSONReader):
         include_individual_arguments: bool = False,
     ) -> dict:
         raise NotImplementedError("This method is not implemented for this reader")
-
 
     def _create_pages_dict(self) -> PagesDict:
         _pages_dict = dict()
@@ -261,7 +267,9 @@ class BatBaseJSONReader(BaseJSONReader):
         # fixing values:
         for key, fixer in self._value_fixers.items():
             if key in _pages_dict:
-                _pages_dict[hdr_journal[key]] = [fixer(x) for x in _pages_dict[hdr_journal[key]]]
+                _pages_dict[hdr_journal[key]] = [
+                    fixer(x) for x in _pages_dict[hdr_journal[key]]
+                ]
 
         # extract nominal capacity unit and convert to cellpy units if available
         if self._nominal_capacity_unit_key is not None:
@@ -269,7 +277,9 @@ class BatBaseJSONReader(BaseJSONReader):
             nom_cap_values = _pages_dict[hdr_journal["nom_cap"]]
             new_nom_cap_values = []
             for info, value in zip(info_list, nom_cap_values):
-                new_nom_cap_values.append(self._convert_nominal_capacity_unit(info, value))
+                new_nom_cap_values.append(
+                    self._convert_nominal_capacity_unit(info, value)
+                )
             _pages_dict[hdr_journal["nom_cap"]] = new_nom_cap_values
 
         # fixing general units:
@@ -295,6 +305,7 @@ class BatBaseJSONReader(BaseJSONReader):
     def pages_dict(self, value: PagesDict):
         self._pages_dict = value
 
+
 if __name__ == "__main__":
     import pandas as pd
 
@@ -308,7 +319,3 @@ if __name__ == "__main__":
     reader = BatBaseJSONReader(json_file, store_raw_data=True)
     print(80 * "=")
     pprint(reader.pages_dict)
-
-
-
-

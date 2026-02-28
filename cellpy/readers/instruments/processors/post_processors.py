@@ -90,11 +90,15 @@ def set_cycle_number_not_zero(data: Data, config_params: ModelParameters) -> Dat
 
 def select_columns_to_keep(data: Data, config_params: ModelParameters) -> Data:
     """Select columns to keep in the raw data."""
-    config_params.columns_to_keep.extend(headers_normal[h] for h in _minimum_columns_to_keep_for_raw_if_exists)
+    config_params.columns_to_keep.extend(
+        headers_normal[h] for h in _minimum_columns_to_keep_for_raw_if_exists
+    )
     if config_params.states:
         config_params.columns_to_keep.append(config_params.states["column_name"])
     config_params.columns_to_keep = list(set(config_params.columns_to_keep))
-    columns_to_keep = [col for col in config_params.columns_to_keep if col in data.raw.columns]
+    columns_to_keep = [
+        col for col in config_params.columns_to_keep if col in data.raw.columns
+    ]
     data.raw = data.raw[columns_to_keep]
     return data
 
@@ -148,7 +152,9 @@ def _get_column_names(data: Data, config_params: ModelParameters) -> Data:
                     config_params.raw_units[label] = 1.0
 
         for k in DEFAULT_RAW_UNITS:
-            config_params.raw_units[k] = config_params.raw_units.get(k, DEFAULT_RAW_UNITS[k])
+            config_params.raw_units[k] = config_params.raw_units.get(
+                k, DEFAULT_RAW_UNITS[k]
+            )
     return data
 
 
@@ -158,8 +164,12 @@ def convert_date_time_to_datetime(data: Data, config_params: ModelParameters) ->
     try:
         data.raw[hdr_date_time] = pd.to_datetime(data.raw[hdr_date_time])
     except ValueError as e:
-        warnings.warn(f"Could not convert date_time to datetime. Will try mixed format (slow).")
-        data.raw[hdr_date_time] = pd.to_datetime(data.raw[hdr_date_time], format="mixed")
+        warnings.warn(
+            f"Could not convert date_time to datetime. Will try mixed format (slow)."
+        )
+        data.raw[hdr_date_time] = pd.to_datetime(
+            data.raw[hdr_date_time], format="mixed"
+        )
     return data
 
 
@@ -172,7 +182,9 @@ def date_time_from_test_time(data: Data, config_params: ModelParameters) -> Data
     # currently, it will always use current date-time as start date.
     start_date = config_params.meta_keys.get("start_date", datetime.datetime.now())
     start_time = data.raw[hdr_test_time].iloc[0]
-    data.raw[hdr_date_time] = pd.to_timedelta(data.raw[hdr_test_time] - start_time) + start_date
+    data.raw[hdr_date_time] = (
+        pd.to_timedelta(data.raw[hdr_test_time] - start_time) + start_date
+    )
     return data
 
 
@@ -182,9 +194,13 @@ def convert_step_time_to_timedelta(data: Data, config_params: ModelParameters) -
     if data.raw[hdr_step_time].dtype == "datetime64[ns]":
         logging.debug("already datetime64[ns] - need to convert to back first")
         data.raw[hdr_step_time] = data.raw[hdr_step_time].view("int64")
-        data.raw[hdr_step_time] = data.raw[hdr_step_time] - data.raw[hdr_step_time].iloc[0]
+        data.raw[hdr_step_time] = (
+            data.raw[hdr_step_time] - data.raw[hdr_step_time].iloc[0]
+        )
 
-    data.raw[hdr_step_time] = pd.to_timedelta(data.raw[hdr_step_time]).dt.total_seconds()
+    data.raw[hdr_step_time] = pd.to_timedelta(
+        data.raw[hdr_step_time]
+    ).dt.total_seconds()
     return data
 
 
@@ -194,8 +210,12 @@ def convert_test_time_to_timedelta(data: Data, config_params: ModelParameters) -
     if data.raw[hdr_test_time].dtype == "datetime64[ns]":
         logging.debug("already datetime64[ns] - need to convert to back first")
         data.raw[hdr_test_time] = data.raw[hdr_test_time].view("int64")
-        data.raw[hdr_test_time] = data.raw[hdr_test_time] - data.raw[hdr_test_time].iloc[0]
-    data.raw[hdr_test_time] = pd.to_timedelta(data.raw[hdr_test_time]).dt.total_seconds()
+        data.raw[hdr_test_time] = (
+            data.raw[hdr_test_time] - data.raw[hdr_test_time].iloc[0]
+        )
+    data.raw[hdr_test_time] = pd.to_timedelta(
+        data.raw[hdr_test_time]
+    ).dt.total_seconds()
     return data
 
 
@@ -278,7 +298,9 @@ def rename_headers(data: Data, config_params: ModelParameters) -> Data:
         if datetime_hdr == test_time_hdr:
             logging.debug("both test_time and datetime assigned to same column")
             logging.debug("duplicating the column")
-            new_test_time_hdr = f"_{test_time_hdr}_cellpy_temporary_col_name_for_test_time"
+            new_test_time_hdr = (
+                f"_{test_time_hdr}_cellpy_temporary_col_name_for_test_time"
+            )
             data.raw[new_test_time_hdr] = data.raw[datetime_hdr]
             renaming_dict["test_time_txt"] = new_test_time_hdr
 
@@ -391,7 +413,8 @@ def _state_splitter(
                 if propagate:
                     charge_last_index, charge_last_val = charge.iloc[-1]
                     raw.loc[
-                        (raw[data_point] > charge_last_index) & (raw[cycle_index_hdr] == i),
+                        (raw[data_point] > charge_last_index)
+                        & (raw[cycle_index_hdr] == i),
                         temp_col_name_charge,
                     ] = charge_last_val
 
@@ -412,7 +435,8 @@ def _state_splitter(
                 if propagate:
                     (discharge_last_index, discharge_last_val) = discharge.iloc[-1]
                     raw.loc[
-                        (raw[data_point] > discharge_last_index) & (raw[cycle_index_hdr] == i),
+                        (raw[data_point] > discharge_last_index)
+                        & (raw[cycle_index_hdr] == i),
                         temp_col_name_discharge,
                     ] = discharge_last_val
             good_cycles.append(i)

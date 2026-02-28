@@ -1,7 +1,7 @@
 """Engines are functions that are used by the Do-ers.
 
-    Keyword Args: experiments, farms, barn, optionals
-    Returns: farms, barn
+Keyword Args: experiments, farms, barn, optionals
+Returns: farms, barn
 """
 
 import logging
@@ -159,7 +159,7 @@ def _create_pages_dict(
     additional_column_names: Optional[List[str]] = None,
 ) -> PagesDict:
     """Create pages_dict from reader and cell_ids.
-    
+
     Args:
         reader: a reader object (dbreader.Reader or json_dbreader.BatbaseJSONReader)
         cell_ids: keys (cell IDs) or None to use batch_name
@@ -167,7 +167,7 @@ def _create_pages_dict(
         include_key: include the key col in the pages (the cell IDs)
         include_individual_arguments: include the argument column in the pages
         additional_column_names: list of additional column names to include in the pages
-        
+
     Returns:
         pages_dict: dictionary with journal data (PagesDict type)
     """
@@ -195,7 +195,9 @@ def _create_pages_dict(
         pages_dict[hdr_journal["mass"]] = _query(reader.get_mass, cell_ids)
         pages_dict[hdr_journal["total_mass"]] = _query(reader.get_total_mass, cell_ids)
         try:
-            pages_dict[hdr_journal["nom_cap_specifics"]] = _query(reader.get_nom_cap_specifics, cell_ids)
+            pages_dict[hdr_journal["nom_cap_specifics"]] = _query(
+                reader.get_nom_cap_specifics, cell_ids
+            )
         except Exception as e:
             logging.debug(f"Error in getting nom_cap_specifics: {e}")
             pages_dict[hdr_journal["nom_cap_specifics"]] = "gravimetric"
@@ -223,7 +225,7 @@ def _create_pages_dict(
             ("comment", reader.get_comment),
             ("group", reader.get_group),
         ]
-        
+
         for field_name, reader_method in journal_fields:
             try:
                 pages_dict[hdr_journal[field_name]] = _query(reader_method, cell_ids)
@@ -298,7 +300,7 @@ def simple_db_engine(
                 reader = json_dbreader.BatBaseJSONReader()
             case _:
                 raise ValueError(f"Invalid reader: {reader}")
-                
+
     if isinstance(reader, dbreader.Reader):
         pages_dict = _create_pages_dict(
             reader=reader,
@@ -311,20 +313,26 @@ def simple_db_engine(
     elif isinstance(reader, json_dbreader.BatBaseJSONReader):
         pages_dict = reader.pages_dict
         logging.debug(f"pages_dict: {pages_dict}")
-        logging.debug(f"number of cells in the batch: {len(pages_dict[hdr_journal['filename']])}")
+        logging.debug(
+            f"number of cells in the batch: {len(pages_dict[hdr_journal['filename']])}"
+        )
 
     logging.debug(f"created info-dict from {reader.db_file}:")
     del reader
 
     for key in list(pages_dict.keys()):
-        logging.debug(f"[length: {len(pages_dict[key]):04d}] {key}: {str(pages_dict[key])}")
+        logging.debug(
+            f"[length: {len(pages_dict[key]):04d}] {key}: {str(pages_dict[key])}"
+        )
 
     _groups = pages_dict[hdr_journal["group"]]
     groups = helper.fix_groups(_groups)
     pages_dict[hdr_journal["group"]] = groups
     my_timer_start = time.time()
     logging.debug("finding files")
-    pages_dict = helper.find_files(pages_dict, file_list=file_list, pre_path=pre_path, **kwargs)
+    pages_dict = helper.find_files(
+        pages_dict, file_list=file_list, pre_path=pre_path, **kwargs
+    )
     logging.debug("files found")
     logging.debug(f"pages_dict: {pages_dict}")
     my_timer_end = time.time()
@@ -352,9 +360,13 @@ def simple_db_engine(
     pages = helper.make_unique_groups(pages)
 
     try:
-        pages[hdr_journal.label] = pages[hdr_journal.filename].apply(helper.create_labels)
+        pages[hdr_journal.label] = pages[hdr_journal.filename].apply(
+            helper.create_labels
+        )
     except AttributeError as e:
-        _report_suspected_duplicate_id(e, "make labels", pages[[hdr_journal.label, hdr_journal.filename]])
+        _report_suspected_duplicate_id(
+            e, "make labels", pages[[hdr_journal.label, hdr_journal.filename]]
+        )
     except IndexError as e:
         logging.debug(f"Could not make labels: {e}")
     except Exception as e:
@@ -376,7 +388,9 @@ def _check_pages_frame(pages):
     logging.debug(f"pages.dtypes: {pages.dtypes}")
     duplicates = pages.index.duplicated()
     if duplicates.any():
-        logging.critical(f"Oh no! Found {duplicates.sum()} duplicate cell names in your db - this is not allowed!")
+        logging.critical(
+            f"Oh no! Found {duplicates.sum()} duplicate cell names in your db - this is not allowed!"
+        )
         logging.critical(f"Duplicate cell names: {pages.index[duplicates].tolist()}")
     else:
         logging.debug("No duplicate indices found")

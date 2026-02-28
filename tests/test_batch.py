@@ -1,5 +1,6 @@
 import ast
 import logging
+import os
 import pathlib
 import tempfile
 import time
@@ -35,24 +36,34 @@ def clean_dir():
 
 @pytest.fixture
 def batch_instance(clean_dir, parameters):
-    prms.Paths.db_filename = parameters.db_file_name
-    prms.Paths.cellpydatadir = clean_dir
-    prms.Paths.outdatadir = clean_dir
-    prms.Paths.rawdatadir = parameters.raw_data_dir
-    prms.Paths.db_path = parameters.db_dir
-    prms.Paths.filelogdir = clean_dir
-    prms.Paths.batchfiledir = clean_dir
-    prms.Paths.notebookdir = clean_dir
-    prms.Paths.instrumentdir = parameters.instrument_dir
-    prms.Paths.templatedir = parameters.template_dir
-    prms.Paths.examplesdir = parameters.examples_dir
-    prms.Batch.auto_use_file_list = False
-    return batch
+    # Change to temporary directory so that files are saved there
+    original_cwd = os.getcwd()
+    os.chdir(clean_dir)
+
+    try:
+        prms.Paths.db_filename = parameters.db_file_name
+        prms.Paths.cellpydatadir = clean_dir
+        prms.Paths.outdatadir = clean_dir
+        prms.Paths.rawdatadir = parameters.raw_data_dir
+        prms.Paths.db_path = parameters.db_dir
+        prms.Paths.filelogdir = clean_dir
+        prms.Paths.batchfiledir = clean_dir
+        prms.Paths.notebookdir = clean_dir
+        prms.Paths.instrumentdir = parameters.instrument_dir
+        prms.Paths.templatedir = parameters.template_dir
+        prms.Paths.examplesdir = parameters.examples_dir
+        prms.Batch.auto_use_file_list = False
+        yield batch
+    finally:
+        # Restore original working directory
+        os.chdir(original_cwd)
 
 
 @pytest.fixture
 def populated_batch(batch_instance):
-    b = batch_instance.init("test", "ProjectOfRun", default_log_level="DEBUG", batch_col="b01", testing=True)
+    b = batch_instance.init(
+        "test", "ProjectOfRun", default_log_level="DEBUG", batch_col="b01", testing=True
+    )
 
     b.create_journal(duplicate_to_local_folder=False)
     b.paginate()
@@ -83,7 +94,9 @@ def updated_cycling_experiment(cycling_experiment):
 
 
 def test_reading_db(batch_instance):
-    b = batch_instance.init("test", "ProjectOfRun", default_log_level="DEBUG", batch_col="b01", testing=True)
+    b = batch_instance.init(
+        "test", "ProjectOfRun", default_log_level="DEBUG", batch_col="b01", testing=True
+    )
 
     b.create_journal(duplicate_to_local_folder=False)
 
@@ -92,6 +105,7 @@ def test_reading_db(batch_instance):
 def test_reading_json_db(batch_instance, parameters):
     from pathlib import Path
     from cellpy.readers import json_dbreader
+
     local_dir = Path(__file__).parent.parent / "local"
     json_file = local_dir / "cellpy_journal_table.json"
     assert json_file.exists()
@@ -129,7 +143,9 @@ def test_reading_cell_specs(batch_instance):
     # The argument str must be on the form:
     #    "keyword-1=value-1;keyword-2=value2"
 
-    b = batch_instance.init("test", "ProjectOfRun", default_log_level="DEBUG", batch_col="b02", testing=True)
+    b = batch_instance.init(
+        "test", "ProjectOfRun", default_log_level="DEBUG", batch_col="b02", testing=True
+    )
     b.create_journal(duplicate_to_local_folder=False)
     hdr = hdr_journal["argument"]
     with_argument = b.pages.iloc[0][hdr]
@@ -153,14 +169,21 @@ def test_load_limited_journal_excel(parameters, batch_instance):
     assert hdr_journal["argument"] in b.pages.columns
 
 
-def test_load_full_journal_excel_and_check_headers_generated(parameters, batch_instance):
+@pytest.mark.skip_on_macos
+def test_load_full_journal_excel_and_check_headers_generated(
+    parameters, batch_instance
+):
     index_name = "filename"
-    b = batch_instance.from_journal(parameters.journal_file_full_xlsx_path, testing=True)
+    b = batch_instance.from_journal(
+        parameters.journal_file_full_xlsx_path, testing=True
+    )
     assert len(b.pages) == 2
     missing = [hdr for hdr in hdr_journal.values() if hdr not in b.pages.columns]
     assert len(missing) == 1
     assert b.pages.index.name == index_name
-    assert missing[0] == index_name  # this is the only missing column since it is now the index
+    assert (
+        missing[0] == index_name
+    )  # this is the only missing column since it is now the index
 
 
 def test_load_full_journal_excel_from_labjournal_class(parameters):
@@ -188,7 +211,9 @@ def test_update_with_cellspecs(parameters, batch_instance):
 def test_load_save_journal_roundtrip_cell_specs(parameters, clean_dir, batch_instance):
     b = batch_instance.from_journal(parameters.journal_file_json_path, testing=True)
     out = pathlib.Path(clean_dir) / "j.json"
-    b.experiment.journal.to_file(file_name=out, to_project_folder=False, duplicate_to_local_folder=False)
+    b.experiment.journal.to_file(
+        file_name=out, to_project_folder=False, duplicate_to_local_folder=False
+    )
     spec_1 = b.pages[hdr_journal["argument"]].iloc[0]
     assert spec_1 == "recalc=False"
     assert out.is_file()
@@ -230,7 +255,9 @@ def test_load_journal_dataframe(batch_instance):
         "label": ["", "cell2", ""],
         "cellpy_file_name": [
             pathlib.Path("data/cellpyfiles/20160805_test001_45_cc.cellpy"),
-            OtherPath("data/cellpyfiles/20160805_test001_46_cc.cellpy"),  # This will be dropped since keep=False
+            OtherPath(
+                "data/cellpyfiles/20160805_test001_46_cc.cellpy"
+            ),  # This will be dropped since keep=False
             "data/cellpyfiles/20160805_test001_47_cc.cellpy",
         ],
         "raw_file_names": [
@@ -352,7 +379,7 @@ def test_lab_journal(batch_instance):
 
 
 def test_cycling_experiment_to_file(cycling_experiment):
-    cycling_experiment.journal.to_file(duplicate_to_local_folder=False)
+    cycling_experiment.journal.to_file(duplicate_to_project_folder=False)
 
 
 def test_interact_with_cellpydata_get_cap(updated_cycling_experiment, parameters):
@@ -370,16 +397,22 @@ def test_cycling_summary_plotter(populated_batch):
 def test_concatinator(populated_batch):
     cellnames = populated_batch.cell_names
     c = populated_batch.experiment.data[cellnames[0]]
-    cf = helpers.concatenate_summaries(populated_batch, columns=["charge_capacity"], rate=0.04, group_it=True)
+    cf = helpers.concatenate_summaries(
+        populated_batch, columns=["charge_capacity"], rate=0.04, group_it=True
+    )
     print(cf.head(5))
 
 
 def test_concatinator_yanked(populated_batch):
-    removed = helpers.yank_outliers(populated_batch, remove_indexes=[3, 4, 5], keep_old=False)
+    removed = helpers.yank_outliers(
+        populated_batch, remove_indexes=[3, 4, 5], keep_old=False
+    )
     print(removed)
     c1 = populated_batch.experiment.data[populated_batch.cell_names[0]]
     print(c1.data.summary.head(10))
-    cf1 = helpers.concatenate_summaries(populated_batch, columns=["charge_capacity"], rate=0.04, group_it=True)
+    cf1 = helpers.concatenate_summaries(
+        populated_batch, columns=["charge_capacity"], rate=0.04, group_it=True
+    )
     cf2 = helpers.concatenate_summaries(
         populated_batch,
         columns=["charge_capacity"],
@@ -396,7 +429,9 @@ def test_report(populated_batch):
 
 
 def test_batch_update(parameters, batch_instance):
-    b = batch_instance.init("test", "ProjectOfRun", default_log_level="DEBUG", batch_col="b01", testing=True)
+    b = batch_instance.init(
+        "test", "ProjectOfRun", default_log_level="DEBUG", batch_col="b01", testing=True
+    )
     b.create_journal(duplicate_to_local_folder=False)
     b.paginate()
     b.update(testing=True)

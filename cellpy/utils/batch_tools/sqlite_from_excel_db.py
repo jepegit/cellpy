@@ -114,9 +114,9 @@ def clean_up(df, columns):
             df[excel_col] = df[excel_col].astype("str")
         logging.debug(f"[{df[excel_col].dtype}]")
         df = df.rename(columns={excel_col: db_col})
-        final_columns[
-            db_col
-        ] = db_col  # modify this if you want to rename columns again
+        final_columns[db_col] = (
+            db_col  # modify this if you want to rename columns again
+        )
     logging.debug("Selecting...")
     df = df[final_columns.keys()]
     logging.debug("Renaming to cellpy names...")

@@ -1,5 +1,31 @@
 # History
 
+## 1.0.3 (pre-release)
+
+* Batch: Batch plotting with multiple subfigures (#343, #344, #346)
+* Batch: JSON db reader from batbase (`batbase_json_reader`) - new database reader for JSON-based batch files
+* Batch: Improved batch load functionality
+* Batch: Enhanced error handling and logging in batch processing with clearer exception messages
+* Batch: Changed default output directory name from 'out' to 'dump'
+* Batch: Use local folder for journal file as default
+* Batch: Allow prms to pass during batch update when reloading cellpy files
+* Batch: Improved `concat_summaries` with support for different averaging methods and filtering (low/high values)
+* Batch: Added CV-share partitioning support in summary collector
+* Batch: Added line hooks in summary plot
+* Batch: Summary plot now supports fullcell standard
+* Batch: Added possibility to drop columns and filter low/high for non-grouped data
+* Batch: Added helper function `collectors.standard_gravimetric_collector`
+* General: Require numpy >= 2
+* General: Made explicit imports of parameters and readers in top init-file
+* General: Allow additional arguments to plotly save images
+* CLI: New label for create new projectdir in `cellpy new`
+* Readers: JSON db reader now supports optional storage of raw JSON data via `store_raw_data` parameter
+* Readers: Added `raw_pages_dict` and `pages_dict` properties to JSON db reader for accessing data as dictionaries
+* Bug fixes: Fixed bug in pandas.ExcelWriter call (#347)
+* Bug fixes: Fixed bug in summary collector (concat summaries) that mutated list of selected columns
+* Bug fixes: Fixed bug in OtherPathsNew
+* Bug fixes: Various other bug fixes and improvements
+
 ## 1.0.2
 
 * Batch: `only_selected` keyword added for concatenating summaries choosing only selected cells in the pages (selected==1)

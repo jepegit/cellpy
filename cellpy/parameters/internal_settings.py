@@ -155,23 +155,43 @@ class CellpyMetaCommon(CellpyMeta):
     # about cell
     material: Optional[prms.CellPyDataConfig] = prms.Materials.default_material
     # TODO @jepe: Maybe we should use values with units here instead (pint)?
-    mass: Optional[prms.CellPyDataConfig] = prms.Materials.default_mass  # active material
-    tot_mass: Optional[prms.CellPyDataConfig] = prms.Materials.default_mass  # total material
-    nom_cap: Optional[prms.CellPyDataConfig] = prms.Materials.default_nom_cap  # nominal capacity   # used as property
+    mass: Optional[prms.CellPyDataConfig] = (
+        prms.Materials.default_mass
+    )  # active material
+    tot_mass: Optional[prms.CellPyDataConfig] = (
+        prms.Materials.default_mass
+    )  # total material
+    nom_cap: Optional[prms.CellPyDataConfig] = (
+        prms.Materials.default_nom_cap
+    )  # nominal capacity   # used as property
     nom_cap_specifics: Optional[prms.CellPyDataConfig] = (
         prms.Materials.default_nom_cap_specifics
     )  # nominal capacity type  # used as property
 
-    active_electrode_area: Optional[prms.CellPyDataConfig] = prms.CellInfo.active_electrode_area
-    active_electrode_thickness: Optional[prms.CellPyDataConfig] = prms.CellInfo.active_electrode_thickness
-    active_electrode_loading: Optional[prms.CellPyDataConfig] = prms.CellInfo.active_electrode_loading  # mAh/cm2
+    active_electrode_area: Optional[prms.CellPyDataConfig] = (
+        prms.CellInfo.active_electrode_area
+    )
+    active_electrode_thickness: Optional[prms.CellPyDataConfig] = (
+        prms.CellInfo.active_electrode_thickness
+    )
+    active_electrode_loading: Optional[prms.CellPyDataConfig] = (
+        prms.CellInfo.active_electrode_loading
+    )  # mAh/cm2
     # volume: Optional[prms.CellPyDataConfig] = prms.CellInfo.volume  # cm3
 
-    electrolyte_volume: Optional[prms.CellPyDataConfig] = prms.CellInfo.electrolyte_volume
+    electrolyte_volume: Optional[prms.CellPyDataConfig] = (
+        prms.CellInfo.electrolyte_volume
+    )
     electrolyte_type: Optional[prms.CellPyDataConfig] = prms.CellInfo.electrolyte_type
-    active_electrode_type: Optional[prms.CellPyDataConfig] = prms.CellInfo.active_electrode_type
-    counter_electrode_type: Optional[prms.CellPyDataConfig] = prms.CellInfo.counter_electrode_type
-    reference_electrode_type: Optional[prms.CellPyDataConfig] = prms.CellInfo.reference_electrode_type
+    active_electrode_type: Optional[prms.CellPyDataConfig] = (
+        prms.CellInfo.active_electrode_type
+    )
+    counter_electrode_type: Optional[prms.CellPyDataConfig] = (
+        prms.CellInfo.counter_electrode_type
+    )
+    reference_electrode_type: Optional[prms.CellPyDataConfig] = (
+        prms.CellInfo.reference_electrode_type
+    )
     experiment_type: Optional[prms.CellPyDataConfig] = prms.CellInfo.experiment_type
     cell_type: Optional[prms.CellPyDataConfig] = prms.CellInfo.cell_type
     separator_type: Optional[prms.CellPyDataConfig] = prms.CellInfo.separator_type
@@ -191,7 +211,9 @@ class CellpyMetaIndividualTest(CellpyMeta):
     channel_index: Optional[prms.CellPyDataConfig] = None
     creator: Optional[str] = None
     schedule_file_name = None
-    test_type: Optional[prms.CellPyDataConfig] = None  # Not used (and might be put inside test_ID)
+    test_type: Optional[prms.CellPyDataConfig] = (
+        None  # Not used (and might be put inside test_ID)
+    )
     voltage_lim_low: Optional[prms.CellPyDataConfig] = prms.CellInfo.voltage_lim_low
     voltage_lim_high: Optional[prms.CellPyDataConfig] = prms.CellInfo.voltage_lim_high
     cycle_mode: Optional[prms.CellPyDataConfig] = prms.Reader.cycle_mode

@@ -42,7 +42,9 @@ class Doer(metaclass=abc.ABCMeta):
         self.farms = []  # A list of lists, each list is a green field where your animals wander around
         self.engines = []  # The engines creates the animals
         self.dumpers = []  # The dumpers places animals in the barn
-        self.barn = None  # This is where we put the animals during winter (and in the night)
+        self.barn = (
+            None  # This is where we put the animals during winter (and in the night)
+        )
 
         # Decide if the farm should be locked or not. If not locked, the farm will be emptied
         # before each engine run (if the farm is not locked, the animals will escape).
@@ -168,7 +170,9 @@ class Data(collections.UserDict):
     def _create_accessor_label(self, cell_label):
         if isinstance(cell_label, int):
             logging.critical(f"cell_label is an integer: {cell_label}")
-            logging.critical("Could be due to missing 'cell' or 'cell_label' in the journal")
+            logging.critical(
+                "Could be due to missing 'cell' or 'cell_label' in the journal"
+            )
             return self.accessor_pre + str(cell_label)
         return self.accessor_pre + cell_label
 
@@ -179,7 +183,9 @@ class Data(collections.UserDict):
         cell_labels = self.experiment.journal.pages.index
         for cell_label in cell_labels:
             try:
-                self.accessors[self._create_accessor_label(cell_label)] = self.experiment.cell_data_frames[cell_label]
+                self.accessors[self._create_accessor_label(cell_label)] = (
+                    self.experiment.cell_data_frames[cell_label]
+                )
             except KeyError as e:
                 logging.debug(
                     f"Could not create accessors for {cell_label}"
@@ -235,7 +241,9 @@ class Data(collections.UserDict):
                 cell = self.experiment._load_cellpy_file(cellpy_file)  # noqa
                 self.experiment.cell_data_frames[cell_id] = cell
                 # trick for making tab-completion work:
-                self.accessors[self._create_accessor_label(cell_id)] = self.experiment.cell_data_frames[cell_id]
+                self.accessors[self._create_accessor_label(cell_id)] = (
+                    self.experiment.cell_data_frames[cell_id]
+                )
                 return cell
             else:
                 raise NotImplementedError
@@ -276,7 +284,11 @@ class BaseExperiment(metaclass=abc.ABCMeta):
         self._max_cycle = None
 
     def __str__(self):
-        return f"[{self.__class__.__name__}]\n" f"journal: \n{str(self.journal)}\n" f"data: \n{str(self.data)}"
+        return (
+            f"[{self.__class__.__name__}]\n"
+            f"journal: \n{str(self.journal)}\n"
+            f"data: \n{str(self.data)}"
+        )
 
     def __repr__(self):
         return self.__class__.__name__
@@ -316,12 +328,16 @@ class BaseExperiment(metaclass=abc.ABCMeta):
     def _link_cellpy_file(self, cell_label, max_cycle=None):
         # creates a CellpyCell object and loads only the step-table
         logging.debug("linking cellpy file")
-        cellpy_file_name = self.journal.pages.loc[cell_label, hdr_journal.cellpy_file_name]
+        cellpy_file_name = self.journal.pages.loc[
+            cell_label, hdr_journal.cellpy_file_name
+        ]
         if not os.path.isfile(cellpy_file_name):
             raise IOError
 
         cellpy_object = cellreader.CellpyCell(initialize=True)
-        step_table = helper.look_up_and_get(cellpy_file_name, prms._cellpyfile_step, max_cycle=max_cycle)
+        step_table = helper.look_up_and_get(
+            cellpy_file_name, prms._cellpyfile_step, max_cycle=max_cycle
+        )
         if step_table.empty:
             raise UnderDefined
         if max_cycle:
@@ -407,11 +423,11 @@ class BaseJournal:
            for making folder names).
         file_name (str or path): the file name used in the to_file method.
         project_dir: folder where to put the batch (or experiment) files and
-           information.
+           information (will be deprecated in future versions).
         batch_dir: folder in project_dir where summary-files and information
-            and results related to the current experiment are stored.
+            and results related to the current experiment are stored (will be deprecated in future versions).
         raw_dir: folder in batch_dir where cell-specific information and results
-            are stored (e.g. raw-data, dq/dv data, voltage-capacity cycles).
+            are stored (e.g. raw-data, dq/dv data, voltage-capacity cycles) (will be deprecated in future versions).
 
     """
 
@@ -427,6 +443,7 @@ class BaseJournal:
         self.project_dir = None
         self.batch_dir = None
         self.raw_dir = None
+        self.legacy_project_dir = None  # Deprecated: for backward compatibility only
 
     def __str__(self):
         return (
@@ -552,7 +569,9 @@ class BaseAnalyzer(Doer, metaclass=abc.ABCMeta):
         """Run the engine, build the barn and put the animals on the farm"""
         logging.debug(f"start engine::{engine.__name__}")
         self.current_engine = engine
-        self.farms, self.barn = engine(experiments=self.experiments, farms=self.farms, **kwargs)
+        self.farms, self.barn = engine(
+            experiments=self.experiments, farms=self.farms, **kwargs
+        )
         logging.debug("::engine ended")
 
     def run_dumper(self, dumper):

@@ -1,4 +1,16 @@
 ---
+description: Guide for LLMs
 alwaysApply: true
 ---
-This project is called "cellpy" and it uses a python environment (.venv). Rember to activate it! We also have uv installed. Use it if you want.
+
+# Best practices for cellpy
+
+This project is called "cellpy" and it uses a python environment (.venv). Rember to activate it! 
+
+We also have uv installed. Use it if you want.
+
+## Working on issues
+
+After each iteration, update the documents in 01_current_issue (should contain one file labelled _original that should consist of the original issue description, and supplementary md files informing what has been done, what is the current status of the issues, and what should be done more.)
+
+When the issue is solved, summarize what was done, challenges met, and smart solutions and hints for future developers into a markdown file inside 02_issue_history (should be named as `[issue number]_[issue short text]_learnings_[date].md`)

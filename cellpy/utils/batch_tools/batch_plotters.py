@@ -48,7 +48,9 @@ def create_legend(info, c, option="clean", use_index=False):
     """creating more informative legends"""
 
     logging.debug("    - creating legends")
-    mass, loading, label = info.loc[c, [hdr_journal["mass"], hdr_journal["loading"], hdr_journal["label"]]]
+    mass, loading, label = info.loc[
+        c, [hdr_journal["mass"], hdr_journal["loading"], hdr_journal["label"]]
+    ]
 
     if use_index or not label:
         label = c.split("_")
@@ -74,7 +76,9 @@ def look_up_group(info, c):
     return int(g), int(sg)
 
 
-def create_plot_option_dicts(info, marker_types=None, colors=None, line_dash=None, size=None, palette=None):
+def create_plot_option_dicts(
+    info, marker_types=None, colors=None, line_dash=None, size=None, palette=None
+):
     """Create two dictionaries with plot-options.
 
     The first iterates colors (based on group-number), the second iterates
@@ -214,11 +218,15 @@ def create_summary_plot_bokeh(
         cols = charge_capacity.columns.get_level_values(1)
         sub_cols_charge = charge_capacity.columns.get_level_values(0).unique()
 
-        charge_capacity.columns = [f"{col[0]}_{col[1]}" for col in charge_capacity.columns.values]
+        charge_capacity.columns = [
+            f"{col[0]}_{col[1]}" for col in charge_capacity.columns.values
+        ]
 
         if discharge_capacity is not None:
             sub_cols_discharge = discharge_capacity.columns.get_level_values(0).unique()
-            discharge_capacity.columns = [f"{col[0]}_{col[1]}" for col in discharge_capacity.columns.values]
+            discharge_capacity.columns = [
+                f"{col[0]}_{col[1]}" for col in discharge_capacity.columns.values
+            ]
     else:
         cols = charge_capacity.columns
     logging.debug("iterate cols")
@@ -339,7 +347,9 @@ def plot_cycle_life_summary_bokeh(
     idx = pd.IndexSlice
     all_legend_items = []
 
-    warnings.warn("This utility function might be removed shortly", category=DeprecationWarning)
+    warnings.warn(
+        "This utility function might be removed shortly", category=DeprecationWarning
+    )
     if add_rate:
         try:
             discharge_capacity = summaries.loc[
@@ -353,8 +363,12 @@ def plot_cycle_life_summary_bokeh(
                 ],
             ]
         except AttributeError:
-            warnings.warn("No discharge rate columns available - consider re-creating summary!")
-            discharge_capacity = summaries[hdr_summary["discharge_capacity_gravimetric"]]
+            warnings.warn(
+                "No discharge rate columns available - consider re-creating summary!"
+            )
+            discharge_capacity = summaries[
+                hdr_summary["discharge_capacity_gravimetric"]
+            ]
 
         try:
             charge_capacity = summaries.loc[
@@ -368,7 +382,9 @@ def plot_cycle_life_summary_bokeh(
                 ],
             ]
         except AttributeError:
-            warnings.warn("No charge rate columns available - consider re-creating summary!")
+            warnings.warn(
+                "No charge rate columns available - consider re-creating summary!"
+            )
             charge_capacity = summaries[hdr_summary["charge_capacity_gravimetric"]]
 
         try:
@@ -376,14 +392,20 @@ def plot_cycle_life_summary_bokeh(
                 :, idx[[hdr_summary.coulombic_efficiency, hdr_summary.charge_c_rate], :]
             ]
         except AttributeError:
-            warnings.warn("No charge rate columns available - consider re-creating summary!")
+            warnings.warn(
+                "No charge rate columns available - consider re-creating summary!"
+            )
             coulombic_efficiency = summaries.coulombic_efficiency
 
         if hdr_summary.ir_charge in summaries.columns:
             try:
-                ir_charge = summaries.loc[:, idx[[hdr_summary.ir_charge, hdr_summary.charge_c_rate], :]]
+                ir_charge = summaries.loc[
+                    :, idx[[hdr_summary.ir_charge, hdr_summary.charge_c_rate], :]
+                ]
             except AttributeError:
-                warnings.warn("No charge rate columns available - consider re-creating summary!")
+                warnings.warn(
+                    "No charge rate columns available - consider re-creating summary!"
+                )
                 ir_charge = summaries.ir_charge
         else:
             ir_charge = pd.DataFrame()
@@ -477,7 +499,9 @@ def plot_cycle_life_summary_bokeh(
     legend_items = []
     renderer_list = []
     for legend in legend_items_dict:
-        legend_items.append(bokeh.models.LegendItem(label=legend, renderers=legend_items_dict[legend]))
+        legend_items.append(
+            bokeh.models.LegendItem(label=legend, renderers=legend_items_dict[legend])
+        )
         renderer_list.extend(legend_items_dict[legend])
 
     legend_title = "Legends"
@@ -542,7 +566,9 @@ def plot_cycle_life_summary_bokeh(
     else:
         p_cap.add_layout(bokeh.models.Title(text=info_text, align="right"), "below")
 
-    final_figure = bokeh.layouts.row(children=[fig_grid, dummy_figure_for_legend], sizing_mode="stretch_width")
+    final_figure = bokeh.layouts.row(
+        children=[fig_grid, dummy_figure_for_legend], sizing_mode="stretch_width"
+    )
     return bokeh.plotting.show(final_figure)
 
 
@@ -605,7 +631,9 @@ def plot_cycle_life_summary_matplotlib(
     ]
 
     marker_size = kwargs.pop("marker_size", None)
-    group_styles, sub_group_styles = create_plot_option_dicts(info, marker_types=marker_types, size=marker_size)
+    group_styles, sub_group_styles = create_plot_option_dicts(
+        info, marker_types=marker_types, size=marker_size
+    )
     if ir_charge is None:
         canvas, (ax_ce, ax_cap) = plt.subplots(
             2,
@@ -637,7 +665,9 @@ def plot_cycle_life_summary_matplotlib(
         f = "white"
 
         try:
-            ax_cap.plot(charge_capacity[label], label=name, color=c, marker=m, markerfacecolor=c)
+            ax_cap.plot(
+                charge_capacity[label], label=name, color=c, marker=m, markerfacecolor=c
+            )
         except Exception as e:
             logging.debug(f"Could not plot charge capacity for {label} ({e})")
         try:
@@ -661,7 +691,9 @@ def plot_cycle_life_summary_matplotlib(
 
         if ir_charge is not None:
             try:
-                ax_ir.plot(ir_charge[label], color=c, label=name, marker=m, markerfacecolor=c)
+                ax_ir.plot(
+                    ir_charge[label], color=c, label=name, marker=m, markerfacecolor=c
+                )
             except Exception as e:
                 logging.debug(f"Could not plot IR for {label} ({e})")
 
@@ -703,7 +735,9 @@ def summary_plotting_engine(**kwargs):
         return farms, barn
 
     if backend in ["bokeh", "matplotlib"]:
-        farms = _preparing_data_and_plotting_legacy(experiments=experiments, farms=farms, **kwargs)
+        farms = _preparing_data_and_plotting_legacy(
+            experiments=experiments, farms=farms, **kwargs
+        )
 
     elif backend in ["plotly", "seaborn"]:
         for experiment in experiments:
@@ -711,7 +745,9 @@ def summary_plotting_engine(**kwargs):
                 logging.debug(f"skipping {experiment} - not a CyclingExperiment")
                 logging.debug(f"({type(experiment)})")
                 continue
-            canvas = generate_summary_plots(experiment=experiment, farms=farms, **kwargs)
+            canvas = generate_summary_plots(
+                experiment=experiment, farms=farms, **kwargs
+            )
             if canvas is None:
                 logging.debug("OH NO! Could not generate canvas")
             farms.append(canvas)
@@ -775,7 +811,9 @@ def generate_summary_frame_for_plotting(pages, experiment, **kwargs) -> pd.DataF
     summaries.columns.names = ["variable", "cell"]
 
     hdr_cycle = hdr_summary["cycle_index"]
-    hdr_charge, hdr_discharge = _get_capacity_columns(capacity_specifics=capacity_specifics)
+    hdr_charge, hdr_discharge = _get_capacity_columns(
+        capacity_specifics=capacity_specifics
+    )
     hdr_ce = hdr_summary["coulombic_efficiency"]
     hdr_ir_charge = hdr_summary["ir_charge"]
     hdr_ir_discharge = hdr_summary["ir_discharge"]
@@ -850,12 +888,16 @@ def _plotly_legend_replacer(trace, df, group_legends=True, inverted_mode=False):
         group = int(parts[0])
         subgroup = int(parts[1])
     else:
-        print("Have not implemented replacing legend labels that are not on the form a,b yet.")
+        print(
+            "Have not implemented replacing legend labels that are not on the form a,b yet."
+        )
         print(f"legend label: {name}")
         return trace
     if inverted_mode:
         group, subgroup = subgroup, group
-    cell_label = df.loc[(df["group"] == group) & (df["sub_group"] == subgroup), "cell"].values[0]
+    cell_label = df.loc[
+        (df["group"] == group) & (df["sub_group"] == subgroup), "cell"
+    ].values[0]
     if group_legends:
         trace.update(
             name=cell_label,
@@ -1312,15 +1354,19 @@ def _plotting_data_legacy(pages, summaries, width, height, height_fractions, **k
     # sub-sub-engine
     canvas = None
     if prms.Batch.backend == "bokeh":
-        canvas = plot_cycle_life_summary_bokeh(pages, summaries, width, height, height_fractions, **kwargs)
+        canvas = plot_cycle_life_summary_bokeh(
+            pages, summaries, width, height, height_fractions, **kwargs
+        )
     elif prms.Batch.backend == "plotly":
         print("plotly not implemented yet")
 
     elif prms.Batch.backend == "matplotlib":
         logging.info("[obs! experimental]")
-        canvas = plot_cycle_life_summary_matplotlib(pages, summaries, width, height, height_fractions, **kwargs)
+        canvas = plot_cycle_life_summary_matplotlib(
+            pages, summaries, width, height, height_fractions, **kwargs
+        )
     else:
-        logging.info(f"the {prms.Batch.backend} " f"back-end is not implemented yet.")
+        logging.info(f"the {prms.Batch.backend} back-end is not implemented yet.")
 
     return canvas
 
@@ -1333,25 +1379,35 @@ def _preparing_data_and_plotting_legacy(**kwargs):
     width = kwargs.pop("width", prms.Batch.summary_plot_width)
     height = kwargs.pop("height", prms.Batch.summary_plot_height)
 
-    height_fractions = kwargs.pop("height_fractions", prms.Batch.summary_plot_height_fractions)
+    height_fractions = kwargs.pop(
+        "height_fractions", prms.Batch.summary_plot_height_fractions
+    )
 
     for experiment in experiments:
         if not isinstance(experiment, CyclingExperiment):
-            logging.info("No! This engine is only really good at processing CyclingExperiments")
+            logging.info(
+                "No! This engine is only really good at processing CyclingExperiments"
+            )
             logging.info(experiment)
         else:
             pages = experiment.journal.pages
             try:
                 keys = [df.name for df in experiment.memory_dumped["summary_engine"]]
-                summaries = pd.concat(experiment.memory_dumped["summary_engine"], keys=keys, axis=1)
-                canvas = _plotting_data_legacy(pages, summaries, width, height, height_fractions, **kwargs)
+                summaries = pd.concat(
+                    experiment.memory_dumped["summary_engine"], keys=keys, axis=1
+                )
+                canvas = _plotting_data_legacy(
+                    pages, summaries, width, height, height_fractions, **kwargs
+                )
 
                 farms.append(canvas)
 
             except KeyError:
                 logging.info("could not parse the summaries")
                 logging.info(" - might be new a bug?")
-                logging.info(" - might be a known bug related to dropping cells (b.drop)")
+                logging.info(
+                    " - might be a known bug related to dropping cells (b.drop)"
+                )
                 logging.info(" - maybe try reloading the data helps?")
 
     return farms
@@ -1445,7 +1501,9 @@ class CyclingSummaryPlotter(BasePlotter):
         self.current_engine = engine
         if self.reset_farms:
             self.farms = []
-        self.farms, self.barn = engine(experiments=self.experiments, farms=self.farms, **kwargs)
+        self.farms, self.barn = engine(
+            experiments=self.experiments, farms=self.farms, **kwargs
+        )
 
         logging.debug("::engine ended")
 

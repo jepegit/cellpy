@@ -5,6 +5,7 @@ see https://pypi.python.org/pypi/apipkg
 
 (c) holger krekel, 2009 - MIT license
 """
+
 from __future__ import annotations
 
 __all__ = ["initpkg", "ApiModule", "AliasModule", "__version__", "distribution_version"]

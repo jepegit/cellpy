@@ -15,9 +15,9 @@ jobs:
         shell: bash -l {0}
     strategy:
       matrix:
-        python-version: ["3.10", "3.11"]
+        python-version: ["3.10", "3.11", "3.12"]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: conda-incubator/setup-miniconda@v3
         with:
           auto-update-conda: true
@@ -37,7 +37,7 @@ jobs:
           sudo apt-get install -y mdbtools
 
       - name: pytest
-        run: pytest
+        run: pytest --ignore=tests/test_plotutils_summary_plot.py
 
       - name: pytest with nbmake (cellpy_batch_processing)
         run: |

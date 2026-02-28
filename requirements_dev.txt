@@ -1,9 +1,7 @@
-PyGithub
 Sphinx
 black
 build
 bumpver
-cookiecutter
 coverage
 flake8
 invoke

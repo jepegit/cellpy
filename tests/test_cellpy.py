@@ -82,7 +82,9 @@ def test_logger(clean_dir):
         elif handler.name == "debug_file_handler":
             assert handler.level == logging.DEBUG
 
-    log.setup_logging(default_json_path="./a_file_that_does_not_exist.json", testing=True)
+    log.setup_logging(
+        default_json_path="./a_file_that_does_not_exist.json", testing=True
+    )
     assert len(logging.getLogger().handlers) == 4
 
     log.setup_logging(default_json_path=test_logging_json, testing=True)
@@ -135,7 +137,9 @@ def test_load_arbin_res_file_diagnostics(clean_dir, benchmark):
 
     prms.Reader.diagnostics = True
     f_in = os.path.join(fdv.raw_data_dir, fdv.res_file_name)
-    new_file = benchmark(cellpy.utils.helpers.load_and_save_resfile, f_in, None, clean_dir)
+    new_file = benchmark(
+        cellpy.utils.helpers.load_and_save_resfile, f_in, None, clean_dir
+    )
     assert os.path.isfile(new_file)
 
 
@@ -178,7 +182,9 @@ def test_get_arbin_res_with_postprocessor_hook():
         print(c)
         return c
 
-    cellpy.get(filename=fdv.res_file_path, post_processor_hook=_my_post_processor, testing=True)  # should print
+    cellpy.get(
+        filename=fdv.res_file_path, post_processor_hook=_my_post_processor, testing=True
+    )  # should print
 
 
 # @pytest.mark.unimportant

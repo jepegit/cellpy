@@ -8,6 +8,7 @@ $ python setup.py sdist # create gzip distr (source dist)
 $ python setup.py bdist_wheel # create build
 $ twine upload dist/* # upload to PyPI
 """
+
 import os
 
 from setuptools import find_packages, setup
@@ -38,7 +39,7 @@ included_packages = find_packages(
 requirements = [
     "scipy",
     "numpy",
-    "pandas",
+    "pandas<3",
     "python-box",
     "setuptools",
     "ruamel.yaml",

@@ -423,14 +423,18 @@ def info():
 
         elif key == "Paths":
             print(" Paths ".center(80, "-"))
-            attributes = {k: v for k, v in vars(current_object).items() if not k.startswith("_")}
+            attributes = {
+                k: v for k, v in vars(current_object).items() if not k.startswith("_")
+            }
             for attr in OTHERPATHS:
                 attributes[attr] = getattr(current_object, attr)
             print(attributes)
 
         elif isinstance(current_object, (prms.CellPyConfig, prms.CellPyDataConfig)):
             # print(" NEW-TYPE PRM ".center(80, "="))
-            attributes = {k: v for k, v in vars(current_object).items() if not k.startswith("_")}
+            attributes = {
+                k: v for k, v in vars(current_object).items() if not k.startswith("_")
+            }
             print(f" {key} ".center(80, "-"))
             print(attributes)
             print()

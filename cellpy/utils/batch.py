@@ -10,6 +10,8 @@ from typing import Optional
 
 import pandas as pd
 from pandas import Index
+
+# from tables.exceptions import traceback
 from tqdm.auto import tqdm
 
 import cellpy.exceptions
@@ -22,6 +24,7 @@ from cellpy.parameters.internal_settings import (
 )
 from cellpy.internals.core import OtherPath
 from cellpy.readers.cellreader import CellpyCell
+from cellpy.exceptions import NullData
 from cellpy.utils.batch_tools.batch_analyzers import (
     BaseSummaryAnalyzer,
 )
@@ -120,7 +123,6 @@ class Batch:
         else:
             db_reader = kwargs.pop("db_reader", "default")
 
-
         logging.debug("creating CyclingExperiment")
         self.experiment = CyclingExperiment(db_reader=db_reader)
         logging.info("created CyclingExperiment")
@@ -179,7 +181,9 @@ class Batch:
                 default_level=default_log_level,
                 reset_big_log=True,
             )
-        self._initial_cells = cells  # used for making a batch object from a list of cellpy cell objects
+        self._initial_cells = (
+            cells  # used for making a batch object from a list of cellpy cell objects
+        )
         self._cells = None  # not used yet - but will be used for the accessors
 
         db_reader = kwargs.pop("db_reader", "default")
@@ -211,7 +215,6 @@ class Batch:
         self._journal_name = self.experiment.journal.file_name
         self.headers_step_table = headers_step_table
         self.experiment.journal.pages = self.experiment.journal.create_empty_pages()
-
 
         if self._initial_cells is not None:
             self.collect()
@@ -257,7 +260,6 @@ class Batch:
 
         info_df = defaultdict(list)
         for n, cell in enumerate(self._initial_cells):
-
             cellpy_file_name = cell.cellpy_file_name
             last_updated_from = cell.last_uploaded_from
 
@@ -447,7 +449,9 @@ class Batch:
             try:
                 cell_labels = self.journal.session["bad_cells"]
             except AttributeError:
-                logging.critical("session info about bad cells is missing - cannot drop")
+                logging.critical(
+                    "session info about bad cells is missing - cannot drop"
+                )
                 return
         else:
             cell_labels = [cell_label]
@@ -497,11 +501,21 @@ class Batch:
         if grouped:
             # TODO: currently does not use cumulative values - consider implementing this
             r_pages["group"] = pages.group
-            r_pages["group_avg_last_cycle"] = r_pages.group.map(r_pages.groupby("group").last_cycle.mean())
-            r_pages["group_avg_max_capacity"] = r_pages.group.map(r_pages.groupby("group").max_capacity.mean())
-            r_pages["group_avg_min_capacity"] = r_pages.group.map(r_pages.groupby("group").min_capacity.mean())
-            r_pages["group_avg_std_capacity"] = r_pages.group.map(r_pages.groupby("group").std_capacity.mean())
-            r_pages["group_avg_average_capacity"] = r_pages.group.map(r_pages.groupby("group").average_capacity.mean())
+            r_pages["group_avg_last_cycle"] = r_pages.group.map(
+                r_pages.groupby("group").last_cycle.mean()
+            )
+            r_pages["group_avg_max_capacity"] = r_pages.group.map(
+                r_pages.groupby("group").max_capacity.mean()
+            )
+            r_pages["group_avg_min_capacity"] = r_pages.group.map(
+                r_pages.groupby("group").min_capacity.mean()
+            )
+            r_pages["group_avg_std_capacity"] = r_pages.group.map(
+                r_pages.groupby("group").std_capacity.mean()
+            )
+            r_pages["group_avg_average_capacity"] = r_pages.group.map(
+                r_pages.groupby("group").average_capacity.mean()
+            )
 
         if stylize:
 
@@ -596,7 +610,9 @@ class Batch:
         # identifier. Consider also to allow for a group-name.
         # The label and cell name can be the same. Consider allowing several cells to share the same label
         # thus returning several cellpy cell objects. Our use "group" for this purpose.
-        print("Label-based look-up is not supported yet. Performing cell-name based look-up instead.")
+        print(
+            "Label-based look-up is not supported yet. Performing cell-name based look-up instead."
+        )
         return self.experiment.cell_names
 
     @property
@@ -759,6 +775,7 @@ class Batch:
         from_db=True,
         auto_use_file_list=None,
         file_list_kwargs=None,
+        abort_on_empty=True,
         **kwargs,
     ):
         """Create journal pages.
@@ -783,6 +800,7 @@ class Batch:
             auto_use_file_list (bool): Experimental feature. If True, a file list will be generated and used
                 instead of searching for files in the folders.
             file_list_kwargs (dict): Experimental feature. Keyword arguments to be sent to the file list generator.
+            abort_on_empty (bool): If True, the function will raise a cellpy.exceptions.NullData if no journal pages are found.
 
             **kwargs: sent to sub-function(s) (*e.g.* ``from_db`` -> ``simple_db_reader`` -> ``find_files`` ->
                 ``filefinder.search_for_files``).
@@ -851,45 +869,102 @@ class Batch:
         if auto_use_file_list is None:
             auto_use_file_list = prms.Batch.auto_use_file_list
 
-        to_project_folder = kwargs.pop("to_project_folder", True)
-        duplicate_to_local_folder = kwargs.pop("duplicate_to_local_folder", True)
+        to_project_folder = kwargs.pop("to_project_folder", False)
+        # Backward compatibility: accept both old and new parameter names
+        duplicate_to_project_folder = kwargs.pop("duplicate_to_project_folder", None)
+        if duplicate_to_project_folder is None:
+            # Check for old parameter name for backward compatibility
+            if "duplicate_to_local_folder" in kwargs:
+                _ = kwargs.pop(
+                    "duplicate_to_local_folder", False
+                )  # Intentionally unused - just removing from kwargs
+                warnings.warn(
+                    "duplicate_to_local_folder is deprecated. "
+                    "The default behavior now saves to current directory. "
+                    "Use duplicate_to_project_folder=True to copy to project folder.",
+                    DeprecationWarning,
+                    stacklevel=2,
+                )
+                # Old behavior: duplicate_to_local_folder=True meant copy to current folder (after saving to project)
+                # New behavior: we save to current folder by default, so duplicate_to_local_folder is now irrelevant
+                # If old param was True, it meant "also copy to local", which is now the default behavior
+                # If old param was False, it meant "don't copy to local", which matches new default (no copy to project)
+                # So we just set duplicate_to_project_folder to False (no copy to project folder)
+                duplicate_to_project_folder = False
+            else:
+                duplicate_to_project_folder = False
 
         if description is not None:
             from_db = False
         else:
             if self.experiment.journal.pages is not None:
                 warnings.warn(
-                    "You created a journal - but you already have a " "journal. Hope you know what you are doing!"
+                    "You created a journal - but you already have a "
+                    "journal. Hope you know what you are doing!"
                 )
 
         if from_db:
             if auto_use_file_list:
-                logging.critical("auto_use_file_list is True - this is an experimental feature")
+                logging.critical(
+                    "auto_use_file_list is True - this is an experimental feature"
+                )
+                logging.debug("The file_list will be used for searching for files")
+                logging.debug(
+                    "in stead of doing individual glob searches in the raw-file directory"
+                )
+                logging.debug(
+                    "reducing the number of ssh-connections to the remote servers."
+                )
                 if file_list_kwargs is None:
                     file_list_kwargs = {}
-
+                logging.debug(f"file_list_kwargs: {file_list_kwargs}")
                 file_list = filefinder.find_in_raw_file_directory(**file_list_kwargs)
+                logging.debug("done running filefinder.find_in_raw_file_directory")
+                logging.debug(
+                    f"recieved file_list from filefinder with {len(file_list)} items"
+                )
                 if file_list is None:
-                    raise cellpy.exceptions.SearchError("Could not create any file list.")
+                    raise cellpy.exceptions.SearchError(
+                        "Could not create any file list."
+                    )
+
                 try:
                     kwargs["file_list"] = file_list
 
                 except Exception as e:
-                    logging.critical("You have set auto_use_file_list to True, but I could not create any file list.")
-                    logging.critical("I recommend that you set auto_use_file_list to False and try again.")
+                    logging.critical(
+                        "You have set auto_use_file_list to True, but I could not create any file list."
+                    )
+                    logging.critical(
+                        "I recommend that you set auto_use_file_list to False and try again."
+                    )
                     logging.critical(
                         "This can be done by setting the correct parameters in "
                         "the prms-file or by providing the correct kwargs "
                         "(e.g. b.create_journal(auto_use_file_list=False))."
                     )
                     raise e
+            logging.debug(f"running from_db with kwargs: {kwargs.keys()}")
             self.experiment.journal.from_db(**kwargs)
-            self.experiment.journal.to_file(duplicate_to_local_folder=duplicate_to_local_folder)
+            logging.debug("done running from_db")
+            logging.debug(
+                f"recieved journal pages from from_db with {len(self.experiment.journal.pages)} items"
+            )
+            if abort_on_empty and len(self.experiment.journal.pages) == 0:
+                logging.critical("No journal pages found - something went wrong")
+                logging.critical("Please check the parameters you have provided")
+                logging.critical("and try again.")
+                raise NullData("No journal pages found - something went wrong")
+            logging.debug("saving journal pages to file")
+            self.experiment.journal.to_file(
+                to_project_folder=to_project_folder,
+                duplicate_to_project_folder=duplicate_to_project_folder,
+            )
 
-            # TODO: remove these:
-            if duplicate_to_local_folder:
-                self.experiment.journal.duplicate_journal()
-            if to_project_folder:
+            if to_project_folder and pathlib.Path(prms.Paths.batchfiledir).is_dir():
+                logging.debug(
+                    "duplicating journal to batch directory (will be a deprecated feature in the future)"
+                )
                 self.duplicate_journal(prms.Paths.batchfiledir)
 
         else:
@@ -915,7 +990,9 @@ class Batch:
                 if is_str and description.lower() == "empty":
                     logging.debug("creating empty journal pages")
 
-                    self.experiment.journal.pages = self.experiment.journal.create_empty_pages()
+                    self.experiment.journal.pages = (
+                        self.experiment.journal.create_empty_pages()
+                    )
 
                 elif isinstance(description, pd.DataFrame):
                     logging.debug("pandas DataFrame given")
@@ -940,7 +1017,9 @@ class Batch:
 
                 elif isinstance(description, dict):
                     logging.debug("dictionary given")
-                    self.experiment.journal.pages = self.experiment.journal.create_empty_pages()
+                    self.experiment.journal.pages = (
+                        self.experiment.journal.create_empty_pages()
+                    )
                     for k in self.experiment.journal.pages.columns:
                         try:
                             value = description[k]
@@ -953,8 +1032,14 @@ class Batch:
                                 value = [value]
                             if k == "raw_file_names":
                                 if not isinstance(value[0], list):
-                                    warnings.warn("encountered raw file description" "that is not of list-type")
-                                    logging.debug("converting raw file description to a" "list of lists")
+                                    warnings.warn(
+                                        "encountered raw file description"
+                                        "that is not of list-type"
+                                    )
+                                    logging.debug(
+                                        "converting raw file description to a"
+                                        "list of lists"
+                                    )
                                     value = [value]
                             self.experiment.journal.pages[k] = value
 
@@ -970,15 +1055,22 @@ class Batch:
 
                 else:
                     logging.debug(
-                        "the option you provided seems to be either of " "an unknown type or a file not found"
+                        "the option you provided seems to be either of "
+                        "an unknown type or a file not found"
                     )
-                    logging.info("did not understand the option - creating empty journal pages")
+                    logging.info(
+                        "did not understand the option - creating empty journal pages"
+                    )
 
             # finally
-            self.experiment.journal.to_file(duplicate_to_local_folder=duplicate_to_local_folder)
-            self.experiment.journal.generate_folder_names()
+            self.experiment.journal.to_file(
+                to_project_folder=to_project_folder,
+                duplicate_to_project_folder=duplicate_to_project_folder,
+            )
+            self.experiment.journal.generate_folder_names(use_outdatadir=False)
             self.experiment.journal.paginate()
-            self.duplicate_journal(prms.Paths.batchfiledir)
+            if to_project_folder and pathlib.Path(prms.Paths.batchfiledir).is_dir():
+                self.duplicate_journal(prms.Paths.batchfiledir)
 
     def _create_folder_structure(self) -> None:
         warnings.warn("Deprecated - use paginate instead.", DeprecationWarning)
@@ -1004,31 +1096,38 @@ class Batch:
         self.save_journal()
         self.experiment.save_cells()
 
-    def save_journal(self, paginate=False, duplicate_journal=True) -> None:
+    def save_journal(self, paginate=False, duplicate_to_project_folder=False) -> None:
         """Save the journal (json-format).
 
-        The journal file will be saved in the project directory and in the
-        batch-file-directory (``prms.Paths.batchfiledir``). The latter is useful
-        for processing several batches using the ``iterate_batches`` functionality.
+        The journal file will be saved to the current directory by default. Optionally,
+        it can be copied to the project directory in prms.Paths.outdatadir and/or
+        the batch-file-directory (``prms.Paths.batchfiledir``).
 
         Args:
             paginate (bool): paginate the journal pages, i.e. create a project folder structure inside your
-                'out' folder (defined in your settings) (default False).
-            duplicate_journal (bool): duplicate the journal pages to the 'batch' directory (defined in your settings)
-                and the current directory (default True).
+                'out' folder (default False).
+            duplicate_to_project_folder (bool): if True, copy the journal to prms.Paths.outdatadir/project/
+                (default False).
         """
 
         # Remark! Got a recursive error when running on Mac.
-        self.experiment.journal.to_file(to_project_folder=True, paginate=paginate)
-        logging.info("saved journal pages to project folder")
-        if pathlib.Path(prms.Paths.batchfiledir).is_dir() and duplicate_journal:
+        # Default: save to current directory
+        self.experiment.journal.to_file(
+            to_project_folder=False,
+            paginate=paginate,
+            duplicate_to_project_folder=duplicate_to_project_folder,
+        )
+        logging.info("saved journal pages to current directory")
+
+        if duplicate_to_project_folder:
+            logging.info("copied journal pages to project folder")
+
+        if (
+            pathlib.Path(prms.Paths.batchfiledir).is_dir()
+            and duplicate_to_project_folder
+        ):
             self.duplicate_journal(prms.Paths.batchfiledir)
             logging.info("duplicated journal pages to batch dir")
-        else:
-            logging.info("batch dir not found")
-
-        self.duplicate_journal()
-        logging.info("duplicated journal pages to current dir")
 
     def export_journal(self, filename=None) -> None:
         """Export the journal to xlsx.
@@ -1041,9 +1140,13 @@ class Batch:
         if filename is None:
             filename = self.experiment.journal.file_name
         filename = pathlib.Path(filename).with_suffix(".xlsx")
-        self.experiment.journal.to_file(file_name=filename, to_project_folder=False, paginate=False)
+        self.experiment.journal.to_file(
+            file_name=filename, to_project_folder=False, paginate=False
+        )
 
-    def duplicate_cellpy_files(self, location: str = "standard", selector: dict = None, **kwargs) -> None:
+    def duplicate_cellpy_files(
+        self, location: str = "standard", selector: dict = None, **kwargs
+    ) -> None:
         """Copy the cellpy files and make a journal with the new names available in
         the current folder.
 
@@ -1105,7 +1208,9 @@ class Batch:
         pages["cellpy_file_name"] = pages["new_cellpy_file_name"]
         self.experiment.journal.pages = pages[columns]
         journal_file_name = pathlib.Path(self.experiment.journal.file_name).name
-        self.experiment.journal.to_file(journal_file_name, paginate=False, to_project_folder=False)
+        self.experiment.journal.to_file(
+            journal_file_name, paginate=False, to_project_folder=False, duplicate_to_local_folder=False,
+        )
         if selector is not None:
             logging.info("Modifying the cellpy-files.")
             logging.info(f"selector: {selector}")
@@ -1294,7 +1399,9 @@ class Batch:
         if backend is None:
             backend = prms.Batch.backend
             if backend in ["bokeh", "matplotlib"]:
-                logging.debug(f"over-riding default backend ('{backend}' will soon be deprecated)")
+                logging.debug(
+                    f"over-riding default backend ('{backend}' will soon be deprecated)"
+                )
                 backend = "plotly"
 
         if backend in ["bokeh", "matplotlib", "plotly", "seaborn"]:
@@ -1335,7 +1442,9 @@ class Batch:
         else:
             print(f"backend {backend} not supported yet")
 
-    def plot_summaries(self, output_filename=None, backend=None, reload_data=False, **kwargs) -> None:
+    def plot_summaries(
+        self, output_filename=None, backend=None, reload_data=False, **kwargs
+    ) -> None:
         """Plot the summaries.
 
         Warnings:
@@ -1368,7 +1477,9 @@ class Batch:
 
             except ModuleNotFoundError:
                 prms.Batch.backend = "matplotlib"
-                logging.warning("could not find the bokeh module -> using matplotlib instead")
+                logging.warning(
+                    "could not find the bokeh module -> using matplotlib instead"
+                )
 
         self.plotter.do(**kwargs)
 
@@ -1394,9 +1505,10 @@ def load(
     project,
     batch_col=None,
     allow_from_journal=True,
+    allow_using_backup_journal=False,
     drop_bad_cells=True,
     force_reload=False,
-    reader=None,
+    reader="default",
     reader_path=None,
     **kwargs,
 ):
@@ -1408,11 +1520,12 @@ def load(
         project (str): name of project
         batch_col (str): batch column identifier (only used for loading from db with simple_db_reader)
         allow_from_journal (bool): if True, the journal file will be loaded if it exists
+        allow_using_backup_journal (bool): if True, the backup journal file will be used if the journal file does not exist
         force_reload (bool): if True, the batch will be reloaded even if the journal file exists
         drop_bad_cells (bool): if True, bad cells will be dropped (only apply if journal file is loaded)
         auto_use_file_list (bool): Experimental feature. If True, a file list will be generated and used
             instead of searching for files in the folders.
-        reader (str): reader to use (defaults to "simple_excel_reader").
+        reader (str): reader to use (defaults to "default" as given in the config-file or prm-class).
         reader_path (str): path to the reader file (if not using "simple_excel_reader").
         **kwargs: sent to Batch during initialization
 
@@ -1444,11 +1557,22 @@ def load(
         b = Batch(name=name, project=project, batch_col=batch_col, db_reader=None)
         try:
             print("checking if it is possible to load from journal file")
-            b.experiment.journal.generate_file_name()
+            # First check current directory (default location)
+            b.experiment.journal.generate_file_name(to_project_folder=False)
             journal_file = b.experiment.journal.file_name
-            print(f" - journal file name: {journal_file}")
+            print(f" - checking current directory: {journal_file}")
+
+            if not pathlib.Path(journal_file).is_file():
+                if allow_using_backup_journal:
+                    # Fall back to project folder if not found in current directory
+                    print(" - not found in current directory, checking project folder")
+                    b.experiment.journal.generate_file_name(to_project_folder=True)
+                    journal_file = b.experiment.journal.file_name
+                    print(f" - checking project folder: {journal_file}")
+                else:
+                    raise FileNotFoundError("Journal file not found")
         except Exception as e:
-            print(f"could not generate journal file name: {e}")
+            print(f"could not load journal file: {e}")
         else:
             if pathlib.Path(journal_file).is_file():
                 print(f" - loading journal file {journal_file}")
@@ -1461,7 +1585,9 @@ def load(
                     b.link(
                         max_cycle=kwargs.pop("max_cycle", None),
                         mark_bad=True,
-                        force_combine_summaries=kwargs.pop("force_combine_summaries", False),
+                        force_combine_summaries=kwargs.pop(
+                            "force_combine_summaries", False
+                        ),
                     )
 
                 if drop_bad_cells:
@@ -1471,7 +1597,9 @@ def load(
                 return b
 
             else:
-                print(" - journal file not found")
+                print(
+                    " - journal file not found in current directory or project folder"
+                )
 
     auto_use_file_list = kwargs.pop("auto_use_file_list", None)
     try:
@@ -1479,17 +1607,30 @@ def load(
         if batch_col is None:
             batch_col = "b01"  # this is needed due to a bug in cellpy (will be fixed when new db reader is ready)
         print("initializing batch object")
-        b = init(name=name, project=project, batch_col=batch_col, db_reader=reader, db_file=reader_path, **kwargs)
+        print(f" - name: {name}")
+        print(f" - project: {project}")
+        print(f" - batch_col: {batch_col}")
+        print(f" - reader: {reader}")
+        print(f" - reader_path: {reader_path}")
+        print(f" - kwargs: {kwargs}")
+        b = init(
+            name=name,
+            project=project,
+            batch_col=batch_col,
+            db_reader=reader,
+            db_file=reader_path,
+            **kwargs,
+        )
     except Exception as e:
         print(f"could not initialize batch: {e}")
         return None
     print("processing batch")
     try:
         print("creating journal")
-        
+
         if reader is not None:
-            print(f"reader: {reader}")
-            print(f"reader_path: {reader_path}")
+            logging.debug(f"reader: {reader}")
+            logging.debug(f"reader_path: {reader_path}")
         b.create_journal(auto_use_file_list=auto_use_file_list)
         print(" - created journal")
     except Exception as e:
@@ -1510,8 +1651,10 @@ def load(
         print("OK!")
     except Exception as e:
         print("something went wrong")
-        print(e)
-        print("returning possibly incomplete batch")
+        print(f" - error message: {e}")
+        # print(f" - traceback: {traceback.format_exc()}")
+        # print(f" - traceback type: {type(traceback)}")
+        print("returning most likely an incomplete batch")
 
     return b
 
@@ -1545,7 +1688,9 @@ def init(*args, empty=False, **kwargs) -> Batch:
     # set up cellpy logger
     default_log_level = kwargs.pop("default_log_level", None)
     testing = kwargs.pop("testing", False)
-    log.setup_logging(default_level=default_log_level, testing=testing, reset_big_log=True)
+    log.setup_logging(
+        default_level=default_log_level, testing=testing, reset_big_log=True
+    )
     if empty:
         logging.debug("returning naked Batch")
         return naked(*args, **kwargs)
@@ -1590,7 +1735,6 @@ def from_journal(journal_file, autolink=True, testing=False, **kwargs) -> Batch:
     return b
 
 
-
 def init2(*args, empty=False, **kwargs) -> Batch:
     """Returns an initialized instance of the Batch class.
 
@@ -1621,7 +1765,9 @@ def init2(*args, empty=False, **kwargs) -> Batch:
     mode = "new"
     default_log_level = kwargs.pop("default_log_level", None)
     testing = kwargs.pop("testing", False)
-    log.setup_logging(default_level=default_log_level, testing=testing, reset_big_log=True)
+    log.setup_logging(
+        default_level=default_log_level, testing=testing, reset_big_log=True
+    )
     if empty:
         logging.debug("returning naked Batch")
         return naked(*args, **kwargs)
@@ -1640,7 +1786,7 @@ def init2(*args, empty=False, **kwargs) -> Batch:
 
     logging.debug(f"returning Batch(kwargs: {kwargs})")
     if file_name is not None:
-        return Batch(*args, db_file=file_name, mode=mode,**kwargs)
+        return Batch(*args, db_file=file_name, mode=mode, **kwargs)
     if frame is not None:
         kwargs.pop("db_reader", None)
         return Batch(*args, file_name=None, db_reader=None, frame=frame, **kwargs)
@@ -1650,7 +1796,7 @@ def init2(*args, empty=False, **kwargs) -> Batch:
 
 def from_journal2(journal_file, autolink=True, testing=False, **kwargs) -> Batch:
     """Create a Batch from a journal file
-    
+
     This function will be renamed to from_journal in the future. It uses the "new" mode of the Batch class.
 
     Args:
@@ -1672,7 +1818,7 @@ def from_journal2(journal_file, autolink=True, testing=False, **kwargs) -> Batch
         >>> b.create_journal()
         >>> b.update()
         >>> b.plot()
-        
+
     """
     # TODO: add option for setting max cycle number (experiment.last_cycle)
     b = init2(file_name=journal_file, testing=testing, **kwargs)
@@ -1744,7 +1890,9 @@ def process_batch(*args, **kwargs) -> Batch:
     else:
         file_name = kwargs.pop("file_name", None)
     testing = kwargs.pop("testing", False)
-    log.setup_logging(default_level=default_log_level, reset_big_log=True, testing=testing)
+    log.setup_logging(
+        default_level=default_log_level, reset_big_log=True, testing=testing
+    )
     logging.debug(f"creating Batch(kwargs: {kwargs})")
 
     if file_name is not None:

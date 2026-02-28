@@ -130,11 +130,11 @@ class DataLoader(BaseLoader):
                     pec_times[var] = units.get(its_unit)
                     if var == "total_time":
                         pec_headers_normal["test_time_txt"] = (
-                            f'Total_Time_{its_unit[1:-1].replace(" ", "_")}'
+                            f"Total_Time_{its_unit[1:-1].replace(' ', '_')}"
                         )
                     if var == "step_time":
                         pec_headers_normal["step_time_txt"] = (
-                            f'Step_Time_{its_unit[1:-1].replace(" ", "_")}'
+                            f"Step_Time_{its_unit[1:-1].replace(' ', '_')}"
                         )
         return pec_times
 
