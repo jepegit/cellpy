@@ -17,7 +17,7 @@ dependencies:
     - nbmake
     - numpy>=2
     - openpyxl
-    - pandas
+    - pandas<3
     - pint
     - pip
     - plotly
@@ -35,10 +35,10 @@ dependencies:
     - scipy
     - setuptools
     - sqlalchemy
+    - sqlalchemy-access
     - tqdm
     - xlrd
     - pip:
-        - sqlalchemy-access
         - jinja2_time
 
 

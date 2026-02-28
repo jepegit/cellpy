@@ -2,7 +2,7 @@ name: cellpy_dev
 channels:
     - conda-forge
 dependencies:
-    - python >=3.10
+    - python >= 3.10
     - PyGithub
     - black
     - bumpver
@@ -27,7 +27,7 @@ dependencies:
     - nox
     - numpy >= 2.0
     - openpyxl
-    - pandas
+    - pandas < 3
     - pandoc
     - pint
     - pip
