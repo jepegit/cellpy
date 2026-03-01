@@ -1263,6 +1263,102 @@ def interpolate_y_on_x(
     return new_df
 
 
+def interpolate_y_on_x_per_monotonic_segments(
+    df,
+    x=None,
+    y=None,
+    dx=10.0,
+    number_of_points=None,
+    direction=1,
+    max_segments=100,
+    **kwargs,
+):
+    """Interpolate y on x per strictly monotonic segment, then concatenate.
+
+    When a curve has multiple steps (e.g. CC + taper), x may not be strictly
+    monotonic (e.g. constant voltage during taper). scipy.interp1d requires
+    strictly increasing x, so interpolating the whole curve drops steps or
+    produces artefacts. This helper splits the dataframe into segments where
+    x is strictly monotonic, interpolates each segment, and concatenates.
+
+    Many segments can occur with noisy x-data: every small reversal
+    (x[i] <= x[i-1]) starts a new segment, so O(n) segments are possible.
+    That would mean many calls to interpolate_y_on_x (slow) and many small
+    DataFrames (memory). If the segment count exceeds max_segments, the
+    function returns the dataframe unchanged and logs a warning.
+
+    Args:
+        df: DataFrame with the (cycle) data.
+        x: Column name for the x-value.
+        y: Column name for the y-value.
+        dx: step-value for interpolation.
+        number_of_points: number of points (overrides dx if given).
+        direction (-1, 1): 1 = x must be strictly increasing, -1 = strictly decreasing.
+        max_segments: if the number of monotonic segments exceeds this, return df
+            unchanged and log a warning (default 100). Set to None for no limit.
+        **kwargs: passed to interpolate_y_on_x.
+
+    Returns:
+        DataFrame with interpolated (x, y) preserving all segments, or df unchanged
+        if segment count exceeds max_segments.
+    """
+    if df is None or df.empty:
+        return df
+    if x is None:
+        x = df.columns[0]
+    if y is None:
+        y = df.columns[1]
+
+    xs = df[x].values
+    n = len(xs)
+    if n < 2:
+        return df
+
+    # Find segment boundaries: start new segment when monotonicity breaks
+    if direction > 0:
+        # segment starts at i when i==0 or when x[i] <= x[i-1] (not strictly increasing)
+        segment_start = externals.numpy.r_[True, xs[1:] <= xs[:-1]]
+    else:
+        # segment starts when x[i] >= x[i-1] (not strictly decreasing)
+        segment_start = externals.numpy.r_[True, xs[1:] >= xs[:-1]]
+
+    n_segments = int(segment_start.sum())
+    if max_segments is not None and n_segments > max_segments:
+        logging.warning(
+            "interpolate_y_on_x_per_monotonic_segments: %d segments exceeds max_segments=%s; "
+            "returning dataframe unchanged (likely noisy x-data).",
+            n_segments,
+            max_segments,
+        )
+        return df
+
+    segment_id = externals.numpy.cumsum(segment_start) - 1
+    segments = []
+    for i in range(n_segments):
+        mask = segment_id == i
+        seg_df = df.loc[mask].copy()
+        if len(seg_df) < 2:
+            continue
+        # Constant-x segment (e.g. taper): keep as-is to preserve step
+        if seg_df[x].min() == seg_df[x].max():
+            segments.append(seg_df[[x, y]].reset_index(drop=True))
+            continue
+        interp_df = interpolate_y_on_x(
+            seg_df,
+            x=x,
+            y=y,
+            dx=dx,
+            number_of_points=number_of_points,
+            direction=direction,
+            **kwargs,
+        )
+        segments.append(interp_df)
+
+    if not segments:
+        return df
+    return externals.pandas.concat(segments, axis=0, ignore_index=True)
+
+
 # TODO: consider moving this to either internals/core or to new module
 def group_by_interpolate(
     df,

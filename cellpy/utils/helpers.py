@@ -1600,7 +1600,7 @@ def load_and_save_resfile(filename, outfile=None, outdir=None, mass=1.00):
     print("mass:", mass, "mg")
 
     d.from_raw(filename)
-    d.set_mass(mass)
+    d.mass = mass
     d.make_step_table()
     d.make_summary()
     d.save(filename=outfile)

@@ -1528,7 +1528,8 @@ def load(
         name (str): name of batch
         project (str): name of project
         batch_col (str): batch column identifier (only used for loading from db with simple_db_reader)
-        allow_from_journal (bool): if True, the journal file will be loaded if it exists
+        allow_from_journal (bool): if True, the journal file will be loaded if it exists 
+        (should be renamed to autoload_batch_journal)
         allow_using_backup_journal (bool): if True, the backup journal file will be used if the journal file does not exist
         force_reload (bool): if True, the batch will be reloaded even if the journal file exists
         drop_bad_cells (bool): if True, bad cells will be dropped (only apply if journal file is loaded)

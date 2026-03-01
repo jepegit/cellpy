@@ -6,8 +6,10 @@
   "Loading (mg/cm2)": [1.0],
   "Nominal Capacity": [2.0],
   "Area (cm2)": [1.0],
-  "Cell Type": ["standard"],
+  "Cell Type": ["hc"],
+  "Test Mode": ["inverted (anode mode)"],
   "Instrument": ["arbin_res"],
   "Unit": ["mAh/g"],
   "Group": [1]
 }
+

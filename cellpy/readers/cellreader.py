@@ -4628,7 +4628,7 @@ class CellpyCell:
                                 }
                             )
                             if interpolated:
-                                _first_df = core.interpolate_y_on_x(
+                                _first_df = core.interpolate_y_on_x_per_monotonic_segments(
                                     _first_df,
                                     y=y_col,
                                     x=x_col,
@@ -4652,7 +4652,7 @@ class CellpyCell:
                                 }
                             )
                             if interpolated:
-                                _last_df = core.interpolate_y_on_x(
+                                _last_df = core.interpolate_y_on_x_per_monotonic_segments(
                                     _last_df,
                                     y=y_col,
                                     x=x_col,
