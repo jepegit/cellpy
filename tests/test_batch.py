@@ -65,7 +65,7 @@ def populated_batch(batch_instance):
         "test", "ProjectOfRun", default_log_level="DEBUG", batch_col="b01", testing=True
     )
 
-    b.create_journal(duplicate_to_local_folder=False)
+    b.create_journal()
     b.paginate()
     b.update(testing=True)
     return b
@@ -98,7 +98,7 @@ def test_reading_db(batch_instance):
         "test", "ProjectOfRun", default_log_level="DEBUG", batch_col="b01", testing=True
     )
 
-    b.create_journal(duplicate_to_local_folder=False)
+    b.create_journal()
 
 
 def test_batbase_json_reader_pages_dict_shape():
@@ -251,7 +251,7 @@ def test_reading_cell_specs(batch_instance):
     b = batch_instance.init(
         "test", "ProjectOfRun", default_log_level="DEBUG", batch_col="b02", testing=True
     )
-    b.create_journal(duplicate_to_local_folder=False)
+    b.create_journal()
     hdr = hdr_journal["argument"]
     with_argument = b.pages.iloc[0][hdr]
     with_several_arguments = b.pages.iloc[1][hdr]
@@ -381,7 +381,7 @@ def test_load_save_journal_roundtrip_cell_specs(parameters, clean_dir, batch_ins
     b = batch_instance.from_journal(parameters.journal_file_json_path, testing=True)
     out = pathlib.Path(clean_dir) / "j.json"
     b.experiment.journal.to_file(
-        file_name=out, to_project_folder=False, duplicate_to_local_folder=False
+        file_name=out, to_project_folder=False
     )
     spec_1 = b.pages[hdr_journal["argument"]].iloc[0]
     assert spec_1 == "recalc=False"
@@ -601,7 +601,7 @@ def test_batch_update(parameters, batch_instance):
     b = batch_instance.init(
         "test", "ProjectOfRun", default_log_level="DEBUG", batch_col="b01", testing=True
     )
-    b.create_journal(duplicate_to_local_folder=False)
+    b.create_journal()
     b.paginate()
     b.update(testing=True)
 

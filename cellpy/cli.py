@@ -202,7 +202,7 @@ def cli():
 )
 @click.option("--silent", "-s", is_flag=True, help="Silent mode (no questions asked)")
 @click.option(
-    "--no-deps", "-n", is_flag=True, help="Don't install missing dependencies"
+    "--no-deps", is_flag=True, help="Don't install missing dependencies"
 )
 def setup(
     interactive,
