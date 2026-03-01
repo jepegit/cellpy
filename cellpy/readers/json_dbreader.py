@@ -2,13 +2,14 @@ import json
 import logging
 import pathlib
 import re
-from typing import Optional, Dict, Mapping
+from typing import Optional, Dict, Mapping, Tuple
 from cellpy.readers.core import BaseDbReader, PagesDictBase
 from cellpy.readers import core
 from cellpy.parameters.internal_settings import get_headers_journal, cellpy_units
 
 
 hdr_journal = get_headers_journal()
+logger = logging.getLogger(__name__)
 
 
 # TODO: use journal headers in stead of this
@@ -79,6 +80,7 @@ class BatBaseJSONReader(BaseJSONReader):
     """
 
     _version = "1.0.0"
+    _required_json_keys: Tuple[str, ...] = ("Test Name", "ID Key")
     _key_translator = dict(
         filename="Test Name",
         id_key="ID Key",
@@ -161,6 +163,7 @@ class BatBaseJSONReader(BaseJSONReader):
     ):
         instrument = kwargs.pop("instrument", None)
         super().__init__(json_file, store_raw_data, **kwargs)
+        self._validate_batbase_format()
         # TODO: add to batbase
         self._value_fixers = dict(
             nom_cap_specifics=self._specific_fixer,
@@ -169,6 +172,36 @@ class BatBaseJSONReader(BaseJSONReader):
             instrument=lambda x: f"{instrument}" if instrument is not None else x,
         )
         self._pages_dict = {}
+
+    def _validate_batbase_format(self) -> None:
+        """Validate BatBase JSON has required columns and no null in required fields.
+
+        Raises:
+            ValueError: With a clear message if a required column is missing,
+                contains null, or the table has no rows.
+        """
+        import pandas as pd
+
+        raw = self.raw_pages_dict
+        for key in self._required_json_keys:
+            if key not in raw:
+                msg = f"BatBase JSON format error: missing required column '{key}'"
+                logger.error(msg)
+                raise ValueError(msg)
+        n = len(self.data)
+        if n == 0:
+            msg = "BatBase JSON format error: no rows in journal"
+            logger.error(msg)
+            raise ValueError(msg)
+        for key in self._required_json_keys:
+            for i, val in enumerate(raw[key]):
+                if pd.isna(val):
+                    msg = (
+                        f"BatBase JSON format error: required column '{key}' "
+                        f"contains null at row index {i}"
+                    )
+                    logger.error(msg)
+                    raise ValueError(msg)
 
     def _get_number_of_cells(self) -> int:
         return len(self.data)
@@ -256,7 +289,7 @@ class BatBaseJSONReader(BaseJSONReader):
 
         # fixing keys:
         for cellpy_key, json_key in self._key_translator.items():
-            if json_key is not None:
+            if json_key is not None and json_key in self.raw_pages_dict:
                 _pages_dict[hdr_journal[cellpy_key]] = self.raw_pages_dict[json_key]
                 unit = self._extract_unit_from_header(json_key)
             elif cellpy_key in ["raw_file_names", "cellpy_file_name"]:
@@ -271,8 +304,18 @@ class BatBaseJSONReader(BaseJSONReader):
                     fixer(x) for x in _pages_dict[hdr_journal[key]]
                 ]
 
+        # cell_type from Test Mode when present (new journal format)
+        if "Test Mode" in self.raw_pages_dict:
+            _pages_dict[hdr_journal["cell_type"]] = [
+                "anode" if x == "inverted (anode mode)" else "standard"
+                for x in self.raw_pages_dict["Test Mode"]
+            ]
+
         # extract nominal capacity unit and convert to cellpy units if available
-        if self._nominal_capacity_unit_key is not None:
+        if (
+            self._nominal_capacity_unit_key is not None
+            and self._nominal_capacity_unit_key in self.raw_pages_dict
+        ):
             info_list = self.raw_pages_dict[self._nominal_capacity_unit_key]
             nom_cap_values = _pages_dict[hdr_journal["nom_cap"]]
             new_nom_cap_values = []
@@ -291,6 +334,8 @@ class BatBaseJSONReader(BaseJSONReader):
                 for value in values:
                     if value is not None:
                         new_value = value * conversion_factor
+                    else:
+                        new_value = None
                     new_values.append(new_value)
                 _pages_dict[hdr_journal[cellpy_key]] = new_values
         return _pages_dict
