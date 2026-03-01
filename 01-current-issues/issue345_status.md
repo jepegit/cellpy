@@ -29,3 +29,5 @@
 
 - BatBaseJSONReader unchanged; no `from_batch` implementation.
 - CustomJSONReader maps JSON columns to journal keys via `column_map`; unmapped columns get None or empty lists. Use `db_reader="custom_json_reader"` with `db_file` and optional `column_map` when creating a batch from arbitrary JSON.
+
+- [x] Done
