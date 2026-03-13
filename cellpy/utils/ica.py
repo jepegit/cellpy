@@ -171,8 +171,8 @@ class Converter:
         self.number_of_points = len(capacity)
 
         if diff_est:
-            d_capacity = np.diff(capacity)
-            d_voltage = np.diff(voltage)
+            d_capacity = np.diff(np.asarray(capacity))
+            d_voltage = np.diff(np.asarray(voltage))
 
             self.d_capacity_mean = np.mean(d_capacity)
             self.d_voltage_mean = np.mean(d_voltage)
@@ -193,8 +193,8 @@ class Converter:
                     _cap = capacity
                     _vol = voltage
 
-                c_pieces = np.split(_cap, splits)
-                v_pieces = np.split(_vol, splits)
+                c_pieces = np.split(np.asarray(_cap), splits)
+                v_pieces = np.split(np.asarray(_vol), splits)
                 # c_middle = int(np.amax(c_pieces) / 2)
 
                 std_err = []
@@ -418,6 +418,7 @@ class Converter:
 
 def value_bounds(x):
     """Returns tuple with min and max in x."""
+    x = np.asarray(x)
     return np.amin(x), np.amax(x)
 
 

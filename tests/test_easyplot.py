@@ -88,7 +88,6 @@ def test_journal_saving_xlsx(parameters):
         journal_file_out_xlsx,
         to_project_folder=False,
         paginate=False,
-        duplicate_to_local_folder=False,
     )
 
 

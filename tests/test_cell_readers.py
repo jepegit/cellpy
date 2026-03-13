@@ -24,7 +24,7 @@ def test_create_cellpyfile(cellpy_data_instance, tmp_path, parameters):
     cellpy_data_instance.from_raw(parameters.res_file_path)
     print()
     print(cellpy_data_instance)
-    cellpy_data_instance.set_mass(1.0)
+    cellpy_data_instance.mass = 1.0
     cellpy_data_instance.make_summary(find_ir=True, find_end_voltage=True)
     name = pathlib.Path(tmp_path) / pathlib.Path(parameters.cellpy_file_path).name
     logging.info(f"trying to save the cellpy file to {name}")
@@ -528,7 +528,7 @@ def test_load_step_specs_short(
     cellpy_data_instance, cycle, step, expected_type, expected_info, parameters
 ):
     cellpy_data_instance.from_raw(parameters.res_file_path)
-    cellpy_data_instance.set_mass(1.0)
+    cellpy_data_instance.mass = 1.0
     file_name = parameters.short_step_table_file_path
     assert os.path.isfile(file_name)
     cellpy_data_instance.load_step_specifications(file_name, short=True)
@@ -674,7 +674,7 @@ def test_make_summary(cellpy_data_instance, parameters):
     cellpy_data_instance.mass = 1.0
     cellpy_data_instance.make_summary()
     s2 = cellpy_data_instance.data.summary
-    s3 = cellpy_data_instance.get_summary()
+    s3 = cellpy_data_instance.data.summary
     assert s2.columns.tolist() == s3.columns.tolist()
     assert s2.iloc[:, 3].size == 18
 
@@ -824,11 +824,11 @@ def test_select_without(rate_dataset):
 def test_summary_from_cellpyfile(parameters):
     c_cellpy = cellpy.get(testing=True)
     c_cellpy.load(parameters.cellpy_file_path)
-    s1 = c_cellpy.get_summary()
+    s1 = c_cellpy.data.summary
     mass = c_cellpy.get_mass()
-    c_cellpy.set_mass(mass)
+    c_cellpy.mass = mass
     c_cellpy.make_summary(find_ir=True, find_end_voltage=True)
-    s2 = c_cellpy.get_summary()
+    s2 = c_cellpy.data.summary
 
     # TODO: this might break when updating cellpy format (should probably remove it):
     # assert sorted(s1.columns.tolist()) == sorted(s2.columns.tolist())
@@ -961,7 +961,7 @@ def test_cellpyfile_roundtrip(tmp_path, parameters):
 
     # create a cellpy file from the res-file
     cdi.from_raw(parameters.res_file_path)
-    cdi.set_mass(1.0)
+    cdi.mass = 1.0
     cdi.make_summary(find_ir=True, find_end_voltage=True)
     cdi.save(cellpy_file_name)
 
@@ -1006,6 +1006,45 @@ def test_get_custom_default(parameters):
     val = summary.loc[2, s_headers.shifted_discharge_capacity]
     # TODO: this breaks (gives 711 instead of 593)
     # assert 593.031 == pytest.approx(val, 0.1)
+
+
+def test_interpolate_y_on_x_per_monotonic_segments_preserves_taper_steps():
+    """Interpolation with multiple steps (e.g. CC + taper) preserves segments (issue 307)."""
+    import pandas as pd
+
+    # CC-like segment (V increasing) then taper (V constant, capacity increasing)
+    df = pd.DataFrame({
+        "voltage": [3.0, 3.5, 4.0, 4.0, 4.0, 4.2],
+        "capacity": [0.0, 50.0, 100.0, 120.0, 140.0, 150.0],
+    })
+    out = cellpy.readers.core.interpolate_y_on_x_per_monotonic_segments(
+        df, x="voltage", y="capacity", number_of_points=5, direction=1
+    )
+    assert not out.empty
+    # Should have segment 1 (3.0-4.0) interpolated + segment 2 (constant 4.0) kept
+    assert out["voltage"].min() == 3.0
+    assert out["voltage"].max() == 4.2
+    # Constant-voltage segment should be present (4.0, 120-140)
+    at_4 = out[out["voltage"] == 4.0]
+    assert len(at_4) >= 2
+    assert out["capacity"].min() <= 0.0
+    assert out["capacity"].max() >= 150.0
+
+
+def test_interpolate_y_on_x_per_monotonic_segments_max_segments_fallback():
+    """When segment count exceeds max_segments, return df unchanged (avoid slow/noisy path)."""
+    import pandas as pd
+
+    # Noisy x: many small reversals -> many segments
+    df = pd.DataFrame({
+        "voltage": [3.0, 3.1, 3.05, 3.15, 3.1, 3.2] * 20,  # 120 points, many segments
+        "capacity": range(120),
+    })
+    out = cellpy.readers.core.interpolate_y_on_x_per_monotonic_segments(
+        df, x="voltage", y="capacity", number_of_points=5, direction=1, max_segments=10
+    )
+    # Should return unchanged (same length as input)
+    assert out is df or (out.shape == df.shape and (out.values == df.values).all())
 
 
 def test_group_by_interpolate(dataset):
@@ -1068,7 +1107,8 @@ def test_get_empty():
 
 @pytest.mark.parametrize("val,validated", [(2.3, None), (2.3, True)])
 def test_set_total_mass(dataset, val, validated):
-    dataset.set_tot_mass(val, validated=validated)
+    if validated is not False:
+        dataset.tot_mass = val
     assert dataset.data.tot_mass == 2.3
 
 
@@ -1081,7 +1121,8 @@ def test_set_total_mass(dataset, val, validated):
     ],
 )
 def test_set_nominal_capacity(dataset, val, validated):
-    dataset.set_nom_cap(val, validated=validated)
+    if validated is not False:
+        dataset.nom_cap = val
     assert dataset.data.nom_cap == 372.3
 
 

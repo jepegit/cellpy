@@ -157,6 +157,7 @@ def test_total_time_at_low_voltage_from_cellpy_cells(_c, request):
         "arbin_res_cell4",
     ],
 )
+@pytest.mark.filterwarnings("ignore:index is not unique for raw data:UserWarning")
 def test_total_time_at_low_voltage_from_raw(_c, request):
     c = request.getfixturevalue(_c)
     t = c.total_time_at_voltage_level()

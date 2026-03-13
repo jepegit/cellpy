@@ -1,4 +1,5 @@
 import ast
+import json
 import logging
 import os
 import pathlib
@@ -65,7 +66,7 @@ def populated_batch(batch_instance):
         "test", "ProjectOfRun", default_log_level="DEBUG", batch_col="b01", testing=True
     )
 
-    b.create_journal(duplicate_to_local_folder=False)
+    b.create_journal()
     b.paginate()
     b.update(testing=True)
     return b
@@ -98,7 +99,7 @@ def test_reading_db(batch_instance):
         "test", "ProjectOfRun", default_log_level="DEBUG", batch_col="b01", testing=True
     )
 
-    b.create_journal(duplicate_to_local_folder=False)
+    b.create_journal()
 
 
 def test_batbase_json_reader_pages_dict_shape():
@@ -120,6 +121,121 @@ def test_batbase_json_reader_pages_dict_shape():
     number_of_cells = len(reader.pages_dict[hdr_journal["filename"]])
     assert number_of_cells == 1
     assert reader.pages_dict[hdr_journal["filename"]][0] == "20160805_test001_45_cc"
+
+
+def test_batbase_json_reader_validation_missing_required_column(tmp_path):
+    """BatBaseJSONReader raises ValueError when a required column is missing."""
+    from cellpy.readers import json_dbreader
+
+    # Missing "Test Name" and "ID Key"
+    bad = {"Mass (mg)": [1], "Total Mass (mg)": [1]}
+    json_file = tmp_path / "bad.json"
+    json_file.write_text(json.dumps(bad))
+    with pytest.raises(ValueError) as exc_info:
+        json_dbreader.BatBaseJSONReader(json_file, store_raw_data=False)
+    assert "missing required column" in exc_info.value.args[0]
+    assert "Test Name" in exc_info.value.args[0]
+
+
+def test_batbase_json_reader_validation_no_rows(tmp_path):
+    """BatBaseJSONReader raises ValueError when the journal has no rows."""
+    from cellpy.readers import json_dbreader
+
+    empty = {"Test Name": [], "ID Key": []}
+    json_file = tmp_path / "empty.json"
+    json_file.write_text(json.dumps(empty))
+    with pytest.raises(ValueError) as exc_info:
+        json_dbreader.BatBaseJSONReader(json_file, store_raw_data=False)
+    assert "no rows" in exc_info.value.args[0]
+
+
+def test_batbase_json_reader_validation_null_in_required_column(tmp_path):
+    """BatBaseJSONReader raises ValueError when a required column contains null."""
+    from cellpy.readers import json_dbreader
+
+    bad = {
+        "Test Name": ["a", None],
+        "ID Key": [1, 2],
+        "Mass (mg)": [1, 1],
+        "Total Mass (mg)": [1, 1],
+    }
+    json_file = tmp_path / "bad.json"
+    json_file.write_text(json.dumps(bad))
+    with pytest.raises(ValueError) as exc_info:
+        json_dbreader.BatBaseJSONReader(json_file, store_raw_data=False)
+    assert "contains null" in exc_info.value.args[0]
+    assert "Test Name" in exc_info.value.args[0]
+    assert "row index 1" in exc_info.value.args[0]
+
+
+def test_batbase_json_reader_cell_type_from_test_mode_inverted(tmp_path):
+    """When Test Mode is 'inverted (anode mode)', cell_type is 'anode'."""
+    from cellpy.readers import json_dbreader
+
+    data = {
+        "Test Name": ["run1"],
+        "ID Key": [1],
+        "Mass (mg)": [1],
+        "Total Mass (mg)": [1],
+        "Loading (mg/cm2)": [1],
+        "Nominal Capacity": [2],
+        "Area (cm2)": [1],
+        "Cell Type": ["hc"],
+        "Test Mode": ["inverted (anode mode)"],
+        "Instrument": ["arbin_res"],
+        "Unit": ["mAh/g"],
+        "Group": [1],
+    }
+    json_file = tmp_path / "batbase.json"
+    json_file.write_text(json.dumps(data))
+    reader = json_dbreader.BatBaseJSONReader(json_file, store_raw_data=False)
+    assert reader.pages_dict[hdr_journal["cell_type"]] == ["anode"]
+
+
+def test_batbase_json_reader_cell_type_from_test_mode_standard(tmp_path):
+    """When Test Mode is not 'inverted (anode mode)', cell_type is 'standard'."""
+    from cellpy.readers import json_dbreader
+
+    data = {
+        "Test Name": ["run1"],
+        "ID Key": [1],
+        "Mass (mg)": [1],
+        "Total Mass (mg)": [1],
+        "Loading (mg/cm2)": [1],
+        "Nominal Capacity": [2],
+        "Area (cm2)": [1],
+        "Test Mode": ["standard"],
+        "Instrument": ["arbin_res"],
+        "Unit": ["mAh/g"],
+        "Group": [1],
+    }
+    json_file = tmp_path / "batbase.json"
+    json_file.write_text(json.dumps(data))
+    reader = json_dbreader.BatBaseJSONReader(json_file, store_raw_data=False)
+    assert reader.pages_dict[hdr_journal["cell_type"]] == ["standard"]
+
+
+def test_batbase_json_reader_cell_type_backward_compat_no_test_mode(tmp_path):
+    """Without Test Mode, cell_type comes from Cell Type (hci -> anode, else standard)."""
+    from cellpy.readers import json_dbreader
+
+    data = {
+        "Test Name": ["run1"],
+        "ID Key": [1],
+        "Mass (mg)": [1],
+        "Total Mass (mg)": [1],
+        "Loading (mg/cm2)": [1],
+        "Nominal Capacity": [2],
+        "Area (cm2)": [1],
+        "Cell Type": ["hci"],
+        "Instrument": ["arbin_res"],
+        "Unit": ["mAh/g"],
+        "Group": [1],
+    }
+    json_file = tmp_path / "batbase.json"
+    json_file.write_text(json.dumps(data))
+    reader = json_dbreader.BatBaseJSONReader(json_file, store_raw_data=False)
+    assert reader.pages_dict[hdr_journal["cell_type"]] == ["anode"]
 
 
 def test_reading_json_db(batch_instance, parameters):
@@ -251,7 +367,7 @@ def test_reading_cell_specs(batch_instance):
     b = batch_instance.init(
         "test", "ProjectOfRun", default_log_level="DEBUG", batch_col="b02", testing=True
     )
-    b.create_journal(duplicate_to_local_folder=False)
+    b.create_journal()
     hdr = hdr_journal["argument"]
     with_argument = b.pages.iloc[0][hdr]
     with_several_arguments = b.pages.iloc[1][hdr]
@@ -381,7 +497,7 @@ def test_load_save_journal_roundtrip_cell_specs(parameters, clean_dir, batch_ins
     b = batch_instance.from_journal(parameters.journal_file_json_path, testing=True)
     out = pathlib.Path(clean_dir) / "j.json"
     b.experiment.journal.to_file(
-        file_name=out, to_project_folder=False, duplicate_to_local_folder=False
+        file_name=out, to_project_folder=False
     )
     spec_1 = b.pages[hdr_journal["argument"]].iloc[0]
     assert spec_1 == "recalc=False"
@@ -601,7 +717,7 @@ def test_batch_update(parameters, batch_instance):
     b = batch_instance.init(
         "test", "ProjectOfRun", default_log_level="DEBUG", batch_col="b01", testing=True
     )
-    b.create_journal(duplicate_to_local_folder=False)
+    b.create_journal()
     b.paginate()
     b.update(testing=True)
 
