@@ -460,11 +460,11 @@ class AutoLoader(BaseLoader):
 
         if not hasattr(self, "supported_models"):
             raise AttributeError(
-                f"missing attribute in sub-class of AutoLoader: supported_models"
+                "missing attribute in sub-class of AutoLoader: supported_models"
             )
         if not hasattr(self, "default_model"):
             raise AttributeError(
-                f"missing attribute in sub-class of AutoLoader: default_model"
+                "missing attribute in sub-class of AutoLoader: default_model"
             )
 
         # in case model is given as argument
@@ -542,7 +542,7 @@ class AutoLoader(BaseLoader):
     @staticmethod
     def get_headers_aux(raw: pd.DataFrame) -> dict:
         raise NotImplementedError(
-            f"missing method in sub-class of TxtLoader: get_headers_aux"
+            "missing method in sub-class of TxtLoader: get_headers_aux"
         )
 
     def _pre_process(self):
@@ -617,14 +617,14 @@ class AutoLoader(BaseLoader):
     def validate(self, data: core.Data) -> core.Data:
         """Validation of the loaded data, should raise an appropriate exception if it fails."""
 
-        logging.debug(f"no validation of defined in this sub-class of TxtLoader")
+        logging.debug("no validation of defined in this sub-class of TxtLoader")
         return data
 
     def parse_meta(self) -> dict:
         """Method that parses the data for meta-data (e.g. start-time, channel number, ...)"""
 
         logging.debug(
-            f"no parsing method for meta-data defined in this sub-class of TxtLoader"
+            "no parsing method for meta-data defined in this sub-class of TxtLoader"
         )
         return dict()
 
