@@ -1,33 +1,16 @@
 import logging
+from datetime import datetime, timezone
+import pandas as pd
+import sys
+import pathlib
 
 from cellpy.readers.instruments.base import BaseLoader
-
+from cellpy import prms
+from cellpy.parameters.internal_settings import HeaderDict, get_headers_normal
+from cellpy.readers.core import Data
 
 """Neware NDA (or NDAX) data"""
 
-import datetime
-import logging
-import pathlib
-import sys
-import warnings
-
-import pandas as pd
-from dateutil.parser import parse
-
-from cellpy import prms
-from cellpy.exceptions import WrongFileVersion
-from cellpy.parameters.internal_settings import HeaderDict, get_headers_normal
-from cellpy.readers.core import Data, FileID
-from cellpy.readers.instruments.base import BaseLoader
-from pathlib import Path
-
-
-from cellpy.parameters.internal_settings import (
-    HeaderDict,
-    base_columns_float,
-    base_columns_int,
-    headers_normal,
-)
 
 
 # How can we propagate kwargs from cellpy.get to the loader?
@@ -48,21 +31,32 @@ from cellpy.parameters.internal_settings import (
 DEBUG_MODE = prms.Reader.diagnostics  # not used
 ALLOW_MULTI_TEST_FILE = prms._allow_multi_test_file  # not used
 DATE_TIME_FORMAT = prms._date_time_format  # not used
+USE_LOCAL_FASTNDA = prms._use_local_fastnda
+CUSTOM_AUX_MAPPING = {
+    102: "aux_102",
+    # 103: "temperature_degC",
+    103: "aux_103",
+    335: "temperature_setpoint_degC",
+    345: "humidity_%",
+    1122: "my_custom_channel",  # your addition
+}
 
 normal_headers_renaming_dict = {
     "test_id_txt": "Test_ID",
     "data_point_txt": "index",
-    "datetime_txt": "date_time",
+    "datetime_txt": "unix_time_s",
     "test_time_txt": "total_time_s",
     "step_time_txt": "step_time_s",
     "cycle_index_txt": "cycle_count",
-    "step_index_txt": "step_count",
+    "step_index_txt": "step_index",
     "current_txt": "current_mA",
     "voltage_txt": "voltage_V",
     "power_txt": "power_mW",
     "charge_capacity_txt": "charge_mAh",
+    # "charge_capacity_txt": "capacity_mAh",
     "discharge_capacity_txt": "discharge_mAh",
     "charge_energy_txt": "charge_mWh",
+    # "charge_energy_txt": "energy_mWh",
     "discharge_energy_txt": "discharge_mWh",
     "internal_resistance_txt": "internal_resistance_mOhm",
 }
@@ -79,6 +73,27 @@ def from_arbin_to_datetime(n):
     return time_in_str
 
 
+def unix_time_s_to_datetime(unix_time_s: float | pd.Series, utc: bool = True) -> datetime | pd.Series:
+    """Convert Unix time in seconds (e.g. Neware/fastnda unix_time_s) to datetime.
+
+    Args:
+        unix_time_s: Seconds since Unix epoch (scalar or pandas Series).
+        utc: If True, return timezone-aware UTC; if False, return naive local time.
+
+    Returns:
+        datetime (or Series of datetime) for the given Unix timestamp(s).
+    """
+    if isinstance(unix_time_s, pd.Series):
+        out = pd.to_datetime(unix_time_s.astype(float), unit="s")
+        if utc:
+            out = out.dt.tz_localize("UTC")
+        return out
+    t = float(unix_time_s)
+    if utc:
+        return datetime.fromtimestamp(t, tz=timezone.utc)
+    return datetime.fromtimestamp(t)
+
+
 class DataLoader(BaseLoader):
     """Class for loading data from Neware NDA files using the `fastnda` library."""
 
@@ -87,13 +102,6 @@ class DataLoader(BaseLoader):
 
     # override this if needed
     def __init__(self, *args, **kwargs):
-        try:
-            import fastnda as fnda
-        except ImportError:
-            raise ImportError(
-                "fastnda library is not installed. Please install it using pip or uv."
-            )
-
         self.fastnda_headers_normal = (
             self.get_headers_normal()
         )  # the column headers defined by fastnda
@@ -183,31 +191,28 @@ class DataLoader(BaseLoader):
         data.summary = (
             pd.DataFrame()
         )  # creating an empty frame - loading summary is not implemented yet
-        # data = self._post_process(data)
-        print(data.raw.head())
-        print(data.raw.tail())
+        data = self._post_process(data)
+        with pd.option_context("display.max_columns", None):
+            print(data.raw.head())
+            print(data.raw.tail())
         print(data.raw.columns)
-        print(data.raw.index)
-        print(data.raw.info())
-        print(data.raw.describe())
-        quit = input("Press q to quit...")
-        if quit.lower() == "q":
-            sys.exit()
+
         data = self.identify_last_data_point(data)
+        # sys.exit()
         return data
 
     def _post_process(self, data):
         set_index = False
         rename_headers = True
-        forward_fill_ir = False
-        backward_fill_ir = False
-        fix_datetime = False
-        set_dtypes = False
-        fix_duplicated_rows = False
-        recalc_capacity = False
+        split_capacity = True
+        set_dtypes = True
+        fix_duplicated_rows = True
 
         if fix_duplicated_rows:
             data.raw = data.raw.drop_duplicates()
+
+        if split_capacity:
+            print("splitting capacity is not implemented yet")
 
         if rename_headers:
             columns = {}
@@ -220,14 +225,6 @@ class DataLoader(BaseLoader):
             new_aux_headers = self.get_headers_aux(data.raw)
             data.raw.rename(index=str, columns=new_aux_headers, inplace=True)
 
-        if fix_datetime:
-            h_datetime = self.cellpy_headers_normal.datetime_txt
-            data.raw[h_datetime] = data.raw[h_datetime].apply(from_arbin_to_datetime)
-            if h_datetime in data.summary:
-                data.summary[h_datetime] = data.summary[h_datetime].apply(
-                    from_arbin_to_datetime
-                )
-
         if set_dtypes:
             logging.debug("setting data types")
             # test_time_txt = self.cellpy_headers_normal.test_time_txt
@@ -237,9 +234,10 @@ class DataLoader(BaseLoader):
             try:
                 # data.raw[test_time_txt] = pd.to_timedelta(data.raw[test_time_txt])  # cellpy is not ready for this
                 # data.raw[step_time_txt] = pd.to_timedelta(data.raw[step_time_txt])  # cellpy is not ready for this
-                data.raw[date_time_txt] = pd.to_datetime(
-                    data.raw[date_time_txt], format=DATE_TIME_FORMAT
+                data.raw[date_time_txt] = unix_time_s_to_datetime(
+                    data.raw[date_time_txt], utc=True
                 )
+
             except ValueError:
                 logging.debug("could not convert to datetime format")
 
@@ -250,21 +248,6 @@ class DataLoader(BaseLoader):
                     hdr_data_point, drop=False
                 )  # TODO: check if this is standard
 
-        if forward_fill_ir:
-            logging.debug("forward filling ir")
-            hdr_ir = self.cellpy_headers_normal.internal_resistance_txt
-            # data.raw[hdr_ir] = data.raw[hdr_ir].fillna(method="ffill")
-            data.raw[hdr_ir] = data.raw[hdr_ir].ffill()
-
-        if backward_fill_ir:
-            logging.debug("forward filling ir")
-            hdr_ir = self.cellpy_headers_normal.internal_resistance_txt
-            # data.raw[hdr_ir] = data.raw[hdr_ir].fillna(method="bfill")
-            data.raw[hdr_ir] = data.raw[hdr_ir].ffill()
-
-        if recalc_capacity:
-            print("Not implemented yet - do it yourself")
-            print("recalculating capacity: cap = current * time")
 
         hdr_date_time = self.cellpy_headers_normal.datetime_txt
         start = data.raw[hdr_date_time].iat[0]
@@ -274,21 +257,42 @@ class DataLoader(BaseLoader):
         return data
 
     def _run_fastnda(self, **kwargs):
-        import fastnda as fnda
+        if USE_LOCAL_FASTNDA:
+            from cellpy.libs import local_fastnda as fnda
+        else:
+            try:
+                if CUSTOM_AUX_MAPPING is not None:
+                    from types import MappingProxyType
+                    import fastnda.ndax as _ndax
+                    _ndax.AUX_CHL_MAP = MappingProxyType(CUSTOM_AUX_MAPPING)
+                import fastnda as fnda
+            except ImportError:
+                raise ImportError("fastnda is not installed. Please install it using `pip install fastnda`.")
 
         file_name = self.temp_file_path
         file_name = pathlib.Path(file_name)
 
         raw_data = fnda.read(file_name, **kwargs)
         raw_data = raw_data.to_pandas()
+        # save to local directory for debugging
+        local_dir = pathlib.Path(r"C:\scripting\cellpy\local")
+        raw_data.to_csv(local_dir / "raw_data.csv")
+
+        if not USE_LOCAL_FASTNDA:
+            raw_data = _process_fastnda_data(raw_data)
         return raw_data
+
+
+def _process_fastnda_data(raw_data):
+    print("PROCESSING FASTNDA DATA".center(100, "="))
+    return raw_data
 
 
 def _check_get():
     import cellpy
 
     name = r"C:\scripting\cellpy\testdata\data\20260302_IFE_BTS85_2_9_8_1.ndax"
-    c = cellpy.get(name, instrument="neware_nda")
+    c = cellpy.get(name, instrument="neware_nda", random_keyword="test-random-keyword")
     print(c)
 
 
