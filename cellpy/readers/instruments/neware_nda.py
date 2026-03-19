@@ -30,9 +30,20 @@ from cellpy.parameters.internal_settings import (
 )
 
 
+# How can we propagate kwargs from cellpy.get to the loader?
+
+
+
 # TODO: rename columns
 # TODO: check if data is loaded correctly
 # TODO: override fastnda (need to provide it with the correct aux dict) (monkey patch)
+
+
+""" Index(['index', 'voltage_V', 'current_mA', 'unix_time_s', 'step_time_s',
+       'total_time_s', 'cycle_count', 'step_count', 'step_index', 'step_type',
+       'capacity_mAh', 'energy_mWh', 'aux1_?', 'aux1_temperature_degC',
+       'aux1_?_right'],
+      dtype='str')"""
 
 DEBUG_MODE = prms.Reader.diagnostics  # not used
 ALLOW_MULTI_TEST_FILE = prms._allow_multi_test_file  # not used
@@ -40,21 +51,20 @@ DATE_TIME_FORMAT = prms._date_time_format  # not used
 
 normal_headers_renaming_dict = {
     "test_id_txt": "Test_ID",
-    "data_point_txt": "Data_Point",
-    "datetime_txt": "Date_Time",
-    "test_time_txt": "Test_Time",
-    "step_time_txt": "Step_Time",
-    "cycle_index_txt": "Cycle_Index",
-    "step_index_txt": "Step_Index",
-    "current_txt": "Current",
-    "voltage_txt": "Voltage",
-    "power_txt": "Power",
-    "charge_capacity_txt": "Charge_Capacity",
-    "discharge_capacity_txt": "Discharge_Capacity",
-    "charge_energy_txt": "Charge_Energy",
-    "discharge_energy_txt": "Discharge_Energy",
-    "internal_resistance_txt": "Internal_Resistance",
-    "ref_voltage_txt": "Aux_Voltage_1",
+    "data_point_txt": "index",
+    "datetime_txt": "date_time",
+    "test_time_txt": "total_time_s",
+    "step_time_txt": "step_time_s",
+    "cycle_index_txt": "cycle_count",
+    "step_index_txt": "step_count",
+    "current_txt": "current_mA",
+    "voltage_txt": "voltage_V",
+    "power_txt": "power_mW",
+    "charge_capacity_txt": "charge_mAh",
+    "discharge_capacity_txt": "discharge_mAh",
+    "charge_energy_txt": "charge_mWh",
+    "discharge_energy_txt": "discharge_mWh",
+    "internal_resistance_txt": "internal_resistance_mOhm",
 }
 
 
