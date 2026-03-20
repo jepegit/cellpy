@@ -1,10 +1,8 @@
 import logging
-import shutil
-import tempfile
 
 import pytest
 
-from cellpy import get, log, prms
+from cellpy import get, log
 
 log.setup_logging(default_level=logging.DEBUG, testing=True)
 
