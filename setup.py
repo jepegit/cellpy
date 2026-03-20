@@ -63,6 +63,11 @@ requirements = [
     "ipykernel",
     "rich",
     "charset-normalizer",
+    "polars",
+    "typer",
+    "xmltodict",
+    "defusedxml",
+    "isal",
 ]
 
 test_requirements = [

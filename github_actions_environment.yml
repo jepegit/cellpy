@@ -21,6 +21,7 @@ dependencies:
     - pint
     - pip
     - plotly
+    - polars
     - pyodbc
     - pytables
     - pytest
@@ -34,14 +35,18 @@ dependencies:
     - ruamel.yaml
     - scipy
     - setuptools
-    - sqlalchemy
     - tqdm
+    - sqlalchemy
     - xlrd
     - pip:
         - fastnda
         - pyarrow>=23
         - sqlalchemy-access
         - jinja2_time
+        - defusedxml
+        - isal
+        - typer
+        - xmltodict
 
 
 
