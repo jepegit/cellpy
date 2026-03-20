@@ -147,6 +147,10 @@ nw_file_path = os.path.join(raw_data_dir, nw_file_name)
 nw_cellpy_file_name = "neware_uio.h5"
 nw_cellpy_file_path = os.path.join(cellpy_data_dir, nw_cellpy_file_name)
 
+nw_nda_file_path = os.path.join(raw_data_dir, "20260302_IFE_BTS85_2_9_8_1.ndax")
+nw_nda_cellpy_file_name = "20260302_IFE_BTS85_2_9_8_1.h5"
+nw_nda_cellpy_file_path = os.path.join(cellpy_data_dir, nw_nda_cellpy_file_name)
+
 # -------- pec specific files -----------------------
 pec_file_name = "pec.csv"
 pec_file_path = os.path.join(raw_data_dir, pec_file_name)

@@ -1,7 +1,6 @@
 import logging
 from datetime import datetime, timezone
 import pandas as pd
-import sys
 import pathlib
 
 from cellpy.readers.instruments.base import BaseLoader
@@ -11,22 +10,6 @@ from cellpy.readers.core import Data
 
 """Neware NDA (or NDAX) data"""
 
-
-
-# How can we propagate kwargs from cellpy.get to the loader?
-
-
-
-# TODO: rename columns
-# TODO: check if data is loaded correctly
-# TODO: override fastnda (need to provide it with the correct aux dict) (monkey patch)
-
-
-""" Index(['index', 'voltage_V', 'current_mA', 'unix_time_s', 'step_time_s',
-       'total_time_s', 'cycle_count', 'step_count', 'step_index', 'step_type',
-       'capacity_mAh', 'energy_mWh', 'aux1_?', 'aux1_temperature_degC',
-       'aux1_?_right'],
-      dtype='str')"""
 
 DEBUG_MODE = prms.Reader.diagnostics  # not used
 ALLOW_MULTI_TEST_FILE = prms._allow_multi_test_file  # not used
@@ -41,37 +24,68 @@ CUSTOM_AUX_MAPPING = {
     1122: "my_custom_channel",  # your addition
 }
 
+
+CHARGE_DISCHARGE_CAP_COLUMNS: dict[str, str] = {"charge": "charge_capacity_mAh", "discharge": "discharge_capacity_mAh"}
+CHARGE_DISCHARGE_ENERGY_COLUMNS: dict[str, str] = {"charge": "charge_energy_mWh", "discharge": "discharge_energy_mWh"}
+CHARGE_DISCHARGE_POWER_COLUMNS: dict[str, str] = {"charge": "charge_power_mW", "discharge": "discharge_power_mW"}
+FASTNDA_CHARGE_COLUMN = "capacity_mAh"
+FASTNDA_ENERGY_COLUMN = "energy_mWh"
+FASTNDA_POWER_COLUMN = "power_mW"
+FASTNDA_CYCLE_COLUMN = "cycle_count"
+
+FASTNDA_CHARGE_ID = "_Chg"
+FASTNDA_DISCHARGE_ID = "_DChg"
+
 normal_headers_renaming_dict = {
     "test_id_txt": "Test_ID",
     "data_point_txt": "index",
     "datetime_txt": "unix_time_s",
     "test_time_txt": "total_time_s",
     "step_time_txt": "step_time_s",
-    "cycle_index_txt": "cycle_count",
+    "cycle_index_txt": FASTNDA_CYCLE_COLUMN,
     "step_index_txt": "step_index",
     "current_txt": "current_mA",
     "voltage_txt": "voltage_V",
-    "power_txt": "power_mW",
-    "charge_capacity_txt": "charge_mAh",
-    # "charge_capacity_txt": "capacity_mAh",
-    "discharge_capacity_txt": "discharge_mAh",
-    "charge_energy_txt": "charge_mWh",
-    # "charge_energy_txt": "energy_mWh",
-    "discharge_energy_txt": "discharge_mWh",
+    # "charge_power_txt": CHARGE_DISCHARGE_POWER_COLUMNS["charge"],  # not available yet
+    # "discharge_power_txt": CHARGE_DISCHARGE_POWER_COLUMNS["discharge"],  # not available yet
+    "charge_capacity_txt": CHARGE_DISCHARGE_CAP_COLUMNS["charge"],
+    "discharge_capacity_txt": CHARGE_DISCHARGE_CAP_COLUMNS["discharge"],
+    "charge_energy_txt": CHARGE_DISCHARGE_ENERGY_COLUMNS["charge"],
+    "discharge_energy_txt": CHARGE_DISCHARGE_ENERGY_COLUMNS["discharge"],
     "internal_resistance_txt": "internal_resistance_mOhm",
 }
 
 
-def from_arbin_to_datetime(n):
-    if isinstance(n, int):
-        n = str(n)
-    ms_component = n[-7:]
-    date_time_component = n[:-7]
-    temp = f"{date_time_component}.{ms_component}"
-    datetime_object = datetime.datetime.fromtimestamp(float(temp))
-    time_in_str = datetime_object.strftime(DATE_TIME_FORMAT)
-    return time_in_str
+def split_to_charge_discharge(
+    df, 
+    original_col=FASTNDA_CHARGE_COLUMN, 
+    new_cols=CHARGE_DISCHARGE_CAP_COLUMNS,
+    cycle_col=FASTNDA_CYCLE_COLUMN, fillna_zero=False
+):
+    """Create charge and discharge columns from the original capacity column.
+    
+    Args:
+        df: DataFrame containing the original data (with original column names).
+        original_col: The original column name containing the capacity data.
+        new_cols: A dictionary containing the new column names for charge and discharge.
+        cycle_col: The column name containing the cycle number.
+        fillna_zero: If True, fill NaN values with 0.0.
+    """
+    if original_col not in df.columns:
+        logging.debug(f"Original column {original_col} not found in dataframe")
+        return df
 
+    df.rename(columns={original_col: "_cap"}, inplace=True)
+    charge_rows = df.step_type.str.contains(FASTNDA_CHARGE_ID)
+    discharge_rows = df.step_type.str.contains(FASTNDA_DISCHARGE_ID)
+    df.loc[charge_rows, new_cols["charge"]] = df.loc[charge_rows, "_cap"]
+    df.loc[discharge_rows, new_cols["discharge"]] = -df.loc[discharge_rows, "_cap"]
+    df.rename(columns={"_cap": original_col}, inplace=True)
+    cols = [new_cols["charge"], new_cols["discharge"]]
+    df[cols] = df.groupby(cycle_col, sort=False)[cols].ffill()
+    if fillna_zero:
+        df[cols] = df[cols].fillna(0.0)
+    return df
 
 def unix_time_s_to_datetime(unix_time_s: float | pd.Series, utc: bool = True) -> datetime | pd.Series:
     """Convert Unix time in seconds (e.g. Neware/fastnda unix_time_s) to datetime.
@@ -274,9 +288,15 @@ class DataLoader(BaseLoader):
 
         raw_data = fnda.read(file_name, **kwargs)
         raw_data = raw_data.to_pandas()
+        print(raw_data.columns)
         # save to local directory for debugging
         local_dir = pathlib.Path(r"C:\scripting\cellpy\local")
+        raw_data = split_to_charge_discharge(raw_data, original_col=FASTNDA_CHARGE_COLUMN, new_cols=CHARGE_DISCHARGE_CAP_COLUMNS, cycle_col=FASTNDA_CYCLE_COLUMN, fillna_zero=True)
+        raw_data = split_to_charge_discharge(raw_data, original_col=FASTNDA_ENERGY_COLUMN, new_cols=CHARGE_DISCHARGE_ENERGY_COLUMNS, cycle_col=FASTNDA_CYCLE_COLUMN, fillna_zero=True)
+        raw_data = split_to_charge_discharge(raw_data, original_col=FASTNDA_POWER_COLUMN, new_cols=CHARGE_DISCHARGE_POWER_COLUMNS, cycle_col=FASTNDA_CYCLE_COLUMN, fillna_zero=True)
+            
         raw_data.to_csv(local_dir / "raw_data.csv")
+        print("Saved raw data to local directory for debugging")
 
         if not USE_LOCAL_FASTNDA:
             raw_data = _process_fastnda_data(raw_data)
@@ -284,13 +304,15 @@ class DataLoader(BaseLoader):
 
 
 def _process_fastnda_data(raw_data):
-    print("PROCESSING FASTNDA DATA".center(100, "="))
+    print("PROCESSING FASTNDA DATA FROM NON-LOCALFASTNDA LIBRARY".center(100, "="))
+    print(".... not needed yet (still in sync)?")
     return raw_data
 
 
 def _check_get():
     import cellpy
 
+    print("RUNNING _CHECK_GET".center(100, "="))
     name = r"C:\scripting\cellpy\testdata\data\20260302_IFE_BTS85_2_9_8_1.ndax"
     c = cellpy.get(name, instrument="neware_nda", random_keyword="test-random-keyword")
     print(c)
