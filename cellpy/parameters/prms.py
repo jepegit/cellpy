@@ -366,6 +366,8 @@ _url_example_data = f"https://raw.githubusercontent.com/{_github_repo_parent}/{_
 _url_example_data_download_with_progressbar = True
 _example_data_in_example_folder_if_available = True
 
+_use_local_fastnda = True
+
 _db_cols_unit = DbColsUnitClass()
 _debug = False
 _variable_that_is_not_saved_to_config = "Hei"

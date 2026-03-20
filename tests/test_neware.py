@@ -32,3 +32,14 @@ def test_get_neware_from_h5(neware_cell):
     assert len(neware_cell.data.summary) == 4
     t = neware_cell.total_time_at_voltage_level()
     print(f"total time at low voltage: {t} seconds")
+
+
+def test_get_neware_from_nda(parameters):
+    c = get(
+        filename=parameters.nw_nda_file_path,
+        instrument="neware_nda",
+        mass=2.08,
+        testing=True,
+    )
+    assert len(c.data.raw) == 252951
+    assert len(c.data.summary) == 1

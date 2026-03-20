@@ -165,7 +165,7 @@ def convert_date_time_to_datetime(data: Data, config_params: ModelParameters) ->
         data.raw[hdr_date_time] = pd.to_datetime(data.raw[hdr_date_time])
     except ValueError as e:
         warnings.warn(
-            f"Could not convert date_time to datetime. Will try mixed format (slow)."
+            "Could not convert date_time to datetime. Will try mixed format (slow)."
         )
         data.raw[hdr_date_time] = pd.to_datetime(
             data.raw[hdr_date_time], format="mixed"
