@@ -15,7 +15,7 @@ dependencies:
     - lmfit
     - matplotlib
     - nbmake
-    - numpy>=2
+    - numpy>=2.2.6
     - openpyxl
     - pandas<3
     - pint
@@ -38,6 +38,8 @@ dependencies:
     - tqdm
     - xlrd
     - pip:
+        - fastnda
+        - pyarrow>=23
         - sqlalchemy-access
         - jinja2_time
 

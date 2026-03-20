@@ -25,7 +25,7 @@ dependencies:
     - nbmake
     - nbsphinx
     - nox
-    - numpy >= 2.0
+    - numpy >= 2.2.6
     - openpyxl
     - pandas < 3
     - pandoc
@@ -57,6 +57,8 @@ dependencies:
     - xlrd
     - charset-normalizer
     - pip:
+        - fastnda
+        - pyarrow>=23
         - bump-my-version
         - isort
         - jinja2_time
