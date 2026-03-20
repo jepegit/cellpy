@@ -206,13 +206,7 @@ class DataLoader(BaseLoader):
             pd.DataFrame()
         )  # creating an empty frame - loading summary is not implemented yet
         data = self._post_process(data)
-        with pd.option_context("display.max_columns", None):
-            print(data.raw.head())
-            print(data.raw.tail())
-        print(data.raw.columns)
-
         data = self.identify_last_data_point(data)
-        # sys.exit()
         return data
 
     def _post_process(self, data):
@@ -226,7 +220,7 @@ class DataLoader(BaseLoader):
             data.raw = data.raw.drop_duplicates()
 
         if split_capacity:
-            print("splitting capacity is not implemented yet")
+            logging.debug("splitting capacity is not implemented yet")
 
         if rename_headers:
             columns = {}
@@ -288,15 +282,9 @@ class DataLoader(BaseLoader):
 
         raw_data = fnda.read(file_name, **kwargs)
         raw_data = raw_data.to_pandas()
-        print(raw_data.columns)
-        # save to local directory for debugging
-        local_dir = pathlib.Path(r"C:\scripting\cellpy\local")
         raw_data = split_to_charge_discharge(raw_data, original_col=FASTNDA_CHARGE_COLUMN, new_cols=CHARGE_DISCHARGE_CAP_COLUMNS, cycle_col=FASTNDA_CYCLE_COLUMN, fillna_zero=True)
         raw_data = split_to_charge_discharge(raw_data, original_col=FASTNDA_ENERGY_COLUMN, new_cols=CHARGE_DISCHARGE_ENERGY_COLUMNS, cycle_col=FASTNDA_CYCLE_COLUMN, fillna_zero=True)
         raw_data = split_to_charge_discharge(raw_data, original_col=FASTNDA_POWER_COLUMN, new_cols=CHARGE_DISCHARGE_POWER_COLUMNS, cycle_col=FASTNDA_CYCLE_COLUMN, fillna_zero=True)
-            
-        raw_data.to_csv(local_dir / "raw_data.csv")
-        print("Saved raw data to local directory for debugging")
 
         if not USE_LOCAL_FASTNDA:
             raw_data = _process_fastnda_data(raw_data)
