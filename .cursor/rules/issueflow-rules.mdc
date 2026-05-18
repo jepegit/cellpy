@@ -1,0 +1,135 @@
+---
+description: Issue-flow workflow rules for LLMs
+globs:
+alwaysApply: true
+---
+
+
+# Issue-flow best practices
+
+
+## Running python
+
+This is a python project. It uses a python environment (.venv) managed by uv.
+
+❌ BAD:
+```bash
+python run_script.py
+```
+
+✅ GOOD:
+```bash
+uv run run_script.py
+```
+
+### Package Management with `uv`
+
+**✅ Use `uv` exclusively**
+
+- All Python dependencies **must be installed, synchronized, and locked** using `uv`.
+- Never use `pip`, `pip-tools`, or `poetry` directly for dependency management.
+
+**🔁 Managing Dependencies**
+
+```bash
+# Add or upgrade dependencies
+uv add <package>
+
+# Remove dependencies
+uv remove <package>
+
+# Reinstall all dependencies from lock file
+uv sync
+```
+
+**🔁 Scripts**
+
+```bash
+# Run script with proper dependencies
+uv run script.py
+```
+
+
+## Issue tracking structure
+
+```bash
+cellpy/
+    .issueflows/
+        00-tools/
+        01-current-issues/
+            issueXX_original.md
+            issueXX_status.md
+        02-partly-solved-issues/
+        03-solved-issues/
+        04-designs-and-guides/
+    pyproject.toml
+    readme.md
+    ...
+```
+
+
+## Development information
+
+
+### Working on issues
+
+After each iteration, update the documents in `.issueflows/01-current-issues` (should contain one file labelled `_original` with the original issue description, a `_plan` file with the confirmed approach, and supplementary status files describing what has been done, current status, and remaining work).
+Use an explicit status checkbox in the status file:
+- `- [x] Done` when fully resolved
+- `- [ ] Done` when not fully resolved
+
+### Command lifecycle
+
+If you just want the next right step, run **`/iflow`** — it detects state (by file presence under `.issueflows/01-current-issues/` and the status-file `- [x] Done` marker) and dispatches to `/issue-init`, `/issue-plan`, `/issue-start`, or `/issue-close`. It never auto-dispatches to `/issue-pause`, `/issue-cleanup`, or `/issue-yolo` — those stay explicit.
+
+The full slash-command lifecycle is:
+
+1. **`/issue-init`** — capture the GitHub issue as `issue<N>_original.md`.
+2. **`/issue-plan`** — design the approach in `issue<N>_plan.md` and get explicit confirmation before any code changes.
+3. **`/issue-start`** — implement the confirmed plan. Asks to run `/issue-plan` first if the plan file is missing.
+4. **`/issue-pause`** *(optional)* — park work mid-stream: update status, move the issue group to `02-partly-solved-issues`, optional WIP commit.
+5. **`/issue-close`** — tests, optional `uv version --bump`, status update, commit, push, PR. Does not delete branches.
+6. **`/issue-cleanup`** — post-merge: switch to default, `git pull --ff-only`, `git fetch --prune`, `git branch -d` on merged local branches under a single consolidated confirm. Never `-D`.
+
+`/issue-yolo` chains `init → plan → start → close` for small, low-risk issues with up-front safeguards (clean tree, passing tests, single consolidated confirm).
+
+### When finishing an issue
+
+If the issue is fully resolved (no additional subtasks present), move the original, plan, and status markdown files to `.issueflows/03-solved-issues`. Else, move them to `.issueflows/02-partly-solved-issues`.
+
+### Scripts that can help us when working on issues
+
+If you want, you can put small scripts etc. that you have made and think could be useful in the future in our llm tools folder: `.issueflows/00-tools`. Also, feel free to use the tools in our llm tools folder if you find someone that could be useful.
+
+
+### Designs and guides
+
+Long-lived design docs, design decisions, and project "good practices" live under `.issueflows/04-designs-and-guides/`. Unlike the issue folders, content here is **not** tied to a single issue and is **not** archived when an issue closes — it is the project's durable memory.
+
+- **Before planning or implementing**, skim `.issueflows/04-designs-and-guides/` for existing docs relevant to the current issue and follow them (cite them in the plan when they influence the approach).
+- **When a non-trivial design decision is made** during `/issue-plan` or `/issue-start`, add or update a markdown file here. Keep entries terse: context, the decision, alternatives considered, and a link back to the issue.
+- **Never overwritten by `issue-flow update`.** The folder is recreated if missing, but existing files are left alone.
+
+
+### Branch hygiene
+
+- Do issue work on an **issue branch** named like `<N>-<short-slug>`, not on the default branch.
+- Before starting or continuing work on an issue branch, run `git fetch --prune` and check where the branch sits relative to `origin/<default>` (ahead/behind). A branch that is "several commits ahead" after a merged PR usually means the PR was squash-merged and the local branch is stale.
+- **Assume squash-merges on GitHub.** After a PR merges: run **`/issue-cleanup`** — it switches to the default branch, runs `git pull --ff-only`, `git fetch --prune`, and deletes merged local branches with `git branch -d <branch>` under a single consolidated confirm (never `-D` automatically). `/issue-close` no longer does this step itself.
+- If an issue is already archived under `.issueflows/02-partly-solved-issues` or `.issueflows/03-solved-issues`, the matching local branch is stale; don't resume work on it silently — switch back to the default branch and, if the issue really needs re-opening, do it deliberately through `/issue-init` (which will ask for a second confirmation).
+
+
+### Folder hygiene for `.issueflows/01-current-issues`
+
+- Only the **focus issue** (the one currently being worked on) should live in `.issueflows/01-current-issues`.
+- `/issue-init` and `/issue-start` both sweep that folder automatically: every `issue<n>_*` group **other than the focus issue** is moved to `.issueflows/03-solved-issues` if a status file contains `- [x] Done`, otherwise to `.issueflows/02-partly-solved-issues`. Keep status files accurate so the sweep routes them correctly.
+
+
+### Knowledge graph (optional, via [graphify](https://graphify.net))
+
+If a `graphify-out/` folder exists in the project root, the project has the optional [graphify](https://graphify.net) integration enabled and a knowledge graph is available alongside the source.
+
+- **Before grepping**, skim `graphify-out/GRAPH_REPORT.md`. It surfaces god-nodes (most-connected concepts), surprising cross-module connections, and suggested questions the graph can answer — often a faster way to locate the files an issue actually touches than full-text search.
+- **`/build`** (slash command) or **`issue-flow build`** (CLI) rebuild the graph. With no extra args this runs `graphify extract <project>` (full build). Pass a graphify build subcommand to pick a different action: `issue-flow build update` (fast incremental, no LLM), `issue-flow build watch` (live), `issue-flow build cluster-only --no-viz` (re-cluster only). Trailing flags pass through verbatim.
+- `/build` is **off-path**: never auto-dispatched by `/iflow`, `/issue-start`, or `/issue-close`. It is the user's call. `/issue-start` may *suggest* skimming `GRAPH_REPORT.md`; `/issue-close` may *suggest* a rebuild after large structural changes — neither runs `graphify` automatically.
+- If `graphify-out/` is not present, ignore graph-related guidance entirely. The integration is opt-in (install with `uv tool install graphifyy`, then `issue-flow update` to register the graphify Cursor skill).
