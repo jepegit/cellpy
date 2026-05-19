@@ -3830,6 +3830,52 @@ class CellpyCell:
                 last_cycle=last_cycle,
             )
 
+    def to_bdf(
+        self,
+        filename=None,
+        *,
+        cycles=None,
+        last_cycle=None,
+        header_style="preferred",
+        format="csv",
+    ):
+        """Export the raw time-series in Battery Data Format (BDF).
+
+        See `Battery Data Format <https://github.com/battery-data-alliance/battery-data-format>`_
+        for the full specification.
+
+        Args:
+            filename: Output path. If ``None`` or extensionless, a default
+                ``<cell_name>.bdf.<format>`` (or ``<filename>.bdf.<format>``)
+                is used. An explicit suffix is honoured as-is.
+            cycles: Optional cycle filter. ``None`` exports all cycles; an
+                ``int`` exports that single cycle; an iterable of ints
+                exports the listed cycles. Combines with ``last_cycle``.
+            last_cycle: If given, drop rows whose cycle index exceeds
+                ``last_cycle``.
+            header_style: ``"preferred"`` (default, BDF spec) writes
+                headers like ``"Test Time / s"``. ``"machine"`` writes
+                machine-readable names like ``"test_time_second"``.
+            format: ``"csv"`` (default) or ``"parquet"``.
+
+        Returns:
+            pathlib.Path: The path that the file was written to.
+
+        Raises:
+            ValueError: If the cell has no raw data, or any BDF-required
+                column is missing from ``data.raw``.
+        """
+        from cellpy.exporters import to_bdf as _to_bdf
+
+        return _to_bdf(
+            self,
+            filename,
+            cycles=cycles,
+            last_cycle=last_cycle,
+            header_style=header_style,
+            format=format,
+        )
+
     # --------------helper-functions--------------------------------------------
     def _fix_dtype_step_table(self, dataset):
         # used when saving to cellpy format
