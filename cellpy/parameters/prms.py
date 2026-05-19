@@ -319,6 +319,7 @@ class InstrumentsClass(CellPyConfig):
     Arbin: externals.box.Box
     Maccor: externals.box.Box
     Neware: externals.box.Box
+    Batmo: externals.box.Box
 
 
 # Pre-defined instruments:

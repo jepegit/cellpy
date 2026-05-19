@@ -57,7 +57,7 @@ post_processors = {
     "set_index": True,
     "rename_headers": True,
     "set_cycle_number_not_zero": False,
-    "convert_date_time_to_datetime": True,
-    "convert_step_time_to_timedelta": True,
-    "convert_test_time_to_timedelta": True,
+    "convert_date_time_to_datetime": False,
+    "convert_step_time_to_timedelta": False,
+    "convert_test_time_to_timedelta": False,
 }

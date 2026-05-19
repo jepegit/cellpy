@@ -12,7 +12,7 @@ from cellpy.parameters.internal_settings import (
 from cellpy.readers.instruments.base import TxtLoader
 
 SUPPORTED_MODELS = {
-    "bdf": "batmo_bdf_bdf",
+    "BDF": "batmo_bdf_bdf",
 }
 
 MUST_HAVE_RAW_COLUMNS = [
@@ -35,31 +35,43 @@ class DataLoader(TxtLoader):
     default_model = prms.Instruments.Batmo["default_model"]  # Required
     supported_models = SUPPORTED_MODELS  # Required
 
-    def pre_process(self, data):
-        """Pre-processes the data before formatting."""
-        # Convert time from hours to seconds
-        data.raw[headers_normal.test_time_txt] = data.raw[headers_normal.test_time_txt] * 3600.0
+    def _post_rename_headers(self, data):
+        """Normalize BatMo columns after they have been renamed to cellpy names."""
+        data.raw[headers_normal.data_point_txt] = range(1, len(data.raw) + 1)
 
-        # We must also make sure that the step indices are cumulated and do not reset on cycle boundaries
-        # Because we only have 'Step Type', we use the fact that cellpy's configurations will map
-        # 'Step Type' to step_index_txt, but it is currently mapped to text values like 'charge'.
-        # Actually, looking at the data, we do have a Step Index / 1 column. But wait...
-        # Let's see the header again: "Protocol Name / 1,Step Type / 1,Cycle Count / 1,Step Index / 1"
-        # Ah, Step Index is actually the 7th column, and looking at the output from `awk`, it seems Batmo
-        # actually DOES increase the Step Index. For Cycle 1 it goes 1, 2, 3, 4, 5. For cycle 2 it goes 1, 2, 3, 4, 5.
-        # Wait, that means it DOES reset per cycle!
-        # Cellpy expects the step_index_txt to strictly increase during the entire run. Let's fix that.
-        
+        test_time_col = headers_normal.test_time_txt
+        data.raw[test_time_col] = pd.to_numeric(
+            data.raw[test_time_col], errors="coerce"
+        )
+        data.raw[test_time_col] = data.raw[test_time_col] * 3600.0
+
+        state_col = "Step Type / 1"
+        current_col = headers_normal.current_txt
+        if state_col in data.raw.columns and current_col in data.raw.columns:
+            state = data.raw[state_col].astype(str).str.lower()
+            current = pd.to_numeric(data.raw[current_col], errors="coerce").abs()
+            data.raw[current_col] = current.where(~state.eq("discharge"), -current)
+            data.raw.loc[state.eq("rest"), current_col] = 0.0
+
         step_index_col = headers_normal.step_index_txt
         cycle_index_col = headers_normal.cycle_index_txt
-
         if step_index_col in data.raw.columns and cycle_index_col in data.raw.columns:
-            # We want to create a strictly increasing step index
-            # We can do this by finding where the step index or cycle index changes
-            # We just detect any change in the combination of cycle and original step index
-            group_col = data.raw[cycle_index_col].astype(str) + "_" + data.raw[step_index_col].astype(str)
-            # Create a cumulated step index based on changes in group_col
+            group_col = (
+                data.raw[cycle_index_col].astype(str)
+                + "_"
+                + data.raw[step_index_col].astype(str)
+            )
             data.raw[step_index_col] = (group_col != group_col.shift()).cumsum()
+
+        step_time_col = headers_normal.step_time_txt
+        data.raw[step_time_col] = data.raw[test_time_col] - data.raw.groupby(
+            step_index_col
+        )[test_time_col].transform("first")
+
+        datetime_col = headers_normal.datetime_txt
+        data.raw[datetime_col] = pd.Timestamp("1970-01-01") + pd.to_timedelta(
+            data.raw[test_time_col], unit="s"
+        )
 
         return data
 
