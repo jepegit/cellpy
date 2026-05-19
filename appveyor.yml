@@ -1,13 +1,12 @@
 build: false
 
+image: Visual Studio 2022
+
 environment:
-  MINICONDA: C:\Miniconda3
+  MINICONDA: C:\Miniconda3-x64
   PYTHON_ARC: "64"
   matrix:
-    - PYTHON_VERSION: 3.10
-    - PYTHON_VERSION: 3.11
-    - PYTHON_VERSION: 3.12
-    - PYTHON_VERSION: 3.13
+    - PYTHON_VERSION: "3.12"
 
 init:
   - "ECHO %PYTHON_VERSION% %MINICONDA% %PYTHON_ARC%"
