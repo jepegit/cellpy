@@ -2,6 +2,8 @@
 
 ## 1.0.3 (pre-release)
 
+* Exporters: New `CellpyCell.to_bdf(...)` exports raw time-series in [Battery Data Format](https://github.com/battery-data-alliance/battery-data-format) (CSV/Parquet) with optional cycle filtering, for use by UiA's dsToolbox and other BDF-aware tools (#356)
+* General: New `cellpy.exporters` and `cellpy.filters` packages; the `CellpyCell` class layer no longer imports from `cellpy.utils`
 * Batch: Batch plotting with multiple subfigures (#343, #344, #346)
 * Batch: JSON db reader from batbase (`batbase_json_reader`) - new database reader for JSON-based batch files
 * Batch: Improved batch load functionality

@@ -116,6 +116,14 @@ The cycle filter is also separately reusable:
 present in cellpy's `HeadersNormal`; if not derivable from existing
 columns, it is warn-and-skipped per Q5.
 
+Unit conversion is delegated to
+[`cellpy.readers.core.Q`](../../cellpy/readers/core.py) (pint), the same
+helper `CellpyCell` already uses for capacity / mass arithmetic. The
+exporter only declares each column's BDF target unit; pint computes the
+factor against `cellpy_units` at runtime, so non-default unit choices
+(e.g. `cellpy_units.current = "mA"`) are handled automatically without
+extending a hand-rolled table.
+
 ## Test strategy
 
 - New `tests/test_filters_cycles.py`:
@@ -140,4 +148,4 @@ columns, it is warn-and-skipped per Q5.
 
 ## Status
 
-- [ ] Done
+- [x] Done

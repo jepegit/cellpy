@@ -66,6 +66,22 @@ Defining points relevant to cellpy:
 | Q4 | Scope | n/a | raw time-series only; steps/summary/metadata/batch deferred |
 | Q5 | Missing columns | n/a | hard-fail on missing *required*, warn-and-skip recommended/optional |
 
+## Unit conversion
+
+All non-datetime unit conversions go through
+[`cellpy.readers.core.Q`](../../cellpy/readers/core.py) (the project-wide
+`pint` wrapper, also used by `CellpyCell` itself for capacity / mass /
+nominal-capacity arithmetic). The exporter does not maintain its own
+factor table - it just declares each column's BDF target unit
+(`"A"`, `"Ah"`, `"V"`, `"s"`, `"Wh"`, `"W"`, `"ohm"`) and lets pint
+compute the multiplier from the cell's current `CellpyUnits`. As a
+result, users who customise units (e.g. `cellpy_units.current = "mA"`,
+`cellpy_units.energy = "kWh"`) get the right numbers automatically.
+
+The `date_time` column is the one exception: pint does not handle wall
+clocks, so cellpy's pandas timestamps are converted to UTC Unix seconds
+explicitly.
+
 ## Column / unit map
 
 Source of truth: `_COLUMN_MAP` in

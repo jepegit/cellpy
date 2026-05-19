@@ -36,6 +36,7 @@ import pandas as pd
 
 from cellpy.filters import filter_cycles
 from cellpy.parameters.internal_settings import get_headers_normal
+from cellpy.readers import core
 
 if TYPE_CHECKING:
     from cellpy.readers.cellreader import CellpyCell
@@ -48,61 +49,68 @@ Tier = Literal["required", "recommended", "optional"]
 
 CyclesArg = Optional[Union[int, Iterable[int]]]
 
+DATETIME_KIND = "datetime"
+
 
 @dataclass(frozen=True)
 class _BdfColumn:
-    """One row of the cellpy <-> BDF column map."""
+    """One row of the cellpy <-> BDF column map.
+
+    ``unit_kind`` is the attribute name on :class:`cellpy.parameters.internal_settings.CellpyUnits`
+    that holds the source unit (e.g. ``"charge"`` -> ``cellpy_units.charge``).
+    ``bdf_unit`` is the BDF target unit symbol that ``pint`` understands
+    (e.g. ``"Ah"``). The special value :data:`DATETIME_KIND` for ``unit_kind``
+    skips pint and routes the column through Unix-seconds conversion.
+    Use ``None`` for both fields when no unit conversion is needed
+    (e.g. dimensionless cycle / step indices).
+    """
 
     cellpy_field: str
     preferred: str
     machine: str
     tier: Tier
     unit_kind: Optional[str] = None
+    bdf_unit: Optional[str] = None
 
 
 _COLUMN_MAP: tuple[_BdfColumn, ...] = (
-    _BdfColumn("test_time_txt", "Test Time / s", "test_time_second", "required", "time"),
-    _BdfColumn("voltage_txt", "Voltage / V", "voltage_volt", "required", "voltage"),
-    _BdfColumn("current_txt", "Current / A", "current_ampere", "required", "current"),
-    _BdfColumn("datetime_txt", "Unix Time / s", "unix_time_second", "recommended", "datetime"),
-    _BdfColumn("cycle_index_txt", "Cycle Count / 1", "cycle_count", "recommended", None),
-    _BdfColumn("step_index_txt", "Step Index / 1", "step_index", "optional", None),
-    _BdfColumn("charge_capacity_txt", "Charging Capacity / Ah", "charging_capacity_ah", "optional", "charge"),
-    _BdfColumn("discharge_capacity_txt", "Discharging Capacity / Ah", "discharging_capacity_ah", "optional", "charge"),
-    _BdfColumn("charge_energy_txt", "Charging Energy / Wh", "charging_energy_wh", "optional", "energy"),
-    _BdfColumn("discharge_energy_txt", "Discharging Energy / Wh", "discharging_energy_wh", "optional", "energy"),
-    _BdfColumn("power_txt", "Power / W", "power_watt", "optional", "power"),
-    _BdfColumn("internal_resistance_txt", "Internal Resistance / Ohm", "internal_resistance_ohm", "optional", "resistance"),
+    _BdfColumn("test_time_txt", "Test Time / s", "test_time_second", "required", "time", "s"),
+    _BdfColumn("voltage_txt", "Voltage / V", "voltage_volt", "required", "voltage", "V"),
+    _BdfColumn("current_txt", "Current / A", "current_ampere", "required", "current", "A"),
+    _BdfColumn("datetime_txt", "Unix Time / s", "unix_time_second", "recommended", DATETIME_KIND, None),
+    _BdfColumn("cycle_index_txt", "Cycle Count / 1", "cycle_count", "recommended"),
+    _BdfColumn("step_index_txt", "Step Index / 1", "step_index", "optional"),
+    _BdfColumn("charge_capacity_txt", "Charging Capacity / Ah", "charging_capacity_ah", "optional", "charge", "Ah"),
+    _BdfColumn("discharge_capacity_txt", "Discharging Capacity / Ah", "discharging_capacity_ah", "optional", "charge", "Ah"),
+    _BdfColumn("charge_energy_txt", "Charging Energy / Wh", "charging_energy_wh", "optional", "energy", "Wh"),
+    _BdfColumn("discharge_energy_txt", "Discharging Energy / Wh", "discharging_energy_wh", "optional", "energy", "Wh"),
+    _BdfColumn("power_txt", "Power / W", "power_watt", "optional", "power", "W"),
+    _BdfColumn("internal_resistance_txt", "Internal Resistance / Ohm", "internal_resistance_ohm", "optional", "resistance", "ohm"),
 )
 
 
-_UNIT_FACTORS: dict[str, dict[str, float]] = {
-    "current": {"A": 1.0, "mA": 1e-3},
-    "charge": {"Ah": 1.0, "mAh": 1e-3},
-    "energy": {"Wh": 1.0, "mWh": 1e-3, "kWh": 1e3},
-    "power": {"W": 1.0, "mW": 1e-3, "kW": 1e3},
-    "voltage": {"V": 1.0, "mV": 1e-3},
-    "time": {"s": 1.0, "sec": 1.0, "second": 1.0, "min": 60.0, "h": 3600.0, "hour": 3600.0},
-    "resistance": {"ohm": 1.0, "Ohm": 1.0, "mOhm": 1e-3, "mohm": 1e-3, "kOhm": 1e3, "kohm": 1e3},
-}
+def _conversion_factor(cellpy_unit: Optional[str], bdf_unit: Optional[str]) -> float:
+    """Return the multiplier that turns ``cellpy_unit`` into ``bdf_unit``.
 
-
-def _unit_factor(unit_kind: Optional[str], cellpy_unit: Optional[str]) -> float:
-    """Return the multiplier that converts ``cellpy_unit`` -> BDF unit."""
-    if unit_kind is None or cellpy_unit is None:
+    Delegates to :func:`cellpy.readers.core.Q` (pint) so that any unit
+    spelling pint understands works automatically (``"mAh" -> "Ah"``,
+    ``"sec" -> "s"``, ``"kWh" -> "Wh"``, ...). Returns ``1.0`` when no
+    conversion is needed or the symbols are equal.
+    """
+    if not cellpy_unit or not bdf_unit or cellpy_unit == bdf_unit:
         return 1.0
-    table = _UNIT_FACTORS.get(unit_kind)
-    if table is None:
-        return 1.0
-    factor = table.get(str(cellpy_unit))
-    if factor is None:
+    try:
+        ratio = core.Q(1.0, cellpy_unit) / core.Q(1.0, bdf_unit)
+        return float(ratio.to("dimensionless").magnitude)
+    except Exception as exc:  # noqa: BLE001 - pint raises a few different types
         logger.warning(
-            "BDF export: unknown %s unit %r; assuming identity factor (no conversion).",
-            unit_kind,
+            "BDF export: could not convert %r to %r via pint (%s); "
+            "leaving values unchanged.",
             cellpy_unit,
+            bdf_unit,
+            exc,
         )
         return 1.0
-    return factor
 
 
 def _datetime_to_unix_seconds(series: pd.Series) -> pd.Series:
@@ -216,11 +224,11 @@ def _build_bdf_frame(
 
         series = raw[src_col]
 
-        if spec.unit_kind == "datetime":
+        if spec.unit_kind == DATETIME_KIND:
             converted = _datetime_to_unix_seconds(series)
         else:
             cellpy_unit = getattr(cellpy_units, spec.unit_kind, None) if spec.unit_kind else None
-            factor = _unit_factor(spec.unit_kind, cellpy_unit)
+            factor = _conversion_factor(cellpy_unit, spec.bdf_unit)
             converted = series * factor if factor != 1.0 else series
 
         out_name = spec.preferred if header_style == "preferred" else spec.machine

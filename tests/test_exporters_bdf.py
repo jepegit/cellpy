@@ -50,7 +50,7 @@ def _make_synthetic_cell(*, with_capacity: bool = True, with_datetime: bool = Tr
             ]
         )
 
-    cell = cellreader.CellpyCell()
+    cell = cellreader.CellpyCell(initialize=True)
     cell.data.raw = raw
     cell.cell_name = "synthetic"
     return cell
@@ -87,6 +87,22 @@ def test_capacity_unit_mAh_to_Ah(tmp_path: Path) -> None:
 
     assert df["charging_capacity_ah"].max() == pytest.approx(0.1)
     assert df["discharging_capacity_ah"].max() == pytest.approx(0.1)
+
+
+def test_non_default_current_unit_uses_pint(tmp_path: Path) -> None:
+    """Override cellpy_units.current to mA and verify pint scales A->A correctly.
+
+    Locks in that unit conversion is delegated to cellpy.readers.core.Q
+    (pint) rather than a hand-rolled factor table.
+    """
+    cell = _make_synthetic_cell()
+    cell.cellpy_units.current = "mA"
+
+    out = cell.to_bdf(tmp_path / "out.bdf.csv", header_style="machine")
+    df = pd.read_csv(out)
+
+    assert df["current_ampere"].max() == pytest.approx(0.1 * 1e-3)
+    assert df["current_ampere"].min() == pytest.approx(-0.1 * 1e-3)
 
 
 def test_datetime_to_unix_seconds(tmp_path: Path) -> None:
@@ -163,7 +179,7 @@ def test_parquet_round_trip(tmp_path: Path) -> None:
 def test_empty_raw_raises(tmp_path: Path) -> None:
     from cellpy import cellreader
 
-    cell = cellreader.CellpyCell()
+    cell = cellreader.CellpyCell(initialize=True)
     cell.data.raw = pd.DataFrame()
 
     with pytest.raises(ValueError, match="empty"):
