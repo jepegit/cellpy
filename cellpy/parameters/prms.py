@@ -345,12 +345,16 @@ Maccor = externals.box.Box(_Maccor)
 _Neware = {"default_model": "one"}
 Neware = externals.box.Box(_Neware)
 
+_Batmo = {"default_model": "bdf"}
+Batmo = externals.box.Box(_Batmo)
+
 Instruments = InstrumentsClass(
     tester=None,  # TODO: moving this to DataSetClass (deprecate)
     custom_instrument_definitions_file=None,
     Arbin=Arbin,
     Maccor=Maccor,
     Neware=Neware,
+    Batmo=Batmo,
 )
 
 
