@@ -16,8 +16,8 @@ import pickle
 import sys
 import time
 import warnings
-from typing import Any, Tuple, Dict, List, Union, TypeVar, Optional
-from typing import TypedDict, List, Union, Any
+from typing import Any, Tuple, Dict, List, Union, Optional
+from typing import TypedDict
 
 from . import externals as externals
 
@@ -1625,15 +1625,6 @@ def _check_how_other_path_works():
         print(f"{p2._original=}")  # noqa
         print(f"{p2.full_path=}")
         print(f"{p2.parts=}")
-
-
-def _check_copy_external_file():
-    from cellpy import prms
-
-    prms.Paths.env_file = r"C:\scripting\cellpy\local\.env_cellpy"
-    dst = r"C:\scripting\cellpy\tmp\20210629_moz_cat_02_cc_01.res"
-    src = "ssh://jepe@not.in.no/home/jepe@ad.ife.no/Temp/20210629_moz_cat_02_cc_01.res"
-    copy_external_file(src, dst)
 
 
 if __name__ == "__main__":

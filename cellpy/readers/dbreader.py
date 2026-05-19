@@ -1,10 +1,6 @@
-import abc
 import logging
 import os
-import pathlib
 import re
-import tempfile
-import time
 import warnings
 from dataclasses import asdict
 from datetime import datetime
@@ -504,7 +500,7 @@ class Reader(core.BaseSimpleDbReader):
         try:
             argument = self._parse_argument_str(argument_str)
         except Exception as e:
-            logging.warning(f"could not parse argument str:")
+            logging.warning("could not parse argument str:")
             logging.warning(f"{argument_str}")
             logging.warning(f"Error message: {e}")
             return {}
