@@ -64,6 +64,7 @@ requirements = [
     "rich",
     "charset-normalizer",
     "polars",
+    "pyarrow>=16",
     "typer",
     "xmltodict",
     "defusedxml",
