@@ -1,6 +1,6 @@
 # Status for issue #360: CI pipeline problems
 
-- [ ] Done
+- [x] Done
 
 ## What landed
 

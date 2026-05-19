@@ -27,6 +27,7 @@
 * Bug fixes: Fixed bug in summary collector (concat summaries) that mutated list of selected columns
 * Bug fixes: Fixed bug in OtherPathsNew
 * Bug fixes: Various other bug fixes and improvements
+* CI: Fix failing CI pipelines (pyarrow runtime dep + AppVeyor 64-bit Miniconda) (#360)
 
 ## 1.0.2
 
