@@ -576,7 +576,21 @@ class CellpyCell:
             c1, c2 = self.split_many(base_cycles=cycle)
             return c2
 
-    def drop_edges(self, start, end):
+    def from_cycle(self, cycle: int) -> "CellpyCell":
+        """Select experiment (CellpyCell object) from cycle number 'cycle'"""
+        if isinstance(cycle, int):
+            return self.split_many(base_cycles=cycle)[1]
+        else:
+            raise ValueError("cycle must be an integer")
+
+    def to_cycle(self, cycle: int) -> "CellpyCell":
+        """Select experiment (CellpyCell object) to cycle number 'cycle'"""
+        if isinstance(cycle, int):
+            return self.split_many(base_cycles=cycle+1)[0]
+        else:
+            raise ValueError("cycle must be an integer")
+
+    def drop_edges(self, start: int, end: int) -> "CellpyCell":
         """Select middle part of experiment (CellpyCell object) from cycle
         number 'start' to 'end'"""
 
@@ -586,7 +600,7 @@ class CellpyCell:
             raise ValueError("end cannot be the same as start")
         return self.split_many([start, end])[1]
 
-    def split_many(self, base_cycles=None):
+    def split_many(self, base_cycles: Optional[Union[int, List[int]]] = None) -> List["CellpyCell"]:
         """Split experiment (CellpyCell object) into several sub-experiments.
 
         Args:
@@ -650,6 +664,49 @@ class CellpyCell:
 
         cells.append(old_cell)
         return cells
+
+    def with_cycles(self, cycles: Union[int, List[int]]) -> "CellpyCell":
+        """Select a subset of cycles from the experiment (CellpyCell object).
+
+        This method should only be used for quick selection of cycles (e.g. for plotting).
+
+        Args:
+            cycles (int or iterable of ints): cycle number(s) to keep.
+
+        Returns:
+            A new CellpyCell object containing only the selected cycles.
+
+        """
+        h_summary_index = HEADERS_SUMMARY.cycle_index
+        h_raw_index = HEADERS_NORMAL.cycle_index_txt
+        h_step_cycle = HEADERS_STEP_TABLE.cycle
+
+        if isinstance(cycles, int):
+            cycles = [cycles]
+        cycles = list(cycles)
+
+        dataset = self.data
+        steptable = dataset.steps
+        data = dataset.raw
+        summary = dataset.summary
+
+        # In case Cycle_Index has been promoted to index [#index]
+        if h_summary_index not in summary.columns:
+            summary = summary.reset_index(drop=False)
+
+        new_steptable = steptable[steptable[h_step_cycle].isin(cycles)]
+        new_data = data[data[h_raw_index].isin(cycles)]
+        new_summary = summary[summary[h_summary_index].isin(cycles)]
+
+        new_summary = new_summary.set_index(h_summary_index)
+
+        new_cell = CellpyCell.vacant(cell=self)
+        new_cell.data.steps = new_steptable
+        new_cell.data.raw = new_data
+        new_cell.data.summary = new_summary
+        new_cell.data = core.identify_last_data_point(new_cell.data)
+
+        return new_cell
 
     # ------------------- SPLITTING AND DROPPING FINISHED -----------
 
