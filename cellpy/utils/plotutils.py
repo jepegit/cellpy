@@ -613,6 +613,33 @@ def _get_capacity_unit(c, mode="gravimetric", seperator="/"):
     return specific_selector.get(mode, "-")
 
 
+# Per-row y-axis labels for predefined ``y`` sets that route a different
+# quantity onto row 0 (efficiency plots, *_with_rate plots). The "_plotly"
+# and "_seaborn" variants differ only in the line-break character (HTML
+# ``<br>`` vs ``\n``) so each builder gets a string it can render natively.
+def _plotly_top_row_label(y: str) -> Optional[str]:
+    if y.endswith("_efficiency"):
+        return "Coulombic Efficiency"
+    if y.endswith("_with_rate"):
+        return "C-rate (1/h)"
+    return None
+
+
+def _seaborn_top_row_label(y: str) -> Optional[str]:
+    if y.endswith("_efficiency"):
+        return "Coulombic\nEfficiency (%)"
+    if y.endswith("_with_rate"):
+        return "C-rate\n(1/h)"
+    return None
+
+
+def _has_special_top_row(y: str) -> bool:
+    """True for y-sets whose row 0 holds a different quantity than the
+    other rows (so plotters should disable shared y-axis and pick a
+    per-row y-label)."""
+    return y.endswith("_efficiency") or y.endswith("_with_rate")
+
+
 # TODO: consistent parameter names (e.g. y_range vs ylim) between summary_plot, plot_cycles, raw_plot, cycle_info_plot and batchutils
 # TODO: consistent function names (raw_plot vs plot_raw etc)
 
@@ -1841,10 +1868,11 @@ class PlotlyPlotBuilder:
         """Configure 2-row plot with formation cycles."""
         fig.update_yaxes(matches="y")
         fig.update_yaxes(autorange=False)
-        if y.endswith("_efficiency"):
+        _top_label = _plotly_top_row_label(y)
+        if _top_label is not None:
             fig.update_layout(
                 yaxis3={
-                    "title": dict(text="Coulombic Efficiency"),
+                    "title": dict(text=_top_label),
                     "domain": [0.7, 1.0],
                 },
                 yaxis1=dict(domain=[0.0, 0.65]),
@@ -2171,11 +2199,12 @@ class PlotlyPlotBuilder:
         """Configure axes when not showing formation cycles."""
         eff_lim = config.ce_range
 
-        if y.endswith("_efficiency"):
+        _top_label = _plotly_top_row_label(y)
+        if _top_label is not None:
             fig.update_layout(
                 yaxis=dict(domain=[0.0, 0.65]),
                 yaxis2={
-                    "title": dict(text="Coulombic Efficiency"),
+                    "title": dict(text=_top_label),
                     "domain": [0.7, 1.0],
                 },
             )
@@ -2446,17 +2475,18 @@ class SeabornPlotBuilder:
             c,
         )
 
-        # Configure facet_kws based on plot type
+        # Configure facet_kws based on plot type. ``_efficiency`` and
+        # ``_with_rate`` share the same row-0-is-different layout:
+        # disable shared y-axis and give the top row a smaller height.
         is_efficiency_plot = y.endswith("_efficiency")
-        if is_efficiency_plot:
+        is_special_top_row = _has_special_top_row(y)
+        if is_special_top_row:
             facet_kws["sharey"] = False
-            # Only set height_ratios if we have exactly 2 rows
-            # (efficiency plots split into efficiency row and capacity row)
             if number_of_rows == 2:
                 gridspec_kws["height_ratios"] = [1, 4]
             else:
                 logging.debug(
-                    f"Efficiency plot with {number_of_rows} rows - not setting height_ratios"
+                    f"Special-top-row plot with {number_of_rows} rows - not setting height_ratios"
                 )
 
         facet_kws["gridspec_kws"] = gridspec_kws
@@ -2643,7 +2673,13 @@ class SeabornPlotBuilder:
         else:
             info_dicts.extend(
                 self._build_standard_info_dicts(
-                    config, number_of_rows, x_range, y_range, xlim_formation, y_label
+                    config,
+                    number_of_rows,
+                    x_range,
+                    y_range,
+                    xlim_formation,
+                    y_label,
+                    top_row_ylabel=_seaborn_top_row_label(y),
                 )
             )
 
@@ -2971,19 +3007,30 @@ class SeabornPlotBuilder:
         y_range: list,
         xlim_formation: tuple,
         y_label: str,
+        top_row_ylabel: Optional[str] = None,
     ) -> list:
-        """Build info dicts for standard plots."""
+        """Build info dicts for standard plots.
+
+        ``top_row_ylabel`` (when given) overrides the y-axis label on row
+        0 only; remaining rows keep ``y_label``. Used by ``*_with_rate``
+        y-sets so the rate row shows "C-rate (1/h)" instead of the
+        capacity label.
+        """
         info_dicts = []
         is_multi_row = number_of_rows > 1
 
         if is_multi_row:
             for i in range(number_of_rows):
+                row_label = (
+                    top_row_ylabel if (i == 0 and top_row_ylabel) else y_label
+                )
+                row_ylim = None if (i == 0 and top_row_ylabel) else y_range
                 info_dicts.append(
                     dict(
-                        ylabel=y_label,
+                        ylabel=row_label,
                         title="",
                         xlim=x_range,
-                        ylim=y_range,
+                        ylim=row_ylim,
                         row=i,
                         col=None,
                         yticks=None,
@@ -2993,10 +3040,10 @@ class SeabornPlotBuilder:
                 if config.show_formation:
                     info_dicts.append(
                         dict(
-                            ylabel=y_label,
+                            ylabel=row_label,
                             title="",
                             xlim=xlim_formation,
-                            ylim=y_range,
+                            ylim=row_ylim,
                             row=i,
                             col="formation",
                             yticks=None,
