@@ -2,6 +2,7 @@
 
 ## 1.0.3 (pre-release)
 
+* Filters: add filtering possibility to plotters in plotutils (#363)
 * Exporters: New `CellpyCell.to_bdf(...)` exports raw time-series in [Battery Data Format](https://github.com/battery-data-alliance/battery-data-format) (CSV/Parquet) with optional cycle filtering, for use by UiA's dsToolbox and other BDF-aware tools (#356)
 * General: New `cellpy.exporters` and `cellpy.filters` packages; the `CellpyCell` class layer no longer imports from `cellpy.utils`
 * Batch: Batch plotting with multiple subfigures (#343, #344, #346)

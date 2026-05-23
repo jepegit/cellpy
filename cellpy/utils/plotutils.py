@@ -13,7 +13,7 @@ import os
 import pickle as pkl
 import pprint
 import sys
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Optional, Union
 import warnings
 from io import StringIO
 from pathlib import Path
@@ -678,6 +678,11 @@ class SummaryPlotConfig:
     # Seaborn hooks
     seaborn_line_hooks: Optional[list[tuple[str, list, dict]]] = None
 
+    # Summary filtering / rate handling (issue #363)
+    filters: Optional[dict] = None
+    nominal_capacity: Optional[float] = None
+    rate_filter_columns: Optional[Union[str, tuple, list]] = None
+
     # Additional kwargs (stored as dict)
     additional_kwargs: dict = dataclasses.field(default_factory=dict)
 
@@ -802,6 +807,9 @@ class SummaryPlotInfo:
             "capacities_gravimetric_coulombic_efficiency": _cap_gravimetric_label,
             "capacities_areal_coulombic_efficiency": _cap_areal_label,
             "capacities_absolute_coulombic_efficiency": _cap_absolute_label,
+            "capacities_gravimetric_with_rate": _cap_gravimetric_label,
+            "capacities_areal_with_rate": _cap_areal_label,
+            "capacities_absolute_with_rate": _cap_absolute_label,
             "fullcell_standard_gravimetric": _cap_gravimetric_label,
             "fullcell_standard_areal": _cap_areal_label,
             "fullcell_standard_absolute": _cap_absolute_label,
@@ -955,6 +963,12 @@ class SummaryPlotInfo:
             + [hdr.coulombic_efficiency],
             capacities_absolute_coulombic_efficiency=_capacities_absolute
             + [hdr.coulombic_efficiency],
+            capacities_gravimetric_with_rate=_capacities_gravimetric
+            + [hdr.charge_c_rate, hdr.discharge_c_rate],
+            capacities_areal_with_rate=_capacities_areal
+            + [hdr.charge_c_rate, hdr.discharge_c_rate],
+            capacities_absolute_with_rate=_capacities_absolute
+            + [hdr.charge_c_rate, hdr.discharge_c_rate],
             fullcell_standard_cumloss_gravimetric=[
                 hdr.charge_capacity + "_gravimetric" + "_cv",
                 hdr.cumulated_discharge_capacity_loss + "_gravimetric",
@@ -1165,7 +1179,7 @@ class SummaryPlotDataPreparer:
         number_of_rows = 4
         column_set = y_cols.get(y, y)
 
-        summary = c.data.summary.copy()
+        summary = self._preprocess_summary(c, c.data.summary, config)
         if summary.index.name == x:
             summary = summary.reset_index(drop=False)
 
@@ -1248,7 +1262,7 @@ class SummaryPlotDataPreparer:
         if isinstance(column_set, str):
             column_set = [column_set]
 
-        summary = c.data.summary
+        summary = self._preprocess_summary(c, c.data.summary, config)
         summary = summary.reset_index()
 
         # Check if requested columns exist in summary
@@ -1292,6 +1306,12 @@ class SummaryPlotDataPreparer:
             if y.endswith("_efficiency"):
                 s[self.row] = 1
                 s.loc[s["variable"].str.contains("efficiency"), self.row] = 0
+                number_of_rows = 2
+            elif y.endswith("_with_rate"):
+                hdr = c.headers_summary
+                rate_cols = {hdr.charge_c_rate, hdr.discharge_c_rate}
+                s[self.row] = 1
+                s.loc[s["variable"].isin(rate_cols), self.row] = 0
                 number_of_rows = 2
 
         return s, number_of_rows
@@ -1384,6 +1404,77 @@ class SummaryPlotDataPreparer:
             s[col_id] = "standard"
             s.loc[formation_cycle_selector, col_id] = "formation"
         return formation_cycle_selector
+
+    @staticmethod
+    def _preprocess_summary(c: Any, summary: pd.DataFrame, config) -> pd.DataFrame:
+        """Apply optional rate-rescaling and row filtering to a summary copy.
+
+        Two opt-in steps, both no-ops when their config field is ``None``:
+
+        * ``config.nominal_capacity`` rescales the existing
+          ``charge_c_rate`` / ``discharge_c_rate`` columns to use a new
+          nominal capacity instead of the one set on the cell. The
+          rescale factor is ``c.data.nom_cap / nominal_capacity``: since
+          ``rate = current / nom_cap``, the rate columns are multiplied
+          by ``old_nom_cap / new_nom_cap``.
+        * ``config.filters`` is forwarded to
+          :func:`cellpy.filters.filter_summary`. The default
+          ``rate_filter_columns`` resolves to both rate columns from
+          ``c.headers_summary`` (charge AND discharge).
+
+        Operates on a copy; the caller's ``summary`` argument is not
+        mutated.
+        """
+        out = summary.copy() if summary is not None else summary
+
+        if config.nominal_capacity is not None:
+            hdr = c.headers_summary
+            old_nom_cap = getattr(c.data, "nom_cap", None)
+            if old_nom_cap in (None, 0):
+                logging.warning(
+                    "summary_plot: nominal_capacity override requested but "
+                    "cell.data.nom_cap is %r; skipping rate rescale.",
+                    old_nom_cap,
+                )
+            else:
+                scale = float(old_nom_cap) / float(config.nominal_capacity)
+                for col in (hdr.charge_c_rate, hdr.discharge_c_rate):
+                    if col in out.columns:
+                        out[col] = out[col] * scale
+                logging.debug(
+                    "summary_plot: rescaled rate columns by %.6g "
+                    "(old nom_cap=%s, new=%s)",
+                    scale,
+                    old_nom_cap,
+                    config.nominal_capacity,
+                )
+
+        if config.filters:
+            from cellpy.filters import filter_summary
+
+            hdr = c.headers_summary
+            filter_kwargs = dict(config.filters)
+            if (
+                "rate" in filter_kwargs
+                and "rate_columns" not in filter_kwargs
+            ):
+                if config.rate_filter_columns is not None:
+                    filter_kwargs["rate_columns"] = config.rate_filter_columns
+                else:
+                    filter_kwargs["rate_columns"] = (
+                        hdr.charge_c_rate,
+                        hdr.discharge_c_rate,
+                    )
+            before = len(out)
+            out = filter_summary(out, **filter_kwargs)
+            logging.debug(
+                "summary_plot: filters %s reduced rows %d -> %d",
+                filter_kwargs,
+                before,
+                len(out),
+            )
+
+        return out
 
 
 class PlotlyPlotBuilder:
@@ -4494,6 +4585,9 @@ def summary_plot(
     fullcell_standard_normalization_scaler: float = 1.0,
     fullcell_standard_normalization_cycle_numbers: Optional[list[int]] = None,
     seaborn_line_hooks: Optional[list[tuple[str, list, dict]]] = None,
+    filters: Optional[dict] = None,
+    nominal_capacity: Optional[float] = None,
+    rate_filter_columns: Optional[Union[str, tuple, list]] = None,
     **kwargs,
 ) -> Any:
     """Create a summary plot.
@@ -4509,6 +4603,8 @@ def summary_plot(
             "capacities_gravimetric_split_constant_voltage", "capacities_areal_split_constant_voltage",
             "capacities_gravimetric_coulombic_efficiency", "capacities_areal_coulombic_efficiency",
             "capacities_absolute_coulombic_efficiency",
+            "capacities_gravimetric_with_rate", "capacities_areal_with_rate",
+            "capacities_absolute_with_rate",
             "fullcell_standard_gravimetric", "fullcell_standard_areal", "fullcell_standard_absolute",
         height: height of the plot (for plotly)
         width: width of the plot (for plotly)
@@ -4542,6 +4638,21 @@ def summary_plot(
         fullcell_standard_normalization_scaler: scaler for the fullcell standard plots
         fullcell_standard_normalization_cycle_numbers: cycle numbers to use for normalization (only for fullcell_standard plots)
         seaborn_line_hooks: list of functions to hook into the seaborn lines (e.g. to update the marker_size)
+        filters: optional dict forwarded to
+            :func:`cellpy.filters.filter_summary` to drop rows from the
+            summary before plotting (e.g. ``filters={"rate": (0, 0.5)}``
+            drops slow-rate characterisation cycles). See
+            :func:`cellpy.filters.filter_summary` for range semantics.
+        nominal_capacity: optional plain float in
+            ``c.cellpy_units.nominal_capacity`` units. When given, the
+            ``charge_c_rate`` / ``discharge_c_rate`` columns are
+            rescaled to use this nominal capacity instead of
+            ``c.data.nom_cap`` (multiplies rates by
+            ``c.data.nom_cap / nominal_capacity``).
+        rate_filter_columns: optional override for which rate column(s)
+            the ``rate`` filter targets. Defaults to both
+            ``(charge_c_rate, discharge_c_rate)``; pass a single string
+            (e.g. ``"discharge_c_rate"``) to filter only one side.
         **kwargs: includes additional parameters for the plotting backend (not properly documented yet).
 
     Returns:
@@ -4584,6 +4695,9 @@ def summary_plot(
         fullcell_standard_normalization_scaler=fullcell_standard_normalization_scaler,
         fullcell_standard_normalization_cycle_numbers=fullcell_standard_normalization_cycle_numbers,
         seaborn_line_hooks=seaborn_line_hooks,
+        filters=filters,
+        nominal_capacity=nominal_capacity,
+        rate_filter_columns=rate_filter_columns,
         **kwargs,
     )
 
