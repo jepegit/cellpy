@@ -65,6 +65,7 @@ Defining points relevant to cellpy:
 | Q3 | Default extension | inferred from `filename` and `format` | `.bdf.csv` when no suffix is given |
 | Q4 | Scope | n/a | raw time-series only; steps/summary/metadata/batch deferred |
 | Q5 | Missing columns | n/a | hard-fail on missing *required*, warn-and-skip recommended/optional |
+| Q6 | Non-BDF columns | `extras` | `False` (strict BDF). `True` appends all unmapped raw columns verbatim; iterable/str selects a subset. No unit conversion or renaming on extras; the resulting file is not strictly BDF-compliant. |
 
 ## Unit conversion
 

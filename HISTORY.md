@@ -5,6 +5,7 @@
 * Filters: add filtering possibility to plotters in plotutils (#363)
 * Fix: clear leaky seaborn facet titles (`row = ... | cycle_type = standard`) in multi-row `summary_plot` panes when `show_formation=True`, while preserving x-tick labels on the bottom row (pre-existing bug surfaced by the new `_with_rate` y-sets)
 * Exporters: New `CellpyCell.to_bdf(...)` exports raw time-series in [Battery Data Format](https://github.com/battery-data-alliance/battery-data-format) (CSV/Parquet) with optional cycle filtering, for use by UiA's dsToolbox and other BDF-aware tools (#356)
+* Exporters: `to_bdf` now accepts an `extras` keyword for appending custom/auxiliary raw columns alongside the BDF payload (`extras=True` for all unmapped columns, or pass a list/string of column names). Extras are written verbatim with no unit conversion; the resulting file is no longer strictly BDF-compliant.
 * General: New `cellpy.exporters` and `cellpy.filters` packages; the `CellpyCell` class layer no longer imports from `cellpy.utils`
 * Batch: Batch plotting with multiple subfigures (#343, #344, #346)
 * Batch: JSON db reader from batbase (`batbase_json_reader`) - new database reader for JSON-based batch files

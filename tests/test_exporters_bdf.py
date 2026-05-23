@@ -195,6 +195,110 @@ def test_empty_cycle_filter_logs_warning(tmp_path: Path, caplog) -> None:
     assert any("empty DataFrame" in rec.message for rec in caplog.records)
 
 
+def test_extras_default_excludes_unmapped_columns(tmp_path: Path) -> None:
+    cell = _make_synthetic_cell()
+    cell.data.raw["aux_temperature"] = [20.0, 20.1, 20.2, 20.3, 20.4, 20.5]
+    cell.data.raw["custom_flag"] = [0, 1, 0, 1, 0, 1]
+
+    out = cell.to_bdf(tmp_path / "out.bdf.csv", header_style="machine")
+    df = pd.read_csv(out)
+
+    assert "aux_temperature" not in df.columns
+    assert "custom_flag" not in df.columns
+
+
+def test_extras_true_appends_all_unmapped_columns(tmp_path: Path, caplog) -> None:
+    cell = _make_synthetic_cell()
+    cell.data.raw["aux_temperature"] = [20.0, 20.1, 20.2, 20.3, 20.4, 20.5]
+    cell.data.raw["custom_flag"] = [0, 1, 0, 1, 0, 1]
+
+    with caplog.at_level(logging.INFO, logger="cellpy.exporters.bdf"):
+        out = cell.to_bdf(tmp_path / "out.bdf.csv", header_style="machine", extras=True)
+    df = pd.read_csv(out)
+
+    assert "aux_temperature" in df.columns
+    assert "custom_flag" in df.columns
+    assert df["aux_temperature"].iloc[0] == pytest.approx(20.0)
+    assert any("non-BDF column" in rec.message for rec in caplog.records)
+
+
+def test_extras_iterable_appends_only_listed_columns(tmp_path: Path) -> None:
+    cell = _make_synthetic_cell()
+    cell.data.raw["aux_temperature"] = [20.0, 20.1, 20.2, 20.3, 20.4, 20.5]
+    cell.data.raw["custom_flag"] = [0, 1, 0, 1, 0, 1]
+
+    out = cell.to_bdf(
+        tmp_path / "out.bdf.csv",
+        header_style="machine",
+        extras=["aux_temperature"],
+    )
+    df = pd.read_csv(out)
+
+    assert "aux_temperature" in df.columns
+    assert "custom_flag" not in df.columns
+
+
+def test_extras_string_treated_as_single_column(tmp_path: Path) -> None:
+    cell = _make_synthetic_cell()
+    cell.data.raw["aux_temperature"] = [20.0, 20.1, 20.2, 20.3, 20.4, 20.5]
+
+    out = cell.to_bdf(
+        tmp_path / "out.bdf.csv",
+        header_style="machine",
+        extras="aux_temperature",
+    )
+    df = pd.read_csv(out)
+
+    assert "aux_temperature" in df.columns
+
+
+def test_extras_unknown_column_warns_and_skips(tmp_path: Path, caplog) -> None:
+    cell = _make_synthetic_cell()
+
+    with caplog.at_level(logging.WARNING, logger="cellpy.exporters.bdf"):
+        out = cell.to_bdf(
+            tmp_path / "out.bdf.csv",
+            header_style="machine",
+            extras=["does_not_exist"],
+        )
+    df = pd.read_csv(out)
+
+    assert "does_not_exist" not in df.columns
+    assert any("does_not_exist" in rec.message for rec in caplog.records)
+
+
+def test_extras_skips_columns_already_in_bdf_map(tmp_path: Path) -> None:
+    """Naming a mapped raw column under ``extras`` must not duplicate it."""
+    cell = _make_synthetic_cell()
+    headers = cell.headers_normal
+
+    out = cell.to_bdf(
+        tmp_path / "out.bdf.csv",
+        header_style="machine",
+        extras=[headers.voltage_txt],
+    )
+    df = pd.read_csv(out)
+
+    assert headers.voltage_txt not in df.columns
+    assert "voltage_volt" in df.columns
+    assert (df.columns == "voltage_volt").sum() == 1
+
+
+def test_extras_values_are_not_unit_converted(tmp_path: Path) -> None:
+    """Charge in `mAh` would normally be scaled; as an extra it must stay raw."""
+    cell = _make_synthetic_cell()
+    cell.data.raw["raw_charge_mAh"] = [0.0, 50.0, 100.0, 50.0, 0.0, 25.0]
+
+    out = cell.to_bdf(
+        tmp_path / "out.bdf.csv",
+        header_style="machine",
+        extras=["raw_charge_mAh"],
+    )
+    df = pd.read_csv(out)
+
+    assert df["raw_charge_mAh"].max() == pytest.approx(100.0)
+
+
 def test_module_does_not_import_from_cellpy_utils() -> None:
     """Architectural rule: cellpy.exporters.bdf must not depend on cellpy.utils.
 

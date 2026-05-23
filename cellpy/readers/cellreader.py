@@ -3895,6 +3895,7 @@ class CellpyCell:
         last_cycle=None,
         header_style="preferred",
         format="csv",
+        extras=False,
     ):
         """Export the raw time-series in Battery Data Format (BDF).
 
@@ -3914,6 +3915,13 @@ class CellpyCell:
                 headers like ``"Test Time / s"``. ``"machine"`` writes
                 machine-readable names like ``"test_time_second"``.
             format: ``"csv"`` (default) or ``"parquet"``.
+            extras: Append columns from ``data.raw`` that are not in the
+                BDF column map. ``False`` (default) exports only the BDF
+                columns. ``True`` appends every unmapped raw column
+                verbatim (no unit conversion, original name preserved).
+                A string or iterable of strings restricts the appended
+                columns to the listed names. The resulting file is no
+                longer strictly BDF-compliant.
 
         Returns:
             pathlib.Path: The path that the file was written to.
@@ -3931,6 +3939,7 @@ class CellpyCell:
             last_cycle=last_cycle,
             header_style=header_style,
             format=format,
+            extras=extras,
         )
 
     # --------------helper-functions--------------------------------------------

@@ -48,6 +48,7 @@ BdfFormat = Literal["csv", "parquet"]
 Tier = Literal["required", "recommended", "optional"]
 
 CyclesArg = Optional[Union[int, Iterable[int]]]
+ExtrasArg = Union[bool, str, Iterable[str]]
 
 DATETIME_KIND = "datetime"
 
@@ -145,6 +146,7 @@ def to_bdf(
     last_cycle: Optional[int] = None,
     header_style: HeaderStyle = "preferred",
     format: BdfFormat = "csv",
+    extras: ExtrasArg = False,
 ) -> Path:
     """Export ``cell.data.raw`` as a BDF file.
 
@@ -163,6 +165,14 @@ def to_bdf(
             readable names like ``"test_time_second"``.
         format: ``"csv"`` or ``"parquet"``. Determines both the writer
             used and the default extension.
+        extras: Append columns from ``data.raw`` that are not part of the
+            BDF column map. ``False`` (default) exports the BDF columns
+            only. ``True`` appends every unmapped raw column verbatim
+            (no unit conversion, original cellpy column name kept). A
+            string or iterable of strings appends only the listed
+            columns. The resulting file is no longer strictly BDF-
+            compliant; useful when you need to preserve cycler-specific
+            auxiliary channels alongside the BDF payload.
 
     Returns:
         The path the file was written to.
@@ -185,9 +195,17 @@ def to_bdf(
         if raw.empty:
             logger.warning("to_bdf: cycle filter produced an empty DataFrame.")
 
-    out_df, missing_recommended = _build_bdf_frame(raw, headers, cellpy_units, header_style)
+    out_df, missing_recommended, extras_added = _build_bdf_frame(
+        raw, headers, cellpy_units, header_style, extras
+    )
     for col_name in missing_recommended:
         logger.warning("to_bdf: BDF-recommended column %r is not present in data.raw; skipped.", col_name)
+    if extras_added:
+        logger.info(
+            "to_bdf: appended %d non-BDF column(s) verbatim: %s",
+            len(extras_added),
+            extras_added,
+        )
 
     out_path = _resolve_filename(filename, cell, format)
     if format == "csv":
@@ -207,11 +225,18 @@ def _build_bdf_frame(
     headers,
     cellpy_units,
     header_style: HeaderStyle,
-) -> tuple[pd.DataFrame, list[str]]:
-    """Build the BDF output frame and report missing recommended columns."""
+    extras: ExtrasArg = False,
+) -> tuple[pd.DataFrame, list[str], list[str]]:
+    """Build the BDF output frame.
+
+    Returns ``(frame, missing_recommended, extras_added)``. ``extras_added``
+    is the list of non-BDF cellpy column names appended verbatim (in the
+    order they appear in the output frame).
+    """
     out: dict[str, pd.Series] = {}
     missing_recommended: list[str] = []
     missing_required: list[str] = []
+    consumed: set[str] = set()
 
     for spec in _COLUMN_MAP:
         src_col = getattr(headers, spec.cellpy_field, None)
@@ -222,6 +247,7 @@ def _build_bdf_frame(
                 missing_recommended.append(spec.preferred)
             continue
 
+        consumed.add(src_col)
         series = raw[src_col]
 
         if spec.unit_kind == DATETIME_KIND:
@@ -241,4 +267,48 @@ def _build_bdf_frame(
         )
         raise ValueError(msg)
 
-    return pd.DataFrame(out), missing_recommended
+    extras_added = _append_extras(raw, out, consumed, extras)
+
+    return pd.DataFrame(out), missing_recommended, extras_added
+
+
+def _append_extras(
+    raw: pd.DataFrame,
+    out: dict[str, pd.Series],
+    consumed: set[str],
+    extras: ExtrasArg,
+) -> list[str]:
+    """Append unmapped raw columns to ``out`` per the ``extras`` policy.
+
+    Extras are written verbatim: the cellpy column name is preserved and
+    no unit conversion is performed. Returns the list of column names
+    that were actually appended (in insertion order).
+    """
+    if not extras:
+        return []
+
+    if extras is True:
+        requested: list[str] = [c for c in raw.columns if c not in consumed]
+    elif isinstance(extras, str):
+        requested = [extras]
+    else:
+        requested = list(extras)
+
+    added: list[str] = []
+    for col in requested:
+        if col not in raw.columns:
+            logger.warning(
+                "to_bdf: requested extra column %r not in data.raw; skipped.", col
+            )
+            continue
+        if col in consumed:
+            logger.debug(
+                "to_bdf: extra column %r is already part of the BDF column map; skipped.",
+                col,
+            )
+            continue
+        if col in out:
+            continue
+        out[col] = raw[col].reset_index(drop=True)
+        added.append(col)
+    return added

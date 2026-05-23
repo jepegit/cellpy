@@ -3321,8 +3321,8 @@ def summary_plot_legacy(
     if formation_cycles < 1:
         show_formation = False
 
-    x_cols, y_cols, x_trans, y_trans = create_col_info(c)
-    x_axis_labels, y_axis_label = create_label_dict(c)
+    x_cols, y_cols, x_trans, y_trans = SummaryPlotInfo(c)._create_col_info(c)
+    x_axis_labels, y_axis_label = SummaryPlotInfo(c)._create_label_dict(c)
 
     def _auto_range(fig: Any, axis_name_1: str, axis_name_2: str) -> list:
         # only works for plotly
