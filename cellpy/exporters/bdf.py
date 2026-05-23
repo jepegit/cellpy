@@ -30,7 +30,7 @@ import logging
 from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, Literal, Optional, Union
+from typing import TYPE_CHECKING, Callable, Literal, Optional, Union
 
 import pandas as pd
 
@@ -147,6 +147,7 @@ def to_bdf(
     header_style: HeaderStyle = "preferred",
     format: BdfFormat = "csv",
     extras: ExtrasArg = False,
+    preprocess_fn: Callable[[pd.DataFrame], pd.DataFrame] = None,
 ) -> Path:
     """Export ``cell.data.raw`` as a BDF file.
 
@@ -173,6 +174,9 @@ def to_bdf(
             columns. The resulting file is no longer strictly BDF-
             compliant; useful when you need to preserve cycler-specific
             auxiliary channels alongside the BDF payload.
+        preprocess_fn: A function that takes the raw DataFrame and returns
+            a new DataFrame. This function is applied to the raw DataFrame
+            after the cycle filter and before the BDF export.
 
     Returns:
         The path the file was written to.
@@ -194,6 +198,9 @@ def to_bdf(
         raw = filter_cycles(raw, cycles=cycles, last_cycle=last_cycle, column=cycle_col)
         if raw.empty:
             logger.warning("to_bdf: cycle filter produced an empty DataFrame.")
+
+    if preprocess_fn:
+        raw = preprocess_fn(raw)
 
     out_df, missing_recommended, extras_added = _build_bdf_frame(
         raw, headers, cellpy_units, header_style, extras
