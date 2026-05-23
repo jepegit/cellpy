@@ -3020,21 +3020,23 @@ class SeabornPlotBuilder:
         is_multi_row = number_of_rows > 1
 
         if is_multi_row:
+            last_row = number_of_rows - 1
             for i in range(number_of_rows):
                 row_label = (
                     top_row_ylabel if (i == 0 and top_row_ylabel) else y_label
                 )
                 row_ylim = None if (i == 0 and top_row_ylabel) else y_range
+                xticks = None if i == last_row else False
                 info_dicts.append(
                     dict(
-                        ylabel=row_label,
+                        ylabel="" if config.show_formation else row_label,
                         title="",
                         xlim=x_range,
                         ylim=row_ylim,
                         row=i,
-                        col=None,
-                        yticks=None,
-                        xticks=False,
+                        col="standard" if config.show_formation else None,
+                        yticks=False if config.show_formation else None,
+                        xticks=xticks,
                     )
                 )
                 if config.show_formation:
@@ -3047,7 +3049,7 @@ class SeabornPlotBuilder:
                             row=i,
                             col="formation",
                             yticks=None,
-                            xticks=False,
+                            xticks=xticks,
                         )
                     )
         else:

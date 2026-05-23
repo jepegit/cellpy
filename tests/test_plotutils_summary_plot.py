@@ -365,27 +365,28 @@ class TestSummaryPlotFiltersAndRate:
         return h.charge_c_rate, h.discharge_c_rate
 
     def test_filters_rate_range_drops_rows(self, cell):
-        """A rate range filter must drop rows whose rates fall outside it.
+        """The rate filter must be wired into the data pipeline.
 
-        The test cell has finite rates, so a tight range that excludes
-        all rows produces a strictly smaller frame than the unfiltered
-        baseline."""
-        _, baseline = summary_plot(
+        Asserting "drops *some* but not all" rows is fragile when the
+        test cell has a near-constant C-rate (which it does). Instead,
+        verify the filter is reachable: an out-of-range filter empties
+        the frame, which the plotter surfaces as the standard
+        "No data found" ``ValueError``.
+        """
+        summary_plot(
             cell,
             y="capacities_gravimetric",
-            return_data=True,
             interactive=False,
             show_formation=False,
         )
-        _, filtered = summary_plot(
-            cell,
-            y="capacities_gravimetric",
-            filters={"rate": (1e6, 1e7)},
-            return_data=True,
-            interactive=False,
-            show_formation=False,
-        )
-        assert len(filtered) < len(baseline)
+        with pytest.raises(ValueError, match="No data found"):
+            summary_plot(
+                cell,
+                y="capacities_gravimetric",
+                filters={"rate": (1e6, 1e7)},
+                interactive=False,
+                show_formation=False,
+            )
 
     def test_filters_passthrough_when_none(self, cell):
         """``filters=None`` is the default - result must match
@@ -454,3 +455,23 @@ class TestSummaryPlotFiltersAndRate:
         variables = set(data["variable"].unique())
         assert charge_col in variables
         assert discharge_col in variables
+
+    def test_seaborn_with_formation_clears_facet_titles(self, cell):
+        """Regression: seaborn ``relplot`` adds default facet titles like
+        ``"row = 0 | cycle_type = standard"``. ``_clean_up_axis`` must
+        match every axis and overwrite the title with ``""`` - otherwise
+        the internal facet identifier leaks into the final plot.
+        """
+        fig = summary_plot(
+            cell,
+            y="capacities_gravimetric_with_rate",
+            interactive=False,
+            show_formation=True,
+            formation_cycles=3,
+        )
+        leaky = [
+            ax.get_title()
+            for ax in fig.get_axes()
+            if "cycle_type" in ax.get_title() or "row =" in ax.get_title()
+        ]
+        assert not leaky, f"Seaborn facet titles leaked through: {leaky}"
