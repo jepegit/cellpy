@@ -13,7 +13,7 @@ import os
 import pickle as pkl
 import pprint
 import sys
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Optional, Union
 import warnings
 from io import StringIO
 from pathlib import Path
@@ -613,6 +613,33 @@ def _get_capacity_unit(c, mode="gravimetric", seperator="/"):
     return specific_selector.get(mode, "-")
 
 
+# Per-row y-axis labels for predefined ``y`` sets that route a different
+# quantity onto row 0 (efficiency plots, *_with_rate plots). The "_plotly"
+# and "_seaborn" variants differ only in the line-break character (HTML
+# ``<br>`` vs ``\n``) so each builder gets a string it can render natively.
+def _plotly_top_row_label(y: str) -> Optional[str]:
+    if y.endswith("_efficiency"):
+        return "Coulombic Efficiency"
+    if y.endswith("_with_rate"):
+        return "C-rate (1/h)"
+    return None
+
+
+def _seaborn_top_row_label(y: str) -> Optional[str]:
+    if y.endswith("_efficiency"):
+        return "Coulombic\nEfficiency (%)"
+    if y.endswith("_with_rate"):
+        return "C-rate\n(1/h)"
+    return None
+
+
+def _has_special_top_row(y: str) -> bool:
+    """True for y-sets whose row 0 holds a different quantity than the
+    other rows (so plotters should disable shared y-axis and pick a
+    per-row y-label)."""
+    return y.endswith("_efficiency") or y.endswith("_with_rate")
+
+
 # TODO: consistent parameter names (e.g. y_range vs ylim) between summary_plot, plot_cycles, raw_plot, cycle_info_plot and batchutils
 # TODO: consistent function names (raw_plot vs plot_raw etc)
 
@@ -677,6 +704,11 @@ class SummaryPlotConfig:
 
     # Seaborn hooks
     seaborn_line_hooks: Optional[list[tuple[str, list, dict]]] = None
+
+    # Summary filtering / rate handling (issue #363)
+    filters: Optional[dict] = None
+    nominal_capacity: Optional[float] = None
+    rate_filter_columns: Optional[Union[str, tuple, list]] = None
 
     # Additional kwargs (stored as dict)
     additional_kwargs: dict = dataclasses.field(default_factory=dict)
@@ -802,6 +834,9 @@ class SummaryPlotInfo:
             "capacities_gravimetric_coulombic_efficiency": _cap_gravimetric_label,
             "capacities_areal_coulombic_efficiency": _cap_areal_label,
             "capacities_absolute_coulombic_efficiency": _cap_absolute_label,
+            "capacities_gravimetric_with_rate": _cap_gravimetric_label,
+            "capacities_areal_with_rate": _cap_areal_label,
+            "capacities_absolute_with_rate": _cap_absolute_label,
             "fullcell_standard_gravimetric": _cap_gravimetric_label,
             "fullcell_standard_areal": _cap_areal_label,
             "fullcell_standard_absolute": _cap_absolute_label,
@@ -955,6 +990,12 @@ class SummaryPlotInfo:
             + [hdr.coulombic_efficiency],
             capacities_absolute_coulombic_efficiency=_capacities_absolute
             + [hdr.coulombic_efficiency],
+            capacities_gravimetric_with_rate=_capacities_gravimetric
+            + [hdr.charge_c_rate, hdr.discharge_c_rate],
+            capacities_areal_with_rate=_capacities_areal
+            + [hdr.charge_c_rate, hdr.discharge_c_rate],
+            capacities_absolute_with_rate=_capacities_absolute
+            + [hdr.charge_c_rate, hdr.discharge_c_rate],
             fullcell_standard_cumloss_gravimetric=[
                 hdr.charge_capacity + "_gravimetric" + "_cv",
                 hdr.cumulated_discharge_capacity_loss + "_gravimetric",
@@ -1165,7 +1206,7 @@ class SummaryPlotDataPreparer:
         number_of_rows = 4
         column_set = y_cols.get(y, y)
 
-        summary = c.data.summary.copy()
+        summary = self._preprocess_summary(c, c.data.summary, config)
         if summary.index.name == x:
             summary = summary.reset_index(drop=False)
 
@@ -1248,7 +1289,7 @@ class SummaryPlotDataPreparer:
         if isinstance(column_set, str):
             column_set = [column_set]
 
-        summary = c.data.summary
+        summary = self._preprocess_summary(c, c.data.summary, config)
         summary = summary.reset_index()
 
         # Check if requested columns exist in summary
@@ -1292,6 +1333,12 @@ class SummaryPlotDataPreparer:
             if y.endswith("_efficiency"):
                 s[self.row] = 1
                 s.loc[s["variable"].str.contains("efficiency"), self.row] = 0
+                number_of_rows = 2
+            elif y.endswith("_with_rate"):
+                hdr = c.headers_summary
+                rate_cols = {hdr.charge_c_rate, hdr.discharge_c_rate}
+                s[self.row] = 1
+                s.loc[s["variable"].isin(rate_cols), self.row] = 0
                 number_of_rows = 2
 
         return s, number_of_rows
@@ -1384,6 +1431,77 @@ class SummaryPlotDataPreparer:
             s[col_id] = "standard"
             s.loc[formation_cycle_selector, col_id] = "formation"
         return formation_cycle_selector
+
+    @staticmethod
+    def _preprocess_summary(c: Any, summary: pd.DataFrame, config) -> pd.DataFrame:
+        """Apply optional rate-rescaling and row filtering to a summary copy.
+
+        Two opt-in steps, both no-ops when their config field is ``None``:
+
+        * ``config.nominal_capacity`` rescales the existing
+          ``charge_c_rate`` / ``discharge_c_rate`` columns to use a new
+          nominal capacity instead of the one set on the cell. The
+          rescale factor is ``c.data.nom_cap / nominal_capacity``: since
+          ``rate = current / nom_cap``, the rate columns are multiplied
+          by ``old_nom_cap / new_nom_cap``.
+        * ``config.filters`` is forwarded to
+          :func:`cellpy.filters.filter_summary`. The default
+          ``rate_filter_columns`` resolves to both rate columns from
+          ``c.headers_summary`` (charge AND discharge).
+
+        Operates on a copy; the caller's ``summary`` argument is not
+        mutated.
+        """
+        out = summary.copy() if summary is not None else summary
+
+        if config.nominal_capacity is not None:
+            hdr = c.headers_summary
+            old_nom_cap = getattr(c.data, "nom_cap", None)
+            if old_nom_cap in (None, 0):
+                logging.warning(
+                    "summary_plot: nominal_capacity override requested but "
+                    "cell.data.nom_cap is %r; skipping rate rescale.",
+                    old_nom_cap,
+                )
+            else:
+                scale = float(old_nom_cap) / float(config.nominal_capacity)
+                for col in (hdr.charge_c_rate, hdr.discharge_c_rate):
+                    if col in out.columns:
+                        out[col] = out[col] * scale
+                logging.debug(
+                    "summary_plot: rescaled rate columns by %.6g "
+                    "(old nom_cap=%s, new=%s)",
+                    scale,
+                    old_nom_cap,
+                    config.nominal_capacity,
+                )
+
+        if config.filters:
+            from cellpy.filters import filter_summary
+
+            hdr = c.headers_summary
+            filter_kwargs = dict(config.filters)
+            if (
+                "rate" in filter_kwargs
+                and "rate_columns" not in filter_kwargs
+            ):
+                if config.rate_filter_columns is not None:
+                    filter_kwargs["rate_columns"] = config.rate_filter_columns
+                else:
+                    filter_kwargs["rate_columns"] = (
+                        hdr.charge_c_rate,
+                        hdr.discharge_c_rate,
+                    )
+            before = len(out)
+            out = filter_summary(out, **filter_kwargs)
+            logging.debug(
+                "summary_plot: filters %s reduced rows %d -> %d",
+                filter_kwargs,
+                before,
+                len(out),
+            )
+
+        return out
 
 
 class PlotlyPlotBuilder:
@@ -1750,10 +1868,11 @@ class PlotlyPlotBuilder:
         """Configure 2-row plot with formation cycles."""
         fig.update_yaxes(matches="y")
         fig.update_yaxes(autorange=False)
-        if y.endswith("_efficiency"):
+        _top_label = _plotly_top_row_label(y)
+        if _top_label is not None:
             fig.update_layout(
                 yaxis3={
-                    "title": dict(text="Coulombic Efficiency"),
+                    "title": dict(text=_top_label),
                     "domain": [0.7, 1.0],
                 },
                 yaxis1=dict(domain=[0.0, 0.65]),
@@ -2080,11 +2199,12 @@ class PlotlyPlotBuilder:
         """Configure axes when not showing formation cycles."""
         eff_lim = config.ce_range
 
-        if y.endswith("_efficiency"):
+        _top_label = _plotly_top_row_label(y)
+        if _top_label is not None:
             fig.update_layout(
                 yaxis=dict(domain=[0.0, 0.65]),
                 yaxis2={
-                    "title": dict(text="Coulombic Efficiency"),
+                    "title": dict(text=_top_label),
                     "domain": [0.7, 1.0],
                 },
             )
@@ -2355,17 +2475,18 @@ class SeabornPlotBuilder:
             c,
         )
 
-        # Configure facet_kws based on plot type
+        # Configure facet_kws based on plot type. ``_efficiency`` and
+        # ``_with_rate`` share the same row-0-is-different layout:
+        # disable shared y-axis and give the top row a smaller height.
         is_efficiency_plot = y.endswith("_efficiency")
-        if is_efficiency_plot:
+        is_special_top_row = _has_special_top_row(y)
+        if is_special_top_row:
             facet_kws["sharey"] = False
-            # Only set height_ratios if we have exactly 2 rows
-            # (efficiency plots split into efficiency row and capacity row)
             if number_of_rows == 2:
                 gridspec_kws["height_ratios"] = [1, 4]
             else:
                 logging.debug(
-                    f"Efficiency plot with {number_of_rows} rows - not setting height_ratios"
+                    f"Special-top-row plot with {number_of_rows} rows - not setting height_ratios"
                 )
 
         facet_kws["gridspec_kws"] = gridspec_kws
@@ -2552,7 +2673,13 @@ class SeabornPlotBuilder:
         else:
             info_dicts.extend(
                 self._build_standard_info_dicts(
-                    config, number_of_rows, x_range, y_range, xlim_formation, y_label
+                    config,
+                    number_of_rows,
+                    x_range,
+                    y_range,
+                    xlim_formation,
+                    y_label,
+                    top_row_ylabel=_seaborn_top_row_label(y),
                 )
             )
 
@@ -2880,36 +3007,49 @@ class SeabornPlotBuilder:
         y_range: list,
         xlim_formation: tuple,
         y_label: str,
+        top_row_ylabel: Optional[str] = None,
     ) -> list:
-        """Build info dicts for standard plots."""
+        """Build info dicts for standard plots.
+
+        ``top_row_ylabel`` (when given) overrides the y-axis label on row
+        0 only; remaining rows keep ``y_label``. Used by ``*_with_rate``
+        y-sets so the rate row shows "C-rate (1/h)" instead of the
+        capacity label.
+        """
         info_dicts = []
         is_multi_row = number_of_rows > 1
 
         if is_multi_row:
+            last_row = number_of_rows - 1
             for i in range(number_of_rows):
+                row_label = (
+                    top_row_ylabel if (i == 0 and top_row_ylabel) else y_label
+                )
+                row_ylim = None if (i == 0 and top_row_ylabel) else y_range
+                xticks = None if i == last_row else False
                 info_dicts.append(
                     dict(
-                        ylabel=y_label,
+                        ylabel="" if config.show_formation else row_label,
                         title="",
                         xlim=x_range,
-                        ylim=y_range,
+                        ylim=row_ylim,
                         row=i,
-                        col=None,
-                        yticks=None,
-                        xticks=False,
+                        col="standard" if config.show_formation else None,
+                        yticks=False if config.show_formation else None,
+                        xticks=xticks,
                     )
                 )
                 if config.show_formation:
                     info_dicts.append(
                         dict(
-                            ylabel=y_label,
+                            ylabel=row_label,
                             title="",
                             xlim=xlim_formation,
-                            ylim=y_range,
+                            ylim=row_ylim,
                             row=i,
                             col="formation",
                             yticks=None,
-                            xticks=False,
+                            xticks=xticks,
                         )
                     )
         else:
@@ -4494,6 +4634,9 @@ def summary_plot(
     fullcell_standard_normalization_scaler: float = 1.0,
     fullcell_standard_normalization_cycle_numbers: Optional[list[int]] = None,
     seaborn_line_hooks: Optional[list[tuple[str, list, dict]]] = None,
+    filters: Optional[dict] = None,
+    nominal_capacity: Optional[float] = None,
+    rate_filter_columns: Optional[Union[str, tuple, list]] = None,
     **kwargs,
 ) -> Any:
     """Create a summary plot.
@@ -4509,6 +4652,8 @@ def summary_plot(
             "capacities_gravimetric_split_constant_voltage", "capacities_areal_split_constant_voltage",
             "capacities_gravimetric_coulombic_efficiency", "capacities_areal_coulombic_efficiency",
             "capacities_absolute_coulombic_efficiency",
+            "capacities_gravimetric_with_rate", "capacities_areal_with_rate",
+            "capacities_absolute_with_rate",
             "fullcell_standard_gravimetric", "fullcell_standard_areal", "fullcell_standard_absolute",
         height: height of the plot (for plotly)
         width: width of the plot (for plotly)
@@ -4542,12 +4687,104 @@ def summary_plot(
         fullcell_standard_normalization_scaler: scaler for the fullcell standard plots
         fullcell_standard_normalization_cycle_numbers: cycle numbers to use for normalization (only for fullcell_standard plots)
         seaborn_line_hooks: list of functions to hook into the seaborn lines (e.g. to update the marker_size)
+        filters: optional dict forwarded to
+            :func:`cellpy.filters.filter_summary` to drop rows from the
+            summary before plotting (e.g. ``filters={"rate": (0, 0.5)}``
+            drops slow-rate characterisation cycles). See
+            :func:`cellpy.filters.filter_summary` for range semantics.
+        nominal_capacity: optional plain float in
+            ``c.cellpy_units.nominal_capacity`` units. When given, the
+            ``charge_c_rate`` / ``discharge_c_rate`` columns are
+            rescaled to use this nominal capacity instead of
+            ``c.data.nom_cap`` (multiplies rates by
+            ``c.data.nom_cap / nominal_capacity``).
+        rate_filter_columns: optional override for which rate column(s)
+            the ``rate`` filter targets. Defaults to both
+            ``(charge_c_rate, discharge_c_rate)``; pass a single string
+            (e.g. ``"discharge_c_rate"``) to filter only one side.
         **kwargs: includes additional parameters for the plotting backend (not properly documented yet).
 
     Returns:
         if ``return_data`` is True, returns a tuple with the figure and the data used for plotting.
         Otherwise, it returns only the figure. If ``interactive`` is True, the figure is a ``plotly`` figure,
         else it is a ``matplotlib`` figure.
+
+    Examples:
+        Default plot (capacity and Coulombic efficiency vs cycle number)::
+
+            >>> from cellpy.utils.plotutils import summary_plot
+            >>> fig = summary_plot(c)
+            >>> fig.show()
+
+        Plot gravimetric capacity alone, with formation cycles disabled::
+
+            >>> fig = summary_plot(c, y="capacities_gravimetric", show_formation=False)
+
+        Use the non-interactive (matplotlib/seaborn) backend, e.g. for an
+        SVG export from a script::
+
+            >>> fig = summary_plot(c, y="capacities_gravimetric", interactive=False)
+            >>> fig.savefig("summary.svg")
+
+        Get the prepared DataFrame back together with the figure (useful
+        for custom annotations or follow-up analysis)::
+
+            >>> fig, data = summary_plot(c, y="capacities_gravimetric", return_data=True)
+            >>> data.head()
+
+        New ``*_with_rate`` y-set adds a C-rate subplot on row 0::
+
+            >>> fig = summary_plot(c, y="capacities_gravimetric_with_rate")
+
+        Drop slow-rate characterisation cycles (e.g. keep only rows where
+        both ``charge_c_rate`` and ``discharge_c_rate`` are above 0.1)::
+
+            >>> fig = summary_plot(
+            ...     c,
+            ...     y="capacities_gravimetric",
+            ...     filters={"rate": (0.1, 10.0)},
+            ... )
+
+        Same idea using the symmetric ``{value, delta}`` form to keep
+        rows close to a target C/2 rate::
+
+            >>> fig = summary_plot(
+            ...     c,
+            ...     y="capacities_gravimetric_with_rate",
+            ...     filters={"rate": {"value": 0.5, "delta": 0.05}},
+            ... )
+
+        Filter on the discharge rate only (charge rate is ignored)::
+
+            >>> fig = summary_plot(
+            ...     c,
+            ...     y="capacities_gravimetric",
+            ...     filters={"rate": (0.1, 1.0)},
+            ...     rate_filter_columns="discharge_c_rate",
+            ... )
+
+        Override the nominal capacity used for the C-rate axis without
+        re-running ``make_summary``. The rate columns are rescaled by
+        ``c.data.nom_cap / nominal_capacity``; here we both rescale and
+        filter in the new units::
+
+            >>> fig = summary_plot(
+            ...     c,
+            ...     y="capacities_gravimetric_with_rate",
+            ...     nominal_capacity=200.0,
+            ...     filters={"rate": (0.1, 5.0)},
+            ... )
+
+        The same filter is available without plotting via
+        :meth:`CellpyCell.filtered_summary` (returns a DataFrame copy)::
+
+            >>> trimmed = c.filtered_summary(rate=(0.1, 10.0))
+
+        Or as a free function on any summary-shaped DataFrame::
+
+            >>> from cellpy.filters import filter_summary
+            >>> trimmed = filter_summary(c.data.summary.reset_index(),
+            ...                          rate=(0.1, 10.0))
     """
     # Create config from parameters
     config = SummaryPlotConfig.from_kwargs(
@@ -4584,6 +4821,9 @@ def summary_plot(
         fullcell_standard_normalization_scaler=fullcell_standard_normalization_scaler,
         fullcell_standard_normalization_cycle_numbers=fullcell_standard_normalization_cycle_numbers,
         seaborn_line_hooks=seaborn_line_hooks,
+        filters=filters,
+        nominal_capacity=nominal_capacity,
+        rate_filter_columns=rate_filter_columns,
         **kwargs,
     )
 

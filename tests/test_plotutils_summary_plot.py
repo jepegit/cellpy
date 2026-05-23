@@ -350,3 +350,128 @@ class TestSummaryPlotGoldenReference:
         assert hasattr(fig, "get_axes")
         axes = fig.get_axes()
         assert len(axes) > 0  # Should have at least one axis
+
+
+@pytest.mark.skipif(
+    not seaborn_available,
+    reason="Seaborn not available",
+)
+class TestSummaryPlotFiltersAndRate:
+    """Coverage for the filters / nominal_capacity / with_rate additions
+    introduced in issue #363."""
+
+    def _rate_cols(self, cell):
+        h = cell.headers_summary
+        return h.charge_c_rate, h.discharge_c_rate
+
+    def test_filters_rate_range_drops_rows(self, cell):
+        """The rate filter must be wired into the data pipeline.
+
+        Asserting "drops *some* but not all" rows is fragile when the
+        test cell has a near-constant C-rate (which it does). Instead,
+        verify the filter is reachable: an out-of-range filter empties
+        the frame, which the plotter surfaces as the standard
+        "No data found" ``ValueError``.
+        """
+        summary_plot(
+            cell,
+            y="capacities_gravimetric",
+            interactive=False,
+            show_formation=False,
+        )
+        with pytest.raises(ValueError, match="No data found"):
+            summary_plot(
+                cell,
+                y="capacities_gravimetric",
+                filters={"rate": (1e6, 1e7)},
+                interactive=False,
+                show_formation=False,
+            )
+
+    def test_filters_passthrough_when_none(self, cell):
+        """``filters=None`` is the default - result must match
+        unfiltered baseline."""
+        _, baseline = summary_plot(
+            cell,
+            y="capacities_gravimetric",
+            return_data=True,
+            interactive=False,
+            show_formation=False,
+        )
+        _, with_none = summary_plot(
+            cell,
+            y="capacities_gravimetric",
+            filters=None,
+            return_data=True,
+            interactive=False,
+            show_formation=False,
+        )
+        assert len(with_none) == len(baseline)
+
+    def test_nominal_capacity_rescales_rate_columns(self, cell):
+        """Doubling the nominal capacity must halve the C-rate columns
+        in the returned data."""
+        charge_col, discharge_col = self._rate_cols(cell)
+        old_nom = cell.data.nom_cap
+        if not old_nom:
+            pytest.skip("cell.data.nom_cap is unset; cannot exercise rescale")
+
+        _, baseline = summary_plot(
+            cell,
+            y="capacities_gravimetric_with_rate",
+            return_data=True,
+            interactive=False,
+            show_formation=False,
+        )
+        _, scaled = summary_plot(
+            cell,
+            y="capacities_gravimetric_with_rate",
+            nominal_capacity=old_nom * 2.0,
+            return_data=True,
+            interactive=False,
+            show_formation=False,
+        )
+
+        base_rate = baseline.loc[baseline["variable"].isin([charge_col, discharge_col]), "value"]
+        scaled_rate = scaled.loc[scaled["variable"].isin([charge_col, discharge_col]), "value"]
+
+        base_mean = float(base_rate.dropna().mean())
+        scaled_mean = float(scaled_rate.dropna().mean())
+        if not (base_mean and base_mean == base_mean):
+            pytest.skip("baseline rate data is empty / NaN; cannot compare")
+        assert scaled_mean == pytest.approx(base_mean * 0.5, rel=1e-6)
+
+    def test_with_rate_yset_produces_rate_rows(self, cell):
+        """``*_with_rate`` y-sets must include rate columns in the
+        returned (melted) DataFrame."""
+        charge_col, discharge_col = self._rate_cols(cell)
+        _, data = summary_plot(
+            cell,
+            y="capacities_gravimetric_with_rate",
+            return_data=True,
+            interactive=False,
+            show_formation=False,
+        )
+        variables = set(data["variable"].unique())
+        assert charge_col in variables
+        assert discharge_col in variables
+
+    def test_seaborn_with_formation_clears_facet_titles(self, cell):
+        """Regression: seaborn ``relplot`` adds default facet titles like
+        ``"row = 0 | cycle_type = standard"``. ``_clean_up_axis`` must
+        match every axis and overwrite the title with ``""`` - otherwise
+        the internal facet identifier leaks into the final plot.
+        """
+        fig = summary_plot(
+            cell,
+            y="capacities_gravimetric_with_rate",
+            interactive=False,
+            show_formation=True,
+            formation_cycles=3,
+        )
+        leaky = [
+            ax.get_title()
+            for ax in fig.get_axes()
+            if "cycle_type" in ax.get_title() or "row =" in ax.get_title()
+        ]
+        assert not leaky, f"Seaborn facet titles leaked through: {leaky}"

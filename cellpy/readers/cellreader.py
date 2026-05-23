@@ -6780,6 +6780,57 @@ class CellpyCell:
 
         return data
 
+    def filtered_summary(
+        self,
+        *,
+        rate=None,
+        rate_columns=None,
+        **extra_filters,
+    ):
+        """Return a filtered copy of the summary DataFrame.
+
+        Thin wrapper around :func:`cellpy.filters.filter_summary` that
+        resolves the rate column names from ``self.headers_summary``.
+        See the underlying function for the full range semantics; in
+        short ``(low, high)`` keeps rows where ``low < value <= high``
+        and ``{"value": v, "delta": d}`` keeps rows where
+        ``v - d < value <= v + d``.
+
+        Note:
+            The name deliberately reads as a property-style "give me a
+            filtered summary" - the return is just the summary
+            DataFrame. The slot ``CellpyCell.filter_summary`` is
+            reserved for a future method that returns a full
+            ``CellpyCell`` with the summary, raw, and steps frames all
+            filtered consistently.
+
+        Args:
+            rate: Range filter applied to the rate columns. ``None``
+                disables it (default).
+            rate_columns: Override which rate columns are filtered.
+                Defaults to both
+                ``(headers_summary.charge_c_rate,
+                headers_summary.discharge_c_rate)``. Pass a single
+                string to filter on only one side.
+            **extra_filters: Additional range filters registered with
+                :func:`cellpy.filters.register_range_filter`.
+
+        Returns:
+            Filtered copy of ``self.data.summary`` (cycle index reset
+            to a column so the result is a plain DataFrame).
+        """
+        from cellpy.filters import filter_summary as _fs
+
+        h = self.headers_summary
+        if rate_columns is None:
+            rate_columns = (h.charge_c_rate, h.discharge_c_rate)
+        return _fs(
+            self.data.summary.reset_index(),
+            rate=rate,
+            rate_columns=rate_columns,
+            **extra_filters,
+        )
+
     def inspect_nominal_capacity(self, cycles=None):
         """Method for estimating the nominal capacity
 

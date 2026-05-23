@@ -198,17 +198,18 @@ The bump runs **after** tests and **before** issue-folder moves and **before** c
 
 **What you pass:** Optional graphify subcommand and args, forwarded verbatim. Common picks:
 
-- *(nothing)* — full rebuild of the project root (`graphify extract <project>`).
-- `update` — fast incremental re-extract of changed code files only, no LLM.
+- *(nothing)* — AST-only build of the project root (`graphify update <project>`). **No LLM API key required**; produces the full `graphify-out/`. The default.
+- `extract` — adds the slower semantic LLM pass for richer cross-file relationships. Needs an API key (`GEMINI_API_KEY`, `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `MOONSHOT_API_KEY`) or `--backend ollama` for a local LLM via [Ollama](https://ollama.com). Cursor's own LLM is **not** available to subprocesses.
 - `watch` — long-running watcher that auto-rebuilds on save.
 - `cluster-only` — rerun clustering on the existing `graph.json` without re-extraction (e.g. `cluster-only --no-viz`).
-- `./subdir` — restrict the scan to a sub-directory (default subcommand: `extract`).
+- `./subdir` — restrict the scan to a sub-directory (default subcommand: `update`).
 
 **What the assistant does:**
 
-1. Runs `issue-flow build` (which shells out to the `graphify` CLI). If `issue-flow` is unavailable, falls back to `graphify extract .` directly (`graphify .` alone is **not** valid — graphify requires a subcommand).
+1. Runs `issue-flow build` (which shells out to the `graphify` CLI). If `issue-flow` is unavailable, falls back to `graphify update .` directly (`graphify .` alone is **not** valid — graphify requires a subcommand).
 2. If `graphify` is not installed, prints install hints (`uv tool install graphifyy`) and stops — never silently retries.
-3. Verifies that `graphify-out/graph.html`, `GRAPH_REPORT.md`, and `graph.json` exist after a successful run.
+3. If `graphify extract` fails with "no LLM API key found", suggests setting one of the supported env vars, or using `--backend ollama`, or dropping back to the default `update` subcommand.
+4. Verifies that `graphify-out/graph.html`, `GRAPH_REPORT.md`, and `graph.json` exist after a successful run.
 
 **Result:** A refreshed `graphify-out/` so `/issue-start` can navigate by graph instead of grepping. `/build` is **off-path** — `/iflow`, `/issue-start`, and `/issue-close` may *suggest* a rebuild but never invoke `/build` automatically.
 

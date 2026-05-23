@@ -22,7 +22,7 @@ Other optional notes still apply: branch name, PR title, draft PR, skip issue do
    - Run tests and any checks you rely on (e.g. `uv run pytest`).
    - Skim the diff so the commit matches what you intend to ship.
    - Confirm that any design decisions or good-practices that emerged from this issue are captured under `.issueflows/04-designs-and-guides/` before committing. If something is missing, add it now (short markdown: context, decision, alternatives, link back to the issue).
-   - **Graph freshness (optional).** If this change touched the project's structure (new modules, big refactor, removed files) and `graphify-out/` exists, suggest the user run `/build` (or `issue-flow build update` for a fast, no-LLM refresh) before pushing so teammates pull a current `GRAPH_REPORT.md`. Do not run `/build` automatically — it is opt-in. Skip this bullet entirely if `graphify-out/` is not present.
+   - **Graph freshness (optional).** If this change touched the project's structure (new modules, big refactor, removed files) and `graphify-out/` exists, suggest the user run `/build` (default: `graphify update`, AST-only, no LLM key needed) before pushing so teammates pull a current `GRAPH_REPORT.md`. Do not run `/build` automatically — it is opt-in. Skip this bullet entirely if `graphify-out/` is not present.
 
 2. **Optional version bump** (only if the user asked for it in the command input)
    - Read `.cursor/skills/issueflow-version-bump/SKILL.md` and follow it.

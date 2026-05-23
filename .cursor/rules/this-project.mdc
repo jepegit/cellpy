@@ -17,6 +17,7 @@ Rember to activate it!
 
 We also have uv installed. Use it if you want (uv run python).
 
+I recommend using conda when running pytest. First activate the conda environment. Then run pytest.
 
 ## Working on issues
 
