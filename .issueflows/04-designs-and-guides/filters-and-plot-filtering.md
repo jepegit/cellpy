@@ -32,12 +32,18 @@ introduce a small, registry-based filter module rather than extend
    `(low, high)` and `{"value": v, "delta": d}` are interpreted as
    **exclusive lower / inclusive upper** so the two forms behave
    consistently. The same convention is used downstream by
-   `summary_plot(filters=...)` and `CellpyCell.filter_summary(...)`.
+   `summary_plot(filters=...)` and `CellpyCell.filtered_summary(...)`.
 4. **Columns are configurable per filter.** Each filter accepts a
    `<name>_columns` kwarg (string -> single column, sequence ->
    AND-across-columns). The cellpy wrapper resolves the defaults from
    `headers_summary` so the public API is `rate=(low, high)` without
    needing to know column names.
+4b. **`CellpyCell` method naming.** The DataFrame-returning accessor is
+   `CellpyCell.filtered_summary(...)` (reads as "give me a filtered
+   summary"). The slot `CellpyCell.filter_summary(...)` is reserved
+   for a future implementation that returns a full `CellpyCell` with
+   `summary`, `raw`, and `steps` filtered together. Don't rebind that
+   name to the DataFrame helper.
 5. **C-rate rescaling lives next to the filter call.** `summary_plot`'s
    `nominal_capacity=` rescales the existing `charge_c_rate` /
    `discharge_c_rate` columns by `c.data.nom_cap / nominal_capacity`
@@ -85,7 +91,7 @@ they can be consolidated in a follow-up:
   [`cellpy/utils/plotutils.py`](../../cellpy/utils/plotutils.py)
   (`SummaryPlotDataPreparer._preprocess_summary`),
   [`cellpy/readers/cellreader.py`](../../cellpy/readers/cellreader.py)
-  (`CellpyCell.filter_summary`).
+  (`CellpyCell.filtered_summary`).
 - Tests:
   [`tests/test_filters_summary.py`](../../tests/test_filters_summary.py),
   [`tests/test_plotutils_summary_plot.py`](../../tests/test_plotutils_summary_plot.py)

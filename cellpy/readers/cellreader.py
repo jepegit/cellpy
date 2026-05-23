@@ -6780,7 +6780,7 @@ class CellpyCell:
 
         return data
 
-    def filter_summary(
+    def filtered_summary(
         self,
         *,
         rate=None,
@@ -6795,6 +6795,14 @@ class CellpyCell:
         short ``(low, high)`` keeps rows where ``low < value <= high``
         and ``{"value": v, "delta": d}`` keeps rows where
         ``v - d < value <= v + d``.
+
+        Note:
+            The name deliberately reads as a property-style "give me a
+            filtered summary" - the return is just the summary
+            DataFrame. The slot ``CellpyCell.filter_summary`` is
+            reserved for a future method that returns a full
+            ``CellpyCell`` with the summary, raw, and steps frames all
+            filtered consistently.
 
         Args:
             rate: Range filter applied to the rate columns. ``None``

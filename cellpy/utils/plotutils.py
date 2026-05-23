@@ -4774,9 +4774,9 @@ def summary_plot(
             ... )
 
         The same filter is available without plotting via
-        :meth:`CellpyCell.filter_summary` (returns a DataFrame copy)::
+        :meth:`CellpyCell.filtered_summary` (returns a DataFrame copy)::
 
-            >>> trimmed = c.filter_summary(rate=(0.1, 10.0))
+            >>> trimmed = c.filtered_summary(rate=(0.1, 10.0))
 
         Or as a free function on any summary-shaped DataFrame::
 
