@@ -6794,6 +6794,70 @@ class CellpyCell:
 
         return data
 
+    def add_to_summary(
+        self,
+        column: str,
+        method: str = "last",
+        new_name: Optional[str] = None,
+    ) -> "CellpyCell":
+        """Augment the summary frame with one value per cycle pulled from raw.
+
+        For every cycle present in ``self.data.summary``, group the raw
+        rows of ``column`` by ``cycle_index`` and reduce them with
+        ``method``. The result is written onto the summary frame in place.
+
+        Args:
+            column: name of the column in ``self.data.raw`` to look up.
+            method: groupby reducer applied per cycle. One of
+                ``"last"`` (default), ``"first"``, ``"mean"``,
+                ``"min"``, ``"max"``.
+            new_name: name to use for the new summary column. Defaults
+                to ``column``.
+
+        Returns:
+            self (chainable).
+
+        Raises:
+            ValueError: if ``column`` is not present in the raw frame or
+                ``method`` is not one of the supported reducers.
+            NoDataFound: propagated from ``self.data`` if no data is loaded.
+        """
+        allowed = {"last", "first", "mean", "min", "max"}
+        if method not in allowed:
+            raise ValueError(
+                f"add_to_summary: method must be one of {sorted(allowed)}, "
+                f"got {method!r}"
+            )
+
+        raw = self.data.raw
+        summary = self.data.summary
+
+        if column not in raw.columns:
+            raise ValueError(
+                f"add_to_summary: column {column!r} not found in raw "
+                f"(available: {sorted(raw.columns)})"
+            )
+
+        hdrn_cycle = self.headers_normal.cycle_index_txt
+        hdrs_cycle = self.headers_summary.cycle_index
+        target = new_name or column
+
+        per_cycle = raw.groupby(hdrn_cycle)[column].agg(method)
+
+        if hdrs_cycle in summary.columns:
+            summary[target] = summary[hdrs_cycle].map(per_cycle)
+        else:
+            summary[target] = per_cycle.reindex(summary.index)
+
+        logging.debug(
+            "add_to_summary: added %r (method=%s, %d non-null / %d rows)",
+            target,
+            method,
+            summary[target].notna().sum(),
+            len(summary),
+        )
+        return self
+
     def filtered_summary(
         self,
         *,
