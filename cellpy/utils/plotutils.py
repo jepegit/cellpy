@@ -4706,6 +4706,83 @@ def summary_plot(
         if ``return_data`` is True, returns a tuple with the figure and the data used for plotting.
         Otherwise, it returns only the figure. If ``interactive`` is True, the figure is a ``plotly`` figure,
         else it is a ``matplotlib`` figure.
+
+    Examples:
+        Default plot (capacity and Coulombic efficiency vs cycle number)::
+
+            >>> from cellpy.utils.plotutils import summary_plot
+            >>> fig = summary_plot(c)
+            >>> fig.show()
+
+        Plot gravimetric capacity alone, with formation cycles disabled::
+
+            >>> fig = summary_plot(c, y="capacities_gravimetric", show_formation=False)
+
+        Use the non-interactive (matplotlib/seaborn) backend, e.g. for an
+        SVG export from a script::
+
+            >>> fig = summary_plot(c, y="capacities_gravimetric", interactive=False)
+            >>> fig.savefig("summary.svg")
+
+        Get the prepared DataFrame back together with the figure (useful
+        for custom annotations or follow-up analysis)::
+
+            >>> fig, data = summary_plot(c, y="capacities_gravimetric", return_data=True)
+            >>> data.head()
+
+        New ``*_with_rate`` y-set adds a C-rate subplot on row 0::
+
+            >>> fig = summary_plot(c, y="capacities_gravimetric_with_rate")
+
+        Drop slow-rate characterisation cycles (e.g. keep only rows where
+        both ``charge_c_rate`` and ``discharge_c_rate`` are above 0.1)::
+
+            >>> fig = summary_plot(
+            ...     c,
+            ...     y="capacities_gravimetric",
+            ...     filters={"rate": (0.1, 10.0)},
+            ... )
+
+        Same idea using the symmetric ``{value, delta}`` form to keep
+        rows close to a target C/2 rate::
+
+            >>> fig = summary_plot(
+            ...     c,
+            ...     y="capacities_gravimetric_with_rate",
+            ...     filters={"rate": {"value": 0.5, "delta": 0.05}},
+            ... )
+
+        Filter on the discharge rate only (charge rate is ignored)::
+
+            >>> fig = summary_plot(
+            ...     c,
+            ...     y="capacities_gravimetric",
+            ...     filters={"rate": (0.1, 1.0)},
+            ...     rate_filter_columns="discharge_c_rate",
+            ... )
+
+        Override the nominal capacity used for the C-rate axis without
+        re-running ``make_summary``. The rate columns are rescaled by
+        ``c.data.nom_cap / nominal_capacity``; here we both rescale and
+        filter in the new units::
+
+            >>> fig = summary_plot(
+            ...     c,
+            ...     y="capacities_gravimetric_with_rate",
+            ...     nominal_capacity=200.0,
+            ...     filters={"rate": (0.1, 5.0)},
+            ... )
+
+        The same filter is available without plotting via
+        :meth:`CellpyCell.filter_summary` (returns a DataFrame copy)::
+
+            >>> trimmed = c.filter_summary(rate=(0.1, 10.0))
+
+        Or as a free function on any summary-shaped DataFrame::
+
+            >>> from cellpy.filters import filter_summary
+            >>> trimmed = filter_summary(c.data.summary.reset_index(),
+            ...                          rate=(0.1, 10.0))
     """
     # Create config from parameters
     config = SummaryPlotConfig.from_kwargs(
