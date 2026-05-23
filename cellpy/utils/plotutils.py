@@ -673,6 +673,7 @@ class SummaryPlotConfig:
 
     # Plot layout
     split: bool = True
+    hover_columns: Optional[list] = None
     auto_convert_legend_labels: bool = True
     interactive: bool = True
     share_y: bool = False
@@ -1151,6 +1152,17 @@ class SummaryPlotDataPreparer:
 
         number_of_rows = 1
         max_val_normalized_col = 0.0
+
+        if config.hover_columns and (
+            y.startswith("fullcell_standard_")
+            or y.endswith("_split_constant_voltage")
+        ):
+            logging.warning(
+                "summary_plot: hover_columns is currently only supported for "
+                "standard plot types; ignoring for y=%r",
+                y,
+            )
+
         # Prepare data based on plot type
         if y.startswith("fullcell_standard_"):
             s, number_of_rows = self._prepare_fullcell_standard_data(
@@ -1314,7 +1326,22 @@ class SummaryPlotDataPreparer:
             # This will result in empty DataFrame, which will be handled downstream
             pass
 
-        s = summary.melt(x)
+        hover_cols = list(config.hover_columns or [])
+        if hover_cols:
+            missing = [h for h in hover_cols if h not in summary.columns]
+            if missing:
+                logging.warning(
+                    "summary_plot: dropping unknown hover_columns %s "
+                    "(available: %s)",
+                    missing,
+                    sorted(summary.columns),
+                )
+                hover_cols = [h for h in hover_cols if h in summary.columns]
+            # Avoid duplicating x and value columns in id_vars
+            hover_cols = [h for h in hover_cols if h != x and h not in column_set]
+
+        id_vars = [x, *hover_cols]
+        s = summary.melt(id_vars=id_vars)
         s = s.loc[s.variable.isin(column_set)]
         s = s.reset_index(drop=True)
 
@@ -1584,6 +1611,12 @@ class PlotlyPlotBuilder:
         # Add facet_row if split
         if config.split and self.row in data.columns:
             plotly_kwargs["facet_row"] = self.row
+
+        # Add hover columns if they survived data preparation
+        if config.hover_columns:
+            present = [h for h in config.hover_columns if h in data.columns]
+            if present:
+                plotly_kwargs["hover_data"] = present
 
         # Set default height if not provided
         if plotly_kwargs.get("height") is None:
@@ -4613,6 +4646,7 @@ def summary_plot(
     norm_range: Optional[list] = None,
     cv_share_range: Optional[list] = None,
     split: bool = True,
+    hover_columns: Optional[list] = None,
     auto_convert_legend_labels: bool = True,
     interactive: bool = True,
     share_y: bool = False,
@@ -4665,6 +4699,7 @@ def summary_plot(
         norm_range: limits for normalized capacity (if present)
         cv_share_range: limits for cv share (if present)
         split: split the plot
+        hover_columns: columns to show in the hover tooltip (only for plotly)
         auto_convert_legend_labels: convert the legend labels to a nicer format.
         interactive: use interactive plotting (plotly)
         rangeslider: add a range slider to the x-axis (only for plotly)
@@ -4800,6 +4835,7 @@ def summary_plot(
         norm_range=norm_range,
         cv_share_range=cv_share_range,
         split=split,
+        hover_columns=hover_columns,
         auto_convert_legend_labels=auto_convert_legend_labels,
         interactive=interactive,
         share_y=share_y,

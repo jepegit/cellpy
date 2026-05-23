@@ -3896,6 +3896,7 @@ class CellpyCell:
         header_style="preferred",
         format="csv",
         extras=False,
+        preprocess_fn=None,
     ):
         """Export the raw time-series in Battery Data Format (BDF).
 
@@ -3922,6 +3923,9 @@ class CellpyCell:
                 A string or iterable of strings restricts the appended
                 columns to the listed names. The resulting file is no
                 longer strictly BDF-compliant.
+            preprocess_fn: A function that takes the raw DataFrame and returns
+                a new DataFrame. This function is applied to the raw DataFrame
+                after the cycle filter and before the BDF export.
 
         Returns:
             pathlib.Path: The path that the file was written to.
@@ -3940,6 +3944,7 @@ class CellpyCell:
             header_style=header_style,
             format=format,
             extras=extras,
+            preprocess_fn=preprocess_fn,
         )
 
     # --------------helper-functions--------------------------------------------
@@ -5964,7 +5969,7 @@ class CellpyCell:
         try:
             test = self.data
         except NoDataFound:
-            logging.info(f"Empty test (no data found)")
+            logging.info("Empty test (no data found)")
             return
 
         if isinstance(test.loaded_from, (list, tuple)):

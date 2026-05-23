@@ -147,7 +147,7 @@ def to_bdf(
     header_style: HeaderStyle = "preferred",
     format: BdfFormat = "csv",
     extras: ExtrasArg = False,
-    preprocess_fn: Callable[[pd.DataFrame], pd.DataFrame] = None,
+    preprocess_fn: Optional[Callable[[pd.DataFrame], pd.DataFrame]] = None,
 ) -> Path:
     """Export ``cell.data.raw`` as a BDF file.
 

@@ -475,3 +475,76 @@ class TestSummaryPlotFiltersAndRate:
             if "cycle_type" in ax.get_title() or "row =" in ax.get_title()
         ]
         assert not leaky, f"Seaborn facet titles leaked through: {leaky}"
+
+
+@pytest.mark.skipif(
+    not plotly_available,
+    reason="Plotly not available",
+)
+class TestSummaryPlotHoverColumns:
+    """Coverage for the optional ``hover_columns`` parameter."""
+
+    def test_hover_columns_added(self, cell):
+        """hover_columns survives the melt and reaches the plotly hover."""
+        hdr = cell.headers_summary
+        extras = [hdr.test_time, hdr.data_point]
+
+        fig, data = summary_plot(
+            cell,
+            y="capacities_gravimetric",
+            hover_columns=extras,
+            return_data=True,
+            interactive=True,
+            show_formation=False,
+        )
+
+        for col in extras:
+            assert col in data.columns, (
+                f"Expected hover column {col!r} to survive data preparation"
+            )
+
+        templates = [t.hovertemplate or "" for t in fig.data]
+        assert any(col in tmpl for tmpl in templates for col in extras), (
+            f"Expected at least one trace hovertemplate to reference "
+            f"{extras}, got {templates}"
+        )
+
+    def test_hover_columns_unknown_warns(self, cell, caplog):
+        """Unknown hover columns are dropped with a warning, not raised."""
+        hdr = cell.headers_summary
+        with caplog.at_level(logging.WARNING):
+            fig, data = summary_plot(
+                cell,
+                y="capacities_gravimetric",
+                hover_columns=[hdr.test_time, "definitely_not_a_real_column"],
+                return_data=True,
+                interactive=True,
+                show_formation=False,
+            )
+
+        assert fig is not None
+        assert hdr.test_time in data.columns
+        assert "definitely_not_a_real_column" not in data.columns
+        assert any(
+            "definitely_not_a_real_column" in rec.getMessage()
+            for rec in caplog.records
+        ), "Expected a warning naming the missing hover column"
+
+    def test_hover_columns_ignored_for_fullcell(self, cell, caplog):
+        """fullcell_standard_* is out of scope: warn and continue."""
+        hdr = cell.headers_summary
+        with caplog.at_level(logging.WARNING):
+            fig = summary_plot(
+                cell,
+                y="fullcell_standard_gravimetric",
+                hover_columns=[hdr.test_time],
+                interactive=True,
+                show_formation=False,
+            )
+
+        assert fig is not None
+        assert any(
+            "hover_columns" in rec.getMessage()
+            and "fullcell_standard_gravimetric" in rec.getMessage()
+            for rec in caplog.records
+        ), "Expected a warning that hover_columns is ignored for fullcell_standard_*"
