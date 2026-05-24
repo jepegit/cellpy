@@ -5,3 +5,10 @@ _old_docs/** linguist-documentation
 paper/** linguist-documentation
 tests/** linguist-documentation
 testdata/** linguist-documentation
+
+# Files sourced by bash must be LF (WSL/Linux/macOS choke on CRLF)
+.aliases     text eol=lf
+*.sh         text eol=lf
+
+# Lockfiles: LF gives stable cross-platform diffs
+*.lock       text eol=lf
