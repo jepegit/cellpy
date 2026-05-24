@@ -10,7 +10,7 @@ It is supposed to work an many platforms.
 
 We have several python environments
 
-conda: cellpy_dev_321
+conda: cellpy_dev_312
 python: .venv
 
 Rember to activate it! 
