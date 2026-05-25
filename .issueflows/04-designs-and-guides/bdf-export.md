@@ -66,6 +66,7 @@ Defining points relevant to cellpy:
 | Q4 | Scope | n/a | raw time-series only; steps/summary/metadata/batch deferred |
 | Q5 | Missing columns | n/a | hard-fail on missing *required*, warn-and-skip recommended/optional |
 | Q6 | Non-BDF columns | `extras` | `False` (strict BDF). `True` appends all unmapped raw columns verbatim; iterable/str selects a subset. No unit conversion or renaming on extras; the resulting file is not strictly BDF-compliant. |
+| Q7 | Target unit override (issue [#365](https://github.com/jepegit/cellpy/issues/365)) | `bdf_units` | `None` (strict BDF spec: `A`, `V`, `Ah`, `Wh`, `s`, `W`, `ohm`). A `CellpyUnits` overrides per `unit_kind`; column labels (`"Charging Capacity / mAh"`) and machine names (`"charging_capacity_mah"`) are rebuilt and values scaled via pint. Incompatible units raise `ValueError`. Any non-default override means the file is no longer strictly BDF-compliant (logged once at INFO). |
 
 ## Unit conversion
 
@@ -82,6 +83,43 @@ result, users who customise units (e.g. `cellpy_units.current = "mA"`,
 The `date_time` column is the one exception: pint does not handle wall
 clocks, so cellpy's pandas timestamps are converted to UTC Unix seconds
 explicitly.
+
+### Overriding target units (`bdf_units=`)
+
+Issue [#365](https://github.com/jepegit/cellpy/issues/365) added a
+`bdf_units` keyword to both `cellpy.exporters.bdf.to_bdf` and
+`CellpyCell.to_bdf`. It accepts a
+[`CellpyUnits`](../../cellpy/parameters/internal_settings.py) object
+whose attributes control the **units written into the BDF file** (not
+the source side — `cell.data.raw` is still assumed to be in
+`cell.cellpy_units`).
+
+Semantics:
+
+- `bdf_units=None` (default) → strict BDF spec output, byte-for-byte
+  identical to the pre-#365 behaviour.
+- `bdf_units=CellpyUnits(charge="mAh", current="mA")` → emits
+  `Charging Capacity / mAh` (machine: `charging_capacity_mah`) and
+  `Current / mA` (machine: `current_ma`), with values scaled via pint.
+- Per-kind precedence: attributes on the supplied object that are
+  **pint-equivalent** to the BDF spec default (`"sec" ≡ "s"`,
+  `"V" ≡ "volt"`, etc.) keep the canonical BDF label and machine name.
+  Only non-equivalent kinds flip labels.
+- A unit pint cannot convert from the cell's source unit (e.g.
+  `charge="kg"` while `cell.cellpy_units.charge == "mAh"`) raises
+  `ValueError`. No silent factor-1.0 fallback under an explicit
+  override.
+- The exporter logs one `INFO` line listing the non-default unit kinds,
+  mirroring how `extras=True` declares the file is no longer strictly
+  BDF-compliant.
+
+Label synthesis lives in `_resolve_column_name` in
+[cellpy/exporters/bdf.py](../../cellpy/exporters/bdf.py); the
+unit-kind → target-unit lookup lives in `_resolve_target_units`. Each
+`_BdfColumn` row carries both the canonical BDF spec spellings
+(`preferred` / `machine`) and unitless bases (`base_preferred` /
+`base_machine`) so the override path never has to monkey with the
+BDF-spec defaults.
 
 ## Column / unit map
 
