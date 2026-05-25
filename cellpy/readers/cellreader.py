@@ -3897,6 +3897,7 @@ class CellpyCell:
         format="csv",
         extras=False,
         preprocess_fn=None,
+        bdf_units=None,
     ):
         """Export the raw time-series in Battery Data Format (BDF).
 
@@ -3926,13 +3927,39 @@ class CellpyCell:
             preprocess_fn: A function that takes the raw DataFrame and returns
                 a new DataFrame. This function is applied to the raw DataFrame
                 after the cycle filter and before the BDF export.
+            bdf_units: Optional
+                :class:`~cellpy.parameters.internal_settings.CellpyUnits`
+                controlling the **units written into the BDF file**.
+                ``None`` (default) emits a strictly BDF-compliant file
+                (``A``, ``V``, ``Ah``, ``Wh``, ``s``, ``W``, ``ohm``).
+                When set, each attribute on the ``CellpyUnits`` overrides
+                the spec target for the corresponding column kind
+                (``charge`` → charge / discharge capacity, ``energy`` →
+                charge / discharge energy, etc.); column labels and
+                machine names are rebuilt from the override
+                (e.g. ``"Charging Capacity / mAh"`` /
+                ``"charging_capacity_mah"``) and values are scaled
+                accordingly via pint. An incompatible unit (e.g.
+                ``charge="kg"``) raises :class:`ValueError`. A file
+                written with overrides is no longer strictly BDF-
+                compliant; this is logged once at INFO level.
+
+                Example::
+
+                    from cellpy.parameters.internal_settings import CellpyUnits
+
+                    # write charge in mAh and current in mA
+                    bdf_units = CellpyUnits(charge="mAh", current="mA")
+                    cell.to_bdf("out.bdf.csv", bdf_units=bdf_units)
 
         Returns:
             pathlib.Path: The path that the file was written to.
 
         Raises:
-            ValueError: If the cell has no raw data, or any BDF-required
-                column is missing from ``data.raw``.
+            ValueError: If the cell has no raw data, any BDF-required
+                column is missing from ``data.raw``, or ``bdf_units``
+                specifies a unit that cannot be converted from the
+                cell's source unit.
         """
         from cellpy.exporters import to_bdf as _to_bdf
 
@@ -3945,6 +3972,7 @@ class CellpyCell:
             format=format,
             extras=extras,
             preprocess_fn=preprocess_fn,
+            bdf_units=bdf_units,
         )
 
     # --------------helper-functions--------------------------------------------

@@ -32,6 +32,7 @@
 * Bug fixes: Various other bug fixes and improvements
 * CI: Fix failing CI pipelines (pyarrow runtime dep + AppVeyor 64-bit Miniconda) (#360)
 * Bug fixes: Fix `TypeError: bad operand type for unary ~: 'slice'` in `plotutils.summary_plot` when called with `formation_cycles=False` or `0` (#366)
+* Exporters: `to_bdf` accepts a `bdf_units` keyword to control units written into the BDF file (#365)
 
 ## 1.0.2
 
