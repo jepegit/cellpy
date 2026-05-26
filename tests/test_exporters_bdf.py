@@ -80,8 +80,9 @@ def test_machine_headers(tmp_path: Path) -> None:
 
 
 def test_capacity_unit_mAh_to_Ah(tmp_path: Path) -> None:
+    """Source unit comes from ``data.raw_units``: mAh -> Ah scales by 1e-3."""
     cell = _make_synthetic_cell()
-    assert cell.cellpy_units.charge == "mAh"
+    cell.data.raw_units.charge = "mAh"
 
     out = cell.to_bdf(tmp_path / "out.bdf.csv", header_style="machine")
     df = pd.read_csv(out)
@@ -90,14 +91,30 @@ def test_capacity_unit_mAh_to_Ah(tmp_path: Path) -> None:
     assert df["discharging_capacity_ah"].max() == pytest.approx(0.1)
 
 
+def test_capacity_unit_passes_through_when_raw_already_Ah(tmp_path: Path) -> None:
+    """Regression: when the loader's ``raw_units.charge == "Ah"`` (as for
+    instruments like ``batmo_bdf``) the raw column is already in Ah and
+    must not be re-scaled by the ``cellpy_units`` charge default (mAh).
+    """
+    cell = _make_synthetic_cell()
+    cell.data.raw_units.charge = "Ah"
+    cell.cellpy_units.charge = "mAh"
+
+    out = cell.to_bdf(tmp_path / "out.bdf.csv", header_style="machine")
+    df = pd.read_csv(out)
+
+    assert df["charging_capacity_ah"].max() == pytest.approx(100.0)
+    assert df["discharging_capacity_ah"].max() == pytest.approx(100.0)
+
+
 def test_non_default_current_unit_uses_pint(tmp_path: Path) -> None:
-    """Override cellpy_units.current to mA and verify pint scales A->A correctly.
+    """Override raw_units.current to mA and verify pint scales mA->A correctly.
 
     Locks in that unit conversion is delegated to cellpy.readers.core.Q
     (pint) rather than a hand-rolled factor table.
     """
     cell = _make_synthetic_cell()
-    cell.cellpy_units.current = "mA"
+    cell.data.raw_units.current = "mA"
 
     out = cell.to_bdf(tmp_path / "out.bdf.csv", header_style="machine")
     df = pd.read_csv(out)
@@ -333,7 +350,7 @@ def test_bdf_units_none_matches_default_path(tmp_path: Path) -> None:
 def test_bdf_units_overrides_charge_to_mAh(tmp_path: Path) -> None:
     """Override charge unit to mAh: label and values reflect the override."""
     cell = _make_synthetic_cell()
-    assert cell.cellpy_units.charge == "mAh"  # source
+    cell.data.raw_units.charge = "mAh"  # source
 
     bdf_units = CellpyUnits(charge="mAh")
     out = cell.to_bdf(tmp_path / "out.bdf.csv", bdf_units=bdf_units)
@@ -363,7 +380,7 @@ def test_bdf_units_overrides_charge_to_mAh_machine_style(tmp_path: Path) -> None
 def test_bdf_units_overrides_current_to_mA(tmp_path: Path) -> None:
     """Override current to mA: factor 1000 from the source A."""
     cell = _make_synthetic_cell()
-    assert cell.cellpy_units.current == "A"
+    assert cell.data.raw_units.current == "A"
 
     bdf_units = CellpyUnits(current="mA")
     out = cell.to_bdf(tmp_path / "out.bdf.csv", bdf_units=bdf_units)

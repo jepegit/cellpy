@@ -404,6 +404,12 @@ def to_bdf(
             An incompatible unit (e.g. ``charge="kg"``) raises
             :class:`ValueError` rather than emitting wrong-unit numbers.
 
+            *Source units*: the conversion source is
+            ``cell.data.raw_units`` (set by the instrument loader), **not**
+            ``cell.cellpy_units``. The ``data.raw`` frame is always stored
+            in the loader's raw units; ``cellpy_units`` describes the
+            summary frame and user-facing meta-data only.
+
             Example::
 
                 from cellpy.parameters.internal_settings import CellpyUnits
@@ -420,7 +426,7 @@ def to_bdf(
         ValueError: If ``cell.data.raw`` is empty, any BDF *required*
             column is missing, or ``bdf_units`` specifies a unit that is
             not convertible from the cell's source unit (e.g.
-            ``charge="kg"`` while ``cell.cellpy_units.charge == "mAh"``).
+            ``charge="kg"`` while ``cell.data.raw_units.charge == "Ah"``).
     """
     raw = cell.data.raw
     if raw is None or raw.empty:
@@ -428,7 +434,7 @@ def to_bdf(
         raise ValueError(msg)
 
     headers = cell.headers_normal
-    cellpy_units = cell.cellpy_units
+    source_units = cell.data.raw_units
     target_units = _resolve_target_units(bdf_units)
     strict_units = bdf_units is not None
 
@@ -442,7 +448,7 @@ def to_bdf(
         raw = preprocess_fn(raw)
 
     out_df, missing_recommended, extras_added, non_default_units = _build_bdf_frame(
-        raw, headers, cellpy_units, header_style, extras, target_units, strict_units
+        raw, headers, source_units, header_style, extras, target_units, strict_units
     )
     for col_name in missing_recommended:
         logger.warning("to_bdf: BDF-recommended column %r is not present in data.raw; skipped.", col_name)
@@ -474,7 +480,7 @@ def to_bdf(
 def _build_bdf_frame(
     raw: pd.DataFrame,
     headers,
-    cellpy_units,
+    source_units,
     header_style: HeaderStyle,
     extras: ExtrasArg,
     target_units: dict[str, Optional[str]],
@@ -515,9 +521,9 @@ def _build_bdf_frame(
         elif spec.unit_kind is None:
             converted = series
         else:
-            cellpy_unit = getattr(cellpy_units, spec.unit_kind, None)
+            source_unit = getattr(source_units, spec.unit_kind, None)
             target_unit = target_units.get(spec.unit_kind, spec.bdf_unit)
-            factor = _conversion_factor(cellpy_unit, target_unit, strict=strict_units)
+            factor = _conversion_factor(source_unit, target_unit, strict=strict_units)
             converted = series * factor if factor != 1.0 else series
             if (
                 strict_units
@@ -583,3 +589,62 @@ def _append_extras(
         out[col] = raw[col].reset_index(drop=True)
         added.append(col)
     return added
+
+
+if __name__ == "__main__":
+    import cellpy
+    import pathlib
+    import pandas as pd
+
+    raw_data_path = pathlib.Path(r"local\data\combined_protocol_results_realistic.bdf.csv")
+    out_path = pathlib.Path(r"local\out\batmo_bdf\out.bdf.csv")
+    assert raw_data_path.exists()
+
+    c = cellpy.get(
+        raw_data_path,
+        instrument="batmo_bdf",
+        cycle_mode="full_cell",
+        mass=1.0,
+        nominal_capacity=120.0,
+        nom_cap_specifics="absolute",
+        refuse_copying=True,
+    )
+
+    c.to_bdf(out_path)
+
+    print(f"Wrote BDF file to {out_path}")
+
+    print("Now we should check the input and output files")
+    print("--------------------------------")
+    r_cha, r_dch = 'Charge Capacity / Ah', 'Discharge Capacity / Ah'
+    c_cha, c_dch = 'charge_capacity', 'discharge_capacity'
+    o_cha, o_dch =  'Charging Capacity / Ah', 'Discharging Capacity / Ah'
+    print("INPUT FILE:")
+    df_raw = pd.read_csv(raw_data_path)
+    print(df_raw.head())
+    print(df_raw[r_cha].max())
+    print(df_raw[r_dch].max())
+
+
+    print("CELLPY CELL:")
+    print(c.data.raw.head())
+    print(c.data.raw[c_cha].max())
+    print(c.data.raw[c_dch].max())
+
+    print("OUTPUT FILE:")
+    df_out = pd.read_csv(out_path)
+    print(df_out.head())
+    print(df_out[o_cha].max())
+    print(df_out[o_dch].max())
+
+    print("--------------------------------")
+    print("Checking if the values are the same")
+    print(f"Input {r_cha}: {df_raw[r_cha].max()} vs Output {c_cha}: {c.data.raw[c_cha].max()}")
+    print(f"Input {r_dch}: {df_raw[r_dch].max()} vs Output {c_dch}: {c.data.raw[c_dch].max()}")
+
+    print("--------------------------------")
+    print("Checking if the values are the same")
+    print(f"Input {r_cha}: {df_raw[r_cha].max()} vs Output {o_cha}: {df_out[o_cha].max()}")
+    print(f"Input {r_dch}: {df_raw[r_dch].max()} vs Output {o_dch}: {df_out[o_dch].max()}")
+
+    print(c.data.raw_units)
