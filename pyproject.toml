@@ -21,6 +21,27 @@ filterwarnings = [
 [tool.black]
 line-length = 120
 
+[tool.coverage.run]
+source = ["cellpy"]
+branch = true
+omit = [
+    "cellpy/libs/*",
+    "cellpy/parameters/legacy/*",
+    "cellpy/_version.py",
+    "*/tests/*",
+]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false
+exclude_also = [
+    "def __repr__",
+    "if __name__ == .__main__.:",
+    "raise NotImplementedError",
+    "if TYPE_CHECKING:",
+    "@(abc\\.)?abstractmethod",
+]
+
 [tool.bumpver]
 current_version = "1.0.3a13"
 version_pattern = "MAJOR.MINOR.PATCH[PYTAG][NUM]"
