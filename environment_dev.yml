@@ -1,8 +1,8 @@
-name: cellpy_dev
+name: cellpy_dev_312
 channels:
     - conda-forge
 dependencies:
-    - python >= 3.11
+    - python=3.12
     - PyGithub
     - black
     - bumpver
