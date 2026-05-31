@@ -595,6 +595,7 @@ if __name__ == "__main__":
     import cellpy
     import pathlib
     import pandas as pd
+    from cellpy.parameters.internal_settings import CellpyUnits
 
     raw_data_path = pathlib.Path(r"local\data\combined_protocol_results_realistic.bdf.csv")
     out_path = pathlib.Path(r"local\out\batmo_bdf\out.bdf.csv")
@@ -609,8 +610,10 @@ if __name__ == "__main__":
         nom_cap_specifics="absolute",
         refuse_copying=True,
     )
-
-    c.to_bdf(out_path)
+    bdf_units = CellpyUnits(
+        charge="mAh"
+    )
+    c.to_bdf(out_path, bdf_units=bdf_units)
 
     print(f"Wrote BDF file to {out_path}")
 
@@ -618,16 +621,16 @@ if __name__ == "__main__":
     print("--------------------------------")
     r_cha, r_dch = 'Charge Capacity / Ah', 'Discharge Capacity / Ah'
     c_cha, c_dch = 'charge_capacity', 'discharge_capacity'
-    o_cha, o_dch =  'Charging Capacity / Ah', 'Discharging Capacity / Ah'
+    o_cha, o_dch =  f'Charging Capacity / {bdf_units.charge}', f'Discharging Capacity / {bdf_units.charge}'
     print("INPUT FILE:")
     df_raw = pd.read_csv(raw_data_path)
-    print(df_raw.head())
+    # print(df_raw.head())
     print(df_raw[r_cha].max())
     print(df_raw[r_dch].max())
 
 
     print("CELLPY CELL:")
-    print(c.data.raw.head())
+    # print(c.data.raw.head())
     print(c.data.raw[c_cha].max())
     print(c.data.raw[c_dch].max())
 
@@ -637,12 +640,12 @@ if __name__ == "__main__":
     print(df_out[o_cha].max())
     print(df_out[o_dch].max())
 
-    print("--------------------------------")
+    print("-------------raw-cellpy----------------")
     print("Checking if the values are the same")
     print(f"Input {r_cha}: {df_raw[r_cha].max()} vs Output {c_cha}: {c.data.raw[c_cha].max()}")
     print(f"Input {r_dch}: {df_raw[r_dch].max()} vs Output {c_dch}: {c.data.raw[c_dch].max()}")
 
-    print("--------------------------------")
+    print("-------------raw-exported--------------")
     print("Checking if the values are the same")
     print(f"Input {r_cha}: {df_raw[r_cha].max()} vs Output {o_cha}: {df_out[o_cha].max()}")
     print(f"Input {r_dch}: {df_raw[r_dch].max()} vs Output {o_dch}: {df_out[o_dch].max()}")
