@@ -1,142 +1,140 @@
-"""pec csv-type data files"""
+"""PEC csv-type data files."""
 
+import csv
 import logging
-import os
+import re
 import warnings
 from datetime import datetime
 
-import numpy as np
 import pandas as pd
 from dateutil.parser import parse
 
-from cellpy.parameters.internal_settings import get_headers_normal
-from cellpy.readers.core import Data, FileID, humanize_bytes
+from cellpy.parameters.internal_settings import (
+    base_columns_float,
+    base_columns_int,
+    get_headers_normal,
+)
+from cellpy.readers.core import Data
 from cellpy.readers.instruments.base import BaseLoader
-
-pec_headers_normal = dict()
-
-pec_headers_normal["step_index_txt"] = "Step"
-pec_headers_normal["cycle_index_txt"] = "Cycle"
-pec_headers_normal["test_time_txt"] = "Total_Time_Seconds"  # This might change
-pec_headers_normal["step_time_txt"] = "Step_Time_Seconds"  # This might change
-pec_headers_normal["datetime_txt"] = "Real_Time"
-pec_headers_normal["voltage_txt"] = "Voltage_mV"  # This might change
-pec_headers_normal["current_txt"] = "Current_mA"  # This might change
-pec_headers_normal["charge_capacity_txt"] = "Charge_Capacity_mAh"
-pec_headers_normal["discharge_capacity_txt"] = "Discharge_Capacity_mAh"
-pec_headers_normal["charge_energy_txt"] = "Charge_Capacity_mWh"
-pec_headers_normal["discharge_energy_txt"] = "Discharge_Capacity_mWh"
-pec_headers_normal["internal_resistance_txt"] = "Internal_Resistance_1_mOhm"
-pec_headers_normal["test_id_txt"] = "Test"
-
-
-# TODO: better reading of first part of the file (comments and headers)
-#  1. find the units
-#  2. convert cycle and step numbers so that they start with 1 and not 0
-#  3. find user-defined variables
 
 
 class DataLoader(BaseLoader):
-    """Class for loading exported data from PEC"""
+    """Class for loading exported data from PEC."""
 
     instrument_name = "pec_csv"
     raw_ext = "csv"
 
+    _HEADER_ALIASES = {
+        "test": {"test"},
+        "step": {"step"},
+        "cycle": {"cycle"},
+        "test_time": {
+            "totaltimeseconds",
+            "totaltimeminutes",
+            "totaltimedecimalhours",
+            "totaltimehoursinhhmmssxxx",
+        },
+        "step_time": {
+            "steptimeseconds",
+            "steptimeminutes",
+            "steptimedecimalhours",
+            "steptimehoursinhhmmssxxx",
+        },
+        "date_time": {"realtime"},
+        "voltage": {"voltagev", "voltagemv", "voltageuv", "voltageµv"},
+        "current": {"currenta", "currentma", "currentua", "currentµa"},
+        "charge_capacity": {"chargecapacityah", "chargecapacitymah"},
+        "discharge_capacity": {"dischargecapacityah", "dischargecapacitymah"},
+        "charge_energy": {"chargeenergymwh", "chargeenergywh", "chargecapacitymwh"},
+        "discharge_energy": {
+            "dischargeenergymwh",
+            "dischargeenergywh",
+            "dischargecapacitymwh",
+        },
+        "internal_resistance": {
+            "internalresistance1mohm",
+            "internalresistance1ohm",
+        },
+    }
+    _REQUIRED_HEADER_FIELDS = {
+        "test",
+        "step",
+        "cycle",
+        "date_time",
+        "voltage",
+        "current",
+    }
+    _MIN_HEADER_MATCHES = 8
+    _TIME_FACTORS = {
+        "seconds": 1.0,
+        "minutes": 60.0,
+        "decimalhours": 3600.0,
+    }
+    _UNIT_FACTORS = {
+        "voltage": {"v": 1.0, "mv": 1e-3, "uv": 1e-6, "µv": 1e-6},
+        "current": {"a": 1.0, "ma": 1e-3, "ua": 1e-6, "µa": 1e-6},
+        "charge_capacity": {"ah": 1.0, "mah": 1e-3},
+        "discharge_capacity": {"ah": 1.0, "mah": 1e-3},
+        "charge_energy": {"wh": 1.0, "mwh": 1e-3},
+        "discharge_energy": {"wh": 1.0, "mwh": 1e-3},
+        "internal_resistance": {"ohm": 1.0, "mohm": 1e-3},
+    }
+    _COLUMN_KEY_TO_CELLPY_HEADER = {
+        "test": "test_id_txt",
+        "step": "step_index_txt",
+        "cycle": "cycle_index_txt",
+        "test_time": "test_time_txt",
+        "step_time": "step_time_txt",
+        "date_time": "datetime_txt",
+        "voltage": "voltage_txt",
+        "current": "current_txt",
+        "charge_capacity": "charge_capacity_txt",
+        "discharge_capacity": "discharge_capacity_txt",
+        "charge_energy": "charge_energy_txt",
+        "discharge_energy": "discharge_energy_txt",
+        "internal_resistance": "internal_resistance_txt",
+    }
+    _MUST_HAVE_RAW_COLUMNS = [
+        "test_time_txt",
+        "step_time_txt",
+        "current_txt",
+        "voltage_txt",
+        "step_index_txt",
+        "cycle_index_txt",
+        "charge_capacity_txt",
+        "discharge_capacity_txt",
+    ]
+
     def __init__(self, *args, **kwargs):
-        self.headers_normal = (
-            get_headers_normal()
-        )  # should consider moving this to the Loader class
-        self.current_chunk = 0  # use this to set chunks to load
-        self.pec_data = None
-        self.pec_log = None
-        self.pec_settings = None
-        self.variable_header_keywords = [
-            "Voltage (V)",
-            "Current (A)",
-        ]  # The unit of these will be read from file
-        self.fake_header_length = [
-            "#RESULTS CHECK\n",
-            "#END RESULTS CHECK\n",
-        ]  # Ignores number of delimiters in between
+        self.headers_normal = get_headers_normal()
+        self.cellpy_headers = self.headers_normal
+        self.current_chunk = 0
+        self.pec_settings = {}
         self.pec_file_delimiter = ","
-        self.number_of_header_lines = None  # Number of header lines is not constant
-        self.cellpy_headers = (
-            get_headers_normal()
-        )  # should consider to move this to the Loader class
+        self.number_of_header_lines = None
 
-    # @staticmethod
-    # def _get_pec_units():
-    #    pec_units = dict()
-    #    pec_units["voltage"] = 0.001  # V
-    #    pec_units["current"] = 0.001  # A
-    #    pec_units["charge"] = 0.001  # Ah
-    #    pec_units["mass"] = 0.001  # g
-    #    pec_units["energy"] = 0.001  # Wh
+    @staticmethod
+    def _normalize_header_token(token):
+        return "".join(ch for ch in token.lower() if ch.isalnum())
 
-    #    return pec_units
+    @staticmethod
+    def _sanitize_column_name(token):
+        token = token.strip()
+        token = token.replace("%", "pct")
+        token = token.replace("°", "deg")
+        token = re.sub(r"[()/\-]+", " ", token)
+        token = re.sub(r"\s+", "_", token.strip())
+        return token.lower()
 
-    def _get_pec_units(self):  # Fetches units from a csv file
-        # Mapping prefixes to values
-        prefix = {"µ": 10**-6, "m": 10**-3, "": 1}
-
-        # Adding the non-variable units to the return value
-        pec_units = {"charge": 0.001, "mass": 0.001, "energy": 0.001}  # Ah  # g  # Wh
-
-        # A list with all the variable keywords without any prefixes, used as search terms
-        header = self.variable_header_keywords
-
-        data = pd.read_csv(
-            self.temp_file_path, skiprows=self.number_of_header_lines, nrows=1
-        )
-
-        # Searching for the prefix for all the variable units
-        for item in data.keys():
-            for unit in header:
-                x = unit.find("(") - len(unit)
-                if unit[: x + 1] in item:
-                    y = item[x].replace("(", "")
-                    # Adding units conversion factor to return value, renaming the headers to include correct units
-                    if header.index(unit) == 0:
-                        pec_units["voltage"] = prefix.get(y)
-                        pec_headers_normal["voltage_txt"] = f"Voltage_{y}V"
-                    elif header.index(unit) == 1:
-                        pec_units["current"] = prefix.get(y)
-                        pec_headers_normal["current_txt"] = f"Current_{y}A"
-        return pec_units
-
-    def _get_pec_times(self):
-        # Mapping units to their conversion values
-        logging.debug("retrieve pec units")
-        units = {
-            "(Hours in hh:mm:ss.xxx)": self.timestamp_to_seconds,
-            "(Decimal Hours)": 3600,
-            "(Minutes)": 60,
-            "(Seconds)": 1,
+    def _header_matches(self, cells):
+        normalized_cells = {
+            self._normalize_header_token(cell) for cell in cells if cell.strip()
         }
-
-        data = pd.read_csv(
-            self.temp_file_path, skiprows=self.number_of_header_lines, nrows=0
-        )
-        pec_times = dict()
-
-        # Adds the time variables and their units to the pec_times dictonary return value
-        # Also updates the column headers in pec_headers_normal with the correct name
-        for item in data.keys():
-            for unit in units:
-                if unit in item:
-                    x = item.find("(")
-                    var = item[: x - 1].lower().replace(" ", "_")
-                    its_unit = item[x:]
-                    pec_times[var] = units.get(its_unit)
-                    if var == "total_time":
-                        pec_headers_normal["test_time_txt"] = (
-                            f"Total_Time_{its_unit[1:-1].replace(' ', '_')}"
-                        )
-                    if var == "step_time":
-                        pec_headers_normal["step_time_txt"] = (
-                            f"Step_Time_{its_unit[1:-1].replace(' ', '_')}"
-                        )
-        return pec_times
+        matched = set()
+        for semantic_name, aliases in self._HEADER_ALIASES.items():
+            if normalized_cells.intersection(aliases):
+                matched.add(semantic_name)
+        return matched
 
     @staticmethod
     def get_raw_units():
@@ -148,24 +146,13 @@ class DataLoader(BaseLoader):
         raw_units["energy"] = "Wh"
         raw_units["time"] = "s"
         raw_units["capacity"] = "Ah"
-
-        return raw_units
-
-    @staticmethod
-    def _raw_units_for_internal_calculations():
-        raw_units = dict()
-        raw_units["current"] = 1.0
-        raw_units["charge"] = 1.0
-        raw_units["mass"] = 0.001
-        raw_units["voltage"] = 1.0
-        raw_units["energy"] = 1.0
-        raw_units["time"] = 1.0
+        raw_units["resistance"] = "ohm"
         return raw_units
 
     def get_raw_limits(self):
         warnings.warn("raw limits have not been subject for testing yet")
         raw_limits = dict()
-        raw_limits["current_hard"] = 0.1  # There is a bug in PEC
+        raw_limits["current_hard"] = 0.1
         raw_limits["current_soft"] = 1.0
         raw_limits["stable_current_hard"] = 2.0
         raw_limits["stable_current_soft"] = 4.0
@@ -177,228 +164,247 @@ class DataLoader(BaseLoader):
         return raw_limits
 
     def loader(self, file_name, bad_steps=None, **kwargs):
-        # self.name = file_name
-        # self.copy_to_temporary()
+        if bad_steps is not None:
+            warnings.warn("bad_steps is not implemented yet for this instrument")
+
         self.number_of_header_lines = self._find_header_length()
+        raw = self._load_pec_data()
+        metadata = self._parse_metadata()
+
         data = Data()
         self.generate_fid()
         data.raw_data_files.append(self.fid)
-
-        # div parameters and information (probably load this last)
         data.loaded_from = self.name
-
-        # some overall prms
         data.channel_index = None
         data.creator = None
         data.schedule_file_name = None
-        data.test_ID = None
-        data.test_name = None
+        data.test_ID = metadata.get("test_id")
+        data.test_name = metadata.get("test_regime_name")
+        data.start_datetime = metadata.get("start_time")
+        data.raw = raw
+        data.raw_data_files_length.append(len(raw))
+        data.summary = pd.DataFrame()
 
-        # --------- read raw-data (normal-data) -------------------------
-        self._load_pec_data(bad_steps)
-        # TODO: convert to datetime:
-        data.start_datetime = self.pec_settings["start_time"]
-        length_of_test = self.pec_data.shape[0]
-        logging.debug(f"length of test: {length_of_test}")
+        data = self.identify_last_data_point(data)
+        return self.validate(data)
 
-        logging.debug("renaming columns")
-        self._rename_headers()
-        self._convert_units()
+    def validate(self, data):
+        missing_must_have_columns = []
 
-        # cycle indices should not be 0
-        if 0 in self.pec_data["cycle_index"]:
-            self.pec_data["cycle_index"] += 1
+        for col in base_columns_float:
+            if col in data.raw.columns:
+                data.raw[col] = pd.to_numeric(data.raw[col], errors="coerce")
+            elif col in [self.headers_normal[k] for k in self._MUST_HAVE_RAW_COLUMNS]:
+                missing_must_have_columns.append(col)
 
-        data.raw = self.pec_data
-        data.raw_data_files_length.append(length_of_test)
+        for col in base_columns_int:
+            if col in data.raw.columns:
+                data.raw[col] = pd.to_numeric(
+                    data.raw[col], errors="coerce", downcast="integer"
+                )
+            elif col in [self.headers_normal[k] for k in self._MUST_HAVE_RAW_COLUMNS]:
+                missing_must_have_columns.append(col)
 
+        if missing_must_have_columns:
+            raise IOError(
+                f"Missing needed columns: {missing_must_have_columns}\nAborting!"
+            )
         return data
 
-    def _load_pec_data(self, bad_steps):
-        if bad_steps is not None:
-            warnings.warn("bad_steps is not implemented yet for this instrument")
-        file_name = self.temp_file_path
-        number_of_header_lines = self.number_of_header_lines
-
-        # ----------------- reading the data ---------------------
-        df = pd.read_csv(file_name, skiprows=number_of_header_lines)
-
-        # get rid of unnamed columns
+    def _load_pec_data(self):
+        df = pd.read_csv(
+            self.temp_file_path,
+            skiprows=self.number_of_header_lines,
+            encoding="utf-8-sig",
+        )
         df = df.loc[:, ~df.columns.str.contains("^Unnamed")]
 
-        # get rid of spaces, parenthesis, and the deg-sign
-        new_column_headers = {
-            c: c.replace(" ", "_")
-            .replace("(", "")
-            .replace(")", "")
-            .replace("°", "")
-            .replace(r"%", "pct")
-            for c in df.columns
-        }
-        df.rename(columns=new_column_headers, inplace=True)
+        pec_columns = self._find_pec_columns(df.columns)
+        self._rename_pec_columns(df, pec_columns)
+        self._sanitize_non_cellpy_columns(df)
+        self._convert_units(df, pec_columns)
+        self._add_missing_columns(df)
 
-        # add missing columns
-        df.insert(0, self.headers_normal.data_point_txt, range(len(df)))
-        df[self.headers_normal.sub_step_index_txt] = 0
-        df[self.headers_normal.sub_step_time_txt] = 0
+        cycle_header = self.headers_normal.cycle_index_txt
+        if cycle_header in df.columns and df[cycle_header].min() == 0:
+            df[cycle_header] = df[cycle_header] + 1
 
-        self.pec_data = df
+        return df
 
-        # ----------------  reading the parameters ---------------
-        with open(file_name, "r") as ofile:
-            counter = 0
-            lines = []
-            for line in ofile:
-                counter += 1
-                if counter > number_of_header_lines:
-                    break
-                lines.append(line)
-        self._extract_variables(lines)
+    def _find_pec_columns(self, columns):
+        matches = {}
+        for column in columns:
+            normalized = self._normalize_header_token(column)
+            for semantic_name, aliases in self._HEADER_ALIASES.items():
+                if normalized in aliases:
+                    matches[semantic_name] = column
+        return matches
 
-    def _extract_variables(self, lines):
-        header_comments = dict()
-        comment_loop = False
-        for line_number, line in enumerate(lines):
-            if line.startswith("#"):
-                if not comment_loop:
-                    comment_loop = True
-                else:
-                    comment_loop = False
+    def _rename_pec_columns(self, df, pec_columns):
+        renaming = {}
+        for semantic_name, column in pec_columns.items():
+            header_key = self._COLUMN_KEY_TO_CELLPY_HEADER.get(semantic_name)
+            if header_key is None:
+                continue
+            renaming[column] = self.headers_normal[header_key]
+        if renaming:
+            df.rename(columns=renaming, inplace=True)
 
-            else:
-                if not comment_loop:
-                    parts = line.split(",")
-                    variable = parts[0].strip()
-                    variable = variable.strip(":")
-                    variable = variable.replace(" ", "_")
-                    try:
-                        value = parts[1].strip()
-                    except IndexError:
-                        value = None
+    def _sanitize_non_cellpy_columns(self, df):
+        protected_columns = set(self._COLUMN_KEY_TO_CELLPY_HEADER.values())
+        protected_columns = {self.headers_normal[key] for key in protected_columns}
+        renaming = {}
+        for column in df.columns:
+            if column in protected_columns:
+                continue
+            sanitized = self._sanitize_column_name(column)
+            if sanitized and sanitized != column:
+                renaming[column] = sanitized
+        if renaming:
+            df.rename(columns=renaming, inplace=True)
 
-                    if not value:
-                        value = np.nan
-                    header_comments[variable] = value
-        logging.debug(" Headers Dict ")
-        logging.debug(header_comments)
+    def _add_missing_columns(self, df):
+        if self.headers_normal.data_point_txt not in df.columns:
+            df.insert(0, self.headers_normal.data_point_txt, range(1, len(df) + 1))
 
-        headers = dict()
+        if self.headers_normal.sub_step_index_txt not in df.columns:
+            df[self.headers_normal.sub_step_index_txt] = 0
 
-        start_time = parse(header_comments["Start_Time"])
-        end_time = parse(header_comments["End_Time"])
+        if self.headers_normal.sub_step_time_txt not in df.columns:
+            df[self.headers_normal.sub_step_time_txt] = 0.0
 
-        headers["start_time"] = start_time
-        headers["end_time"] = end_time
-        # headers["test_regime_name"] = header_comments["TestRegime_Name"]
+    def _convert_units(self, df, pec_columns):
+        datetime_header = self.headers_normal.datetime_txt
+        if datetime_header in df.columns:
+            df[datetime_header] = pd.to_datetime(df[datetime_header], errors="coerce")
 
-        self.pec_settings = headers
-
-    def _rename_headers(self):
-        logging.debug("Trying to rename the columns")
-        # logging.debug("Current columns:")
-        # logging.debug(self.pec_data.columns)
-        # logging.debug("Rename to:")
-        # logging.debug(self.headers_normal)
-
-        for key in pec_headers_normal:
-            self._rename_header(key, pec_headers_normal[key])
-
-        # logging.debug("New cols:")
-        # logging.debug(self.pec_data.columns)
-
-    def _convert_units(self):
-        logging.debug("Trying to convert all data into correct units")
-        logging.debug("- dtypes")
-        self.pec_data[self.headers_normal.datetime_txt] = pd.to_datetime(
-            self.pec_data[self.headers_normal.datetime_txt]
-        )
-
-        self.pec_data["Position_Start_Time"] = pd.to_datetime(
-            self.pec_data["Position_Start_Time"]
-        )
-
-        self.pec_data["Rack"] = self.pec_data["Rack"].astype("category")
-
-        logging.debug("- cellpy units")
-        pec_units = self._get_pec_units()
-        pec_times = self._get_pec_times()
-        raw_units = self._raw_units_for_internal_calculations()
-        self._rename_headers()  # Had to run this again after fixing the headers, might be a better way to fix this
-
-        _v = pec_units["voltage"] / raw_units["voltage"]
-        _i = pec_units["current"] / raw_units["current"]
-        _c = pec_units["charge"] / raw_units["charge"]
-        _w = pec_units["energy"] / raw_units["energy"]
-
-        # Check if time is given in a units proportional to seconds or in a hh:mm:ss.xxx format
-        # Convert all hh:mm:ss.xxx formats to seconds using self.timestamp_to_seconds()
-        relevant_times = ["total_time", "step_time"]
-        for x in relevant_times:
-            if isinstance(pec_times[x], (int, float)):
-                if x == relevant_times[0]:
-                    _tt = pec_times["total_time"] / raw_units["time"]
-                    self.pec_data[self.headers_normal.test_time_txt] *= _tt
-                elif x == relevant_times[1]:
-                    _st = pec_times["step_time"] / raw_units["time"]
-                    self.pec_data[self.headers_normal.step_time_txt] *= _st
-            elif callable(pec_times[x]):
-                # EDIT jepe 18.06.2020: change to .apply(func) instead of for-loop
-                # (now the column is of float64 type and behaves properly)
-                if x == relevant_times[0]:
-                    # col = self.pec_data[self.headers_normal.test_time_txt]
-                    hdr = self.headers_normal.test_time_txt
-                elif x == relevant_times[1]:
-                    # col = self.pec_data[self.headers_normal.step_time_txt]
-                    hdr = self.headers_normal.test_time_txt
-                self.pec_data[hdr] = self.pec_data[hdr].apply(pec_times[x])
-                # for i in range(len(col)):
-                #     col[i] = pec_times[x](col[i])
-
-        v_txt = self.headers_normal.voltage_txt
-        i_txt = self.headers_normal.current_txt
-
-        self.pec_data[v_txt] *= _v
-        self.pec_data[i_txt] *= _i
-
-        self.pec_data[self.headers_normal.charge_capacity_txt] *= _c
-        self.pec_data[self.headers_normal.discharge_capacity_txt] *= _c
-        self.pec_data[self.headers_normal.charge_energy_txt] *= _w
-        self.pec_data[self.headers_normal.discharge_energy_txt] *= _w
-
-    def _rename_header(self, h_old, h_new):
-        try:
-            self.pec_data.rename(
-                columns={h_new: self.cellpy_headers[h_old]}, inplace=True
+        if "position_start_time" in df.columns:
+            df["position_start_time"] = pd.to_datetime(
+                df["position_start_time"], errors="coerce"
             )
-        except KeyError as e:
-            logging.info(f"Problem during conversion to cellpy-format ({e})")
+
+        for semantic_name, original_header in pec_columns.items():
+            header_key = self._COLUMN_KEY_TO_CELLPY_HEADER.get(semantic_name)
+            if header_key is None:
+                continue
+            cellpy_header = self.headers_normal[header_key]
+            if cellpy_header not in df.columns:
+                continue
+
+            if semantic_name in {"test_time", "step_time"}:
+                df[cellpy_header] = self._convert_time_column(
+                    df[cellpy_header], original_header
+                )
+                continue
+
+            if semantic_name == "date_time":
+                continue
+
+            df[cellpy_header] = pd.to_numeric(df[cellpy_header], errors="coerce")
+            factor = self._get_unit_factor(semantic_name, original_header)
+            if factor != 1.0:
+                df[cellpy_header] = df[cellpy_header] * factor
+
+    def _convert_time_column(self, series, original_header):
+        unit = self._extract_unit_label(original_header)
+        normalized = self._normalize_header_token(unit)
+        if normalized in self._TIME_FACTORS:
+            values = pd.to_numeric(series, errors="coerce")
+            return values * self._TIME_FACTORS[normalized]
+        if normalized == "hoursinhhmmssxxx":
+            return series.apply(self.timestamp_to_seconds)
+        return pd.to_numeric(series, errors="coerce")
+
+    def _get_unit_factor(self, semantic_name, header):
+        unit = self._normalize_header_token(self._extract_unit_label(header))
+        if not unit:
+            return 1.0
+        quantity_units = self._UNIT_FACTORS.get(semantic_name, {})
+        return quantity_units.get(unit, 1.0)
+
+    @staticmethod
+    def _extract_unit_label(header):
+        match = re.search(r"\((.*?)\)", header)
+        if match is None:
+            return ""
+        return match.group(1).strip()
+
+    def _parse_metadata(self):
+        with open(
+            self.temp_file_path, "r", encoding="utf-8-sig", errors="replace"
+        ) as handle:
+            header_lines = [next(handle) for _ in range(self.number_of_header_lines)]
+
+        metadata = {}
+        inside_comment_block = False
+        for line in header_lines:
+            stripped = line.strip()
+            if stripped.startswith("#"):
+                inside_comment_block = not inside_comment_block
+                continue
+
+            if inside_comment_block or "," not in line:
+                continue
+
+            key, value = line.split(",", 1)
+            key = self._sanitize_column_name(key.strip(": "))
+            value = value.strip().strip(",")
+            metadata[key] = value or None
+
+        self.pec_settings = metadata
+
+        parsed_metadata = {
+            "test_id": metadata.get("test"),
+            "test_regime_name": metadata.get("testregime_name"),
+            "start_time": self._parse_datetime_or_none(metadata.get("start_time")),
+            "end_time": self._parse_datetime_or_none(metadata.get("end_time")),
+        }
+        return parsed_metadata
+
+    @staticmethod
+    def _parse_datetime_or_none(value):
+        if not value:
+            return None
+        try:
+            return parse(value)
+        except (TypeError, ValueError):
+            logging.debug("could not parse datetime metadata: %s", value)
+            return None
 
     def _find_header_length(self):
-        skiprows = 0
-        resultscheck = False  # Ignore number of delimiters inside RESULTS CHECK
+        with open(
+            self.temp_file_path, "r", encoding="utf-8-sig", errors="replace", newline=""
+        ) as handle:
+            for line_number, line in enumerate(handle, 1):
+                cells = next(csv.reader([line], delimiter=self.pec_file_delimiter))
+                matched = self._header_matches(cells)
+                if len(matched) >= self._MIN_HEADER_MATCHES and (
+                    self._REQUIRED_HEADER_FIELDS <= matched
+                ):
+                    return line_number - 1
 
-        with open(self.temp_file_path, "r") as header:
-            for line in header:
-                if line in self.fake_header_length:
-                    resultscheck = not resultscheck
-                if (
-                    line.count(self.pec_file_delimiter) > 1 and not resultscheck
-                ):  # End when there are >2 columns
-                    break
-                skiprows += 1
-
-        return skiprows
+        raise IOError(
+            f"Could not detect PEC header row in {self.temp_file_path}. "
+            "Expected a CSV table header containing the core PEC columns."
+        )
 
     @staticmethod
     def timestamp_to_seconds(timestamp):
-        """Changes hh:mm:s.xxx time format to seconds"""
+        """Convert `hh:mm:ss.xxx` values to seconds.
+
+        PEC can export elapsed time in clock-format, and the hour field can exceed 24.
+        """
+
+        if pd.isna(timestamp):
+            return pd.NA
+
+        timestamp = str(timestamp)
         total_secs = 0
-        # strptime can not handle more than 24 hours, days are counted manually
         hours = int(timestamp[:2])
         if hours >= 24:
             days = hours // 24
             total_secs += days * 3600 * 24
-            timestamp = str(hours - 24 * days) + timestamp[2:]
+            timestamp = str(hours - 24 * days).zfill(2) + timestamp[2:]
         total_secs += (
             datetime.strptime(timestamp, "%H:%M:%S.%f")
             - datetime.strptime("00:00:00.000", "%H:%M:%S.%f")
