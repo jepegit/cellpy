@@ -2,6 +2,7 @@
 
 import csv
 import logging
+import pathlib
 import re
 import warnings
 from datetime import datetime
@@ -16,6 +17,98 @@ from cellpy.parameters.internal_settings import (
 )
 from cellpy.readers.core import Data
 from cellpy.readers.instruments.base import BaseLoader
+
+
+def inspect_pec_csv_metadata(file_name):
+    """Inspect PEC CSV preamble metadata without loading the full dataset."""
+
+    loader = DataLoader()
+    loader.name = pathlib.Path(file_name)
+    loader.copy_to_temporary()
+    loader.number_of_header_lines = loader._find_header_length()
+    metadata = loader._parse_metadata()
+    metadata["file_name"] = pathlib.Path(file_name)
+    metadata["test_number"] = _extract_test_number_from_pec_path(file_name)
+    return metadata
+
+
+def group_pec_csv_files_by_lot(file_names):
+    """Group PEC CSV files by LotID and sort each group by numeric test id."""
+
+    grouped = {}
+    for file_name in file_names:
+        metadata = inspect_pec_csv_metadata(file_name)
+        lot_id = metadata.get("lot_id") or "<missing>"
+        grouped.setdefault(lot_id, []).append(metadata)
+
+    grouped_files = {}
+    for lot_id, entries in grouped.items():
+        ordered_entries = sorted(
+            entries,
+            key=lambda entry: (
+                entry["test_number"] is None,
+                (
+                    entry["test_number"]
+                    if entry["test_number"] is not None
+                    else float("inf")
+                ),
+                pathlib.Path(entry["file_name"]).name,
+            ),
+        )
+        grouped_files[lot_id] = [entry["file_name"] for entry in ordered_entries]
+    return grouped_files
+
+
+def load_pec_csv_groups_by_lot(file_names, **kwargs):
+    """Load PEC CSV files into one CellpyCell per LotID."""
+
+    from cellpy.readers.cellreader import CellpyCell
+
+    cells = {}
+    grouped_files = group_pec_csv_files_by_lot(file_names)
+    for lot_id, files in grouped_files.items():
+        cell = CellpyCell()
+        cell.from_raw(files, instrument="pec_csv", **kwargs)
+        _update_pec_group_metadata(cell, lot_id, files)
+        cells[lot_id] = cell
+    return cells
+
+
+def _extract_test_number_from_pec_path(file_name):
+    match = re.search(r"Test(\d+)\.csv$", pathlib.Path(file_name).name)
+    if match is None:
+        return None
+    return int(match.group(1))
+
+
+def _update_pec_group_metadata(cell, lot_id, files):
+    metadata_entries = [inspect_pec_csv_metadata(file_name) for file_name in files]
+
+    if cell.data.custom_info is None:
+        cell.data.custom_info = {}
+
+    pec_metadata = dict(cell.data.custom_info.get("pec_metadata", {}))
+    pec_metadata["lot_id"] = None if lot_id == "<missing>" else lot_id
+
+    group_metadata = {
+        "grouped_by": "lot_id",
+        "lot_ids": sorted(
+            {
+                entry["lot_id"]
+                for entry in metadata_entries
+                if entry.get("lot_id") not in [None, ""]
+            }
+        ),
+        "source_test_ids": [
+            entry["test_number"]
+            for entry in metadata_entries
+            if entry["test_number"] is not None
+        ],
+        "source_files": [pathlib.Path(file_name) for file_name in files],
+    }
+
+    cell.data.custom_info["pec_metadata"] = pec_metadata
+    cell.data.custom_info["pec_group_metadata"] = group_metadata
 
 
 class DataLoader(BaseLoader):
@@ -170,6 +263,10 @@ class DataLoader(BaseLoader):
         self.number_of_header_lines = self._find_header_length()
         raw = self._load_pec_data()
         metadata = self._parse_metadata()
+        cell_id = None
+        if "cell_id" in raw.columns and not raw["cell_id"].empty:
+            if raw["cell_id"].notna().any():
+                cell_id = raw["cell_id"].dropna().iloc[0]
 
         data = Data()
         self.generate_fid()
@@ -181,6 +278,16 @@ class DataLoader(BaseLoader):
         data.test_ID = metadata.get("test_id")
         data.test_name = metadata.get("test_regime_name")
         data.start_datetime = metadata.get("start_time")
+        data.custom_info = {
+            "pec_metadata": {
+                "test_id": metadata.get("test_id"),
+                "test_regime_name": metadata.get("test_regime_name"),
+                "start_time": metadata.get("start_time"),
+                "end_time": metadata.get("end_time"),
+                "lot_id": metadata.get("lot_id"),
+                "cell_id": cell_id,
+            }
+        }
         data.raw = raw
         data.raw_data_files_length.append(len(raw))
         data.summary = pd.DataFrame()
@@ -358,6 +465,7 @@ class DataLoader(BaseLoader):
             "test_regime_name": metadata.get("testregime_name"),
             "start_time": self._parse_datetime_or_none(metadata.get("start_time")),
             "end_time": self._parse_datetime_or_none(metadata.get("end_time")),
+            "lot_id": metadata.get("lotid"),
         }
         return parsed_metadata
 
