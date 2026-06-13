@@ -56,11 +56,20 @@ Ready to contribute? Here's how to set up ``cellpy`` for local development.
     git clone git@github.com:your_name_here/cellpy.git
     ```
 
-3. Create a local python virtual environment and activate it using python's venv utility:
+3. Create the development environment with [uv](https://docs.astral.sh/uv/) (recommended).
+   This creates ``.venv`` and installs the project plus the ``dev`` dependency group
+   from the locked ``uv.lock``:
+
+    ```shell
+    uv sync
+    ```
+
+   Or create a plain virtual environment manually:
 
     ```shell
     python -m venv .venv
     source .venv/bin/activate  # or .venv\Scripts\activate on Windows
+    uv pip install -e .
     ```
 
    Or use ``conda`` environments. See the conda documentation for more information.
@@ -68,10 +77,10 @@ Ready to contribute? Here's how to set up ``cellpy`` for local development.
    can be found in the root of the repository (``environment_dev.yml``; to create the environment,
    run ``conda env create -f environment_dev.yml``).
 
-4. Install your local copy into your virtualenv:
+4. Run commands inside the environment with ``uv run``, e.g.:
 
     ```shell
-    python -m pip install -e .
+    uv run pytest
     ```
 
 5. Create a branch for local development:
@@ -100,6 +109,29 @@ Ready to contribute? Here's how to set up ``cellpy`` for local development.
     ```
 
 8. Submit a pull request through the GitHub website (or your IDE if that option exists).
+
+## Building the package
+
+The build is defined entirely in ``pyproject.toml`` (hatchling backend). The
+version is derived from the latest git tag via ``uv-dynamic-versioning`` (tag
+new releases as ``vX.Y.Z``).
+
+Build the sdist and wheel locally:
+
+```shell
+uv build
+```
+
+To verify the build in a clean, isolated environment (catches packaging
+problems such as missing data files or a broken CLI entry point), run the
+Docker-based build test (requires Docker):
+
+```shell
+scripts/build_test.sh
+```
+
+This builds the wheel inside a fresh container, installs it, and smoke-tests
+``import cellpy`` and the ``cellpy`` CLI.
 
 ## Pull Request Guidelines
 
