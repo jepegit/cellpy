@@ -5,7 +5,6 @@ dependencies:
     - python=3.13
     - PyGithub
     - black
-    - bumpver
     - click
     - cookiecutter
     - coverage
@@ -32,14 +31,12 @@ dependencies:
     - pint
     - pip
     - plotly
-    - plotly
     - pyodbc
     - pytables
     - pytest
     - pytest-benchmark
     - pytest-timeout
     - python-box
-    - python-dotenv
     - python-dotenv
     - requests
     - rich
@@ -59,6 +56,9 @@ dependencies:
     - pip:
         - fastnda
         - pyarrow>=23
+        # bumpver is installed via pip because its dependency `lexid` has no
+        # conda-forge build for Python 3.13 (pure-Python, so pip works fine).
+        - bumpver
         - bump-my-version
         - isort
         - jinja2_time
