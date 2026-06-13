@@ -24,7 +24,7 @@ dependencies:
     - pytables
     - python-box
     - python-dotenv
-    - python >= 3.10
+    - python >= 3.13
     - requests
     - rich
     - ruamel.yaml
@@ -41,5 +41,7 @@ dependencies:
     - pip:
         - fastnda
         - pyarrow>=23
+        # cellpy-core is consumed as a git dependency until it is released on PyPI.
+        - cellpycore @ git+https://github.com/cellpy/cellpy-core.git@main
 
 

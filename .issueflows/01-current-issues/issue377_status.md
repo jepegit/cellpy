@@ -35,6 +35,27 @@ suite is green (494 passed, 17 skipped, 13 xfailed) on Python 3.13, and the new
 - `tests/test_slim.py`: new acceptance tests (seam wiring, Data ownership,
   end-to-end `make_summary`, save round-trip, direct `make_core_summary`).
 
+## CI / environment updates (Python 3.13 floor)
+
+- `.github/workflows/*.yml` (8 files: `pytest_posix`, `pytest_win`, `pytest_macos`,
+  `pytest_macos_14`, `pip-install-posix`, `pip-install-win`, `pip-install-macos-14`,
+  `check_conda_forge`): matrix `python-version` changed from
+  `["3.10", "3.11", "3.12"]` to `["3.13"]`. (`test-win.yml` is a disabled experiment
+  with no Python version — untouched.)
+- `github_actions_environment.yml`: added `cellpycore @ git+...@main` to the pip
+  section (required — `cellpy` imports `cellpycore` at module load, so the conda
+  `pytest` job would otherwise fail on import). Python is injected by the workflow
+  matrix (now 3.13).
+- `environment.yml`: `python >= 3.10` -> `>= 3.13`; added cellpycore git dep.
+- `environment_dev.yml`: `python=3.12` -> `python=3.13`; added cellpycore git dep;
+  renamed env `cellpy_dev_312` -> `cellpy_dev_313` (and updated the reference in
+  `.cursor/rules/this-project.mdc`).
+- `docs/environment_rtd.yml`: `python >=3.10` -> `>=3.13`.
+
+Note: CI pulls `cellpycore` from `github.com/cellpy/cellpy-core@main`, so CI will
+only pass once the cellpy-core changes listed below are pushed to that branch (and
+the repo is accessible to CI).
+
 ## Changes in `cellpy-core` (separate repo — needs its own commit/PR)
 
 These were required to make the legacy bridge actually run (it had latent,
