@@ -69,6 +69,9 @@ requirements = [
     "xmltodict",
     "defusedxml",
     "isal",
+    # cellpy-core is consumed as a git dependency during development (no PyPI
+    # release yet). Pin to a tag/commit for releases.
+    "cellpycore @ git+https://github.com/cellpy/cellpy-core.git@main",
 ]
 
 test_requirements = [
@@ -115,6 +118,7 @@ setup(
     entry_points={"console_scripts": ["cellpy=cellpy.cli:cli"]},
     include_package_data=True,
     install_requires=requirements,
+    python_requires=">=3.13",
     license="MIT license",
     zip_safe=False,
     keywords="cellpy",
@@ -123,9 +127,6 @@ setup(
         "Intended Audience :: Science/Research",
         "License :: OSI Approved :: MIT License",
         "Natural Language :: English",
-        "Programming Language :: Python :: 3.10",
-        "Programming Language :: Python :: 3.11",
-        "Programming Language :: Python :: 3.12",
         "Programming Language :: Python :: 3.13",
     ],
     test_suite="tests",

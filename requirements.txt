@@ -35,3 +35,6 @@ xlrd
 charset_normalizer
 fastnda
 pyarrow
+# cellpy-core (git dependency during development; pin to tag/commit for releases).
+# For local development you can instead install editable: uv pip install -e ../cellpy-core
+cellpycore @ git+https://github.com/cellpy/cellpy-core.git@main

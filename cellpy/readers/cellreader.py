@@ -65,6 +65,13 @@ from cellpy.parameters.internal_settings import (
     CellpyMetaIndividualTest,
 )
 
+# cellpy-core seam: CellpyCell delegates Data ownership and the per-cycle summary
+# pipeline to cellpy-core. OldCellpyCellCore is the legacy bridge that restores the
+# old headers/units (identical to cellpy.parameters.internal_settings) that cellpy
+# still expects. cellpy-core's __init__ is intentionally empty, so import submodules.
+from cellpycore.cell_core import OldCellpyCellCore
+from cellpycore import selectors as core_selectors
+
 DIGITS_C_RATE = 5
 
 HEADERS_NORMAL = get_headers_normal()  # TODO @jepe refactor this (not needed)
@@ -236,6 +243,12 @@ class CellpyCell:
         self.debug = debug
         logging.debug("created CellpyCell instance")
 
+        # cellpy-core seam: the core owns the Data object and runs the per-cycle
+        # summary pipeline. Construct it without initializing so that cellpy's own
+        # initialize() creates the cellpy ``core.Data`` it expects (the data
+        # property reads/writes ``self.core._data``).
+        self.core = OldCellpyCellCore(initialize=False, debug=debug)
+
         self._cell_name = None
         self._initial_cells = None
         self.group = None
@@ -258,7 +271,6 @@ class CellpyCell:
         if not self._is_listtype(self.selected_scans):
             self.selected_scans = [self.selected_scans]
 
-        self._data = None
         self.overwrite_able = True  # attribute that prevents saving to the same filename as loaded from if False
 
         self.capacity_modifiers = ["reset"]
@@ -310,7 +322,7 @@ class CellpyCell:
         """Initialize the CellpyCell object with empty Data instance."""
 
         logging.debug("Initializing...")
-        self._data = core.Data()
+        self.core._data = core.Data()
 
     # the batch utility might be using session name
     # the cycle and ica collector are using session name
@@ -462,19 +474,20 @@ class CellpyCell:
     def data(self):
         """Returns the DataSet instance"""
 
-        if not self._data:
+        # Data ownership lives in the cellpy-core seam (self.core._data).
+        if not self.core._data:
             logging.debug(
                 "NoDataFound - might consider defaulting to create one in the future"
             )
             raise NoDataFound
         else:
-            return self._data
+            return self.core._data
 
     @data.setter
     def data(self, new_cell):
         """sets the DataSet instance"""
 
-        self._data = new_cell
+        self.core._data = new_cell
 
     @property
     def empty(self):
@@ -6099,16 +6112,13 @@ class CellpyCell:
                 warnings.warn(f"Unknown keyword argument: {k}")
 
         if selector is None:
-            if selector_type == "non-cv":
-                exclude_types = ["cv_"]
-            elif selector_type == "non-rest":
-                exclude_types = ["rest_"]
-            elif selector_type == "non-ocv":
-                exclude_types = ["ocv_"]
-            elif selector_type == "only-cv":
-                exclude_types = ["charge", "discharge"]
-            selector = functools.partial(
-                self._select_without,
+            # cellpy-core seam: build the summary selector via the core. The core's
+            # create_selector handles the selector_type -> exclude_types mapping
+            # (non-cv / non-rest / non-ocv / only-cv) internally and is equivalent
+            # to cellpy's legacy self._select_without.
+            selector = core_selectors.create_selector(
+                self.data,
+                selector_type=selector_type,
                 exclude_types=exclude_types,
                 exclude_steps=exclude_steps,
             )
@@ -6195,87 +6205,29 @@ class CellpyCell:
                     "c.data.raw = c.data.raw[~raw.index.duplicated(keep='first')]"
                 )
 
-        if use_cellpy_stat_file:
-            summary_df = data.summary
-            try:
-                summary = self.data.raw[self.headers_normal.data_point_txt].isin(
-                    summary_df[self.headers_normal.data_point_txt]
-                )
-            except KeyError:
-                # TODO: remove this "escape" and instead raise Error asking
-                #  the user to not use the stat-file if it is not working properly:
-                logging.info("Error in stat_file (?) - using _select_last")
-                summary = selector()
-        else:
-            summary = selector()
-
-        if not summary.index.is_unique:
-            warnings.warn(f"{self.cell_name}: index is not unique for summary data")
-
-        column_names = summary.columns
-        # TODO @jepe: use pandas.DataFrame properties instead (.len, .reset_index), but maybe first
-        #  figure out if this is really needed and why it was implemented in the first place.
-        summary_length = len(summary[column_names[0]])
-        summary.index = list(range(summary_length))
-
-        if select_columns:
-            logging.debug("keeping only selected set of columns")
-            columns_to_keep = [
-                self.headers_normal.charge_capacity_txt,
-                self.headers_normal.cycle_index_txt,
-                self.headers_normal.data_point_txt,
-                self.headers_normal.datetime_txt,
-                self.headers_normal.discharge_capacity_txt,
-                self.headers_normal.test_time_txt,
-            ]
-            for cn in column_names:
-                if not columns_to_keep.count(cn):
-                    try:
-                        summary.pop(cn)
-                    except KeyError:
-                        logging.debug(f"could not pop {cn}")
-
-        data.summary = summary
-
-        # ----------------- calculated values -----------------------
-
-        if self.cycle_mode == "anode":
-            logging.info(
-                "Assuming cycling in anode half-data (discharge before charge) mode"
-            )
-            _first_step_txt = self.headers_summary.discharge_capacity
-            _second_step_txt = self.headers_summary.charge_capacity
-        else:
-            logging.info("Assuming cycling in full-data / cathode mode")
-            _first_step_txt = self.headers_summary.charge_capacity
-            _second_step_txt = self.headers_summary.discharge_capacity
-
-        # ---------------- absolute -------------------------------
-
-        data = self._generate_absolute_summary_columns(
-            data, _first_step_txt, _second_step_txt
+        # cellpy-core seam: delegate the per-cycle summary pipeline to the core.
+        # ``make_core_summary`` builds the base summary (selector + index reset +
+        # column pruning) and the absolute / IR / end-voltage / C-rate columns;
+        # ``add_scaled_summary_columns`` adds the meta-dependent (equivalent-cycle
+        # and gravimetric/areal/absolute) columns. cellpy keeps the selector setup,
+        # nominal-capacity resolution, step-table/dedup handling above and the
+        # column sort / index post-processing below.
+        # Note: the deprecated ``use_cellpy_stat_file`` path now simply runs the
+        # selector (the stat-file has not been properly supported for a long time).
+        data = self.core.make_core_summary(
+            data,
+            selector=selector,
+            find_ir=find_ir,
+            find_end_voltage=find_end_voltage,
+            select_columns=select_columns,
         )
-        data = self._equivalent_cycles_to_summary(
-            data, _first_step_txt, _second_step_txt, nom_cap_abs, normalization_cycles
+        data = self.core.add_scaled_summary_columns(
+            data,
+            nom_cap_abs=nom_cap_abs,
+            normalization_cycles=normalization_cycles,
+            specifics=specifics,
+            to_units=self.cellpy_units,
         )
-
-        # getting the C-rates, using values from step-table (so it will not be changed
-        # even though you provide make_summary with a new nom_cap unfortunately):
-        data = self._c_rates_to_summary(data)
-
-        # ----------------- specifics ----------------------------------------
-        specific_columns = self.headers_summary.specific_columns
-        for mode in specifics:
-            data = self._generate_specific_summary_columns(data, mode, specific_columns)
-
-        # TODO @jepe: refactor this to method:
-        if find_end_voltage:
-            data = self._end_voltage_to_summary(data)
-
-        if find_ir and (
-            self.headers_normal.internal_resistance_txt in data.raw.columns
-        ):
-            data = self._ir_to_summary(data)
 
         if sort_my_columns:
             logging.debug("sorting columns")
