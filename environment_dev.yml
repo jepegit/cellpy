@@ -1,8 +1,8 @@
-name: cellpy_dev_312
+name: cellpy_dev_313
 channels:
     - conda-forge
 dependencies:
-    - python=3.12
+    - python=3.13
     - PyGithub
     - black
     - bumpver
@@ -69,5 +69,8 @@ dependencies:
         - pipdeptree
         - pydeps
         - sphinx-book-theme
+        # cellpy-core is consumed as a git dependency until it is released on PyPI.
+        # For dual-repo development install it editable instead: pip install -e ../cellpy-core
+        - cellpycore @ git+https://github.com/cellpy/cellpy-core.git@main
 
 
