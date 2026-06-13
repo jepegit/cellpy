@@ -1,0 +1,45 @@
+# Local build test for cellpy.
+#
+# Builds the sdist + wheel from the current source in a clean container,
+# installs the wheel into a fresh virtual environment (not the source tree),
+# and smoke-tests that the package imports, exposes a version, and that the
+# `cellpy` CLI entry point resolves.
+#
+# Usage (from the repo root):
+#   docker build -f docker/Dockerfile.build-test -t cellpy-build-test .
+# or simply:
+#   scripts/build_test.sh
+#
+# Note: the full git history is required in the build context because the
+# version is derived from the latest git tag (uv-dynamic-versioning).
+
+FROM python:3.13-slim
+
+# System libraries needed by some dependencies (pyodbc -> unixodbc),
+# the Access reader / mdb files (mdbtools), and the git-based cellpy-core
+# dependency (git).
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        git \
+        unixodbc \
+        mdbtools \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install uv.
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /usr/local/bin/
+
+WORKDIR /src
+
+# Copy the project (see .dockerignore; .git is intentionally kept for versioning).
+COPY . .
+
+# Build sdist + wheel.
+RUN uv build
+
+# Install the built wheel into a clean environment.
+RUN uv venv /opt/venv \
+    && uv pip install --python /opt/venv/bin/python dist/*.whl
+
+# Smoke test: import, version, and CLI entry point.
+RUN /opt/venv/bin/python -c "import cellpy; print('cellpy', cellpy.__version__)" \
+    && /opt/venv/bin/cellpy --help > /dev/null \
+    && echo "BUILD TEST OK"

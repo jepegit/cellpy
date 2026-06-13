@@ -2,6 +2,7 @@
 
 ## 1.0.3 (pre-release)
 
+* Build: Migrated packaging to a single `pyproject.toml` (hatchling + git-tag dynamic versioning), managed with `uv`; removed `setup.py`/`requirements*.txt`/`MANIFEST.in` and added a Docker-based local build test (#354)
 * Filters: add filtering possibility to plotters in plotutils (#363)
 * Fix: clear leaky seaborn facet titles (`row = ... | cycle_type = standard`) in multi-row `summary_plot` panes when `show_formation=True`, while preserving x-tick labels on the bottom row (pre-existing bug surfaced by the new `_with_rate` y-sets)
 * Exporters: New `CellpyCell.to_bdf(...)` exports raw time-series in [Battery Data Format](https://github.com/battery-data-alliance/battery-data-format) (CSV/Parquet) with optional cycle filtering, for use by UiA's dsToolbox and other BDF-aware tools (#356)
