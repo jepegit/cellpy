@@ -12,13 +12,13 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from cellpy.internals import core as internals_core
-from cellpy.readers import core
+from cellpy.internals import connections as internals_core
+from cellpy.readers import data_structures as core
 from cellpy.utils import helpers
 
 
 class TestInterpolateYonX:
-    """cellpy.readers.core.interpolate_y_on_x (the base interpolator)."""
+    """cellpy.readers.data_structures.interpolate_y_on_x (the base interpolator)."""
 
     @staticmethod
     def _linear_df():
@@ -54,7 +54,7 @@ class TestInterpolateYonX:
 
 
 class TestCheckConnection:
-    """cellpy.internals.core.check_connection short-circuits on local paths."""
+    """cellpy.internals.connections.check_connection short-circuits on local paths."""
 
     def test_local_path_returns_empty_dict(self):
         # a plain local path is not "external", so no network access happens

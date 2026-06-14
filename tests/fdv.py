@@ -7,7 +7,7 @@ Notes:
 
 import os
 from pathlib import Path
-from cellpy.internals.core import OtherPath
+from cellpy.internals.connections import OtherPath
 
 
 def get_cellpy_file_path(raw_path):

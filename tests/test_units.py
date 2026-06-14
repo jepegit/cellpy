@@ -2,9 +2,9 @@ import logging
 
 import pytest
 
-import cellpy.readers.core
+import cellpy.readers.data_structures
 from cellpy import log, prms
-from cellpy.readers.core import Q
+from cellpy.readers.data_structures import Q
 from cellpy.exceptions import NoDataFound
 from cellpy.parameters.internal_settings import get_headers_summary
 

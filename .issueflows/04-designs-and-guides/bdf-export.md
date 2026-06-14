@@ -71,7 +71,7 @@ Defining points relevant to cellpy:
 ## Unit conversion
 
 All non-datetime unit conversions go through
-[`cellpy.readers.core.Q`](../../cellpy/readers/core.py) (the project-wide
+[`cellpy.readers.data_structures.Q`](../../cellpy/readers/data_structures.py) (the project-wide
 `pint` wrapper, also used by `CellpyCell` itself for capacity / mass /
 nominal-capacity arithmetic). The exporter does not maintain its own
 factor table - it just declares each column's BDF target unit

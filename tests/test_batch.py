@@ -521,7 +521,7 @@ def test_load_save_journal_roundtrip_json(batch_instance):
 def test_load_journal_dataframe(batch_instance):
     import pandas as pd
     from cellpy.utils.batch_tools.batch_journals import LabJournal
-    from cellpy.internals.core import OtherPath
+    from cellpy.internals.connections import OtherPath
 
     _frame = {
         "filename": ["a", "b", "c"],

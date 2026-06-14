@@ -18,7 +18,7 @@ import numpy as np
 import pandas as pd
 
 from cellpy.parameters.internal_settings import get_headers_normal
-from cellpy.readers.core import Data, FileID, humanize_bytes
+from cellpy.readers.data_structures import Data, FileID, humanize_bytes
 from cellpy.readers.instruments.base import BaseLoader
 from cellpy.readers.instruments.loader_specific_modules.biologic_file_format import (
     bl_dtypes,

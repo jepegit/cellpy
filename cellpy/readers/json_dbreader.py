@@ -3,8 +3,8 @@ import logging
 import pathlib
 import re
 from typing import Optional, Dict, Mapping, Tuple
-from cellpy.readers.core import BaseDbReader, PagesDictBase
-from cellpy.readers import core
+from cellpy.readers.data_structures import BaseDbReader, PagesDictBase
+from cellpy.readers import data_structures as core
 from cellpy.parameters.internal_settings import get_headers_journal, cellpy_units
 
 

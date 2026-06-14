@@ -110,7 +110,7 @@ def test_capacity_unit_passes_through_when_raw_already_Ah(tmp_path: Path) -> Non
 def test_non_default_current_unit_uses_pint(tmp_path: Path) -> None:
     """Override raw_units.current to mA and verify pint scales mA->A correctly.
 
-    Locks in that unit conversion is delegated to cellpy.readers.core.Q
+    Locks in that unit conversion is delegated to cellpy.readers.data_structures.Q
     (pint) rather than a hand-rolled factor table.
     """
     cell = _make_synthetic_cell()

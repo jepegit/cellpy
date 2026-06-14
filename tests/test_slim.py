@@ -88,7 +88,7 @@ def test_direct_core_make_core_summary(cpi, parameters):
     cpi.make_step_table()
 
     data = cpi.data
-    selector = core_selectors.create_selector(data)
+    selector = core_selectors.create_selector(data, cpi.core.schema)
     data = cpi.core.make_core_summary(
         data, selector, find_ir=True, find_end_voltage=True
     )

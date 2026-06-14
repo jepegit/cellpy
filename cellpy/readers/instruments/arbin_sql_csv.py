@@ -5,7 +5,7 @@ from dateutil.parser import parse
 
 from cellpy import prms
 from cellpy.parameters.internal_settings import HeaderDict, get_headers_normal
-from cellpy.readers.core import Data, FileID
+from cellpy.readers.data_structures import Data, FileID
 from cellpy.readers.instruments.base import BaseLoader
 
 DEBUG_MODE = prms.Reader.diagnostics  # not used

@@ -10,12 +10,12 @@ import warnings
 import pandas as pd
 from dateutil.parser import parse
 
-import cellpy.readers.core
+import cellpy.readers.data_structures
 from cellpy import prms
 from cellpy.exceptions import WrongFileVersion
 from cellpy.parameters.internal_settings import HeaderDict, get_headers_normal
-from cellpy.readers.core import Data, FileID
-from cellpy.readers.core import Q
+from cellpy.readers.data_structures import Data, FileID
+from cellpy.readers.data_structures import Q
 from cellpy.readers.instruments.base import BaseLoader
 from cellpy.readers.instruments.processors import post_processors as pp
 from pathlib import Path

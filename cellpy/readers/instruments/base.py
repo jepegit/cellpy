@@ -16,8 +16,8 @@ from typing import List, Union
 import pandas as pd
 
 from cellpy.exceptions import WrongFileVersion
-import cellpy.internals.core
-import cellpy.readers.core as core
+import cellpy.internals.connections
+import cellpy.readers.data_structures as core
 from cellpy.parameters.internal_settings import headers_normal
 from cellpy.readers.instruments.configurations import (
     ModelParameters,
@@ -252,13 +252,13 @@ class AtomicLoad:
     @name.setter
     def name(self, value):
         """The name of the file to be loaded"""
-        if not self.is_db and not isinstance(value, cellpy.internals.core.OtherPath):
+        if not self.is_db and not isinstance(value, cellpy.internals.connections.OtherPath):
             logging.debug("converting to OtherPath")
-            value = cellpy.internals.core.OtherPath(value)
+            value = cellpy.internals.connections.OtherPath(value)
         self._name = value
 
     @property
-    def temp_file_path(self):  # -> Union[cellpy.internals.core.OtherPath, pathlib.Path]
+    def temp_file_path(self):  # -> Union[cellpy.internals.connections.OtherPath, pathlib.Path]
         """The name of the file to be loaded if copied to a temporary file"""
         return self._temp_file_path
 

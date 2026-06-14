@@ -37,7 +37,7 @@ import pandas as pd
 
 from cellpy.filters import filter_cycles
 from cellpy.parameters.internal_settings import get_headers_normal
-from cellpy.readers import core
+from cellpy.readers import data_structures as core
 
 if TYPE_CHECKING:
     from cellpy.parameters.internal_settings import CellpyUnits
@@ -245,7 +245,7 @@ def _conversion_factor(
 ) -> float:
     """Return the multiplier that turns ``source_unit`` into ``target_unit``.
 
-    Delegates to :func:`cellpy.readers.core.Q` (pint) so that any unit
+    Delegates to :func:`cellpy.readers.data_structures.Q` (pint) so that any unit
     spelling pint understands works automatically (``"mAh" -> "Ah"``,
     ``"sec" -> "s"``, ``"kWh" -> "Wh"``, ...). Returns ``1.0`` when no
     conversion is needed or the symbols are equal.
