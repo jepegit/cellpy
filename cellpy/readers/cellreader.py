@@ -30,8 +30,8 @@ from dataclasses import asdict
 import numpy as np
 
 from . import externals as externals
-from cellpy.readers import core
-import cellpy.internals.core as internals
+from cellpy.readers import data_structures as core
+import cellpy.internals.connections as internals
 
 from cellpy.exceptions import (
     DeprecatedFeature,
@@ -7121,7 +7121,7 @@ class CellpyCell:
             logging.debug("loading raw file:")
             logging.debug(f"{f}")
 
-            # get a list of cellpy.readers.core.Data objects
+            # get a list of cellpy.readers.data_structures.Data objects
             # cell = raw_file_loader(f, data_points=data_points, **kwargs)
             # remark that the bounds are included (i.e. the first datapoint
             # is 5000.

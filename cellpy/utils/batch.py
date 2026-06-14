@@ -22,7 +22,7 @@ from cellpy.parameters.internal_settings import (
     headers_step_table,
     headers_summary,
 )
-from cellpy.internals.core import OtherPath
+from cellpy.internals.connections import OtherPath
 from cellpy.readers.cellreader import CellpyCell
 from cellpy.exceptions import NullData
 from cellpy.utils.batch_tools.batch_analyzers import (

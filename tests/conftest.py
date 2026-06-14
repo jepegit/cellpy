@@ -5,7 +5,7 @@ import pathlib
 
 import pytest
 
-from cellpy.readers.core import Data
+from cellpy.readers.data_structures import Data
 from cellpy.readers.cellreader import CellpyCell
 from . import fdv
 

@@ -17,7 +17,7 @@ import sqlalchemy as sa
 from cellpy import prms
 from cellpy.exceptions import NullData
 from cellpy.parameters.internal_settings import HeaderDict, get_headers_normal
-from cellpy.readers.core import (
+from cellpy.readers.data_structures import (
     Data,
     FileID,
     check64bit,

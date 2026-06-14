@@ -22,7 +22,7 @@ from typing import TypedDict
 from . import externals as externals
 
 from cellpy.exceptions import NullData
-from cellpy.internals.core import OtherPath
+from cellpy.internals.connections import OtherPath
 from cellpy.parameters.internal_settings import (
     get_headers_normal,
     get_headers_step_table,
@@ -1008,7 +1008,7 @@ def identify_last_data_point(data):
     return data
 
 
-# TODO: move this to internals/core
+# TODO: move this to internals/connections
 def check64bit(current_system="python"):
     """checks if you are on a 64-bit platform"""
     if current_system == "python":
@@ -1036,7 +1036,7 @@ def check64bit(current_system="python"):
                 return False
 
 
-# TODO: move this to internals/core
+# TODO: move this to internals/connections
 def humanize_bytes(b, precision=1):
     """Return a humanized string representation of a number of b."""
 
@@ -1057,7 +1057,7 @@ def humanize_bytes(b, precision=1):
     return "%.*f %s" % (precision, b // factor, suffix)  # noqa
 
 
-# TODO: move this to internals/core
+# TODO: move this to internals/connections
 def xldate_as_datetime(xldate, datemode=0, option="to_datetime"):
     """Converts a xls date stamp to a more sensible format.
 
@@ -1092,7 +1092,7 @@ def xldate_as_datetime(xldate, datemode=0, option="to_datetime"):
     return d
 
 
-# TODO: consider moving this to either internals/core or to new module
+# TODO: consider moving this to either internals/connections or to new module
 def collect_capacity_curves(
     cell,
     direction="charge",
@@ -1187,7 +1187,7 @@ def collect_capacity_curves(
     return charge_list, cycles, minimum_v_value, maximum_v_value
 
 
-# TODO: consider moving this to either internals/core or to new module
+# TODO: consider moving this to either internals/connections or to new module
 def interpolate_y_on_x(
     df,
     x=None,
@@ -1359,7 +1359,7 @@ def interpolate_y_on_x_per_monotonic_segments(
     return externals.pandas.concat(segments, axis=0, ignore_index=True)
 
 
-# TODO: consider moving this to either internals/core or to new module
+# TODO: consider moving this to either internals/connections or to new module
 def group_by_interpolate(
     df,
     x=None,

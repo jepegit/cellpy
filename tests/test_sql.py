@@ -3,7 +3,7 @@ import pytest
 
 from cellpy import log
 from cellpy.readers.instruments import base
-from cellpy.readers.core import Data
+from cellpy.readers.data_structures import Data
 
 log.setup_logging(default_level="DEBUG", testing=True)
 

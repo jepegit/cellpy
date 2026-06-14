@@ -8,7 +8,7 @@ import pandas as pd
 
 import cellpy.parameters.internal_settings
 from cellpy import filefinder, prms
-from cellpy.readers import core
+from cellpy.readers import data_structures as core
 from cellpy.exceptions import ExportFailed, NullData, WrongFileVersion
 
 # logger = logging.getLogger(__name__)

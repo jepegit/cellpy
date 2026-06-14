@@ -21,7 +21,7 @@ from . import externals as externals
 from cellpy.exceptions import ConfigFileNotRead, ConfigFileNotWritten
 from cellpy.parameters import prms
 from cellpy.parameters.internal_settings import OTHERPATHS
-from cellpy.internals.core import OtherPath
+from cellpy.internals.connections import OtherPath
 
 DEFAULT_FILENAME_START = ".cellpy_prms_"
 DEFAULT_FILENAME_END = ".conf"

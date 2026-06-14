@@ -20,10 +20,10 @@ cellpy.readers.cellreader module
    :undoc-members:
    :show-inheritance:
 
-cellpy.readers.core module
---------------------------
+cellpy.readers.data\_structures module
+--------------------------------------
 
-.. automodule:: cellpy.readers.core
+.. automodule:: cellpy.readers.data_structures
    :members:
    :undoc-members:
    :show-inheritance:

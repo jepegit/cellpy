@@ -4,7 +4,7 @@ from abc import ABC
 import pytest
 from cellpy.readers.instruments.configurations import register_configuration_from_module
 from cellpy.readers.instruments.base import AutoLoader
-from cellpy.readers import core
+from cellpy.readers import data_structures as core
 from cellpy import log, prms
 
 from . import instrument_configuration_module

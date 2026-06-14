@@ -14,7 +14,7 @@ from scipy.integrate import simpson
 from scipy.ndimage.filters import gaussian_filter1d
 
 from cellpy.exceptions import NullData
-from cellpy.readers.core import collect_capacity_curves
+from cellpy.readers.data_structures import collect_capacity_curves
 
 
 # TODO: @jepe - documentation and tests
