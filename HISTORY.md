@@ -3,6 +3,7 @@
 ## 1.0.3 (pre-release)
 
 * Refactor: Renamed internal modules accidentally named `core` — `cellpy.readers.core` → `cellpy.readers.data_structures` and `cellpy.internals.core` → `cellpy.internals.connections` — to avoid a name clash with the new cellpy-core package (#381)
+* Testing: Added header/unit parity contract tests asserting cellpy-core's settings copies (HeadersNormal, HeadersSummary, HeadersStepTable, CellpyUnits) stay in sync with cellpy's internal_settings (#378)
 * Build: Migrated packaging to a single `pyproject.toml` (hatchling + git-tag dynamic versioning), managed with `uv`; removed `setup.py`/`requirements*.txt`/`MANIFEST.in` and added a Docker-based local build test (#354)
 * Filters: add filtering possibility to plotters in plotutils (#363)
 * Fix: clear leaky seaborn facet titles (`row = ... | cycle_type = standard`) in multi-row `summary_plot` panes when `show_formation=True`, while preserving x-tick labels on the bottom row (pre-existing bug surfaced by the new `_with_rate` y-sets)
