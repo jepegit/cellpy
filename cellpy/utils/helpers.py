@@ -19,7 +19,7 @@ from cellpy.parameters.internal_settings import (
 )
 from cellpy.readers.cellreader import CellpyCell
 from cellpy.utils.batch import Batch
-from cellpy.internals.core import check_connection as _check_connection
+from cellpy.internals.connections import check_connection as _check_connection
 
 hdr_summary = get_headers_summary()
 hdr_steps = get_headers_step_table()

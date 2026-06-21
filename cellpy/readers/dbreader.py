@@ -8,7 +8,7 @@ from typing import List, Optional
 
 from . import externals as externals
 from cellpy.parameters import prms
-from cellpy.readers import core
+from cellpy.readers import data_structures as core
 
 # logger = logging.getLogger(__name__)
 

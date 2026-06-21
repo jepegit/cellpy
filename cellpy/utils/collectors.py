@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 import cellpy
-from cellpy.readers.core import group_by_interpolate
+from cellpy.readers.data_structures import group_by_interpolate
 from cellpy.utils.batch import Batch
 from cellpy.utils.helpers import concat_summaries
 from cellpy.utils import ica

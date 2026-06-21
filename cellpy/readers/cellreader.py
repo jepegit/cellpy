@@ -30,8 +30,8 @@ from dataclasses import asdict
 import numpy as np
 
 from . import externals as externals
-from cellpy.readers import core
-import cellpy.internals.core as internals
+from cellpy.readers import data_structures as core
+import cellpy.internals.connections as internals
 
 from cellpy.exceptions import (
     DeprecatedFeature,
@@ -64,6 +64,13 @@ from cellpy.parameters.internal_settings import (
     CellpyMetaCommon,
     CellpyMetaIndividualTest,
 )
+
+# cellpy-core seam: CellpyCell delegates Data ownership and the per-cycle summary
+# pipeline to cellpy-core. OldCellpyCellCore is the legacy bridge that restores the
+# old headers/units (identical to cellpy.parameters.internal_settings) that cellpy
+# still expects. cellpy-core's __init__ is intentionally empty, so import submodules.
+from cellpycore.cell_core import OldCellpyCellCore
+from cellpycore import selectors as core_selectors
 
 DIGITS_C_RATE = 5
 
@@ -236,6 +243,12 @@ class CellpyCell:
         self.debug = debug
         logging.debug("created CellpyCell instance")
 
+        # cellpy-core seam: the core owns the Data object and runs the per-cycle
+        # summary pipeline. Construct it without initializing so that cellpy's own
+        # initialize() creates the cellpy ``core.Data`` it expects (the data
+        # property reads/writes ``self.core._data``).
+        self.core = OldCellpyCellCore(initialize=False, debug=debug)
+
         self._cell_name = None
         self._initial_cells = None
         self.group = None
@@ -258,7 +271,6 @@ class CellpyCell:
         if not self._is_listtype(self.selected_scans):
             self.selected_scans = [self.selected_scans]
 
-        self._data = None
         self.overwrite_able = True  # attribute that prevents saving to the same filename as loaded from if False
 
         self.capacity_modifiers = ["reset"]
@@ -310,7 +322,7 @@ class CellpyCell:
         """Initialize the CellpyCell object with empty Data instance."""
 
         logging.debug("Initializing...")
-        self._data = core.Data()
+        self.core._data = core.Data()
 
     # the batch utility might be using session name
     # the cycle and ica collector are using session name
@@ -462,19 +474,20 @@ class CellpyCell:
     def data(self):
         """Returns the DataSet instance"""
 
-        if not self._data:
+        # Data ownership lives in the cellpy-core seam (self.core._data).
+        if not self.core._data:
             logging.debug(
                 "NoDataFound - might consider defaulting to create one in the future"
             )
             raise NoDataFound
         else:
-            return self._data
+            return self.core._data
 
     @data.setter
     def data(self, new_cell):
         """sets the DataSet instance"""
 
-        self._data = new_cell
+        self.core._data = new_cell
 
     @property
     def empty(self):
@@ -3031,371 +3044,50 @@ class CellpyCell:
         if profiling:
             print("PROFILING MAKE_STEP_TABLE".center(80, "="))
 
-        def first(x):
-            return x.iloc[0]
-
-        def last(x):
-            return x.iloc[-1]
-
-        def delta(x):
-            # Remark! this will not work if x is a TimeDelta object
-            if x.iloc[0] == 0.0:
-                # starts from a zero value
-                difference = 100.0 * x.iloc[-1]
-            else:
-                difference_factor = 100.0 * (x.iloc[-1] - x.iloc[0])
-                difference_dividend = abs(x.iloc[0])
-                difference = difference_factor / difference_dividend
-
-            return difference
-
-        nhdr = self.headers_normal
-        shdr = self.headers_step_table
-
-        if from_data_point is not None:
-            df = self.data.raw.loc[
-                self.data.raw[nhdr.data_point_txt] >= from_data_point
-            ]
-        else:
-            df = self.data.raw
-        # df[shdr.internal_resistance_change] = \
-        #     df[nhdr.internal_resistance_txt].pct_change()
-
-        # selecting only the most important columns from raw:
-        keep = [
-            nhdr.data_point_txt,
-            nhdr.test_time_txt,
-            nhdr.step_time_txt,
-            nhdr.step_index_txt,
-            nhdr.cycle_index_txt,
-            nhdr.current_txt,
-            nhdr.voltage_txt,
-            nhdr.ref_voltage_txt,
-            nhdr.charge_capacity_txt,
-            nhdr.discharge_capacity_txt,
-            nhdr.internal_resistance_txt,
-            # "ir_pct_change"
-        ]
-
-        # only use col-names that exist:
-        keep = [col for col in keep if col in df.columns]
-        df = df[keep]
-        # preparing for implementation of sub_steps (will come in the future):
-        df = df.assign(**{f"{nhdr.sub_step_index_txt}": 1})
-
-        # using headers as defined in the internal_settings.py file
-        rename_dict = {
-            nhdr.cycle_index_txt: shdr.cycle,
-            nhdr.step_index_txt: shdr.step,
-            nhdr.sub_step_index_txt: shdr.sub_step,
-            nhdr.data_point_txt: shdr.point,
-            nhdr.test_time_txt: shdr.test_time,
-            nhdr.step_time_txt: shdr.step_time,
-            nhdr.current_txt: shdr.current,
-            nhdr.voltage_txt: shdr.voltage,
-            nhdr.charge_capacity_txt: shdr.charge,
-            nhdr.discharge_capacity_txt: shdr.discharge,
-            nhdr.internal_resistance_txt: shdr.internal_resistance,
-        }
-
-        df = df.rename(columns=rename_dict)
-        by = [shdr.cycle, shdr.step, shdr.sub_step]
-
-        if skip_steps is not None:
-            logging.debug(f"omitting steps {skip_steps}")
-            df = df.loc[~df[shdr.step].isin(skip_steps)]
-
-        if usteps:
-            by.append(shdr.ustep)
-            df[shdr.ustep] = self._ustep(df[shdr.step])
-
-        logging.debug(f"groupby: {by}")
-
-        if profiling:
-            time_01 = time.time()
-
-        # TODO: make sure that all columns are numeric
-
-        gf = df.groupby(by=by)
-
-        # TODO: FutureWarning: The provided callable <function mean at 0x000002BD4D332840>
-        #  is currently using SeriesGroupBy.mean. In a future version of pandas, the provided
-        #  callable will be used directly. To keep current behavior pass the string "mean" instead.
-        df_steps = gf.agg(["mean", "std", "min", "max", "first", "last", delta]).rename(
-            columns={"amin": "min", "amax": "max", "mean": "avr"}
-        )
-
-        df_steps = df_steps.reset_index()
-
-        if profiling:
-            print(f"*** groupby-agg: {time.time() - time_01} s")
-            time_01 = time.time()
-
-        # column with C-rates:
+        # cellpy-core seam: delegate the per-step table computation to the core
+        # (``make_core_step_table`` -> ``summarizers.make_step_table``). cellpy keeps
+        # orchestration here: deprecation handling above, resolving the absolute
+        # nominal capacity for the C-rate, and supplying the instrument resolution
+        # limits (``self.raw_limits``). Both ``nom_cap`` (absolute) and
+        # ``raw_limits`` are passed across the seam by value.
+        nom_cap_abs = None
         if add_c_rate:
             # remark that no unit conversion is done with the current values!
-            logging.debug("adding c-rates")
-            nom_cap = self.data.nom_cap
+            logging.debug("resolving nominal capacity for c-rate")
+            nom_cap_abs = self.data.nom_cap
             if nom_cap_specifics == "gravimetric":
-                mass = self.data.mass
-                nom_cap = self.nominal_capacity_as_absolute(
-                    nom_cap, mass, nom_cap_specifics
+                nom_cap_abs = self.nominal_capacity_as_absolute(
+                    nom_cap_abs, self.data.mass, nom_cap_specifics
                 )
-
             elif nom_cap_specifics == "areal":
-                area = self.data.active_electrode_area
-                nom_cap = self.nominal_capacity_as_absolute(
-                    nom_cap, area, nom_cap_specifics
+                nom_cap_abs = self.nominal_capacity_as_absolute(
+                    nom_cap_abs, self.data.active_electrode_area, nom_cap_specifics
                 )
-
             elif nom_cap_specifics == "absolute":
-                nom_cap = self.nominal_capacity_as_absolute(
-                    nom_cap, 1.0, nom_cap_specifics
+                nom_cap_abs = self.nominal_capacity_as_absolute(
+                    nom_cap_abs, 1.0, nom_cap_specifics
                 )
 
-            df_steps[shdr.rate_avr] = abs(
-                round(
-                    df_steps.loc[:, (shdr.current, "avr")] / nom_cap,
-                    DIGITS_C_RATE,
-                )
-            )
-        df_steps[shdr.type] = ""
-        df_steps[shdr.sub_type] = ""
-        df_steps[shdr.info] = ""
-
-        if step_specifications is None:
-            # TODO: refactor this:
-            if override_raw_limits is None:
-                override_raw_limits = {}
-            current_limit_value_hard = (
-                override_raw_limits.get("current_hard", None)
-                or self.raw_limits["current_hard"]
-            )
-            current_limit_value_soft = (
-                override_raw_limits.get("current_soft", None)
-                or self.raw_limits["current_soft"]
-            )
-            stable_current_limit_hard = (
-                override_raw_limits.get("stable_current_hard", None)
-                or self.raw_limits["stable_current_hard"]
-            )
-            stable_current_limit_soft = (
-                override_raw_limits.get("stable_current_soft", None)
-                or self.raw_limits["stable_current_soft"]
-            )
-            stable_voltage_limit_hard = (
-                override_raw_limits.get("stable_voltage_hard", None)
-                or self.raw_limits["stable_voltage_hard"]
-            )
-            stable_voltage_limit_soft = (
-                override_raw_limits.get("stable_voltage_soft", None)
-                or self.raw_limits["stable_voltage_soft"]
-            )
-            stable_charge_limit_hard = (
-                override_raw_limits.get("stable_charge_hard", None)
-                or self.raw_limits["stable_charge_hard"]
-            )
-            stable_charge_limit_soft = (
-                override_raw_limits.get("stable_charge_soft", None)
-                or self.raw_limits["stable_charge_soft"]
-            )
-            ir_change_limit = (
-                override_raw_limits.get("ir_change", None)
-                or self.raw_limits["ir_change"]
-            )
-
-            mask_no_current_hard = (
-                df_steps.loc[:, (shdr.current, "max")].abs()
-                + df_steps.loc[:, (shdr.current, "min")].abs()
-            ) < current_limit_value_hard / 2
-
-            mask_voltage_down = (
-                df_steps.loc[:, (shdr.voltage, "delta")] < -stable_voltage_limit_hard
-            )
-
-            mask_voltage_up = (
-                df_steps.loc[:, (shdr.voltage, "delta")] > stable_voltage_limit_hard
-            )
-
-            mask_voltage_stable = (
-                df_steps.loc[:, (shdr.voltage, "delta")].abs()
-                < stable_voltage_limit_hard
-            )
-
-            mask_current_down = (
-                df_steps.loc[:, (shdr.current, "delta")] < -stable_current_limit_soft
-            )
-
-            mask_current_up = (
-                df_steps.loc[:, (shdr.current, "delta")] > stable_current_limit_soft
-            )
-
-            mask_current_negative = (
-                df_steps.loc[:, (shdr.current, "avr")] < -current_limit_value_hard
-            )
-
-            mask_current_positive = (
-                df_steps.loc[:, (shdr.current, "avr")] > current_limit_value_hard
-            )
-
-            mask_galvanostatic = (
-                df_steps.loc[:, (shdr.current, "delta")].abs()
-                < stable_current_limit_soft
-            )
-
-            mask_charge_changed = (
-                df_steps.loc[:, (shdr.charge, "delta")].abs() > stable_charge_limit_hard
-            )
-
-            mask_discharge_changed = (
-                df_steps.loc[:, (shdr.discharge, "delta")].abs()
-                > stable_charge_limit_hard
-            )
-
-            mask_no_change = (
-                (df_steps.loc[:, (shdr.voltage, "delta")] == 0)
-                & (df_steps.loc[:, (shdr.current, "delta")] == 0)
-                & (df_steps.loc[:, (shdr.charge, "delta")] == 0)
-                & (df_steps.loc[:, (shdr.discharge, "delta")] == 0)
-            )
-
-            # TODO: make an option for only checking unique steps
-            #     e.g.
-            #     df_x = df_steps.where.steps.are.unique
-
-            # TODO: FutureWarning: Setting an item of incompatible dtype is deprecated and will raise in a future error
-            #  of pandas. Value 'rest' has dtype incompatible with float64, please explicitly cast to a
-            #  compatible dtype first.
-
-            df_steps.loc[
-                mask_no_current_hard & mask_voltage_stable, (shdr.type, slice(None))
-            ] = "rest"
-
-            df_steps.loc[
-                mask_no_current_hard & mask_voltage_up, (shdr.type, slice(None))
-            ] = "ocvrlx_up"
-
-            df_steps.loc[
-                mask_no_current_hard & mask_voltage_down, (shdr.type, slice(None))
-            ] = "ocvrlx_down"
-
-            df_steps.loc[
-                mask_discharge_changed & mask_current_negative, (shdr.type, slice(None))
-            ] = "discharge"
-
-            df_steps.loc[
-                mask_charge_changed & mask_current_positive, (shdr.type, slice(None))
-            ] = "charge"
-
-            df_steps.loc[
-                mask_voltage_stable & mask_current_negative & mask_current_down,
-                (shdr.type, slice(None)),
-            ] = "cv_discharge"
-
-            df_steps.loc[
-                mask_voltage_stable & mask_current_positive & mask_current_down,
-                (shdr.type, slice(None)),
-            ] = "cv_charge"
-
-            # --- internal resistance ----
-            df_steps.loc[mask_no_change, (shdr.type, slice(None))] = "ir"
-            # assumes that IR is stored in just one row
-
-            # --- sub-step-txt -----------
-            df_steps[shdr.sub_type] = None
-
-            # --- CV steps ----
-
-            # "voltametry_charge"
-            # mask_charge_changed
-            # mask_voltage_up
-            # (could also include abs-delta-cumsum current)
-
-            # "voltametry_discharge"
-            # mask_discharge_changed
-            # mask_voltage_down
-
-            if override_step_types is not None:
-                for step, step_type in override_step_types.items():
-                    df_steps.loc[
-                        df_steps[shdr.step] == step, (shdr.type, slice(None))
-                    ] = step_type
-
-            if profiling:
-                print(f"*** masking: {time.time() - time_01} s")
-                time_01 = time.time()
-
-        else:
-            logging.debug("parsing custom step definition")
-            if not short:
-                logging.debug("using long format (cycle,step)")
-                for row in step_specifications.itertuples():
-                    df_steps.loc[
-                        (df_steps[shdr.step] == row.step)
-                        & (df_steps[shdr.cycle] == row.cycle),
-                        (shdr.type, slice(None)),
-                    ] = row.type
-                    df_steps.loc[
-                        (df_steps[shdr.step] == row.step)
-                        & (df_steps[shdr.cycle] == row.cycle),
-                        (shdr.info, slice(None)),
-                    ] = row.info
-            else:
-                logging.debug("using short format (step)")
-                for row in step_specifications.itertuples():
-                    df_steps.loc[
-                        df_steps[shdr.step] == row.step, (shdr.type, slice(None))
-                    ] = row.type
-                    df_steps.loc[
-                        df_steps[shdr.step] == row.step, (shdr.info, slice(None))
-                    ] = row.info
-
-        if profiling:
-            print(f"*** introspect: {time.time() - time_01} s")
-
-        # check if all the steps got categorizes
-        logging.debug("looking for un-categorized steps")
-        empty_rows = df_steps.loc[df_steps[shdr.type].isnull()]
-        if not empty_rows.empty:
-            logging.warning(
-                f"found {len(empty_rows)}"
-                f":{len(df_steps)} non-categorized steps "
-                f"(please, check your raw-limits)"
-            )
-            # logging.debug(empty_rows)
-
-        # flatten (possible remove in the future),
-
-        logging.debug(f"flatten columns")
-        if profiling:
-            time_01 = time.time()
-        flat_cols = []
-        for col in df_steps.columns:
-            if isinstance(col, tuple):
-                if col[-1]:
-                    col = "_".join(col)
-                else:
-                    col = col[0]
-            flat_cols.append(col)
-
-        df_steps.columns = flat_cols
-        if sort_rows:
-            logging.debug("sorting the step rows")
-            # TODO: [#index]
-            # if this throws a KeyError: 'test_time_first' it probably
-            # means that the df contains a non-nummeric 'test_time' column.
-            df_steps = df_steps.sort_values(by=shdr.test_time + "_first").reset_index()
-
-        if profiling:
-            print(f"*** flattening: {time.time() - time_01} s")
+        result = self.core.make_core_step_table(
+            self.data,
+            raw_limits=self.raw_limits,
+            step_specifications=step_specifications,
+            short=short,
+            override_step_types=override_step_types,
+            override_raw_limits=override_raw_limits,
+            usteps=usteps,
+            add_c_rate=add_c_rate,
+            nom_cap=nom_cap_abs,
+            skip_steps=skip_steps,
+            sort_rows=sort_rows,
+            from_data_point=from_data_point,
+        )
 
         logging.debug(f"(dt: {(time.time() - time_00):4.2f}s)")
 
         if from_data_point is not None:
-            return df_steps
-        else:
-            self.data.steps = df_steps
-            return self
+            return result
+        return self
 
     def select_steps(self, step_dict, append_df=False):
         """Select steps (not documented yet)."""
@@ -3897,6 +3589,7 @@ class CellpyCell:
         format="csv",
         extras=False,
         preprocess_fn=None,
+        bdf_units=None,
     ):
         """Export the raw time-series in Battery Data Format (BDF).
 
@@ -3926,13 +3619,39 @@ class CellpyCell:
             preprocess_fn: A function that takes the raw DataFrame and returns
                 a new DataFrame. This function is applied to the raw DataFrame
                 after the cycle filter and before the BDF export.
+            bdf_units: Optional
+                :class:`~cellpy.parameters.internal_settings.CellpyUnits`
+                controlling the **units written into the BDF file**.
+                ``None`` (default) emits a strictly BDF-compliant file
+                (``A``, ``V``, ``Ah``, ``Wh``, ``s``, ``W``, ``ohm``).
+                When set, each attribute on the ``CellpyUnits`` overrides
+                the spec target for the corresponding column kind
+                (``charge`` → charge / discharge capacity, ``energy`` →
+                charge / discharge energy, etc.); column labels and
+                machine names are rebuilt from the override
+                (e.g. ``"Charging Capacity / mAh"`` /
+                ``"charging_capacity_mah"``) and values are scaled
+                accordingly via pint. An incompatible unit (e.g.
+                ``charge="kg"``) raises :class:`ValueError`. A file
+                written with overrides is no longer strictly BDF-
+                compliant; this is logged once at INFO level.
+
+                Example::
+
+                    from cellpy.parameters.internal_settings import CellpyUnits
+
+                    # write charge in mAh and current in mA
+                    bdf_units = CellpyUnits(charge="mAh", current="mA")
+                    cell.to_bdf("out.bdf.csv", bdf_units=bdf_units)
 
         Returns:
             pathlib.Path: The path that the file was written to.
 
         Raises:
-            ValueError: If the cell has no raw data, or any BDF-required
-                column is missing from ``data.raw``.
+            ValueError: If the cell has no raw data, any BDF-required
+                column is missing from ``data.raw``, or ``bdf_units``
+                specifies a unit that cannot be converted from the
+                cell's source unit.
         """
         from cellpy.exporters import to_bdf as _to_bdf
 
@@ -3945,6 +3664,7 @@ class CellpyCell:
             format=format,
             extras=extras,
             preprocess_fn=preprocess_fn,
+            bdf_units=bdf_units,
         )
 
     # --------------helper-functions--------------------------------------------
@@ -6071,16 +5791,14 @@ class CellpyCell:
                 warnings.warn(f"Unknown keyword argument: {k}")
 
         if selector is None:
-            if selector_type == "non-cv":
-                exclude_types = ["cv_"]
-            elif selector_type == "non-rest":
-                exclude_types = ["rest_"]
-            elif selector_type == "non-ocv":
-                exclude_types = ["ocv_"]
-            elif selector_type == "only-cv":
-                exclude_types = ["charge", "discharge"]
-            selector = functools.partial(
-                self._select_without,
+            # cellpy-core seam: build the summary selector via the core. The core's
+            # create_selector handles the selector_type -> exclude_types mapping
+            # (non-cv / non-rest / non-ocv / only-cv) internally and is equivalent
+            # to cellpy's legacy self._select_without.
+            selector = core_selectors.create_selector(
+                self.data,
+                self.core.schema,
+                selector_type=selector_type,
                 exclude_types=exclude_types,
                 exclude_steps=exclude_steps,
             )
@@ -6167,87 +5885,47 @@ class CellpyCell:
                     "c.data.raw = c.data.raw[~raw.index.duplicated(keep='first')]"
                 )
 
-        if use_cellpy_stat_file:
-            summary_df = data.summary
-            try:
-                summary = self.data.raw[self.headers_normal.data_point_txt].isin(
-                    summary_df[self.headers_normal.data_point_txt]
-                )
-            except KeyError:
-                # TODO: remove this "escape" and instead raise Error asking
-                #  the user to not use the stat-file if it is not working properly:
-                logging.info("Error in stat_file (?) - using _select_last")
-                summary = selector()
-        else:
-            summary = selector()
-
-        if not summary.index.is_unique:
-            warnings.warn(f"{self.cell_name}: index is not unique for summary data")
-
-        column_names = summary.columns
-        # TODO @jepe: use pandas.DataFrame properties instead (.len, .reset_index), but maybe first
-        #  figure out if this is really needed and why it was implemented in the first place.
-        summary_length = len(summary[column_names[0]])
-        summary.index = list(range(summary_length))
-
-        if select_columns:
-            logging.debug("keeping only selected set of columns")
-            columns_to_keep = [
-                self.headers_normal.charge_capacity_txt,
-                self.headers_normal.cycle_index_txt,
-                self.headers_normal.data_point_txt,
-                self.headers_normal.datetime_txt,
-                self.headers_normal.discharge_capacity_txt,
-                self.headers_normal.test_time_txt,
-            ]
-            for cn in column_names:
-                if not columns_to_keep.count(cn):
-                    try:
-                        summary.pop(cn)
-                    except KeyError:
-                        logging.debug(f"could not pop {cn}")
-
-        data.summary = summary
-
-        # ----------------- calculated values -----------------------
-
-        if self.cycle_mode == "anode":
-            logging.info(
-                "Assuming cycling in anode half-data (discharge before charge) mode"
+        # cellpy-core seam: delegate the per-cycle summary pipeline to the core.
+        # ``make_core_summary`` builds the base summary (selector + index reset +
+        # column pruning) and the absolute / IR / end-voltage / C-rate columns;
+        # ``add_scaled_summary_columns`` adds the meta-dependent (equivalent-cycle
+        # and gravimetric/areal/absolute) columns. cellpy keeps the selector setup,
+        # nominal-capacity resolution, step-table/dedup handling above and the
+        # column sort / index post-processing below.
+        # Note: the deprecated ``use_cellpy_stat_file`` path now simply runs the
+        # selector (the stat-file has not been properly supported for a long time).
+        # cellpy-core takes unit conversions by value: cellpy (the consumer, which
+        # owns cellpy_units and pint) computes the factors and passes them in, so
+        # the core summary engine needs no pint.
+        current_conversion_factor = float(
+            (
+                core.Q(1.0, data.raw_units["current"])
+                / core.Q(1.0, self.cellpy_units["current"])
             )
-            _first_step_txt = self.headers_summary.discharge_capacity
-            _second_step_txt = self.headers_summary.charge_capacity
-        else:
-            logging.info("Assuming cycling in full-data / cathode mode")
-            _first_step_txt = self.headers_summary.charge_capacity
-            _second_step_txt = self.headers_summary.discharge_capacity
-
-        # ---------------- absolute -------------------------------
-
-        data = self._generate_absolute_summary_columns(
-            data, _first_step_txt, _second_step_txt
+            .to_reduced_units()
+            .magnitude
         )
-        data = self._equivalent_cycles_to_summary(
-            data, _first_step_txt, _second_step_txt, nom_cap_abs, normalization_cycles
+        specific_converters = {
+            mode: self.get_converter_to_specific(
+                dataset=data, mode=mode, to_units=self.cellpy_units
+            )
+            for mode in specifics
+        }
+        data = self.core.make_core_summary(
+            data,
+            selector=selector,
+            find_ir=find_ir,
+            find_end_voltage=find_end_voltage,
+            select_columns=select_columns,
+            current_conversion_factor=current_conversion_factor,
         )
-
-        # getting the C-rates, using values from step-table (so it will not be changed
-        # even though you provide make_summary with a new nom_cap unfortunately):
-        data = self._c_rates_to_summary(data)
-
-        # ----------------- specifics ----------------------------------------
-        specific_columns = self.headers_summary.specific_columns
-        for mode in specifics:
-            data = self._generate_specific_summary_columns(data, mode, specific_columns)
-
-        # TODO @jepe: refactor this to method:
-        if find_end_voltage:
-            data = self._end_voltage_to_summary(data)
-
-        if find_ir and (
-            self.headers_normal.internal_resistance_txt in data.raw.columns
-        ):
-            data = self._ir_to_summary(data)
+        data = self.core.add_scaled_summary_columns(
+            data,
+            nom_cap_abs=nom_cap_abs,
+            normalization_cycles=normalization_cycles,
+            specifics=specifics,
+            specific_converters=specific_converters,
+        )
 
         if sort_my_columns:
             logging.debug("sorting columns")
@@ -7141,7 +6819,7 @@ class CellpyCell:
             logging.debug("loading raw file:")
             logging.debug(f"{f}")
 
-            # get a list of cellpy.readers.core.Data objects
+            # get a list of cellpy.readers.data_structures.Data objects
             # cell = raw_file_loader(f, data_points=data_points, **kwargs)
             # remark that the bounds are included (i.e. the first datapoint
             # is 5000.

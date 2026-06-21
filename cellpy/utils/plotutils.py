@@ -714,6 +714,20 @@ class SummaryPlotConfig:
     # Additional kwargs (stored as dict)
     additional_kwargs: dict = dataclasses.field(default_factory=dict)
 
+    def __post_init__(self) -> None:
+        # Mirror the legacy normalisation: a non-positive ``formation_cycles``
+        # (including ``False`` / ``0`` / ``None``) means there is no formation
+        # block to draw, so ``show_formation`` must be False regardless of
+        # how the caller set it. Without this, ``_mark_formation_cycles``
+        # returns the ``slice(None, None)`` sentinel while ``show_formation``
+        # stays True, and ``_configure_formation_axes`` then evaluates
+        # ``~slice(...)`` which raises ``TypeError``. See issue #366.
+        if self.formation_cycles is None:
+            self.formation_cycles = 0
+        self.formation_cycles = int(self.formation_cycles)
+        if self.formation_cycles < 1:
+            self.show_formation = False
+
     def __str__(self) -> str:
         variables = vars(self)
         outputs = ["SummaryPlotConfig:"]
@@ -5033,7 +5047,7 @@ def raw_plot(
         ``matplotlib`` figure or ``plotly`` figure
 
     """
-    from cellpy.readers.core import Q
+    from cellpy.readers.data_structures import Q
 
     _set_individual_y_labels = False
     _special_height = None

@@ -47,6 +47,8 @@ dependencies:
         - isal
         - typer
         - xmltodict
+        # cellpy-core is consumed as a git dependency until it is released on PyPI.
+        - cellpycore @ git+https://github.com/cellpy/cellpy-core.git@main
 
 
 

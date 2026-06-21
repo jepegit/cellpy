@@ -22,7 +22,7 @@ import numpy as np
 
 from cellpy.parameters.internal_settings import headers_normal
 from cellpy.parameters.prms import _minimum_columns_to_keep_for_raw_if_exists
-from cellpy.readers.core import Data
+from cellpy.readers.data_structures import Data
 from cellpy.readers.instruments.configurations import ModelParameters
 
 ORDERED_POST_PROCESSING_STEPS = [

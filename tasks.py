@@ -214,35 +214,24 @@ def delete_stuff(pattern):
 @task
 def info(c, full=False):
     """Get info about your cellpy"""
-    from pathlib import Path
-
     import cellpy
 
     print()
-    version_file_path = Path("cellpy") / "_version.py"
-    version_ns = {}
-    with open(version_file_path) as f:
-        exec(f.read(), {}, version_ns)
-
     version_stable, sha, version_last = get_pypi_info(package="cellpy")
-    version_in_code = version_ns["__version__"]
     version_by_import = cellpy.__version__
 
     print(" INFO ".center(80, "="))
     print(" version ".center(80, "-"))
     print(f"version (by import cellpy): cellpy {version_by_import}")
-    print(f"version (in _version.py):   cellpy {version_in_code}")
-    if version_in_code != version_by_import:
-        print("WARNING: version mismatch")
+    print("note: version is derived from the git tag (uv-dynamic-versioning)")
 
     if version_stable:
         print(f"version on PyPI:            cellpy {version_stable}")
     if version_last:
         print(f"last on PyPI:               cellpy {version_last}")
-        if version_in_code == version_last:
-            print("You need to bump version number before you can publish!")
-            print("Use bump task to do this:")
-            print("> inv bump")
+        if version_by_import == version_last:
+            print("You need to create a new git tag before you can publish!")
+            print("Tag with e.g.: git tag vX.Y.Z")
     print(80 * "-")
 
 

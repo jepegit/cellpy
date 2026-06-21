@@ -7,7 +7,7 @@ import logging
 import pytest
 
 import cellpy
-from cellpy.readers import core
+from cellpy.readers import data_structures as core
 from cellpy import log, prms
 from cellpy.exceptions import DeprecatedFeature, WrongFileVersion
 from cellpy.parameters.internal_settings import get_headers_summary

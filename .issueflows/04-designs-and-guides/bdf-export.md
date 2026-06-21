@@ -66,38 +66,94 @@ Defining points relevant to cellpy:
 | Q4 | Scope | n/a | raw time-series only; steps/summary/metadata/batch deferred |
 | Q5 | Missing columns | n/a | hard-fail on missing *required*, warn-and-skip recommended/optional |
 | Q6 | Non-BDF columns | `extras` | `False` (strict BDF). `True` appends all unmapped raw columns verbatim; iterable/str selects a subset. No unit conversion or renaming on extras; the resulting file is not strictly BDF-compliant. |
+| Q7 | Target unit override (issue [#365](https://github.com/jepegit/cellpy/issues/365)) | `bdf_units` | `None` (strict BDF spec: `A`, `V`, `Ah`, `Wh`, `s`, `W`, `ohm`). A `CellpyUnits` overrides per `unit_kind`; column labels (`"Charging Capacity / mAh"`) and machine names (`"charging_capacity_mah"`) are rebuilt and values scaled via pint. Incompatible units raise `ValueError`. Any non-default override means the file is no longer strictly BDF-compliant (logged once at INFO). |
 
 ## Unit conversion
 
 All non-datetime unit conversions go through
-[`cellpy.readers.core.Q`](../../cellpy/readers/core.py) (the project-wide
+[`cellpy.readers.data_structures.Q`](../../cellpy/readers/data_structures.py) (the project-wide
 `pint` wrapper, also used by `CellpyCell` itself for capacity / mass /
 nominal-capacity arithmetic). The exporter does not maintain its own
 factor table - it just declares each column's BDF target unit
 (`"A"`, `"Ah"`, `"V"`, `"s"`, `"Wh"`, `"W"`, `"ohm"`) and lets pint
-compute the multiplier from the cell's current `CellpyUnits`. As a
-result, users who customise units (e.g. `cellpy_units.current = "mA"`,
-`cellpy_units.energy = "kWh"`) get the right numbers automatically.
+compute the multiplier from the cell's `data.raw_units` (set by the
+instrument loader). As a result, instruments that report raw data in
+non-default units (e.g. `batmo_bdf` stores charge in `Ah`) get the
+right numbers automatically.
+
+**Source units come from `cell.data.raw_units`, not
+`cell.cellpy_units`.** The `data.raw` frame is always in the
+instrument loader's raw units; `cellpy_units` describes the summary
+frame and user-facing meta-data only. See the `CellpyUnits` docstring
+in `cellpy/parameters/internal_settings.py`. (The previous version of
+this exporter incorrectly read source units from `cellpy_units`,
+producing values off by the `raw_units / cellpy_units` ratio whenever
+the loader's raw units differed from the cellpy-units defaults — most
+visibly for instruments like `batmo_bdf` whose `raw_units.charge =
+"Ah"` does not match `cellpy_units.charge = "mAh"`.)
 
 The `date_time` column is the one exception: pint does not handle wall
 clocks, so cellpy's pandas timestamps are converted to UTC Unix seconds
 explicitly.
+
+### Overriding target units (`bdf_units=`)
+
+Issue [#365](https://github.com/jepegit/cellpy/issues/365) added a
+`bdf_units` keyword to both `cellpy.exporters.bdf.to_bdf` and
+`CellpyCell.to_bdf`. It accepts a
+[`CellpyUnits`](../../cellpy/parameters/internal_settings.py) object
+whose attributes control the **units written into the BDF file** (not
+the source side — `cell.data.raw` is assumed to be in
+`cell.data.raw_units`, as set by the instrument loader).
+
+Semantics:
+
+- `bdf_units=None` (default) → strict BDF spec output, byte-for-byte
+  identical to the pre-#365 behaviour.
+- `bdf_units=CellpyUnits(charge="mAh", current="mA")` → emits
+  `Charging Capacity / mAh` (machine: `charging_capacity_mah`) and
+  `Current / mA` (machine: `current_ma`), with values scaled via pint.
+- Per-kind precedence: attributes on the supplied object that are
+  **pint-equivalent** to the BDF spec default (`"sec" ≡ "s"`,
+  `"V" ≡ "volt"`, etc.) keep the canonical BDF label and machine name.
+  Only non-equivalent kinds flip labels.
+- A unit pint cannot convert from the cell's source unit (e.g.
+  `charge="kg"` while `cell.cellpy_units.charge == "mAh"`) raises
+  `ValueError`. No silent factor-1.0 fallback under an explicit
+  override.
+- The exporter logs one `INFO` line listing the non-default unit kinds,
+  mirroring how `extras=True` declares the file is no longer strictly
+  BDF-compliant.
+
+Label synthesis lives in `_resolve_column_name` in
+[cellpy/exporters/bdf.py](../../cellpy/exporters/bdf.py); the
+unit-kind → target-unit lookup lives in `_resolve_target_units`. Each
+`_BdfColumn` row carries both the canonical BDF spec spellings
+(`preferred` / `machine`) and unitless bases (`base_preferred` /
+`base_machine`) so the override path never has to monkey with the
+BDF-spec defaults.
 
 ## Column / unit map
 
 Source of truth: `_COLUMN_MAP` in
 [cellpy/exporters/bdf.py](../../cellpy/exporters/bdf.py).
 
-| cellpy `HeadersNormal` field | Preferred label | Machine name | Tier | Cellpy default unit | BDF unit | Factor |
+Source units are read per-cell from `data.raw_units` (set by the
+instrument loader). The "Default raw unit" column below is the cellpy
+default (`get_default_raw_units()`); instrument loaders override these
+per-channel (e.g. `batmo_bdf` keeps `charge="Ah"` instead of the
+factor-1e-3 case shown here).
+
+| cellpy `HeadersNormal` field | Preferred label | Machine name | Tier | Default raw unit | BDF unit | Factor (defaults) |
 |---|---|---|---|---|---|---|
 | `test_time_txt` | `Test Time / s` | `test_time_second` | required | `sec` | `s` | 1 |
 | `voltage_txt` | `Voltage / V` | `voltage_volt` | required | `V` | `V` | 1 |
-| `current_txt` | `Current / A` | `current_ampere` | required | `A` | `A` | 1 (or 1e-3 if cellpy `current="mA"`) |
+| `current_txt` | `Current / A` | `current_ampere` | required | `A` | `A` | 1 |
 | `datetime_txt` | `Unix Time / s` | `unix_time_second` | recommended | `datetime64` | `s` (Unix) | UTC seconds |
 | `cycle_index_txt` | `Cycle Count / 1` | `cycle_count` | recommended | int | dimensionless | 1 |
 | `step_index_txt` | `Step Index / 1` | `step_index` | optional | int | dimensionless | 1 |
-| `charge_capacity_txt` | `Charging Capacity / Ah` | `charging_capacity_ah` | optional | `mAh` | `Ah` | 1e-3 |
-| `discharge_capacity_txt` | `Discharging Capacity / Ah` | `discharging_capacity_ah` | optional | `mAh` | `Ah` | 1e-3 |
+| `charge_capacity_txt` | `Charging Capacity / Ah` | `charging_capacity_ah` | optional | `Ah` | `Ah` | 1 |
+| `discharge_capacity_txt` | `Discharging Capacity / Ah` | `discharging_capacity_ah` | optional | `Ah` | `Ah` | 1 |
 | `charge_energy_txt` | `Charging Energy / Wh` | `charging_energy_wh` | optional | `Wh` | `Wh` | 1 |
 | `discharge_energy_txt` | `Discharging Energy / Wh` | `discharging_energy_wh` | optional | `Wh` | `Wh` | 1 |
 | `power_txt` | `Power / W` | `power_watt` | optional | `W` | `W` | 1 |

@@ -548,3 +548,72 @@ class TestSummaryPlotHoverColumns:
             and "fullcell_standard_gravimetric" in rec.getMessage()
             for rec in caplog.records
         ), "Expected a warning that hover_columns is ignored for fullcell_standard_*"
+
+
+class TestSummaryPlotFormationCyclesNormalisation:
+    """Regression tests for issue #366.
+
+    Passing ``formation_cycles=False`` (or ``0``) without explicitly also
+    setting ``show_formation=False`` used to crash with
+    ``TypeError: bad operand type for unary ~: 'slice'`` because the
+    formation-axes branch ran with the ``slice(None, None)`` sentinel
+    selector. ``SummaryPlotConfig.__post_init__`` now mirrors the legacy
+    normalisation so both forms produce a valid no-formation plot.
+    """
+
+    def test_config_normalises_zero_formation_cycles(self):
+        from cellpy.utils.plotutils import SummaryPlotConfig
+
+        cfg = SummaryPlotConfig.from_kwargs(formation_cycles=0)
+        assert cfg.formation_cycles == 0
+        assert cfg.show_formation is False
+
+    def test_config_normalises_false_formation_cycles(self):
+        from cellpy.utils.plotutils import SummaryPlotConfig
+
+        cfg = SummaryPlotConfig.from_kwargs(formation_cycles=False)
+        assert cfg.formation_cycles == 0
+        assert cfg.show_formation is False
+
+    def test_config_keeps_show_formation_for_positive_count(self):
+        from cellpy.utils.plotutils import SummaryPlotConfig
+
+        cfg = SummaryPlotConfig.from_kwargs(formation_cycles=3)
+        assert cfg.formation_cycles == 3
+        assert cfg.show_formation is True
+
+    @pytest.mark.skipif(
+        not plotly_available,
+        reason="Plotly not available",
+    )
+    @pytest.mark.parametrize("formation_cycles_arg", [False, 0])
+    def test_plotly_with_zero_or_false_formation_cycles(
+        self, cell, formation_cycles_arg
+    ):
+        """Reproduction from issue #366 for the plotly backend."""
+        fig = summary_plot(
+            cell,
+            y="capacities_gravimetric",
+            interactive=True,
+            formation_cycles=formation_cycles_arg,
+        )
+        assert fig is not None
+        assert hasattr(fig, "data")
+
+    @pytest.mark.skipif(
+        not seaborn_available,
+        reason="Seaborn not available",
+    )
+    @pytest.mark.parametrize("formation_cycles_arg", [False, 0])
+    def test_seaborn_with_zero_or_false_formation_cycles(
+        self, cell, formation_cycles_arg
+    ):
+        """Same regression on the seaborn backend."""
+        fig = summary_plot(
+            cell,
+            y="capacities_gravimetric",
+            interactive=False,
+            formation_cycles=formation_cycles_arg,
+        )
+        assert fig is not None
+        assert hasattr(fig, "get_axes")

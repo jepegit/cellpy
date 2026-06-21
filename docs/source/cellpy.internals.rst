@@ -4,10 +4,10 @@ cellpy.internals package
 Submodules
 ----------
 
-cellpy.internals.core module
-----------------------------
+cellpy.internals.connections module
+-----------------------------------
 
-.. automodule:: cellpy.internals.core
+.. automodule:: cellpy.internals.connections
    :members:
    :undoc-members:
    :show-inheritance:

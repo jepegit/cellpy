@@ -11,7 +11,7 @@ import pytest
 from cellpy import log
 from cellpy.exporters import to_bdf
 from cellpy.exporters import bdf as bdf_module
-from cellpy.parameters.internal_settings import get_headers_normal
+from cellpy.parameters.internal_settings import CellpyUnits, get_headers_normal
 
 log.setup_logging(default_level=logging.DEBUG, testing=True)
 
@@ -51,6 +51,7 @@ def _make_synthetic_cell(*, with_capacity: bool = True, with_datetime: bool = Tr
         )
 
     cell = cellreader.CellpyCell(initialize=True)
+    cell.cellpy_units = CellpyUnits()
     cell.data.raw = raw
     cell.cell_name = "synthetic"
     return cell
@@ -79,8 +80,9 @@ def test_machine_headers(tmp_path: Path) -> None:
 
 
 def test_capacity_unit_mAh_to_Ah(tmp_path: Path) -> None:
+    """Source unit comes from ``data.raw_units``: mAh -> Ah scales by 1e-3."""
     cell = _make_synthetic_cell()
-    assert cell.cellpy_units.charge == "mAh"
+    cell.data.raw_units.charge = "mAh"
 
     out = cell.to_bdf(tmp_path / "out.bdf.csv", header_style="machine")
     df = pd.read_csv(out)
@@ -89,14 +91,30 @@ def test_capacity_unit_mAh_to_Ah(tmp_path: Path) -> None:
     assert df["discharging_capacity_ah"].max() == pytest.approx(0.1)
 
 
-def test_non_default_current_unit_uses_pint(tmp_path: Path) -> None:
-    """Override cellpy_units.current to mA and verify pint scales A->A correctly.
+def test_capacity_unit_passes_through_when_raw_already_Ah(tmp_path: Path) -> None:
+    """Regression: when the loader's ``raw_units.charge == "Ah"`` (as for
+    instruments like ``batmo_bdf``) the raw column is already in Ah and
+    must not be re-scaled by the ``cellpy_units`` charge default (mAh).
+    """
+    cell = _make_synthetic_cell()
+    cell.data.raw_units.charge = "Ah"
+    cell.cellpy_units.charge = "mAh"
 
-    Locks in that unit conversion is delegated to cellpy.readers.core.Q
+    out = cell.to_bdf(tmp_path / "out.bdf.csv", header_style="machine")
+    df = pd.read_csv(out)
+
+    assert df["charging_capacity_ah"].max() == pytest.approx(100.0)
+    assert df["discharging_capacity_ah"].max() == pytest.approx(100.0)
+
+
+def test_non_default_current_unit_uses_pint(tmp_path: Path) -> None:
+    """Override raw_units.current to mA and verify pint scales mA->A correctly.
+
+    Locks in that unit conversion is delegated to cellpy.readers.data_structures.Q
     (pint) rather than a hand-rolled factor table.
     """
     cell = _make_synthetic_cell()
-    cell.cellpy_units.current = "mA"
+    cell.data.raw_units.current = "mA"
 
     out = cell.to_bdf(tmp_path / "out.bdf.csv", header_style="machine")
     df = pd.read_csv(out)
@@ -311,3 +329,161 @@ def test_module_does_not_import_from_cellpy_utils() -> None:
         if line.strip().startswith(("import cellpy.utils", "from cellpy.utils"))
     ]
     assert offending == [], f"Unexpected cellpy.utils imports: {offending}"
+
+
+# --- bdf_units= override (issue #365) -------------------------------------
+
+
+def test_bdf_units_none_matches_default_path(tmp_path: Path) -> None:
+    """Explicit ``bdf_units=None`` is byte-for-byte identical to the default path."""
+    cell_a = _make_synthetic_cell()
+    cell_b = _make_synthetic_cell()
+
+    out_a = cell_a.to_bdf(tmp_path / "a.bdf.csv")
+    out_b = cell_b.to_bdf(tmp_path / "b.bdf.csv", bdf_units=None)
+
+    df_a = pd.read_csv(out_a)
+    df_b = pd.read_csv(out_b)
+    pd.testing.assert_frame_equal(df_a, df_b)
+
+
+def test_bdf_units_overrides_charge_to_mAh(tmp_path: Path) -> None:
+    """Override charge unit to mAh: label and values reflect the override."""
+    cell = _make_synthetic_cell()
+    cell.data.raw_units.charge = "mAh"  # source
+
+    bdf_units = CellpyUnits(charge="mAh")
+    out = cell.to_bdf(tmp_path / "out.bdf.csv", bdf_units=bdf_units)
+    df = pd.read_csv(out)
+
+    assert "Charging Capacity / mAh" in df.columns
+    assert "Discharging Capacity / mAh" in df.columns
+    assert "Charging Capacity / Ah" not in df.columns
+    # source == target == mAh, so values stay raw (100, not 0.1).
+    assert df["Charging Capacity / mAh"].max() == pytest.approx(100.0)
+    assert df["Discharging Capacity / mAh"].max() == pytest.approx(100.0)
+
+
+def test_bdf_units_overrides_charge_to_mAh_machine_style(tmp_path: Path) -> None:
+    """Machine-style header is synthesized from the override unit."""
+    cell = _make_synthetic_cell()
+    bdf_units = CellpyUnits(charge="mAh")
+
+    out = cell.to_bdf(tmp_path / "out.bdf.csv", header_style="machine", bdf_units=bdf_units)
+    df = pd.read_csv(out)
+
+    assert "charging_capacity_mah" in df.columns
+    assert "discharging_capacity_mah" in df.columns
+    assert "charging_capacity_ah" not in df.columns
+
+
+def test_bdf_units_overrides_current_to_mA(tmp_path: Path) -> None:
+    """Override current to mA: factor 1000 from the source A."""
+    cell = _make_synthetic_cell()
+    assert cell.data.raw_units.current == "A"
+
+    bdf_units = CellpyUnits(current="mA")
+    out = cell.to_bdf(tmp_path / "out.bdf.csv", bdf_units=bdf_units)
+    df = pd.read_csv(out)
+
+    assert "Current / mA" in df.columns
+    assert "Current / A" not in df.columns
+    assert df["Current / mA"].max() == pytest.approx(100.0)
+    assert df["Current / mA"].min() == pytest.approx(-100.0)
+
+
+def test_bdf_units_overrides_time_to_minutes(tmp_path: Path) -> None:
+    """Override time to minutes: values divided by 60."""
+    cell = _make_synthetic_cell()
+
+    bdf_units = CellpyUnits(time="min")
+    out = cell.to_bdf(tmp_path / "out.bdf.csv", bdf_units=bdf_units)
+    df = pd.read_csv(out)
+
+    assert "Test Time / min" in df.columns
+    assert "Test Time / s" not in df.columns
+    assert df["Test Time / min"].iloc[-1] == pytest.approx(5.0 / 60.0)
+
+
+def test_bdf_units_partial_override_keeps_defaults(tmp_path: Path) -> None:
+    """Unchanged kinds keep canonical BDF spec spelling and values.
+
+    `sec` is pint-equivalent to `s` so the default ``CellpyUnits().time``
+    must not flip the time column away from the BDF canonical label.
+    """
+    cell_default = _make_synthetic_cell()
+    cell_override = _make_synthetic_cell()
+
+    out_default = cell_default.to_bdf(tmp_path / "default.bdf.csv")
+    out_override = cell_override.to_bdf(
+        tmp_path / "override.bdf.csv",
+        bdf_units=CellpyUnits(charge="mAh"),
+    )
+    df_default = pd.read_csv(out_default)
+    df_override = pd.read_csv(out_override)
+
+    # Untouched columns byte-for-byte identical to the no-override file.
+    for col in ("Test Time / s", "Voltage / V", "Current / A", "Unix Time / s"):
+        assert col in df_default.columns
+        assert col in df_override.columns
+        pd.testing.assert_series_equal(
+            df_default[col], df_override[col], check_names=False
+        )
+
+    # Charge columns moved to mAh; old Ah labels gone.
+    assert "Charging Capacity / mAh" in df_override.columns
+    assert "Charging Capacity / Ah" not in df_override.columns
+
+
+def test_bdf_units_does_not_mutate_inputs(tmp_path: Path) -> None:
+    """`to_bdf` must not mutate `cell.cellpy_units` or the passed-in object."""
+    cell = _make_synthetic_cell()
+    cellpy_units_snapshot = {
+        "charge": cell.cellpy_units.charge,
+        "current": cell.cellpy_units.current,
+        "time": cell.cellpy_units.time,
+    }
+
+    bdf_units = CellpyUnits(charge="mAh", current="mA")
+    passed_snapshot = {"charge": bdf_units.charge, "current": bdf_units.current}
+
+    cell.to_bdf(tmp_path / "out.bdf.csv", bdf_units=bdf_units)
+
+    assert cell.cellpy_units.charge == cellpy_units_snapshot["charge"]
+    assert cell.cellpy_units.current == cellpy_units_snapshot["current"]
+    assert cell.cellpy_units.time == cellpy_units_snapshot["time"]
+    assert bdf_units.charge == passed_snapshot["charge"]
+    assert bdf_units.current == passed_snapshot["current"]
+
+
+def test_bdf_units_incompatible_unit_raises(tmp_path: Path) -> None:
+    """A unit pint cannot convert (e.g. `charge="kg"`) raises ValueError."""
+    cell = _make_synthetic_cell()
+    bdf_units = CellpyUnits(charge="kg")
+
+    with pytest.raises(ValueError, match="charge|kg|mAh"):
+        cell.to_bdf(tmp_path / "out.bdf.csv", bdf_units=bdf_units)
+
+
+def test_bdf_units_pint_equivalent_keeps_canonical_label(tmp_path: Path) -> None:
+    """`time="s"` (vs spec default `s`) keeps the BDF canonical label."""
+    cell = _make_synthetic_cell()
+    out = cell.to_bdf(
+        tmp_path / "out.bdf.csv",
+        bdf_units=CellpyUnits(time="s"),
+    )
+    df = pd.read_csv(out)
+    assert "Test Time / s" in df.columns
+
+
+def test_bdf_units_logs_non_strict_warning(tmp_path: Path, caplog) -> None:
+    """One INFO line is emitted when the override is not strictly BDF."""
+    cell = _make_synthetic_cell()
+    with caplog.at_level(logging.INFO, logger="cellpy.exporters.bdf"):
+        cell.to_bdf(
+            tmp_path / "out.bdf.csv",
+            bdf_units=CellpyUnits(charge="mAh"),
+        )
+    assert any(
+        "not strictly BDF-compliant" in rec.message for rec in caplog.records
+    )

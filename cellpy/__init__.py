@@ -28,7 +28,7 @@ __version__ = cellpy._version.__version__
 
 from cellpy.readers import cellreader, dbreader, filefinder, do
 
-# from cellpy.readers.core import Q, ureg
+# from cellpy.readers.data_structures import Q, ureg
 
 logging.getLogger(__name__).addHandler(logging.NullHandler())
 

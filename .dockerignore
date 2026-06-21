@@ -1,0 +1,18 @@
+# Keep the Docker build context small. NOTE: .git is intentionally NOT ignored,
+# because the package version is derived from the latest git tag at build time.
+.venv/
+dist/
+build/
+*.egg-info/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.nox/
+testdata/
+dev_data/
+dev_utils/
+docs/_build/
+.idea/
+.vscode/
