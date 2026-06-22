@@ -96,6 +96,15 @@ dev = [
 # is released on PyPI.
 allow-direct-references = true
 
+[tool.uv.sources]
+# Local editable override for development only: resolve cellpycore from the
+# sibling working copy instead of the pinned git reference in
+# [project.dependencies]. uv does NOT write this into the built wheel metadata,
+# so a released/installed cellpy still uses the git/tag reference. Remove this
+# (or rely on the git pin) for reproducible release builds. See the migration
+# guide: cellpy-core/.issueflows/04-designs-and-guides/cellpy-core-migration.md.
+cellpycore = { path = "../cellpy-core", editable = true }
+
 [tool.hatch.version]
 source = "uv-dynamic-versioning"
 

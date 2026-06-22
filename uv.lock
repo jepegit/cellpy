@@ -421,7 +421,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "cellpycore", git = "https://github.com/cellpy/cellpy-core.git?rev=main" },
+    { name = "cellpycore", editable = "../cellpy-core" },
     { name = "charset-normalizer" },
     { name = "click" },
     { name = "cookiecutter" },
@@ -488,7 +488,7 @@ dev = [
 [[package]]
 name = "cellpycore"
 version = "0.1.0"
-source = { git = "https://github.com/cellpy/cellpy-core.git?rev=main#cdcdc96be747d00b1df7987598e0067427c27d9f" }
+source = { editable = "../cellpy-core" }
 dependencies = [
     { name = "duckdb" },
     { name = "duckdb-engine" },
@@ -497,6 +497,28 @@ dependencies = [
     { name = "polars" },
     { name = "pyarrow" },
     { name = "sqlalchemy" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "duckdb", specifier = ">=1.2.2" },
+    { name = "duckdb-engine", specifier = ">=0.17.0" },
+    { name = "narwhals", specifier = ">=1.38.0" },
+    { name = "pandas", specifier = ">=2.2.3" },
+    { name = "pint", marker = "extra == 'units'", specifier = ">=0.25" },
+    { name = "polars", specifier = ">=1.29.0" },
+    { name = "pyarrow", specifier = ">=20.0.0" },
+    { name = "sqlalchemy", specifier = ">=2.0.40" },
+]
+provides-extras = ["units"]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "marimo", specifier = ">=0.23.10" },
+    { name = "matplotlib", specifier = ">=3.10.6" },
+    { name = "pint", specifier = ">=0.25" },
+    { name = "pytest", specifier = ">=8.0.0" },
+    { name = "ruff", specifier = ">=0.11.8" },
 ]
 
 [[package]]
