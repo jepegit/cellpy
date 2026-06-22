@@ -447,11 +447,23 @@ class DataLoader(BaseLoader):
 
     def _rename_header(self, h_old, h_new):
         try:
-            self.mpr_data.rename(
-                columns={h_new: self.cellpy_headers[h_old]}, inplace=True
-            )
+            cellpy_name = self.cellpy_headers[h_old]
         except KeyError as e:
             self.logger.info(f"Problem during conversion to cellpy-format ({e})")
+            return
+        if h_new not in self.mpr_data.columns:
+            return
+        if cellpy_name != h_new and cellpy_name in self.mpr_data.columns:
+            # Two biologics source columns map to the same cellpy header (e.g.
+            # both "Energy" and "Energy_charge" -> charge_energy). Renaming the
+            # second would create a duplicate column, which the polars-native
+            # core (make_step_table / make_summary) rejects. Keep the first.
+            self.logger.info(
+                f"skipping rename {h_new!r} -> {cellpy_name!r}: "
+                "target column already present (avoiding duplicate)"
+            )
+            return
+        self.mpr_data.rename(columns={h_new: cellpy_name}, inplace=True)
 
     def _generate_cycle_index(self, cellpy_header_lookup=None, b_header=None):
         if "half_cycle" in self.mpr_data.columns:

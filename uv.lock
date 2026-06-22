@@ -488,7 +488,7 @@ dev = [
 [[package]]
 name = "cellpycore"
 version = "0.1.0"
-source = { git = "https://github.com/cellpy/cellpy-core.git?rev=main#902bf77139ea494514971a5f122ce3cec9a8e528" }
+source = { git = "https://github.com/cellpy/cellpy-core.git?rev=main#cdcdc96be747d00b1df7987598e0067427c27d9f" }
 dependencies = [
     { name = "duckdb" },
     { name = "duckdb-engine" },
