@@ -54,6 +54,7 @@ def _drift_report(name: str, cellpy_map: dict, core_map: dict) -> str:
     return "\n".join(lines)
 
 
+@pytest.mark.essential
 @pytest.mark.parametrize("name", SHARED_CLASSES)
 def test_settings_parity(name):
     cellpy_cls = getattr(cellpy_settings, name)

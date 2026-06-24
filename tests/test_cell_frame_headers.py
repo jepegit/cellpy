@@ -1,5 +1,7 @@
 import logging
 
+import pytest
+
 from cellpy import log, prms
 from cellpy.parameters.internal_settings import get_headers_summary
 
@@ -7,6 +9,7 @@ log.setup_logging(default_level=logging.DEBUG, testing=True)
 
 
 # TODO: finish this
+@pytest.mark.essential
 def test_header(dataset):
     h = dataset.data.summary.columns
     print(h)

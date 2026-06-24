@@ -157,6 +157,7 @@ def test_get_pec():
     )
 
 
+@pytest.mark.essential
 def test_get_cellpy():
     cellpy.get(filename=fdv.cellpy_file_path, testing=True)
 
@@ -177,6 +178,7 @@ def test_get_cellpy_with_post_processor_hook():
     )  # should only give a warning
 
 
+@pytest.mark.essential
 def test_get_arbin_res_with_postprocessor_hook():
     def _my_post_processor(c):
         print(c)
@@ -199,6 +201,7 @@ def test_humanize_bytes():
     assert cellpy.readers.data_structures.humanize_bytes(1024 * 1234 * 1111, 1) == "1.0 GB"
 
 
+@pytest.mark.essential
 def test_make_step_table():
     c = cellpy.get(
         fdv.res_file_path,

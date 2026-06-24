@@ -140,6 +140,7 @@ markers = [
     "slowtest: marks tests as slow (deselect with '-m \"not slow\"')",
     "serial",
     "skip_on_macos: skip this test when running on macOS (e.g. CI flakiness)",
+    "essential: marks the core smoke tests of the read -> step-table -> summary pipeline and the cellpy/cellpy-core parity contract (run with '-m essential')",
 ]
 filterwarnings = [
     "ignore::DeprecationWarning:dateparser",

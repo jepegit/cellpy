@@ -19,6 +19,7 @@ log.setup_logging(default_level="DEBUG", testing=True)
 
 # TODO: refactor from 'dataset' to 'cell' manually (PyCharm cannot handle pytest)
 # TODO: fix this: not smart to save cellpyfile that will be used by other modules
+@pytest.mark.essential
 def test_create_cellpyfile(cellpy_data_instance, tmp_path, parameters):
     # create a cellpy file from the res-file (used for testing)
     cellpy_data_instance.from_raw(parameters.res_file_path)
@@ -620,6 +621,7 @@ def test_load_arbin_res_aux_multiple(cellpy_data_instance, parameters):
     assert cellpy_data_instance.data.raw.size == 134976
 
 
+@pytest.mark.essential
 def test_from_raw_local(cellpy_data_instance, parameters):
     cellpy_data_instance.from_raw(parameters.res_file_path)
     cellpy_data_instance.make_summary()
@@ -639,6 +641,7 @@ def test_make_step_table(cellpy_data_instance, parameters):
     cellpy_data_instance.make_step_table()
 
 
+@pytest.mark.essential
 def test_make_new_step_table(cellpy_data_instance, parameters):
     cellpy_data_instance.from_raw(parameters.res_file_path)
     cellpy_data_instance.mass = 1.0
@@ -669,6 +672,7 @@ def test_make_step_table_skip_steps(cellpy_data_instance, parameters):
     assert len(cellpy_data_instance.data.steps) == 87
 
 
+@pytest.mark.essential
 def test_make_summary(cellpy_data_instance, parameters):
     cellpy_data_instance.from_raw(parameters.res_file_path)
     cellpy_data_instance.mass = 1.0
@@ -821,6 +825,7 @@ def test_select_without(rate_dataset):
     # depending on the data
 
 
+@pytest.mark.essential
 def test_summary_from_cellpyfile(parameters):
     c_cellpy = cellpy.get(testing=True)
     c_cellpy.load(parameters.cellpy_file_path)
@@ -835,6 +840,7 @@ def test_summary_from_cellpyfile(parameters):
     assert s2.iloc[:, 3].size == 18
 
 
+@pytest.mark.essential
 def test_load_cellpyfile(cellpy_data_instance, parameters):
     cellpy_data_instance.load(parameters.cellpy_file_path)
     cycle_number = 1
@@ -861,6 +867,7 @@ def test_get_current_voltage(dataset):
     c_all2 = dataset.get_current(as_frame=False)  # list of numpy arrays
 
 
+@pytest.mark.essential
 def test_get_capacity(dataset):
     cc, vcc = dataset.get_ccap(cycle=5, as_frame=False)
     assert len(cc) == len(vcc)
