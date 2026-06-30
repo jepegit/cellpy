@@ -988,6 +988,10 @@ class BatchSummaryCollector(BatchCollector):
         "columns": ["charge_capacity_gravimetric"],
     }
 
+    _default_plotter_arguments = {
+        "match_axes": False,
+    }
+
     def __init__(
         self,
         b,
