@@ -306,7 +306,7 @@ class DataLoader(BaseLoader):
 
         for col in base_columns_int:
             if col in data.raw.columns:
-                data.raw[col] = pd.to_numeric(data.raw[col], errors="coerce").astype("Int64")
+                data.raw[col] = pd.to_numeric(data.raw[col], errors="coerce").astype("int64")
             elif col in [self.headers_normal[k] for k in self._MUST_HAVE_RAW_COLUMNS]:
                 missing_must_have_columns.append(col)
 
