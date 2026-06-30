@@ -1,7 +1,137 @@
 [build-system]
-# This section defines the build system requirements
-requires = ["setuptools"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling>=1.27", "uv-dynamic-versioning>=0.7.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "cellpy"
+dynamic = ["version"]
+description = "Extract and manipulate data from battery data testers."
+readme = "README.md"
+requires-python = ">=3.13"
+license = "MIT"
+license-files = ["LICEN[CS]E*"]
+authors = [
+    { name = "Jan Petter Maehlen", email = "jepe@ife.no" },
+    { name = "Asbjoern Ulvestad", email = "Asbjorn.Ulvestad@ife.no" },
+    { name = "Muhammad Abdelhamid", email = "Muhammad.Abdelhamid@ife.no" },
+    { name = "Julia Wind", email = "julia.wind@ife.no" },
+]
+keywords = ["cellpy", "battery"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Science/Research",
+    "Natural Language :: English",
+    "Programming Language :: Python :: 3.13",
+]
+
+dependencies = [
+    "scipy",
+    "numpy",
+    "pandas<3",
+    "python-box",
+    "setuptools",
+    "ruamel.yaml",
+    "matplotlib",
+    "openpyxl",
+    "click",
+    "PyGithub",
+    "tqdm",
+    "pint",
+    "requests",
+    "pyodbc",
+    "sqlalchemy>=2.0.0",
+    "sqlalchemy-access; platform_system == 'Windows'",
+    "python-dotenv",
+    "fabric",
+    "dateparser",
+    "cookiecutter",
+    "jinja2_time",
+    "tables",
+    "ipykernel",
+    "rich",
+    "charset-normalizer",
+    "polars",
+    "pyarrow>=16",
+    "typer",
+    "xmltodict",
+    "defusedxml",
+    "isal",
+    # cellpy-core is consumed as a git dependency during development (no PyPI
+    # release yet). Pin to a tag/commit for releases.
+    "cellpycore @ git+https://github.com/cellpy/cellpy-core.git@main",
+]
+
+[project.optional-dependencies]
+batch = ["ipython", "jupyter", "plotly", "seaborn", "kaleido==0.1.*"]
+fit = ["lmfit"]
+all = ["ipython", "jupyter", "plotly", "seaborn", "kaleido==0.1.*", "lmfit"]
+
+[project.scripts]
+cellpy = "cellpy.cli:cli"
+
+[project.urls]
+Homepage = "https://github.com/jepegit/cellpy"
+Repository = "https://github.com/jepegit/cellpy"
+Documentation = "https://cellpy.readthedocs.io"
+
+[dependency-groups]
+dev = [
+    "Sphinx",
+    "black",
+    "build",
+    "coverage",
+    "flake8",
+    "invoke",
+    "ipykernel",
+    "nox",
+    "lmfit",
+    "pandoc",
+    "pytest",
+    "pytest-benchmark",
+    "pytest-timeout",
+]
+
+[tool.hatch.metadata]
+# Required because cellpycore is pulled in via a direct git reference until it
+# is released on PyPI.
+allow-direct-references = true
+
+[tool.uv.sources]
+# Local editable override for development only: resolve cellpycore from the
+# sibling working copy instead of the pinned git reference in
+# [project.dependencies]. uv does NOT write this into the built wheel metadata,
+# so a released/installed cellpy still uses the git/tag reference. Remove this
+# (or rely on the git pin) for reproducible release builds. See the migration
+# guide: cellpy-core/.issueflows/04-designs-and-guides/cellpy-core-migration.md.
+cellpycore = { path = "../cellpy-core", editable = true }
+
+[tool.hatch.version]
+source = "uv-dynamic-versioning"
+
+[tool.uv-dynamic-versioning]
+vcs = "git"
+style = "pep440"
+# Tolerate the existing inconsistent tags (e.g. "v.0.3.0", "v0.4.2", "1.0.3a13").
+# Going forward, use "vX.Y.Z" tags.
+pattern = "default-unprefixed"
+fallback-version = "0.0.0"
+
+[tool.hatch.build.targets.wheel]
+packages = ["cellpy"]
+
+[tool.hatch.build.targets.sdist]
+exclude = [
+    "/.github",
+    "/docs",
+    "/examples",
+    "/templates",
+    "/tests",
+    "/dev_data",
+    "/dev_utils",
+    "/testdata",
+    "/recipe",
+    "/.pytest_cache",
+]
 
 [tool.pytest.ini_options]
 minversion = "6.0"
@@ -10,6 +140,7 @@ markers = [
     "slowtest: marks tests as slow (deselect with '-m \"not slow\"')",
     "serial",
     "skip_on_macos: skip this test when running on macOS (e.g. CI flakiness)",
+    "essential: marks the core smoke tests of the read -> step-table -> summary pipeline and the cellpy/cellpy-core parity contract (run with '-m essential')",
 ]
 filterwarnings = [
     "ignore::DeprecationWarning:dateparser",
@@ -40,22 +171,4 @@ exclude_also = [
     "raise NotImplementedError",
     "if TYPE_CHECKING:",
     "@(abc\\.)?abstractmethod",
-]
-
-[tool.bumpver]
-current_version = "1.0.3"
-version_pattern = "MAJOR.MINOR.PATCH[PYTAG][NUM]"
-commit_message = "bump version {old_version} -> {new_version}"
-commit = true
-tag = true
-push = false
-
-[tool.bumpver.file_patterns]
-"pyproject.toml" = [
-    'current_version = "{version}"',
-]
-
-
-"cellpy/_version.py" = [
-    '__version__ = "{version}"',
 ]

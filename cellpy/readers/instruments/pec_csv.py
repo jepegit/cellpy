@@ -5,7 +5,6 @@ import logging
 import pathlib
 import re
 import warnings
-from datetime import datetime
 
 import pandas as pd
 from dateutil.parser import parse
@@ -15,7 +14,7 @@ from cellpy.parameters.internal_settings import (
     base_columns_int,
     get_headers_normal,
 )
-from cellpy.readers.core import Data
+from cellpy.readers.data_structures import Data
 from cellpy.readers.instruments.base import BaseLoader
 
 

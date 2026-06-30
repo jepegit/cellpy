@@ -24,7 +24,7 @@ from cellpy.parameters.internal_settings import (
     BATCH_ATTRS_TO_IMPORT_FROM_EXCEL_SQLITE,
     get_headers_journal,
 )
-from cellpy.readers.core import BaseSimpleDbReader
+from cellpy.readers.data_structures import BaseSimpleDbReader
 
 # ----------------- USED WHEN CONVERTING FROM EXCEL -----------------
 DB_FILE_EXCEL = prms.Paths.db_filename

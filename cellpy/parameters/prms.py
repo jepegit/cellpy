@@ -11,7 +11,7 @@ from typing import List, Tuple, Union, Optional, TYPE_CHECKING
 # (this will only work without from __future__ import annotations for python 3.11 and above)
 
 from . import externals as externals
-from cellpy.internals.core import OtherPath
+from cellpy.internals.connections import OtherPath
 
 # When adding prms, please
 #   1) check / update the internal_settings.py file as well to

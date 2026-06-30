@@ -8,17 +8,18 @@ import tempfile
 
 import pytest
 
-import cellpy.readers.core
+import cellpy.readers.data_structures
 from cellpy import log, prms
 from cellpy.exceptions import DeprecatedFeature, WrongFileVersion
 from cellpy.parameters.internal_settings import get_headers_summary
-from cellpy.internals.core import OtherPath
+from cellpy.internals.connections import OtherPath
 
 log.setup_logging(default_level="DEBUG", testing=True)
 
 
 # TODO: refactor from 'dataset' to 'cell' manually (PyCharm cannot handle pytest)
 # TODO: fix this: not smart to save cellpyfile that will be used by other modules
+@pytest.mark.essential
 def test_create_cellpyfile(cellpy_data_instance, tmp_path, parameters):
     # create a cellpy file from the res-file (used for testing)
     cellpy_data_instance.from_raw(parameters.res_file_path)
@@ -43,7 +44,7 @@ def test_create_cellpyfile(cellpy_data_instance, tmp_path, parameters):
     ],
 )
 def test_xldate_as_datetime(xldate, datemode, option, expected):
-    result = cellpy.readers.core.xldate_as_datetime(xldate, datemode, option)
+    result = cellpy.readers.data_structures.xldate_as_datetime(xldate, datemode, option)
     assert result == expected
 
 
@@ -303,8 +304,8 @@ def test_get_ir(dataset):
 
 
 def test_check64bit():
-    a = cellpy.readers.core.check64bit()
-    b = cellpy.readers.core.check64bit("os")
+    a = cellpy.readers.data_structures.check64bit()
+    b = cellpy.readers.data_structures.check64bit("os")
     logging.debug(f"Python 64bit? {a}")
     logging.debug(f"OS 64bit? {b}")
 
@@ -382,7 +383,7 @@ def test_fid_with_otherpath(cellpy_data_instance, parameters):
 
 
 def test_only_fid_raw(parameters):
-    from cellpy.readers.core import FileID
+    from cellpy.readers.data_structures import FileID
 
     my_fid_one = FileID()
     my_file = parameters.cellpy_file_path
@@ -393,8 +394,8 @@ def test_only_fid_raw(parameters):
 
 
 def test_only_fid_otherpath_local(parameters):
-    from cellpy.readers.core import FileID
-    from cellpy.internals.core import OtherPath
+    from cellpy.readers.data_structures import FileID
+    from cellpy.internals.connections import OtherPath
 
     my_fid_one = FileID()
     my_file = OtherPath(parameters.cellpy_file_path)
@@ -406,8 +407,8 @@ def test_only_fid_otherpath_local(parameters):
 
 @pytest.mark.skip(reason="only run locally")
 def test_only_fid_otherpath_external(parameters):
-    from cellpy.readers.core import FileID
-    from cellpy.internals.core import OtherPath
+    from cellpy.readers.data_structures import FileID
+    from cellpy.internals.connections import OtherPath
 
     my_fid_one = FileID()
     my_file = OtherPath(parameters.cellpy_file_path_external)
@@ -435,8 +436,8 @@ def test_local_only_fid_otherpath_external(parameters):
     import dotenv
     import os
 
-    from cellpy.readers.core import FileID
-    from cellpy.internals.core import OtherPath
+    from cellpy.readers.data_structures import FileID
+    from cellpy.internals.connections import OtherPath
     from cellpy import cellreader
 
     # This should only be run on your local machine:
@@ -620,6 +621,7 @@ def test_load_arbin_res_aux_multiple(cellpy_data_instance, parameters):
     assert cellpy_data_instance.data.raw.size == 134976
 
 
+@pytest.mark.essential
 def test_from_raw_local(cellpy_data_instance, parameters):
     cellpy_data_instance.from_raw(parameters.res_file_path)
     cellpy_data_instance.make_summary()
@@ -639,6 +641,7 @@ def test_make_step_table(cellpy_data_instance, parameters):
     cellpy_data_instance.make_step_table()
 
 
+@pytest.mark.essential
 def test_make_new_step_table(cellpy_data_instance, parameters):
     cellpy_data_instance.from_raw(parameters.res_file_path)
     cellpy_data_instance.mass = 1.0
@@ -669,6 +672,7 @@ def test_make_step_table_skip_steps(cellpy_data_instance, parameters):
     assert len(cellpy_data_instance.data.steps) == 87
 
 
+@pytest.mark.essential
 def test_make_summary(cellpy_data_instance, parameters):
     cellpy_data_instance.from_raw(parameters.res_file_path)
     cellpy_data_instance.mass = 1.0
@@ -821,6 +825,7 @@ def test_select_without(rate_dataset):
     # depending on the data
 
 
+@pytest.mark.essential
 def test_summary_from_cellpyfile(parameters):
     c_cellpy = cellpy.get(testing=True)
     c_cellpy.load(parameters.cellpy_file_path)
@@ -835,6 +840,7 @@ def test_summary_from_cellpyfile(parameters):
     assert s2.iloc[:, 3].size == 18
 
 
+@pytest.mark.essential
 def test_load_cellpyfile(cellpy_data_instance, parameters):
     cellpy_data_instance.load(parameters.cellpy_file_path)
     cycle_number = 1
@@ -861,6 +867,7 @@ def test_get_current_voltage(dataset):
     c_all2 = dataset.get_current(as_frame=False)  # list of numpy arrays
 
 
+@pytest.mark.essential
 def test_get_capacity(dataset):
     cc, vcc = dataset.get_ccap(cycle=5, as_frame=False)
     assert len(cc) == len(vcc)
@@ -1017,7 +1024,7 @@ def test_interpolate_y_on_x_per_monotonic_segments_preserves_taper_steps():
         "voltage": [3.0, 3.5, 4.0, 4.0, 4.0, 4.2],
         "capacity": [0.0, 50.0, 100.0, 120.0, 140.0, 150.0],
     })
-    out = cellpy.readers.core.interpolate_y_on_x_per_monotonic_segments(
+    out = cellpy.readers.data_structures.interpolate_y_on_x_per_monotonic_segments(
         df, x="voltage", y="capacity", number_of_points=5, direction=1
     )
     assert not out.empty
@@ -1040,7 +1047,7 @@ def test_interpolate_y_on_x_per_monotonic_segments_max_segments_fallback():
         "voltage": [3.0, 3.1, 3.05, 3.15, 3.1, 3.2] * 20,  # 120 points, many segments
         "capacity": range(120),
     })
-    out = cellpy.readers.core.interpolate_y_on_x_per_monotonic_segments(
+    out = cellpy.readers.data_structures.interpolate_y_on_x_per_monotonic_segments(
         df, x="voltage", y="capacity", number_of_points=5, direction=1, max_segments=10
     )
     # Should return unchanged (same length as input)
@@ -1049,9 +1056,9 @@ def test_interpolate_y_on_x_per_monotonic_segments_max_segments_fallback():
 
 def test_group_by_interpolate(dataset):
     data = dataset.data.raw
-    interpolated_data1 = cellpy.readers.core.group_by_interpolate(data)
-    interpolated_data2 = cellpy.readers.core.group_by_interpolate(data, tidy=True)
-    interpolated_data3 = cellpy.readers.core.group_by_interpolate(
+    interpolated_data1 = cellpy.readers.data_structures.group_by_interpolate(data)
+    interpolated_data2 = cellpy.readers.data_structures.group_by_interpolate(data, tidy=True)
+    interpolated_data3 = cellpy.readers.data_structures.group_by_interpolate(
         data, individual_x_cols=True
     )
 

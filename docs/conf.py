@@ -5,9 +5,13 @@ INCLUDE_SOURCE_FILES = True
 
 project_root = os.path.abspath("../")
 name = "cellpy"
-version_ns = {}
-with open(os.path.join(project_root, name, "_version.py")) as f:
-    exec(f.read(), {}, version_ns)
+try:
+    from importlib.metadata import PackageNotFoundError, version as _pkg_version
+
+    _cellpy_version = _pkg_version(name)
+except PackageNotFoundError:
+    _cellpy_version = "0.0.0"
+version_ns = {"__version__": _cellpy_version}
 
 if INCLUDE_SOURCE_FILES:
     project_prmsdir = os.path.join(project_root, r"cellpy\parameters")

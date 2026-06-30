@@ -1,0 +1,30 @@
+---
+description: Required reading before cross-repo cellpy <-> cellpy-core integration/migration work
+alwaysApply: true
+---
+
+# cellpy <-> cellpy-core migration
+
+Before doing **any** work that touches the boundary between `cellpy` (this repo) and
+`cellpy-core` (cellpy/cellpy-core) — wiring the dependency, the processing seam, shared
+headers/units, test/cell metadata, or "what belongs in core" — you MUST first read the
+migration guide in the sibling cellpy-core checkout:
+
+`../cellpy-core/.issueflows/04-designs-and-guides/cellpy-core-migration.md`
+(and its companion `cellpy-core-integration-into-cellpy.md`).
+
+Key invariants from that doc:
+
+- **Branch, don't fork.** Integration work goes on a branch of this repo (optionally a
+  `git worktree`), never a fresh clone.
+- **Dev wiring:** `[tool.uv.sources]` gives an editable path to `../cellpy-core` for local
+  dev; the `git+https…@<ref>` reference in `[project.dependencies]` stays the
+  release/consumer truth. Pin a tag/commit for releases.
+- **Parity is enforced by tests** (legacy header/unit contract tests + golden parquet
+  fixtures), not by vigilance. Target the `OldCellpyCellCore` legacy bridge first.
+- **Metadata boundary:** core may own metadata *scaffolding and tooling* but must NOT
+  require populated metadata on its `Data`; attaching real metadata is this library's
+  opt-in (cellpy v2.0).
+
+If the sibling `../cellpy-core` checkout is unavailable, ask the user for its location
+rather than guessing.

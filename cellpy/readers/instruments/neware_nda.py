@@ -6,7 +6,7 @@ import pathlib
 from cellpy.readers.instruments.base import BaseLoader
 from cellpy import prms
 from cellpy.parameters.internal_settings import HeaderDict, get_headers_normal
-from cellpy.readers.core import Data
+from cellpy.readers.data_structures import Data
 
 """Neware NDA (or NDAX) data"""
 

@@ -12,7 +12,7 @@ from typing import List, Any, Optional
 import pandas as pd
 
 from cellpy import dbreader
-from cellpy.readers.core import PagesDictBase
+from cellpy.readers.data_structures import PagesDictBase
 from cellpy.readers import json_dbreader
 from cellpy.parameters.internal_settings import get_headers_journal, get_headers_summary
 from cellpy.utils.batch_tools import batch_helpers as helper

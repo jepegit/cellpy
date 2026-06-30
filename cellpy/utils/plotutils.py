@@ -5047,7 +5047,7 @@ def raw_plot(
         ``matplotlib`` figure or ``plotly`` figure
 
     """
-    from cellpy.readers.core import Q
+    from cellpy.readers.data_structures import Q
 
     _set_individual_y_labels = False
     _special_height = None

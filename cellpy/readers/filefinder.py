@@ -13,7 +13,7 @@ import warnings
 from . import externals as externals
 import cellpy.exceptions
 from cellpy.parameters import prms
-from cellpy.internals.core import OtherPath
+from cellpy.internals.connections import OtherPath
 
 
 # TODO: @jepe - add function for dumping the raw-file directory to a file,

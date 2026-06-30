@@ -20,7 +20,7 @@ import cellpy._version
 from cellpy.exceptions import ConfigFileNotWritten
 from cellpy.parameters import prmreader
 from cellpy.parameters.internal_settings import OTHERPATHS
-from cellpy.internals.core import OtherPath
+from cellpy.internals.connections import OtherPath
 
 DIFFICULT_MISSING_MODULES = {}
 
