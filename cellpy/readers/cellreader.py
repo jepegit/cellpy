@@ -1631,6 +1631,7 @@ class CellpyCell:
             fid_dir = prms._cellpyfile_fid  # noqa
             test_dependent_meta_dir = prms._cellpyfile_test_dependent_meta  # noqa
             warnings.simplefilter("ignore", externals.pandas.errors.PerformanceWarning)
+            store = None
             try:
                 with core.pickle_protocol(PICKLE_PROTOCOL):
                     store = self._save_to_hdf5(
@@ -1648,7 +1649,8 @@ class CellpyCell:
                         summary_dir,
                     )
             finally:
-                store.close()
+                if store is not None:
+                    store.close()
             logging.debug(" all -> hdf5 OK")
             warnings.simplefilter("default", externals.pandas.errors.PerformanceWarning)
             # del store

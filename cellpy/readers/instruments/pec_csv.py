@@ -5,7 +5,6 @@ import logging
 import pathlib
 import re
 import warnings
-from datetime import datetime
 
 import pandas as pd
 from dateutil.parser import parse
@@ -306,9 +305,7 @@ class DataLoader(BaseLoader):
 
         for col in base_columns_int:
             if col in data.raw.columns:
-                data.raw[col] = pd.to_numeric(
-                    data.raw[col], errors="coerce", downcast="integer"
-                )
+                data.raw[col] = pd.to_numeric(data.raw[col], errors="coerce").astype("int64")
             elif col in [self.headers_normal[k] for k in self._MUST_HAVE_RAW_COLUMNS]:
                 missing_must_have_columns.append(col)
 
@@ -500,24 +497,15 @@ class DataLoader(BaseLoader):
     def timestamp_to_seconds(timestamp):
         """Convert `hh:mm:ss.xxx` values to seconds.
 
-        PEC can export elapsed time in clock-format, and the hour field can exceed 24.
+        PEC can export elapsed time in clock-format, and the hour field can exceed 24
+        (or even 99, which breaks strptime's %H directive).
         """
 
         if pd.isna(timestamp):
             return pd.NA
 
-        timestamp = str(timestamp)
-        total_secs = 0
-        hours = int(timestamp[:2])
-        if hours >= 24:
-            days = hours // 24
-            total_secs += days * 3600 * 24
-            timestamp = str(hours - 24 * days).zfill(2) + timestamp[2:]
-        total_secs += (
-            datetime.strptime(timestamp, "%H:%M:%S.%f")
-            - datetime.strptime("00:00:00.000", "%H:%M:%S.%f")
-        ).total_seconds()
-        return total_secs
+        h, m, s = str(timestamp).split(":")
+        return int(h) * 3600 + int(m) * 60 + float(s)
 
 
 if __name__ == "__main__":
