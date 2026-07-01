@@ -189,6 +189,7 @@ Reader:
         capacity_interpolation_step: 2.0
         use_cellpy_stat_file: false
         auto_dirs: true
+        max_raw_files_to_merge: 20
 
 # settings related to the instrument loader
 # (each instrument can have its own set of settings)
