@@ -144,6 +144,7 @@ class ReaderClass(CellPyConfig):
     auto_dirs: bool = (
         True  # v2.0 search in prm-file for res and hdf5 dirs in cellpy.get()
     )
+    max_raw_files_to_merge: int = 20  # guard against accidentally passing too many files
     jupyter_executable: str = "jupyter"
 
 

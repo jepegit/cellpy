@@ -1345,8 +1345,7 @@ class CellpyCell:
         except AttributeError:
             logging.debug("could not set instrument name")
 
-        # TODO: include this into prms (and config-file):
-        max_raw_files_to_merge = 20
+        max_raw_files_to_merge = prms.Reader.max_raw_files_to_merge
         if len(self.file_names) > max_raw_files_to_merge:
             logging.debug("ERROR? Too many files to merge")
             raise ValueError(
