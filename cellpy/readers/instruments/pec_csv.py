@@ -305,7 +305,8 @@ class DataLoader(BaseLoader):
 
         for col in base_columns_int:
             if col in data.raw.columns:
-                data.raw[col] = pd.to_numeric(data.raw[col], errors="coerce").astype("int64")
+                # fillna before int cast — numpy int64 has no NaN representation
+                data.raw[col] = pd.to_numeric(data.raw[col], errors="coerce").fillna(0).astype("int64")
             elif col in [self.headers_normal[k] for k in self._MUST_HAVE_RAW_COLUMNS]:
                 missing_must_have_columns.append(col)
 
@@ -313,6 +314,23 @@ class DataLoader(BaseLoader):
             raise IOError(
                 f"Missing needed columns: {missing_must_have_columns}\nAborting!"
             )
+
+        # Drop rows where essential columns are NaN — unparseable rows (empty
+        # trailing rows, footer lines) would otherwise cause RuntimeWarning from
+        # numpy cumsum in make_summary/make_step_table.
+        must_have_cols = [
+            self.headers_normal[k]
+            for k in self._MUST_HAVE_RAW_COLUMNS
+            if self.headers_normal[k] in data.raw.columns
+        ]
+        n_before = len(data.raw)
+        data.raw = data.raw.dropna(subset=must_have_cols).reset_index(drop=True)
+        n_dropped = n_before - len(data.raw)
+        if n_dropped:
+            logging.warning(
+                "pec_csv: dropped %d row(s) with NaN in essential columns", n_dropped
+            )
+
         return data
 
     def _load_pec_data(self):
