@@ -70,7 +70,6 @@ from cellpy.parameters.internal_settings import (
 # old headers/units (identical to cellpy.parameters.internal_settings) that cellpy
 # still expects. cellpy-core's __init__ is intentionally empty, so import submodules.
 from cellpycore.cell_core import OldCellpyCellCore
-from cellpycore import selectors as core_selectors
 
 DIGITS_C_RATE = 5
 
@@ -5661,15 +5660,27 @@ class CellpyCell:
             nom_cap_specifics (str): gravimetric, areal, or volumetric.
             old (bool): if True, the old summary method will be used.
             create_copy (bool): if True, a copy of the cellpy object will be returned.
-            exclude_types (list of str): exclude these types from the summary.
-            exclude_steps (list of int): exclude these steps from the summary.
-            selector_type (str): select based on type (e.g. "non-cv", "non-rest", "non-ocv", "only-cv").
-            selector (callable): custom selector function.
+            exclude_types (list of str): deprecated, has no effect.
+            exclude_steps (list of int): deprecated, has no effect.
+            selector_type (str): deprecated, has no effect.
+            selector (callable): deprecated, has no effect.
             **kwargs: additional keyword arguments sent to internal method (check source for info).
 
         Returns:
             cellpy.CellpyData: cellpy object with the summary added to it.
         """
+        if any(
+            v is not None
+            for v in (selector, selector_type, exclude_types, exclude_steps)
+        ):
+            warnings.warn(
+                "The 'selector', 'selector_type', 'exclude_types' and "
+                "'exclude_steps' arguments to make_summary are deprecated and "
+                "have no effect: the cellpy-core summary engine selects "
+                "cycle-end data points internally and ignores custom selectors.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
 
         # TODO: @jepe  - make it is possible to update only new data by implementing
         #  from_cycle (only calculate summary from a given cycle number).
@@ -5726,10 +5737,6 @@ class CellpyCell:
             nom_cap=nom_cap,
             nom_cap_specifics=nom_cap_specifics,
             create_copy=create_copy,
-            exclude_types=exclude_types,
-            exclude_steps=exclude_steps,
-            selector_type=selector_type,
-            selector=selector,
             **kwargs,
         )
         if create_copy:
@@ -5755,10 +5762,6 @@ class CellpyCell:
         use_cellpy_stat_file=False,
         normalization_cycles=None,
         create_copy=True,
-        exclude_types=None,
-        exclude_steps=None,
-        selector_type=None,
-        selector=None,
         **kwargs,
     ):
         # ---------------- discharge loss --------------------------------------
@@ -5790,19 +5793,6 @@ class CellpyCell:
                 self.cycle_mode = cell_type.lower()
             else:
                 warnings.warn(f"Unknown keyword argument: {k}")
-
-        if selector is None:
-            # cellpy-core seam: build the summary selector via the core. The core's
-            # create_selector handles the selector_type -> exclude_types mapping
-            # (non-cv / non-rest / non-ocv / only-cv) internally and is equivalent
-            # to cellpy's legacy self._select_without.
-            selector = core_selectors.create_selector(
-                self.data,
-                self.core.schema,
-                selector_type=selector_type,
-                exclude_types=exclude_types,
-                exclude_steps=exclude_steps,
-            )
 
         # TODO: add this to arguments and possible prms:
         if nom_cap_specifics is None:
@@ -5887,14 +5877,12 @@ class CellpyCell:
                 )
 
         # cellpy-core seam: delegate the per-cycle summary pipeline to the core.
-        # ``make_core_summary`` builds the base summary (selector + index reset +
-        # column pruning) and the absolute / IR / end-voltage / C-rate columns;
-        # ``add_scaled_summary_columns`` adds the meta-dependent (equivalent-cycle
-        # and gravimetric/areal/absolute) columns. cellpy keeps the selector setup,
-        # nominal-capacity resolution, step-table/dedup handling above and the
-        # column sort / index post-processing below.
-        # Note: the deprecated ``use_cellpy_stat_file`` path now simply runs the
-        # selector (the stat-file has not been properly supported for a long time).
+        # ``make_core_summary`` builds the base summary (cycle-end selection +
+        # index reset + column pruning) and the absolute / IR / end-voltage /
+        # C-rate columns; ``add_scaled_summary_columns`` adds the meta-dependent
+        # (equivalent-cycle and gravimetric/areal/absolute) columns. cellpy keeps
+        # the nominal-capacity resolution, step-table/dedup handling above and
+        # the column sort / index post-processing below.
         # cellpy-core takes unit conversions by value: cellpy (the consumer, which
         # owns cellpy_units and pint) computes the factors and passes them in, so
         # the core summary engine needs no pint.
@@ -5914,7 +5902,6 @@ class CellpyCell:
         }
         data = self.core.make_core_summary(
             data,
-            selector=selector,
             find_ir=find_ir,
             find_end_voltage=find_end_voltage,
             select_columns=select_columns,
