@@ -14,7 +14,6 @@ import pytest
 
 from cellpy import log
 from cellpycore.cell_core import OldCellpyCellCore
-from cellpycore import selectors as core_selectors
 
 log.setup_logging(default_level="DEBUG", testing=True)
 
@@ -88,13 +87,21 @@ def test_direct_core_make_core_summary(cpi, parameters):
     cpi.make_step_table()
 
     data = cpi.data
-    selector = core_selectors.create_selector(data, cpi.core.schema)
-    data = cpi.core.make_core_summary(
-        data, selector, find_ir=True, find_end_voltage=True
-    )
+    data = cpi.core.make_core_summary(data, find_ir=True, find_end_voltage=True)
 
     h = cpi.headers_summary
     assert data.summary is not None
     assert not data.summary.empty
     assert h.charge_capacity in data.summary.columns
     assert h.discharge_capacity in data.summary.columns
+
+
+def test_make_summary_selector_kwargs_deprecated(cpi, parameters):
+    """The legacy selector kwargs are accepted but warn and have no effect."""
+    cpi.set_instrument("arbin_res")
+    cpi.from_raw(parameters.res_file_path)
+    cpi.mass = 1.0
+    with pytest.warns(DeprecationWarning, match="deprecated"):
+        cpi.make_summary(selector_type="non-cv")
+    assert cpi.data.summary is not None
+    assert not cpi.data.summary.empty
