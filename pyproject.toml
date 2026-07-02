@@ -56,9 +56,10 @@ dependencies = [
     "xmltodict",
     "defusedxml",
     "isal",
-    # cellpy-core is consumed as a git dependency during development (no PyPI
-    # release yet). Pin to a tag/commit for releases.
-    "cellpycore @ git+https://github.com/cellpy/cellpy-core.git@main",
+    # cellpy-core is released on PyPI (issue cellpy/cellpy-core#44). Pin an
+    # exact version (==) before tagging a cellpy release so the release maps to
+    # a known core revision.
+    "cellpycore>=0.1.1",
 ]
 
 [project.optional-dependencies]
@@ -91,17 +92,12 @@ dev = [
     "pytest-timeout",
 ]
 
-[tool.hatch.metadata]
-# Required because cellpycore is pulled in via a direct git reference until it
-# is released on PyPI.
-allow-direct-references = true
-
 [tool.uv.sources]
 # Local editable override for development only: resolve cellpycore from the
-# sibling working copy instead of the pinned git reference in
+# sibling working copy instead of the PyPI release pinned in
 # [project.dependencies]. uv does NOT write this into the built wheel metadata,
-# so a released/installed cellpy still uses the git/tag reference. Remove this
-# (or rely on the git pin) for reproducible release builds. See the migration
+# so a released/installed cellpy still uses the PyPI version. Remove this
+# (or rely on the PyPI pin) for reproducible release builds. See the migration
 # guide: cellpy-core/.issueflows/04-designs-and-guides/cellpy-core-migration.md.
 cellpycore = { path = "../cellpy-core", editable = true }
 
