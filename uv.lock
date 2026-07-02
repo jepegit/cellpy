@@ -421,7 +421,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "cellpycore", editable = "../cellpy-core" },
+    { name = "cellpycore", specifier = ">=0.1.2" },
     { name = "charset-normalizer" },
     { name = "click" },
     { name = "cookiecutter" },
@@ -487,8 +487,8 @@ dev = [
 
 [[package]]
 name = "cellpycore"
-version = "0.1.1"
-source = { editable = "../cellpy-core" }
+version = "0.1.2"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "duckdb" },
     { name = "duckdb-engine" },
@@ -498,27 +498,9 @@ dependencies = [
     { name = "pyarrow" },
     { name = "sqlalchemy" },
 ]
-
-[package.metadata]
-requires-dist = [
-    { name = "duckdb", specifier = ">=1.2.2" },
-    { name = "duckdb-engine", specifier = ">=0.17.0" },
-    { name = "narwhals", specifier = ">=1.38.0" },
-    { name = "pandas", specifier = ">=2.2.3" },
-    { name = "pint", marker = "extra == 'units'", specifier = ">=0.25" },
-    { name = "polars", specifier = ">=1.29.0" },
-    { name = "pyarrow", specifier = ">=20.0.0" },
-    { name = "sqlalchemy", specifier = ">=2.0.40" },
-]
-provides-extras = ["units"]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "marimo", specifier = ">=0.23.10" },
-    { name = "matplotlib", specifier = ">=3.10.6" },
-    { name = "pint", specifier = ">=0.25" },
-    { name = "pytest", specifier = ">=8.0.0" },
-    { name = "ruff", specifier = ">=0.11.8" },
+sdist = { url = "https://files.pythonhosted.org/packages/e2/ad/f72926e5f7846e5e93a153416bc0b2100a67ed74785499e12b33482d013a/cellpycore-0.1.2.tar.gz", hash = "sha256:d9e2d1904f47cc156bf8375928b8693e9dcda84c557e6f68789b104bcd3058f2", size = 380641, upload-time = "2026-07-02T19:39:39.286Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/d6/7f/3b1a25910fdacf2258fe8453ff67a2027fa4f8195f700d73dee5b1858ecb/cellpycore-0.1.2-py3-none-any.whl", hash = "sha256:bcfaeadaf3ed6945c65aecb6060d786e8f69cdf5a134e78687dce86c94225996", size = 58171, upload-time = "2026-07-02T19:39:37.981Z" },
 ]
 
 [[package]]
