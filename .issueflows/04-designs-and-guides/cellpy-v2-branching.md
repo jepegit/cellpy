@@ -100,9 +100,15 @@ not conda, for integration tests.
 ## GitHub hygiene
 
 - **Default branch stays `master`** for clones and casual contributors.
-- Label **`v2`** on issues/PRs tied to epic #402; set PR base to `v2`.
+- Label **`v2`** on issues/PRs tied to epic #402; set PR base to `v2`. (Label created:
+  purple **`v2`** — *cellpy v2.0 epic work — PRs should target the v2 branch*.)
 - Child issues carved from the epic should state **Target branch: `v2`** in the body.
-- **Branch protection** on `master` (required CI, no force-push). Consider the same for `v2`.
+- **Branch protection** on **`master`** and **`v2`** (configured 2026-07-03):
+  - Require PR before merge (0 approvals — merge when CI green, no reviewer gate)
+  - Required checks: **`Run pytest on linux (conda)`**, **`Installing using pip on posix`**
+  - Branches must be up to date before merge (`strict`)
+  - No force-push; no branch deletion
+  - Admins may bypass (`enforce_admins: false`)
 - Close **#334** as superseded by #377 — do not merge that branch.
 
 ## Dependency policy (cellpy-core)
