@@ -1,0 +1,91 @@
+name: Publish to PyPI
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name }}
+          fetch-depth: 0
+
+      - name: Validate release tag vs branch
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          set -euo pipefail
+          git fetch origin master v2
+
+          on_branch() {
+            git merge-base --is-ancestor HEAD "origin/$1"
+          }
+
+          if [[ "$TAG" =~ ^v1\. ]]; then
+            on_branch master || {
+              echo "::error::1.x release $TAG must point to a commit on master"
+              exit 1
+            }
+          elif [[ "$TAG" =~ ^v2\.0\.0(a|b|rc) ]]; then
+            on_branch v2 || {
+              echo "::error::v2.0 pre-release $TAG must point to a commit on v2"
+              exit 1
+            }
+          elif [[ "$TAG" =~ ^v2\. ]]; then
+            on_branch master || {
+              echo "::error::v2.x stable release $TAG must point to a commit on master"
+              exit 1
+            }
+          else
+            echo "::error::Tag $TAG is not allowed. Use v1.* (master), v2.0.0a/b/rc* (v2), or v2.* stable (master)."
+            exit 1
+          fi
+
+  test:
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name }}
+          fetch-depth: 0
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          version: "latest"
+
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y mdbtools
+
+      - run: uv python install 3.13
+
+      - name: Sync dependencies (PyPI cellpycore only)
+        run: UV_NO_SOURCES=1 uv sync
+
+      - name: Run tests
+        run: uv run pytest -m essential --ignore=tests/test_plotutils_summary_plot.py
+
+  publish:
+    needs: test
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name }}
+          fetch-depth: 0
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          version: "latest"
+
+      - name: Build package
+        run: uv build
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
