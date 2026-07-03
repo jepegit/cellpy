@@ -47,6 +47,8 @@ jobs:
   test:
     needs: validate
     runs-on: ubuntu-latest
+    env:
+      UV_NO_SOURCES: 1
     steps:
       - uses: actions/checkout@v4
         with:
@@ -63,7 +65,7 @@ jobs:
       - run: uv python install 3.13
 
       - name: Sync dependencies (PyPI cellpycore only)
-        run: UV_NO_SOURCES=1 uv sync
+        run: uv sync
 
       - name: Run tests
         run: uv run pytest -m essential --ignore=tests/test_plotutils_summary_plot.py
