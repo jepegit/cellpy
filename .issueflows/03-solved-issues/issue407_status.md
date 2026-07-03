@@ -1,6 +1,6 @@
 # Issue #407 — Status
 
-- [ ] Done
+- [x] Done
 
 ## Locked decisions (from plan review)
 
@@ -15,7 +15,8 @@
 - **Docs** — dropped `appveyor.yml` from folder-structure listings.
 - **`tests/test_batch.py`** — generic CI flaky skip reason.
 - **`tests/test_filefinder.py`** — basename extraction via `pathlib.Path.name` (Windows backslash paths).
+- **GHA Windows job** — green on branch PR.
 
 ## Remaining work
 
-- [ ] Confirm GHA Windows job green on PR (`/iflow-close`).
+- None.
