@@ -517,7 +517,7 @@ class EasyPlot:
 
                 def format_label(x, pos):
                     # The commented out code here makes the fractioned C-rate like C/50 and so on.
-                    """
+                    r"""
                     if x >= 1:
                         s = '%.2gC' % x
                     elif x == 0:

@@ -2,6 +2,62 @@
 
 - [ ] Done
 
+## Iteration 2 (2026-07-03, Linux/WSL)
+
+Scope per `issue372_plan.md`: offline unit tests for `utils/helpers.py` outlier/summary
+functions, `tmp_path` tests for `readers/filefinder.py`, plus two backlog nits
+(`easyplot.py` escape sequence, `test_cell_readers.py` xfail arg).
+
+### What's done
+
+**New tests (all fixture-free / `tmp_path`-based):**
+- `tests/test_helpers.py`: 15 new tests on a synthetic summary frame — the four
+  `remove_outliers_from_summary_on_*` variants (incl. `freeze_indexes`),
+  `remove_first/last_cycles_from_summary`, `add_normalized_cycle_index`,
+  `create_rate_column`, and all five `create_group_names` branches.
+- `tests/test_filefinder.py`: 6 new tests on a fake raw-file tree —
+  `search_for_files` (recursive, non-recursive, `file_list` filter, missing-dir warning)
+  and `list_raw_file_directory` (extension filter, `only_filename`).
+
+**Bugs found by the new tests and fixed:**
+- `internals/otherpath.py`: local (non-external) `rglob()` did not recurse — `_glob`
+  ignored `search_in_sub_dirs` for local paths, so `search_for_files(..., sub_folders=True)`
+  missed files in subdirectories. Fixed in both `OtherPathNew` and `OtherPathLegacy`.
+- `utils/helpers.py` (`remove_outliers_from_summary_on_nn_distance`): the 2-element
+  window branch returned a 1-element array; pandas ≥ 2 raises
+  `TypeError: only 0-dimensional arrays can be converted to Python scalars`. Now returns
+  a scalar.
+- `readers/filefinder.py` (`list_raw_file_directory`): `fnmatch.filter` got `OtherPath`
+  objects and raised `TypeError`; now filters on `str(f)`.
+
+**Backlog nits fixed:**
+- `cellpy/utils/easyplot.py:520`: commented-out code block is now a raw string → no more
+  `SyntaxWarning: invalid escape sequence '\i'`.
+- `tests/test_cell_readers.py:100`: `@pytest.mark.xfail(WrongFileVersion)` →
+  `@pytest.mark.xfail(raises=WrongFileVersion)`.
+
+**Suite health (this Linux env):**
+- `uv run pytest --ignore=tests/test_plotutils_summary_plot.py` (CI-style):
+  **474 passed, 17 skipped, 12 deselected, 14 xfailed** in ~47 s.
+- Coverage on touched modules: `utils/helpers.py` **11% → 41%**,
+  `readers/filefinder.py` **31% → 44%** (total 40% here; not directly comparable to the
+  44% Windows baseline — this env lacks plotly/seaborn, so plot modules import-fail
+  and `.res` loading works via a different path).
+
+### Closed out (2026-07-03)
+Iteration 2 landed via PR from branch `372-code-cleanups-and-test-improvements`.
+Issue stays open — remaining backlog below.
+
+### New backlog items spotted
+- `cellpy/readers/cellreader.py:5351`: `SyntaxWarning: 'return' in a 'finally' block`
+  (new warning on Python 3.14) — should be restructured.
+- This Linux `.venv` lacks the `[all]` plot extras (plotly/seaborn); `pytest` without the
+  CI-style ignore fails collection on `test_plotutils_summary_plot.py`.
+
+---
+
+## Iteration 1 (done, Windows)
+
 Broad-shallow, tests-first first iteration. Scope: test infrastructure, coverage baseline,
 skipped-test triage, and a small slice of new unit tests. Code cleanups / bug fixes / large
 refactors are deferred to later iterations (see backlog below).

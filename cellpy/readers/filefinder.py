@@ -198,7 +198,10 @@ def list_raw_file_directory(
         _file_list = d.listdir(levels=levels)
         if extension is not None:
             logging.debug(f"filtering for extension: {extension}")
-            _file_list = fnmatch.filter(_file_list, f"*.{extension}")
+            # listdir yields path objects; fnmatch needs strings
+            _file_list = [
+                f for f in _file_list if fnmatch.fnmatch(str(f), f"*.{extension}")
+            ]
         if only_filename:
             logging.debug("only returning the file names")
             _file_list = [f.name for f in _file_list]

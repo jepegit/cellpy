@@ -1,5 +1,13 @@
 # History
 
+## [Unreleased]
+
+* Testing: new offline unit tests for `utils/helpers.py` (outlier removal, group names, rate column) and `readers/filefinder.py` (tmp-path raw-file trees) (#372)
+* Fix: local `OtherPath.rglob()` did not recurse into subdirectories, so `search_for_files(..., sub_folders=True)` missed files in subfolders (#372)
+* Fix: `remove_outliers_from_summary_on_nn_distance` crashed on pandas ≥ 2 (`TypeError` in 2-element window branch) (#372)
+* Fix: `list_raw_file_directory(extension=...)` raised `TypeError` when filtering path objects (#372)
+* Testing: silenced `easyplot` `SyntaxWarning` and corrected an `xfail` marker to use `raises=` (#372)
+
 ## 1.0.4a1 - 2026-07-03
 
 First **alpha** on the automated GitHub release → PyPI pipeline. Install with

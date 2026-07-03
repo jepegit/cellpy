@@ -353,7 +353,8 @@ def remove_outliers_from_summary_on_nn_distance(
             # only included in case the pandas rolling function changes in the future
             return 0.5
         if len(y) == 2:
-            return abs(np.diff(y)) / np.mean(y)
+            # must return a scalar (pandas >= 2 rejects 1-element arrays here)
+            return abs(y[1] - y[0]) / np.mean(y)
         else:
             return min(abs(y[1] - y[0]), abs(y[1] - y[2])) / min(
                 np.mean(y[0:1]), np.mean(y[1:])

@@ -97,7 +97,7 @@ def test_raw_limited_loaded_cycles_prm(cellpy_data_instance, parameters):
     assert all(cycles == [3, 4, 5])
 
 
-@pytest.mark.xfail(WrongFileVersion)
+@pytest.mark.xfail(raises=WrongFileVersion)
 def test_cellpy_version_4(cellpy_data_instance, parameters):
     f_old = parameters.cellpy_file_path_v4
     d = cellpy_data_instance.load(f_old, accept_old=True)
