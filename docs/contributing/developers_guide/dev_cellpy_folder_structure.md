@@ -20,7 +20,6 @@ The `cellpy` repository is structured as follows:
 ├── 📄 .gitignore
 ├── 📄 .readthedocs.yaml
 ├── 📄 bumpver.toml
-├── 📄 appveyor.yml
 ├── 📄 AUTHORS.rst        <-- picked up by sphinx (in docs)
 ├── 📄 README.rst         <-- picked up by sphinx (in docs)
 ├── 📄 CODE_OF_CONDUCT.md

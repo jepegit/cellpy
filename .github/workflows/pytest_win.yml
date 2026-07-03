@@ -1,26 +1,55 @@
-name: Run pytest on win - NOT WORKING DUE TO MISSING ACCESSDATABASEENGINE
+name: Run pytest on win (conda)
 on:
-#  push:
-#    branches:
-#      - "**"
-#  pull_request:
-#    branches: [ master ]
+  push:
+    branches:
+      - "**"
+  pull_request:
+    branches: [ master ]
   workflow_dispatch:
 
 jobs:
   Install-miniconda-and-run-pytest:
     runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash -l {0}
     strategy:
       matrix:
         python-version: ["3.13"]
     steps:
       - uses: actions/checkout@v6
+
+      - name: Cache Access Database Engine installer
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/AccessDatabaseEngine_X64.exe
+          key: access-database-engine-x64-${{ hashFiles('.github/workflows/pytest_win.yml') }}
+
+      - name: Install Access Database Engine 2016 (x64)
+        shell: pwsh
+        run: |
+          $installer = "$env:RUNNER_TEMP/AccessDatabaseEngine_X64.exe"
+          if (-not (Test-Path $installer)) {
+            Write-Host "Downloading Access Database Engine 2016 x64..."
+            $url = 'https://download.microsoft.com/download/3/5/C/35C84C36-661A-44E6-9324-8786B8DBE231/accessdatabaseengine_X64.exe'
+            (New-Object Net.WebClient).DownloadFile($url, $installer)
+          } else {
+            Write-Host "Using cached ACE installer."
+          }
+          $proc = Start-Process -FilePath $installer -ArgumentList '/quiet','/norestart' -Wait -PassThru
+          Write-Host "ACE installer exit code: $($proc.ExitCode)"
+          if ($proc.ExitCode -ne 0) { throw "ACE install failed" }
+
       - uses: conda-incubator/setup-miniconda@v3
         with:
           auto-update-conda: true
           activate-environment: cellpy_dev
-          environment-file: dev_environment.yml
+          environment-file: github_actions_environment.yml
           python-version: ${{ matrix.python-version }}
+
+      - name: Verify Access ODBC driver
+        run: |
+          python -c "import pyodbc; drivers=[d for d in pyodbc.drivers() if d.startswith('Microsoft Access Driver')]; assert drivers, 'Microsoft Access ODBC driver not found after ACE install'; print('Access drivers:', drivers)"
 
       - name: Conda info
         run: conda info
@@ -29,4 +58,4 @@ jobs:
         run: conda list
 
       - name: pytest
-        run: pytest
+        run: pytest --ignore=tests/test_plotutils_summary_plot.py

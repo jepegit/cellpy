@@ -1,3 +1,5 @@
+import pathlib
+
 import pytest
 
 from cellpy import filefinder, log
@@ -104,7 +106,7 @@ def test_search_for_files_recursive(raw_tree):
     raw_files, cellpy_file = filefinder.search_for_files(
         "runA", raw_extension="res", raw_file_dir=raw_dir, cellpy_file_dir=cellpy_dir
     )
-    names = sorted(f.rsplit("/", 1)[-1] for f in raw_files)
+    names = sorted(pathlib.Path(f).name for f in raw_files)
     assert names == ["runA_01.res", "runA_02.res", "runA_03.res"]
     assert cellpy_file.endswith("runA.h5")
 
@@ -118,7 +120,7 @@ def test_search_for_files_no_sub_folders(raw_tree):
         cellpy_file_dir=cellpy_dir,
         sub_folders=False,
     )
-    names = sorted(f.rsplit("/", 1)[-1] for f in raw_files)
+    names = sorted(pathlib.Path(f).name for f in raw_files)
     assert names == ["runA_01.res", "runA_02.res"]
 
 
@@ -151,7 +153,7 @@ def test_search_for_files_missing_raw_dir_warns(tmp_path):
 def test_list_raw_file_directory_extension_filter(raw_tree):
     raw_dir, _ = raw_tree
     file_list = filefinder.list_raw_file_directory(raw_file_dir=raw_dir, extension="res")
-    names = sorted(str(f).rsplit("/", 1)[-1] for f in file_list)
+    names = sorted(pathlib.Path(f).name for f in file_list)
     assert names == ["runA_01.res", "runA_02.res", "runB_01.res"]
 
 

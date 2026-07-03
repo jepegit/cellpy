@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+* CI: move Windows conda pytest from AppVeyor to GitHub Actions (ACE x64 install with cache) (#407)
 * Testing: new offline unit tests for `utils/helpers.py` (outlier removal, group names, rate column) and `readers/filefinder.py` (tmp-path raw-file trees) (#372)
 * Fix: local `OtherPath.rglob()` did not recurse into subdirectories, so `search_for_files(..., sub_folders=True)` missed files in subfolders (#372)
 * Fix: `remove_outliers_from_summary_on_nn_distance` crashed on pandas ≥ 2 (`TypeError` in 2-element window branch) (#372)
