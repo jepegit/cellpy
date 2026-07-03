@@ -22,6 +22,15 @@ metadata, native schema path, cleaner public API).
 **v2 is not** a rewrite of the processing engine (that lives in `cellpy-core`), a new repo,
 or a merge of branch 334. Integration stays on branches of the real `cellpy` repo.
 
+## Branching
+
+**All v2 epic work lands on the long-lived `v2` branch.** `master` remains the stable **1.x**
+line for other contributors. PRs for epic #402 and child issues **target `v2`**, not
+`master`. Phase 0 gate work (#384, #385) may land on `master` when parity tests prove
+behaviour is unchanged.
+
+Full conventions: [`cellpy-v2-branching.md`](cellpy-v2-branching.md).
+
 ## Relationship to the core integration roadmap
 
 The STEP-01–12 roadmap in `cellpy-core` covers **wiring and engine parity**. Most steps
@@ -46,6 +55,9 @@ Ship **cellpy v2.0** as a behaviour-compatible upgrade where `CellpyCell` orches
 API, and retires legacy duplication — with parity enforced by tests, not vigilance.
 
 ## Architecture (consumer vs engine)
+
+**Diagram:** [`cellpy-v2-architecture.excalidraw`](cellpy-v2-architecture.excalidraw) (open in
+Excalidraw / VS Code Excalidraw extension).
 
 ```mermaid
 flowchart TB
@@ -274,7 +286,9 @@ Parent epic issue on GitHub: [#402](https://github.com/jepegit/cellpy/issues/402
 
 ## Tracking
 
-- **GitHub epic:** [#402](https://github.com/jepegit/cellpy/issues/402)
+- **GitHub epic:** [#402](https://github.com/jepegit/cellpy/issues/402) — PRs target **`v2`**
+- **Branching:** [`cellpy-v2-branching.md`](cellpy-v2-branching.md) · integration branch **`v2`**
+- **Architecture diagram:** [`cellpy-v2-architecture.excalidraw`](cellpy-v2-architecture.excalidraw)
 - **This document:** `.issueflows/04-designs-and-guides/cellpy-v2-epic.md`
 - **Integration roadmap (engine):** `cellpy-core/.issueflows/04-designs-and-guides/cellpy-core-integration-roadmap.md`
 - **Open gate issues:** jepegit/cellpy#384, #385, #387
