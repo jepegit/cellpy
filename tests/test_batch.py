@@ -673,7 +673,7 @@ def test_interact_with_cellpydata_get_cap(updated_cycling_experiment, parameters
     assert len(capacity_voltage_df) == 1105
 
 
-@pytest.mark.skip(reason="shaky test - fails sometimes on appveyor")
+@pytest.mark.skip(reason="shaky test - fails intermittently in CI")
 def test_cycling_summary_plotter(populated_batch):
     populated_batch.combine_summaries()
     populated_batch.plot()
