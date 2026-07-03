@@ -80,3 +80,88 @@ def test_search_for_files_using_custom_prms_file(parameters):
     raw_files, cellpy_file = filefinder.search_for_files(
         parameters.run_name, prm_filename=parameters.default_prm_file
     )
+
+
+# ----------------------------------------------------------------------
+# Fixture-free tests on a synthetic tmp_path raw-file tree (issue #372).
+# ----------------------------------------------------------------------
+
+
+@pytest.fixture
+def raw_tree(tmp_path):
+    """A small fake raw-data directory with a subdirectory."""
+    (tmp_path / "sub").mkdir()
+    for name in ["runA_01.res", "runA_02.res", "runB_01.res", "notes.txt"]:
+        (tmp_path / name).touch()
+    (tmp_path / "sub" / "runA_03.res").touch()
+    cellpy_dir = tmp_path / "cellpyfiles"
+    cellpy_dir.mkdir()
+    return tmp_path, cellpy_dir
+
+
+def test_search_for_files_recursive(raw_tree):
+    raw_dir, cellpy_dir = raw_tree
+    raw_files, cellpy_file = filefinder.search_for_files(
+        "runA", raw_extension="res", raw_file_dir=raw_dir, cellpy_file_dir=cellpy_dir
+    )
+    names = sorted(f.rsplit("/", 1)[-1] for f in raw_files)
+    assert names == ["runA_01.res", "runA_02.res", "runA_03.res"]
+    assert cellpy_file.endswith("runA.h5")
+
+
+def test_search_for_files_no_sub_folders(raw_tree):
+    raw_dir, cellpy_dir = raw_tree
+    raw_files, _ = filefinder.search_for_files(
+        "runA",
+        raw_extension="res",
+        raw_file_dir=raw_dir,
+        cellpy_file_dir=cellpy_dir,
+        sub_folders=False,
+    )
+    names = sorted(f.rsplit("/", 1)[-1] for f in raw_files)
+    assert names == ["runA_01.res", "runA_02.res"]
+
+
+def test_search_for_files_within_file_list(raw_tree):
+    raw_dir, cellpy_dir = raw_tree
+    raw_files, _ = filefinder.search_for_files(
+        "runA",
+        raw_extension="res",
+        raw_file_dir=raw_dir,
+        cellpy_file_dir=cellpy_dir,
+        file_list=["runA_01.res", "runB_01.res"],
+        with_prefix=False,
+    )
+    assert raw_files == ["runA_01.res"]
+
+
+def test_search_for_files_missing_raw_dir_warns(tmp_path):
+    cellpy_dir = tmp_path / "cellpyfiles"
+    cellpy_dir.mkdir()
+    with pytest.warns(UserWarning, match="cannot be accessed"):
+        raw_files, _ = filefinder.search_for_files(
+            "runA",
+            raw_extension="res",
+            raw_file_dir=tmp_path / "does-not-exist",
+            cellpy_file_dir=cellpy_dir,
+        )
+    assert raw_files == []
+
+
+def test_list_raw_file_directory_extension_filter(raw_tree):
+    raw_dir, _ = raw_tree
+    file_list = filefinder.list_raw_file_directory(raw_file_dir=raw_dir, extension="res")
+    names = sorted(str(f).rsplit("/", 1)[-1] for f in file_list)
+    assert names == ["runA_01.res", "runA_02.res", "runB_01.res"]
+
+
+def test_list_raw_file_directory_only_filename(raw_tree):
+    raw_dir, _ = raw_tree
+    file_list = filefinder.list_raw_file_directory(
+        raw_file_dir=raw_dir, extension="res", only_filename=True
+    )
+    assert sorted(str(f) for f in file_list) == [
+        "runA_01.res",
+        "runA_02.res",
+        "runB_01.res",
+    ]

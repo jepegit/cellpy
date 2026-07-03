@@ -207,7 +207,10 @@ class OtherPathNew(pathlib.Path):
                 host, connect_kwargs, glob_str, search_in_sub_dirs=search_in_sub_dirs
             )
             return (OtherPathNew(f"{self._original.rstrip('/')}/{p}") for p in paths)
-        paths = pathlib.Path(self._original).glob(glob_str)
+        if search_in_sub_dirs:
+            paths = pathlib.Path(self._original).rglob(glob_str)
+        else:
+            paths = pathlib.Path(self._original).glob(glob_str)
         return (OtherPathNew(p) for p in paths)
 
     def glob(self, glob_str: str, *args, **kwargs) -> Generator:
@@ -840,7 +843,10 @@ class OtherPathLegacy(pathlib.Path):
                 host, connect_kwargs, glob_str, search_in_sub_dirs=search_in_sub_dirs
             )
             return (OtherPathLegacy(f"{self._original.rstrip('/')}/{p}") for p in paths)
-        paths = pathlib.Path(self._original).glob(glob_str)
+        if search_in_sub_dirs:
+            paths = pathlib.Path(self._original).rglob(glob_str)
+        else:
+            paths = pathlib.Path(self._original).glob(glob_str)
         return (OtherPathLegacy(p) for p in paths)
 
     def glob(self, glob_str: str, *args, **kwargs) -> Generator:
