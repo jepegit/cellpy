@@ -14,6 +14,7 @@
 - **Removed** `appveyor.yml` and `.github/workflows/test-win.yml`.
 - **Docs** — dropped `appveyor.yml` from folder-structure listings.
 - **`tests/test_batch.py`** — generic CI flaky skip reason.
+- **`tests/test_filefinder.py`** — basename extraction via `pathlib.Path.name` (Windows backslash paths).
 
 ## Remaining work
 
