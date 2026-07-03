@@ -1,5 +1,19 @@
 # History
 
+## 1.0.4a1 - 2026-07-03
+
+First **alpha** on the automated GitHub release → PyPI pipeline. Install with
+`pip install cellpy --pre` or `pip install cellpy==1.0.4a1`.
+
+* Integration: `cellpycore` consumed from **PyPI** (pinned `0.1.2` for this release); core
+  step/summary processing delegated via `OldCellpyCellCore` seam (#377, #400–#401)
+* CI: `release.yml` — published GitHub release triggers test + PyPI trusted publishing (#403)
+* Testing: `essential` pytest marker for read → step-table → summary smoke + parity contract
+* Build: Python **≥ 3.13**; hatchling + uv-dynamic-versioning from git tags (#354)
+* Removed dependency on cellpy-core's deprecated `create_selector` (#399)
+* Plus fixes and features merged since `v1.0.3a6` (PEC reader #393, batch/config #392/#397,
+  module rename #381, filters #363, BDF export #356, …)
+
 ## 1.0.3 (pre-release)
 
 * Refactor: Renamed internal modules accidentally named `core` — `cellpy.readers.core` → `cellpy.readers.data_structures` and `cellpy.internals.core` → `cellpy.internals.connections` — to avoid a name clash with the new cellpy-core package (#381)
