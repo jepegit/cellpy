@@ -14,6 +14,13 @@ Context: issue #354 ("update build procedure").
   builds the wheel in a clean container, installs it, and smoke-tests import + CLI.
 
 ## How to release
+
+Automated path (recommended): publish a **GitHub release** on the correct branch; CI builds
+and uploads to PyPI. See **[`release-procedure.md`](release-procedure.md)** for tag/branch
+rules, checklist, and cellpy-core pin coordination.
+
+Manual fallback:
+
 1. Tag the commit as `vX.Y.Z` (use this consistent prefix going forward).
 2. `uv build` produces the sdist + wheel with the version taken from that tag.
 3. Publish (e.g. `uv publish` / twine).
@@ -22,8 +29,8 @@ Between tags, `uv build` yields a dev version like `1.0.3a13.post5.dev0+<hash>` 
 
 ## Notes / alternatives considered
 - `bumpver` + a static `_version.py` was dropped in favour of tag-based versioning.
-- Direct git dependency `cellpycore @ git+...` requires
-  `[tool.hatch.metadata] allow-direct-references = true` until cellpy-core is on PyPI.
+- Direct git dependency was replaced by PyPI `cellpycore` (see `release-procedure.md` for pin
+  discipline at release time).
 - Existing tags are inconsistent (`v.0.3.0`, `v0.4.2`, `1.0.3a13`); the
   `pattern = "default-unprefixed"` setting tolerates them. Standardize on `vX.Y.Z`.
 - Out of scope for #354 (follow-up): migrating CI workflows to uv and retiring the

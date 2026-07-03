@@ -29,7 +29,10 @@ line for other contributors. PRs for epic #402 and child issues **target `v2`**,
 `master`. Phase 0 gate work (#384, #385) may land on `master` when parity tests prove
 behaviour is unchanged.
 
-Full conventions: [`cellpy-v2-branching.md`](cellpy-v2-branching.md).
+Full conventions: [`cellpy-v2-branching.md`](cellpy-v2-branching.md) — including **two-way
+parity**: merge `master` → `v2` before each v2 issue; land **stable shared work on `master`
+ASAP** (prefer `master` first, or backport from `v2`); resolve conflicts so v2-only design
+is not overwritten by 1.x paths.
 
 ## Relationship to the core integration roadmap
 
@@ -170,7 +173,7 @@ I/O, plotting hooks — not compute.
 |-------|------------------|------|-----------|
 | **V2-13** cellpy file format v2 | HDF5 layer | Version bump; serialize `TestMetaCollection`; migration from v1 files | Round-trip test v1→v2→read |
 | **V2-14** Metadata persistence policy | cellpy (not core) | Implement real `save_archive` / load paths cellpy needs (core stubs stay stubs) | User can save merged campaign metadata |
-| **V2-15** Release discipline | `pyproject.toml` | Pin exact `cellpycore==` before tagging v2.0; changelog + migration guide | Reproducible release artifact |
+| **V2-15** Release discipline | `pyproject.toml`, GitHub releases | Pin exact `cellpycore==`; use [`release-procedure.md`](release-procedure.md) (GitHub release → PyPI) | Reproducible release artifact |
 
 ### Phase 5 — Hardening (parallel, both repos)
 
@@ -288,6 +291,7 @@ Parent epic issue on GitHub: [#402](https://github.com/jepegit/cellpy/issues/402
 
 - **GitHub epic:** [#402](https://github.com/jepegit/cellpy/issues/402) — PRs target **`v2`**
 - **Branching:** [`cellpy-v2-branching.md`](cellpy-v2-branching.md) · integration branch **`v2`**
+- **Release procedure:** [`release-procedure.md`](release-procedure.md)
 - **Architecture diagram:** [`cellpy-v2-architecture.excalidraw`](cellpy-v2-architecture.excalidraw)
 - **This document:** `.issueflows/04-designs-and-guides/cellpy-v2-epic.md`
 - **Integration roadmap (engine):** `cellpy-core/.issueflows/04-designs-and-guides/cellpy-core-integration-roadmap.md`
