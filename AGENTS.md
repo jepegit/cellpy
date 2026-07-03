@@ -1,10 +1,4 @@
----
-description: Issue-flow workflow rules for LLMs
-globs:
-alwaysApply: true
----
-
-
+<!-- BEGIN issue-flow (managed: do not edit this block) -->
 # Issue-flow best practices
 
 
@@ -204,3 +198,4 @@ If a `graphify-out/` folder exists in the project root, the project has the opti
 - `/iflow-graphify` is **off-path**: never auto-dispatched by `/iflow`, `/iflow-start`, or `/iflow-close`. It is the user's call. `/iflow-start` may *suggest* skimming `GRAPH_REPORT.md`; `/iflow-close` may *suggest* a rebuild after large structural changes — neither runs `graphify` automatically.
 - If `graphify-out/` is not present, ignore graph-related guidance entirely. The integration is opt-in (install with `uv tool install graphifyy`, then `issue-flow update` to register the graphify skill).
 
+<!-- END issue-flow (managed) -->
