@@ -147,7 +147,7 @@ Full procedure: [`release-procedure.md`](release-procedure.md). Summary:
 
 | Line | GitHub release from | Tag examples | PyPI |
 |------|---------------------|--------------|------|
-| **1.x (now)** | **`master`** | `v1.0.4` | stable |
+| **1.x (now)** | **`master`** | `v1.0.4a1` → `v1.0.4` | alpha first, then stable |
 | **v2 integration** | **`v2`** (optional) | `v2.0.0a1` | pre-release only (`--pre`) |
 | **2.x (after v2.0 merge)** | **`master`** | `v2.0.0`, `v2.1.0` | stable |
 

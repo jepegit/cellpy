@@ -33,6 +33,23 @@ Branch policy for releases lives in [`cellpy-v2-branching.md`](cellpy-v2-branchi
 
 The workflow **fails** if e.g. `v1.0.5` points at a commit that is not on `origin/master`.
 
+## Bootstrap: first automated PyPI release
+
+After merging PR #403 (or whenever `release.yml` first lands on `master`), cut an **alpha**
+before the first **stable** 1.x tag:
+
+| Step | Tag | Why |
+|------|-----|-----|
+| 1 | **`v1.0.4a1`** on `master` | Smoke-test trusted publishing + workflow; stays off default `pip install` |
+| 2 | `v1.0.4a2`, … | Fix-ups if the pipeline or PyPI metadata needs iteration |
+| 3 | **`v1.0.4`** on `master` | Stable 1.x once CI publish is proven and you are happy with the tree |
+
+This matches the current line: latest tag is `v1.0.3a6`, `HISTORY.md` still documents 1.0.3
+as pre-release, and post-seam / `cellpycore` integration has not yet shipped on a stable
+PyPI tag.
+
+Install the alpha with `pip install cellpy --pre` (or `pip install cellpy==1.0.4a1`).
+
 ## Cutting a 1.x release (happy path)
 
 ```bash
@@ -48,7 +65,9 @@ uv run pytest -m essential
 git status   # must be clean
 
 # 3. Create the GitHub release (tag = version)
-gh release create v1.0.4 --target master --generate-notes
+#    First automated publish: use v1.0.4a1 (alpha) before v1.0.4 stable — see Bootstrap above.
+gh release create v1.0.4a1 --target master --generate-notes   # alpha
+# gh release create v1.0.4 --target master --generate-notes  # stable, after alpha is green
 
 # 4. Watch CI
 gh run watch --workflow release.yml
