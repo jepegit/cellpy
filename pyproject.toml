@@ -60,7 +60,7 @@ dependencies = [
     # cellpy-core is released on PyPI (issue cellpy/cellpy-core#44). Pin an
     # exact version (==) before tagging a cellpy release so the release maps to
     # a known core revision.
-    "cellpycore==0.1.3",
+    "cellpycore==0.1.4",
 ]
 
 [project.optional-dependencies]
