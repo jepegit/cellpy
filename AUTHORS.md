@@ -3,6 +3,7 @@
 ## Development Lead
 
 * Jan Petter Maehlen <jepe@ife.no>
+* Meghana Sudarshan <meghana.sudarshan@ife.no>
 * Muhammad Abdelhamid <muhammad.abdelhamid@ife.no>
 * Asbjoern Ulvestad <asbjorn.ulvestad@ife.no>
 * Julia Wind <julia.wind@ife.no>

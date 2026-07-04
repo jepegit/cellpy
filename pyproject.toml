@@ -13,7 +13,8 @@ license-files = ["LICEN[CS]E*"]
 authors = [
     { name = "Jan Petter Maehlen", email = "jepe@ife.no" },
     { name = "Asbjoern Ulvestad", email = "Asbjorn.Ulvestad@ife.no" },
-    { name = "Muhammad Abdelhamid", email = "Muhammad.Abdelhamid@ife.no" },
+    { name = "Muhammad Abdelhamid", email = "Muhammad.Abdelhamid@faam.com" },
+    { name = "Meghana Sudarshan", email = "meghana.sudarshan@ife.no" },
     { name = "Julia Wind", email = "julia.wind@ife.no" },
 ]
 keywords = ["cellpy", "battery"]
