@@ -58,11 +58,28 @@ Ready to contribute? Here's how to set up ``cellpy`` for local development.
 
 3. Create the development environment with [uv](https://docs.astral.sh/uv/) (recommended).
    This creates ``.venv`` and installs the project plus the ``dev`` dependency group
-   from the locked ``uv.lock``:
+   from the locked ``uv.lock`` (``cellpycore`` resolves from PyPI):
 
     ```shell
-    uv sync
+    uv sync --no-sources
     ```
+
+   **Dual-repo development** (cellpy + a sibling ``cellpy-core`` checkout): after sync,
+   install core editable so local core changes are picked up immediately:
+
+    ```shell
+    uv pip install -e ../cellpy-core
+    ```
+
+   Or run the helper script (expects ``../cellpy-core`` relative to the cellpy root):
+
+    ```shell
+    scripts/dev_sync.sh
+    ```
+
+   Do **not** commit a ``[tool.uv.sources]`` path override in ``pyproject.toml`` — it
+   breaks Dependabot ``uv.lock`` updates. Regenerate the lock from PyPI pins with
+   ``UV_NO_SOURCES=1 uv lock`` before pushing lockfile changes.
 
    Or create a plain virtual environment manually:
 
