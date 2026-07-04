@@ -28,7 +28,7 @@ classifiers = [
 dependencies = [
     "scipy",
     "numpy",
-    "pandas<3",
+    "pandas<4",
     "python-box",
     "setuptools",
     "ruamel.yaml",
