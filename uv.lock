@@ -421,7 +421,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "cellpycore", editable = "../cellpy-core" },
+    { name = "cellpycore", specifier = "==0.1.4" },
     { name = "charset-normalizer" },
     { name = "click" },
     { name = "cookiecutter" },
@@ -487,31 +487,16 @@ dev = [
 
 [[package]]
 name = "cellpycore"
-version = "0.1.2"
-source = { editable = "../cellpy-core" }
+version = "0.1.4"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "pandas" },
     { name = "polars" },
     { name = "pyarrow" },
 ]
-
-[package.metadata]
-requires-dist = [
-    { name = "pandas", specifier = ">=2.2.3" },
-    { name = "pint", marker = "extra == 'units'", specifier = ">=0.25" },
-    { name = "polars", specifier = ">=1.29.0" },
-    { name = "pyarrow", specifier = ">=20.0.0" },
-]
-provides-extras = ["units"]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "marimo", specifier = ">=0.23.10" },
-    { name = "matplotlib", specifier = ">=3.10.6" },
-    { name = "pint", specifier = ">=0.25" },
-    { name = "pytest", specifier = ">=8.0.0" },
-    { name = "pytest-benchmark", specifier = ">=5.2.3" },
-    { name = "ruff", specifier = ">=0.11.8" },
+sdist = { url = "https://files.pythonhosted.org/packages/e7/f9/e5fa27d05c4f9fbc6d4aea4b34e21725d451aaaf3dc0372e77fb118e9681/cellpycore-0.1.4.tar.gz", hash = "sha256:e7b19202febd8fdb0bcc7f2f8dab03707a3eb9ab4efb819eceeb745c9d3e8989", size = 611839, upload-time = "2026-07-04T21:54:43.206Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/29/f5/27a903e26a33ed38027940c819be13099ba783a0966174b75497117d2a2e/cellpycore-0.1.4-py3-none-any.whl", hash = "sha256:30707c3ce6d23dbe9dc6b6508a5400a1c2f9597d2f400fba75df15688eb6fc95", size = 70485, upload-time = "2026-07-04T21:54:41.67Z" },
 ]
 
 [[package]]

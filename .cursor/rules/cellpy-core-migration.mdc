@@ -17,9 +17,10 @@ Key invariants from that doc:
 
 - **Branch, don't fork.** Integration work goes on a branch of this repo (optionally a
   `git worktree`), never a fresh clone.
-- **Dev wiring:** `[tool.uv.sources]` gives an editable path to `../cellpy-core` for local
-  dev; the `git+https…@<ref>` reference in `[project.dependencies]` stays the
-  release/consumer truth. Pin a tag/commit for releases.
+- **Dev wiring:** PyPI pin in `[project.dependencies]` is release/consumer truth. For local
+  dual-repo work: `uv sync --no-sources` then `uv pip install -e ../cellpy-core` (or
+  `scripts/dev_sync.sh`). Do not commit `[tool.uv.sources]` path overrides — they break
+  Dependabot lock updates. Regenerate lock with `UV_NO_SOURCES=1 uv lock`.
 - **Parity is enforced by tests** (legacy header/unit contract tests + golden parquet
   fixtures), not by vigilance. Target the `OldCellpyCellCore` legacy bridge first.
 - **Metadata boundary:** core may own metadata *scaffolding and tooling* but must NOT

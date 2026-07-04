@@ -1,0 +1,14 @@
+# Dependabot updates uv.lock from PyPI pins in pyproject.toml.
+# cellpycore is pinned deliberately after cellpy-core releases — see
+# .issueflows/04-designs-and-guides/release-procedure.md.
+# Do not add [tool.uv.sources] path overrides to pyproject.toml; Dependabot
+# cannot resolve sibling checkouts when regenerating the lockfile.
+version: 2
+
+updates:
+  - package-ecosystem: "uv"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    ignore:
+      - dependency-name: "cellpycore"

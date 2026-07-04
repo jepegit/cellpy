@@ -90,8 +90,8 @@ inspect `dist/` metadata.
 - [ ] **`cellpycore` pin** in `[project.dependencies]` reflects the intended core revision.
       Use `UV_NO_SOURCES=1 uv lock` so the lock resolves from PyPI, not the editable path.
 - [ ] **`uv run pytest -m essential`** (or full suite) green locally with `UV_NO_SOURCES=1`.
-- [ ] **`[tool.uv.sources]`** editable override is **not** relied on for the release artifact
-      (it never ships in the wheel; CI uses `UV_NO_SOURCES=1`).
+- [ ] **No `[tool.uv.sources]` path override** in committed `pyproject.toml` (CI and
+      Dependabot use PyPI via `UV_NO_SOURCES=1`).
 - [ ] **`HISTORY.md`** updated (Keep a Changelog) before or with the release PR.
 - [ ] Tag name follows **`vX.Y.Z`** going forward (legacy inconsistent tags still tolerated
       by `uv-dynamic-versioning` but avoid adding new ones).

@@ -59,7 +59,9 @@ dependencies = [
     "isal",
     # cellpy-core is released on PyPI (issue cellpy/cellpy-core#44). Pin an
     # exact version (==) before tagging a cellpy release so the release maps to
-    # a known core revision.
+    # a known core revision. For dual-repo development, install the sibling
+    # checkout editable after sync (see CONTRIBUTING.md); do not commit a
+    # [tool.uv.sources] path override — it breaks Dependabot lock updates.
     "cellpycore==0.1.4",
 ]
 
@@ -92,15 +94,6 @@ dev = [
     "pytest-benchmark",
     "pytest-timeout",
 ]
-
-[tool.uv.sources]
-# Local editable override for development only: resolve cellpycore from the
-# sibling working copy instead of the PyPI release pinned in
-# [project.dependencies]. uv does NOT write this into the built wheel metadata,
-# so a released/installed cellpy still uses the PyPI version. Remove this
-# (or rely on the PyPI pin) for reproducible release builds. See the migration
-# guide: cellpy-core/.issueflows/04-designs-and-guides/cellpy-core-migration.md.
-cellpycore = { path = "../cellpy-core", editable = true }
 
 [tool.hatch.version]
 source = "uv-dynamic-versioning"
