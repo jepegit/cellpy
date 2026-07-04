@@ -6,6 +6,10 @@ releases.
 
 ## Unspecified
 
+### Integrating cellpycore
+
+During integration process - use pinning. For changes relevant for the v2 branch - merge from v2.
+
 ### Need to use API token for PyPI
 First, generate an API token for your account or project at https://pypi.org/manage/account/token/
 
