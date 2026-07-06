@@ -1,20 +1,28 @@
 ---
 name: iflow-version-bump
 description: >-
-  Bump the project version in pyproject.toml using uv. Supports every uv bump
-  level (major, minor, patch, stable, alpha, beta, rc, post, dev) and a
-  pre-release-aware default when no level is given. Runs from the project root.
+  Bump the project version in pyproject.toml using uv, with a
+  pre-release-aware default when no level is given.
 disable-model-invocation: true
 ---
 
 # issue-flow — version bump
 
-Use when the user wants to **bump the project version** with **uv** before landing work (often invoked from `/iflow-close`).
+Use this skill to **bump the project version** with **uv** before landing work (often invoked from `/iflow-close`) — either at a specific level, or with the default rule below when none is given. It targets a **Python + uv** project whose `pyproject.toml` has a `[project]` `version` field.
 
-## When to use
 
-- The user asks for a version bump — either a specific level, or just "bump" / "release" with no level (use the default rule below).
-- The repo is a **Python + uv** project whose `pyproject.toml` has a `[project]` `version` field (standard for packages using issue-flow).
+### MODEL & EXECUTION DIRECTIVE
+
+
+**Profile: economy** — Prioritize speed and token economy over deep reasoning.
+
+In Cursor: use **Auto** or a fast model before invoking this step.
+
+
+
+Keep scope tight to what this step requires.
+
+
 
 ## Preconditions
 

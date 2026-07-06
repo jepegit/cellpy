@@ -1,20 +1,49 @@
 ---
 name: iflow-start
 description: >-
-  Run the /iflow-start workflow: pick the current issue, read issue<N>_plan.md
-  (offer to run /iflow-plan if missing), then implement with the project's
-  documented conventions (e.g. uv run, or inside an activated conda env).
+  Implement the confirmed plan for the focus issue using the project's
+  documented conventions.
 disable-model-invocation: true
 ---
 
 # issue-flow — issue start (`/iflow-start`)
 
-Follow this skill when the user wants to **begin implementation** from issue notes and project rules. Planning itself lives in `/iflow-plan`; this skill is now implementation-only.
+Follow this skill to **begin implementation** from issue notes and project rules. Planning itself lives in `/iflow-plan`; this skill is implementation-only. Stay aligned with `.cursor/rules/issueflow-rules.mdc` when present.
 
-## When to use
 
-- The user runs `/iflow-start`, mentions **issue-start**, or asks to implement from `.issueflows/01-current-issues/`.
-- Work should follow the issue-flow markdown workflow and stay aligned with `.cursor/rules/issueflow-rules.mdc` when present.
+### MODEL & EXECUTION DIRECTIVE
+
+
+**Profile: reasoning** — Prioritize deep thinking and careful trade-offs over speed or token economy.
+
+In Cursor: switch to a thinking-capable model before invoking this step (not Auto-only).
+
+
+
+Keep scope tight to what this step requires.
+
+
+
+
+### Resolve project root (multi-root workspaces)
+
+Before any `git`, `gh`, or `.issueflows/` path operation in this workflow:
+
+**Resolution order** (stop when unambiguous):
+
+1. **Explicit hints** in slash input — `root:<path>`, `repo:<folder-basename>` (directory name, e.g. `cellpy-core`), or `repo:owner/name`.
+2. **CLI fast path** — `issue-flow agent resolve [-C <start>] [--from-file <active-file>] [--json]`. Use the returned `project_root` and `repo`; pass `-C <project_root>` to other `issue-flow agent …` subcommands.
+3. **Branch context** — exactly one workspace repo whose branch matches `^\d+-` → that root.
+4. **Single scaffold** — exactly one `.issueflows/` tree visible in the workspace → that root.
+5. **Ambiguous** → **stop and ask**; never guess between sibling repos.
+
+After resolution, treat the result as `<project_root>` and `<owner/repo>`:
+
+- **Git:** `git -C <project_root> …` (or `issue-flow agent … -C <project_root>` for supported ops).
+- **GitHub:** always `gh … --repo <owner/repo>` — never rely on `gh`'s implicit cwd default.
+- **Paths:** all `.issueflows/…` paths are under `<project_root>`.
+
+When `.issueflows/04-designs-and-guides/multi-repo-workspaces.md` exists, read it for layout and cross-repo guidance.
 
 ## Instructions
 
@@ -44,6 +73,7 @@ Follow this skill when the user wants to **begin implementation** from issue not
 
 7. **Project conventions**
    - Use the project's **documented Python toolchain**, not bare `python`. Default to `uv run` (scripts, pytest, tools) and `uv add` / `uv remove` / `uv sync` for dependencies, **unless** the project documents otherwise — e.g. a conda project runs scripts and `pytest` inside the **activated conda environment** (`conda activate <env>` or `conda run -n <env> …`). Honour existing project rules over these defaults.
+   - **Ruff (when present).** If the project uses ruff (`[tool.ruff]` in `pyproject.toml`, ruff in dev dependencies, or `.issueflows/04-designs-and-guides/python-quality-tools.md` exists), run auto-fix lint after substantive code changes — e.g. `uv run ruff check --fix …` then `uv run ruff format …` (match paths to what the project documents).
    - **Toolbox** — Before writing a one-off helper script, check `.issueflows/00-tools/` (start with its `README.md` index) for an existing tool. If you build something reusable during this issue, save it into `.issueflows/00-tools/` and add a one-line entry to that README's index (name, what it does, when to use it) for the next agent.
    - If `.issueflows/04-designs-and-guides/this-project.md` exists, read it for project-specific context before implementing; then skim relevant design docs under `.issueflows/04-designs-and-guides/`.
    - As you iterate, re-read and keep `issue<N>_status.md` current — move items between **What's done** and **Remaining work**, leaving `- [ ] Done` unchecked until fully resolved.

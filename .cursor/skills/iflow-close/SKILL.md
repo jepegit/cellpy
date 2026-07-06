@@ -1,33 +1,26 @@
 ---
 name: iflow-close
 description: >-
-  Run the /iflow-close workflow: verify tests, optional uv semver bump, update
-  issue status and folder locations, commit, push, and open a PR with a clear
-  summary. Post-merge branch cleanup now lives in /iflow-cleanup.
+  Finish and land the focus issue: tests, optional version bump, status
+  update, commit, push, and PR.
 disable-model-invocation: true
 ---
 
 # issue-flow — issue close (`/iflow-close`)
 
-Follow this skill when the user wants to **finish and land** work: tests, optional version bump, issue-folder updates, git, and PR.
+Follow this skill to **finish and land** work: tests, optional version bump, issue-folder updates, git, and PR.
 
-Post-merge branch hygiene now lives in `/iflow-cleanup` — this skill no longer deletes branches.
-
-## When to use
-
-- The user runs `/iflow-close`, mentions **issue-close**, or asks to commit, push, or open a PR after issue-flow work.
+Post-merge branch hygiene lives in `/iflow-cleanup` — this skill never deletes branches.
 
 ## Optional version bump (command input)
 
 If the user included text after `/iflow-close` that requests a version bump:
 
-- **`bump`** (no level) → **pre-release-aware default**: stay on the current channel (alpha→`alpha`, beta→`beta`, rc→`rc`, dev→`dev`) or `patch` when the current version is already stable.
-- **A named level** → `uv version --bump <level>` for any uv level: `patch`, `minor`, `major`, `stable`, `alpha`, `beta`, `rc`, `post`, `dev` (`dev` must be paired, e.g. `--bump patch --bump dev`).
-- Otherwise infer the level from natural language (e.g. "bugfix release" → `patch`, "promote to beta" → `beta`); ask once if ambiguous. Never auto-pick `major`.
+- **`bump`** (no level) → apply the pre-release-aware default.
+- **A named level** (`patch`, `minor`, `major`, `stable`, `alpha`, `beta`, `rc`, `post`, `dev`) → use exactly that.
+- Otherwise infer the level from natural language (e.g. "bugfix release" → `patch`); ask once if ambiguous. Never auto-pick `major`.
 
-The exact semantics and the default rule live in `.cursor/skills/iflow-version-bump/SKILL.md` — that skill is the source of truth.
-
-When a bump applies: read `.cursor/skills/iflow-version-bump/SKILL.md`, run the bump from the **project root** **after** the sanity check and **before** issue-folder updates and **before** commit / push / PR.
+The exact semantics and the default rule live in `.cursor/skills/iflow-version-bump/SKILL.md` — that skill is the source of truth. When a bump applies: read it, then run the bump from the **project root** **after** the sanity check and **before** issue-folder updates and **before** commit / push / PR.
 
 ## Changelog update tokens (command input)
 
@@ -42,11 +35,46 @@ When a bump applies: read `.cursor/skills/iflow-version-bump/SKILL.md`, run the 
 
 - **`yolo`** (used by `/iflow-yolo`) → close the loop without user input: write the `HISTORY.md` bullet without a confirm prompt (step 3), **merge the PR** right after opening it (step 8a), then switch back to the default branch and `git pull --ff-only` (step 9, unless `stay` was also passed).
 
+
+### MODEL & EXECUTION DIRECTIVE
+
+
+**Profile: economy** — Prioritize speed and token economy over deep reasoning.
+
+In Cursor: use **Auto** or a fast model before invoking this step.
+
+
+
+Keep scope tight to what this step requires.
+
+
+
+
+### Resolve project root (multi-root workspaces)
+
+Before any `git`, `gh`, or `.issueflows/` path operation in this workflow:
+
+**Resolution order** (stop when unambiguous):
+
+1. **Explicit hints** in slash input — `root:<path>`, `repo:<folder-basename>` (directory name, e.g. `cellpy-core`), or `repo:owner/name`.
+2. **CLI fast path** — `issue-flow agent resolve [-C <start>] [--from-file <active-file>] [--json]`. Use the returned `project_root` and `repo`; pass `-C <project_root>` to other `issue-flow agent …` subcommands.
+3. **Branch context** — exactly one workspace repo whose branch matches `^\d+-` → that root.
+4. **Single scaffold** — exactly one `.issueflows/` tree visible in the workspace → that root.
+5. **Ambiguous** → **stop and ask**; never guess between sibling repos.
+
+After resolution, treat the result as `<project_root>` and `<owner/repo>`:
+
+- **Git:** `git -C <project_root> …` (or `issue-flow agent … -C <project_root>` for supported ops).
+- **GitHub:** always `gh … --repo <owner/repo>` — never rely on `gh`'s implicit cwd default.
+- **Paths:** all `.issueflows/…` paths are under `<project_root>`.
+
+When `.issueflows/04-designs-and-guides/multi-repo-workspaces.md` exists, read it for layout and cross-repo guidance.
+
 ## Instructions
 
-1. **Sanity check** — Run the project test suite (e.g. `uv run pytest`) and any checks the repo relies on. Skim the diff; avoid bundling unrelated changes. Confirm that any design decisions or good practices that emerged from this issue are captured under `.issueflows/04-designs-and-guides/` before committing.
+1. **Sanity check** — Run the project test suite (e.g. `uv run pytest`) and any checks the repo relies on. **Ruff (when present):** if the project uses ruff (`[tool.ruff]` in `pyproject.toml`, ruff in dev dependencies, or `.issueflows/04-designs-and-guides/python-quality-tools.md` exists), run auto-fix lint through the documented Python runner before committing — e.g. `uv run ruff check --fix …` then `uv run ruff format …` (match paths to what the project documents). Skim the diff; avoid bundling unrelated changes. Confirm that any design decisions or good practices that emerged from this issue are captured under `.issueflows/04-designs-and-guides/` before committing.
 
-2. **Optional version bump** — If the user asked for a bump (see above), follow `.cursor/skills/iflow-version-bump/SKILL.md` and run `uv version --bump <patch|minor|major>`. If there is no bumpable `pyproject.toml`, skip and continue.
+2. **Optional version bump** — If the user asked for a bump (see above), follow `.cursor/skills/iflow-version-bump/SKILL.md` and run `uv version --bump <level>`. If there is no bumpable `pyproject.toml`, skip and continue.
 
 3. **Update `HISTORY.md`** — Unless the user passed `nohistory`, follow `.cursor/skills/iflow-history-update/SKILL.md`. If step 2 did not bump the version, append a bullet to the `## [Unreleased]` section. If step 2 bumped the version, promote `## [Unreleased]` to `## [<new_version>] - <YYYY-MM-DD>` and open a fresh empty `## [Unreleased]` above it. Show the diff and confirm once before writing. Skip with a note if `HISTORY.md` does not exist at the project root. With the `yolo` token, do not ask — decide yourself and write the bullet (issue title, or `log "..."` text) directly.
 

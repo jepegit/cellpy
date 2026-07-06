@@ -1,29 +1,56 @@
 ---
 name: iflow-init
 description: >-
-  Run the /iflow-init workflow: resolve GitHub issue reference, fetch body
-  and comments with gh, triage the comments via the iflow-comments
-  skill, write issue<number>_original.md under
-  .issueflows/01-current-issues/, and archive other
-  current issues by done status.
+  Capture a GitHub issue locally as issue<number>_original.md and archive
+  other current issues by done status.
 disable-model-invocation: true
 ---
 
 # issue-flow — issue init (`/iflow-init`)
 
-Follow this skill when the user wants to **capture a GitHub issue locally**.
+Follow this skill to **capture a GitHub issue locally** under `.issueflows/01-current-issues/`.
 
-## When to use
 
-- The user runs `/iflow-init`, mentions **issue-init**, or asks to pull an issue into `.issueflows/01-current-issues/`.
-- You need a repeatable checklist without opening the command file.
+### MODEL & EXECUTION DIRECTIVE
+
+
+**Profile: economy** — Prioritize speed and token economy over deep reasoning.
+
+In Cursor: use **Auto** or a fast model before invoking this step.
+
+
+
+Keep scope tight to what this step requires.
+
+
+
+
+### Resolve project root (multi-root workspaces)
+
+Before any `git`, `gh`, or `.issueflows/` path operation in this workflow:
+
+**Resolution order** (stop when unambiguous):
+
+1. **Explicit hints** in slash input — `root:<path>`, `repo:<folder-basename>` (directory name, e.g. `cellpy-core`), or `repo:owner/name`.
+2. **CLI fast path** — `issue-flow agent resolve [-C <start>] [--from-file <active-file>] [--json]`. Use the returned `project_root` and `repo`; pass `-C <project_root>` to other `issue-flow agent …` subcommands.
+3. **Branch context** — exactly one workspace repo whose branch matches `^\d+-` → that root.
+4. **Single scaffold** — exactly one `.issueflows/` tree visible in the workspace → that root.
+5. **Ambiguous** → **stop and ask**; never guess between sibling repos.
+
+After resolution, treat the result as `<project_root>` and `<owner/repo>`:
+
+- **Git:** `git -C <project_root> …` (or `issue-flow agent … -C <project_root>` for supported ops).
+- **GitHub:** always `gh … --repo <owner/repo>` — never rely on `gh`'s implicit cwd default.
+- **Paths:** all `.issueflows/…` paths are under `<project_root>`.
+
+When `.issueflows/04-designs-and-guides/multi-repo-workspaces.md` exists, read it for layout and cross-repo guidance.
 
 ## Instructions
 
-> **CLI fast path (optional).** If the `issue-flow` CLI is on `PATH`, two
-> mechanical steps have a deterministic shortcut:
-> - **Fetch + write (steps 3 & 5):** `issue-flow agent capture <N>` (use `--repo owner/repo` to override the resolved remote, `--force` to overwrite). It writes the `## Original issue text` body deterministically and prints the comments payload — you still triage comments (step 3a) and add the curated section yourself.
-> - **Archive (step 4):** `issue-flow agent sweep --except <N>` (add `--dry-run` to preview).
+> **CLI fast path (optional).** If the `issue-flow` CLI is on `PATH`:
+> - **Resolve root + repo (step 0):** `issue-flow agent resolve [--from-file <active-file>] [--json]` — use `project_root` and `repo` for all steps below.
+> - **Fetch + write (steps 3 & 5):** `issue-flow agent capture <N> -C <project_root>` (use `--repo owner/repo` to override the resolved remote, `--force` to overwrite). It writes the `## Original issue text` body deterministically and prints the comments payload — you still triage comments (step 3a) and add the curated section yourself.
+> - **Archive (step 4):** `issue-flow agent sweep --except <N> -C <project_root>` (add `--dry-run` to preview).
 >
 > The CLI is optional: if it is missing or errors, fall back to the manual
 > instructions below. (`issue-flow` is only present when the user installed it,
@@ -33,19 +60,13 @@ Follow this skill when the user wants to **capture a GitHub issue locally**.
 
 2. **Resolve the reference**
    - **URL** — Parse `owner`, `repo`, issue number.
-   - **Number only** — Use `git remote get-url origin` (HTTPS or SSH) to derive `owner/repo`. If parsing fails, ask for a full URL or `owner/repo`.
-   - **Empty / whitespace** — Run `git branch --show-current`. If empty or `main`/`master` (case-insensitive), **stop** and ask for a number, URL, or `owner/repo/#n`. If the branch is an **issue-style branch** matching `^\d+-.+`, ask: "You have not provided an issue reference. Should I use issue #NN from the current branch `<branchname>`?" Do not proceed without a clear yes/no.
+   - **Number only** — After resolving `<project_root>`, run `git -C <project_root> remote get-url origin` (HTTPS or SSH) to derive `owner/repo`. If parsing fails, ask for a full URL or `owner/repo`.
+   - **Empty / whitespace** — Run `git -C <project_root> branch --show-current`. If empty or `main`/`master` (case-insensitive), **stop** and ask for a number, URL, or `owner/repo/#n`. If the branch is an **issue-style branch** matching `^\d+-.+`, ask: "You have not provided an issue reference. Should I use issue #NN from the current branch `<branchname>`?" Do not proceed without a clear yes/no.
    - **Archived-issue guard** — Before writing, check `.issueflows/02-partly-solved-issues/` and `.issueflows/03-solved-issues/` for existing `issue<n>_*` files. If the issue is already archived, warn and require a second explicit confirmation before re-opening it in `.issueflows/01-current-issues/`.
 
 3. **Fetch** — `gh issue view <n> --repo owner/repo --json title,body,url,number,comments`. The `comments` field returns an array of `{author.login, body, createdAt, ...}` that step 3a consumes. On failure, report the error and suggest `gh auth login`. After confirming `owner/repo`, change the chat/agent tab title to reflect the issue topic on the form "Issue <issue number> <short description of issue>" (e.g. "Issue 74 cell info").
 
-3a. **Triage comments** (skip if `comments` is empty). Follow the [`iflow-comments`](../iflow-comments/SKILL.md) skill. Summary of rules:
-   - Process comments chronologically; **later comments win conflicts** with earlier ones.
-   - Sort points into three buckets: **Additional tasks**, **Clarifications / constraints**, **Superseded / retracted**.
-   - Collapse duplicates; drop chit-chat, emoji-only, "LGTM" and bot messages.
-   - Paraphrase — this section is an interpretive summary, not a verbatim dump.
-   - If all comments are noise, skip the curated section entirely.
-   - On open disagreement with no clear winner, log it under *Clarifications* rather than picking a side.
+3a. **Triage comments** (skip if `comments` is empty). Follow the [`iflow-comments`](../iflow-comments/SKILL.md) skill — it owns the triage rules (chronological precedence, three buckets, noise filtering) and the exact shape of the `## Comments (curated summary)` section.
 
 3.5 **Branch status preflight** (report only) — Run `git fetch --prune`. Report current branch, clean/dirty working tree, and ahead/behind counts vs `origin/<default>` (detect default via `gh repo view --json defaultBranchRef -q .defaultBranchRef.name`, else `git symbolic-ref --quiet --short refs/remotes/origin/HEAD`, else `main`). If the current branch matches `^(\d+)-.+` and files for that issue already live in `.issueflows/02-partly-solved-issues/` or `.issueflows/03-solved-issues/`, note that the branch looks stale. Never delete or move anything at this step.
 
@@ -80,4 +101,3 @@ Follow this skill when the user wants to **capture a GitHub issue locally**.
 ## Constraints
 
 - Allowed file operations: create/update the target `*_original.md`, and move pre-existing issue groups per the archive rules. Do not modify unrelated project files.
-- Use UTF-8 for markdown output.

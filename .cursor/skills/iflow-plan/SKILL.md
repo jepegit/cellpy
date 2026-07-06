@@ -1,21 +1,49 @@
 ---
 name: iflow-plan
 description: >-
-  Run the /iflow-plan workflow: read the focus issue in
-  .issueflows/01-current-issues/, draft a structured plan
-  in issue<N>_plan.md, and get explicit user confirmation before any
-  implementation starts.
+  Draft a structured plan in issue<N>_plan.md and get explicit user
+  confirmation before any implementation starts.
 disable-model-invocation: true
 ---
 
 # issue-flow — issue plan (`/iflow-plan`)
 
-Follow this skill when the user wants to **design the approach** for an issue before touching code.
+Follow this skill to **design the approach** for the focus issue before touching code, and to get the plan confirmed ahead of `/iflow-start`.
 
-## When to use
 
-- The user runs `/iflow-plan`, mentions **issue-plan**, or asks you to design the approach / write a plan for the current issue.
-- You want a clear, confirmed plan before `/iflow-start` begins editing code.
+### MODEL & EXECUTION DIRECTIVE
+
+
+**Profile: reasoning** — Prioritize deep thinking and careful trade-offs over speed or token economy.
+
+In Cursor: switch to a thinking-capable model before invoking this step (not Auto-only).
+
+
+
+Keep scope tight to what this step requires.
+
+
+
+
+### Resolve project root (multi-root workspaces)
+
+Before any `git`, `gh`, or `.issueflows/` path operation in this workflow:
+
+**Resolution order** (stop when unambiguous):
+
+1. **Explicit hints** in slash input — `root:<path>`, `repo:<folder-basename>` (directory name, e.g. `cellpy-core`), or `repo:owner/name`.
+2. **CLI fast path** — `issue-flow agent resolve [-C <start>] [--from-file <active-file>] [--json]`. Use the returned `project_root` and `repo`; pass `-C <project_root>` to other `issue-flow agent …` subcommands.
+3. **Branch context** — exactly one workspace repo whose branch matches `^\d+-` → that root.
+4. **Single scaffold** — exactly one `.issueflows/` tree visible in the workspace → that root.
+5. **Ambiguous** → **stop and ask**; never guess between sibling repos.
+
+After resolution, treat the result as `<project_root>` and `<owner/repo>`:
+
+- **Git:** `git -C <project_root> …` (or `issue-flow agent … -C <project_root>` for supported ops).
+- **GitHub:** always `gh … --repo <owner/repo>` — never rely on `gh`'s implicit cwd default.
+- **Paths:** all `.issueflows/…` paths are under `<project_root>`.
+
+When `.issueflows/04-designs-and-guides/multi-repo-workspaces.md` exists, read it for layout and cross-repo guidance.
 
 ## Instructions
 

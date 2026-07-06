@@ -1,24 +1,30 @@
 ---
 name: iflow-graphify
 description: >-
-  Run the /iflow-graphify slash command: rebuild the graphify knowledge graph for the
-  project (graphify-out/graph.html, GRAPH_REPORT.md, graph.json) by shelling out
-  to `issue-flow graphify` (or `graphify` directly). Off-path: never auto-dispatched
-  by /iflow. Forwards trailing args verbatim to graphify.
+  Rebuild the graphify knowledge graph (graphify-out/) by shelling out to
+  `issue-flow graphify` or `graphify` directly.
 disable-model-invocation: true
 ---
 
 # issue-flow — graph rebuild (`/iflow-graphify`)
 
-Follow this skill when the user wants to refresh the project's [graphify](https://iflow-graphify.net) knowledge graph.
-
-## When to use
-
-- The user runs `/iflow-graphify`, mentions "rebuild the graph", "refresh graphify", "regenerate `GRAPH_REPORT.md`", or similar.
-- The project has a `graphify-out/` folder that is stale (large refactor, new modules, new docs/papers added) and the user asks to update it.
-- The user installed `graphifyy` for the first time and wants to produce the initial graph.
+Follow this skill to refresh the project's [graphify](https://iflow-graphify.net) knowledge graph — a stale `graphify-out/` after a large refactor, or the initial graph after installing `graphifyy`.
 
 Do **not** use this skill from `/iflow-start`, `/iflow-close`, or `/iflow`. `/iflow-graphify` is opt-in only.
+
+
+### MODEL & EXECUTION DIRECTIVE
+
+
+**Profile: economy** — Prioritize speed and token economy over deep reasoning.
+
+In Cursor: use **Auto** or a fast model before invoking this step.
+
+
+
+Keep scope tight to what this step requires.
+
+
 
 ## Instructions
 

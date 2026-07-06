@@ -1,26 +1,33 @@
 ---
 name: iflow-history-update
 description: >-
-  Keep HISTORY.md (or equivalent changelog) up to date when landing an issue:
-  append a bullet to [Unreleased], or promote [Unreleased] to a new [x.y.z]
-  release section when a version bump happened. Invoked from /iflow-close.
+  Update the changelog when landing an issue: append a bullet to
+  [Unreleased], or promote it to a release section after a version bump.
 disable-model-invocation: true
 ---
 
 # issue-flow — history update
 
-Use this skill to update the project's changelog file (default **`HISTORY.md`**, overridable via `ISSUEFLOW_HISTORY_FILE` in `.env`) as part of `/iflow-close`. It never runs on its own schedule; it is driven by the "update HISTORY" step.
+Use this skill to update the project's changelog file (default **`HISTORY.md`**, overridable via `ISSUEFLOW_HISTORY_FILE` in `.env`) as part of `/iflow-close`. It never runs on its own schedule; it is driven by the "update HISTORY" step, and does not run when the user passed `nohistory` / `skip history`.
 
-## When to use
 
-- `/iflow-close` is landing an issue and the project has a changelog file in the repo root.
-- The user did **not** pass `nohistory` / `skip history` on the command line.
+### MODEL & EXECUTION DIRECTIVE
+
+
+**Profile: economy** — Prioritize speed and token economy over deep reasoning.
+
+In Cursor: use **Auto** or a fast model before invoking this step.
+
+
+
+Keep scope tight to what this step requires.
+
+
 
 ## Preconditions
 
 1. The changelog file (`HISTORY.md`) exists at the **project root**. If it does not, **skip** this step, print "no `HISTORY.md` — skipping changelog update" and continue the rest of `/iflow-close`. Never create the file from this skill.
 2. The file is in **Keep a Changelog** shape: a top-level `## [Unreleased]` heading, with released versions below as `## [x.y.z] - YYYY-MM-DD` headings. If the shape does not match, **stop and report the mismatch** instead of guessing — let the user fix the file or pass `nohistory`.
-3. UTF-8 read/write with explicit encoding.
 
 ## Inputs from `/iflow-close`
 
@@ -78,7 +85,6 @@ When `/iflow-close` reaches its commit step:
 
 - Read/write only `HISTORY.md` at the project root. Do not touch any other file from this skill.
 - Never create `HISTORY.md` from scratch — scaffolding a starter changelog is out of scope for `issue-flow init` / `update`.
-- If the user passed `nohistory` (or `skip history`) to `/iflow-close`, don't run this skill at all.
 - If the confirm prompt in mode A or mode B is declined, leave `HISTORY.md` untouched and print a short "skipped changelog update" note. The rest of `/iflow-close` continues normally.
 - Preserve existing formatting conventions (bullet style, sentence case, trailing punctuation). Match the style of the nearest existing entries when in doubt.
 - The new bullet's `(#<N>)` suffix is always GitHub issue `#N`, matching the focus issue's number in `.issueflows/01-current-issues/issue<N>_original.md`.

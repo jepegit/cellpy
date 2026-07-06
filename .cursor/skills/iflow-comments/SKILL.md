@@ -1,24 +1,30 @@
 ---
 name: iflow-comments
 description: >-
-  Triage a GitHub issue's comment thread into a curated, bucketed summary
-  (additional tasks, clarifications, superseded) for inclusion in
-  issue<N>_original.md. Invoked by /iflow-init; also reusable when re-triaging
-  comments later in an issue's lifecycle.
+  Triage a GitHub issue's comment thread into the curated, bucketed summary
+  section of issue<N>_original.md.
 disable-model-invocation: true
 ---
 
 # issue-flow — issue comments triage
 
-Follow this skill when you need to turn a GitHub issue's comment thread into a short, decision-useful summary that lives next to the original issue body under `.issueflows/01-current-issues/issue<N>_original.md`.
+Follow this skill to turn a GitHub issue's comment thread into a short, decision-useful summary that lives next to the original issue body under `.issueflows/01-current-issues/issue<N>_original.md`.
 
-It is the playbook that `/iflow-init` (and the `iflow-init` skill) delegate to for anything beyond fetching raw comments.
+It is the playbook that `/iflow-init` (and the `iflow-init` skill) delegate to for anything beyond fetching raw comments. It also covers re-triage of an already-captured issue when new comments arrive (the issue body text stays unchanged; only the curated section is rewritten).
 
-## When to use
 
-- `/iflow-init` just fetched an issue with a non-empty `comments` array and needs to write the `## Comments (curated summary)` section.
-- You are re-running triage on an already-captured issue because new comments have arrived (the issue body text must stay unchanged; only the curated section is rewritten).
-- Any workflow that needs to understand "what does the comment thread actually ask us to do?" without pasting the raw thread into a file.
+### MODEL & EXECUTION DIRECTIVE
+
+
+**Profile: economy** — Prioritize speed and token economy over deep reasoning.
+
+In Cursor: use **Auto** or a fast model before invoking this step.
+
+
+
+Keep scope tight to what this step requires.
+
+
 
 ## Inputs
 
@@ -78,7 +84,6 @@ Formatting rules:
 - Each bucket's bullet is itself a list if there is more than one item — nest concrete bullets under the bold label.
 - **Drop any bucket that is empty** — do not leave `- **Additional tasks**: ` with no content.
 - **Always keep the `_Note: ..._` footer** when the section exists. Use the total `comments` length for `<count>` and the `author.login` + date of the most recent non-dropped comment for `@<login>` / `<date>`.
-- Use UTF-8 markdown. No leading/trailing blank lines inside the section beyond what's shown.
 
 ## Edge cases
 
@@ -92,5 +97,4 @@ Formatting rules:
 ## Constraints
 
 - This skill only writes into the `## Comments (curated summary)` section of `issue<N>_original.md`. It never touches the issue body, the status file, or the plan file.
-- It never calls `gh` itself — it expects the caller (`/iflow-init` or similar) to provide the comments JSON.
-- It never talks to the network beyond what the caller has already fetched.
+- It never calls `gh` or the network itself — it expects the caller (`/iflow-init` or similar) to provide the comments JSON.

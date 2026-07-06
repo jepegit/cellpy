@@ -1,24 +1,51 @@
 ---
 name: iflow
 description: >-
-  Run the /iflow smart dispatcher: detect where the focus issue stands in the
-  lifecycle (via files in .issueflows/01-current-issues/ and
-  status markers) and dispatch to /iflow-init, /iflow-plan, /iflow-start, or
-  /iflow-close. Forwards trailing args verbatim. Never auto-dispatches to
-  /iflow-pause, /iflow-cleanup, or /iflow-yolo.
+  Smart dispatcher: detect where the focus issue stands and dispatch to
+  /iflow-init, /iflow-plan, /iflow-start, or /iflow-close.
 disable-model-invocation: true
 ---
 
 # issue-flow — iflow smart dispatcher (`/iflow`)
 
-Follow this skill when the user wants to run **the right next step** in the issue-flow lifecycle without remembering which specific command applies.
-
-## When to use
-
-- The user runs `/iflow`, mentions **iflow**, or asks "what's the next step?" during an issue-flow lifecycle.
-- You want a single entry point that routes to `/iflow-init`, `/iflow-plan`, `/iflow-start`, or `/iflow-close` based on current state.
+Follow this skill to run **the right next step** in the issue-flow lifecycle: it detects state and routes to `/iflow-init`, `/iflow-plan`, `/iflow-start`, or `/iflow-close`, forwarding trailing args verbatim.
 
 Do **not** use this skill for `/iflow-pick`, `/iflow-pause`, `/iflow-cleanup`, `/iflow-yolo`, or `/iflow-fix`. Those are explicit-only commands. (`/iflow-pick` is the front door *before* `/iflow-init`, for when no issue has been chosen yet. `/iflow-fix` runs an interactive iterative-fixes session, driven by `/iflow-fix` + `/iflow-close`.)
+
+
+### MODEL & EXECUTION DIRECTIVE
+
+
+**Profile: economy** — Prioritize speed and token economy over deep reasoning.
+
+In Cursor: use **Auto** or a fast model before invoking this step.
+
+
+
+Keep scope tight to what this step requires.
+
+
+
+
+### Resolve project root (multi-root workspaces)
+
+Before any `git`, `gh`, or `.issueflows/` path operation in this workflow:
+
+**Resolution order** (stop when unambiguous):
+
+1. **Explicit hints** in slash input — `root:<path>`, `repo:<folder-basename>` (directory name, e.g. `cellpy-core`), or `repo:owner/name`.
+2. **CLI fast path** — `issue-flow agent resolve [-C <start>] [--from-file <active-file>] [--json]`. Use the returned `project_root` and `repo`; pass `-C <project_root>` to other `issue-flow agent …` subcommands.
+3. **Branch context** — exactly one workspace repo whose branch matches `^\d+-` → that root.
+4. **Single scaffold** — exactly one `.issueflows/` tree visible in the workspace → that root.
+5. **Ambiguous** → **stop and ask**; never guess between sibling repos.
+
+After resolution, treat the result as `<project_root>` and `<owner/repo>`:
+
+- **Git:** `git -C <project_root> …` (or `issue-flow agent … -C <project_root>` for supported ops).
+- **GitHub:** always `gh … --repo <owner/repo>` — never rely on `gh`'s implicit cwd default.
+- **Paths:** all `.issueflows/…` paths are under `<project_root>`.
+
+When `.issueflows/04-designs-and-guides/multi-repo-workspaces.md` exists, read it for layout and cross-repo guidance.
 
 ## Instructions
 
