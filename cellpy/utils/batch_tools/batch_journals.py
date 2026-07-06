@@ -2,7 +2,6 @@ import json
 import logging
 import os
 import pathlib
-import platform
 import shutil
 import tempfile
 from typing import Union, Any
@@ -22,7 +21,7 @@ from cellpy.parameters.legacy.update_headers import (
 )
 from cellpy.readers import dbreader, json_dbreader
 from cellpy.utils.batch_tools.batch_core import BaseJournal
-from cellpy.utils.batch_tools.engines import simple_db_engine, sql_db_engine
+from cellpy.utils.batch_tools.engines import simple_db_engine
 from cellpy.utils.batch_tools import batch_helpers
 
 hdr_journal = get_headers_journal()
@@ -436,17 +435,17 @@ class LabJournal(BaseJournal, ABC):
             bcn2 = []
 
         try:
-            bc2 = list(session["bad_cells"]["cell_name"].dropna().values.flatten())
+            bc2 = session["bad_cells"]["cell_name"].dropna().tolist()
         except KeyError:
             bc2 = []
 
         try:
-            s2 = list(session["starred"]["cell_name"].dropna().values.flatten())
+            s2 = session["starred"]["cell_name"].dropna().tolist()
         except KeyError:
             s2 = []
 
         try:
-            n2 = list(session["notes"]["txt"].dropna().values.flatten())
+            n2 = session["notes"]["txt"].dropna().tolist()
         except KeyError:
             n2 = []
 
