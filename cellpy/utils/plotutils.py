@@ -9,17 +9,15 @@ import importlib
 import itertools
 import logging
 from multiprocessing import Process
-import os
 import pickle as pkl
 import pprint
-import sys
 from typing import Any, Callable, Optional, Union
 import warnings
-from io import StringIO
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import pandas as pd
+import numpy as np
 
 from cellpy.parameters.internal_settings import (
     get_headers_journal,
@@ -328,9 +326,6 @@ def _plotly_legend_replacer(trace, df, group_legends=True):
         )
 
 
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
-import numpy as np
 
 # original:
 SYMBOL_DICT = {
