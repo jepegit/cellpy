@@ -66,9 +66,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-batch = ["ipython", "jupyter", "plotly", "seaborn", "kaleido==0.1.*"]
+batch = ["ipython", "jupyter", "plotly", "seaborn", "kaleido>=0.1,<1.4"]
 fit = ["lmfit"]
-all = ["ipython", "jupyter", "plotly", "seaborn", "kaleido==0.1.*", "lmfit"]
+all = ["ipython", "jupyter", "plotly", "seaborn", "kaleido>=0.1,<1.4", "lmfit"]
 
 [project.scripts]
 cellpy = "cellpy.cli:cli"
