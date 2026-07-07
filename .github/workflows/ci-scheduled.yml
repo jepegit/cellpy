@@ -1,0 +1,196 @@
+# Full matrix (Tier 3): weekly schedule + manual dispatch.
+# Failures here do not block merges; investigate and fix on the next cycle.
+
+name: CI (scheduled)
+
+on:
+  schedule:
+    # Mondays 03:00 UTC
+    - cron: "0 3 * * 1"
+  workflow_dispatch:
+
+concurrency:
+  group: ci-scheduled
+  cancel-in-progress: true
+
+jobs:
+  conda-pytest:
+    name: conda pytest (${{ matrix.os }})
+    runs-on: ${{ matrix.runner }}
+    defaults:
+      run:
+        shell: bash -l {0}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: linux
+            runner: ubuntu-latest
+            pytest-args: --ignore=tests/test_plotutils_summary_plot.py
+          - os: macos-14
+            runner: macos-14
+            pytest-args: >-
+              --ignore=tests/test_plotutils_summary_plot.py
+              -m "not slowtest and not smoketest and not unimportant and not unfinished and not onlylocal and not skip_on_macos"
+          - os: windows
+            runner: windows-latest
+            pytest-args: --ignore=tests/test_plotutils_summary_plot.py
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install Access Database Engine (Windows)
+        if: matrix.os == 'windows'
+        shell: pwsh
+        run: |
+          $installer = "$env:RUNNER_TEMP/AccessDatabaseEngine_X64.exe"
+          if (-not (Test-Path $installer)) {
+            $url = 'https://download.microsoft.com/download/3/5/C/35C84C36-661A-44E6-9324-8786B8DBE231/accessdatabaseengine_X64.exe'
+            (New-Object Net.WebClient).DownloadFile($url, $installer)
+          }
+          $proc = Start-Process -FilePath $installer -ArgumentList '/quiet','/norestart' -Wait -PassThru
+          if ($proc.ExitCode -ne 0) { throw "ACE install failed" }
+
+      - uses: conda-incubator/setup-miniconda@v3
+        with:
+          auto-update-conda: true
+          miniconda-version: latest
+          activate-environment: cellpy_dev
+          environment-file: github_actions_environment.yml
+          python-version: "3.13"
+
+      - name: Install mdbtools (Linux)
+        if: matrix.os == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mdbtools
+
+      - name: Install mdbtools (macOS)
+        if: matrix.os == 'macos-14'
+        run: brew install mdbtools
+
+      - name: Verify Access ODBC driver (Windows)
+        if: matrix.os == 'windows'
+        run: |
+          python -c "import pyodbc; drivers=[d for d in pyodbc.drivers() if d.startswith('Microsoft Access Driver')]; assert drivers, 'Microsoft Access ODBC driver not found'; print('Access drivers:', drivers)"
+
+      - name: Install cellpy (editable)
+        run: python -m pip install -e .
+
+      - name: pytest
+        run: pytest ${{ matrix.pytest-args }}
+
+  nbmake-linux:
+    name: nbmake (linux)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -l {0}
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: conda-incubator/setup-miniconda@v3
+        with:
+          auto-update-conda: true
+          activate-environment: cellpy_dev
+          environment-file: github_actions_environment.yml
+          python-version: "3.13"
+
+      - name: Install mdbtools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mdbtools
+
+      - name: pytest with nbmake (cellpy_batch_processing)
+        continue-on-error: true
+        run: |
+          python -m pip install -e .
+          python -m pip install kaleido==0.1.*
+          python -m ipykernel install --user --name=cellpy_dev
+          pytest -v --nbmake --nbmake-timeout=600 --nbmake-kernel=cellpy_dev "examples/cellpy batch utility/cellpy_batch_processing.ipynb"
+
+  pip-install:
+    name: pip install (${{ matrix.os }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: linux
+            runner: ubuntu-latest
+            pytest-args: --ignore=tests/test_plotutils_summary_plot.py
+          - os: macos-14
+            runner: macos-14
+            pytest-args: --ignore=tests/test_plotutils_summary_plot.py
+          - os: windows
+            runner: windows-latest
+            pytest-args: tests/test_maccor.py
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.13"
+
+      - name: Install system dependencies (Linux)
+        if: matrix.os == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mdbtools
+
+      - name: Install system dependencies (macOS)
+        if: matrix.os == 'macos-14'
+        run: |
+          brew install mdbtools unixodbc hdf5 c-blosc
+
+      - name: Install test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pytest pytest-timeout pytest-benchmark lmfit
+
+      - name: Install PyTables (macOS)
+        if: matrix.os == 'macos-14'
+        run: |
+          python -m pip install cython
+          export HDF5_DIR=/opt/homebrew/opt/hdf5
+          export BLOSC_DIR=/opt/homebrew/opt/c-blosc
+          python -m pip install tables
+
+      - name: Install cellpy
+        run: python -m pip install -e .
+
+      - name: Test with pytest
+        run: pytest ${{ matrix.pytest-args }}
+
+      - name: Run cellpy setup
+        run: cellpy setup --silent
+
+      - name: Run cellpy check
+        run: cellpy info --check
+
+  conda-forge:
+    name: conda-forge install
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -l {0}
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: conda-incubator/setup-miniconda@v3
+        with:
+          auto-update-conda: true
+          activate-environment: cellpy_dev
+          environment-file: github_actions_environment.yml
+          python-version: "3.13"
+
+      - name: Install cellpy from conda-forge
+        run: |
+          conda create -n cellpy_conda -y
+          conda activate cellpy_conda
+          conda install -c conda-forge cellpy -y
+
+      - name: Check cellpy
+        run: |
+          conda activate cellpy_conda
+          cellpy setup -s
