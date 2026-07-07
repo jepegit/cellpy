@@ -88,6 +88,9 @@ docs/_build/
 # PyBuilder
 target/
 
+# Graphify cache
+graphify-out/cache/
+
 # My own notes
 notes.md
 
