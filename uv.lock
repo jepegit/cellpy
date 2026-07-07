@@ -425,7 +425,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "cellpycore", specifier = "==0.1.4" },
+    { name = "cellpycore", specifier = "==0.1.5" },
     { name = "charset-normalizer" },
     { name = "click" },
     { name = "cookiecutter" },
@@ -491,16 +491,16 @@ dev = [
 
 [[package]]
 name = "cellpycore"
-version = "0.1.4"
+version = "0.1.5"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "pandas" },
     { name = "polars" },
     { name = "pyarrow" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/e7/f9/e5fa27d05c4f9fbc6d4aea4b34e21725d451aaaf3dc0372e77fb118e9681/cellpycore-0.1.4.tar.gz", hash = "sha256:e7b19202febd8fdb0bcc7f2f8dab03707a3eb9ab4efb819eceeb745c9d3e8989", size = 611839, upload-time = "2026-07-04T21:54:43.206Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/26/cd/d5c16c36dbb63925af27f0f77c58ea3812e4dcd9ef25d8fbbf10dfcea80e/cellpycore-0.1.5.tar.gz", hash = "sha256:68f45fc6e510fa8ae8e0172b0061eab7e0b79b16ec2de23fe7d49327c8502f47", size = 680782, upload-time = "2026-07-07T10:21:41.019Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/29/f5/27a903e26a33ed38027940c819be13099ba783a0966174b75497117d2a2e/cellpycore-0.1.4-py3-none-any.whl", hash = "sha256:30707c3ce6d23dbe9dc6b6508a5400a1c2f9597d2f400fba75df15688eb6fc95", size = 70485, upload-time = "2026-07-04T21:54:41.67Z" },
+    { url = "https://files.pythonhosted.org/packages/cc/6f/be4dc8d576fa7b1922fe4ebc5c6c1ccf15b3b4566742657d977c76c2b227/cellpycore-0.1.5-py3-none-any.whl", hash = "sha256:f0febeb4391b1ddb8aacbdce576c5eed3ed3a5f619e60e8147e8b3de4995cc7c", size = 74199, upload-time = "2026-07-07T10:21:39.698Z" },
 ]
 
 [[package]]
@@ -3569,9 +3569,9 @@ name = "sqlalchemy-access"
 version = "2.0.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "pyodbc" },
-    { name = "pywin32" },
-    { name = "sqlalchemy" },
+    { name = "pyodbc", marker = "sys_platform == 'win32'" },
+    { name = "pywin32", marker = "sys_platform == 'win32'" },
+    { name = "sqlalchemy", marker = "sys_platform == 'win32'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/3f/e3/02801e7b150342be8b7146227beb7943723511eb2f074bb836eae05e7578/sqlalchemy_access-2.0.3.tar.gz", hash = "sha256:89174a94e0ebd6c32470282d143aef0c0fbe3aafdee2c40956cd417648cb317e", size = 18011, upload-time = "2024-09-08T14:16:16.866Z" }
 wheels = [
