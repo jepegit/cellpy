@@ -25,6 +25,10 @@ seaborn_available = importlib.util.find_spec("seaborn") is not None
 log = logging.getLogger(__name__)
 
 
+@pytest.mark.skipif(
+    not seaborn_available,
+    reason="seaborn not available",
+)
 class TestSummaryPlotBasic:
     """Test basic functionality of summary_plot with different plot types."""
 

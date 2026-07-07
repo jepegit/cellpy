@@ -36,7 +36,6 @@ from typing import TYPE_CHECKING, Callable, Literal, Optional, Union
 import pandas as pd
 
 from cellpy.filters import filter_cycles
-from cellpy.parameters.internal_settings import get_headers_normal
 from cellpy.readers import data_structures as core
 
 if TYPE_CHECKING:
@@ -331,7 +330,8 @@ def _datetime_to_unix_seconds(series: pd.Series) -> pd.Series:
         ts = ts.dt.tz_localize("UTC", nonexistent="NaT", ambiguous="NaT")
     else:
         ts = ts.dt.tz_convert("UTC")
-    return ts.view("int64") / 1e9
+    epoch = pd.Timestamp("1970-01-01", tz="UTC")
+    return (ts - epoch).dt.total_seconds()
 
 
 def _resolve_filename(filename: Union[str, Path, None], cell: "CellpyCell", fmt: BdfFormat) -> Path:

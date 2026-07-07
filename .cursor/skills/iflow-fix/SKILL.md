@@ -1,22 +1,14 @@
 ---
 name: iflow-fix
 description: >-
-  Run the /iflow-fix interactive session: set up one long-lived branch + GitHub
-  issue for a stream of small iterative fixes, then loop — each fix gets a short
-  plan, is implemented only on confirmation, and is recorded as a dated bullet in
-  issue<N>_status.md. Finish with /iflow-close. Off-path: never auto-dispatched by
-  /iflow. Always creates a GitHub issue (gh); GitLab is not supported.
+  Interactive session: one long-lived branch + GitHub issue for a stream of
+  small iterative fixes, landed together via /iflow-close.
 disable-model-invocation: true
 ---
 
 # issue-flow — interactive iterative-fix session (`/iflow-fix`)
 
-Follow this skill when the user wants an **ongoing working session** for many small fixes on one branch, rather than a single well-defined deliverable.
-
-## When to use
-
-- The user runs `/iflow-fix`, mentions "iterative fixes", "small fixes session", or "let's just fix things on a branch".
-- They have a bucket of little improvements (small bugs, typos, chores, polish) to knock out together and land via one PR.
+Follow this skill for an **ongoing working session** of many small fixes (small bugs, typos, chores, polish) on one branch, landed via one PR — rather than a single well-defined deliverable.
 
 Do **not** use this skill from `/iflow`, `/iflow-start`, or `/iflow-close`. `/iflow-fix` is explicit-only because it creates GitHub issues and branches and drives an open-ended loop. While a session is active, drive it with `/iflow-fix` + `/iflow-close`, not `/iflow`.
 
@@ -27,6 +19,41 @@ It **coexists** with `/iflow-pick fix`: that command is a one-shot setup back in
 - **a name** (e.g. `polish-cli-output`) — used for the issue title and branch slug.
 - **(nothing)** — default the slug to `iterative-small-fixes` (made unique via the new issue number).
 - **a description** during an active session — run the next fix in the loop.
+
+
+### MODEL & EXECUTION DIRECTIVE
+
+
+**Profile: reasoning** — Prioritize deep thinking and careful trade-offs over speed or token economy.
+
+In Cursor: switch to a thinking-capable model before invoking this step (not Auto-only).
+
+
+
+Keep scope tight to what this step requires.
+
+
+
+
+### Resolve project root (multi-root workspaces)
+
+Before any `git`, `gh`, or `.issueflows/` path operation in this workflow:
+
+**Resolution order** (stop when unambiguous):
+
+1. **Explicit hints** in slash input — `root:<path>`, `repo:<folder-basename>` (directory name, e.g. `cellpy-core`), or `repo:owner/name`.
+2. **CLI fast path** — `issue-flow agent resolve [-C <start>] [--from-file <active-file>] [--json]`. Use the returned `project_root` and `repo`; pass `-C <project_root>` to other `issue-flow agent …` subcommands.
+3. **Branch context** — exactly one workspace repo whose branch matches `^\d+-` → that root.
+4. **Single scaffold** — exactly one `.issueflows/` tree visible in the workspace → that root.
+5. **Ambiguous** → **stop and ask**; never guess between sibling repos.
+
+After resolution, treat the result as `<project_root>` and `<owner/repo>`:
+
+- **Git:** `git -C <project_root> …` (or `issue-flow agent … -C <project_root>` for supported ops).
+- **GitHub:** always `gh … --repo <owner/repo>` — never rely on `gh`'s implicit cwd default.
+- **Paths:** all `.issueflows/…` paths are under `<project_root>`.
+
+When `.issueflows/04-designs-and-guides/multi-repo-workspaces.md` exists, read it for layout and cross-repo guidance.
 
 ## Instructions
 

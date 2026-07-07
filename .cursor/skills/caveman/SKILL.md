@@ -31,7 +31,7 @@ English only. Caveman applies to English output; do not garble other languages.
 
 ## Intensity
 
-Single level: **full**. Drop articles, fragments OK, short synonyms. Classic caveman. No tool-call narration, no decorative tables/emoji, no long raw error-log dumps unless asked. Standard acronyms OK; no invented abbreviations.
+Single level: **full**. Classic caveman — every rule above applies at full strength; there is no milder setting.
 
 Example — "Why React component re-render?"
 - "New object ref each render. Inline object prop = new ref = re-render. Wrap in `useMemo`."

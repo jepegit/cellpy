@@ -118,9 +118,15 @@ The full slash-command lifecycle is:
 Issue labels can select the flow: when an issue picked via `/iflow-pick` carries the **`yolo`** label, it is routed through `/iflow-yolo` (one combined confirmation). Controlled by `label_flows` (default `true`) and `yolo_label` (default `"yolo"`) under `[issueflow]` in `.issueflows/config.toml`; re-run `issue-flow update` after changing them.
 
 
+
+Lifecycle skills include a **`### MODEL & EXECUTION DIRECTIVE`** section that tells agents whether to prioritize **economy** (speed) or **reasoning** (depth) for that step. Toggle with `step_directives` under `[issueflow]`; override per step via `[issueflow.step_profiles]`; optional label hints during `/iflow-pick` via `model_label_flows`, `deep_model_label`, and `fast_model_label`. Re-run `issue-flow update` after changing any of these.
+
+
 `/iflow-fix` opens an interactive iterative-fixes session: it creates one GitHub issue + long-lived branch, then loops over many small fixes (each gets a short plan and is implemented only on confirmation, recorded as a dated bullet in `issue<N>_status.md`), and ends with `/iflow-close`. It is off-path (never auto-dispatched); while a session is active, drive it with `/iflow-fix` + `/iflow-close`, not `/iflow`.
 
 `/iflow-status` prints a **read-only** overview of where every issue stands — the local tracking state under `.issueflows/` (focus / parked / solved) plus open GitHub issues cross-referenced against it. It is off-path (never auto-dispatched) and changes nothing.
+
+`/iflow-archive` condenses old solved issue groups under `.issueflows/03-solved-issues/` into a single dated `YYYY-MM-DD_archived_issues.md` summary file (recording the pre-archive git ref for recovery via `git show <ref>:<path>`), then deletes the original `issue<N>_*` files. It is off-path and destructive: nothing is deleted before one consolidated confirmation.
 
 > On tools without project slash commands (e.g. Codex CLI), invoke the mirrored Agent Skills instead (for example `iflow-init` in place of `/iflow-init`).
 
@@ -173,6 +179,16 @@ Long-lived design docs, design decisions, and project "good practices" live unde
 - **Before planning or implementing**, skim `.issueflows/04-designs-and-guides/` for existing docs relevant to the current issue and follow them (cite them in the plan when they influence the approach).
 - **When a non-trivial design decision is made** during `/iflow-plan` or `/iflow-start`, add or update a markdown file here. Keep entries terse: context, the decision, alternatives considered, and a link back to the issue.
 - **Never overwritten by `issue-flow update`.** The folder is recreated if missing, but existing files are left alone.
+
+
+### Multi-root workspaces
+
+When an editor workspace contains **multiple sibling repositories**, each with its own `.issueflows/` scaffold:
+
+- **Resolve the target repo first** — explicit `root:` / `repo:` hints, then `issue-flow agent resolve`, then branch/single-scaffold heuristics; **ask** when ambiguous. Never let `git` or `gh` infer the repo from cwd alone.
+- **Scoped rules** — this repo's `issueflow-rules` apply under this project root only (path globs). Put **toolchain-specific** run/test commands in `.issueflows/04-designs-and-guides/this-project.md`, not in shared boilerplate that every repo merges.
+- **Per-repo lifecycle** — `/iflow-cleanup`, branch hygiene, and focus issue folders are **per repository**; repeat commands in each repo when needed.
+- **Design doc** — see `.issueflows/04-designs-and-guides/multi-repo-workspaces.md` when present (issue #67).
 
 
 ### Branch hygiene

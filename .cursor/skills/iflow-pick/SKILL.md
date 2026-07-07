@@ -1,23 +1,14 @@
 ---
 name: iflow-pick
 description: >-
-  Run the /iflow-pick front door: help the user choose the next issue (parked
-  work in 02-partly-solved-issues/ first, else rank open GitHub issues by
-  milestone, labels, and topical similarity to recently solved work), optionally
-  create a new general-fixes issue on `fix`, create the issue branch, run
-  /iflow-init, then hand off to /iflow-plan. Off-path: never auto-dispatched by
-  /iflow. Does not auto-create sub-issues.
+  Front door: choose the next issue, create the issue branch, and run
+  /iflow-init.
 disable-model-invocation: true
 ---
 
 # issue-flow — pick next issue (`/iflow-pick`)
 
-Follow this skill when the user wants help **choosing what to work on next** and getting set up to start.
-
-## When to use
-
-- The user runs `/iflow-pick`, mentions "pick the next issue", "what should I work on next?", or "find me an issue".
-- The user is on the default branch with nothing in progress and wants a candidate plus a ready branch.
+Follow this skill to help the user **choose what to work on next** (parked work first, else ranked open GitHub issues) and get set up to start.
 
 Do **not** use this skill from `/iflow`, `/iflow-start`, or `/iflow-close`. `/iflow-pick` is explicit-only because it creates GitHub issues and branches.
 
@@ -26,6 +17,41 @@ Do **not** use this skill from `/iflow`, `/iflow-start`, or `/iflow-close`. `/if
 - **(nothing)** — survey candidates and ask which to pick.
 - **`fix`** — create a **new** general-fixes GitHub issue (a fresh one every time) and use it.
 - **a hint** (milestone / label / topic) — bias the candidate ranking.
+
+
+### MODEL & EXECUTION DIRECTIVE
+
+
+**Profile: reasoning** — Prioritize deep thinking and careful trade-offs over speed or token economy.
+
+In Cursor: switch to a thinking-capable model before invoking this step (not Auto-only).
+
+
+
+Keep scope tight to what this step requires.
+
+
+
+
+### Resolve project root (multi-root workspaces)
+
+Before any `git`, `gh`, or `.issueflows/` path operation in this workflow:
+
+**Resolution order** (stop when unambiguous):
+
+1. **Explicit hints** in slash input — `root:<path>`, `repo:<folder-basename>` (directory name, e.g. `cellpy-core`), or `repo:owner/name`.
+2. **CLI fast path** — `issue-flow agent resolve [-C <start>] [--from-file <active-file>] [--json]`. Use the returned `project_root` and `repo`; pass `-C <project_root>` to other `issue-flow agent …` subcommands.
+3. **Branch context** — exactly one workspace repo whose branch matches `^\d+-` → that root.
+4. **Single scaffold** — exactly one `.issueflows/` tree visible in the workspace → that root.
+5. **Ambiguous** → **stop and ask**; never guess between sibling repos.
+
+After resolution, treat the result as `<project_root>` and `<owner/repo>`:
+
+- **Git:** `git -C <project_root> …` (or `issue-flow agent … -C <project_root>` for supported ops).
+- **GitHub:** always `gh … --repo <owner/repo>` — never rely on `gh`'s implicit cwd default.
+- **Paths:** all `.issueflows/…` paths are under `<project_root>`.
+
+When `.issueflows/04-designs-and-guides/multi-repo-workspaces.md` exists, read it for layout and cross-repo guidance.
 
 ## Instructions
 
@@ -42,6 +68,9 @@ Do **not** use this skill from `/iflow`, `/iflow-start`, or `/iflow-close`. `/if
 
 7. **Label-driven yolo flow.** If the chosen issue carries the **`yolo`** label (case-insensitive), announce it and fold `/iflow-yolo`'s consolidated confirm into the pick confirmation (one prompt: branch + full `init → plan → start → close yolo` chain). On yes, run Phase 2 then follow the `iflow-yolo` skill **instead of** the Phase 3 handoff — its preflight still applies, but do not re-ask its confirm. Configurable via `label_flows` / `yolo_label` under `[issueflow]` in `.issueflows/config.toml` (re-run `issue-flow update` after changing).
 
+
+
+### Phase 2 — create the branch
 
 1. **Require a clean tree** (`git status --porcelain`). If dirty, **stop** and ask the user to commit/stash.
 2. **Branch off the default** — switch to default, fast-forward, then `git switch -c <N>-<short-slug>` (GitHub numeric convention). Confirm a non-obvious slug.

@@ -8,6 +8,8 @@ This repo uses Cursor **Agent Skills** under `.cursor/skills/` that line up with
 
 It also seeds `.issueflows/00-tools/README.md` — the index of the project's **shared toolbox**. Drop reusable helper scripts there during issue work and add a one-line index entry; check the folder before writing a new one-off helper. Like the project brief, this README is never overwritten by `issue-flow update`, so its index grows over time.
 
+**Multi-root workspaces:** when several sibling repos share one editor workspace, resolve the target repo first (`root:` / `repo:` hints, or `issue-flow agent resolve`). Never let `git` or `gh` infer the repository from cwd alone. See `.issueflows/04-designs-and-guides/multi-repo-workspaces.md` when present.
+
 
 | Entry point | File | Role |
 |--------|------|------|
@@ -22,6 +24,7 @@ It also seeds `.issueflows/00-tools/README.md` — the index of the project's **
 | `/iflow-yolo` | `iflow-yolo/SKILL.md` | All-in-one for small, low-risk issues: chains `init → plan → start → close` with up-front safeguards and a single confirmation. |
 | `/iflow-fix` | `iflow-fix/SKILL.md` | **Off-path.** Interactive iterative-fixes session: create one issue + long-lived branch, then loop over many small fixes (short plan each, recorded in `issue<N>_status.md`), ending with `/iflow-close`. |
 | `/iflow-status` | `iflow-status/SKILL.md` | **Off-path, read-only.** Snapshot of where every issue stands — local tracking state (focus / parked / solved) plus open GitHub issues cross-referenced against it. Changes nothing. |
+| `/iflow-archive` | `iflow-archive/SKILL.md` | **Off-path, destructive (gated).** Condense old solved issue groups into a dated `YYYY-MM-DD_archived_issues.md` summary (recording the pre-archive git ref for recovery), then delete the original files after one consolidated confirm. |
 | `/iflow-graphify` | `iflow-graphify/SKILL.md` | **Off-path.** Rebuild the [graphify](https://iflow-graphify.net) knowledge graph (`graphify-out/graph.html`, `GRAPH_REPORT.md`, `graph.json`). Wraps `issue-flow graphify` / `graphify`. Optional: only meaningful when `graphifyy` is installed. |
 
 
@@ -45,11 +48,15 @@ It also seeds `.issueflows/00-tools/README.md` — the index of the project's **
 | `iflow-yolo` | `/iflow-yolo` | Chain `init → plan → start → close` with safeguards. |
 | `iflow-fix` | `/iflow-fix` | Same flow as `/iflow-fix`: set up an interactive iterative-fixes session, loop over small fixes, finish with `/iflow-close`. Off-path. |
 | `iflow-status` | `/iflow-status` | Same flow as `/iflow-status`: read-only overview of focus / parked / solved issues plus open GitHub issues. Off-path; writes nothing. |
+| `iflow-archive` | `/iflow-archive` | Same flow as `/iflow-archive`: summarise selected solved issue groups into a dated archive file (with the pre-archive git ref), then delete the originals. Off-path; destructive with one consolidated confirm. |
 | `iflow-version-bump` | `@iflow-version-bump` (often used from `/iflow-close`) | Bump `[project]` version in `pyproject.toml` via `uv version --bump <level>` (any uv level: `major`/`minor`/`patch`/`stable`/`alpha`/`beta`/`rc`/`post`/`dev`); a bare `bump` stays on the current pre-release channel. |
 | `iflow-history-update` | `@iflow-history-update` (used from `/iflow-close`) | Append an entry to `## [Unreleased]` in `HISTORY.md`, or promote it to a new `## [x.y.z] - YYYY-MM-DD` release section when a version bump happened. |
 | `iflow-graphify` | `/iflow-graphify` | Same flow as `/iflow-graphify`: rebuild the graphify knowledge graph for the project. Off-path; never auto-dispatched. |
 
 Each skill sets `disable-model-invocation: true` so it is included when you **explicitly** invoke it, not on every chat. See [Agent Skills](https://cursor.com/help/customization/skills) in the Cursor docs.
+
+Lifecycle skills also carry a **`### MODEL & EXECUTION DIRECTIVE`** — **economy** (speed/token savings) or **reasoning** (design depth) — baked at `issue-flow update` from `[issueflow]` / `[issueflow.step_profiles]` in `.issueflows/config.toml`. `/iflow-pick` can announce label-based session overrides when `model_label_flows` is enabled (`deep_model_label` / `fast_model_label`).
+
 
 ---
 
@@ -101,7 +108,7 @@ All workflows that touch git also run a short **branch-status preflight**: `git 
 
 **Focus-issue resolution:** prefer the leading digits of the current branch when it matches `^<N>-.+`; else the single group in `.issueflows/01-current-issues/`; else ask.
 
-**Not auto-dispatched:** `/iflow-pause`, `/iflow-cleanup`, `/iflow-yolo`, `/iflow-fix`, and `/iflow-status`. `/iflow` will mention them in its output when relevant (e.g. "after the PR merges, run `/iflow-cleanup`") but never picks them for you.
+**Not auto-dispatched:** `/iflow-pause`, `/iflow-cleanup`, `/iflow-yolo`, `/iflow-fix`, `/iflow-status`, and `/iflow-archive`. `/iflow` will mention them in its output when relevant (e.g. "after the PR merges, run `/iflow-cleanup`") but never picks them for you.
 
 **Result:** One of the four linear commands runs, with its own normal checkpoints intact.
 
@@ -309,6 +316,27 @@ The bump runs **after** tests and **before** issue-folder moves and **before** c
 
 ---
 
+## 11. `/iflow-archive` — condense the solved-issues archive (destructive, gated)
+
+**When:** `.issueflows/03-solved-issues/` has grown large and most of its `issue<N>_*` groups are no longer worth keeping as individual files.
+
+**What you pass:** Nothing (archive all but the 5 most recent solved groups), `keep <K>` (keep the `<K>` most recent), an explicit list of issue numbers, or `all`.
+
+**What the assistant does:**
+
+1. **Preflight** — requires a **clean working tree** (stop if dirty) and records the pre-archive ref via `git rev-parse HEAD`.
+2. **Select** — lists every solved group (number + title), applies your input rule, and shows the candidate list for you to adjust.
+3. **Consolidated confirm** — one prompt covering exactly which issues get summarised and that their files will be **deleted**; nothing proceeds without a clear yes.
+4. **Summarise** — appends to `.issueflows/03-solved-issues/YYYY-MM-DD_archived_issues.md`: a header with the pre-archive ref and recovery recipe (`git show <ref>:<path>`), then one section per issue with source URL, archived file names, and a 2–4 sentence outcome summary.
+5. **Delete** — removes the archived groups' files (`issue-flow agent archive <N> ...` when the CLI is installed, else `git rm`).
+6. **Commit offer** — proposes a single commit so the deletion lands right after the recorded ref; asks first, never pushes.
+
+**Off-path:** `/iflow` never auto-dispatches to `/iflow-archive`. It deletes files, so you opt in explicitly.
+
+**Result:** One dated summary file replaces the archived groups; every original file remains recoverable from git history via the recorded ref.
+
+---
+
 ## End-to-end flow
 
 Tip: at any point in the linear flow below, you can just run `/iflow` and it will dispatch to the right step based on current state.
@@ -342,6 +370,7 @@ Detours:
   /iflow-yolo   — chain init → plan → start → close for tiny fixes (safeguarded)
   /iflow-fix    — interactive session: one branch, many small fixes, then /iflow-close
   /iflow-status — read-only overview of all issues (focus / parked / solved + GitHub)
+  /iflow-archive — condense old solved issues into a dated summary file (gated deletion)
 ```
 
 The skill packages under `.cursor/skills/` are the primary workflow surface. This document is a readable overview only.

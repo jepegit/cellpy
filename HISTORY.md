@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+* Fix: bump pandas to 3.0.3 — BDF Unix-time export, batch journal string extraction, and post-processor datetime handling (#415)
 * CI: move Windows conda pytest from AppVeyor to GitHub Actions (ACE x64 install with cache) (#407)
 * Testing: new offline unit tests for `utils/helpers.py` (outlier removal, group names, rate column) and `readers/filefinder.py` (tmp-path raw-file trees) (#372)
 * Fix: local `OtherPath.rglob()` did not recurse into subdirectories, so `search_for_files(..., sub_folders=True)` missed files in subfolders (#372)

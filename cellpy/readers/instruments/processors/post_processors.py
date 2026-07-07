@@ -14,11 +14,9 @@ the ``config_params.post_processor[<name of post processor>]``.
 
 import datetime
 import logging
-import sys
 import warnings
 
 import pandas as pd
-import numpy as np
 
 from cellpy.parameters.internal_settings import headers_normal
 from cellpy.parameters.prms import _minimum_columns_to_keep_for_raw_if_exists
@@ -163,7 +161,7 @@ def convert_date_time_to_datetime(data: Data, config_params: ModelParameters) ->
     hdr_date_time = headers_normal.datetime_txt
     try:
         data.raw[hdr_date_time] = pd.to_datetime(data.raw[hdr_date_time])
-    except ValueError as e:
+    except ValueError:
         warnings.warn(
             "Could not convert date_time to datetime. Will try mixed format (slow)."
         )
@@ -193,7 +191,7 @@ def convert_step_time_to_timedelta(data: Data, config_params: ModelParameters) -
     hdr_step_time = headers_normal.step_time_txt
     if data.raw[hdr_step_time].dtype == "datetime64[ns]":
         logging.debug("already datetime64[ns] - need to convert to back first")
-        data.raw[hdr_step_time] = data.raw[hdr_step_time].view("int64")
+        data.raw[hdr_step_time] = data.raw[hdr_step_time].astype("int64")
         data.raw[hdr_step_time] = (
             data.raw[hdr_step_time] - data.raw[hdr_step_time].iloc[0]
         )
@@ -209,7 +207,7 @@ def convert_test_time_to_timedelta(data: Data, config_params: ModelParameters) -
     hdr_test_time = headers_normal.test_time_txt
     if data.raw[hdr_test_time].dtype == "datetime64[ns]":
         logging.debug("already datetime64[ns] - need to convert to back first")
-        data.raw[hdr_test_time] = data.raw[hdr_test_time].view("int64")
+        data.raw[hdr_test_time] = data.raw[hdr_test_time].astype("int64")
         data.raw[hdr_test_time] = (
             data.raw[hdr_test_time] - data.raw[hdr_test_time].iloc[0]
         )
