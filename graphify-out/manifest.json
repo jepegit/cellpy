@@ -110,8 +110,8 @@
     "semantic_hash": ""
   },
   "/home/jepe/scripting/cellpy/cellpy/readers/cellreader.py": {
-    "mtime": 1783075984.2660708,
-    "ast_hash": "3c02688d951c0271cddd32f32bb72dec",
+    "mtime": 1783454813.127163,
+    "ast_hash": "f141892c10eaa99d170f25bcc0d50d69",
     "semantic_hash": ""
   },
   "/home/jepe/scripting/cellpy/cellpy/readers/do.py": {
@@ -1674,54 +1674,14 @@
     "ast_hash": "39d0ec52740c70e2c205f92ea60c5a17",
     "semantic_hash": ""
   },
-  "/home/jepe/scripting/cellpy/.github/workflows/pip-install-posix.yml": {
-    "mtime": 1782044826.1177108,
-    "ast_hash": "40504213266bf5256456f01d2b505f19",
-    "semantic_hash": ""
-  },
-  "/home/jepe/scripting/cellpy/.github/workflows/pytest_macos.yml": {
-    "mtime": 1782044826.1177108,
-    "ast_hash": "b19624d285a4e0e36afce4e2db214df2",
-    "semantic_hash": ""
-  },
-  "/home/jepe/scripting/cellpy/.github/workflows/pytest_posix.yml": {
-    "mtime": 1783075984.2660708,
-    "ast_hash": "83c28567380c99ee33dc61696b994ee1",
-    "semantic_hash": ""
-  },
   "/home/jepe/scripting/cellpy/.github/workflows/draft-pdf.yml": {
     "mtime": 1779650475.0419497,
     "ast_hash": "2814b48934ac9f42ba88fb50ca6661cb",
     "semantic_hash": ""
   },
-  "/home/jepe/scripting/cellpy/.github/workflows/check_conda_forge.yml": {
-    "mtime": 1782044826.1177108,
-    "ast_hash": "9d9b2c4f34ff5c5c99d360faccac59ba",
-    "semantic_hash": ""
-  },
-  "/home/jepe/scripting/cellpy/.github/workflows/pip-install-win.yml": {
-    "mtime": 1782044826.1177108,
-    "ast_hash": "6d1bad07a9e827b37b0fe71d9500fd29",
-    "semantic_hash": ""
-  },
-  "/home/jepe/scripting/cellpy/.github/workflows/pytest_win.yml": {
-    "mtime": 1783101889.3116038,
-    "ast_hash": "7e9cbc210968f5b58ecd63da751b2778",
-    "semantic_hash": ""
-  },
   "/home/jepe/scripting/cellpy/.github/workflows/release.yml": {
     "mtime": 1783081940.060896,
     "ast_hash": "94ef40fe2bf18d86278e10fdac598e63",
-    "semantic_hash": ""
-  },
-  "/home/jepe/scripting/cellpy/.github/workflows/pytest_macos_14.yml": {
-    "mtime": 1782044826.1177108,
-    "ast_hash": "45cdb8c49d2e4069d5422af13bcb4260",
-    "semantic_hash": ""
-  },
-  "/home/jepe/scripting/cellpy/.github/workflows/pip-install-macos-14.yml": {
-    "mtime": 1782044826.1177108,
-    "ast_hash": "a46dff1b3623254cb65c25500f99c712",
     "semantic_hash": ""
   },
   "/home/jepe/scripting/cellpy/examples/cellpy project template/Notes.md": {
@@ -1917,6 +1877,21 @@
   "/home/jepe/scripting/cellpy/.github/dependabot.yml": {
     "mtime": 1783333824.2343285,
     "ast_hash": "87e22998c13dd0271e0f8e226e17335b",
+    "semantic_hash": ""
+  },
+  "/home/jepe/scripting/cellpy/.issueflows/04-designs-and-guides/ci-tiers.md": {
+    "mtime": 1783453639.4233947,
+    "ast_hash": "ba2a3514ea6bb51f7e4a96825cae7645",
+    "semantic_hash": ""
+  },
+  "/home/jepe/scripting/cellpy/.github/workflows/ci-scheduled.yml": {
+    "mtime": 1783453644.6073935,
+    "ast_hash": "84b9e99731a3dc56233aff06599b6f36",
+    "semantic_hash": ""
+  },
+  "/home/jepe/scripting/cellpy/.github/workflows/ci.yml": {
+    "mtime": 1783453631.2233965,
+    "ast_hash": "3ce7c852a2c3dc8d98ca1b3e8f281667",
     "semantic_hash": ""
   }
 }

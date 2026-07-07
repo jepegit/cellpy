@@ -5348,7 +5348,8 @@ class CellpyCell:
 
         finally:
             df = df.reindex(columns=column_headings)
-            return df
+
+        return df
 
     def get_summary(self, use_summary_made=False):
         """Retrieve summary returned as a pandas DataFrame.
