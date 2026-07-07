@@ -14,3 +14,69 @@ case "$OSTYPE" in
         fi
         ;;
 esac
+
+# `release [patch|minor|major]`
+#
+# Cuts a GitHub release whose tag matches the *committed* project version, so
+# the git history and the published tags can never drift apart.
+#
+#   release              # tag the already-committed version (e.g. after `/issue-close patch`)
+#   release patch        # bump -> commit -> push -> tag, all in one consistent step
+#   release minor|major  # same, for the other bump levels
+#
+# Guards:
+#   - refuses to tag while a version bump is still uncommitted (the old alias
+#     silently dropped uncommitted bumps from history -> tag/repo drift);
+#   - refuses if the target tag already exists locally or on origin
+#     (this is what produced the confusing "tag already exists" error after a
+#     double bump from `/issue-close` + the release ritual).
+release() {
+    local level="${1:-}"
+
+    if [ -n "$level" ]; then
+        case "$level" in
+            patch|minor|major) ;;
+            *) echo "release: unknown bump level '$level' (use patch|minor|major)"; return 1 ;;
+        esac
+        if [ -n "$(git status --porcelain)" ]; then
+            echo "release: working tree is not clean; commit or stash before bumping."; return 1
+        fi
+        uv version --bump "$level" || return 1
+    fi
+
+    # Derive the version from pyproject AFTER any bump.
+    local ver
+    ver="$(python -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")" || return 1
+    local tag="v$ver"
+
+    # Commit the bump (if we made one) so the tag points at committed history.
+    if [ -n "$(git status --porcelain -- pyproject.toml uv.lock)" ]; then
+        if [ -n "$level" ]; then
+            git add pyproject.toml uv.lock || return 1
+            git commit -m "$tag" || return 1
+        else
+            echo "release: pyproject.toml/uv.lock has an uncommitted version change."
+            echo "         commit it first, or run: release patch|minor|major"
+            return 1
+        fi
+    fi
+
+    # Never re-create an existing tag.
+    if git rev-parse -q --verify "refs/tags/$tag" >/dev/null 2>&1 \
+       || git ls-remote --exit-code --tags origin "refs/tags/$tag" >/dev/null 2>&1; then
+        echo "release: tag $tag already exists. Bump the version first (release patch|minor|major)."
+        return 1
+    fi
+
+    git push || return 1
+    gh release create "$tag" --generate-notes
+}
+
+# `acp "commit message"` — stage all, commit, push
+acp() {
+    if [ $# -lt 1 ]; then
+        echo 'acp: usage: acp "commit message"'
+        return 1
+    fi
+    git add -A && git commit -m "$1" && git push
+}
