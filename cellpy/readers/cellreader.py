@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+    # -*- coding: utf-8 -*-
 """Datareader for cell testers and potentiostats.
 
 This module is used for loading data and databases created by different cell
