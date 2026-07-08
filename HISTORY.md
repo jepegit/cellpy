@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+* Docs: clarify cellpy_units defaults in `cellpy.get()` and Google docstring formatting cleanup in `cellreader.py` (#425)
 * Fix: bump pandas to 3.0.3 — BDF Unix-time export, batch journal string extraction, and post-processor datetime handling (#415)
 * CI: move Windows conda pytest from AppVeyor to GitHub Actions (ACE x64 install with cache) (#407)
 * Testing: new offline unit tests for `utils/helpers.py` (outlier removal, group names, rate column) and `readers/filefinder.py` (tmp-path raw-file trees) (#372)
