@@ -2,9 +2,9 @@
 """Datareader for cell testers and potentiostats.
 
 This module is used for loading data and databases created by different cell
-testers and exporing them in a common hdf5-format.
+testers and exporting them in a common hdf5-format.
 
-Example:
+Examples:
     >>> c = cellpy.get(["super_battery_run_01.res", "super_battery_run_02.res"]) # loads and merges the runs
     >>> voltage_curves = c.get_cap()
     >>> c.save("super_battery_run.h5")
@@ -502,9 +502,9 @@ class CellpyCell:
 
         Args:
             cell (CellpyCell instance): the attributes from the data will be
-                copied to the new Cellpydata instance.
+                copied to the new CellpyCell instance.
 
-         Returns:
+        Returns:
             CellpyCell instance.
 
         """
@@ -793,7 +793,7 @@ class CellpyCell:
             kwargs (dict): key-word arguments sent to the initializer of the
                 loader class
 
-        Notes:
+        Note:
             If you are using a local instrument loader, you will have to register it first to the loader factory.
 
             >>> c = CellpyCell()  # this will automatically register the already implemented loaders
@@ -905,13 +905,13 @@ class CellpyCell:
     def set_raw_datadir(self, directory=None):
         """Set the directory containing .res-files.
 
-        Used for setting directory for looking for res-files.@
+        Used for setting directory for looking for res-files.
         A valid directory name is required.
 
         Args:
             directory (str): path to res-directory
 
-        Example:
+        Examples:
             >>> d = CellpyCell()
             >>> directory = "MyData/cycler-data"
             >>> d.set_raw_datadir(directory)
@@ -937,7 +937,7 @@ class CellpyCell:
         Args:
             directory (str): path to hdf5-directory
 
-        Example:
+        Examples:
             >>> d = CellpyCell()
             >>> directory = "MyData/HDF5"
             >>> d.set_raw_datadir(directory)
@@ -1165,7 +1165,9 @@ class CellpyCell:
         Args:
             raw_files (list): name of res-files
             cellpy_file (path): name of cellpy-file
-            mass (float): mass of electrode or active material
+            mass (float or str): mass of electrode or active material in cellpy_units
+                (default mg). Pass a string with unit (e.g. "1.14 mg") to override
+                cellpy_units.
             summary_on_raw (bool): calculate summary if loading from raw
             summary_on_cellpy_file (bool): calculate summary if loading from cellpy-file.
             find_ir (bool): summarize ir
@@ -1175,13 +1177,15 @@ class CellpyCell:
                 from raw
             cell_type (str): set the data type (e.g. "anode"). If not, the default from
                the config file is used.
-            loading (float): loading in units [mass] / [area], used to calculate area if area not given
-            area (float): area of active electrode
+            loading (float or str): loading in units [mass] / [area] (cellpy_units),
+                used to calculate area if area not given.
+            area (float or str): area of active electrode in cellpy_units (default cm**2).
+                Pass a string with unit (e.g. "2.12 cm**2") to override cellpy_units.
             estimate_area (bool): calculate area from loading if given (defaults to True).
             selector (dict): passed to load.
             **kwargs: passed to from_raw
 
-        Example:
+        Examples:
 
             >>> srnos = my_dbreader.select_batch("testing_new_solvent")
             >>> cell_datas = []
@@ -1198,7 +1202,7 @@ class CellpyCell:
             >>> ... cell_datas.append(cell_data)
             >>>
 
-        Warnings:
+        Warning:
             This method will soon be deprecated. Use ``cellpy.get`` instead.
 
         """
@@ -1441,7 +1445,7 @@ class CellpyCell:
         will in most cases work as a normal object. However, some methods
         might be disabled. And it will be slower.
 
-        Notes:
+        Note:
             2020.02.08 - maybe this functionality is not needed and can be replaced
                 by using dask or similar?
         """
@@ -1466,7 +1470,7 @@ class CellpyCell:
             return_cls (bool): Return the class.
             accept_old (bool): Accept loading old cellpy-file versions.
                 Instead of raising WrongFileVersion it only issues a warning.
-            selector (str): Experimental feature - select specific ranges of data.
+            selector (dict): Experimental feature - select specific ranges of data.
 
         Returns:
             cellpy.CellpyCell class if return_cls is True
@@ -2788,7 +2792,7 @@ class CellpyCell:
         step-table frame (i.e. all the same columns, only filtered by rows).
 
         Args:
-            steptype (string): string identifying type of step.
+            steptype (str): string identifying type of step.
             allctypes (bool): get all types of charge (or discharge).
             pdtype (bool): return results as pandas.DataFrame
             cycle_number (int): selected cycle, selects all if not set.
@@ -2800,7 +2804,7 @@ class CellpyCell:
         Returns:
             dict or ``pandas.DataFrame``
 
-        Example:
+        Examples:
             >>> my_charge_steps = CellpyCell.get_step_numbers(
             >>>    "charge",
             >>>    cycle_number = 3
@@ -3511,7 +3515,7 @@ class CellpyCell:
             raw: (bool) export raw-data if True.
             summary: (bool) export summary if True.
             shifted (bool): export with cumulated shift.
-            method (string): how the curves are given:
+            method (str): how the curves are given:
 
                 - "back-and-forth" - standard back and forth; discharge (or charge)
                   reversed from where charge (or discharge) ends.
@@ -4098,7 +4102,7 @@ class CellpyCell:
             converter (float): a multiplication factor that converts the values to
                 specific values (i.e. from Ah to mAh/g). If not provided (or None),
                 the factor is obtained from the self.get_converter_to_specific() method.
-            mode (string): 'gravimetric', 'areal' or 'absolute'. Defaults to 'gravimetric'. Used
+            mode (str): 'gravimetric', 'areal' or 'absolute'. Defaults to 'gravimetric'. Used
                 if converter is not provided (or None).
             as_frame (bool): if True: returns externals.pandas.DataFrame instead of capacity, voltage series.
             **kwargs (dict): additional keyword arguments sent to the internal _get_cap method.
@@ -4136,7 +4140,7 @@ class CellpyCell:
             converter (float): a multiplication factor that converts the values to
                 specific values (i.e. from Ah to mAh/g). If not provided (or None),
                 the factor is obtained from the self.get_converter_to_specific() method.
-            mode (string): 'gravimetric', 'areal' or 'absolute'. Defaults to 'gravimetric'. Used
+            mode (str): 'gravimetric', 'areal' or 'absolute'. Defaults to 'gravimetric'. Used
                 if converter is not provided (or None).
             as_frame (bool): if True: returns externals.pandas.DataFrame instead of capacity, voltage series.
             **kwargs (dict): additional keyword arguments sent to the internal _get_cap method.
@@ -4189,7 +4193,7 @@ class CellpyCell:
         Args:
             cycle (int, list): cycle number (s).
             cycles (list): list of cycle numbers.
-            method (string): how the curves are given
+            method (str): how the curves are given
 
                 - "back-and-forth" - standard back and forth; discharge
                   (or charge) reversed from where charge (or discharge) ends.
@@ -4223,12 +4227,12 @@ class CellpyCell:
                 of along the voltage axis. Defaults to False.
             capacity_then_voltage (bool): return capacity and voltage instead of
                 voltage and capacity. Defaults to False.
-            mode (string): 'gravimetric', 'areal', 'volumetric' or 'absolute'. Defaults
+            mode (str): 'gravimetric', 'areal', 'volumetric' or 'absolute'. Defaults
                 to 'gravimetric'.
             mass (float): mass of active material (in set cellpy unit, typically mg).
             area (float): area of electrode (in set cellpy units, typically cm2).
             volume (float): volume of electrode (in set cellpy units, typically cm3).
-            cycle_mode (string): if 'anode' the first step is assumed to be the discharge,
+            cycle_mode (str): if 'anode' the first step is assumed to be the discharge,
                 else charge (defaults to ``CellpyCell.cycle_mode``).
             dynamic: for dynamic retrieving data from cellpy-file.
                 [NOT IMPLEMENTED YET]
@@ -4800,7 +4804,7 @@ class CellpyCell:
     ):
         """Get a array containing the cycle numbers in the test.
 
-        Parameters:
+        Args:
             steptable (pandas.DataFrame): the step-table to use (if None, the step-table
                 from the cellpydata object will be used).
             rate (float): the rate to filter on. Remark that it should be given
@@ -6857,24 +6861,31 @@ def get(
     debug=False,
     **kwargs,
 ):
-    """Create a CellpyCell object
+    """Create a CellpyCell object.
 
     Args:
         filename (str, os.PathLike, OtherPath, or list of raw-file names): path to file(s) or data-set(s) to load.
         instrument (str): instrument to use (defaults to the one in your cellpy config file).
         instrument_file (str or path): yaml file for custom file type.
         cellpy_file (str, os.PathLike, or OtherPath): if both filename (a raw-file) and cellpy_file (a cellpy file)
-            is provided, cellpy will try to check if the raw-file is has been updated since the
+            is provided, cellpy will try to check if the raw file has been updated since the
             creation of the cellpy-file and select this instead of the raw file if cellpy thinks
             they are similar (use with care!).
         logging_mode (str): "INFO" or "DEBUG".
         cycle_mode (str): the cycle mode (e.g. "anode" or "full_cell").
-        mass (float): mass of active material (mg) (defaults to mass given in cellpy-file or 1.0).
-        nominal_capacity (float): nominal capacity for the cell (e.g. used for finding C-rates).
-        nom_cap_specifics (str): either "gravimetric" (pr mass), or "areal" (per area).
+        mass (float or str): mass of active material in cellpy_units (default mg)
+            (defaults to mass given in cellpy-file or 1.0). Pass a string with unit
+            (e.g. "1.14 mg") to override cellpy_units.
+        nominal_capacity (float or str): nominal capacity in cellpy_units (default mAh/g;
+            used for finding C-rates). Pass a string with unit (e.g. "155 mAh/g") to
+            override cellpy_units. The expected unit depends on nom_cap_specifics
+            (gravimetric/areal/volumetric/absolute).
+        nom_cap_specifics (str): either "gravimetric" (per mass), or "areal" (per area).
             ("volumetric" is not fully implemented yet - let us know if you need it).
-        loading (float): loading in units [mass] / [area].
-        area (float): active electrode area (e.g. used for finding the areal capacity).
+        loading (float or str): loading in units [mass] / [area] (cellpy_units).
+        area (float or str): active electrode area in cellpy_units (default cm**2;
+            e.g. used for finding the areal capacity). Pass a string with unit
+            (e.g. "2.12 cm**2") to override cellpy_units.
         estimate_area (bool): calculate area from loading if given (defaults to True).
         auto_pick_cellpy_format (bool): decide if it is a cellpy-file based on suffix.
         auto_summary (bool): (re-) create summary.
@@ -6898,7 +6909,7 @@ def get(
         data_points (tuple of ints): load only data from data_point[0] to
             data_point[1] (use None for infinite) ("arbin_res").
         increment_cycle_index (bool): increment the cycle index if merging several datasets (default True)
-        ("arbin_res").
+            ("arbin_res").
         sep (str): separator used in the file ("maccor_txt", "neware_txt", "local_instrument", "custom").
         skip_rows (int): number of rows to skip in the beginning of the file
             ("maccor_txt", "neware_txt", "local_instrument", "custom").
@@ -6907,7 +6918,8 @@ def get(
         decimal (str): decimal separator ("maccor_txt", "neware_txt", "local_instrument", "custom").
         thousand (str): thousand separator ("maccor_txt", "neware_txt", "local_instrument", "custom").
         pre_processor_hook (callable): pre-processors to use ("maccor_txt", "neware_txt", "local_instrument", "custom").
-        bad_steps (list): separator used in the file (not implemented yet) ("pec_csv").
+        bad_steps (list of tuples): (c, s) tuples of steps s (in cycle c) to skip loading
+            (not implemented yet) ("pec_csv").
 
     Returns:
         CellpyCell object (if successful, None if not).
