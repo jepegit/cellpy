@@ -123,8 +123,8 @@ def test_location(test_input, expected):
     "test_input,expected",
     [
         (
-            r"C:\scripting\cellpy\testdata\data\20160805_test001_45_cc_01.res",
-            "C:/scripting/cellpy/testdata/data/20160805_test001_45_cc_01.res",
+            r"C:\scripting\cellpy-workspace\cellpy\testdata\data\20160805_test001_45_cc_01.res",
+            "C:/scripting/cellpy-workspace/cellpy/testdata/data/20160805_test001_45_cc_01.res",
         ),
         (
             r"ssh://jepe@server.ife.no/home/jepe/cellpy/testdata/data/20160805_test001_45_cc_01.res",
