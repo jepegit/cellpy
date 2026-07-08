@@ -110,8 +110,8 @@
     "semantic_hash": ""
   },
   "/home/jepe/scripting/cellpy/cellpy/readers/cellreader.py": {
-    "mtime": 1783454813.127163,
-    "ast_hash": "f141892c10eaa99d170f25bcc0d50d69",
+    "mtime": 1783506374.8118496,
+    "ast_hash": "c67bed9e165260dc977bc41d3d3c74cc",
     "semantic_hash": ""
   },
   "/home/jepe/scripting/cellpy/cellpy/readers/do.py": {
@@ -1892,6 +1892,16 @@
   "/home/jepe/scripting/cellpy/.github/workflows/ci.yml": {
     "mtime": 1783453631.2233965,
     "ast_hash": "3ce7c852a2c3dc8d98ca1b3e8f281667",
+    "semantic_hash": ""
+  },
+  "/home/jepe/scripting/cellpy/.issueflows/01-current-issues/issue425_status.md": {
+    "mtime": 1783506385.9958491,
+    "ast_hash": "59c105f6745a3a44b969ec0fa9f8097e",
+    "semantic_hash": ""
+  },
+  "/home/jepe/scripting/cellpy/.issueflows/01-current-issues/issue425_original.md": {
+    "mtime": 1783505694.2559757,
+    "ast_hash": "6da9cc3e4b60ffba63696904720aec10",
     "semantic_hash": ""
   }
 }
