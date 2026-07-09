@@ -7,8 +7,14 @@ from pathlib import Path
 import pytest
 
 from cellpy import log, prmreader, prms
+from cellpy.internals.connections import OtherPath
 
-from . import fdv
+from .prms_support import (
+    EXPECTED_PRMS_INVENTORY,
+    assert_inventory_equal,
+    collect_prms_inventory,
+    write_minimal_prm_file,
+)
 
 log.setup_logging(default_level="DEBUG", testing=True)
 
@@ -328,3 +334,159 @@ def test_dataclass_prms_instruments_subclass():
     print(prms.Instruments.Arbin)
     detect_subprocess_need = prms.Instruments.Arbin.detect_subprocess_need
     print(detect_subprocess_need)
+
+
+@pytest.mark.essential
+def test_prms_inventory_parity():
+    actual = collect_prms_inventory()
+    assert_inventory_equal(
+        actual, sorted(EXPECTED_PRMS_INVENTORY, key=lambda t: (t[0], t[1]))
+    )
+
+
+@pytest.mark.essential
+def test_prms_config_full_section_roundtrip(clean_dir):
+    tmp_config = os.path.join(clean_dir, "cellpy_roundtrip.yml")
+    write_minimal_prm_file(Path(tmp_config), config_file_txt)
+
+    prmreader._read_prm_file(tmp_config)
+    prms.Reader.cycle_mode = "cathode"
+    prms.Batch.backend = "bokeh"
+    prms.DbCols.project = "roundtrip_project"
+    prms.Materials.default_material = "graphite"
+    prms.Instruments.tester = "maccor"
+    prms.Paths.outdatadir = str(Path(clean_dir) / "custom_out")
+
+    prmreader._write_prm_file(tmp_config)
+    prmreader._read_prm_file(tmp_config)
+
+    assert prms.Reader.cycle_mode == "cathode"
+    assert prms.Batch.backend == "bokeh"
+    assert prms.DbCols.project == "roundtrip_project"
+    assert prms.Materials.default_material == "graphite"
+    assert prms.Instruments.tester == "maccor"
+    assert str(prms.Paths.outdatadir).endswith("custom_out")
+
+    reloaded = prmreader._read_prm_file_without_updating(tmp_config)
+    for section in ("Paths", "Reader", "Batch", "DbCols", "Materials", "Instruments"):
+        assert section in reloaded
+
+
+@pytest.mark.essential
+def test_prms_precedence_file_runtime_write(clean_dir):
+    tmp_config = os.path.join(clean_dir, "cellpy_precedence.yml")
+    write_minimal_prm_file(Path(tmp_config), config_file_txt)
+
+    prmreader._read_prm_file(tmp_config)
+    prms.Reader.cycle_mode = "cathode"
+    assert prms.Reader.cycle_mode == "cathode"
+
+    prmreader._read_prm_file(tmp_config)
+    assert prms.Reader.cycle_mode == "anode"
+
+    prms.Reader.cycle_mode = "cathode"
+    prmreader._write_prm_file(tmp_config)
+    prmreader._read_prm_file(tmp_config)
+    assert prms.Reader.cycle_mode == "cathode"
+
+    on_disk = prmreader._read_prm_file_without_updating(tmp_config)
+    assert on_disk["Reader"]["cycle_mode"] == "cathode"
+
+
+@pytest.mark.essential
+def test_prms_otherpath_coercion_smoke(clean_dir):
+    config_txt = f"""---
+Paths:
+  outdatadir: {clean_dir}/rel_out
+  rawdatadir: {clean_dir}/rel_raw
+  cellpydatadir: {clean_dir}/rel_cellpy
+  db_path: {clean_dir}/db
+  filelogdir: {clean_dir}/logs
+  examplesdir: {clean_dir}/examples
+  notebookdir: {clean_dir}/notebooks
+  templatedir: {clean_dir}/templates
+  batchfiledir: {clean_dir}/batchfiles
+  instrumentdir: {clean_dir}/instruments
+  db_filename: cellpy_db.xlsx
+  env_file: .env_cellpy
+...
+"""
+    tmp_config = os.path.join(clean_dir, "otherpath_coerce.yml")
+    write_minimal_prm_file(Path(tmp_config), config_txt)
+    prmreader._read_prm_file(tmp_config, resolve_paths=True)
+
+    assert isinstance(prms.Paths.rawdatadir, OtherPath)
+    assert isinstance(prms.Paths.cellpydatadir, OtherPath)
+    assert isinstance(prms.Paths.db_filename, str)
+    assert Path(prms.Paths.outdatadir).is_absolute()
+
+    paths_dict = prmreader._convert_paths_to_dict(prms.Paths)
+    assert "rel_raw" in paths_dict["rawdatadir"]
+
+
+def test_prms_otherpath_local_resolve(clean_dir):
+    rel = Path("nested_raw")
+    config_txt = f"""---
+Paths:
+  outdatadir: {clean_dir}
+  rawdatadir: {rel}
+  cellpydatadir: {clean_dir}
+  db_path: {clean_dir}
+  filelogdir: {clean_dir}
+  examplesdir: {clean_dir}
+  notebookdir: {clean_dir}
+  templatedir: {clean_dir}
+  batchfiledir: {clean_dir}
+  instrumentdir: {clean_dir}
+  db_filename: cellpy_db.xlsx
+  env_file: .env_cellpy
+...
+"""
+    tmp_config = os.path.join(clean_dir, "otherpath_resolve.yml")
+    write_minimal_prm_file(Path(tmp_config), config_txt)
+    prmreader._read_prm_file(tmp_config, resolve_paths=True)
+    assert Path(prms.Paths.rawdatadir.raw_path).is_absolute()
+
+
+@pytest.mark.essential
+def test_prms_env_file_loads_secrets(clean_dir, parameters, monkeypatch):
+    for key in ("CELLPY_USER", "CELLPY_HOST", "CELLPY_PASSWORD", "CELLPY_KEY_FILENAME"):
+        monkeypatch.delenv(key, raising=False)
+
+    env_path = Path(clean_dir) / ".env_cellpy"
+    env_path.write_text(
+        "\n".join(
+            [
+                f"CELLPY_USER={parameters.env_cellpy_user}",
+                f"CELLPY_HOST={parameters.env_cellpy_host}",
+                f"CELLPY_PASSWORD={parameters.env_cellpy_password}",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    prms.Paths.env_file = env_path
+    prmreader._load_env_file()
+
+    assert os.getenv("CELLPY_USER") == parameters.env_cellpy_user
+    assert os.getenv("CELLPY_HOST") == parameters.env_cellpy_host
+    assert os.getenv("CELLPY_PASSWORD") == parameters.env_cellpy_password
+
+
+def test_prms_env_reaches_otherpath_connection_info(clean_dir, parameters, monkeypatch):
+    for key in ("CELLPY_USER", "CELLPY_HOST", "CELLPY_PASSWORD", "CELLPY_KEY_FILENAME"):
+        monkeypatch.delenv(key, raising=False)
+
+    env_path = Path(clean_dir) / ".env_cellpy"
+    env_path.write_text(
+        f"CELLPY_PASSWORD={parameters.env_cellpy_password}\n",
+        encoding="utf-8",
+    )
+    prms.Paths.env_file = env_path
+    prmreader._load_env_file()
+
+    remote = OtherPath(
+        f"ssh://{parameters.env_cellpy_user}@{parameters.env_cellpy_host}/tmp/file.res"
+    )
+    connect_kwargs, host = remote.connection_info(testing=True)
+    assert host == f"{parameters.env_cellpy_user}@{parameters.env_cellpy_host}"
+    assert connect_kwargs["password"] == parameters.env_cellpy_password

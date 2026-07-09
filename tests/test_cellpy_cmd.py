@@ -103,7 +103,6 @@ def test_pull_tests(tmp_path):
 
 @pytest.mark.slowtest
 def test_pull_examples(tmp_path):
-    import github
 
     runner = CliRunner()
     opts = list()
@@ -245,6 +244,47 @@ def test_cli_setup_custom_dir():
         )
         print(result.output)
         assert result.exit_code == 0
+
+
+def test_cli_setup_creates_dirs_and_files(tmp_path, monkeypatch):
+    runner = CliRunner()
+    test_user = "inventory_user"
+
+    monkeypatch.setattr(prmreader, "get_user_dir", lambda: tmp_path)
+    prms.Paths.env_file = tmp_path / ".env_cellpy"
+
+    result = runner.invoke(
+        cli.cli,
+        ["setup", "--test_user", test_user, "--silent"],
+    )
+    print(result.output)
+    assert result.exit_code == 0
+
+    cellpy_data = tmp_path / "cellpy_data"
+    expected_dirs = [
+        "out",
+        "raw",
+        "cellpyfiles",
+        "logs",
+        "examples",
+        "db",
+        "notebooks",
+        "batchfiles",
+        "templates",
+        "instruments",
+    ]
+    for name in expected_dirs:
+        assert (cellpy_data / name).is_dir(), f"missing {name}"
+
+    conf_name = prmreader.create_custom_init_filename(test_user)
+    conf_path = tmp_path / conf_name
+    assert conf_path.is_file()
+    parsed = prmreader._read_prm_file_without_updating(conf_path)
+    assert "Paths" in parsed
+
+    env_path = tmp_path / ".env_cellpy"
+    assert env_path.is_file()
+    assert "CELLPY_PASSWORD" in env_path.read_text(encoding="utf-8")
 
 
 @pytest.mark.slowtest
