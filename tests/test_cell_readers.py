@@ -959,6 +959,7 @@ def test_check_cellpy_file(cellpy_data_instance, parameters):
 
 
 def test_cellpyfile_roundtrip(tmp_path, parameters):
+    # Superseded by characterization tests in tests/test_cellpy_file_roundtrip.py.
     from cellpy import cellreader
 
     cellpy_file_name = (
