@@ -19,6 +19,21 @@ DATETIME_LIKE_COLUMNS = frozenset({"date_time"})
 TIMEDELTA_LIKE_COLUMNS = frozenset({"step_time", "test_time"})
 TEMPORAL_ABS_NS = 1_000
 
+# Raw columns that stay integer; all other int64 loader columns are coerced to
+# float64 so all-zero measurements (e.g. ac_impedance) match across platforms.
+INTEGER_RAW_COLUMNS = frozenset(
+    {
+        "channel_id",
+        "cycle_index",
+        "data_flag",
+        "data_point",
+        "is_fc_data",
+        "step_index",
+        "sub_step_index",
+        "test_id",
+    }
+)
+
 
 class LoaderGoldenSpec:
     """Configuration for one loader golden suite."""
@@ -126,6 +141,12 @@ def prepare_raw_for_golden(raw: pd.DataFrame) -> pd.DataFrame:
         frame = frame.reset_index()
     if not isinstance(frame.index, pd.RangeIndex):
         frame = frame.reset_index(drop=True)
+    temporal_cols = DATETIME_LIKE_COLUMNS | TIMEDELTA_LIKE_COLUMNS
+    for col in frame.columns:
+        if col in INTEGER_RAW_COLUMNS or col in temporal_cols:
+            continue
+        if pd.api.types.is_integer_dtype(frame[col]):
+            frame[col] = frame[col].astype("float64")
     return frame[sorted(frame.columns)]
 
 
