@@ -11,6 +11,6 @@
   },
   "n_columns": 2,
   "n_rows": 1105,
-  "source": "testdata\\data\\20160805_test001_45_cc_01.res",
+  "source": "testdata/data/20160805_test001_45_cc_01.res",
   "suite": "curve_get_cap_back_and_forth_c1"
 }

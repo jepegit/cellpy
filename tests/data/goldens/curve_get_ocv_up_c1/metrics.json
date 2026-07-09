@@ -13,6 +13,6 @@
   },
   "n_columns": 4,
   "n_rows": 32,
-  "source": "testdata\\data\\20160805_test001_45_cc_01.res",
+  "source": "testdata/data/20160805_test001_45_cc_01.res",
   "suite": "curve_get_ocv_up_c1"
 }

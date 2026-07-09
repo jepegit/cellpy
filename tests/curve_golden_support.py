@@ -175,7 +175,7 @@ def curve_metrics(case: CurveGoldenCase, frame: pd.DataFrame | None) -> dict[str
     payload: dict[str, Any] = {
         "func_name": case.func_name,
         "kwargs": case.kwargs,
-        "source": str(RES_FILE.relative_to(REPO_ROOT)),
+        "source": RES_FILE.relative_to(REPO_ROOT).as_posix(),
         "suite": case.suite,
         "expect_null_data": case.expect_null_data,
     }
