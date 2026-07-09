@@ -27,6 +27,11 @@ See also [testing-and-coverage.md](testing-and-coverage.md) and [ci-tiers.md](ci
   Add it when the test guards read → step table → summary, cellpy-core parity, golden-fixture
   oracles, or other regressions you cannot leave to the scheduled run only. Keep the set
   small so Tier 1 stays fast. Document new suites in `tests/README.md` when they use goldens.
+- **Paths in tests (cross-platform):** CI runs on Linux; local dev is often Windows. When
+  tests or committed golden artifacts store file paths (e.g. `metrics.json` `source` fields),
+  normalize to **forward slashes** — use `pathlib.Path(...).as_posix()` or
+  `path.replace("\\", "/")`, not raw `str(path)` on Windows. Parquet/frame comparisons are
+  unaffected; string metadata in JSON is where `\` vs `/` bites (see #433).
 - TODO: Branch, commit, formatting, typing, or review conventions beyond the above.
 
 ## Entry points
