@@ -84,6 +84,29 @@ code, `LIB` in the template YAML).
 uv run pytest tests/test_prms.py -v
 ```
 
+## Unit-handling characterization (Stage 0.4)
+
+Legacy↔cellpycore converter parity and registry-interop groundwork live in
+[`test_unit_handling_stage0.py`](test_unit_handling_stage0.py) with helpers in
+[`unit_parity_support.py`](unit_parity_support.py). Golden floats mirror
+`cellpy-core/tests/test_units_converters.py` (hand-computed oracles, not parquet).
+
+Four tests are marked `@pytest.mark.essential` (gravimetric / areal / absolute
+`get_converter_to_specific` parity plus gravimetric `nominal_capacity_as_absolute`).
+`test_cellpy_and_cellpycore_quantities_interoperate` is a strict `xfail` until unit-plan
+Phase 1 unifies pint registries (`architecture-plan/unit-handling-cellpy2-plan.md`).
+
+cellpy-core STEP-12 pint-optional guard is already covered in the sibling checkout:
+`cellpy-core/tests/test_units_optional.py` and `test_units_converters.py` (issue #40) —
+no core changes required for Stage 0.4 unless that preflight regresses.
+
+Update `GOLDEN_*_CASES` in `unit_parity_support.py` intentionally when converter math
+changes on either side.
+
+```bash
+uv run pytest tests/test_unit_handling_stage0.py -v
+```
+
 ## `essential` marker
 
 Fast smoke tests — read → step table → summary pipeline and cellpy/cellpy-core parity —
