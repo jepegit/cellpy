@@ -1,0 +1,53 @@
+{
+  "meta_common": {
+    "active_electrode_area": 1.0,
+    "active_electrode_current_collector": "standard",
+    "active_electrode_loading": 1.0,
+    "active_electrode_thickness": 1.0,
+    "active_electrode_type": "standard",
+    "cell_name": "maccor_001",
+    "cell_type": "standard",
+    "cellpy_file_version": 8,
+    "comment": "",
+    "counter_electrode_type": "standard",
+    "electrolyte_type": "standard",
+    "electrolyte_volume": 1.0,
+    "experiment_type": "cycling",
+    "file_errors": null,
+    "mass": 1.0,
+    "material": "silicon",
+    "nom_cap": 1.0,
+    "nom_cap_specifics": "gravimetric",
+    "raw_id": null,
+    "reference_electrode_current_collector": "standard",
+    "reference_electrode_type": "standard",
+    "separator_type": "standard",
+    "start_datetime": "2020-12-11T12:22:12",
+    "tester_ID": null,
+    "tester_calibration_date": null,
+    "tester_client_software_version": null,
+    "tester_server_software_version": null,
+    "time_zone": null,
+    "tot_mass": 1.0
+  },
+  "meta_test_dependent": {
+    "channel_index": null,
+    "creator": null,
+    "cycle_mode": "anode",
+    "test_ID": null,
+    "test_type": null,
+    "voltage_lim_high": 1.0,
+    "voltage_lim_low": 0.0
+  },
+  "raw_limits": {
+    "current_hard": 1e-13,
+    "current_soft": 1e-05,
+    "ir_change": 1e-05,
+    "stable_charge_hard": 0.9,
+    "stable_charge_soft": 5.0,
+    "stable_current_hard": 2.0,
+    "stable_current_soft": 4.0,
+    "stable_voltage_hard": 2.0,
+    "stable_voltage_soft": 4.0
+  }
+}

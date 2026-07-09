@@ -19,7 +19,6 @@ import argparse
 import filecmp
 import json
 import os
-import shutil
 import sys
 import tempfile
 from collections.abc import Callable
@@ -34,6 +33,7 @@ if str(REPO_ROOT / "tests") not in sys.path:
     sys.path.insert(0, str(REPO_ROOT / "tests"))
 
 from golden_support import sort_summary_columns  # noqa: E402
+from loader_golden_support import LOADER_GOLDEN_SPECS, load_loader_snapshot  # noqa: E402
 
 _SUITES: dict[str, Callable[[Path], None]] = {}
 
@@ -136,6 +136,54 @@ def _regen_pipeline_smoke(out_dir: Path) -> None:
         )
 
 
+def _register_loader_golden_suites() -> None:
+    for spec in LOADER_GOLDEN_SPECS:
+
+        def _make_regen(selected_spec=spec):
+            @register_golden_suite(selected_spec.suite)
+            def _regen_loader(out_dir: Path, _spec=selected_spec) -> None:
+                if not _spec.source_path.is_file():
+                    raise FileNotFoundError(
+                        f"Missing source file {_spec.source_path} for suite {_spec.suite!r}."
+                    )
+                if (
+                    _spec.instrument_file is not None
+                    and not _spec.instrument_file_path.is_file()
+                ):
+                    raise FileNotFoundError(
+                        f"Missing instrument file {_spec.instrument_file_path} "
+                        f"for suite {_spec.suite!r}."
+                    )
+                raw, meta, metrics = load_loader_snapshot(_spec)
+                write_parquet_frame(raw, out_dir / "raw.parquet")
+                write_json_doc(meta["raw_units"], out_dir / "raw_units.json")
+                write_json_doc(
+                    {
+                        "meta_common": meta["meta_common"],
+                        "meta_test_dependent": meta["meta_test_dependent"],
+                        "raw_limits": meta["raw_limits"],
+                        **(
+                            {"custom_info": meta["custom_info"]}
+                            if "custom_info" in meta
+                            else {}
+                        ),
+                    },
+                    out_dir / "meta.json",
+                )
+                write_json_doc(metrics, out_dir / "metrics.json")
+                print(
+                    f"[{_spec.suite}] wrote raw.parquet ({metrics['n_rows']} rows, "
+                    f"{metrics['n_columns']} cols), raw_units.json, meta.json, metrics.json"
+                )
+
+            return _regen_loader
+
+        _make_regen()
+
+
+_register_loader_golden_suites()
+
+
 def _regenerate_suite(name: str, out_root: Path) -> None:
     if name not in _SUITES:
         known = ", ".join(sorted(_SUITES)) or "(none registered)"
@@ -161,7 +209,10 @@ def _compare_dirs(left: Path, right: Path) -> list[str]:
 
 def _verify_suites(names: list[str]) -> None:
     for name in names:
-        with tempfile.TemporaryDirectory() as tmp_a, tempfile.TemporaryDirectory() as tmp_b:
+        with (
+            tempfile.TemporaryDirectory() as tmp_a,
+            tempfile.TemporaryDirectory() as tmp_b,
+        ):
             root_a = Path(tmp_a)
             root_b = Path(tmp_b)
             _regenerate_suite(name, root_a)
