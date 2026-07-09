@@ -1,16 +1,16 @@
-# Graph Report - cellpy  (2026-07-09)
+# Graph Report - cellpy  (2026-07-10)
 
 ## Corpus Check
-- 248 files · ~1,600,711 words
+- 258 files · ~1,605,809 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 7715 nodes · 12335 edges · 672 communities (438 shown, 234 thin omitted)
-- Extraction: 94% EXTRACTED · 6% INFERRED · 0% AMBIGUOUS · INFERRED: 752 edges (avg confidence: 0.59)
+- 7944 nodes · 12650 edges · 672 communities (438 shown, 234 thin omitted)
+- Extraction: 94% EXTRACTED · 6% INFERRED · 0% AMBIGUOUS · INFERRED: 779 edges (avg confidence: 0.6)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `39caa652`
+- Built from commit: `9e40330f`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -156,6 +156,7 @@
 - [[_COMMUNITY_Community 139|Community 139]]
 - [[_COMMUNITY_Community 140|Community 140]]
 - [[_COMMUNITY_Community 141|Community 141]]
+- [[_COMMUNITY_Community 142|Community 142]]
 - [[_COMMUNITY_Community 143|Community 143]]
 - [[_COMMUNITY_Community 144|Community 144]]
 - [[_COMMUNITY_Community 145|Community 145]]
@@ -548,12 +549,15 @@
 - [[_COMMUNITY_Community 553|Community 553]]
 - [[_COMMUNITY_Community 554|Community 554]]
 - [[_COMMUNITY_Community 555|Community 555]]
+- [[_COMMUNITY_Community 556|Community 556]]
 - [[_COMMUNITY_Community 557|Community 557]]
+- [[_COMMUNITY_Community 558|Community 558]]
 - [[_COMMUNITY_Community 559|Community 559]]
 - [[_COMMUNITY_Community 560|Community 560]]
 - [[_COMMUNITY_Community 561|Community 561]]
 - [[_COMMUNITY_Community 562|Community 562]]
 - [[_COMMUNITY_Community 563|Community 563]]
+- [[_COMMUNITY_Community 564|Community 564]]
 - [[_COMMUNITY_Community 565|Community 565]]
 - [[_COMMUNITY_Community 566|Community 566]]
 - [[_COMMUNITY_Community 567|Community 567]]
@@ -568,6 +572,7 @@
 - [[_COMMUNITY_Community 576|Community 576]]
 - [[_COMMUNITY_Community 577|Community 577]]
 - [[_COMMUNITY_Community 578|Community 578]]
+- [[_COMMUNITY_Community 579|Community 579]]
 - [[_COMMUNITY_Community 580|Community 580]]
 - [[_COMMUNITY_Community 581|Community 581]]
 - [[_COMMUNITY_Community 582|Community 582]]
@@ -617,7 +622,6 @@
 - [[_COMMUNITY_Community 647|Community 647]]
 - [[_COMMUNITY_Community 648|Community 648]]
 - [[_COMMUNITY_Community 649|Community 649]]
-- [[_COMMUNITY_Community 650|Community 650]]
 - [[_COMMUNITY_Community 651|Community 651]]
 - [[_COMMUNITY_Community 653|Community 653]]
 - [[_COMMUNITY_Community 654|Community 654]]
@@ -625,9 +629,6 @@
 - [[_COMMUNITY_Community 663|Community 663]]
 - [[_COMMUNITY_Community 664|Community 664]]
 - [[_COMMUNITY_Community 665|Community 665]]
-- [[_COMMUNITY_Community 666|Community 666]]
-- [[_COMMUNITY_Community 667|Community 667]]
-- [[_COMMUNITY_Community 668|Community 668]]
 - [[_COMMUNITY_Community 669|Community 669]]
 - [[_COMMUNITY_Community 670|Community 670]]
 - [[_COMMUNITY_Community 671|Community 671]]
@@ -652,7 +653,7 @@
 5. `p()` - 73 edges
 6. `I()` - 73 edges
 7. `UnderDefined` - 69 edges
-8. `NullData` - 64 edges
+8. `NullData` - 65 edges
 9. `o()` - 64 edges
 10. `G()` - 64 edges
 
@@ -661,10 +662,10 @@
   _old_docs/_examples_and_tutorials/utils/easyplot.md → cellpy/utils/batch_tools/batch_journals.py
 - `bool` --uses--> `CellpyUnits`  [INFERRED]
   tests/test_exporters_bdf.py → cellpy/parameters/internal_settings.py
-- `test_set_cellpy_unit_and_use()` --calls--> `get_headers_summary()`  [INFERRED]
-  tests/test_units.py → cellpy/parameters/internal_settings.py
 - `Main easyplot class.     Takes all the inputs from the user in its kwargs upon` --rationale_for--> `Easyplot`  [EXTRACTED]
   cellpy/utils/easyplot.py → _old_docs/_examples_and_tutorials/utils/easyplot.md
+- `CurveGoldenCase` --uses--> `NullData`  [INFERRED]
+  tests/curve_golden_support.py → cellpy/exceptions.py
 - `TestCreateGroupNames` --uses--> `NullData`  [INFERRED]
   tests/test_helpers.py → cellpy/exceptions.py
 
@@ -672,19 +673,19 @@
 
 ### Community 0 - "Community 0"
 Cohesion: 0.03
-Nodes (87): Ai(), Ao(), As(), bi(), bs(), bu(), ci(), Co() (+79 more)
+Nodes (76): Ao(), As(), bs(), bu(), Co(), cs(), Cu(), di() (+68 more)
 
 ### Community 1 - "Community 1"
 Cohesion: 0.01
-Nodes (255): # TODO: implement external handling of hdf5-files, # TODO: implement external handling of hdf5-files, # TODO: v2.0 - remove this, # TODO: v2.0 - remove this, # TODO: v2.0 - remove this, # TODO: CellpyCell contains many thousand lines of code. It needs to be simplifi, # TODO: this could be moved outside to either utility functions or to a new clas, # TODO: this could be moved outside to either utility functions or to a new clas (+247 more)
+Nodes (298): # TODO: implement external handling of hdf5-files, # TODO: implement external handling of hdf5-files, # TODO: v2.0 - remove this, # TODO: v2.0 - remove this, # TODO: v2.0 - remove this, # TODO: CellpyCell contains many thousand lines of code. It needs to be simplifi, # TODO: this could be moved outside to either utility functions or to a new clas, # TODO: this could be moved outside to either utility functions or to a new clas (+290 more)
 
 ### Community 2 - "Community 2"
 Cohesion: 0.02
-Nodes (15): # TODO: this breaks (gives 711 instead of 593), # TODO: this breaks (gives 711 instead of 593), # TODO: this breaks (gives 711 instead of 593), # TODO: fix this so that it does not globally alter the units, # TODO: fix this so that it does not globally alter the units, # TODO: fix this so that it does not globally alter the units, # TODO: refactor from 'dataset' to 'cell' manually (PyCharm cannot handle pytest, # TODO: fix this: not smart to save cellpyfile that will be used by other module (+7 more)
+Nodes (17): # TODO: this breaks (gives 711 instead of 593), # TODO: this breaks (gives 711 instead of 593), # TODO: this breaks (gives 711 instead of 593), # TODO: fix this so that it does not globally alter the units, # TODO: fix this so that it does not globally alter the units, # TODO: fix this so that it does not globally alter the units, # TODO: refactor from 'dataset' to 'cell' manually (PyCharm cannot handle pytest, # TODO: fix this: not smart to save cellpyfile that will be used by other module (+9 more)
 
 ### Community 3 - "Community 3"
-Cohesion: 0.06
-Nodes (26): Get the step numbers of selected type.          Returns the selected step_numb, Get the step numbers of selected type.          Returns the selected step_numb, Get the step numbers of selected type.          Returns the selected step_numb, Get the step numbers of selected type.          Returns the selected step_numb, Load a table that contains step-type definitions.          This method loads a, Load a table that contains step-type definitions.          This method loads a, Load a table that contains step-type definitions.          This method loads a, Create a table (v.4) that contains summary information for each step. (+18 more)
+Cohesion: 0.05
+Nodes (28): CellpyCell, _check_cellpy_file(), Main class for working and storing data.      This class is the main work-hors, Get the step numbers of selected type.          Returns the selected step_numb, Get the step numbers of selected type.          Returns the selected step_numb, Get the step numbers of selected type.          Returns the selected step_numb, Get the step numbers of selected type.          Returns the selected step_numb, Get the step numbers of selected type.          Returns the selected step_numb (+20 more)
 
 ### Community 4 - "Community 4"
 Cohesion: 0.29
@@ -696,7 +697,7 @@ Nodes (18): This module contains several of the most important classes used in c
 
 ### Community 6 - "Community 6"
 Cohesion: 0.03
-Nodes (33): Test BatBaseJSONReader produces pages_dict with expected journal keys (no file s, BatBaseJSONReader raises ValueError when a required column is missing., BatBaseJSONReader raises ValueError when the journal has no rows., BatBaseJSONReader raises ValueError when a required column contains null., When Test Mode is 'inverted (anode mode)', cell_type is 'anode'., When Test Mode is not 'inverted (anode mode)', cell_type is 'standard'., Without Test Mode, cell_type comes from Cell Type (hci -> anode, else standard)., Test batch journal from BatBase-like JSON and file search (uses testdata paths). (+25 more)
+Nodes (35): Test BatBaseJSONReader produces pages_dict with expected journal keys (no file s, BatBaseJSONReader raises ValueError when a required column is missing., BatBaseJSONReader raises ValueError when the journal has no rows., BatBaseJSONReader raises ValueError when a required column contains null., When Test Mode is 'inverted (anode mode)', cell_type is 'anode'., When Test Mode is not 'inverted (anode mode)', cell_type is 'standard'., Without Test Mode, cell_type comes from Cell Type (hci -> anode, else standard)., Test batch journal from BatBase-like JSON and file search (uses testdata paths). (+27 more)
 
 ### Community 7 - "Community 7"
 Cohesion: 0.07
@@ -711,28 +712,28 @@ Cohesion: 0.06
 Nodes (32): Comprehensive test suite for summary_plot function.  This test suite covers al, Test interactive plotting with formation cycles., Test edge cases and error handling., Test with cell that has no summary data., Test edge cases and error handling., Test with cell that has no summary data., Test with minimal data (if possible)., Test with minimal data (if possible). (+24 more)
 
 ### Community 10 - "Community 10"
-Cohesion: 0.41
-Nodes (46): _(), a(), aa(), ar(), c(), ca(), D(), dr() (+38 more)
+Cohesion: 0.42
+Nodes (45): _(), a(), aa(), ar(), br(), c(), ca(), D() (+37 more)
 
 ### Community 11 - "Community 11"
 Cohesion: 0.05
 Nodes (59): _cell_and_output_path(), _check_cycles_plotter_matplotlib(), _check_cycles_plotter_plotly(), _check_plotter_matplotlib(), _check_plotter_plotly(), _check_summary_plotter_plotly(), _check_summary_plotter_seaborn(), create_plotly_default_template() (+51 more)
 
 ### Community 12 - "Community 12"
-Cohesion: 0.06
-Nodes (19): BaseJournal, LabJournal, populate new column from db, populate new column from db, add a comment (will be saved in the journal file), add a comment (will be saved in the journal file), Add a cell to the pages, Add a cell to the pages (+11 more)
+Cohesion: 0.05
+Nodes (30): BaseJournal, LabJournal, populate new column from db, populate new column from db, get additional cell info from db, get additional cell info from db, add a comment (will be saved in the journal file), add a comment (will be saved in the journal file) (+22 more)
 
 ### Community 13 - "Community 13"
-Cohesion: 0.04
-Nodes (40): int, Batch, _check_standard(), from_journal(), from_journal2(), init(), init2(), load() (+32 more)
+Cohesion: 0.03
+Nodes (40): Batch, _check_standard(), from_journal(), from_journal2(), init(), init2(), load(), naked() (+32 more)
 
 ### Community 14 - "Community 14"
-Cohesion: 0.22
-Nodes (14): bool, int, OtherPath, Path, str, _check_01(), _check_03(), find_in_raw_file_directory() (+6 more)
+Cohesion: 0.09
+Nodes (32): _as_pandas(), assert_value_parity(), _compare_series(), legacy_native_pairs(), _merge_on_row_keys(), _normalize_exceptions(), Value-parity oracle for legacy vs native column names (issue #434).  Compares pa, Assert mapped legacy and native columns carry equal values.      Args:         l (+24 more)
 
 ### Community 15 - "Community 15"
-Cohesion: 0.18
-Nodes (27): an(), bn(), Cn(), En(), gn(), hn(), jn(), jr() (+19 more)
+Cohesion: 0.19
+Nodes (26): an(), bn(), Cn(), En(), gn(), hn(), jn(), jr() (+18 more)
 
 ### Community 16 - "Community 16"
 Cohesion: 0.07
@@ -743,8 +744,8 @@ Cohesion: 0.1
 Nodes (13): _check_loader_aux(), DataLoader, Class for loading arbin-data from res-files.      Parameters from configuratio, Returns a connection to the .res-file, Inspect the file -> reports to log (debug), try to repair a broken/corrupted file, Loads data from arbin .res files.          Args:             name (str): path, Merge data from different data-sets (Test-ID) into one data-set. (+5 more)
 
 ### Community 18 - "Community 18"
-Cohesion: 0.13
-Nodes (36): columns(), create_legend(), create_plot_option_dicts(), create_summary_plot_bokeh(), exporting_plots(), fig(), figure(), figures() (+28 more)
+Cohesion: 0.12
+Nodes (38): BasePlotter, columns(), create_legend(), create_plot_option_dicts(), create_summary_plot_bokeh(), EISPlotter, exporting_plots(), fig() (+30 more)
 
 ### Community 19 - "Community 19"
 Cohesion: 0.06
@@ -763,48 +764,48 @@ Cohesion: 0.07
 Nodes (33): build(), bump(), capture(), clean(), commit(), create_commit_message_from_output(), delete_stuff(), docs() (+25 more)
 
 ### Community 23 - "Community 23"
-Cohesion: 0.19
-Nodes (6): BasePlotter, CyclingSummaryPlotter, EISPlotter, Attributes (inherited):             experiments: list of experiments., run engine (once pr. experiment).          Args:             engine: engine t, run dumber (once pr. engine)          Args:             dumper: dumper to run
+Cohesion: 0.1
+Nodes (24): _check_pages_frame(), _create_pages_dict(), dq_dv_engine(), _load_summaries(), _query(), Engines are functions that are used by the Do-ers.  Keyword Args: experiments,, # TODO: replace this with direct lookup from hdf5?, engine that performs incremental analysis of the cycle-data (+16 more)
 
 ### Community 24 - "Community 24"
-Cohesion: 0.04
-Nodes (47): get_default_raw_units(), Returns a dictionary with units as default for raw data, _check_cellpy_file(), _check_raw(), _compare_ids(), empty(), get(), _parse_ids() (+39 more)
+Cohesion: 0.06
+Nodes (28): empty(), Loads data for given cells (soon to be deprecated).          Args:, Loads data for given cells (soon to be deprecated).          Args:, Loads data for given cells (soon to be deprecated).          Args:, Load a raw data-file.          Args:             file_names (list of raw-file, Load a raw data-file.          Args:             file_names (list of raw-file, Load a raw data-file.          Args:             file_names (list of raw-file, Load a raw data-file.          Args:             file_names (list of raw-file (+20 more)
 
 ### Community 25 - "Community 25"
 Cohesion: 0.05
-Nodes (34): DataFrame, parameters(), Files, Directories, and Variables to be used in the tests., create_colormap(), cycles(), fit(), _model(), MultiCycleOcvFit (+26 more)
+Nodes (32): DataFrame, parameters(), Files, Directories, and Variables to be used in the tests., create_colormap(), cycles(), fit(), _model(), MultiCycleOcvFit (+24 more)
 
 ### Community 26 - "Community 26"
-Cohesion: 0.12
+Cohesion: 0.11
 Nodes (31): test_cli_help(), test_cli_new(), test_cli_new_different_and_missing_default(), test_cli_new_list(), test_cli_new_with_dir_as_input(), test_cli_setup(), test_cli_setup_custom_dir(), test_cli_setup_help() (+23 more)
 
 ### Community 27 - "Community 27"
 Cohesion: 0.15
-Nodes (14): ApiModule, initpkg(), initialize given package from the export definitions., ApiModule, __dict__(), __makeattr(), the magical lazy-loading module standing, Any (+6 more)
+Nodes (15): ApiModule, initpkg(), initialize given package from the export definitions., ApiModule, _initpkg(), Helper for initpkg.      Python 3.3+ uses finer grained locking for imports, a, the magical lazy-loading module standing, # TODO: (v2.0) remove this and enforce using for example `import cellpy.session (+7 more)
 
 ### Community 28 - "Community 28"
 Cohesion: 0.33
 Nodes (3): pickle_protocol(), PickleProtocol, Context for using a specific pickle protocol.
 
 ### Community 29 - "Community 29"
-Cohesion: 0.11
-Nodes (13): BaseExporter, CSVExporter, ExcelExporter, OriginLabExporter, run engine (once pr. experiment).          Args:             engine: engine t, run dumber (once pr. engine)          Args:             dumper: dumper to run, Exporter that saves the files in a format convenient for OriginLab., Exporter that saves the file in a format that Excel likes. (+5 more)
+Cohesion: 0.17
+Nodes (9): BaseExporter, BaseExporter, An exporter exports your data to a given format., ExcelExporter, OriginLabExporter, Exporter that saves the files in a format convenient for OriginLab., Exporter that saves the file in a format that Excel likes., cycles_engine() (+1 more)
 
 ### Community 30 - "Community 30"
-Cohesion: 0.19
-Nodes (20): ae(), Be(), ce(), de(), ee(), fe(), he(), Je() (+12 more)
+Cohesion: 0.24
+Nodes (19): ae(), Be(), ce(), de(), ee(), fe(), he(), ie() (+11 more)
 
 ### Community 31 - "Community 31"
-Cohesion: 0.15
-Nodes (9): This function merges datasets into one set., This function merges datasets into one set., This function merges datasets into one set., This function merges datasets into one set., Filter and modify cell cycling data by excluding specific step types and steps., Filter and modify cell cycling data by excluding specific step types and steps., Filter and modify cell cycling data by excluding specific step types and steps., Filter and modify cell cycling data by excluding specific step types and steps. (+1 more)
+Cohesion: 0.11
+Nodes (19): assert_raw_matches_golden(), assert_temporal_series_equal(), extract_loader_meta(), json_safe(), load_loader_snapshot(), normalize_raw_units(), prepare_raw_for_golden(), Loader golden snapshot helpers for Stage 0.5 per-loader oracles. (+11 more)
 
 ### Community 32 - "Community 32"
-Cohesion: 0.12
-Nodes (14): BaseAnalyzer, BaseSummaryAnalyzer, dframe(), EISAnalyzer, ICAAnalyzer, last(), OCVRelaxationAnalyzer, Analyze open curcuit relaxation curves.      This analyzer is still under deve (+6 more)
+Cohesion: 0.14
+Nodes (11): BaseAnalyzer, dframe(), EISAnalyzer, ICAAnalyzer, last(), OCVRelaxationAnalyzer, Analyze open curcuit relaxation curves.      This analyzer is still under deve, BaseAnalyzer (+3 more)
 
 ### Community 33 - "Community 33"
-Cohesion: 0.36
-Nodes (26): at(), b(), bt(), ct(), dt(), et(), ft(), gt() (+18 more)
+Cohesion: 0.35
+Nodes (27): at(), b(), bt(), ct(), dt(), et(), ft(), gt() (+19 more)
 
 ### Community 34 - "Community 34"
 Cohesion: 0.09
@@ -816,15 +817,15 @@ Nodes (29): generate_output_path(), incremental_image_exporter_plotly(), load_da
 
 ### Community 37 - "Community 37"
 Cohesion: 0.09
-Nodes (35): str, areal_charge_capacity(), areal_discharge_capacity(), CellpyLimits, _field_names(), get_cellpy_units(), get_default_cellpy_file_raw_units(), get_default_custom_headers_summary() (+27 more)
+Nodes (34): str, areal_charge_capacity(), areal_discharge_capacity(), BaseSettings, CellpyLimits, _field_names(), get_default_cellpy_file_raw_units(), get_default_custom_headers_summary() (+26 more)
 
 ### Community 38 - "Community 38"
-Cohesion: 0.1
-Nodes (19): _check_loader_empty_normal(), _create_tmp_files(), get_headers_aux(), get_headers_aux_global(), get_headers_global(), get_headers_normal(), arbin res-type data files, # TODO: convert to datetime: (+11 more)
+Cohesion: 0.08
+Nodes (19): Get the open circuit voltage relaxation curves.          Args:             cy, Get the open circuit voltage relaxation curves.          Args:             cy, Get the open circuit voltage relaxation curves.          Args:             cy, Get the rates in the test (only valid for constant current).          Args:, Get the rates in the test (only valid for constant current).          Args:, Get the rates in the test (only valid for constant current).          Args:, Get a array containing the cycle numbers in the test.          Parameters:, Get a array containing the cycle numbers in the test.          Args: (+11 more)
 
 ### Community 39 - "Community 39"
-Cohesion: 0.11
-Nodes (15): DataLoader, get_headers_aux(), get_headers_normal(), neware xlsx exported data, # TODO: extract units from the file and link it to the get_raw_units method, # TODO: extract meta from the file, returns a Data object with loaded data.          Loads data from arbin SQL ser, # TODO: implement conversion to datetime (+7 more)
+Cohesion: 0.08
+Nodes (20): DataLoader, get_headers_aux(), get_headers_normal(), ModelParameters, neware xlsx exported data, # TODO: extract units from the file and link it to the get_raw_units method, # TODO: extract meta from the file, returns a Data object with loaded data.          Loads data from arbin SQL ser (+12 more)
 
 ### Community 40 - "Community 40"
 Cohesion: 0.1
@@ -835,8 +836,8 @@ Cohesion: 0.08
 Nodes (24): CellpyCell - main structure, CellpyCell - methods, code:{eval-rst} (.. graphviz::), code:python (list_of_step_types = ['charge', 'discharge',), code:python (CellpyCell.tester = "arbin_res"  # TODO - update this), code:{eval-rst} (.. graphviz::), code:python (cell_no = None), code:python (from cellpy.parameters.internal_settings import headers_norm) (+16 more)
 
 ### Community 42 - "Community 42"
-Cohesion: 0.03
-Nodes (54): int, _is_empty_array(), Get the file-ids for the cellpy_file., Get the file-ids for the cellpy_file., Select steps (not documented yet)., Select steps (not documented yet)., Select steps (not documented yet)., Select steps (not documented yet). (+46 more)
+Cohesion: 0.06
+Nodes (22): _parse_instrument_str(), Split experiment (CellpyCell object) into two sub-experiments. if cycle, Select first part of experiment (CellpyCell object) up to cycle number, Split experiment (CellpyCell object) into two sub-experiments. if cycle, Select last part of experiment (CellpyCell object) from cycle number         'c, Select first part of experiment (CellpyCell object) up to cycle number, Select experiment (CellpyCell object) from cycle number 'cycle, Select last part of experiment (CellpyCell object) from cycle number         'c (+14 more)
 
 ### Community 43 - "Community 43"
 Cohesion: 0.06
@@ -903,40 +904,40 @@ Cohesion: 0.15
 Nodes (7): BatchCollector, Update both the collected data and the plot(s).          Args:             b, Generate a name for the collection., Reset the arguments to the defaults.          Args:             data_collecto, Look through your cellpy objects and search for units., Perform post-operation after collecting the data, _set_plotly_templates()
 
 ### Community 59 - "Community 59"
-Cohesion: 0.1
-Nodes (14): find_all_instruments(), generate_default_factory(), _get_models(), instrument_configurations(), InstrumentFactory, Factory for instrument loaders., register an instrument loader module.          Args:             key: instrum, unregister an instrument loader module.          Args:             key: instr (+6 more)
+Cohesion: 0.17
+Nodes (18): CellpyUnits, get_cellpy_units(), These are the units used inside Cellpy.      At least two sets of units needs, Returns an augmented global dictionary with units, Stage 0.4 unit-handling characterization (issue #431).  Cross-boundary registr, Multiply quantities from separate pint registries; passes after Phase 1., test_cellpy_and_cellpycore_quantities_interoperate(), test_get_converter_to_specific_charge_unit_mismatch_matches_cellpycore() (+10 more)
 
 ### Community 60 - "Community 60"
 Cohesion: 0.08
 Nodes (39): AcceptedFormats, bool, int, Path, ColumnsOption, Context, CycleModeOption, FormatOption (+31 more)
 
 ### Community 61 - "Community 61"
-Cohesion: 0.33
-Nodes (5): Method for estimating the nominal capacity          Args:             cycles, Method for estimating the nominal capacity          Args:             cycles, Method for estimating the nominal capacity          Args:             cycles, Method for estimating the nominal capacity          Args:             cycles, Method for estimating the nominal capacity          Args:             cycles
+Cohesion: 0.29
+Nodes (6): Method for estimating the nominal capacity          Args:             cycles, Method for estimating the nominal capacity          Args:             cycles, Method for estimating the nominal capacity          Args:             cycles, Method for estimating the nominal capacity          Args:             cycles, Method for estimating the nominal capacity          Args:             cycles, Method for estimating the nominal capacity          Args:             cycles
 
 ### Community 62 - "Community 62"
 Cohesion: 0.09
 Nodes (22): 0.1.0 (2016-09-26), 0.1.21 (2018-06-09), 0.1.22 (2018-07-17), 0.2.0 (2018-10-17), 0.2.1 (2018), 0.3.0 (2019), 0.3.1 (2019), 0.3.2 (2019) (+14 more)
 
 ### Community 63 - "Community 63"
-Cohesion: 0.12
-Nodes (15): # TODO: make a better error-message if the d.raw_path does not exist:, # TODO: @jepe - add function for dumping the raw-file directory to a file,, # TODO: @jepe - add function for searching in cloud storage (dropbox, google dri, # TODO: @jepe - add function for searching in database (sqlite, postgresql etc), # TODO: @jepe - allow for providing a glob pattern also when using file_list by, # TODO: @jepe - use reg_exp, # TODO: @jepe - allow for searching in cloud, # TODO: @jepe - how to implement searching in db? (+7 more)
+Cohesion: 0.09
+Nodes (29): bool, int, OtherPath, Path, str, _check_01(), _check_03(), find_in_raw_file_directory() (+21 more)
 
 ### Community 64 - "Community 64"
-Cohesion: 0.07
-Nodes (27): BaseLoader, Set up logger instance, Setup logging configuration.      Args:         default_level: default log-le, setup_logging(), bool, float, Series, datetime (+19 more)
+Cohesion: 0.04
+Nodes (39): BaseLoader, Set up logger instance, Setup logging configuration.      Args:         default_level: default log-le, setup_logging(), bool, float, Series, datetime (+31 more)
 
 ### Community 65 - "Community 65"
 Cohesion: 0.09
 Nodes (16): Data, DataFrame, ModelParameters, Path, str, AutoLoader, get_headers_aux(), get_params() (+8 more)
 
 ### Community 66 - "Community 66"
-Cohesion: 0.11
-Nodes (5): MockLoader, This is a minimal subclass of AutoLoader that     reads its configuration from, return_42(), test_registering_module(), test_registering_module_post_processors()
+Cohesion: 0.1
+Nodes (6): AutoLoader, MockLoader, This is a minimal subclass of AutoLoader that     reads its configuration from, return_42(), test_registering_module(), test_registering_module_post_processors()
 
 ### Community 67 - "Community 67"
-Cohesion: 0.06
-Nodes (32): DataFrame, str, Index, LabJournal, cell_raw_headers(), cell_step_headers(), cell_summary_headers(), _check_iterate() (+24 more)
+Cohesion: 0.04
+Nodes (51): BaseSummaryAnalyzer, CyclingExperiment, Run make_step_table and make_summary on all cells.          Args:, Save all cells in the experiment.          Args:             kwargs: passed t, Load experimental data into memory.      This is a re-implementation of the ol, Export all cellpy-files to a given path.          Remarks:             This m, Ensure that an appropriate link to the cellpy-files exists for         each cel, CSVExporter (+43 more)
 
 ### Community 68 - "Community 68"
 Cohesion: 0.08
@@ -944,7 +945,7 @@ Nodes (27): DataLoader, _extract_test_number_from_pec_path(), _extract_unit_labe
 
 ### Community 69 - "Community 69"
 Cohesion: 0.08
-Nodes (54): ConfigFileNotRead, ConfigFileNotWritten, DeprecatedFeature, Error, ExportFailed, FileNotFound, IOError, NoDataFound (+46 more)
+Nodes (57): ConfigFileNotRead, ConfigFileNotWritten, DeprecatedFeature, Error, ExportFailed, FileNotFound, IOError, NoDataFound (+49 more)
 
 ### Community 70 - "Community 70"
 Cohesion: 0.09
@@ -955,12 +956,12 @@ Cohesion: 0.2
 Nodes (19): converter(), test_dqdv_multi_cycles_tidy(), test_dqdv_multi_cycles_wide(), test_dqdv_one_cycle_tidy(), test_dqdv_split(), test_ica_converter(), test_ica_dqdv(), test_ica_dqdv_cycles() (+11 more)
 
 ### Community 72 - "Community 72"
-Cohesion: 0.1
-Nodes (23): cell(), cell_with_cv_data(), cellpy_data_instance(), dataset(), gitt_datasett(), mock_env_cellpy_host(), mock_env_cellpy_key_filename(), mock_env_cellpy_user() (+15 more)
+Cohesion: 0.08
+Nodes (27): cell(), cell_with_cv_data(), cell_with_summary(), cellpy_data_instance(), dataset(), gitt_datasett(), mock_env_cellpy_host(), mock_env_cellpy_key_filename() (+19 more)
 
 ### Community 73 - "Community 73"
-Cohesion: 0.04
-Nodes (28): CellpyCell, Main class for working and storing data.      This class is the main work-hors, Saves the data as .csv file(s).          Args:             datadir: folder wh, Saves the data as .csv file(s).          Args:             datadir: folder wh, Export the raw time-series in Battery Data Format (BDF).          See `Battery, Export the raw time-series in Battery Data Format (BDF).          See `Battery, Saves the data as .csv file(s).          Args:             datadir: folder wh, Returns the mass of the active material (in mg).          This method will be (+20 more)
+Cohesion: 0.06
+Nodes (26): _is_empty_array(), Saves the data as .csv file(s).          Args:             datadir: folder wh, Saves the data as .csv file(s).          Args:             datadir: folder wh, Saves the data as .csv file(s).          Args:             datadir: folder wh, Saves the data as .csv file(s).          Args:             datadir: folder wh, Saves the data as .csv file(s).          Args:             datadir: folder wh, Returns discharge capacity and voltage for the selected cycle.          Args:, Returns discharge capacity and voltage for the selected cycle.          Args: (+18 more)
 
 ### Community 74 - "Community 74"
 Cohesion: 0.11
@@ -972,11 +973,11 @@ Nodes (33): bytes, DataFrame, dtype, float, int, ndarray, Path, str (+25 more)
 
 ### Community 76 - "Community 76"
 Cohesion: 0.08
-Nodes (23): add_areal_capacity(), add_c_rate(), add_normalized_cycle_index(), make_new_cell(), # TODO: consider changing this to [1, -1], # TODO: consider changing this to [1, -1], # NOTE: to allow for hooks to add columns, all functions that operates in this l, # NOTE: to allow for hooks to add columns, all functions that operates in this l (+15 more)
+Nodes (25): add_areal_capacity(), add_c_rate(), add_normalized_cycle_index(), _check(), check_connection(), make_new_cell(), # TODO: consider changing this to [1, -1], # TODO: consider changing this to [1, -1] (+17 more)
 
 ### Community 77 - "Community 77"
-Cohesion: 0.09
-Nodes (9): BaseExperiment, Data, Class that is used to access the experiment.journal.pages DataFrame.      The, Pick out one random cell from the batch, Pick out first cell from the batch, Pick out last cell from the batch, An experiment contains experimental data and meta-data., Describe the status and health of your experiment. (+1 more)
+Cohesion: 0.18
+Nodes (5): Data, Class that is used to access the experiment.journal.pages DataFrame.      The, Pick out one random cell from the batch, Pick out first cell from the batch, Pick out last cell from the batch
 
 ### Community 78 - "Community 78"
 Cohesion: 0.15
@@ -991,8 +992,8 @@ Cohesion: 0.15
 Nodes (9): DataLoader, get_headers_aux(), get_headers_normal(), arbin MS SQL Server csv data, # TODO: rename this (for all instruments) to e.g. load, # TODO: implement more options (bad_cycles, ...), returns a Data object with loaded data.          Loads data from arbin SQL ser, Class for loading csv-exported arbin-data from MS SQL server. (+1 more)
 
 ### Community 81 - "Community 81"
-Cohesion: 0.16
-Nodes (11): ABC, AutoLoader, _check_loader_from_outside_with_get(), DataLoader, _process_cellpy_object(), This module is used for loading data using the ``instrument="custom"`` method., # TODO: consider rewriting this:, Query the file and return a pandas dataframe. (+3 more)
+Cohesion: 0.17
+Nodes (10): ABC, _check_loader_from_outside_with_get(), DataLoader, _process_cellpy_object(), This module is used for loading data using the ``instrument="custom"`` method., # TODO: consider rewriting this:, Query the file and return a pandas dataframe., Class for loading data from txt files. (+2 more)
 
 ### Community 82 - "Community 82"
 Cohesion: 0.15
@@ -1003,12 +1004,12 @@ Cohesion: 0.17
 Nodes (4): OtherPathNew, parent(), pathlike_location(), A pathlib.Path subclass that can handle external paths.      Attributes:
 
 ### Community 84 - "Community 84"
-Cohesion: 0.05
-Nodes (25): _check_path_things(), _create_unit_registry(), __dir__(), get_ureg(), __getattr__(), identify_last_data_point(), This module contains several of the most important classes used in cellpy.  It, # TODO: move this to internals/connections (+17 more)
+Cohesion: 0.03
+Nodes (68): float, int, str, get_default_raw_units(), Returns a dictionary with units as default for raw data, _check_convert_from_simple_unit_label_to_string_unit_label(), convert_from_simple_unit_label_to_string_unit_label(), _create_unit_registry() (+60 more)
 
 ### Community 85 - "Community 85"
-Cohesion: 0.11
-Nodes (9): BaseJournal, A journal keeps track of the details of the experiment.      The journal shoul, Make journal pages by looking up a database.          Default to using the sim, Create a journal manually, Save journal pages to a file.          The file can then be used in later sess, Create folders used for saving the different output files., Create a file name for saving the journal., bytearray (+1 more)
+Cohesion: 0.07
+Nodes (16): BaseJournal, A journal keeps track of the details of the experiment.      The journal shoul, Make journal pages by looking up a database.          Default to using the sim, Create a journal manually, Save journal pages to a file.          The file can then be used in later sess, Create folders used for saving the different output files., Create a file name for saving the journal., Toggle the selected status of a group of cells. (+8 more)
 
 ### Community 86 - "Community 86"
 Cohesion: 0.17
@@ -1023,8 +1024,8 @@ Cohesion: 0.12
 Nodes (15): 10. References, 1. Entry point and loader class, 2. Class hierarchy and responsibilities, 3. Model → configuration module, 4. Configuration module (e.g. `neware_txt_one.py`), 5.1 Pre-processors (`processors/pre_processors.py`), 5.2 Post-processors (`processors/post_processors.py`), 5. Processors (+7 more)
 
 ### Community 89 - "Community 89"
-Cohesion: 0.14
-Nodes (6): BaseSettings, DictLikeClass, Add some dunder-methods so that it does not break old code that used     dictio, Base class for internal cellpy settings.      Usage::           @dataclass, Get the value (postfixes not supported)., Converts to pandas dataframe
+Cohesion: 0.11
+Nodes (9): bool, CellpyMeta, DictLikeClass, Pops from dictionary of form {key: [values]}          Args:             as_li, Converts to pandas dataframe, Add some dunder-methods so that it does not break old code that used     dictio, Get the value (postfixes not supported)., Base class for meta-data in cellpy. (+1 more)
 
 ### Community 90 - "Community 90"
 Cohesion: 0.12
@@ -1032,7 +1033,7 @@ Nodes (15): 1. Import, 2. Loading data, 3. Saving data, 4. Basic operations, Bas
 
 ### Community 91 - "Community 91"
 Cohesion: 0.08
-Nodes (18): generate a suitable file name for the experiment          Args:             t, generate a suitable file name for the experiment          Args:             t, populate journal from db.          Args:             project (str): project n, populate journal from db.          Args:             project (str): project n, Loads a DataFrame with all the needed info about the experiment, Loads a DataFrame with all the needed info about the experiment, Loads a DataFrame with all the needed info about the experiment, Loads a DataFrame with all the needed info about the experiment (+10 more)
+Nodes (36): _clean_pages(), _clean_session(), _dev_journal_loading(), _fix_cellpy_paths(), _pack_meta(), _pack_session(), generate a suitable file name for the experiment          Args:             t, generate a suitable file name for the experiment          Args:             t (+28 more)
 
 ### Community 92 - "Community 92"
 Cohesion: 0.12
@@ -1055,8 +1056,8 @@ Cohesion: 0.12
 Nodes (14): 0. `/iflow` — smart dispatcher (quick start), 1. `/issue-init` — capture the issue locally, 2. `/issue-plan` — design the approach, 3. `/issue-start` — implement the plan, 4. `/issue-pause` — park work safely, 5. `/issue-close` — land the work, 6. `/issue-cleanup` — post-merge branch hygiene, 7. `/build` — rebuild the knowledge graph (optional) (+6 more)
 
 ### Community 98 - "Community 98"
-Cohesion: 0.05
-Nodes (56): BaseDbReader, _check_pages_frame(), _create_pages_dict(), dq_dv_engine(), _load_summaries(), _query(), Engines are functions that are used by the Do-ers.  Keyword Args: experiments,, # TODO: replace this with direct lookup from hdf5? (+48 more)
+Cohesion: 0.08
+Nodes (32): BaseDbReader, bool, float, int, PagesDict, Path, str, main() (+24 more)
 
 ### Community 99 - "Community 99"
 Cohesion: 0.19
@@ -1071,8 +1072,8 @@ Cohesion: 0.08
 Nodes (37): _convert_instruments_to_dict(), _convert_paths_to_dict(), _convert_to_dict(), create_custom_init_filename(), get_env_file_name(), _get_prm_file(), get_user_dir(), get_user_dir_and_dst() (+29 more)
 
 ### Community 102 - "Community 102"
-Cohesion: 0.08
-Nodes (24): str, _check_loader(), _check_sql_loader(), DataLoader, from_arbin_to_datetime(), get_headers_aux(), get_headers_aux_global(), get_headers_global() (+16 more)
+Cohesion: 0.05
+Nodes (43): str, _check_loader_empty_normal(), _create_tmp_files(), get_headers_aux(), get_headers_aux_global(), get_headers_global(), get_headers_normal(), arbin res-type data files (+35 more)
 
 ### Community 104 - "Community 104"
 Cohesion: 0.08
@@ -1095,12 +1096,12 @@ Cohesion: 0.13
 Nodes (13): Automatically running batches, code:shell ($ cellpy), code:shell ($ cellpy info --version), code:shell ($ cellpy setup --interactive), code:shell (batchfiles/), code:shell ($ cellpy setup --help), code:shell (Usage: cellpy setup [OPTIONS]), code:shell ($ cellpy new --help) (+5 more)
 
 ### Community 109 - "Community 109"
-Cohesion: 0.16
-Nodes (12): str, _check_keys_in_cellpy_file(), _convert2fid_list(), _extract_from_meta_dictionary(), Load a cellpy-file.          Args:             filename (str): Name of the ce, Load a cellpy-file.          Args:             filename (str): Name of the ce, Load a cellpy-file.          Args:             filename (str): Name of the ce, Load a cellpy-file.          Args:             filename (str): Name of the ce (+4 more)
+Cohesion: 0.14
+Nodes (13): _check_keys_in_cellpy_file(), _convert2fid_list(), data(), _extract_from_meta_dictionary(), Get the file-ids for the cellpy_file., Get the file-ids for the cellpy_file., Load a cellpy-file.          Args:             filename (str): Name of the ce, Load a cellpy-file.          Args:             filename (str): Name of the ce (+5 more)
 
 ### Community 110 - "Community 110"
-Cohesion: 0.09
-Nodes (14): DataLoader, Class for using the NDA loader by Frederik Huld (Beyonder)., initiates the NdaLoader class, Include the settings for the units used by the instrument.          The units, Include the settings for how to decide what kind of step you are examining here., ModelParameters, FileID, class for storing information about the raw-data files.      This class is use (+6 more)
+Cohesion: 0.14
+Nodes (8): FileID, class for storing information about the raw-data files.      This class is use, Initialize the FileID class., Return a string representation of the FileID object., Finds the file-stats and populates the class with stat values.          Args:, Get a list with information about the file.          The returned list contain, Get the size of the file., Get last modification time of the file.
 
 ### Community 111 - "Community 111"
 Cohesion: 0.11
@@ -1135,28 +1136,28 @@ Cohesion: 0.36
 Nodes (12): _check(), clean_up(), create_column_names_from_prms(), DbColsRenamer, load_xlsx(), main(), Create a list of DbColsRenamer objects from the cellpy.prms.DbCols object., Load the Excel file and return a pandas dataframe. (+4 more)
 
 ### Community 119 - "Community 119"
-Cohesion: 0.09
-Nodes (18): Path, _check_excel(), _check_new_dot_get_methods(), _load_and_save_to_excel(), _parse_instrument_str(), Saves the data as .xlsx file(s).          Args:             filename: name of, Saves the data as .xlsx file(s).          Args:             filename: name of, Saves the data as .xlsx file(s).          Args:             filename: name of (+10 more)
+Cohesion: 0.08
+Nodes (24): _check_excel(), _check_raw(), _compare_ids(), get(), _load_and_save_to_excel(), _parse_ids(), Saves the data as .xlsx file(s).          Args:             filename: name of, Saves the data as .xlsx file(s).          Args:             filename: name of (+16 more)
 
 ### Community 120 - "Community 120"
-Cohesion: 0.1
-Nodes (33): BdfFormat, CyclesArg, DataFrame, int, Path, Series, str, CyclesArg (+25 more)
+Cohesion: 0.06
+Nodes (50): BdfFormat, bool, CyclesArg, DataFrame, float, int, Path, Series (+42 more)
 
 ### Community 121 - "Community 121"
-Cohesion: 0.1
-Nodes (16): Returns the values for column with given header (in raw units).          Args:, Returns the values for column with given header (in raw units).          Args:, Returns voltage (in raw units).          Args:             cycle: cycle numbe, Returns voltage (in raw units).          Args:             cycle: cycle numbe, Returns current (in raw units).          Args:             cycle: cycle numbe, Returns current (in raw units).          Args:             cycle: cycle numbe, Returns datetime (in raw units).          Args:             cycle: cycle numb, Returns datetime (in raw units).          Args:             cycle: cycle numb (+8 more)
+Cohesion: 0.08
+Nodes (20): Returns the values for column with given header (in raw units).          Args:, Returns the values for column with given header (in raw units).          Args:, Returns the values for column with given header (in raw units).          Args:, Returns voltage (in raw units).          Args:             cycle: cycle numbe, Returns voltage (in raw units).          Args:             cycle: cycle numbe, Returns voltage (in raw units).          Args:             cycle: cycle numbe, Returns current (in raw units).          Args:             cycle: cycle numbe, Returns current (in raw units).          Args:             cycle: cycle numbe (+12 more)
 
 ### Community 122 - "Community 122"
-Cohesion: 0.1
-Nodes (12): _check_convert_from_simple_unit_label_to_string_unit_label(), convert_from_simple_unit_label_to_string_unit_label(), Q(), Convert from simple unit label to string unit label., test_set_cellpy_unit_and_use(), test_to_cellpy_unit_from_cellpy_instance(), test_to_cellpy_unit_from_cellpy_instance_with_cell(), test_using_internal_pint_methods() (+4 more)
+Cohesion: 0.13
+Nodes (8): Q(), test_to_cellpy_unit_from_cellpy_instance(), test_to_cellpy_unit_from_cellpy_instance_with_cell(), test_using_internal_pint_methods(), Plot raw data.      Args:         cell: cellpy object         y (str or list, Plot raw data.      Args:         cell: cellpy object         y (str or list, Plot raw data.      Args:         cell: cellpy object         y (str or list, raw_plot()
 
 ### Community 123 - "Community 123"
-Cohesion: 0.19
-Nodes (19): _clean_pages(), _clean_session(), _dev_journal_loading(), _fix_cellpy_paths(), _pack_meta(), _pack_session(), # TODO: clean up this method, # TODO: clean up this method (+11 more)
+Cohesion: 0.17
+Nodes (4): BaseReporter, BaseReporter, HTMLReporter, PPTReporter
 
 ### Community 124 - "Community 124"
-Cohesion: 0.18
-Nodes (11): bool, str, collect_frames(), _partition_summary_based_on_cv_steps(), Helper function for concat_summaries., Helper function for concat_summaries., Select only cycles charged or discharged with a given rate.      Parameters:, Select only cycles charged or discharged with a given rate.      Parameters: (+3 more)
+Cohesion: 0.25
+Nodes (8): bool, str, collect_frames(), _partition_summary_based_on_cv_steps(), Helper function for concat_summaries., Helper function for concat_summaries., Partition the summary data into CV and non-CV steps.      Args:         c: ce, Partition the summary data into CV and non-CV steps.      Args:         c: ce
 
 ### Community 125 - "Community 125"
 Cohesion: 0.13
@@ -1167,16 +1168,16 @@ Cohesion: 0.17
 Nodes (11): 1. Inspect the file, 2. Map columns to cellpy, 3. Add configuration module, 4. Register the model, 5. Test, 6. Optional, Before you start (today / prep), If something fails (+3 more)
 
 ### Community 127 - "Community 127"
-Cohesion: 0.25
-Nodes (6): bool, CellpyMeta, Pops from dictionary of form {key: [values]}          Args:             as_li, Converts to pandas dataframe, Base class for meta-data in cellpy., Updates from dictionary of form {key: [values]}          Args:             as
+Cohesion: 0.15
+Nodes (4): BaseExperiment, An experiment contains experimental data and meta-data., Describe the status and health of your experiment., Print information about the experiment.
 
 ### Community 128 - "Community 128"
 Cohesion: 0.12
-Nodes (20): load_cellpy_file(), Load a cellpy-file and return the populated ``CellpyCell`` instance., Characterization tests for cellpy-file (HDF5) load/save behavior (Stage 0.2).  L, ``selector={'max_cycle': N}`` truncates summary/raw/steps and sets limits., Pin current v4/v5 load failure (missing ``upgrade_from_to`` on meta extract)., Legacy v6/v7: load succeeds with expected shapes and renamed columns., Too-old v0 layout cannot read file version., Missing summary key → bare Exception with OH MY GOD message (current contract). (+12 more)
+Nodes (20): load_cellpy_file(), Load a cellpy-file and return the populated ``CellpyCell`` instance., Characterization tests for cellpy-file (HDF5) load/save behavior (Stage 0.2)., ``selector={'max_cycle': N}`` truncates summary/raw/steps and sets limits., Pin current v4/v5 load failure (missing ``upgrade_from_to`` on meta extract)., Legacy v6/v7: load succeeds with expected shapes and renamed columns., Too-old v0 layout cannot read file version., Missing summary key → bare Exception with OH MY GOD message (current contract). (+12 more)
 
 ### Community 129 - "Community 129"
-Cohesion: 0.33
-Nodes (6): _check(), check_connection(), This module contains div classes etc that are not really connected to cellpy., Check if the connection works.      This is a helper function for cellpy v1.0, _check(), check_connection()
+Cohesion: 0.14
+Nodes (13): This method is under development. Using this to develop updating files, This method is under development. Using this to develop updating files, This method is under development. Using this to develop updating files, This method is under development. Using this to develop updating files, This method is under development. Using this to develop updating files, Used by get to update metadata in the CellpyCell object., Used by get to update metadata in the CellpyCell object., Used by get to update metadata in the CellpyCell object. (+5 more)
 
 ### Community 130 - "Community 130"
 Cohesion: 0.06
@@ -1220,11 +1221,15 @@ Nodes (37): code:block1 (conda env create -f dev_environment.yml), code:block2 (
 
 ### Community 140 - "Community 140"
 Cohesion: 0.06
-Nodes (66): CyclesArg, DataFrame, int, str, Any, DataFrame, float, Series (+58 more)
+Nodes (68): CyclesArg, DataFrame, int, str, Any, DataFrame, float, Series (+60 more)
 
 ### Community 141 - "Community 141"
-Cohesion: 0.29
-Nodes (7): get_headers_summary(), Returns an augmented global dictionary containing the header-strings for the sum, # TODO: finish this, # TODO: finish this, test_header(), test_get_custom_default(), test_load_custom_default()
+Cohesion: 0.19
+Nodes (10): get_headers_summary(), Returns an augmented global dictionary containing the header-strings for the sum, # TODO: finish this, # TODO: finish this, test_header(), test_get_custom_default(), test_load_custom_default(), test_get_headers_normal() (+2 more)
+
+### Community 142 - "Community 142"
+Cohesion: 0.16
+Nodes (5): write_minimal_prm_file(), test_prms_config_full_section_roundtrip(), test_prms_otherpath_coercion_smoke(), test_prms_otherpath_local_resolve(), test_prms_precedence_file_runtime_write()
 
 ### Community 143 - "Community 143"
 Cohesion: 0.14
@@ -1243,24 +1248,28 @@ Cohesion: 0.19
 Nodes (7): str, ExternalStatResult, Return a dictionary with connection information., Return a dictionary with connection information., Mock of os.stat_result., Return a dictionary with connection information., Return a dictionary with connection information.
 
 ### Community 147 - "Community 147"
-Cohesion: 0.7
-Nodes (3): func(), _main(), # TODO: make it serializable
+Cohesion: 0.11
+Nodes (23): assert_curve_matches_golden(), assert_temporal_series_equal(), _call_curve_func(), capture_curve_case(), curve_metrics(), CurveGoldenCase, load_golden_cell(), prepare_curve_for_golden() (+15 more)
 
 ### Community 148 - "Community 148"
-Cohesion: 0.18
-Nodes (13): generate_folder_names(), Creates sensible folder names., csv_dumper(), excel_dumper(), origin_dumper(), ram_dumper(), Dumpers are functions that are used by the Do-ers. Keyword Args: experiments, f, Dump data to excel xlxs-format. (+5 more)
+Cohesion: 0.23
+Nodes (11): generate_folder_names(), Creates sensible folder names., csv_dumper(), excel_dumper(), origin_dumper(), ram_dumper(), Dumpers are functions that are used by the Do-ers. Keyword Args: experiments, f, Dump data to excel xlxs-format. (+3 more)
 
 ### Community 149 - "Community 149"
-Cohesion: 0.12
-Nodes (11): DataLoader, get_headers_aux(), get_headers_normal(), arbin MS SQL Server exported h5 data, # TODO: rename this (for all instruments) to e.g. load, # TODO: implement more options (bad_cycles, ...), returns a Data object with loaded data.          Loads data from arbin SQL ser, # TODO: convert to datetime (note that this seems to be set also in the postproc (+3 more)
+Cohesion: 0.24
+Nodes (13): Ai(), bi(), ci(), Ei(), fi(), ji(), Li(), mi() (+5 more)
 
 ### Community 150 - "Community 150"
 Cohesion: 0.18
 Nodes (9): **cellpy** - *a library for assisting in analysing batteries and cells*, Citing cellpy, code:block1 (conda install -c conda-forge cellpy), code:block2 (python -m pip install cellpy), Contributing, Documentation, Features, Installation and dependencies (+1 more)
 
+### Community 151 - "Community 151"
+Cohesion: 0.28
+Nodes (4): __dict__(), __makeattr(), Any, str
+
 ### Community 152 - "Community 152"
-Cohesion: 0.15
-Nodes (20): float, int, str, get_area(), get_args(), get_by_column_label(), get_cell_name(), get_cell_type() (+12 more)
+Cohesion: 0.25
+Nodes (5): DataLoader, batmo outputs in BDF format., Class for loading data from BatMo BDF txt files., Normalize BatMo columns after they have been renamed to cellpy names., A simple check that all the needed columns has been successfully         loaded
 
 ### Community 153 - "Community 153"
 Cohesion: 0.08
@@ -1275,28 +1284,28 @@ Cohesion: 0.18
 Nodes (9): code:{eval-rst} (.. include:: utils/tut_ocv_rlx.md), code:{eval-rst} (.. include:: utils/ica.md), code:{eval-rst} (.. include:: utils/batch.md), code:{eval-rst} (.. include:: utils/collectors.md), code:{eval-rst} (.. include:: utils/plotting.md), code:{eval-rst} (.. include:: utils/easyplot.md), code:{eval-rst} (.. include:: utils/templates.md), code:{eval-rst} (.. include:: utils/custom_file_loaders.md) (+1 more)
 
 ### Community 156 - "Community 156"
-Cohesion: 0.09
-Nodes (49): _make_synthetic_cell(), bool, Path, Tests for cellpy.exporters.bdf.to_bdf., Build a minimal CellpyCell with a fabricated ``data.raw`` frame.      Avoids t, Naming a mapped raw column under ``extras`` must not duplicate it., Naming a mapped raw column under ``extras`` must not duplicate it., Explicit ``bdf_units=None`` is byte-for-byte identical to the default path. (+41 more)
+Cohesion: 0.07
+Nodes (58): _make_synthetic_cell(), bool, Path, Tests for cellpy.exporters.bdf.to_bdf., Override raw_units.current to mA and verify pint scales mA->A correctly., Build a minimal CellpyCell with a fabricated ``data.raw`` frame.      Avoids t, Naming a mapped raw column under ``extras`` must not duplicate it., Charge in `mAh` would normally be scaled; as an extra it must stay raw. (+50 more)
 
 ### Community 157 - "Community 157"
-Cohesion: 0.09
-Nodes (15): Main txt loading class (for sub-classing).      The subclass of a ``TxtLoader`, Parse the formatter parameters., Parse the loader parameters.          Args:             auto_formatter: if Tr, TxtLoader, DataLoader, batmo outputs in BDF format., Class for loading data from BatMo BDF txt files., Normalize BatMo columns after they have been renamed to cellpy names. (+7 more)
+Cohesion: 0.1
+Nodes (14): Main txt loading class (for sub-classing).      The subclass of a ``TxtLoader`, Parse the formatter parameters., Parse the loader parameters.          Args:             auto_formatter: if Tr, TxtLoader, DataLoader, This module is used for loading data using the corresponding local yaml file wi, Class for loading data from txt files., Args:             instrument_file: name of the local instrument file. (+6 more)
 
 ### Community 158 - "Community 158"
 Cohesion: 0.16
 Nodes (11): int, List the contents of a directory through sftp., List the contents of a directory through sftp., List the contents of the directory.          Args:             levels (int, o, List the contents of the directory.          Args:             levels (int, o, List the contents of a directory through sftp., List the contents of a directory through sftp., List the contents of the directory.          Args:             levels (int, o (+3 more)
 
 ### Community 159 - "Community 159"
-Cohesion: 0.16
-Nodes (26): br(), cr(), Dn(), fn(), ge(), gr(), hr(), In() (+18 more)
+Cohesion: 0.15
+Nodes (26): cr(), Dn(), fn(), ge(), gr(), hr(), In(), ir() (+18 more)
 
 ### Community 160 - "Community 160"
 Cohesion: 0.2
 Nodes (8): code:python (cycle_number = 5), code:python (capacity, charge_voltage = cell_data.get_cap(cycle_number)), Create dQ/dV plots, Do some plotting, Extract current-voltage graphs, Extract summaries of runs, Stuff that you might want to do with `cellpy`, What else?
 
 ### Community 161 - "Community 161"
-Cohesion: 0.12
-Nodes (10): FileID, class for storing information about the raw-data files.      This class is use, Initialize the FileID class., Return a string representation of the FileID object., Finds the file-stats and populates the class with stat values.          Args:, Get a list with information about the file.          The returned list contain, Get the size of the file., Get last modification time of the file. (+2 more)
+Cohesion: 0.36
+Nodes (8): assert_inventory_equal(), collect_prms_inventory(), _flatten_section(), _fresh_paths_section(), fresh_section_defaults(), _normalize_value(), Helpers for prms characterization tests (issue #430)., test_prms_inventory_parity()
 
 ### Community 162 - "Community 162"
 Cohesion: 0.08
@@ -1315,8 +1324,8 @@ Cohesion: 0.12
 Nodes (16): 1. Bump dependency, 2. Fix BDF datetime conversion (30 test failures), 3. Fix post-processor datetime re-interpretation (proactive), 4. Fix batch journal string extraction (5 test failures), 5. Investigate plotutils summary_plot (7 test failures), Approach, code:python (# before (pandas 3: AttributeError — Series.view removed)), code:python (list(col.dropna().values.flatten())) (+8 more)
 
 ### Community 166 - "Community 166"
-Cohesion: 0.12
-Nodes (12): data(), _is_listtype(), Get the file-ids for the res_files., Args:             filenames: list of files to load.             selected_scans, Args:             filenames: list of files to load.             selected_scans, Initialize the CellpyCell object with empty Data instance., Initialize the CellpyCell object with empty Data instance., Register instrument readers. (+4 more)
+Cohesion: 0.14
+Nodes (11): get_default_output_units(), Returns an augmented dictionary with units to use as default., _is_listtype(), Get the file-ids for the res_files., Args:             filenames: list of files to load.             selected_scans, Args:             filenames: list of files to load.             selected_scans, Register instrument readers., Register instrument readers. (+3 more)
 
 ### Community 167 - "Community 167"
 Cohesion: 0.36
@@ -1327,8 +1336,8 @@ Cohesion: 0.33
 Nodes (8): maccor_cell(), Use default location of user instrument files, # TODO: create defaults for missing parameters in the custom instrument file., test_cellpy_get(), test_cellpy_get_model_one(), test_cellpy_get_model_one_custom_instrument_file(), test_load_custom_yaml_file(), test_set_instrument()
 
 ### Community 169 - "Community 169"
-Cohesion: 0.18
-Nodes (12): DataFrame, add_normalized_capacity(), concatenate_summaries(), fix_group_names(), _make_average(), _make_average_legacy(), Helper function for concat_summaries., Helper function for concat_summaries. (+4 more)
+Cohesion: 0.14
+Nodes (18): DataFrame, add_normalized_capacity(), concat_summaries(), concatenate_summaries(), fix_group_names(), _make_average(), _make_average_legacy(), Helper function for concat_summaries. (+10 more)
 
 ### Community 170 - "Community 170"
 Cohesion: 0.2
@@ -1347,8 +1356,8 @@ Cohesion: 0.12
 Nodes (15): 1. Fix Windows conda workflow (replace AppVeyor), 2. Remove AppVeyor artifacts, 3. Clean up dead Windows workflow experiments, 4. Verification order, Approach, code:mermaid (flowchart LR), code:bash (# Local (Linux/WSL) — ensure no regressions to shared env fi), Constraints (+7 more)
 
 ### Community 174 - "Community 174"
-Cohesion: 0.4
-Nodes (4): Convert value to cellpy units.          Args:             value (numeric, pin, Convert value to cellpy units.          Args:             value (numeric, pin, # TODO: deprecate it, Convert value to cellpy units.          Args:             value (numeric, pin
+Cohesion: 0.33
+Nodes (5): Convert value to cellpy units.          Args:             value (numeric, pin, Convert value to cellpy units.          Args:             value (numeric, pin, Convert value to cellpy units.          Args:             value (numeric, pin, # TODO: deprecate it, Convert value to cellpy units.          Args:             value (numeric, pin
 
 ### Community 175 - "Community 175"
 Cohesion: 0.22
@@ -1359,8 +1368,8 @@ Cohesion: 0.22
 Nodes (7): code:{eval-rst} (.. include:: loaders/01_arbin.md), code:{eval-rst} (.. include:: loaders/02_maccor.md), code:{eval-rst} (.. include:: loaders/03_PEC.md), code:{eval-rst} (.. include:: loaders/04_Neware.md), code:{eval-rst} (.. include:: loaders/05_biologics.md), code:{eval-rst} (.. include:: loaders/06_custom.md), Loaders
 
 ### Community 177 - "Community 177"
-Cohesion: 0.15
-Nodes (10): DataLoader, get_headers_aux(), get_headers_normal(), arbin MS SQL Server csv data, # TODO: rename this (for all instruments) to e.g. load, # TODO: implement more options (bad_cycles, ...), returns a Data object with loaded data.          Loads data from arbin SQL ser, # TODO: convert to datetime: (+2 more)
+Cohesion: 0.07
+Nodes (18): DataLoader, get_headers_aux(), get_headers_normal(), arbin MS SQL Server csv data, # TODO: rename this (for all instruments) to e.g. load, # TODO: implement more options (bad_cycles, ...), returns a Data object with loaded data.          Loads data from arbin SQL ser, # TODO: convert to datetime: (+10 more)
 
 ### Community 178 - "Community 178"
 Cohesion: 0.12
@@ -1371,8 +1380,8 @@ Cohesion: 0.11
 Nodes (10): _linear_df(), Fixture-free unit tests for pure helper/utility functions.  Added under issue, cellpy.readers.data_structures.interpolate_y_on_x (the base interpolator)., cellpy.internals.connections.check_connection short-circuits on local paths., cellpy.utils.helpers.add_cv_step_columns., cellpy.utils.helpers.fix_group_names de-duplicates by appending 'x'., TestAddCvStepColumns, TestCheckConnection (+2 more)
 
 ### Community 180 - "Community 180"
-Cohesion: 0.14
-Nodes (12): _convert2fid_table(), Loads a cellpy file.          Args:             cellpy_file (OtherPath, str):, Save the data structure to cellpy-format.          Args:             filename, Save the data structure to cellpy-format.          Args:             filename, Save the data structure to cellpy-format.          Args:             filename, # How to update the cellpy file version      ## Top level      ## Metadata, # How to update the cellpy file version      ## Top level      ## Metadata, # How to update the cellpy file version      ## Top level      ## Metadata (+4 more)
+Cohesion: 0.13
+Nodes (13): _convert2fid_table(), Loads a cellpy file.          Args:             cellpy_file (OtherPath, str):, Save the data structure to cellpy-format.          Args:             filename, Save the data structure to cellpy-format.          Args:             filename, Save the data structure to cellpy-format.          Args:             filename, # How to update the cellpy file version      ## Top level      ## Metadata, # How to update the cellpy file version      ## Top level      ## Metadata, # How to update the cellpy file version      ## Top level      ## Metadata (+5 more)
 
 ### Community 181 - "Community 181"
 Cohesion: 0.12
@@ -1399,8 +1408,8 @@ Cohesion: 0.5
 Nodes (6): _check_galvani_VMPdata_colID_dtype_map(), _header_cleaner(), _header_splitter(), File-format dicts for BioLogic" (building on the ``galvani`` package), Split header into label and unit., _unit_cleaner()
 
 ### Community 187 - "Community 187"
-Cohesion: 0.14
-Nodes (11): load_nda(), Loads data into a DataSet object and returns it, # TODO: convert to datetime:, get_headers_normal(), Returns an augmented global dictionary containing the header-strings for the nor, check64bit(), checks if you are on a 64-bit platform, Converts a xls date stamp to a more sensible format.      Args:         xldat (+3 more)
+Cohesion: 0.12
+Nodes (12): DataLoader, load_nda(), Class for using the NDA loader by Frederik Huld (Beyonder)., initiates the NdaLoader class, Include the settings for the units used by the instrument.          The units, Include the settings for how to decide what kind of step you are examining here., Loads data into a DataSet object and returns it, # TODO: convert to datetime: (+4 more)
 
 ### Community 188 - "Community 188"
 Cohesion: 0.25
@@ -1411,8 +1420,8 @@ Cohesion: 0.18
 Nodes (11): _cycles_plotter(), ica_plotter(), Plot charge-discharge curves.      Args:         collected_curves(pd.DataFram, Plot charge-discharge curves.      Args:         collected_curves(pd.DataFram, Plot summaries (value vs cycle number).      Assuming data as pandas.DataFrame, Plot summaries (value vs cycle number).      Assuming data as pandas.DataFrame, Plot charge-discharge curves.      Args:         collected_curves(pd.DataFram, Plot charge-discharge curves.      Args:         collected_curves(pd.DataFram (+3 more)
 
 ### Community 190 - "Community 190"
-Cohesion: 0.23
-Nodes (13): _atomic_write_bytes(), _compare_dirs(), main(), Register a suite regen callable; ``name`` is the subdirectory under goldens/., Write a DataFrame to parquet with stable column order and compression., Write JSON with sorted keys and a trailing newline., Canonical read → step table → summary on the Arbin .res golden file., _regen_pipeline_smoke() (+5 more)
+Cohesion: 0.14
+Nodes (17): _atomic_write_bytes(), _compare_dirs(), main(), Register a suite regen callable; ``name`` is the subdirectory under goldens/., Register a suite regen callable; ``name`` is the subdirectory under goldens/., Write a DataFrame to parquet with stable column order and compression., Write a DataFrame to parquet with stable column order and compression., Write JSON with sorted keys and a trailing newline. (+9 more)
 
 ### Community 191 - "Community 191"
 Cohesion: 0.29
@@ -1451,16 +1460,16 @@ Cohesion: 0.11
 Nodes (18): 0. `/iflow` — smart dispatcher (quick start), 0a. `/iflow-pick` — choose the next issue (front door), 10. `/iflow-status` — status overview of all issues (read-only), 11. `/iflow-archive` — condense the solved-issues archive (destructive, gated), 1. `/iflow-init` — capture the issue locally, 2. `/iflow-plan` — design the approach, 3. `/iflow-start` — implement the plan, 4. `/iflow-pause` — park work safely (+10 more)
 
 ### Community 200 - "Community 200"
-Cohesion: 0.15
-Nodes (12): Adding a suite, Cellpy-file characterization (Stage 0.2), cellpy tests, code:bash (uv run python dev/regenerate_goldens.py), code:bash (uv run python -c "), code:bash (uv run pytest tests/test_cellpy_file_roundtrip.py -v), code:bash (uv run pytest -m essential), code:bash (uv run pytest) (+4 more)
+Cohesion: 0.12
+Nodes (18): Adding a suite, Cellpy-file characterization (Stage 0.2), cellpy tests, code:bash (uv run python dev/regenerate_goldens.py), code:bash (uv run python -c "), code:bash (uv run pytest tests/test_cellpy_file_roundtrip.py -v), code:bash (uv run pytest tests/test_prms.py -v), code:bash (uv run pytest tests/test_unit_handling_stage0.py -v) (+10 more)
 
 ### Community 201 - "Community 201"
 Cohesion: 0.29
 Nodes (5): code:python (from cellpy import prms), code:python (from cellpy import prms), code:python (from cellpy import prms), Overriding settings, Some tips and tricks
 
 ### Community 202 - "Community 202"
-Cohesion: 0.4
-Nodes (4): _check(), check_connection(), This module contains div classes etc that are not really connected to cellpy., Check if the connection works.      This is a helper function for cellpy v1.0
+Cohesion: 0.22
+Nodes (8): _check(), check_connection(), This module contains div classes etc that are not really connected to cellpy., Check if the connection works.      This is a helper function for cellpy v1.0, _check(), check_connection(), This module contains div classes etc that are not really connected to cellpy., Check if the connection works.      This is a helper function for cellpy v1.0
 
 ### Community 203 - "Community 203"
 Cohesion: 0.08
@@ -1479,8 +1488,8 @@ Cohesion: 0.48
 Nodes (5): Acknowledgements, Implementation and architecture, References, Statement of need, Summary
 
 ### Community 207 - "Community 207"
-Cohesion: 0.33
-Nodes (3): pickle_protocol(), PickleProtocol, Context for using a specific pickle protocol.
+Cohesion: 0.25
+Nodes (4): Free all the farms for content (empty all lists)., Do what is needed and dump it for each engine., Run the engine, build the barn and put the animals on the farm, Place the animals in the barn
 
 ### Community 208 - "Community 208"
 Cohesion: 0.33
@@ -1507,8 +1516,8 @@ Cohesion: 0.33
 Nodes (4): code:{figure} (:name: fig2), code:{figure} (:name: fig3), code:{figure} (:name: fig4), The fundamentals of cellpy
 
 ### Community 215 - "Community 215"
-Cohesion: 0.18
-Nodes (8): Toggle the selected status of a group of cells., Toggle the selected status of a group of cells., Toggle the selected status of a group of cells., Toggle the selected status of a group of cells., Select cells based on a column value., Select cells based on a column value., float, int
+Cohesion: 0.33
+Nodes (5): Augment the summary frame with one value per cycle pulled from raw.          F, Augment the summary frame with one value per cycle pulled from raw.          F, Augment the summary frame with one value per cycle pulled from raw.          F, Augment the summary frame with one value per cycle pulled from raw.          F, Augment the summary frame with one value per cycle pulled from raw.          F
 
 ### Community 216 - "Community 216"
 Cohesion: 0.53
@@ -1563,12 +1572,12 @@ Cohesion: 0.25
 Nodes (6): code:{toctree} (:maxdepth: 2), Developers guide, code:{toctree} (:maxdepth: 2), Developers guide, code:{toctree} (:maxdepth: 2), Developers guide
 
 ### Community 229 - "Community 229"
-Cohesion: 0.39
-Nodes (7): test_easyplot_from_journal(), test_import(), test_journal_loading_json(), test_journal_loading_xlsx(), test_journal_loading_xlsx_only_pages(), test_journal_saving(), test_journal_saving_xlsx()
+Cohesion: 0.33
+Nodes (5): Returns the mass of the active material (in mg).          This method will be, Returns the mass of the active material (in mg).          This method will be, Returns the mass of the active material (in mg).          This method will be, Returns the mass of the active material (in mg).          This method will be, Returns the mass of the active material (in mg).          This method will be
 
 ### Community 230 - "Community 230"
-Cohesion: 0.09
-Nodes (18): Get the IR data (Deprecated)., Get the IR data (Deprecated)., Check if the raw data has data_point as index., Check if the raw data has data_point as column., Check if the raw data has no full duplicates., Check if the raw data has no partial duplicates., Get the IR data (Deprecated)., Check if the raw data has data_point as index. (+10 more)
+Cohesion: 0.07
+Nodes (25): _check_new_dot_get_methods(), Returns timestamp.          Args:             cycle: cycle number (all cycles, Returns timestamp.          Args:             cycle: cycle number (all cycles, Returns timestamp.          Args:             cycle: cycle number (all cycles, Returns timestamp.          Args:             cycle: cycle number (all cycles, # TODO: allow for fixing the interpolation range (so that it is possible, Get the IR data (Deprecated)., Get the IR data (Deprecated). (+17 more)
 
 ### Community 231 - "Community 231"
 Cohesion: 0.33
@@ -1587,8 +1596,8 @@ Cohesion: 0.15
 Nodes (12): Bootstrap: first automated PyPI release, cellpy-core coordination, code:bash (git switch master && git pull --ff-only), Cutting a 1.x release (happy path), Failure modes, One-time GitHub setup (maintainers), Pre-release checklist, Release procedure — GitHub release → PyPI (+4 more)
 
 ### Community 235 - "Community 235"
-Cohesion: 0.08
-Nodes (19): BaseExperiment, CyclingExperiment, _get_cell_spec_from_page(), ImpedanceExperiment, LifeTimeExperiment, Run make_step_table and make_summary on all cells.          Args:, # TODO: option (default) to only recalc if the values (mass, nom_cap,...) have c, Save all cells in the experiment.          Args:             kwargs: passed t (+11 more)
+Cohesion: 0.12
+Nodes (13): BaseExperiment, _get_cell_spec_from_page(), ImpedanceExperiment, LifeTimeExperiment, # TODO: option (default) to only recalc if the values (mass, nom_cap,...) have c, Updates the selected datasets.          Args:             all_in_memory (bool, # TODO: implement experiment.last_cycle, # TODO: create a multiprocessing pool and get one statusbar pr cell (+5 more)
 
 ### Community 236 - "Community 236"
 Cohesion: 0.6
@@ -1607,16 +1616,16 @@ Cohesion: 0.33
 Nodes (6): Remove last rows after given cycle number, Remove last rows after given cycle number, Cut all cycles after a given cycle index number.      Args:         b (batch, Cut all cycles after a given cycle index number.      Args:         b (batch, remove_last_cycles_from_summary(), yank_after()
 
 ### Community 240 - "Community 240"
-Cohesion: 0.08
-Nodes (19): Returns voltage for cycle, step.          Convenience function; same as issuin, Returns voltage for cycle, step.          Convenience function; same as issuin, Returns current for cycle, step.          Convenience function; same as issuin, Returns current for cycle, step.          Convenience function; same as issuin, Returns voltage for cycle, step.          Convenience function; same as issuin, Returns current for cycle, step.          Convenience function; same as issuin, Returns step time for cycle, step.          Convenience function; Convenience, Returns step time for cycle, step.          Convenience function; Convenience (+11 more)
+Cohesion: 0.07
+Nodes (24): Returns voltage for cycle, step.          Convenience function; same as issuin, Returns voltage for cycle, step.          Convenience function; same as issuin, Returns voltage for cycle, step.          Convenience function; same as issuin, Returns current for cycle, step.          Convenience function; same as issuin, Returns current for cycle, step.          Convenience function; same as issuin, Returns current for cycle, step.          Convenience function; same as issuin, Returns voltage for cycle, step.          Convenience function; same as issuin, Returns current for cycle, step.          Convenience function; same as issuin (+16 more)
 
 ### Community 243 - "Community 243"
 Cohesion: 0.15
 Nodes (12): Area (cm2), Cell Type, Group, ID Key, Instrument, Loading (mg/cm2), Mass (mg), Nominal Capacity (+4 more)
 
 ### Community 245 - "Community 245"
-Cohesion: 0.29
-Nodes (4): DataLoader, This module is used for loading data using the corresponding local yaml file wi, Class for loading data from txt files., Args:             instrument_file: name of the local instrument file.
+Cohesion: 0.33
+Nodes (5): Get the number of cycles in the test., Get the number of cycles in the test., Get the number of cycles in the test., Get the number of cycles in the test., Get the number of cycles in the test.
 
 ### Community 265 - "Community 265"
 Cohesion: 0.15
@@ -1627,8 +1636,8 @@ Cohesion: 0.17
 Nodes (8): bool, int, str, _parse_argument_str(), Selects the rows in column batch_col_number.          Args:             batch, Selects the rows in column batch_col_number.          Args:             batch, Checks that the db-file is ok          Returns:             True if OK, False, Checks that the db-file is ok          Returns:             True if OK, False
 
 ### Community 285 - "Community 285"
-Cohesion: 0.07
-Nodes (20): BaseReporter, BaseExporter, BasePlotter, BaseReporter, Doer, max_cycle(), Delivers some info to you about the class., Assign an experiment. (+12 more)
+Cohesion: 0.13
+Nodes (14): BasePlotter, Doer, max_cycle(), Delivers some info to you about the class., Assign an experiment., Base class for all the classes that do something to the experiment(s).      At, # TODO: modify _load_cellpy_file so that it can select parts of the data (max_cy, # TODO: modify this so that it can select parts of the data (max_cycle etc) (+6 more)
 
 ### Community 286 - "Community 286"
 Cohesion: 0.17
@@ -1639,16 +1648,12 @@ Cohesion: 0.17
 Nodes (11): BDF export design notes, code:block1 (cellpy.readers.cellreader.CellpyCell), Column / unit map, Layering rule, Locked decisions, Out of scope (clean follow-ups), Overriding target units (`bdf_units=`), Tests / guards (+3 more)
 
 ### Community 294 - "Community 294"
-Cohesion: 0.21
-Nodes (13): AliasModule(), distribution_version(), importobj(), _py_abspath(), try to get the version of the named distribution,     returns None on failure, imports a module, then resolves the attrname on it, special version of abspath     that will leave paths from jython jars alone, _initpkg() (+5 more)
+Cohesion: 0.18
+Nodes (12): AliasModule(), distribution_version(), importobj(), _py_abspath(), try to get the version of the named distribution,     returns None on failure, imports a module, then resolves the attrname on it, special version of abspath     that will leave paths from jython jars alone, Decorator to synchronise __getattr__ calls. (+4 more)
 
 ### Community 297 - "Community 297"
 Cohesion: 0.24
 Nodes (9): DataFrame, float, Path, str, btsda_csv_to_parquet(), Functions for generating test data from BTSDA.  Export data using BTSDA.  Ma, Convert hh:mm:ss.ms to (float64) seconds., Convert csv from BTSDA into Parquet file.      Export data to CSV using BTSDA, (+1 more)
-
-### Community 298 - "Community 298"
-Cohesion: 0.27
-Nodes (3): apipkg: control the exported namespace of a Python package.  see https://pypi., Decorator to synchronise __getattr__ calls., _synchronized()
 
 ### Community 299 - "Community 299"
 Cohesion: 0.22
@@ -1675,8 +1680,8 @@ Cohesion: 0.18
 Nodes (11): 20230221_CLP001_1_02_cc, 20230221_CLP001_1_03_cc, 20230221_CLP001_1_04_cc, 20230221_CLP001_2_01_cc, 20230221_CLP001_2_04_cc, 20230221_CLP001_3_01_cc, 20230221_CLP001_3_02_cc, 20230221_CLP001_3_03_cc (+3 more)
 
 ### Community 305 - "Community 305"
-Cohesion: 0.12
-Nodes (12): Warning:             This function is deprecated. Use the setter instead (mass, Warning:             This function is deprecated. Use the setter instead (mass, Warning:             This function is deprecated. Use the setter instead (tot_m, Warning:             This function is deprecated. Use the setter instead (tot_m, Warning:             This function is deprecated. Use the setter instead (nom_c, Warning:             This function is deprecated. Use the setter instead (nom_c, Warning:             This function is deprecated. Use the setter instead (mass, Warning:             This function is deprecated. Use the setter instead (tot_m (+4 more)
+Cohesion: 0.08
+Nodes (20): Warning:             This function is deprecated. Use the setter instead (mass, Warning:             This function is deprecated. Use the setter instead (mass, Warning:             This function is deprecated. Use the setter instead (mass, Warning:             This function is deprecated. Use the setter instead (tot_m, Warning:             This function is deprecated. Use the setter instead (tot_m, Warning:             This function is deprecated. Use the setter instead (tot_m, Warning:             This function is deprecated. Use the setter instead (nom_c, Warning:             This function is deprecated. Use the setter instead (nom_c (+12 more)
 
 ### Community 306 - "Community 306"
 Cohesion: 0.18
@@ -1719,12 +1724,12 @@ Cohesion: 0.18
 Nodes (11): instrument, 20230221_CLP001_1_02_cc, 20230221_CLP001_1_03_cc, 20230221_CLP001_1_04_cc, 20230221_CLP001_2_01_cc, 20230221_CLP001_2_04_cc, 20230221_CLP001_3_01_cc, 20230221_CLP001_3_02_cc (+3 more)
 
 ### Community 440 - "Community 440"
-Cohesion: 0.29
-Nodes (7): instruments_dict(), Create a dictionary with the available instrument loaders.      The dictionary, Create a dictionary with the available instrument loaders.      The dictionary, Create a dictionary with the available instrument loaders.      The dictionary, Create a dictionary with the available instrument loaders.      The dictionary, Create a dictionary with the available instrument loaders.      The dictionary, Create a dictionary with the available instrument loaders.      The dictionary
+Cohesion: 0.25
+Nodes (8): instruments_dict(), Create a dictionary with the available instrument loaders.      The dictionary, Create a dictionary with the available instrument loaders.      The dictionary, Create a dictionary with the available instrument loaders.      The dictionary, Create a dictionary with the available instrument loaders.      The dictionary, Create a dictionary with the available instrument loaders.      The dictionary, Create a dictionary with the available instrument loaders.      The dictionary, Create a dictionary with the available instrument loaders.      The dictionary
 
 ### Community 441 - "Community 441"
-Cohesion: 0.29
-Nodes (7): print_instruments(), Prints out the available instrument loaders and their models., Prints out the available instrument loaders and their models., Prints out the available instrument loaders and their models., Prints out the available instrument loaders and their models., Prints out the available instrument loaders and their models., Prints out the available instrument loaders and their models.
+Cohesion: 0.25
+Nodes (8): print_instruments(), Prints out the available instrument loaders and their models., Prints out the available instrument loaders and their models., Prints out the available instrument loaders and their models., Prints out the available instrument loaders and their models., Prints out the available instrument loaders and their models., Prints out the available instrument loaders and their models., Prints out the available instrument loaders and their models.
 
 ### Community 442 - "Community 442"
 Cohesion: 0.18
@@ -1835,8 +1840,8 @@ Cohesion: 0.22
 Nodes (8): active_electrode_area(), active_mass(), mass(), nom_cap(), nominal_capacity(), Parse for unit, update cellpy_units class, and return magnitude., Parse for unit, update cellpy_units class, and return magnitude., tot_mass()
 
 ### Community 476 - "Community 476"
-Cohesion: 0.27
-Nodes (4): get additional cell info from db, get additional cell info from db, Journal for selected batch.          The journal contains pages (pandas.DataFr, Journal for selected batch.          The journal contains pages (pandas.DataFr
+Cohesion: 0.33
+Nodes (5): Load a table that contains step-type definitions.          This method loads a, Load a table that contains step-type definitions.          This method loads a, Load a table that contains step-type definitions.          This method loads a, Load a table that contains step-type definitions.          This method loads a, Load a table that contains step-type definitions.          This method loads a
 
 ### Community 477 - "Community 477"
 Cohesion: 0.25
@@ -2151,16 +2156,20 @@ Cohesion: 0.5
 Nodes (3): Issue #391: BatchSummaryCollector default y-axis scaling, Issue metadata, Original issue text
 
 ### Community 555 - "Community 555"
-Cohesion: 0.2
-Nodes (10): _BdfColumn, Lowercase alphanumeric slug for a unit symbol.      Used to synthesize machine, Lowercase alphanumeric slug for a unit symbol.      Used to synthesize machine, Pick the output column name for ``spec`` given the effective target unit., Pick the output column name for ``spec`` given the effective target unit., One row of the cellpy <-> BDF column map.      ``unit_kind`` is the attribute, One row of the cellpy <-> BDF column map.      ``unit_kind`` is the attribute, One row of the cellpy <-> BDF column map.      ``unit_kind`` is the attribute (+2 more)
+Cohesion: 0.33
+Nodes (5): Select steps (not documented yet)., Select steps (not documented yet)., Select steps (not documented yet)., Select steps (not documented yet)., Select steps (not documented yet).
+
+### Community 556 - "Community 556"
+Cohesion: 0.33
+Nodes (5): Experimental method for getting the total time spent at low / high voltage., Experimental method for getting the total time spent at low / high voltage., Experimental method for getting the total time spent at low / high voltage., Experimental method for getting the total time spent at low / high voltage., Experimental method for getting the total time spent at low / high voltage.
 
 ### Community 557 - "Community 557"
-Cohesion: 0.33
-Nodes (5): Retrieve summary returned as a pandas DataFrame.          Warning:, Retrieve summary returned as a pandas DataFrame.          Warning:, Retrieve summary returned as a pandas DataFrame.          Warning:, Retrieve summary returned as a pandas DataFrame.          Warning:, Retrieve summary returned as a pandas DataFrame.          Warning:
+Cohesion: 0.29
+Nodes (6): Retrieve summary returned as a pandas DataFrame.          Warning:, Retrieve summary returned as a pandas DataFrame.          Warning:, Retrieve summary returned as a pandas DataFrame.          Warning:, Retrieve summary returned as a pandas DataFrame.          Warning:, Retrieve summary returned as a pandas DataFrame.          Warning:, Retrieve summary returned as a pandas DataFrame.          Warning:
 
-### Community 559 - "Community 559"
-Cohesion: 0.25
-Nodes (9): bool, float, _conversion_factor(), _is_unit_equivalent(), Return ``True`` if ``a`` and ``b`` describe the same unit.      Equivalent mea, Return ``True`` if ``a`` and ``b`` describe the same unit.      Equivalent mea, Return the multiplier that turns ``source_unit`` into ``target_unit``.      De, Return the multiplier that turns ``source_unit`` into ``target_unit``.      De (+1 more)
+### Community 558 - "Community 558"
+Cohesion: 0.4
+Nodes (4): Export the raw time-series in Battery Data Format (BDF).          See `Battery, Export the raw time-series in Battery Data Format (BDF).          See `Battery, Export the raw time-series in Battery Data Format (BDF).          See `Battery, Export the raw time-series in Battery Data Format (BDF).          See `Battery
 
 ### Community 561 - "Community 561"
 Cohesion: 0.22
@@ -2174,21 +2183,33 @@ Nodes (8): _check_convert_from_simple_unit_label_to_string_unit_label(), convert
 Cohesion: 0.29
 Nodes (6): code:markdown (# Archived issues — YYYY-MM-DD), Constraints, Input, Instructions, issue-flow — archive solved issues (`/iflow-archive`), MODEL & EXECUTION DIRECTIVE
 
+### Community 564 - "Community 564"
+Cohesion: 0.5
+Nodes (3): Set the directory containing .hdf5-files.          Used for setting directory, Set the directory containing .hdf5-files.          Used for setting directory, Set the directory containing .hdf5-files.          Used for setting directory
+
 ### Community 565 - "Community 565"
-Cohesion: 0.33
-Nodes (6): group_by_interpolate(), interpolate_y_on_x(), interpolate_y_on_x_per_monotonic_segments(), Interpolate a column based on another column.      Args:         df: DataFram, Interpolate y on x per strictly monotonic segment, then concatenate.      When, Do a pandas.DataFrame.group_by and perform interpolation for all groups.
+Cohesion: 0.5
+Nodes (3): Set the directory containing .res-files.          Used for setting directory f, Set the directory containing .res-files.          Used for setting directory f, Set the directory containing .res-files.          Used for setting directory f
 
 ### Community 577 - "Community 577"
-Cohesion: 0.17
-Nodes (12): Collects summaries using cellpy.utils.helpers.concat_summaries., Collects summaries using cellpy.utils.helpers.concat_summaries., summary_collector(), add_cv_step_columns(), concat_summaries(), create_group_names(), Helper function for concat_summaries.      The prioritisation of methods for c, Helper function for concat_summaries.      The prioritisation of methods for c (+4 more)
+Cohesion: 0.67
+Nodes (3): Collects summaries using cellpy.utils.helpers.concat_summaries., Collects summaries using cellpy.utils.helpers.concat_summaries., summary_collector()
 
 ### Community 578 - "Community 578"
 Cohesion: 0.33
 Nodes (6): export_dqdv(), _extract_dqdv(), Convenience function for storing data column-wise in a csv-file., Simple wrapper around the cellpy.utils.ica.dqdv function., Exports dQ/dV data from a CellpyCell instance.      Args:         cell_data:, save_multi()
 
+### Community 579 - "Community 579"
+Cohesion: 0.67
+Nodes (3): add_cv_step_columns(), Add columns for CV steps., Add columns for CV steps.
+
 ### Community 580 - "Community 580"
 Cohesion: 0.67
 Nodes (3): create_rate_column(), Adds a rate column to the dataframe (steps)., Adds a rate column to the dataframe (steps).
+
+### Community 585 - "Community 585"
+Cohesion: 0.67
+Nodes (3): create_group_names(), Helper function for concat_summaries.      The prioritisation of methods for c, Helper function for concat_summaries.      The prioritisation of methods for c
 
 ### Community 645 - "Community 645"
 Cohesion: 0.19
@@ -2206,13 +2227,9 @@ Nodes (4): Issue #407 — Status, Locked decisions (from plan review), Remaining
 Cohesion: 0.5
 Nodes (3): Issue #415 status, Remaining work, What's done
 
-### Community 650 - "Community 650"
-Cohesion: 0.4
-Nodes (4): Return a filtered copy of the summary DataFrame.          Thin wrapper around, Return a filtered copy of the summary DataFrame.          Thin wrapper around, Return a filtered copy of the summary DataFrame.          Thin wrapper around, Return a filtered copy of the summary DataFrame.          Thin wrapper around
-
 ### Community 651 - "Community 651"
-Cohesion: 0.4
-Nodes (4): Returns a dict with cycle numbers as keys         and corresponding steps (list, Returns a dict with cycle numbers as keys         and corresponding steps (list, Returns a dict with cycle numbers as keys         and corresponding steps (list, Returns a dict with cycle numbers as keys         and corresponding steps (list
+Cohesion: 0.33
+Nodes (5): Returns a dict with cycle numbers as keys         and corresponding steps (list, Returns a dict with cycle numbers as keys         and corresponding steps (list, Returns a dict with cycle numbers as keys         and corresponding steps (list, Returns a dict with cycle numbers as keys         and corresponding steps (list, Returns a dict with cycle numbers as keys         and corresponding steps (list
 
 ### Community 662 - "Community 662"
 Cohesion: 0.5
@@ -2230,36 +2247,24 @@ Nodes (3): This test is only ran if you are working on your local machine.      
 Cohesion: 0.67
 Nodes (3): Test the _select_without method for filtering and modifying cell cycling data., Test the _select_without method for filtering and modifying cell cycling data., test_select_without()
 
-### Community 666 - "Community 666"
-Cohesion: 0.67
-Nodes (3): Override raw_units.current to mA and verify pint scales mA->A correctly., Override cellpy_units.current to mA and verify pint scales A->A correctly., test_non_default_current_unit_uses_pint()
-
-### Community 667 - "Community 667"
-Cohesion: 0.67
-Nodes (3): Charge in `mAh` would normally be scaled; as an extra it must stay raw., Charge in `mAh` would normally be scaled; as an extra it must stay raw., test_extras_values_are_not_unit_converted()
-
-### Community 668 - "Community 668"
-Cohesion: 0.67
-Nodes (3): Architectural rule: cellpy.exporters.bdf must not depend on cellpy.utils., Architectural rule: cellpy.exporters.bdf must not depend on cellpy.utils., test_module_does_not_import_from_cellpy_utils()
-
 ### Community 669 - "Community 669"
-Cohesion: 0.4
-Nodes (4): Print the step table., Print the step table., Print the step table., Print the step table.
+Cohesion: 0.33
+Nodes (5): Print the step table., Print the step table., Print the step table., Print the step table., Print the step table.
 
 ## Knowledge Gaps
-- **3643 isolated node(s):** `get the platform you are running on`, `context manager to capture output from a running subproject`, `get version number and sha256 for a pypi package      Args:         package (`, `Simply commit and push`, `Clean up stuff from previous builds` (+3638 more)
+- **3769 isolated node(s):** `get the platform you are running on`, `context manager to capture output from a running subproject`, `get version number and sha256 for a pypi package      Args:         package (`, `Simply commit and push`, `Clean up stuff from previous builds` (+3764 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **234 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `CellpyCell` connect `Community 73` to `Community 1`, `Community 3`, `Community 650`, `Community 651`, `Community 13`, `Community 24`, `Community 669`, `Community 29`, `Community 31`, `Community 166`, `Community 169`, `Community 42`, `Community 555`, `Community 557`, `Community 174`, `Community 559`, `Community 561`, `Community 305`, `Community 180`, `Community 309`, `Community 61`, `Community 576`, `Community 67`, `Community 68`, `Community 69`, `Community 584`, `Community 72`, `Community 76`, `Community 475`, `Community 230`, `Community 109`, `Community 240`, `Community 119`, `Community 120`, `Community 121`, `Community 124`, `Community 125`?**
-  _High betweenness centrality (0.104) - this node is a cross-community bridge._
-- **Why does `UnderDefined` connect `Community 69` to `Community 129`, `Community 1`, `Community 645`, `Community 12`, `Community 146`, `Community 18`, `Community 23`, `Community 285`, `Community 158`, `Community 32`, `Community 42`, `Community 45`, `Community 178`, `Community 73`, `Community 77`, `Community 82`, `Community 83`, `Community 85`, `Community 215`, `Community 91`, `Community 476`, `Community 98`, `Community 109`, `Community 119`, `Community 123`?**
-  _High betweenness centrality (0.069) - this node is a cross-community bridge._
-- **Why does `NullData` connect `Community 69` to `Community 1`, `Community 13`, `Community 17`, `Community 152`, `Community 28`, `Community 29`, `Community 161`, `Community 34`, `Community 38`, `Community 42`, `Community 43`, `Community 44`, `Community 50`, `Community 55`, `Community 59`, `Community 64`, `Community 194`, `Community 67`, `Community 71`, `Community 73`, `Community 207`, `Community 210`, `Community 84`, `Community 98`, `Community 229`, `Community 237`, `Community 109`, `Community 110`, `Community 119`, `Community 249`?**
-  _High betweenness centrality (0.051) - this node is a cross-community bridge._
+- **Why does `CellpyCell` connect `Community 3` to `Community 1`, `Community 129`, `Community 651`, `Community 13`, `Community 24`, `Community 669`, `Community 166`, `Community 38`, `Community 169`, `Community 42`, `Community 555`, `Community 556`, `Community 557`, `Community 558`, `Community 174`, `Community 561`, `Community 305`, `Community 564`, `Community 565`, `Community 180`, `Community 309`, `Community 59`, `Community 61`, `Community 576`, `Community 67`, `Community 68`, `Community 69`, `Community 584`, `Community 73`, `Community 72`, `Community 76`, `Community 84`, `Community 215`, `Community 475`, `Community 476`, `Community 229`, `Community 230`, `Community 109`, `Community 240`, `Community 245`, `Community 119`, `Community 120`, `Community 121`, `Community 124`, `Community 125`?**
+  _High betweenness centrality (0.113) - this node is a cross-community bridge._
+- **Why does `UnderDefined` connect `Community 69` to `Community 1`, `Community 3`, `Community 645`, `Community 12`, `Community 146`, `Community 18`, `Community 23`, `Community 29`, `Community 285`, `Community 158`, `Community 32`, `Community 45`, `Community 178`, `Community 67`, `Community 202`, `Community 77`, `Community 207`, `Community 82`, `Community 83`, `Community 85`, `Community 91`, `Community 123`, `Community 127`?**
+  _High betweenness centrality (0.073) - this node is a cross-community bridge._
+- **Why does `NullData` connect `Community 69` to `Community 1`, `Community 3`, `Community 12`, `Community 13`, `Community 17`, `Community 147`, `Community 28`, `Community 34`, `Community 39`, `Community 43`, `Community 44`, `Community 177`, `Community 50`, `Community 55`, `Community 64`, `Community 194`, `Community 67`, `Community 71`, `Community 73`, `Community 210`, `Community 84`, `Community 98`, `Community 102`, `Community 237`, `Community 110`, `Community 249`?**
+  _High betweenness centrality (0.053) - this node is a cross-community bridge._
 - **Are the 35 inferred relationships involving `CellpyCell` (e.g. with `_BdfColumn` and `DeprecatedFeature`) actually correct?**
   _`CellpyCell` has 35 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 22 inferred relationships involving `Batch` (e.g. with `CellpyCell` and `NullData`) actually correct?**
@@ -2267,4 +2272,4 @@ _Questions this graph is uniquely positioned to answer:_
 - **Are the 27 inferred relationships involving `LabJournal` (e.g. with `Batch` and `Easyplot`) actually correct?**
   _`LabJournal` has 27 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `get the platform you are running on`, `context manager to capture output from a running subproject`, `get version number and sha256 for a pypi package      Args:         package (` to the rest of the system?**
-  _3643 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _3769 weakly-connected nodes found - possible documentation gaps or missing edges._
