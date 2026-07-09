@@ -48,7 +48,9 @@ uv run pytest -m essential
 ```
 
 Tier 1 CI runs the same subset on every PR to `master`. See
-[`.issueflows/04-designs-and-guides/ci-tiers.md`](../.issueflows/04-designs-and-guides/ci-tiers.md).
+[`.issueflows/04-designs-and-guides/ci-tiers.md`](../.issueflows/04-designs-and-guides/ci-tiers.md)
+and [`.github/workflows/ci-scheduled.yml`](../../.github/workflows/ci-scheduled.yml) for the
+full conda/platform matrix (weekly + manual).
 
 ## Running the full suite
 
