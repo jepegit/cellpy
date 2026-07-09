@@ -1,0 +1,7 @@
+{
+  "cycle1_data_point": 1457,
+  "n_cycles": 18,
+  "n_steps": 103,
+  "source": "testdata/data/20160805_test001_45_cc_01.res",
+  "suite": "pipeline_smoke"
+}
