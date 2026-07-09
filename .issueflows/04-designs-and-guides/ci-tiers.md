@@ -11,8 +11,7 @@ cellpy CI is split into a fast merge gate and a slower scheduled matrix.
 **Branch protection:** require this job before merge.
 
 **Contract:** anything that must block a merge belongs on the `essential` marker (or add it
-when you discover a gap). Mark new regression guards `@pytest.mark.essential` when they
-guard read → step table → summary, cellpy-core parity, or golden-fixture oracles.
+when you discover a gap). See [`tests/README.md`](../../tests/README.md).
 
 ## Tier 2 — platform matrix (`ci-scheduled.yml`)
 
@@ -46,8 +45,8 @@ Add `@pytest.mark.essential` when the test guards behaviour that every PR must p
 - read → step table → summary pipeline smoke,
 - cellpy / cellpy-core parity contract,
 - golden-fixture oracles under `tests/data/goldens/`,
-- other regressions you cannot afford to discover only on the scheduled run.
+- other regressions you cannot afford to discover only on Monday's scheduled run.
 
-Keep the set small so Tier 1 stays fast. Platform-specific paths (Windows ODBC,
-macOS-only skips) stay in the full suite unless you add a targeted essential on that
-platform — which would require a separate job.
+Keep the set small (~20 tests today) so Tier 1 stays fast. Platform-specific paths
+(Windows ODBC, macOS-only skips) stay in the full suite unless you add a targeted
+essential on that platform — which would require a separate job.

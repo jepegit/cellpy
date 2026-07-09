@@ -29,6 +29,8 @@ couple of minutes. Subsequent runs are fast.
 
 ## Running tests
 
+Golden-fixture convention and the `essential` marker are documented in [`tests/README.md`](../../tests/README.md).
+
 ```bash
 # Canonical local run (uses the marker deselection in pyproject.toml addopts)
 uv run pytest
