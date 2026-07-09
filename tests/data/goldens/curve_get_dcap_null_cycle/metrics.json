@@ -1,0 +1,10 @@
+{
+  "expect_null_data": true,
+  "func_name": "get_dcap",
+  "kwargs": {
+    "as_frame": true,
+    "cycle": 999
+  },
+  "source": "testdata\\data\\20160805_test001_45_cc_01.res",
+  "suite": "curve_get_dcap_null_cycle"
+}

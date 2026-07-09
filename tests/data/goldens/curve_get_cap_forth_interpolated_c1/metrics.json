@@ -1,0 +1,18 @@
+{
+  "columns": [
+    "capacity",
+    "voltage"
+  ],
+  "expect_null_data": false,
+  "func_name": "get_cap",
+  "kwargs": {
+    "cycle": 1,
+    "interpolated": true,
+    "method": "forth",
+    "number_of_points": 100
+  },
+  "n_columns": 2,
+  "n_rows": 1545,
+  "source": "testdata\\data\\20160805_test001_45_cc_01.res",
+  "suite": "curve_get_cap_forth_interpolated_c1"
+}

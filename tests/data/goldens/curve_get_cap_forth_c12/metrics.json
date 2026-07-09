@@ -1,0 +1,22 @@
+{
+  "columns": [
+    "capacity",
+    "cycle",
+    "voltage"
+  ],
+  "expect_null_data": false,
+  "func_name": "get_cap",
+  "kwargs": {
+    "cycles": [
+      1,
+      2
+    ],
+    "insert_nan": false,
+    "label_cycle_number": true,
+    "method": "forth"
+  },
+  "n_columns": 3,
+  "n_rows": 1866,
+  "source": "testdata\\data\\20160805_test001_45_cc_01.res",
+  "suite": "curve_get_cap_forth_c12"
+}
