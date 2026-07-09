@@ -14,6 +14,7 @@ import pytest
 from pandas.testing import assert_frame_equal
 
 from cellpy import cellreader
+from tests.golden_support import stabilize_summary_for_golden
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 GOLDENS_ROOT = REPO_ROOT / "tests" / "data" / "goldens"
@@ -68,5 +69,6 @@ def test_pipeline_smoke_summary_matches_golden_parquet():
 
     expected = pd.read_parquet(PIPELINE_SMOKE_SUMMARY)
     summary, _ = _run_pipeline_smoke()
-    summary = summary[sorted(summary.columns)]
+    summary = stabilize_summary_for_golden(summary[sorted(summary.columns)])
+    expected = stabilize_summary_for_golden(expected[sorted(expected.columns)])
     assert_frame_equal(summary, expected)

@@ -14,6 +14,10 @@ uv run python dev/regenerate_goldens.py --verify   # assert byte-identical re-ru
 Never edit golden files by hand; review diffs intentionally when re-running the script
 after an expected behaviour change.
 
+Datetime columns listed in ``tests/golden_support.py`` (currently ``date_time``) are
+floored to **microsecond** precision before golden write/compare so parquet oracles stay
+stable across platforms.
+
 ### Layout
 
 | Kind | Path pattern | Format |

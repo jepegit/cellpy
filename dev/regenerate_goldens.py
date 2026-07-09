@@ -30,6 +30,11 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 GOLDENS_ROOT = REPO_ROOT / "tests" / "data" / "goldens"
 RES_FILE = REPO_ROOT / "testdata" / "data" / "20160805_test001_45_cc_01.res"
 
+if str(REPO_ROOT / "tests") not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT / "tests"))
+
+from golden_support import stabilize_summary_for_golden  # noqa: E402
+
 _SUITES: dict[str, Callable[[Path], None]] = {}
 
 # Scalar oracle mirrored from tests/test_cell_readers.py (canonical Arbin .res).
@@ -101,7 +106,7 @@ def _regen_pipeline_smoke(out_dir: Path) -> None:
     cell.make_step_table()
     cell.make_summary()
 
-    summary = cell.data.summary.reset_index(drop=True)
+    summary = stabilize_summary_for_golden(cell.data.summary.reset_index(drop=True))
     steps = cell.data.steps.reset_index(drop=True)
     metrics = {
         "cycle1_data_point": int(summary.loc[summary.index[0], "data_point"]),
