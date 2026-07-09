@@ -61,6 +61,21 @@ cellpy_file_path_v5 = os.path.join(cellpy_data_dir, cellpy_file_name_v5)
 cellpy_file_name_v6 = "20160805_test001_45_cc_v6.h5"
 cellpy_file_path_v6 = os.path.join(cellpy_data_dir, cellpy_file_name_v6)
 
+# Stage 0.2 characterization fixtures (correct version suffixes)
+cellpy_file_name_v5 = "20160805_test001_45_cc_v5.h5"
+cellpy_file_path_v5 = os.path.join(cellpy_data_dir, cellpy_file_name_v5)
+
+cellpy_file_name_v7 = "20160805_test001_45_cc_v7.h5"
+cellpy_file_path_v7 = os.path.join(cellpy_data_dir, cellpy_file_name_v7)
+
+cellpy_file_name_v8 = "20160805_test001_45_cc_v8.h5"
+cellpy_file_path_v8 = os.path.join(cellpy_data_dir, cellpy_file_name_v8)
+
+cellpy_file_name_v8_with_fids = "20160805_test001_45_cc_v8_with_fids.h5"
+cellpy_file_path_v8_with_fids = os.path.join(
+    cellpy_data_dir, cellpy_file_name_v8_with_fids
+)
+
 temporary_cellpy_file_name = "tmpfile.h5"
 temporary_cellpy_file_path = os.path.join(cellpy_data_dir, temporary_cellpy_file_name)
 

@@ -38,6 +38,33 @@ Philosophy (loader-free core vs loaderful cellpy): see
 2. Add tests that read from `tests/data/goldens/my_suite/` (skip if files missing).
 3. Document the suite in [`data/goldens/README.md`](data/goldens/README.md).
 
+## Cellpy-file characterization (Stage 0.2)
+
+HDF5 load/save behavior is locked in [`test_cellpy_file_roundtrip.py`](test_cellpy_file_roundtrip.py)
+before the cellpy-file module extraction. The primary v8 oracle is the committed fixture
+`../testdata/hdf5/20160805_test001_45_cc_v8_with_fids.h5` (built from the canonical Arbin
+`.res` with populated fid table).
+
+Regenerate that file only when v8 **write** semantics change intentionally:
+
+```bash
+uv run python -c "
+from pathlib import Path
+from cellpy import cellreader
+res = Path('testdata/data/20160805_test001_45_cc_01.res')
+out = Path('testdata/hdf5/20160805_test001_45_cc_v8_with_fids.h5')
+c = cellreader.CellpyCell()
+c.from_raw(res); c.mass = 1.0; c.make_step_table(); c.make_summary(); c.save(out)
+"
+```
+
+Three tests are marked `@pytest.mark.essential` (v8 round-trip, limits-prefix trap,
+`max_cycle` selector). Legacy version matrix and corrupt-file tests run in the full suite only.
+
+```bash
+uv run pytest tests/test_cellpy_file_roundtrip.py -v
+```
+
 ## `essential` marker
 
 Fast smoke tests — read → step table → summary pipeline and cellpy/cellpy-core parity —
