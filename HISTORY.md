@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+* Testing: prms configuration characterization tests — inventory parity contract, config round-trip/precedence, OtherPath coercion, `.env_cellpy` pickup, and `cellpy setup` dir/file creation (#430)
 * Testing: cellpy-file HDF5 characterization tests — v8 round-trip (fid-populated fixture), limits-prefix trap, `max_cycle` selector, legacy version matrix, and missing-key failure mode (#429)
 * Testing: golden-fixture convention under `tests/data/goldens/`, `dev/regenerate_goldens.py` suite registry, and `pipeline_smoke` essential oracle on the canonical Arbin `.res` (#428)
 * Docs: clarify cellpy_units defaults in `cellpy.get()` and Google docstring formatting cleanup in `cellreader.py` (#425)

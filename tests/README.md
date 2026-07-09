@@ -65,6 +65,25 @@ Three tests are marked `@pytest.mark.essential` (v8 round-trip, limits-prefix tr
 uv run pytest tests/test_cellpy_file_roundtrip.py -v
 ```
 
+## Configuration characterization (Stage 0.3)
+
+`prms` / `prmreader` / `cellpy setup` behavior is locked in
+[`test_prms.py`](test_prms.py) with helpers in [`prms_support.py`](prms_support.py).
+The frozen `EXPECTED_PRMS_INVENTORY` tuple list is the Step 2 pydantic parity contract —
+update it intentionally when dataclass defaults change.
+
+Five tests are marked `@pytest.mark.essential` (inventory, full-section round-trip,
+precedence, OtherPath coercion smoke, `.env_cellpy` pickup). Non-dry-run `cellpy setup`
+dir/file creation lives in [`test_cellpy_cmd.py`](test_cellpy_cmd.py) (full suite only).
+
+Code defaults are authoritative when they differ from
+`cellpy/parameters/.cellpy_prms_default.conf` (e.g. `Materials.cell_class` is `Li-Ion` in
+code, `LIB` in the template YAML).
+
+```bash
+uv run pytest tests/test_prms.py -v
+```
+
 ## `essential` marker
 
 Fast smoke tests — read → step table → summary pipeline and cellpy/cellpy-core parity —

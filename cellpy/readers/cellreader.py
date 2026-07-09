@@ -2030,7 +2030,9 @@ class CellpyCell:
                 fid_dir, parent_level, store
             )
 
-        self._extract_meta_from_old_cellpy_file_max_v7(data, meta_table, filename)
+        self._extract_meta_from_old_cellpy_file_max_v7(
+            data, meta_table, filename, upgrade_from_to=(5, CELLPY_FILE_VERSION)
+        )
 
         if fid_table_selected:
             (
@@ -2107,7 +2109,9 @@ class CellpyCell:
             fid_table, fid_table_selected = self._extract_fids_from_cellpy_file(
                 _fid_dir, parent_level, store
             )
-        self._extract_meta_from_old_cellpy_file_max_v7(data, meta_table, filename)
+        self._extract_meta_from_old_cellpy_file_max_v7(
+            data, meta_table, filename, upgrade_from_to=(4, CELLPY_FILE_VERSION)
+        )
         warnings.warn(
             "Loaded old cellpy-file version (<5). Please update and save again."
         )
