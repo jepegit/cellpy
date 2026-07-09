@@ -1,9 +1,9 @@
+# Legacy unit math tests; cross-boundary parity lives in test_unit_handling_stage0.py.
 import logging
 
 import pytest
 
-import cellpy.readers.data_structures
-from cellpy import log, prms
+from cellpy import log
 from cellpy.readers.data_structures import Q
 from cellpy.exceptions import NoDataFound
 from cellpy.parameters.internal_settings import get_headers_summary
