@@ -3,22 +3,37 @@
 from __future__ import annotations
 
 import pandas as pd
+import pytest
+from pandas.testing import assert_frame_equal
 
-# Summary ``date_time`` is stored as datetime64[ns] (or its int64 view). Sub-nanosecond
-# rounding differs across platforms after parquet round-trip, so goldens floor to µs.
-_DATETIME_GOLDEN_COLUMNS = ("date_time",)
+# ``date_time`` can differ by 1 ns across platforms after parquet round-trip.
+# Compare as epoch-ns with a 1 µs absolute tolerance.
+DATE_TIME_GOLDEN_ABS_NS = 1_000
+DATE_TIME_GOLDEN_COLUMN = "date_time"
 
 
-def stabilize_summary_for_golden(df: pd.DataFrame) -> pd.DataFrame:
-    """Return a copy of ``df`` with platform-stable datetime columns for golden I/O."""
-    out = df.copy()
-    for col in _DATETIME_GOLDEN_COLUMNS:
-        if col not in out.columns:
-            continue
-        series = out[col]
-        if pd.api.types.is_datetime64_any_dtype(series):
-            out[col] = pd.to_datetime(series).astype("datetime64[us]")
-        elif pd.api.types.is_integer_dtype(series):
-            # ns since epoch — floor to whole microseconds.
-            out[col] = (series // 1_000) * 1_000
-    return out
+def sort_summary_columns(df: pd.DataFrame) -> pd.DataFrame:
+    """Return a copy with lexicographically sorted columns (golden convention)."""
+    return df[sorted(df.columns)].copy()
+
+
+def date_time_as_epoch_ns(series: pd.Series) -> pd.Series:
+    """Normalize ``date_time`` to int64 nanoseconds since epoch for comparison."""
+    if pd.api.types.is_datetime64_any_dtype(series):
+        return pd.to_datetime(series).astype("datetime64[ns]").astype("int64")
+    return series.astype("int64")
+
+
+def assert_summary_matches_golden(actual: pd.DataFrame, expected: pd.DataFrame) -> None:
+    """Compare summary frames: exact on all columns except ``date_time`` (approx ns)."""
+    actual = sort_summary_columns(actual)
+    expected = sort_summary_columns(expected)
+    assert list(actual.columns) == list(expected.columns)
+
+    other_cols = [c for c in actual.columns if c != DATE_TIME_GOLDEN_COLUMN]
+    assert_frame_equal(actual[other_cols], expected[other_cols])
+
+    if DATE_TIME_GOLDEN_COLUMN in actual.columns:
+        act_ns = date_time_as_epoch_ns(actual[DATE_TIME_GOLDEN_COLUMN]).tolist()
+        exp_ns = date_time_as_epoch_ns(expected[DATE_TIME_GOLDEN_COLUMN]).tolist()
+        assert act_ns == pytest.approx(exp_ns, abs=DATE_TIME_GOLDEN_ABS_NS)
