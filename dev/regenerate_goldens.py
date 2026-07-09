@@ -34,6 +34,7 @@ if str(REPO_ROOT / "tests") not in sys.path:
 
 from golden_support import sort_summary_columns  # noqa: E402
 from loader_golden_support import LOADER_GOLDEN_SPECS, load_loader_snapshot  # noqa: E402
+from curve_golden_support import CURVE_GOLDEN_CASES, capture_curve_case  # noqa: E402
 
 _SUITES: dict[str, Callable[[Path], None]] = {}
 
@@ -182,6 +183,38 @@ def _register_loader_golden_suites() -> None:
 
 
 _register_loader_golden_suites()
+
+
+def _register_curve_golden_suites() -> None:
+    for case in CURVE_GOLDEN_CASES:
+
+        def _make_regen(selected_case=case):
+            @register_golden_suite(selected_case.suite)
+            def _regen_curve(out_dir: Path, _case=selected_case) -> None:
+                frame, metrics, null_data = capture_curve_case(_case)
+                write_json_doc(metrics, out_dir / "metrics.json")
+                if _case.expect_null_data:
+                    if null_data is None:
+                        raise AssertionError(
+                            f"{_case.suite} expected NullData but capture succeeded"
+                        )
+                    write_json_doc(null_data, out_dir / "null_data.json")
+                    print(f"[{_case.suite}] wrote null_data.json and metrics.json")
+                    return
+                if frame is None:
+                    raise AssertionError(f"{_case.suite} expected a curve frame")
+                write_parquet_frame(frame, out_dir / "curve.parquet")
+                print(
+                    f"[{_case.suite}] wrote curve.parquet ({metrics['n_rows']} rows, "
+                    f"{metrics['n_columns']} cols) and metrics.json"
+                )
+
+            return _regen_curve
+
+        _make_regen()
+
+
+_register_curve_golden_suites()
 
 
 def _regenerate_suite(name: str, out_root: Path) -> None:

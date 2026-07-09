@@ -20,3 +20,4 @@ Full convention, naming rules, and how to add suites: [`../../README.md`](../../
 | `loader_neware_txt` | `testdata/data/neware_uio.csv` | `raw.parquet`, `raw_units.json`, `meta.json`, `metrics.json` |
 | `loader_pec_csv` | `testdata/data/pec.csv` | `raw.parquet`, `raw_units.json`, `meta.json`, `metrics.json` |
 | `loader_custom` | `testdata/data/custom_data_001.csv` + `custom_instrument_001.yml` | `raw.parquet`, `raw_units.json`, `meta.json`, `metrics.json` |
+| `curve_get_cap_*`, `curve_get_ccap_*`, `curve_get_dcap_*`, `curve_get_ocv_*` | `testdata/data/20160805_test001_45_cc_01.res` (via cellpy pipeline) | `curve.parquet`, `metrics.json`; `null_data.json` for NullData cases |

@@ -1,0 +1,16 @@
+{
+  "columns": [
+    "discharge_capacity",
+    "voltage"
+  ],
+  "expect_null_data": false,
+  "func_name": "get_dcap",
+  "kwargs": {
+    "as_frame": true,
+    "cycle": 5
+  },
+  "n_columns": 2,
+  "n_rows": 224,
+  "source": "testdata/data/20160805_test001_45_cc_01.res",
+  "suite": "curve_get_dcap_c5"
+}

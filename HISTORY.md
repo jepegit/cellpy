@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+* Testing: curve-extraction golden snapshots for `get_cap` / `get_ccap` / `get_dcap` / `get_ocv` on the canonical Arbin cell, including labeled/interpolated/multi-cycle variants and NullData edge cases (#433)
 * Testing: per-loader golden snapshots for tier-1 loaders (`arbin_res`, `maccor_txt`, `neware_txt`, `pec_csv`, `custom`) — raw frame, `raw_units`, and loader meta oracles under `tests/data/goldens/loader_*/` with parametrized essential regression tests (#432)
 * Testing: prms configuration characterization tests — inventory parity contract, config round-trip/precedence, OtherPath coercion, `.env_cellpy` pickup, and `cellpy setup` dir/file creation (#430)
 * Testing: cellpy-file HDF5 characterization tests — v8 round-trip (fid-populated fixture), limits-prefix trap, `max_cycle` selector, legacy version matrix, and missing-key failure mode (#429)
