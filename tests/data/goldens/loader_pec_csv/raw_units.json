@@ -1,0 +1,20 @@
+{
+  "area": "cm**2",
+  "charge": "Ah",
+  "current": "A",
+  "energy": "Wh",
+  "frequency": "hz",
+  "length": "cm",
+  "mass": "mg",
+  "nominal_capacity": "mAh/g",
+  "power": "W",
+  "pressure": "bar",
+  "resistance": "ohm",
+  "specific_areal": "cm**2",
+  "specific_gravimetric": "g",
+  "specific_volumetric": "cm**3",
+  "temperature": "C",
+  "time": "s",
+  "voltage": "V",
+  "volume": "cm**3"
+}

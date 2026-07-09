@@ -1,0 +1,7 @@
+{
+  "instrument": "pec_csv",
+  "n_columns": 37,
+  "n_rows": 16255,
+  "source": "testdata/data/pec.csv",
+  "suite": "loader_pec_csv"
+}

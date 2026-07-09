@@ -1,0 +1,7 @@
+{
+  "instrument": "arbin_res",
+  "n_columns": 18,
+  "n_rows": 10261,
+  "source": "testdata/data/20160805_test001_45_cc_01.res",
+  "suite": "loader_arbin_res"
+}
