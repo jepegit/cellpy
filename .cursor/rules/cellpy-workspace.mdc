@@ -1,0 +1,17 @@
+---
+description: Where cellpy 2 plan documents and sibling repos live in the multi-root workspace
+alwaysApply: true
+---
+
+# cellpy workspace — plan documents
+
+The **`architecture-plan`** repository (`../architecture-plan/` from this checkout) is
+the **authoritative home for cellpy 2 plan documents** (gap analysis, Stage 0 plans,
+loader/config/unit migration plans, etc.).
+
+**Do not use `code-reviews/`** for these plans — that location is obsolete.
+
+When issues or older text reference `code-reviews/cellpy2-*.md`, open the same filename
+under `../architecture-plan/` instead.
+
+Durable detail: `.issueflows/04-designs-and-guides/cellpy-workspace-repos.md`
