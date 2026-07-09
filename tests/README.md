@@ -107,6 +107,21 @@ changes on either side.
 uv run pytest tests/test_unit_handling_stage0.py -v
 ```
 
+## Value-parity oracle (Stage 0.7)
+
+Legacy↔native column comparison through `cellpycore.legacy.mapping` lives in
+[`parity.py`](parity.py) (`assert_value_parity`) with pipeline helpers in
+[`parity_support.py`](parity_support.py). Trivial-pass bridge tests are in
+[`test_value_parity.py`](test_value_parity.py) (raw / steps / summary on the canonical
+Arbin `.res`, including `{col}_{mode}` specific summary columns).
+
+Pass explicit exception column names (legacy or native) when a mapped column is
+allowed to differ; unlisted mismatches always fail.
+
+```bash
+uv run pytest tests/test_value_parity.py -m essential
+```
+
 ## `essential` marker
 
 Fast smoke tests — read → step table → summary pipeline and cellpy/cellpy-core parity —
