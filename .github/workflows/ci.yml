@@ -1,160 +1,114 @@
-# Fast default gate (Tier 1 + Tier 2): PRs and pushes to master only.
-# Full matrix runs weekly in ci-scheduled.yml.
+# Fast merge gate (Tier 1): PRs and pushes to master only.
+
+# Full conda / pip matrix runs in ci-scheduled.yml (Tier 3).
+
+
 
 name: CI
 
+
+
 on:
+
   pull_request:
+
     branches: [master]
+
     paths-ignore:
+
       - "docs/**"
+
       - "paper/**"
+
       - ".issueflows/**"
+
       - "graphify-out/**"
+
       - "**/*.md"
+
   push:
+
     branches: [master]
+
     paths-ignore:
+
       - "docs/**"
+
       - "paper/**"
+
       - ".issueflows/**"
+
       - "graphify-out/**"
+
       - "**/*.md"
+
   workflow_dispatch:
 
+
+
 concurrency:
+
   group: ci-${{ github.ref }}
+
   cancel-in-progress: true
 
+
+
 jobs:
+
   essential:
+
     name: essential (linux / uv)
+
     runs-on: ubuntu-latest
+
     env:
+
       UV_NO_SOURCES: 1
+
     steps:
+
       - uses: actions/checkout@v6
 
+
+
       - uses: astral-sh/setup-uv@v5
+
         with:
+
           version: "latest"
 
+
+
       - name: Install system dependencies
+
         run: sudo apt-get update && sudo apt-get install -y mdbtools
+
+
 
       - run: uv python install 3.13
 
+
+
       - name: Sync dependencies (PyPI cellpycore only)
+
         run: uv sync
 
+
+
       - name: Run essential tests
+
         run: uv run pytest -m essential --ignore=tests/test_plotutils_summary_plot.py
 
+
+
       - name: Run cellpy setup
+
         run: uv run cellpy setup --silent
 
+
+
       - name: Run cellpy check
+
         run: uv run cellpy info --check
 
-  conda-linux:
-    name: conda pytest (linux)
-    needs: essential
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        shell: bash -l {0}
-    steps:
-      - uses: actions/checkout@v6
-
-      - uses: conda-incubator/setup-miniconda@v3
-        with:
-          auto-update-conda: true
-          activate-environment: cellpy_dev
-          environment-file: github_actions_environment.yml
-          python-version: "3.13"
-
-      - name: Install mdbtools
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y mdbtools
-
-      - name: Install cellpy (editable)
-        run: python -m pip install -e .
-
-      - name: pytest
-        run: pytest --ignore=tests/test_plotutils_summary_plot.py
-
-  conda-macos:
-    name: conda pytest (macos-14)
-    needs: essential
-    runs-on: macos-14
-    defaults:
-      run:
-        shell: bash -l {0}
-    steps:
-      - uses: actions/checkout@v6
-
-      - uses: conda-incubator/setup-miniconda@v3
-        with:
-          auto-update-conda: true
-          miniconda-version: latest
-          activate-environment: cellpy_dev
-          environment-file: github_actions_environment.yml
-          python-version: "3.13"
-
-      - name: Install mdbtools
-        run: brew install mdbtools
-
-      - name: Install cellpy (editable)
-        run: python -m pip install -e .
-
-      - name: pytest
-        run: pytest --ignore=tests/test_plotutils_summary_plot.py -m "not slowtest and not smoketest and not unimportant and not unfinished and not onlylocal and not skip_on_macos"
-
-  conda-windows:
-    name: conda pytest (windows)
-    needs: essential
-    runs-on: windows-latest
-    defaults:
-      run:
-        shell: bash -l {0}
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Cache Access Database Engine installer
-        uses: actions/cache@v4
-        with:
-          path: ${{ runner.temp }}/AccessDatabaseEngine_X64.exe
-          key: access-database-engine-x64-${{ hashFiles('.github/workflows/ci.yml') }}
-
-      - name: Install Access Database Engine 2016 (x64)
-        shell: pwsh
-        run: |
-          $installer = "$env:RUNNER_TEMP/AccessDatabaseEngine_X64.exe"
-          if (-not (Test-Path $installer)) {
-            Write-Host "Downloading Access Database Engine 2016 x64..."
-            $url = 'https://download.microsoft.com/download/3/5/C/35C84C36-661A-44E6-9324-8786B8DBE231/accessdatabaseengine_X64.exe'
-            (New-Object Net.WebClient).DownloadFile($url, $installer)
-          } else {
-            Write-Host "Using cached ACE installer."
-          }
-          $proc = Start-Process -FilePath $installer -ArgumentList '/quiet','/norestart' -Wait -PassThru
-          Write-Host "ACE installer exit code: $($proc.ExitCode)"
-          if ($proc.ExitCode -ne 0) { throw "ACE install failed" }
-
-      - uses: conda-incubator/setup-miniconda@v3
-        with:
-          auto-update-conda: true
-          activate-environment: cellpy_dev
-          environment-file: github_actions_environment.yml
-          python-version: "3.13"
-
-      - name: Verify Access ODBC driver
-        run: |
-          python -c "import pyodbc; drivers=[d for d in pyodbc.drivers() if d.startswith('Microsoft Access Driver')]; assert drivers, 'Microsoft Access ODBC driver not found after ACE install'; print('Access drivers:', drivers)"
-
-      - name: Install cellpy (editable)
-        run: python -m pip install -e .
-
-      - name: pytest
-        run: pytest --ignore=tests/test_plotutils_summary_plot.py
