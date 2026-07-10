@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+* Docs: Stage 0.11 decision register recorded in architecture-plan (timezone, curve-schema, v9 container, IR semantics, easyplot, v1.x maintenance) (#438)
 * Conventions: `cellpy._deprecation.warn_once` helper, `DEPRECATIONS.md` registry, exception-tree stubs (`CellpyError` re-export plus `CorruptCellpyFile`, `ConfigurationError`, `UnitsError`, `LoaderError`), and `make_new_cell` wired as first consumer (#437, closes #456)
 * Testing: legacy v4/v5 cellpy-file loads now covered in the v4–v7 characterization matrix (removed stale TypeError pin) (#466)
 * CI: retry `setup-miniconda` in scheduled workflow on transient conda-forge download failures (#465)
