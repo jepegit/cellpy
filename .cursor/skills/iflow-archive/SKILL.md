@@ -4,6 +4,7 @@ description: >-
   Condense old solved issue groups into one dated summary file, then delete
   the originals. Destructive, one consolidated confirm.
 disable-model-invocation: true
+issue-flow-version: 0.4.2a4
 ---
 
 # issue-flow — archive solved issues (`/iflow-archive`)
@@ -21,6 +22,11 @@ Do **not** use this to park or close an active issue — that is `/iflow-pause` 
 - **`keep <K>`** — same, but keep the `<K>` most recent groups instead.
 - **an explicit list** (e.g. `12 13 24`) — archive exactly those issues.
 - **`all`** — archive every solved group.
+
+
+**Invoke:** type `iflow archive` in chat, or `/iflow-archive` from the slash menu (`iflow-archive` also works).
+
+
 
 
 ### MODEL & EXECUTION DIRECTIVE

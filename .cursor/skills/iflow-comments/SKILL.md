@@ -4,6 +4,7 @@ description: >-
   Triage a GitHub issue's comment thread into the curated, bucketed summary
   section of issue<N>_original.md.
 disable-model-invocation: true
+issue-flow-version: 0.4.2a4
 ---
 
 # issue-flow — issue comments triage

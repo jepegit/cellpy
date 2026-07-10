@@ -4,11 +4,17 @@ description: >-
   Post-merge branch hygiene: switch to the default branch and delete merged
   local branches under one consolidated confirm. Never -D.
 disable-model-invocation: true
+issue-flow-version: 0.4.2a4
 ---
 
 # issue-flow — issue cleanup (`/iflow-cleanup`)
 
 Follow this skill to **run post-merge branch hygiene** after a PR has been merged (typically the PR opened by `/iflow-close`).
+
+
+**Invoke:** type `iflow cleanup` in chat, or `/iflow-cleanup` from the slash menu (`iflow-cleanup` also works).
+
+
 
 
 ### MODEL & EXECUTION DIRECTIVE
@@ -32,10 +38,11 @@ Before any `git`, `gh`, or `.issueflows/` path operation in this workflow:
 **Resolution order** (stop when unambiguous):
 
 1. **Explicit hints** in slash input — `root:<path>`, `repo:<folder-basename>` (directory name, e.g. `cellpy-core`), or `repo:owner/name`.
-2. **CLI fast path** — `issue-flow agent resolve [-C <start>] [--from-file <active-file>] [--json]`. Use the returned `project_root` and `repo`; pass `-C <project_root>` to other `issue-flow agent …` subcommands.
+2. **CLI fast path** — `issue-flow agent resolve [-C <start>] [--from-file <active-file>] [--json]`. Use the returned `project_root` and `repo`; pass `-C <project_root>` to other `issue-flow agent …` subcommands. When the answer came from the workspace registry, the payload sets `resolved_via_workspace_default: true`.
 3. **Branch context** — exactly one workspace repo whose branch matches `^\d+-` → that root.
 4. **Single scaffold** — exactly one `.issueflows/` tree visible in the workspace → that root.
-5. **Ambiguous** → **stop and ask**; never guess between sibling repos.
+5. **Workspace default** — an `issueflow-workspace.toml` at the workspace root (created with `issue-flow workspace init`) may name a `default` member repo; use it when no scaffold matched above. Tell the user the default was used.
+6. **Ambiguous** → **stop and ask**; never guess between sibling repos.
 
 After resolution, treat the result as `<project_root>` and `<owner/repo>`:
 
@@ -60,6 +67,7 @@ When `.issueflows/04-designs-and-guides/multi-repo-workspaces.md` exists, read i
    - `git pull --ff-only`
    - `git fetch --prune`
    - Every local branch whose tip is already reachable from `origin/<default>` (include squash-merges via `git cherry`). List them explicitly before running `git branch -d <branch>` for each. Never use `-D`; if `-d` refuses, report the branch and move on.
+   - **Planned release tag (tag-derived projects only).** When `/iflow-close` planned a tag it did not create — check the focus issue's status file and the newest `HISTORY.md` release section for a version whose tag is missing from `git tag -l` — include creating it here: `git tag <planned>` then `git push origin <planned>` (or `gh release create <planned> --generate-notes`). Run it **after** the pull so the tag lands on the merged squash commit.
 
 5. **Optional folder sweep** (safe; no destructive git). In `.issueflows/01-current-issues/`, for each `issue<N>_*` group whose status file contains `- [x] Done` (case-insensitive on `done`), move the group to `.issueflows/03-solved-issues/`. Leave groups without a checked `Done` in place — routing them to `.issueflows/02-partly-solved-issues/` is `/iflow-pause`'s job.
 
@@ -70,4 +78,4 @@ When `.issueflows/04-designs-and-guides/multi-repo-workspaces.md` exists, read i
 - Never use `git branch -D` or `git push --force`.
 - Never delete the default branch.
 - If anything is ambiguous (detached HEAD, multiple remotes, missing tracking info), report and stop rather than guess.
-- Do not open or update PRs. Do not bump versions. Those belong to `/iflow-close`.
+- Do not open or update PRs. Do not bump version fields — pyproject bumps belong to `/iflow-close`. The only version action allowed here is creating a release tag that `/iflow-close` **planned** (tag-derived strategy), inside the consolidated confirm.

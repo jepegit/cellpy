@@ -4,6 +4,7 @@ description: >-
   Rebuild the graphify knowledge graph (graphify-out/) by shelling out to
   `issue-flow graphify` or `graphify` directly.
 disable-model-invocation: true
+issue-flow-version: 0.4.2a4
 ---
 
 # issue-flow — graph rebuild (`/iflow-graphify`)
@@ -11,6 +12,11 @@ disable-model-invocation: true
 Follow this skill to refresh the project's [graphify](https://iflow-graphify.net) knowledge graph — a stale `graphify-out/` after a large refactor, or the initial graph after installing `graphifyy`.
 
 Do **not** use this skill from `/iflow-start`, `/iflow-close`, or `/iflow`. `/iflow-graphify` is opt-in only.
+
+
+**Invoke:** type `iflow graphify` in chat, or `/iflow-graphify` from the slash menu (`iflow-graphify` also works).
+
+
 
 
 ### MODEL & EXECUTION DIRECTIVE

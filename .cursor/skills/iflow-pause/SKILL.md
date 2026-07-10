@@ -4,11 +4,17 @@ description: >-
   Park work on the current issue without closing it: update status, move
   the group to 02-partly-solved-issues/, optional WIP commit.
 disable-model-invocation: true
+issue-flow-version: 0.4.2a4
 ---
 
 # issue-flow — issue pause (`/iflow-pause`)
 
 Follow this skill to **park work on the current issue** without closing it. The issue is **not** done — this is not `/iflow-close`.
+
+
+**Invoke:** type `iflow pause` in chat, or `/iflow-pause` from the slash menu (`iflow-pause` also works).
+
+
 
 
 ### MODEL & EXECUTION DIRECTIVE
@@ -32,10 +38,11 @@ Before any `git`, `gh`, or `.issueflows/` path operation in this workflow:
 **Resolution order** (stop when unambiguous):
 
 1. **Explicit hints** in slash input — `root:<path>`, `repo:<folder-basename>` (directory name, e.g. `cellpy-core`), or `repo:owner/name`.
-2. **CLI fast path** — `issue-flow agent resolve [-C <start>] [--from-file <active-file>] [--json]`. Use the returned `project_root` and `repo`; pass `-C <project_root>` to other `issue-flow agent …` subcommands.
+2. **CLI fast path** — `issue-flow agent resolve [-C <start>] [--from-file <active-file>] [--json]`. Use the returned `project_root` and `repo`; pass `-C <project_root>` to other `issue-flow agent …` subcommands. When the answer came from the workspace registry, the payload sets `resolved_via_workspace_default: true`.
 3. **Branch context** — exactly one workspace repo whose branch matches `^\d+-` → that root.
 4. **Single scaffold** — exactly one `.issueflows/` tree visible in the workspace → that root.
-5. **Ambiguous** → **stop and ask**; never guess between sibling repos.
+5. **Workspace default** — an `issueflow-workspace.toml` at the workspace root (created with `issue-flow workspace init`) may name a `default` member repo; use it when no scaffold matched above. Tell the user the default was used.
+6. **Ambiguous** → **stop and ask**; never guess between sibling repos.
 
 After resolution, treat the result as `<project_root>` and `<owner/repo>`:
 

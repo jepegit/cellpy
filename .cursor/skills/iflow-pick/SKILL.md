@@ -4,6 +4,7 @@ description: >-
   Front door: choose the next issue, create the issue branch, and run
   /iflow-init.
 disable-model-invocation: true
+issue-flow-version: 0.4.2a4
 ---
 
 # issue-flow — pick next issue (`/iflow-pick`)
@@ -17,6 +18,11 @@ Do **not** use this skill from `/iflow`, `/iflow-start`, or `/iflow-close`. `/if
 - **(nothing)** — survey candidates and ask which to pick.
 - **`fix`** — create a **new** general-fixes GitHub issue (a fresh one every time) and use it.
 - **a hint** (milestone / label / topic) — bias the candidate ranking.
+
+
+**Invoke:** type `iflow pick` in chat, or `/iflow-pick` from the slash menu (`iflow-pick` also works).
+
+
 
 
 ### MODEL & EXECUTION DIRECTIVE
@@ -40,10 +46,11 @@ Before any `git`, `gh`, or `.issueflows/` path operation in this workflow:
 **Resolution order** (stop when unambiguous):
 
 1. **Explicit hints** in slash input — `root:<path>`, `repo:<folder-basename>` (directory name, e.g. `cellpy-core`), or `repo:owner/name`.
-2. **CLI fast path** — `issue-flow agent resolve [-C <start>] [--from-file <active-file>] [--json]`. Use the returned `project_root` and `repo`; pass `-C <project_root>` to other `issue-flow agent …` subcommands.
+2. **CLI fast path** — `issue-flow agent resolve [-C <start>] [--from-file <active-file>] [--json]`. Use the returned `project_root` and `repo`; pass `-C <project_root>` to other `issue-flow agent …` subcommands. When the answer came from the workspace registry, the payload sets `resolved_via_workspace_default: true`.
 3. **Branch context** — exactly one workspace repo whose branch matches `^\d+-` → that root.
 4. **Single scaffold** — exactly one `.issueflows/` tree visible in the workspace → that root.
-5. **Ambiguous** → **stop and ask**; never guess between sibling repos.
+5. **Workspace default** — an `issueflow-workspace.toml` at the workspace root (created with `issue-flow workspace init`) may name a `default` member repo; use it when no scaffold matched above. Tell the user the default was used.
+6. **Ambiguous** → **stop and ask**; never guess between sibling repos.
 
 After resolution, treat the result as `<project_root>` and `<owner/repo>`:
 

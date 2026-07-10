@@ -4,6 +4,7 @@ description: >-
   Interactive session: one long-lived branch + GitHub issue for a stream of
   small iterative fixes, landed together via /iflow-close.
 disable-model-invocation: true
+issue-flow-version: 0.4.2a4
 ---
 
 # issue-flow — interactive iterative-fix session (`/iflow-fix`)
@@ -19,6 +20,11 @@ It **coexists** with `/iflow-pick fix`: that command is a one-shot setup back in
 - **a name** (e.g. `polish-cli-output`) — used for the issue title and branch slug.
 - **(nothing)** — default the slug to `iterative-small-fixes` (made unique via the new issue number).
 - **a description** during an active session — run the next fix in the loop.
+
+
+**Invoke:** type `iflow fix` in chat, or `/iflow-fix` from the slash menu (`iflow-fix` also works).
+
+
 
 
 ### MODEL & EXECUTION DIRECTIVE
@@ -42,10 +48,11 @@ Before any `git`, `gh`, or `.issueflows/` path operation in this workflow:
 **Resolution order** (stop when unambiguous):
 
 1. **Explicit hints** in slash input — `root:<path>`, `repo:<folder-basename>` (directory name, e.g. `cellpy-core`), or `repo:owner/name`.
-2. **CLI fast path** — `issue-flow agent resolve [-C <start>] [--from-file <active-file>] [--json]`. Use the returned `project_root` and `repo`; pass `-C <project_root>` to other `issue-flow agent …` subcommands.
+2. **CLI fast path** — `issue-flow agent resolve [-C <start>] [--from-file <active-file>] [--json]`. Use the returned `project_root` and `repo`; pass `-C <project_root>` to other `issue-flow agent …` subcommands. When the answer came from the workspace registry, the payload sets `resolved_via_workspace_default: true`.
 3. **Branch context** — exactly one workspace repo whose branch matches `^\d+-` → that root.
 4. **Single scaffold** — exactly one `.issueflows/` tree visible in the workspace → that root.
-5. **Ambiguous** → **stop and ask**; never guess between sibling repos.
+5. **Workspace default** — an `issueflow-workspace.toml` at the workspace root (created with `issue-flow workspace init`) may name a `default` member repo; use it when no scaffold matched above. Tell the user the default was used.
+6. **Ambiguous** → **stop and ask**; never guess between sibling repos.
 
 After resolution, treat the result as `<project_root>` and `<owner/repo>`:
 

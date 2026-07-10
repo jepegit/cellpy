@@ -1,14 +1,16 @@
 # Cursor issue workflow (Agent Skills)
 
-This repo uses Cursor **Agent Skills** under `.cursor/skills/` that line up with how we track GitHub issues in `.issueflows/01-current-issues/`. Skills appear in the slash menu, so the normal entry points are still `/iflow`, `/iflow-plan`, and friends.
+This repo uses Cursor **Agent Skills** under `.cursor/skills/` that line up with how we track GitHub issues in `.issueflows/01-current-issues/`. Skills appear in the slash menu as `/iflow`, `/iflow-plan`, and friends — or type **`iflow plan`** (space, no slash) in chat when `/` is awkward on your keyboard.
 
-**Quick start: just run `/iflow`.** It inspects the state of the focus issue and dispatches to the right linear-flow skill (`/iflow-init`, `/iflow-plan`, `/iflow-start`, or `/iflow-close`) — so you don't have to remember which step is next. Haven't chosen an issue yet? Start with **`/iflow-pick`**.
+> **Keyboard-friendly chat:** type **`iflow plan`**, **`iflow pick`**, **`iflow close`**, etc. in chat (letters + space only). Slash menu still uses `/iflow-plan`. Hyphen form `iflow-plan` also works. Norwegian and similar layouts often lack a dedicated `/` key; `@` is awkward too — the space form is intentional.
+
+**Quick start:** type **`iflow`** in chat or run **`/iflow`** from the slash menu. It inspects the state of the focus issue and dispatches to the right linear-flow skill (`iflow init` / `/iflow-init`, `iflow plan` / `/iflow-plan`, `iflow start` / `/iflow-start`, or `iflow close` / `/iflow-close`) — so you don't have to remember which step is next. Haven't chosen an issue yet? Start with **`iflow pick`** or **`/iflow-pick`**.
 
 `issue-flow init` also creates a durable project brief at `.issueflows/04-designs-and-guides/this-project.md` when it is missing. Edit it by hand with project-specific context; `issue-flow update` and `issue-flow init --force` leave existing content untouched.
 
 It also seeds `.issueflows/00-tools/README.md` — the index of the project's **shared toolbox**. Drop reusable helper scripts there during issue work and add a one-line index entry; check the folder before writing a new one-off helper. Like the project brief, this README is never overwritten by `issue-flow update`, so its index grows over time.
 
-**Multi-root workspaces:** when several sibling repos share one editor workspace, resolve the target repo first (`root:` / `repo:` hints, or `issue-flow agent resolve`). Never let `git` or `gh` infer the repository from cwd alone. See `.issueflows/04-designs-and-guides/multi-repo-workspaces.md` when present.
+**Multi-root workspaces:** when several sibling repos share one editor workspace, resolve the target repo first (`root:` / `repo:` hints, or `issue-flow agent resolve`). A workspace-root `issueflow-workspace.toml` (create it with `issue-flow workspace init`) can name a **default member repo** used when a command runs from outside any single scaffold. Never let `git` or `gh` infer the repository from cwd alone. See `.issueflows/04-designs-and-guides/multi-repo-workspaces.md` when present.
 
 
 | Entry point | File | Role |
@@ -37,23 +39,23 @@ It also seeds `.issueflows/00-tools/README.md` — the index of the project's **
 
 | Skill folder | Invoke (examples) | Role |
 |--------------|-------------------|------|
-| `iflow-pick` | `/iflow-pick` | Front door — same flow as `/iflow-pick` (choose issue, branch, init, hand off). |
-| `iflow` | `/iflow` or attach `@iflow` | Smart dispatcher — same state machine as `/iflow`. |
-| `iflow-init` | `/iflow-init` or attach `@iflow-init` | Same flow as `/iflow-init`. |
-| `iflow-plan` | `/iflow-plan` | Same flow as `/iflow-plan` (write & confirm plan). |
-| `iflow-start` | `/iflow-start` | Read the plan, implement from `.issueflows/01-current-issues/`. |
-| `iflow-pause` | `/iflow-pause` | Update status, move issue group to `02-partly-solved-issues/`, optional WIP commit + branch switch. |
-| `iflow-close` | `/iflow-close` | Tests, optional bump, status checkboxes, move issue docs, commit, push, PR, and safe default-branch switch. |
-| `iflow-cleanup` | `/iflow-cleanup` | Post-merge cleanup (single consolidated confirm, never `-D`). |
-| `iflow-yolo` | `/iflow-yolo` | Chain `init → plan → start → close` with safeguards. |
-| `iflow-fix` | `/iflow-fix` | Same flow as `/iflow-fix`: set up an interactive iterative-fixes session, loop over small fixes, finish with `/iflow-close`. Off-path. |
-| `iflow-status` | `/iflow-status` | Same flow as `/iflow-status`: read-only overview of focus / parked / solved issues plus open GitHub issues. Off-path; writes nothing. |
-| `iflow-archive` | `/iflow-archive` | Same flow as `/iflow-archive`: summarise selected solved issue groups into a dated archive file (with the pre-archive git ref), then delete the originals. Off-path; destructive with one consolidated confirm. |
-| `iflow-version-bump` | `@iflow-version-bump` (often used from `/iflow-close`) | Bump `[project]` version in `pyproject.toml` via `uv version --bump <level>` (any uv level: `major`/`minor`/`patch`/`stable`/`alpha`/`beta`/`rc`/`post`/`dev`); a bare `bump` stays on the current pre-release channel. |
+| `iflow-pick` | `iflow pick`, `iflow-pick`, `/iflow-pick` | Front door — choose issue, branch, init, hand off. |
+| `iflow` | `iflow`, `/iflow` | Smart dispatcher — same state machine as `/iflow`. |
+| `iflow-init` | `iflow init`, `iflow-init`, `/iflow-init` | Capture GitHub issue as `issue<N>_original.md`. |
+| `iflow-plan` | `iflow plan`, `iflow-plan`, `/iflow-plan` | Write & confirm `issue<N>_plan.md`. |
+| `iflow-start` | `iflow start`, `iflow-start`, `/iflow-start` | Implement from `.issueflows/01-current-issues/`. |
+| `iflow-pause` | `iflow pause`, `iflow-pause`, `/iflow-pause` | Park work in `02-partly-solved-issues/`. |
+| `iflow-close` | `iflow close`, `iflow-close`, `/iflow-close` | Tests, bump, commit, push, PR. |
+| `iflow-cleanup` | `iflow cleanup`, `iflow-cleanup`, `/iflow-cleanup` | Post-merge branch cleanup. |
+| `iflow-yolo` | `iflow yolo`, `iflow-yolo`, `/iflow-yolo` | Chain `init → plan → start → close`. |
+| `iflow-fix` | `iflow fix`, `iflow-fix`, `/iflow-fix` | Interactive iterative-fixes session. Off-path. |
+| `iflow-status` | `iflow status`, `iflow-status`, `/iflow-status` | Read-only issue overview. Off-path. |
+| `iflow-archive` | `iflow archive`, `iflow-archive`, `/iflow-archive` | Condense solved archive. Off-path; destructive. |
+| `iflow-version-bump` | `@iflow-version-bump` (often used from `/iflow-close`) | Strategy-aware version bump: static `[project]` versions via `uv version --bump <level>` (any uv level: `major`/`minor`/`patch`/`stable`/`alpha`/`beta`/`rc`/`post`/`dev`); git-tag-derived versions via a planned post-merge tag. The project's own "Release & version bump" section in `this-project.md` wins; a bare `bump` stays on the current pre-release channel. |
 | `iflow-history-update` | `@iflow-history-update` (used from `/iflow-close`) | Append an entry to `## [Unreleased]` in `HISTORY.md`, or promote it to a new `## [x.y.z] - YYYY-MM-DD` release section when a version bump happened. |
-| `iflow-graphify` | `/iflow-graphify` | Same flow as `/iflow-graphify`: rebuild the graphify knowledge graph for the project. Off-path; never auto-dispatched. |
+| `iflow-graphify` | `iflow graphify`, `iflow-graphify`, `/iflow-graphify` | Rebuild the graphify knowledge graph. Off-path. |
 
-Each skill sets `disable-model-invocation: true` so it is included when you **explicitly** invoke it, not on every chat. See [Agent Skills](https://cursor.com/help/customization/skills) in the Cursor docs.
+Each skill sets `disable-model-invocation: true` so it is included when you **explicitly** invoke it, not on every chat. Every rendered `SKILL.md` also carries `issue-flow-version: <version>` in its YAML frontmatter (the package version at last `issue-flow init` / `issue-flow update`). Compare with `issue-flow --version`; if they differ, re-run `issue-flow update`. See [Agent Skills](https://cursor.com/help/customization/skills) in the Cursor docs.
 
 Lifecycle skills also carry a **`### MODEL & EXECUTION DIRECTIVE`** — **economy** (speed/token savings) or **reasoning** (design depth) — baked at `issue-flow update` from `[issueflow]` / `[issueflow.step_profiles]` in `.issueflows/config.toml`. `/iflow-pick` can announce label-based session overrides when `model_label_flows` is enabled (`deep_model_label` / `fast_model_label`).
 
@@ -204,7 +206,7 @@ The bump runs **after** tests and **before** issue-folder moves and **before** c
 **Typical steps the assistant follows:**
 
 1. **Sanity check** — e.g. `uv run pytest`, review the diff.
-2. **Optional version bump** — if requested, follow `.cursor/skills/iflow-version-bump/SKILL.md` and run `uv version --bump …` from the project root.
+2. **Optional version bump** — if requested, follow `.cursor/skills/iflow-version-bump/SKILL.md`. It resolves the project's **release strategy** first (the "Release & version bump" section of `.issueflows/04-designs-and-guides/this-project.md`, else `pyproject.toml` detection): static versions are bumped with `uv version --bump …` from the project root; **git-tag derived** versions (setuptools-scm and friends) get a **planned tag** instead — created after the merge (by `/iflow-cleanup`, or the yolo close's post-merge step), never on the issue branch.
 3. **Update `HISTORY.md`** — unless `nohistory` was passed, follow `.cursor/skills/iflow-history-update/SKILL.md`. Append a bullet to `## [Unreleased]` (no bump) or promote `## [Unreleased]` to `## [<new_version>] - <YYYY-MM-DD>` and open a fresh empty `## [Unreleased]` above it (with bump). The assistant shows the diff and asks for a single confirm before writing. If `HISTORY.md` is missing at the project root, the step is skipped with a note — never auto-created.
 4. **Issue folders** — update status markdown; use `- [x] Done` only when fully resolved. Move completed issue files from `.issueflows/01-current-issues/` to `.issueflows/03-solved-issues/`, or partly done work to `.issueflows/02-partly-solved-issues/`.
 5. **Commit** — focused staging and a clear message (include `pyproject.toml` / `uv.lock` if the bump changed them, and `HISTORY.md` when step 3 updated it). Sync with the default branch using `git pull --ff-only`.

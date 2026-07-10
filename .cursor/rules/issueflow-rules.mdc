@@ -104,11 +104,52 @@ Use an explicit status checkbox in the status file:
 - `- [x] Done` when fully resolved
 - `- [ ] Done` when not fully resolved
 
+### Chat invocation (no slash)
+
+On keyboard layouts where `/` and `@` are awkward to type (for example Norwegian), invoke lifecycle skills in **chat** without special keys.
+
+**Primary form:** `iflow <step>` (space-separated) — e.g. `iflow plan`, `iflow pick`, `iflow close`. Plain `iflow` runs the smart dispatcher.
+
+**Also recognized** (same obligation as slash-menu invocation): hyphen form (`iflow-plan`), slash form (`/iflow-plan`), slash + space (`/iflow plan`).
+
+When the user message is **exactly** one of these forms, or **starts with** it followed by a space and trailing arguments, **read and follow** the matching skill immediately. Forward trailing text verbatim (e.g. `iflow pick fix` → `iflow-pick` with arg `fix`). Do **not** treat incidental mid-sentence mentions as commands — the message must **start with** the invocation.
+
+| Chat / slash form | Skill |
+|-------------------|-------|
+| `iflow` / `/iflow` | `iflow` (dispatcher) |
+
+| `iflow archive`, `iflow-archive`, `/iflow-archive`, `/iflow archive` | `iflow-archive` |
+
+| `iflow cleanup`, `iflow-cleanup`, `/iflow-cleanup`, `/iflow cleanup` | `iflow-cleanup` |
+
+| `iflow close`, `iflow-close`, `/iflow-close`, `/iflow close` | `iflow-close` |
+
+| `iflow fix`, `iflow-fix`, `/iflow-fix`, `/iflow fix` | `iflow-fix` |
+
+| `iflow graphify`, `iflow-graphify`, `/iflow-graphify`, `/iflow graphify` | `iflow-graphify` |
+
+| `iflow init`, `iflow-init`, `/iflow-init`, `/iflow init` | `iflow-init` |
+
+| `iflow pause`, `iflow-pause`, `/iflow-pause`, `/iflow pause` | `iflow-pause` |
+
+| `iflow pick`, `iflow-pick`, `/iflow-pick`, `/iflow pick` | `iflow-pick` |
+
+| `iflow plan`, `iflow-plan`, `/iflow-plan`, `/iflow plan` | `iflow-plan` |
+
+| `iflow start`, `iflow-start`, `/iflow-start`, `/iflow start` | `iflow-start` |
+
+| `iflow status`, `iflow-status`, `/iflow-status`, `/iflow status` | `iflow-status` |
+
+| `iflow yolo`, `iflow-yolo`, `/iflow-yolo`, `/iflow yolo` | `iflow-yolo` |
+
+
+Skill `@` attachment is supported on some editors but is not the recommended keyboard-friendly path.
+
 ### Command lifecycle
 
-If you have not chosen an issue yet, run **`/iflow-pick`** — the front door that helps you select the next issue (parked work first, else ranked open GitHub issues), creates the branch, and runs `/iflow-init` for you. It is off-path (never auto-dispatched).
+If you have not chosen an issue yet, run **`/iflow-pick`** (or type **`iflow pick`** in chat) — the front door that helps you select the next issue (parked work first, else ranked open GitHub issues), creates the branch, and runs `/iflow-init`. It is off-path (never auto-dispatched).
 
-If you just want the next right step, run **`/iflow`** — it detects state (by file presence under `.issueflows/01-current-issues/` and the status-file `- [x] Done` marker) and dispatches to `/iflow-init`, `/iflow-plan`, `/iflow-start`, or `/iflow-close`. It never auto-dispatches to `/iflow-pick`, `/iflow-pause`, `/iflow-cleanup`, or `/iflow-yolo` — those stay explicit.
+If you just want the next right step, run **`/iflow`** (or type **`iflow`** in chat) — it detects state (by file presence under `.issueflows/01-current-issues/` and the status-file `- [x] Done` marker) and dispatches to `/iflow-init`, `/iflow-plan`, `/iflow-start`, or `/iflow-close`. It never auto-dispatches to `/iflow-pick`, `/iflow-pause`, `/iflow-cleanup`, or `/iflow-yolo` — those stay explicit.
 
 The full slash-command lifecycle is:
 
@@ -192,7 +233,7 @@ Long-lived design docs, design decisions, and project "good practices" live unde
 
 When an editor workspace contains **multiple sibling repositories**, each with its own `.issueflows/` scaffold:
 
-- **Resolve the target repo first** — explicit `root:` / `repo:` hints, then `issue-flow agent resolve`, then branch/single-scaffold heuristics; **ask** when ambiguous. Never let `git` or `gh` infer the repo from cwd alone.
+- **Resolve the target repo first** — explicit `root:` / `repo:` hints, then `issue-flow agent resolve`, then branch/single-scaffold heuristics, then the **workspace default** from `issueflow-workspace.toml` at the workspace root (create it with `issue-flow workspace init`); **ask** when still ambiguous. Never let `git` or `gh` infer the repo from cwd alone.
 - **Scoped rules** — this repo's `issueflow-rules` apply under this project root only (path globs). Put **toolchain-specific** run/test commands in `.issueflows/04-designs-and-guides/this-project.md`, not in shared boilerplate that every repo merges.
 - **Per-repo lifecycle** — `/iflow-cleanup`, branch hygiene, and focus issue folders are **per repository**; repeat commands in each repo when needed.
 - **Design doc** — see `.issueflows/04-designs-and-guides/multi-repo-workspaces.md` when present (issue #67).

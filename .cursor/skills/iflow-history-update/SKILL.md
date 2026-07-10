@@ -4,6 +4,7 @@ description: >-
   Update the changelog when landing an issue: append a bullet to
   [Unreleased], or promote it to a release section after a version bump.
 disable-model-invocation: true
+issue-flow-version: 0.4.2a4
 ---
 
 # issue-flow — history update
