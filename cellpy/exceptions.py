@@ -1,8 +1,10 @@
-"""Exceptions defined within cellpy"""
+"""Exceptions defined within cellpy."""
+
+from cellpycore.exceptions import CellpyError, NoDataFound
 
 
 class Error(Exception):
-    """Base class for other exceptions"""
+    """Base class for other exceptions (legacy; prefer :class:`CellpyError`)."""
 
     pass
 
@@ -37,6 +39,30 @@ class WrongFileVersion(Error):
     pass
 
 
+class CorruptCellpyFile(IOError, CellpyError):
+    """Raised when a cellpy file is structurally corrupt."""
+
+    pass
+
+
+class ConfigurationError(CellpyError):
+    """Raised when configuration validation fails."""
+
+    pass
+
+
+class UnitsError(ValueError, CellpyError):
+    """Raised when unit labels or scales are invalid."""
+
+    pass
+
+
+class LoaderError(CellpyError):
+    """Raised when instrument ingestion fails."""
+
+    pass
+
+
 class DeprecatedFeature(Error):
     """Raised when the feature is recently deprecated"""
 
@@ -61,14 +87,29 @@ class NullData(Error):
     pass
 
 
-class NoDataFound(Error):
-    """Raised when there are no cells, but a data is needed."""
-
-    pass
-
-
 class UnderDefined(Error):
     """Raised when trying something that requires you to set
     a missing prm on environment variable first"""
 
     pass
+
+
+__all__ = [
+    "CellpyError",
+    "NoDataFound",
+    "Error",
+    "ConfigFileNotWritten",
+    "ConfigFileNotRead",
+    "FileNotFound",
+    "SearchError",
+    "WrongFileVersion",
+    "CorruptCellpyFile",
+    "ConfigurationError",
+    "UnitsError",
+    "LoaderError",
+    "DeprecatedFeature",
+    "ExportFailed",
+    "IOError",
+    "NullData",
+    "UnderDefined",
+]

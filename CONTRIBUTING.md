@@ -155,7 +155,9 @@ This builds the wheel inside a fresh container, installs it, and smoke-tests
 Before you submit a pull request, check that it meets these guidelines:
 
 1. The pull request should include tests.
-2. The pull request should not include any gluten.
+2. Deprecation shims must use ``cellpy._deprecation.warn_once`` (warn once per call site)
+   and register in ``DEPRECATIONS.md``.
+3. The pull request should not include any gluten.
 
 ## Tips
 
