@@ -61,13 +61,13 @@ jobs:
           Write-Host "ACE installer exit code: $($proc.ExitCode)"
           if ($proc.ExitCode -ne 0) { throw "ACE install failed" }
 
-      - uses: conda-incubator/setup-miniconda@v3
+      - name: Setup miniconda (retry transient conda-forge errors)
+        uses: Wandalen/wretry.action@v3.5.0
         with:
-          auto-update-conda: true
-          miniconda-version: latest
-          activate-environment: cellpy_dev
-          environment-file: github_actions_environment.yml
-          python-version: "3.13"
+          action: conda-incubator/setup-miniconda@v3
+          with: '{"auto-update-conda":true,"miniconda-version":"latest","activate-environment":"cellpy_dev","environment-file":"github_actions_environment.yml","python-version":"3.13"}'
+          attempt_limit: 3
+          attempt_delay: 30000
 
       - name: Install mdbtools (Linux)
         if: matrix.os == 'linux'
@@ -99,12 +99,13 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - uses: conda-incubator/setup-miniconda@v3
+      - name: Setup miniconda (retry transient conda-forge errors)
+        uses: Wandalen/wretry.action@v3.5.0
         with:
-          auto-update-conda: true
-          activate-environment: cellpy_dev
-          environment-file: github_actions_environment.yml
-          python-version: "3.13"
+          action: conda-incubator/setup-miniconda@v3
+          with: '{"auto-update-conda":true,"activate-environment":"cellpy_dev","environment-file":"github_actions_environment.yml","python-version":"3.13"}'
+          attempt_limit: 3
+          attempt_delay: 30000
 
       - name: Install mdbtools
         run: |
@@ -188,12 +189,13 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - uses: conda-incubator/setup-miniconda@v3
+      - name: Setup miniconda (retry transient conda-forge errors)
+        uses: Wandalen/wretry.action@v3.5.0
         with:
-          auto-update-conda: true
-          activate-environment: cellpy_dev
-          environment-file: github_actions_environment.yml
-          python-version: "3.13"
+          action: conda-incubator/setup-miniconda@v3
+          with: '{"auto-update-conda":true,"activate-environment":"cellpy_dev","environment-file":"github_actions_environment.yml","python-version":"3.13"}'
+          attempt_limit: 3
+          attempt_delay: 30000
 
       - name: Install cellpy from conda-forge
         run: |
