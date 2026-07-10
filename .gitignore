@@ -91,6 +91,9 @@ target/
 # Graphify cache
 graphify-out/cache/
 
+# Graphify output
+graphify-out/
+
 # My own notes
 notes.md
 
