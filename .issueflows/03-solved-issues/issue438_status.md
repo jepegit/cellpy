@@ -17,7 +17,13 @@
 
 ## Remaining work
 
-- None for this issue (doc recording complete).
+- None.
+
+## Close (2026-07-10)
+
+- Essential tests green (`uv run pytest -m essential`).
+- Issue files archived to `03-solved-issues/`.
+- PRs: cellpy #472 (tracking), architecture-plan #1 (decision recordings).
 
 ## Follow-up (out of scope)
 
