@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+* Stage 1.1: extract cellpy-file format spec into `cellpy/readers/cellpy_file/format.py`; `prms._cellpyfile_*` aliases preserved; template registry and example-data URL constants moved to owning modules (#446)
 * Stage 0 foundations complete — all linked characterization, oracle, baseline, convention, and decision-register issues closed; ready for Stage 1 (#439)
 * Docs: Stage 0.11 decision register recorded in architecture-plan (timezone, curve-schema, v9 container, IR semantics, easyplot, v1.x maintenance) (#438)
 * Conventions: `cellpy._deprecation.warn_once` helper, `DEPRECATIONS.md` registry, exception-tree stubs (`CellpyError` re-export plus `CorruptCellpyFile`, `ConfigurationError`, `UnitsError`, `LoaderError`), and `make_new_cell` wired as first consumer (#437, closes #456)

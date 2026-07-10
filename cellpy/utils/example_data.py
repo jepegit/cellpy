@@ -18,6 +18,14 @@ _DATA_PATH = CURRENT_PATH / "data"
 DO_NOT_REMOVE_THESE_FILES = [".gitkeep"]
 CHUNK_SIZE = 8192
 
+_GITHUB_REPO_PARENT = "jepegit"
+_GITHUB_REPO = "cellpy"
+_URL_EXAMPLE_DATA = (
+    f"https://raw.githubusercontent.com/{_GITHUB_REPO_PARENT}/{_GITHUB_REPO}/master/examples/data/"
+)
+_URL_EXAMPLE_DATA_DOWNLOAD_WITH_PROGRESSBAR = True
+_EXAMPLE_DATA_IN_EXAMPLE_FOLDER_IF_AVAILABLE = True
+
 _example_data_download_help = """
 You don't have any accessible example directory set in your configurations so
 cellpy will try to download the example data to the folder where the cellpy
@@ -52,7 +60,7 @@ def _user_examples_dir():
     return examples_dir / "data"
 
 
-if prms._example_data_in_example_folder_if_available:
+if _EXAMPLE_DATA_IN_EXAMPLE_FOLDER_IF_AVAILABLE:
     DATA_PATH = _user_examples_dir() or _DATA_PATH
 
 
@@ -100,12 +108,12 @@ def download_file(url, local_filename):
     with requests.get(url, stream=True) as r:
         r.raise_for_status()
         with open(local_filename, "wb") as f:
-            if prms._url_example_data_download_with_progressbar:
+            if _URL_EXAMPLE_DATA_DOWNLOAD_WITH_PROGRESSBAR:
                 pbar = tqdm(
                     total=int(r.headers["Content-Length"]), unit="B", unit_scale=True
                 )
             for chunk in r.iter_content(chunk_size=CHUNK_SIZE):
-                if chunk and prms._url_example_data_download_with_progressbar:
+                if chunk and _URL_EXAMPLE_DATA_DOWNLOAD_WITH_PROGRESSBAR:
                     pbar.update(len(chunk))
                 f.write(chunk)
 
@@ -157,7 +165,7 @@ def _download_example_data(filename: str):
 
     """
     logging.info(f"{filename} not found. Trying to access it from GitHub...")
-    base_url = prms._url_example_data
+    base_url = _URL_EXAMPLE_DATA
     if not os.path.exists(DATA_PATH):
         try:
             os.makedirs(DATA_PATH)
