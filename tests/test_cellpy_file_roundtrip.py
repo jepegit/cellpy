@@ -36,13 +36,10 @@ RAW_RES = (
 )
 
 LEGACY_SUCCESS = [
+    ("v4", "20160805_test001_45_cc_v4.h5", 4),
+    ("v5", "20160805_test001_45_cc_v5.h5", 5),
     ("v6", "20160805_test001_45_cc_v6.h5", 6),
     ("v7", "20160805_test001_45_cc_v7.h5", 7),
-]
-
-LEGACY_TYPE_ERROR = [
-    ("v4", "20160805_test001_45_cc_v4.h5"),
-    ("v5", "20160805_test001_45_cc_v5.h5"),
 ]
 
 
@@ -126,21 +123,9 @@ def test_v8_load_selector_max_cycle_truncates_consistently():
     assert len(selected.data.steps) < len(full.data.steps)
 
 
-@pytest.mark.parametrize("label,filename", LEGACY_TYPE_ERROR)
-def test_legacy_v4_v5_currently_raise_typeerror_on_meta_extract(label, filename):
-    """Pin current v4/v5 load failure (missing ``upgrade_from_to`` on meta extract)."""
-    path = HDF5_DIR / filename
-    if not path.is_file():
-        pytest.skip(f"missing legacy fixture: {path}")
-
-    cell = cellreader.CellpyCell()
-    with pytest.raises(TypeError):
-        cell.load(path, accept_old=True)
-
-
 @pytest.mark.parametrize("label,filename,version", LEGACY_SUCCESS)
-def test_legacy_v6_v7_load_shapes_and_columns(label, filename, version):
-    """Legacy v6/v7: load succeeds with expected shapes and renamed columns."""
+def test_legacy_v4_v7_load_shapes_and_columns(label, filename, version):
+    """Legacy v4–v7: load succeeds with expected shapes and renamed columns."""
     path = HDF5_DIR / filename
     if not path.is_file():
         pytest.skip(f"missing legacy fixture: {path}")
@@ -153,7 +138,10 @@ def test_legacy_v6_v7_load_shapes_and_columns(label, filename, version):
     assert cell.data.summary.shape[0] > 0
     assert hn.data_point_txt in cell.data.raw.columns
     assert hn.cycle_index_txt in cell.data.raw.columns
-    assert cell.data.summary.index.name == hs.cycle_index
+    if version >= 6:
+        assert cell.data.summary.index.name == hs.cycle_index
+    else:
+        assert hs.cycle_index in cell.data.summary.columns
     assert hs.data_point in cell.data.summary.columns
     assert hs.discharge_capacity in cell.data.summary.columns
     assert cell.data.meta_common.cellpy_file_version == version
