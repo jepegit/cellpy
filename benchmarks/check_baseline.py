@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Compare a pytest-benchmark JSON run against the committed v1.x baseline."""
+"""Compare a pytest-benchmark JSON run against the committed v1.x baseline.
+
+Fails only on slowdowns beyond the tolerance band. Faster runs pass — refresh the
+committed baseline when an intentional speedup should become the new ruler.
+"""
 
 from __future__ import annotations
 
@@ -41,10 +45,10 @@ def compare(
             failures.append(f"{name}: invalid baseline mean {ref_mean}")
             continue
         ratio = cur_mean / ref_mean
-        if ratio > 1 + tolerance or ratio < 1 - tolerance:
+        if ratio > 1 + tolerance:
             failures.append(
                 f"{name}: mean {cur_mean:.6f}s vs baseline {ref_mean:.6f}s "
-                f"(ratio {ratio:.3f}, allowed ±{tolerance:.0%})"
+                f"(ratio {ratio:.3f}, max slowdown +{tolerance:.0%})"
             )
 
     return failures
@@ -56,7 +60,12 @@ def main(argv: list[str] | None = None) -> int:
         "current", type=Path, help="pytest-benchmark JSON from the current run"
     )
     parser.add_argument("baseline", type=Path, help="committed baseline JSON")
-    parser.add_argument("--tolerance", type=float, default=0.20)
+    parser.add_argument(
+        "--tolerance",
+        type=float,
+        default=0.20,
+        help="maximum allowed slowdown vs baseline (default: 0.20 = +20%%)",
+    )
     args = parser.parse_args(argv)
 
     failures = compare(args.current, args.baseline, tolerance=args.tolerance)
@@ -65,7 +74,10 @@ def main(argv: list[str] | None = None) -> int:
         for item in failures:
             print(f"  - {item}", file=sys.stderr)
         return 1
-    print(f"Benchmark means within ±{args.tolerance:.0%} of {args.baseline}")
+    print(
+        f"No benchmark slowdown beyond +{args.tolerance:.0%} vs {args.baseline} "
+        "(faster runs are OK — rebaseline when intentional)"
+    )
     return 0
 
 

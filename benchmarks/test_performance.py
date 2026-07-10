@@ -9,7 +9,7 @@ Capture or refresh the committed baseline on **ubuntu-latest** (match CI)::
     uv run pytest benchmarks/ --benchmark-only --benchmark-save=v1x \\
         --benchmark-json=benchmarks/baselines/v1x_ubuntu_py313.json
 
-Compare against the baseline (±20%% mean)::
+Compare against the baseline (fail on slowdown >20%%)::
 
     uv run pytest benchmarks/ --benchmark-only --benchmark-json=/tmp/bench.json
     uv run python benchmarks/check_baseline.py /tmp/bench.json benchmarks/baselines/v1x_ubuntu_py313.json
@@ -85,7 +85,7 @@ def test_benchmark_get_cap_all_cycles(benchmark, pipeline_cell):
 
 
 def test_benchmark_peak_rss_kib(benchmark):
-    """Record peak RSS (Linux only); informational — not gated by the ±20% compare."""
+    """Record peak RSS (Linux only); informational — not gated by the slowdown compare."""
     if peak_rss_kib() is None:
         pytest.skip("peak RSS sampling is only recorded on Linux")
 

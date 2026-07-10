@@ -26,15 +26,15 @@ From the repo root:
 uv run pytest benchmarks/ --benchmark-only
 
 # Capture baseline on **GitHub Actions ubuntu-latest** (commit the JSON).
-# Do **not** capture on local WSL/macOS/Windows — mounted filesystems and different
-# CPUs skew wall time and will fail the ±20% compare in CI.
+# Do **not** capture on local WSL/macOS/Windows — use the GHA capture job so the
+# ruler matches the compare runner.
 #
 # Recommended: run the **Benchmarks** workflow via *workflow_dispatch* (capture job)
 # and download the `v1x-baseline` artifact, or copy means from a green GHA log.
 uv run pytest benchmarks/ --benchmark-only --benchmark-save=v1x \
   --benchmark-json=benchmarks/baselines/v1x_ubuntu_py313.json
 
-# Compare against committed baseline (±20% mean) — CI uses this
+# Regression gate (fail only if slower than baseline by more than 20%) — CI uses this
 uv run pytest benchmarks/ --benchmark-only --benchmark-json=/tmp/bench.json
 uv run python benchmarks/check_baseline.py /tmp/bench.json benchmarks/baselines/v1x_ubuntu_py313.json
 ```
@@ -45,7 +45,8 @@ Linux CI.
 ## CI
 
 See `.github/workflows/benchmarks.yml` — runs on `ubuntu-latest` only, separate from the
-Tier-1 `essential` merge gate.
+Tier-1 `essential` merge gate. The compare job **fails only on slowdown** (>20% slower than
+baseline); faster runs pass. Rebaseline on GHA when a speedup should become the new ruler.
 
 To refresh the committed baseline on the real CI runner, trigger the workflow manually
 (*Actions → Benchmarks → Run workflow*). The `capture-baseline` job uploads

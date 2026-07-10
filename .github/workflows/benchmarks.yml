@@ -43,7 +43,7 @@ jobs:
       - run: uv python install 3.13
       - name: Sync dependencies
         run: uv sync
-      - name: Run benchmarks and compare against v1.x baseline (±20% mean)
+      - name: Run benchmarks and compare against v1.x baseline (+20% slowdown max)
         run: |
           uv run pytest benchmarks/ --benchmark-only --benchmark-json=/tmp/bench.json
           uv run python benchmarks/check_baseline.py /tmp/bench.json benchmarks/baselines/v1x_ubuntu_py313.json
