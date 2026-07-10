@@ -28,6 +28,7 @@ concurrency:
 
 jobs:
   compare:
+    if: github.event_name != 'workflow_dispatch'
     name: benchmark compare (ubuntu / uv)
     runs-on: ubuntu-latest
     env:
@@ -46,3 +47,30 @@ jobs:
         run: |
           uv run pytest benchmarks/ --benchmark-only --benchmark-json=/tmp/bench.json
           uv run python benchmarks/check_baseline.py /tmp/bench.json benchmarks/baselines/v1x_ubuntu_py313.json
+
+  capture-baseline:
+    if: github.event_name == 'workflow_dispatch'
+    name: capture baseline (ubuntu / uv)
+    runs-on: ubuntu-latest
+    env:
+      UV_NO_SOURCES: 1
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v5
+        with:
+          version: "latest"
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y mdbtools
+      - run: uv python install 3.13
+      - name: Sync dependencies
+        run: uv sync
+      - name: Capture v1.x baseline JSON on ubuntu-latest
+        run: |
+          uv run pytest benchmarks/ --benchmark-only \
+            --benchmark-json=benchmarks/baselines/v1x_ubuntu_py313.json
+      - name: Upload baseline artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: v1x-baseline
+          path: benchmarks/baselines/v1x_ubuntu_py313.json
+          if-no-files-found: error

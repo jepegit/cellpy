@@ -25,7 +25,12 @@ From the repo root:
 # Local timing (no regression gate)
 uv run pytest benchmarks/ --benchmark-only
 
-# Capture baseline on ubuntu-latest (commit the JSON)
+# Capture baseline on **GitHub Actions ubuntu-latest** (commit the JSON).
+# Do **not** capture on local WSL/macOS/Windows — mounted filesystems and different
+# CPUs skew wall time and will fail the ±20% compare in CI.
+#
+# Recommended: run the **Benchmarks** workflow via *workflow_dispatch* (capture job)
+# and download the `v1x-baseline` artifact, or copy means from a green GHA log.
 uv run pytest benchmarks/ --benchmark-only --benchmark-save=v1x \
   --benchmark-json=benchmarks/baselines/v1x_ubuntu_py313.json
 
@@ -41,6 +46,10 @@ Linux CI.
 
 See `.github/workflows/benchmarks.yml` — runs on `ubuntu-latest` only, separate from the
 Tier-1 `essential` merge gate.
+
+To refresh the committed baseline on the real CI runner, trigger the workflow manually
+(*Actions → Benchmarks → Run workflow*). The `capture-baseline` job uploads
+`benchmarks/baselines/v1x_ubuntu_py313.json` as an artifact.
 
 ## Legacy
 
