@@ -9,7 +9,32 @@ working on cellpy v2 or Stage 0 issues should know where each kind of document l
 |----------|------|
 | `cellpy/` | Main consumer library (loaders, API, plotting, persistence). Issue-flow tracking under `.issueflows/`. |
 | `cellpy-core/` | Compute engine (step/summary, schemas, legacy bridge). Integration guides under `.issueflows/04-designs-and-guides/`. |
-| `architecture-plan/` | **Authoritative home for cellpy 2 plan documents** (Stage 0–N sequencing, gap analysis, topic plans). |
+| `architecture-plan/` | **Authoritative home for cellpy 2 plan documents** (Stage 0–N sequencing, gap analysis, topic plans). Canonical remote: `cellpy/architecture-plan`. |
+
+## `architecture-plan` fork mirror (cloud agents)
+
+Cursor Cloud and similar tools often cannot use two GitHub orgs in one session. A read
+mirror exists at **[jepegit/architecture-plan](https://github.com/jepegit/architecture-plan)**.
+
+| Remote | Use |
+|--------|-----|
+| `cellpy/architecture-plan` | **Source of truth** — open PRs and merge plan changes here |
+| `jepegit/architecture-plan` | **Mirror** — clone target for cloud agents; `main` synced from upstream |
+
+Sync: GitHub Action `sync-upstream.yml` on the fork (every 6h + manual *Run workflow*).
+Do **not** commit plan changes directly to the fork's `main`.
+
+Local canonical checkout (as in this workspace):
+
+```bash
+git clone https://github.com/cellpy/architecture-plan.git
+```
+
+Cloud / single-org checkout:
+
+```bash
+git clone https://github.com/jepegit/architecture-plan.git
+```
 
 ## Plan documents → `architecture-plan/`
 
