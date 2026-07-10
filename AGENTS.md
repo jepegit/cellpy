@@ -215,3 +215,36 @@ If a `graphify-out/` folder exists in the project root, the project has the opti
 - If `graphify-out/` is not present, ignore graph-related guidance entirely. The integration is opt-in (install with `uv tool install graphifyy`, then `issue-flow update` to register the graphify skill).
 
 <!-- END issue-flow (managed) -->
+
+## Cursor Cloud specific instructions
+
+Environment is already provisioned on cloud VM startup: `uv` (on PATH via
+`~/.local/bin`), the `mdbtools` system package (needed to read Arbin `.mdb`/`.res`
+files on Linux), and the startup update script runs `uv sync`, which installs
+Python 3.13 and the project + `dev` dependency group from `uv.lock` (`cellpycore`
+resolves from PyPI). No manual install is normally needed.
+
+- **Product:** `cellpy` is a Python library + `cellpy` CLI for battery/cell cycling
+  data (no web/GUI server; `cellpy serve` only launches Jupyter). There is nothing
+  long-running to "start" — you exercise it via the CLI or by importing the library.
+- **Run everything through `uv run`** (e.g. `uv run cellpy ...`, `uv run pytest`,
+  `uv run python ...`) so the `.venv` interpreter and deps are used. Standard
+  commands are in `CONTRIBUTING.md`, `.github/workflows/ci.yml`, and `pyproject.toml`.
+- **Tests:** `uv run pytest -m essential` is the fast CI merge gate (~70 tests).
+  CI ignores `tests/test_plotutils_summary_plot.py` in the essential run. Full suite
+  is `uv run pytest` (default `addopts` deselects slow/local/unfinished markers).
+- **Lint/format:** `uv run flake8 cellpy` and `uv run black --check cellpy` (line
+  length 120). These are not wired into the Tier-1 CI gate, and the repo currently
+  has pre-existing `black` reformat suggestions and some `flake8 F821` findings —
+  do not treat those as regressions from your change.
+- **Build:** `uv build` (hatchling; version derived from git tags via
+  `uv-dynamic-versioning`, so a shallow/tagless checkout reports a `0.0.0`-style dev
+  version — harmless for dev).
+- **CLI smoke check:** `uv run cellpy setup --silent` then `uv run cellpy info --check`.
+  `cellpy setup` writes a runtime `.env_cellpy` in the repo root and a
+  `~/.cellpy_prms_*.conf` in $HOME — these are local runtime files, do not commit them.
+- **Example data** (`cellpy.utils.example_data`, e.g. `raw_file()`) downloads small
+  fixtures from GitHub on first use, so those helpers need network access.
+- **Dual-repo dev** with a sibling `../cellpy-core` checkout is optional (see
+  `CONTRIBUTING.md`): `uv sync --no-sources` then `uv pip install -e ../cellpy-core`.
+  The default `uv sync` uses the PyPI `cellpycore` pin and is sufficient for most work.
