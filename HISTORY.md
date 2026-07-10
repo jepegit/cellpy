@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+* Testing: Stage 0.9 benchmark harness — opt-in `pytest-benchmark` suite under `benchmarks/`, committed v1.x baseline JSON, and dedicated CI job with ±20% regression gate (#436)
 * Docs: Stage-0 AST inventory scanners (`scan_member_usage.py`, `scan_hardcoded_headers.py`) in `.issueflows/00-tools/` for consumer/header reports (#435) (`tests/parity.py::assert_value_parity`) — legacy vs native frames compared through `cellpycore.legacy.mapping` with dtype-tolerant mapped-column equality, named exception list, and trivial-pass essential tests on the current bridge (#434)
 * Testing: curve-extraction golden snapshots for `get_cap` / `get_ccap` / `get_dcap` / `get_ocv` on the canonical Arbin cell, including labeled/interpolated/multi-cycle variants and NullData edge cases (#433)
 * Testing: per-loader golden snapshots for tier-1 loaders (`arbin_res`, `maccor_txt`, `neware_txt`, `pec_csv`, `custom`) — raw frame, `raw_units`, and loader meta oracles under `tests/data/goldens/loader_*/` with parametrized essential regression tests (#432)

@@ -109,6 +109,7 @@ xdist/
 .dotenv
 .env
 .pytest_cache/
+.benchmarks/
 cellpy_debug.lo*
 out/20190403_cen59_04_rateGITT_01.h5
 builds/
