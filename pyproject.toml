@@ -131,6 +131,7 @@ markers = [
     "serial",
     "skip_on_macos: skip this test when running on macOS (e.g. CI flakiness)",
     "essential: marks the core smoke tests of the read -> step-table -> summary pipeline and the cellpy/cellpy-core parity contract (run with '-m essential')",
+    "benchmark: opt-in performance benchmarks (run benchmarks/ or pytest -m benchmark)",
 ]
 filterwarnings = [
     "ignore::DeprecationWarning:dateparser",
