@@ -366,11 +366,6 @@ Instruments = InstrumentsClass(
 
 _github_repo_parent = "jepegit"
 _github_repo = "cellpy"
-_github_templates_repo = "cellpy_cookies.git"
-
-_url_example_data = f"https://raw.githubusercontent.com/{_github_repo_parent}/{_github_repo}/master/examples/data/"
-_url_example_data_download_with_progressbar = True
-_example_data_in_example_folder_if_available = True
 
 _use_local_fastnda = True
 
@@ -388,42 +383,26 @@ _sub_process_path = Path(__file__) / "../../../bin/mdbtools-win/mdb-export"
 _sub_process_path = _sub_process_path.resolve()
 _sort_if_subprocess = True
 
-_cellpyfile_root = "CellpyData"
-_cellpyfile_raw = "/raw"
-_cellpyfile_step = "/steps"
-_cellpyfile_summary = "/summary"
-_cellpyfile_fid = "/fid"
-_cellpyfile_common_meta = "/info"
-_cellpyfile_test_dependent_meta = "/info_test_dependent"
+from cellpy.readers.cellpy_file.format import FORMAT_V8 as _cellpyfile_format
 
-_cellpyfile_raw_unit_pre_id = "raw_unit_"
-_cellpyfile_raw_limit_pre_id = ""
-
-_cellpyfile_complevel = 1
-_cellpyfile_complib = None  # currently, defaults to "zlib"
-_cellpyfile_raw_format = "table"
-_cellpyfile_summary_format = "table"
-_cellpyfile_stepdata_format = "table"
-_cellpyfile_infotable_format = "fixed"
-_cellpyfile_fidtable_format = "fixed"
+_cellpyfile_root = _cellpyfile_format.root
+_cellpyfile_raw = _cellpyfile_format.raw_dir
+_cellpyfile_step = _cellpyfile_format.step_dir
+_cellpyfile_summary = _cellpyfile_format.summary_dir
+_cellpyfile_fid = _cellpyfile_format.fid_dir
+_cellpyfile_common_meta = _cellpyfile_format.common_meta_dir
+_cellpyfile_test_dependent_meta = _cellpyfile_format.test_dependent_meta_dir
+_cellpyfile_raw_unit_pre_id = _cellpyfile_format.raw_unit_prefix
+_cellpyfile_raw_limit_pre_id = _cellpyfile_format.raw_limit_prefix
+_cellpyfile_complevel = _cellpyfile_format.complevel
+_cellpyfile_complib = _cellpyfile_format.complib
+_cellpyfile_raw_format = _cellpyfile_format.raw_format
+_cellpyfile_summary_format = _cellpyfile_format.summary_format
+_cellpyfile_stepdata_format = _cellpyfile_format.stepdata_format
+_cellpyfile_infotable_format = _cellpyfile_format.infotable_format
+_cellpyfile_fidtable_format = _cellpyfile_format.fidtable_format
 
 _date_time_format = "%Y-%m-%d %H:%M:%S:%f"
-
-# templates
-_standard_template_uri = (
-    f"https://github.com/{_github_repo_parent}/{_github_templates_repo}"
-)
-
-_registered_templates = {
-    "standard": (_standard_template_uri, "standard"),  # (repository, name-of-folder)
-    "ife": (_standard_template_uri, "ife"),
-    "single": (_standard_template_uri, "single"),
-}
-
-# used as global variables
-_globals_status = ""
-_globals_errors = []
-_globals_message = []
 
 
 # general settings for loaders

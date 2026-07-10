@@ -21,6 +21,7 @@ from cellpy.exceptions import ConfigFileNotWritten
 from cellpy.parameters import prmreader
 from cellpy.parameters.internal_settings import OTHERPATHS
 from cellpy.internals.connections import OtherPath
+from cellpy.utils.template_registry import REGISTERED_TEMPLATES
 
 DIFFICULT_MISSING_MODULES = {}
 
@@ -1669,7 +1670,7 @@ def _new(
         default_template = _get_default_template()
         local_templates = _read_local_templates()
         local_templates_path = prmreader.prms.Paths.templatedir
-        registered_templates = prms._registered_templates
+        registered_templates = REGISTERED_TEMPLATES
         click.echo(f"[cellpy] - default: {default_template}")
         click.echo("[cellpy] - registered templates (on github):")
         for label, link in registered_templates.items():
@@ -1706,7 +1707,7 @@ def _new(
             )
             return
     else:
-        templates = prms._registered_templates
+        templates = REGISTERED_TEMPLATES
         if local_templates := _read_local_templates():
             templates.update(local_templates)
 
