@@ -34,7 +34,7 @@ uv run pytest benchmarks/ --benchmark-only
 uv run pytest benchmarks/ --benchmark-only --benchmark-save=v1x \
   --benchmark-json=benchmarks/baselines/v1x_ubuntu_py313.json
 
-# Regression gate (fail only if slower than baseline by more than 20%) — CI uses this
+# Regression gate — warn +20%%, fail +100%% (CI uses this)
 uv run pytest benchmarks/ --benchmark-only --benchmark-json=/tmp/bench.json
 uv run python benchmarks/check_baseline.py /tmp/bench.json benchmarks/baselines/v1x_ubuntu_py313.json
 ```
@@ -45,8 +45,9 @@ Linux CI.
 ## CI
 
 See `.github/workflows/benchmarks.yml` — runs on `ubuntu-latest` only, separate from the
-Tier-1 `essential` merge gate. The compare job **fails only on slowdown** (>20% slower than
-baseline); faster runs pass. Rebaseline on GHA when a speedup should become the new ruler.
+Tier-1 `essential` merge gate. The compare job **warns** on slowdowns above +20% and
+**fails** only above +100%; faster runs pass. Rebaseline on GHA when a speedup should
+become the new ruler.
 
 To refresh the committed baseline on the real CI runner, trigger the workflow manually
 (*Actions → Benchmarks → Run workflow*). The `capture-baseline` job uploads
