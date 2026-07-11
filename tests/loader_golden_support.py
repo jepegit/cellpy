@@ -132,6 +132,18 @@ LOADER_GOLDEN_SPECS: tuple[LoaderGoldenSpec, ...] = (
 )
 
 
+def _temporal_columns(*frames: pd.DataFrame) -> set[str]:
+    """Return datetime/timedelta column names from frames (plus static sets)."""
+    cols = set(DATETIME_LIKE_COLUMNS) | set(TIMEDELTA_LIKE_COLUMNS)
+    for frame in frames:
+        for col in frame.columns:
+            if pd.api.types.is_datetime64_any_dtype(frame[col]):
+                cols.add(col)
+            elif pd.api.types.is_timedelta64_dtype(frame[col]):
+                cols.add(col)
+    return cols
+
+
 def prepare_raw_for_golden(raw: pd.DataFrame) -> pd.DataFrame:
     """Return a column-only raw frame with stable column order for goldens."""
     frame = raw.copy()
@@ -141,7 +153,7 @@ def prepare_raw_for_golden(raw: pd.DataFrame) -> pd.DataFrame:
         frame = frame.reset_index()
     if not isinstance(frame.index, pd.RangeIndex):
         frame = frame.reset_index(drop=True)
-    temporal_cols = DATETIME_LIKE_COLUMNS | TIMEDELTA_LIKE_COLUMNS
+    temporal_cols = _temporal_columns(frame)
     for col in frame.columns:
         if col in INTEGER_RAW_COLUMNS or col in temporal_cols:
             continue
@@ -248,7 +260,7 @@ def assert_raw_matches_golden(actual: pd.DataFrame, expected: pd.DataFrame) -> N
     expected = sort_summary_columns(prepare_raw_for_golden(expected))
     assert list(actual.columns) == list(expected.columns)
 
-    temporal_cols = DATETIME_LIKE_COLUMNS | TIMEDELTA_LIKE_COLUMNS
+    temporal_cols = _temporal_columns(actual, expected)
     exact_cols = [c for c in actual.columns if c not in temporal_cols]
     if exact_cols:
         assert_frame_equal(actual[exact_cols], expected[exact_cols])

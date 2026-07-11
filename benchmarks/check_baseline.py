@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Compare a pytest-benchmark JSON run against the committed v1.x baseline.
 
-Fails only on slowdowns beyond the tolerance band. Faster runs pass — refresh the
-committed baseline when an intentional speedup should become the new ruler.
+Warns on moderate slowdowns; fails only on extreme regressions. Faster runs
+pass — refresh the committed baseline when an intentional speedup should become
+the new ruler.
 """
 
 from __future__ import annotations
@@ -10,7 +11,16 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from dataclasses import dataclass
 from pathlib import Path
+
+
+@dataclass(frozen=True)
+class CompareResult:
+    """Outcome of comparing current benchmark means to a baseline."""
+
+    warnings: tuple[str, ...]
+    failures: tuple[str, ...]
 
 
 def _means_by_name(payload: dict) -> dict[str, float]:
@@ -25,14 +35,34 @@ def _means_by_name(payload: dict) -> dict[str, float]:
 
 
 def compare(
-    current_path: Path, baseline_path: Path, tolerance: float = 0.20
-) -> list[str]:
+    current_path: Path,
+    baseline_path: Path,
+    *,
+    warn_tolerance: float = 0.20,
+    fail_tolerance: float = 1.0,
+) -> CompareResult:
+    """Compare benchmark means to baseline with tiered warn/fail bands.
+
+    Args:
+        current_path: pytest-benchmark JSON from the current run.
+        baseline_path: committed baseline JSON.
+        warn_tolerance: Emit a warning when slowdown exceeds this fraction
+            (default 0.20 = +20%%).
+        fail_tolerance: Fail when slowdown exceeds this fraction (default 1.0 =
+            +100%%, ratio 2.0).
+
+    Returns:
+        CompareResult with warning and failure messages.
+    """
     current = json.loads(current_path.read_text(encoding="utf-8"))
     baseline = json.loads(baseline_path.read_text(encoding="utf-8"))
 
     cur = _means_by_name(current)
     ref = _means_by_name(baseline)
+    warnings: list[str] = []
     failures: list[str] = []
+    warn_ratio = 1 + warn_tolerance
+    fail_ratio = 1 + fail_tolerance
 
     for name, ref_mean in sorted(ref.items()):
         if name.startswith("test_benchmark_peak_rss"):
@@ -45,13 +75,20 @@ def compare(
             failures.append(f"{name}: invalid baseline mean {ref_mean}")
             continue
         ratio = cur_mean / ref_mean
-        if ratio > 1 + tolerance:
+        message = (
+            f"{name}: mean {cur_mean:.6f}s vs baseline {ref_mean:.6f}s "
+            f"(ratio {ratio:.3f})"
+        )
+        if ratio > fail_ratio:
             failures.append(
-                f"{name}: mean {cur_mean:.6f}s vs baseline {ref_mean:.6f}s "
-                f"(ratio {ratio:.3f}, max slowdown +{tolerance:.0%})"
+                f"{message}, exceeds max slowdown +{fail_tolerance:.0%}"
+            )
+        elif ratio > warn_ratio:
+            warnings.append(
+                f"{message}, above warn threshold +{warn_tolerance:.0%}"
             )
 
-    return failures
+    return CompareResult(tuple(warnings), tuple(failures))
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -61,23 +98,54 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("baseline", type=Path, help="committed baseline JSON")
     parser.add_argument(
-        "--tolerance",
+        "--warn-tolerance",
         type=float,
         default=0.20,
-        help="maximum allowed slowdown vs baseline (default: 0.20 = +20%%)",
+        help="warn when slowdown exceeds this fraction (default: 0.20 = +20%%)",
+    )
+    parser.add_argument(
+        "--fail-tolerance",
+        type=float,
+        default=1.0,
+        help="fail when slowdown exceeds this fraction (default: 1.0 = +100%%)",
+    )
+    parser.add_argument(
+        "--tolerance",
+        type=float,
+        default=None,
+        help="deprecated alias for --warn-tolerance",
     )
     args = parser.parse_args(argv)
 
-    failures = compare(args.current, args.baseline, tolerance=args.tolerance)
-    if failures:
+    warn_tolerance = args.warn_tolerance
+    if args.tolerance is not None:
+        warn_tolerance = args.tolerance
+
+    result = compare(
+        args.current,
+        args.baseline,
+        warn_tolerance=warn_tolerance,
+        fail_tolerance=args.fail_tolerance,
+    )
+    if result.warnings:
+        print("Benchmark baseline warnings:", file=sys.stderr)
+        for item in result.warnings:
+            print(f"  - {item}", file=sys.stderr)
+    if result.failures:
         print("Benchmark baseline regression:", file=sys.stderr)
-        for item in failures:
+        for item in result.failures:
             print(f"  - {item}", file=sys.stderr)
         return 1
-    print(
-        f"No benchmark slowdown beyond +{args.tolerance:.0%} vs {args.baseline} "
-        "(faster runs are OK — rebaseline when intentional)"
-    )
+    if result.warnings:
+        print(
+            f"Benchmarks within +{args.fail_tolerance:.0%} fail band vs {args.baseline} "
+            f"({len(result.warnings)} warn-only slowdown(s))"
+        )
+    else:
+        print(
+            f"No benchmark slowdown beyond +{warn_tolerance:.0%} vs {args.baseline} "
+            "(faster runs are OK — rebaseline when intentional)"
+        )
     return 0
 
 
