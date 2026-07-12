@@ -75,6 +75,8 @@ When `.issueflows/04-designs-and-guides/multi-repo-workspaces.md` exists, read i
 
 4. **Solved archive** (`.issueflows/03-solved-issues/`). Report the count of distinct solved issue numbers and the most recent few.
 
+4a. **In-flight cycle.** If `.issueflows/01-current-issues/cycle_status.md` exists, a `/iflow-cycle` batch run is paused or active — report it and its progress (from the file's checklist), and note that `/iflow-cycle resume` continues it. (`issue-flow status --json` reports this as `cycle_active`.)
+
 5. **Open GitHub issues** (skip if the user passed `local`). Run `gh issue list --state open --json number,title,labels,milestone,updatedAt` and tag each issue's local state: **focus**, **parked**, **solved-locally**, or **untracked**. If `gh` is missing/unauthenticated, skip this section and note it (suggest `gh auth login`) — never fail.
 
 6. **Summary line.** One terse line, e.g. `Focus: #20 (start). Parked: 2. Solved: 31. Open on GitHub: 7 (5 untracked).`
