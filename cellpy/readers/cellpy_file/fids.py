@@ -5,9 +5,16 @@ from __future__ import annotations
 import collections
 import logging
 import warnings
+from typing import TYPE_CHECKING
 
 import cellpy.internals.connections as internals
 from cellpy.readers import data_structures as ds
+from cellpy.readers import externals
+from cellpy.readers.cellpy_file import meta as cellpy_file_meta
+from cellpy.readers.cellpy_file.format import get_format
+
+if TYPE_CHECKING:
+    from cellpy.readers.data_structures import FileID
 
 
 def convert2fid_table(cell):
@@ -85,3 +92,35 @@ def convert2fid_list(tbl):
     if min_amount < 1:
         logging.debug("info about raw files missing")
     return fids, lengths
+
+
+def read_fid_table(path) -> tuple[list["FileID"], list[int]] | None:
+    """Read the fid table from a cellpy-file without a full load."""
+    from cellpy.readers.cellpy_file.read import resolve_hdf5_path
+
+    resolved = resolve_hdf5_path(path)
+    try:
+        version = cellpy_file_meta.get_cellpy_file_version(resolved)
+        fmt = get_format(version)
+    except Exception as e:
+        logging.debug(f"could not read cellpy-file version ({e})")
+        return None
+
+    parent_level = fmt.root
+    try:
+        with externals.pandas.HDFStore(resolved) as store:
+            fid_table = store.select(parent_level + fmt.fid_dir)
+    except KeyError:
+        logging.warning("no fidtable - you should update your hdf5-file")
+        return None
+    except NotImplementedError:
+        logging.warning(
+            "your system cannot read the fid-table (posix-windows confusion) "
+            "hopefully this will be solved in a newer version of pytables."
+        )
+        return None
+    except Exception as e:
+        logging.debug(f"could not open cellpy-file ({e})")
+        return None
+
+    return convert2fid_list(fid_table)

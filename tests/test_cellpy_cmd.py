@@ -334,6 +334,38 @@ def test_cli_new_with_dir_as_input(tmp_path):
     assert "_life.ipynb" in output_paths
 
 
+@pytest.mark.essential
+def test_convert_cli_v4_to_v8(tmp_path):
+    """cellpy convert upgrades a v4 fixture to v8 on disk."""
+    from pathlib import Path
+
+    import pandas as pd
+
+    from cellpy.readers.cellpy_file import load as cellpy_file_load
+
+    source = (
+        Path(__file__).resolve().parents[1]
+        / "testdata"
+        / "hdf5"
+        / "20160805_test001_45_cc_v4.h5"
+    )
+    if not source.is_file():
+        pytest.skip(f"missing legacy fixture: {source}")
+
+    out = tmp_path / "converted_v8.h5"
+    runner = CliRunner()
+    result = runner.invoke(cli.cli, ["convert", str(source), str(out)])
+    assert result.exit_code == 0, result.output
+    assert out.is_file()
+
+    loaded = cellpy_file_load(out, accept_old=True)
+    assert loaded.file_version == 8
+    assert loaded.data.raw.shape[0] > 0
+    with pd.HDFStore(out) as store:
+        assert "/CellpyData/raw" in store.keys()
+        assert "/CellpyData/summary" in store.keys()
+
+
 @pytest.mark.slowtest
 def test_cli_new_different_and_missing_default(tmp_path):
     logging.debug("\nSTARTING TEST")

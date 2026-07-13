@@ -16,6 +16,7 @@ from cellpy.readers.cellpy_file.format import (
     FORMAT_V8,
     MINIMUM_CELLPY_FILE_VERSION,
     CellpyFileFormat,
+    get_format,
 )
 from cellpy.parameters.legacy.update_headers import (
     rename_fid_columns,
@@ -28,13 +29,68 @@ from cellpy.readers import externals
 from cellpy.readers.cellpy_file import fids as cellpy_file_fids
 from cellpy.readers.cellpy_file import keys as cellpy_file_keys
 from cellpy.readers.cellpy_file import meta as cellpy_file_meta
-from cellpy.readers.cellpy_file.format import FORMAT_V8, CellpyFileFormat
+from cellpy.readers.cellpy_file.format import CellpyFileFormat
 from cellpy.readers.cellpy_file.selectors import LoadLimits, LoadResult
 
 if TYPE_CHECKING:
     from cellpy.readers.data_structures import Data
 
 _module_logger = logging.getLogger(__name__)
+
+
+def resolve_hdf5_path(path) -> str | Path:
+    """Return a local path suitable for ``pd.HDFStore``, copying external files once."""
+    import cellpy.internals.connections as internals
+
+    other = path if isinstance(path, internals.OtherPath) else internals.OtherPath(path)
+    if other.is_external:
+        other = other.copy()
+    return other
+
+
+def _resolve_table_dir(table_name: str, fmt: CellpyFileFormat) -> str:
+    """Map a v8-style table dir (e.g. ``prms._cellpyfile_step``) to ``fmt``'s layout."""
+    mapping = {
+        FORMAT_V8.step_dir: fmt.step_dir,
+        FORMAT_V8.summary_dir: fmt.summary_dir,
+        FORMAT_V8.raw_dir: fmt.raw_dir,
+        FORMAT_V8.fid_dir: fmt.fid_dir,
+        FORMAT_V8.common_meta_dir: fmt.common_meta_dir,
+        FORMAT_V8.test_dependent_meta_dir: fmt.test_dependent_meta_dir,
+    }
+    return mapping.get(table_name, table_name)
+
+
+def read_table(path, table_name: str, *, max_cycle: int | None = None):
+    """Read a single table from a cellpy-file (batch link mode and similar)."""
+    resolved = resolve_hdf5_path(path)
+    version = cellpy_file_meta.get_cellpy_file_version(resolved)
+    fmt = get_format(version)
+    parent_level = fmt.root
+    table_dir = _resolve_table_dir(table_name, fmt)
+    store_key = parent_level + table_dir
+
+    try:
+        with externals.pandas.HDFStore(resolved) as store:
+            if max_cycle is not None and table_dir == fmt.step_dir:
+                data = ds.Data()
+                limits = extract_summary_from_cellpy_file(
+                    data,
+                    parent_level,
+                    store,
+                    fmt.summary_dir,
+                    selector={"max_cycle": max_cycle},
+                )
+                table = store.select(store_key)
+                if limits.limit_data_points:
+                    table = table.loc[
+                        table["point_last"] <= limits.limit_data_points
+                    ]
+                return table
+            return store.select(store_key)
+    except KeyError as e:
+        logging.warning("Could not read the table")
+        raise WrongFileVersion(e) from e
 
 
 def _headers_summary():

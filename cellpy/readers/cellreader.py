@@ -1051,63 +1051,40 @@ class CellpyCell:
             filename = internals.OtherPath(filename)
 
         use_full_filename_path = False
-        parent_level = prms._cellpyfile_root  # noqa
-        fid_dir = prms._cellpyfile_fid  # noqa
         check_on = self.filestatuschecker
         logging.debug("checking cellpy-file")
         logging.debug(filename)
         if not filename.is_file():
             logging.debug("cellpy-file does not exist")
             return None
-        try:
-            # TODO: implement external handling of hdf5-files
-            if filename.is_external:
-                # I have not implemented any external handling of hdf5-files yet. So we need to
-                # copy the file to temporary directory (this will take some time, and therefore it is
-                # probably best not to put your cellpy files in a remote directory yet):
-                filename = filename.copy()
-            store = externals.pandas.HDFStore(filename)
-        except Exception as e:
-            logging.debug(f"could not open cellpy-file ({e})")
-            return None
-        fidtable = None
-        try:
-            fidtable = store.select(parent_level + fid_dir)
-        except KeyError:
-            logging.warning("no fidtable - you should update your hdf5-file")
-        except NotImplementedError:
-            logging.warning(
-                "your system cannot read the fid-table (posix-windows confusion) "
-                "hopefully this will be solved in a newer version of pytables."
-            )
-        finally:
-            store.close()
-        if fidtable is not None:
-            raw_data_files, raw_data_files_length = self._convert2fid_list(fidtable)
-            txt = "contains %i res-files" % (len(raw_data_files))
-            logging.debug(txt)
-            ids = dict()
-            for fid in raw_data_files:
-                full_name = fid.full_name
-                name = fid.name
-                size = fid.size
-                mod = fid.last_modified
-                logging.debug(f"fileID information for: {full_name}")
-                logging.debug(f"   modified: {mod}")
-                logging.debug(f"   size: {size}")
 
-                if use_full_filename_path:
-                    name = full_name
-
-                if check_on == "size":
-                    ids[name] = int(fid.size)
-                elif check_on == "modified":
-                    ids[name] = int(fid.last_modified)
-                else:
-                    ids[name] = int(fid.last_modified)
-            return ids
-        else:
+        fid_result = cellpy_file_fids.read_fid_table(filename)
+        if fid_result is None:
             return None
+
+        raw_data_files, _raw_data_files_length = fid_result
+        txt = "contains %i res-files" % (len(raw_data_files))
+        logging.debug(txt)
+        ids = dict()
+        for fid in raw_data_files:
+            full_name = fid.full_name
+            name = fid.name
+            size = fid.size
+            mod = fid.last_modified
+            logging.debug(f"fileID information for: {full_name}")
+            logging.debug(f"   modified: {mod}")
+            logging.debug(f"   size: {size}")
+
+            if use_full_filename_path:
+                name = full_name
+
+            if check_on == "size":
+                ids[name] = int(fid.size)
+            elif check_on == "modified":
+                ids[name] = int(fid.last_modified)
+            else:
+                ids[name] = int(fid.last_modified)
+        return ids
 
     @staticmethod
     def _compare_ids(ids_raw, ids_cellpy_file):
@@ -1489,29 +1466,20 @@ class CellpyCell:
         for kwarg in kwargs:
             logging.debug(f"received (still) un-supported keyword argument {kwarg=}")
 
-        try:
-            logging.debug("loading cellpy-file (hdf5):")
-            logging.debug(cellpy_file)
-            logging.debug(f"{type(cellpy_file)=}")
-            cellpy_file = internals.OtherPath(cellpy_file)
-            logging.debug(f"using pickle protocol {PICKLE_PROTOCOL}")
-            result = cellpy_file_read.load(
-                cellpy_file,
-                accept_old=accept_old,
-                selector=selector,
-                parent_level=parent_level,
-            )
-            data = result.data
-            limits = result
-            logging.debug("cellpy-file loaded")
-
-        except AttributeError:
-            data = None
-            limits = None
-            logging.warning(
-                "This cellpy-file version is not supported by "
-                "current reader (try to update cellpy)."
-            )
+        logging.debug("loading cellpy-file (hdf5):")
+        logging.debug(cellpy_file)
+        logging.debug(f"{type(cellpy_file)=}")
+        cellpy_file = internals.OtherPath(cellpy_file)
+        logging.debug(f"using pickle protocol {PICKLE_PROTOCOL}")
+        result = cellpy_file_read.load(
+            cellpy_file,
+            accept_old=accept_old,
+            selector=selector,
+            parent_level=parent_level,
+        )
+        data = result.data
+        limits = result
+        logging.debug("cellpy-file loaded")
 
         if data:
             self.data = data
