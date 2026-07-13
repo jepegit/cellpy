@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+* Units Phase 1: re-export ``CellpyUnits`` and ``Q`` from cellpycore; remove cellpy-local pint registry; rename ``cellreader`` ``data_structures`` alias to ``ds`` (#450)
 * Deprecation: `cellpy.utils.easyplot` warns on import via `warn_once`; use `plotutils`/`collectors` instead (removed in 2.0, #438 decision 5) (#479)
 * Fix: loader PEC golden compares all datetime columns by epoch-ns (Windows `datetime64[us]` vs `ns`); benchmark baseline gate warns above +20% slowdown and fails only above +100% (#476)
 * Stage 1.1: extract cellpy-file format spec into `cellpy/readers/cellpy_file/format.py`; `prms._cellpyfile_*` aliases preserved; template registry and example-data URL constants moved to owning modules (#446)
