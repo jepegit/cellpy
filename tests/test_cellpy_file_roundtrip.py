@@ -13,9 +13,10 @@ import pandas as pd
 import pytest
 
 from cellpy import cellreader, prms
-from cellpy.exceptions import WrongFileVersion
+from cellpy.exceptions import CorruptCellpyFile, WrongFileVersion
 from cellpy.internals.connections import OtherPath
 from cellpy.parameters.internal_settings import get_headers_normal, get_headers_summary
+from cellpy.readers.cellpy_file import read as cellpy_file_read
 from tests.cellpy_file_support import (
     assert_data_frames_equal,
     assert_fid_lists_equal,
@@ -158,8 +159,9 @@ def test_legacy_v0_raises_wrong_file_version():
         cell.load(path, accept_old=True)
 
 
-def test_missing_required_store_key_raises_current_exception(tmp_path):
-    """Missing summary key → bare Exception with OH MY GOD message (current contract)."""
+@pytest.mark.essential
+def test_missing_required_store_key_raises_corrupt_cellpy_file(tmp_path):
+    """Missing summary key → CorruptCellpyFile (Stage 1.4 typed error)."""
     source = HDF5_DIR / "20160805_test001_45_cc_v8.h5"
     if not source.is_file():
         pytest.skip(f"missing fixture: {source}")
@@ -170,10 +172,37 @@ def test_missing_required_store_key_raises_current_exception(tmp_path):
         store.remove("/CellpyData/summary")
 
     cell = cellreader.CellpyCell()
-    with pytest.raises(Exception, match="OH MY GOD") as exc_info:
+    with pytest.raises(CorruptCellpyFile, match="crucial key is missing") as exc_info:
         cell.load(corrupt)
 
     assert "/CellpyData/summary" in str(exc_info.value)
+
+
+@pytest.mark.essential
+def test_read_table_steps_max_cycle_matches_selector_load():
+    """read_table with max_cycle returns the same steps slice as a full load."""
+    source = _require_v8_with_fids()
+    max_cycle = 3
+
+    selected = load_cellpy_file(source, selector={"max_cycle": max_cycle})
+    table = cellpy_file_read.read_table(
+        source, prms._cellpyfile_step, max_cycle=max_cycle
+    )
+
+    assert_data_frames_equal(table, selected.data.steps)
+
+
+@pytest.mark.essential
+def test_read_table_does_not_touch_cellpy_cell_state():
+    """read_table is a single-table read with no CellpyCell side effects."""
+    source = _require_v8_with_fids()
+    cell = cellreader.CellpyCell()
+    assert cell.core._data is None
+
+    table = cellpy_file_read.read_table(source, prms._cellpyfile_step)
+
+    assert cell.core._data is None
+    assert not table.empty
 
 
 def test_check_file_ids_matches_res_provenance():

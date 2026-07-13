@@ -27,6 +27,8 @@ __all__ = [
     "LoadSelector",
     "get_format",
     "load",
+    "read_fid_table",
+    "read_table",
     "save",
 ]
 
@@ -40,4 +42,12 @@ def __getattr__(name: str):
         from cellpy.readers.cellpy_file.write import save
 
         return save
+    if name == "read_table":
+        from cellpy.readers.cellpy_file.read import read_table
+
+        return read_table
+    if name == "read_fid_table":
+        from cellpy.readers.cellpy_file.fids import read_fid_table
+
+        return read_fid_table
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

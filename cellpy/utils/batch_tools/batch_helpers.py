@@ -9,10 +9,6 @@ import pandas as pd
 import cellpy.parameters.internal_settings
 from cellpy import filefinder, prms
 from cellpy.readers import data_structures as core
-from cellpy.exceptions import ExportFailed, NullData, WrongFileVersion
-
-# logger = logging.getLogger(__name__)
-from cellpy.parameters.internal_settings import headers_step_table
 
 hdr_summary = cellpy.parameters.internal_settings.get_headers_summary()
 hdr_journal = cellpy.parameters.internal_settings.get_headers_journal()
@@ -23,35 +19,15 @@ CELL_TYPE_IDS = ["cc", "ec", "eth"]
 
 def look_up_and_get(cellpy_file_name, table_name, root=None, max_cycle=None):
     """Extracts table from cellpy hdf5-file."""
+    from cellpy.readers.cellpy_file.read import read_table
 
-    # infoname = '/CellpyData/info'
-    # dataname = '/CellpyData/dfdata'
-    # summaryname = '/CellpyData/dfsummary'
-    # fidname = '/CellpyData/fidtable'
-    # stepname = '/CellpyData/step_table'
-
-    if root is None:
-        root = "/CellpyData"
-    table_path = "/".join([root, table_name])
+    if root is not None and root != prms._cellpyfile_root:
+        logging.warning(
+            "look_up_and_get root= is ignored; use cellpy_file.read_table instead"
+        )
 
     logging.debug(f"look_up_and_get({cellpy_file_name}, {table_name}")
-    store = pd.HDFStore(cellpy_file_name)
-    # max_cycle is not implemented properly yet
-    # TODO: implement max_cycle
-    try:
-        if max_cycle and table_name == prms._cellpyfile_step:
-            _cycle_header = headers_step_table.cycle
-            cycles = store.select(table_path, where="columns=[_cycle_header]")
-            _where = cycles[_cycle_header] <= max_cycle
-            table = store.select(table_path, where=_where)
-        else:
-            table = store.select(table_path)
-        store.close()
-    except KeyError as e:
-        logging.warning("Could not read the table")
-        store.close()
-        raise WrongFileVersion(e)
-    return table
+    return read_table(cellpy_file_name, table_name, max_cycle=max_cycle)
 
 
 def create_folder_structure(project_name, batch_name):

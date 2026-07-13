@@ -1904,6 +1904,32 @@ cli.add_command(new)
 cli.add_command(serve)
 
 
+@click.command()
+@click.argument("old_h5", type=click.Path(exists=True, dir_okay=False))
+@click.argument("new_h5", required=False, type=click.Path(dir_okay=False))
+def convert(old_h5, new_h5):
+    """Upgrade a legacy cellpy-file to the current v8 HDF5 layout."""
+    from cellpy.readers.cellpy_file import load as cellpy_file_load
+    from cellpy.readers.cellpy_file import save as cellpy_file_save
+
+    old_path = pathlib.Path(old_h5)
+    if new_h5 is None:
+        new_path = old_path.with_name(f"{old_path.stem}_v8{old_path.suffix}")
+    else:
+        new_path = pathlib.Path(new_h5)
+
+    click.echo(f"[cellpy] (convert) loading {old_path}")
+    result = cellpy_file_load(old_path, accept_old=True)
+    click.echo(
+        f"[cellpy] (convert) saving v{result.file_version} -> v8 as {new_path}"
+    )
+    cellpy_file_save(result.data, new_path)
+    click.echo(f"[cellpy] (convert) done: {new_path}")
+
+
+cli.add_command(convert)
+
+
 # tests etc
 def _main_pull():
     if sys.platform == "win32":
