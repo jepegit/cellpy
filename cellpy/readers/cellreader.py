@@ -71,6 +71,12 @@ from cellpy.parameters.internal_settings import (
 # still expects. cellpy-core's __init__ is intentionally empty, so import submodules.
 from cellpycore.cell_core import OldCellpyCellCore
 
+from cellpy.readers.cellpy_file import dtype as cellpy_file_dtype
+from cellpy.readers.cellpy_file import fids as cellpy_file_fids
+from cellpy.readers.cellpy_file import keys as cellpy_file_keys
+from cellpy.readers.cellpy_file import meta as cellpy_file_meta
+from cellpy.readers.cellpy_file.selectors import LoadLimits, LoadSelector
+
 DIGITS_C_RATE = 5
 
 HEADERS_NORMAL = get_headers_normal()  # TODO @jepe refactor this (not needed)
@@ -1491,13 +1497,14 @@ class CellpyCell:
             cellpy_file = internals.OtherPath(cellpy_file)
             with ds.pickle_protocol(PICKLE_PROTOCOL):
                 logging.debug(f"using pickle protocol {PICKLE_PROTOCOL}")
-                data = self._load_hdf5(
+                data, limits = self._load_hdf5(
                     cellpy_file, parent_level, accept_old, selector=selector
                 )
             logging.debug("cellpy-file loaded")
 
         except AttributeError:
             data = None
+            limits = None
             logging.warning(
                 "This cellpy-file version is not supported by "
                 "current reader (try to update cellpy)."
@@ -1505,7 +1512,8 @@ class CellpyCell:
 
         if data:
             self.data = data
-            # self._invent_a_cell_name(cellpy_file)
+            self.limit_loaded_cycles = limits.limit_loaded_cycles
+            self.limit_data_points = limits.limit_data_points
 
         else:
             # raise LoadError
@@ -1732,32 +1740,9 @@ class CellpyCell:
 
     # TODO @jepe: move this to its own module (e.g. as a cellpy-loader in instruments?):
     def _get_cellpy_file_version(self, filename, meta_dir=None, parent_level=None):
-        if meta_dir is None:
-            meta_dir = prms._cellpyfile_common_meta
-
-        if parent_level is None:
-            parent_level = prms._cellpyfile_root
-
-        with externals.pandas.HDFStore(filename) as store:
-            try:
-                meta_table = store.select(parent_level + meta_dir)
-            except KeyError:
-                raise WrongFileVersion(
-                    "This file is VERY old - cannot read file version number"
-                )
-        try:
-            # cellpy_file_version = self._extract_from_dict(
-            #     meta_table, "cellpy_file_version"
-            # )
-            meta_dict = meta_table.to_dict(orient="list")
-            cellpy_file_version = self._extract_from_meta_dictionary(
-                meta_dict, "cellpy_file_version"
-            )
-        except Exception as e:
-            warnings.warn(f"Unhandled exception raised: {e}")
-            return 0
-
-        return cellpy_file_version
+        return cellpy_file_meta.get_cellpy_file_version(
+            filename, meta_dir=meta_dir, parent_level=parent_level
+        )
 
     # TODO @jepe: move this to its own module (e.g. as a cellpy-loader in instruments?):
     def _load_hdf5(self, filename, parent_level=None, accept_old=False, selector=None):
@@ -1809,7 +1794,7 @@ class CellpyCell:
                     f"Loading old file-type. It is recommended that you remake the step table and the "
                     f"summary table."
                 )
-                new_data = self._load_old_hdf5(filename, cellpy_file_version)
+                new_data, limits = self._load_old_hdf5(filename, cellpy_file_version)
                 logging.debug("loaded old file")
                 logging.debug(new_data)
             else:
@@ -1820,11 +1805,13 @@ class CellpyCell:
 
         else:
             logging.debug(f"Loading {filename} :: v{cellpy_file_version}")
-            new_data = self._load_hdf5_current_version(filename, selector=selector)
+            new_data, limits = self._load_hdf5_current_version(
+                filename, selector=selector
+            )
 
         # self.__check_loaded_data(new_data)
 
-        return new_data
+        return new_data, limits
 
     # TODO @jepe: move this to its own module (e.g. as a cellpy-loader in instruments?):
     def _load_hdf5_current_version(self, filename, parent_level=None, selector=None):
@@ -1840,6 +1827,7 @@ class CellpyCell:
 
         logging.debug(f"filename: {filename}")
         logging.debug(f"selector: {selector}")
+        limits = LoadLimits()
         with externals.pandas.HDFStore(filename) as store:
             (
                 data,
@@ -1854,14 +1842,14 @@ class CellpyCell:
             self._check_keys_in_cellpy_file(
                 common_meta_dir, parent_level, raw_dir, store, summary_dir
             )
-            self._extract_summary_from_cellpy_file(
-                data, parent_level, store, summary_dir, selector=selector
+            limits = self._extract_summary_from_cellpy_file(
+                data, parent_level, store, summary_dir, selector=selector, limits=limits
             )
             self._extract_raw_from_cellpy_file(
-                data, parent_level, raw_dir, store, selector=selector
+                data, parent_level, raw_dir, store, limits=limits
             )
             self._extract_steps_from_cellpy_file(
-                data, parent_level, step_dir, store, selector=selector
+                data, parent_level, step_dir, store, limits=limits
             )
             fid_table, fid_table_selected = self._extract_fids_from_cellpy_file(
                 fid_dir, parent_level, store
@@ -1879,7 +1867,7 @@ class CellpyCell:
         else:
             data.raw_data_files = []
             data.raw_data_files_length = []
-        return data
+        return data, limits
 
     # TODO @jepe: move this to its own module (e.g. as a cellpy-loader in instruments?):
     def _load_hdf5_v7(self, filename, selector=None, **kwargs):
@@ -1893,6 +1881,7 @@ class CellpyCell:
 
         logging.debug(f"filename: {filename}")
         logging.debug(f"selector: {selector}")
+        limits = LoadLimits()
 
         with externals.pandas.HDFStore(filename) as store:
             data, meta_table = self._create_initial_data_set_from_cellpy_file(
@@ -1901,14 +1890,14 @@ class CellpyCell:
             self._check_keys_in_cellpy_file(
                 meta_dir, parent_level, raw_dir, store, summary_dir
             )
-            self._extract_summary_from_cellpy_file(
-                data, parent_level, store, summary_dir, selector=selector
+            limits = self._extract_summary_from_cellpy_file(
+                data, parent_level, store, summary_dir, selector=selector, limits=limits
             )
             self._extract_raw_from_cellpy_file(
-                data, parent_level, raw_dir, store, selector=selector
+                data, parent_level, raw_dir, store, limits=limits
             )
             self._extract_steps_from_cellpy_file(
-                data, parent_level, step_dir, store, selector=selector
+                data, parent_level, step_dir, store, limits=limits
             )
             fid_table, fid_table_selected = self._extract_fids_from_cellpy_file(
                 fid_dir, parent_level, store
@@ -1926,7 +1915,7 @@ class CellpyCell:
         else:
             data.raw_data_files = []
             data.raw_data_files_length = []
-        return data
+        return data, limits
 
     # TODO @jepe: move this to its own module (e.g. as a cellpy-loader in instruments?):
     def _load_hdf5_v6(self, filename, selector=None):
@@ -1937,6 +1926,7 @@ class CellpyCell:
         summary_dir = "/summary"
         fid_dir = "/fid"
         meta_dir = "/info"
+        limits = LoadLimits()
 
         with externals.pandas.HDFStore(filename) as store:
             data, meta_table = self._create_initial_data_set_from_cellpy_file(
@@ -1947,12 +1937,13 @@ class CellpyCell:
             self._check_keys_in_cellpy_file(
                 meta_dir, parent_level, raw_dir, store, summary_dir
             )
-            self._extract_summary_from_cellpy_file(
+            limits = self._extract_summary_from_cellpy_file(
                 data,
                 parent_level,
                 store,
                 summary_dir,
                 selector=selector,
+                limits=limits,
                 upgrade_from_to=(6, CELLPY_FILE_VERSION),
             )
             self._extract_raw_from_cellpy_file(
@@ -1960,7 +1951,7 @@ class CellpyCell:
                 parent_level,
                 raw_dir,
                 store,
-                selector=selector,
+                limits=limits,
                 upgrade_from_to=(6, CELLPY_FILE_VERSION),
             )
             self._extract_steps_from_cellpy_file(
@@ -1968,7 +1959,7 @@ class CellpyCell:
                 parent_level,
                 step_dir,
                 store,
-                selector=selector,
+                limits=limits,
             )
             fid_table, fid_table_selected = self._extract_fids_from_cellpy_file(
                 fid_dir, parent_level, store
@@ -1988,7 +1979,7 @@ class CellpyCell:
             data.raw_data_files_length = []
 
         logging.debug("loaded new test")
-        return data
+        return data, limits
 
     # TODO @jepe: move this to its own module (e.g. as a cellpy-loader in instruments?):
     def _load_hdf5_v5(self, filename, selector=None):
@@ -1999,6 +1990,7 @@ class CellpyCell:
         summary_dir = "/summary"
         fid_dir = "/fid"
         meta_dir = "/info"
+        limits = LoadLimits()
 
         with externals.pandas.HDFStore(filename) as store:
             data, meta_table = self._create_initial_data_set_from_cellpy_file(
@@ -2007,12 +1999,13 @@ class CellpyCell:
             self._check_keys_in_cellpy_file(
                 meta_dir, parent_level, raw_dir, store, summary_dir
             )
-            self._extract_summary_from_cellpy_file(
+            limits = self._extract_summary_from_cellpy_file(
                 data,
                 parent_level,
                 store,
                 summary_dir,
                 selector=selector,
+                limits=limits,
                 upgrade_from_to=(5, CELLPY_FILE_VERSION),
             )
             self._extract_raw_from_cellpy_file(
@@ -2020,11 +2013,11 @@ class CellpyCell:
                 parent_level,
                 raw_dir,
                 store,
-                selector=selector,
+                limits=limits,
                 upgrade_from_to=(5, CELLPY_FILE_VERSION),
             )
             self._extract_steps_from_cellpy_file(
-                data, parent_level, step_dir, store, selector=selector
+                data, parent_level, step_dir, store, limits=limits
             )
             fid_table, fid_table_selected = self._extract_fids_from_cellpy_file(
                 fid_dir, parent_level, store
@@ -2044,18 +2037,18 @@ class CellpyCell:
             data.raw_data_files_length = []
 
         logging.debug("loaded new test")
-        return data
+        return data, limits
 
     # TODO @jepe: move this to its own module (e.g. as a cellpy-loader in instruments?):
     def _load_old_hdf5(self, filename, cellpy_file_version):
         if cellpy_file_version < 5:
-            data = self._load_old_hdf5_v3_to_v4(filename)
+            data, limits = self._load_old_hdf5_v3_to_v4(filename)
         elif cellpy_file_version == 5:
-            data = self._load_hdf5_v5(filename)
+            data, limits = self._load_hdf5_v5(filename)
         elif cellpy_file_version == 6:
-            data = self._load_hdf5_v6(filename)
+            data, limits = self._load_hdf5_v6(filename)
         elif cellpy_file_version == 7:
-            data = self._load_hdf5_v7(filename)
+            data, limits = self._load_hdf5_v7(filename)
         else:
             raise WrongFileVersion(f"version {cellpy_file_version} is not supported")
 
@@ -2065,7 +2058,7 @@ class CellpyCell:
         #     data.raw = rename_raw_columns(data.raw, old, new)
         #     # data = old_settings.translate_headers(data, cellpy_file_version)
         #     # self.__check_loaded_data(data)
-        return data
+        return data, limits
 
     # TODO @jepe: move this to its own module (e.g. as a cellpy-loader in instruments?):
     def _load_old_hdf5_v3_to_v4(self, filename):
@@ -2076,6 +2069,7 @@ class CellpyCell:
         _step_dir = "/step_table"
         _summary_dir = "/dfsummary"
         _fid_dir = "/fidtable"
+        limits = LoadLimits()
 
         with externals.pandas.HDFStore(filename) as store:
             data, meta_table = self._create_initial_data_set_from_cellpy_file(
@@ -2085,11 +2079,12 @@ class CellpyCell:
             self._check_keys_in_cellpy_file(
                 meta_dir, parent_level, _raw_dir, store, _summary_dir
             )
-            self._extract_summary_from_cellpy_file(
+            limits = self._extract_summary_from_cellpy_file(
                 data,
                 parent_level,
                 store,
                 _summary_dir,
+                limits=limits,
                 upgrade_from_to=(4, CELLPY_FILE_VERSION),
             )
             self._extract_raw_from_cellpy_file(
@@ -2097,6 +2092,7 @@ class CellpyCell:
                 parent_level,
                 _raw_dir,
                 store,
+                limits=limits,
                 upgrade_from_to=(4, CELLPY_FILE_VERSION),
             )
             self._extract_steps_from_cellpy_file(
@@ -2104,6 +2100,7 @@ class CellpyCell:
                 parent_level,
                 _step_dir,
                 store,
+                limits=limits,
                 upgrade_from_to=(4, CELLPY_FILE_VERSION),
             )
             fid_table, fid_table_selected = self._extract_fids_from_cellpy_file(
@@ -2126,7 +2123,7 @@ class CellpyCell:
 
         # new_tests = [data]
         # return new_tests
-        return data
+        return data, limits
 
     # TODO @jepe: move this to its own module (e.g. as a cellpy-loader in instruments?):
     def _create_initial_data_set_from_cellpy_file(
@@ -2170,19 +2167,9 @@ class CellpyCell:
     # TODO @jepe: move this to its own module (e.g. as a cellpy-loader in instruments?):
     @staticmethod
     def _check_keys_in_cellpy_file(meta_dir, parent_level, raw_dir, store, summary_dir):
-        required_keys = [raw_dir, summary_dir, meta_dir]
-        required_keys = ["/" + parent_level + _ for _ in required_keys]
-
-        for key in required_keys:
-            if key not in store.keys():
-                logging.info(
-                    f"This cellpy-file is not good enough - "
-                    f"at least one key is missing: {key}"
-                )
-                raise Exception(
-                    f"OH MY GOD! At least one crucial key is missing {key}!"
-                )
-        logging.debug(f"Keys in current cellpy-file: {store.keys()}")
+        return cellpy_file_keys.check_keys_in_cellpy_file(
+            meta_dir, parent_level, raw_dir, store, summary_dir
+        )
 
     # TODO @jepe: move this to its own module (e.g. as a cellpy-loader in instruments?):
     def _hdf5_locate_data_points_from_max_cycle_number(
@@ -2204,29 +2191,22 @@ class CellpyCell:
         return cycles[_cycle_header] <= max_cycle
 
     # TODO @jepe: move this to its own module (e.g. as a cellpy-loader in instruments?):
-    def _hdf5_cycle_filter(self, table=None):
+    def _hdf5_cycle_filter(self, table=None, limits=None):
         # this is not the best way to do it
-        if max_cycle := self.limit_loaded_cycles:
+        if max_cycle := limits.limit_loaded_cycles:
             if table == "summary":
                 logging.debug(f"limited to cycle_number {max_cycle}")
                 return f"index <= {int(max_cycle)}"
             elif table == "raw":
-                # update this by finding the last data point
-                #  by making a function setting self.limit_data_points
-                logging.debug(f"limited to data_point {self.limit_data_points}")
-                return f"index <= {int(self.limit_data_points)}"
+                logging.debug(f"limited to data_point {limits.limit_data_points}")
+                return f"index <= {int(limits.limit_data_points)}"
             elif table == "steps":
-                # update this by finding the last data point
-                #  by making a function setting self.limit_data_points
-                logging.debug(f"limited to data_point {self.limit_data_points}")
-                return f"index <= {int(self.limit_data_points)}"
+                logging.debug(f"limited to data_point {limits.limit_data_points}")
+                return f"index <= {int(limits.limit_data_points)}"
 
     # TODO @jepe: move this to its own module (e.g. as a cellpy-loader in instruments?):
     def _unpack_selector(self, selector):
-        # not implemented yet
-        # should be used for trimming the selector so that it is not necessary to parse it individually
-        # for all the _extract_xxx_from_cellpy_file methods.
-        return selector
+        return LoadSelector.from_dict(selector)
 
     # TODO @jepe: move this to its own module (e.g. as a cellpy-loader in instruments?):
     def _extract_summary_from_cellpy_file(
@@ -2236,19 +2216,19 @@ class CellpyCell:
         store: "externals.pandas.HDFStore",
         summary_dir: str,
         selector: Union[None, str] = None,
+        limits: LoadLimits | None = None,
         upgrade_from_to: tuple = None,
     ):
+        if limits is None:
+            limits = LoadLimits()
         if selector is not None:
             cycle_filter = []
             if max_cycle := selector.get("max_cycle", None):
-                # self.overwrite_able = False
-
                 cycle_filter.append(f"index <= {int(max_cycle)}")
-                self.limit_loaded_cycles = max_cycle
+                limits.limit_loaded_cycles = max_cycle
         else:
-            # getting cycle filter by setting attributes:
-            self.limit_loaded_cycles = None
-            cycle_filter = self._hdf5_cycle_filter("summary")
+            limits.limit_loaded_cycles = None
+            cycle_filter = self._hdf5_cycle_filter("summary", limits)
 
         data.summary = store.select(parent_level + summary_dir, where=cycle_filter)
         if upgrade_from_to is not None:
@@ -2256,7 +2236,6 @@ class CellpyCell:
             logging.debug(f"upgrading from {old} to {new}")
             data.summary = rename_summary_columns(data.summary, old, new)
 
-        # TODO: max data point should be an attribute
         try:
             max_data_point = data.summary[self.headers_summary.data_point].max()
         except KeyError as e:
@@ -2264,8 +2243,9 @@ class CellpyCell:
                 f"You are most likely trying to open a too old cellpy file"
             ) from e
 
-        self.limit_data_points = int(max_data_point)
-        logging.debug(f"data-point max limit: {self.limit_data_points}")
+        limits.limit_data_points = int(max_data_point)
+        logging.debug(f"data-point max limit: {limits.limit_data_points}")
+        return limits
 
     # TODO @jepe: move this to its own module (e.g. as a cellpy-loader in instruments?):
     def _extract_raw_from_cellpy_file(
@@ -2274,13 +2254,12 @@ class CellpyCell:
         parent_level,
         raw_dir,
         store,
-        selector: Union[None, str] = None,
+        limits: LoadLimits | None = None,
         upgrade_from_to: tuple = None,
     ):
-        # selector is not implemented yet for only raw data
-        # however, selector for max_cycle will still work since
-        # the attribute self.limit_data_points is set while reading the summary
-        cycle_filter = self._hdf5_cycle_filter(table="raw")
+        if limits is None:
+            limits = LoadLimits()
+        cycle_filter = self._hdf5_cycle_filter(table="raw", limits=limits)
         data.raw = store.select(parent_level + raw_dir, where=cycle_filter)
         if upgrade_from_to is not None:
             old, new = upgrade_from_to
@@ -2293,16 +2272,18 @@ class CellpyCell:
         parent_level,
         step_dir,
         store,
-        selector: Union[None, str] = None,
+        limits: LoadLimits | None = None,
         upgrade_from_to: tuple = None,
     ):
+        if limits is None:
+            limits = LoadLimits()
         try:
             data.steps = store.select(parent_level + step_dir)
-            if self.limit_data_points:
+            if limits.limit_data_points:
                 data.steps = data.steps.loc[
-                    data.steps["point_last"] <= self.limit_data_points
+                    data.steps["point_last"] <= limits.limit_data_points
                 ]
-                logging.debug(f"limited to data_point {self.limit_data_points}")
+                logging.debug(f"limited to data_point {limits.limit_data_points}")
             if upgrade_from_to is not None:
                 old, new = upgrade_from_to
                 logging.debug(f"upgrading from {old} to {new}")
@@ -2435,15 +2416,9 @@ class CellpyCell:
     def _extract_from_meta_dictionary(
         meta_dict, attribute, default_value=None, hard=False
     ):
-        try:
-            value = meta_dict[attribute][0]
-            if not value:
-                value = None
-        except KeyError as e:
-            if hard:
-                raise KeyError from e
-            value = default_value
-        return value
+        return cellpy_file_meta.extract_from_meta_dictionary(
+            meta_dict, attribute, default_value=default_value, hard=hard
+        )
 
     # TODO @jepe: move this to its own module (e.g. as a cellpy-exporters?):
     def _create_infotable(self):
@@ -2485,81 +2460,12 @@ class CellpyCell:
     # TODO @jepe: move this to its own module (e.g. as a cellpy-exporters?):
     @staticmethod
     def _convert2fid_table(cell):
-        # used when saving cellpy-file
-        logging.debug("converting FileID object to fid-table that can be saved")
-        fidtable = collections.OrderedDict()
-        fidtable["raw_data_name"] = []
-        fidtable["raw_data_full_name"] = []
-        fidtable["raw_data_size"] = []
-        fidtable["raw_data_last_modified"] = []
-        fidtable["raw_data_last_accessed"] = []
-        fidtable["raw_data_last_info_changed"] = []
-        fidtable["raw_data_location"] = []
-        # TODO: consider deprecating this as we now have implemented last_data_point:
-        fidtable["raw_data_files_length"] = []
-
-        fidtable["last_data_point"] = []
-        fids = cell.raw_data_files
-        if fids:
-            for fid, length in zip(fids, cell.raw_data_files_length):
-                try:
-                    fidtable["raw_data_name"].append(fid.name)
-                    fidtable["raw_data_full_name"].append(fid.full_name)
-                    fidtable["raw_data_size"].append(fid.size)
-                    fidtable["raw_data_last_modified"].append(fid.last_modified)
-                    fidtable["raw_data_last_accessed"].append(fid.last_accessed)
-                    fidtable["raw_data_last_info_changed"].append(fid.last_info_changed)
-                except AttributeError:  # TODO: this is probably not needed anymore
-                    logging.debug("this is probably not from a file")
-                    fidtable["raw_data_name"].append("db")
-                    fidtable["raw_data_full_name"].append("db")
-                    fidtable["raw_data_size"].append(fid.size)
-                    fidtable["raw_data_last_modified"].append("db")
-                    fidtable["raw_data_last_accessed"].append("db")
-                    fidtable["raw_data_last_info_changed"].append("db")
-
-                fidtable["raw_data_location"].append(fid.location)
-                fidtable["raw_data_files_length"].append(length)
-                fidtable["last_data_point"].append(
-                    fid.last_data_point
-                )  # will most likely be the same as length
-        else:
-            warnings.warn("seems you lost info about your raw-data (missing fids)")
-        return fidtable
+        return cellpy_file_fids.convert2fid_table(cell)
 
     # TODO @jepe: move this to its own module (e.g. as a cellpy-loader in instruments?):
     @staticmethod
     def _convert2fid_list(tbl):
-        # used when reading cellpy-file
-        logging.debug("converting loaded fid-table to FileID object")
-        fids = []
-        lengths = []
-        min_amount = 0
-        for counter, item in enumerate(tbl["raw_data_name"]):
-            fid = ds.FileID()
-            try:
-                fid.name = internals.OtherPath(item).name
-            except NotImplementedError:
-                fid.name = item
-            fid.full_name = tbl["raw_data_full_name"][counter]
-            fid.size = tbl["raw_data_size"][counter]
-            fid.last_modified = tbl["raw_data_last_modified"][counter]
-            fid.last_accessed = tbl["raw_data_last_accessed"][counter]
-            fid.last_info_changed = tbl["raw_data_last_info_changed"][counter]
-            fid.location = tbl["raw_data_location"][counter]
-            length = tbl["raw_data_files_length"][counter]
-            if "last_data_point" in tbl.columns:
-                fid.last_data_point = tbl["last_data_point"][counter]
-            else:
-                fid.last_data_point = 0
-            if "is_db" in tbl.columns:
-                fid.is_db = tbl["is_db"][counter]
-            fids.append(fid)
-            lengths.append(length)
-            min_amount = 1
-        if min_amount < 1:
-            logging.debug("info about raw files missing")
-        return fids, lengths
+        return cellpy_file_fids.convert2fid_list(tbl)
 
     # -------------------- cellpy file handling end ----------------------
 
@@ -3677,21 +3583,7 @@ class CellpyCell:
 
     # --------------helper-functions--------------------------------------------
     def _fix_dtype_step_table(self, dataset):
-        # used when saving to cellpy format
-        hst = get_headers_step_table()
-        try:
-            cols = dataset.steps.columns
-        except AttributeError:
-            logging.info("Could not extract columns from steps")
-            return
-        for col in cols:
-            if col not in [hst.cycle, hst.sub_step, hst.info]:
-                dataset.steps[col] = dataset.steps[col].apply(
-                    externals.pandas.to_numeric
-                )
-            else:
-                dataset.steps[col] = dataset.steps[col].astype("str")
-        return dataset
+        return cellpy_file_dtype.fix_dtype_step_table(dataset)
 
     # TODO: check if this is useful and if it is rename, if not delete
     def _cap_mod_summary(self, summary, capacity_modifier="reset"):
