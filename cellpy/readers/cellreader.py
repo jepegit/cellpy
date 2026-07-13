@@ -30,7 +30,7 @@ from dataclasses import asdict
 import numpy as np
 
 from . import externals as externals
-from cellpy.readers import data_structures as core
+from cellpy.readers import data_structures as ds
 import cellpy.internals.connections as internals
 
 from cellpy.exceptions import (
@@ -91,9 +91,9 @@ HEADERS_STEP_TABLE = get_headers_step_table()  # TODO @jepe refactor this (not n
 _module_logger = logging.getLogger(__name__)
 
 
-# def core.Q(value, *args, **kwargs):
+# def ds.Q(value, *args, **kwargs):
 #     """Convert value to pint quantity."""
-#     ureg, Q = core.get_pint_unit_registry()
+#     ureg, Q = ds.get_pint_unit_registry()
 #     return Q(value, *args, **kwargs)
 
 
@@ -244,7 +244,7 @@ class CellpyCell:
 
         # cellpy-core seam: the core owns the Data object and runs the per-cycle
         # summary pipeline. Construct it without initializing so that cellpy's own
-        # initialize() creates the cellpy ``core.Data`` it expects (the data
+        # initialize() creates the cellpy ``ds.Data`` it expects (the data
         # property reads/writes ``self.core._data``).
         self.core = OldCellpyCellCore(initialize=False, debug=debug)
 
@@ -321,7 +321,7 @@ class CellpyCell:
         """Initialize the CellpyCell object with empty Data instance."""
 
         logging.debug("Initializing...")
-        self.core._data = core.Data()
+        self.core._data = ds.Data()
 
     # the batch utility might be using session name
     # the cycle and ica collector are using session name
@@ -427,7 +427,7 @@ class CellpyCell:
         logging.critical(f"Parsing {parameter} ({value})")
 
         try:
-            c = core.Q(value)
+            c = ds.Q(value)
             c_unit = c.units
             self.cellpy_units[parameter] = f"{c_unit}"
             logging.critical(f"Updated your cellpy_units['{parameter}'] to '{c_unit}'")
@@ -665,12 +665,12 @@ class CellpyCell:
             new_cell.data.steps = steptable0
             new_cell.data.raw = data0
             new_cell.data.summary = summary0
-            new_cell.data = core.identify_last_data_point(new_cell.data)
+            new_cell.data = ds.identify_last_data_point(new_cell.data)
 
             old_cell.data.steps = steptable
             old_cell.data.raw = data
             old_cell.data.summary = summary
-            old_cell.data = core.identify_last_data_point(old_cell.data)
+            old_cell.data = ds.identify_last_data_point(old_cell.data)
 
             cells.append(new_cell)
 
@@ -716,7 +716,7 @@ class CellpyCell:
         new_cell.data.steps = new_steptable
         new_cell.data.raw = new_data
         new_cell.data.summary = new_summary
-        new_cell.data = core.identify_last_data_point(new_cell.data)
+        new_cell.data = ds.identify_last_data_point(new_cell.data)
 
         return new_cell
 
@@ -735,7 +735,7 @@ class CellpyCell:
     def register_instrument_readers(self):
         """Register instrument readers."""
 
-        self.instrument_factory = core.generate_default_factory()
+        self.instrument_factory = ds.generate_default_factory()
         # instruments = find_all_instruments()
         # for instrument_id, instrument in instruments.items():
         #     self.instrument_factory.register_builder(instrument_id, instrument)
@@ -1011,7 +1011,7 @@ class CellpyCell:
         ids = dict()
         for f in file_names:
             logging.debug(f"checking raw file {f}")
-            fid = core.FileID(f)
+            fid = ds.FileID(f)
             # logging.debug(fid)
             if fid.name is None:
                 warnings.warn(f"file does not exist: {f}")
@@ -1489,7 +1489,7 @@ class CellpyCell:
             logging.debug(cellpy_file)
             logging.debug(f"{type(cellpy_file)=}")
             cellpy_file = internals.OtherPath(cellpy_file)
-            with core.pickle_protocol(PICKLE_PROTOCOL):
+            with ds.pickle_protocol(PICKLE_PROTOCOL):
                 logging.debug(f"using pickle protocol {PICKLE_PROTOCOL}")
                 data = self._load_hdf5(
                     cellpy_file, parent_level, accept_old, selector=selector
@@ -1635,7 +1635,7 @@ class CellpyCell:
             warnings.simplefilter("ignore", externals.pandas.errors.PerformanceWarning)
             store = None
             try:
-                with core.pickle_protocol(PICKLE_PROTOCOL):
+                with ds.pickle_protocol(PICKLE_PROTOCOL):
                     store = self._save_to_hdf5(
                         fid_dir,
                         fid_table,
@@ -2139,11 +2139,11 @@ class CellpyCell:
         if test_dependent_meta_dir is not None:
             common_meta_table = store.select(parent_level + meta_dir)
             test_dependent_meta = store.select(parent_level + test_dependent_meta_dir)
-            data = core.Data()
+            data = ds.Data()
             # data.cellpy_file_version = CELLPY_FILE_VERSION
             return data, common_meta_table, test_dependent_meta
 
-        data = core.Data()
+        data = ds.Data()
         meta_table = None
 
         try:
@@ -2421,7 +2421,7 @@ class CellpyCell:
                 v = v[0]
                 if not isinstance(v, str):
                     logging.debug(f"{v} is not of type string")
-                    v = core.convert_from_simple_unit_label_to_string_unit_label(key, v)
+                    v = ds.convert_from_simple_unit_label_to_string_unit_label(key, v)
                 data.raw_units[key] = v
             except KeyError:
                 logging.critical(f"missing key in meta_table: {h5_key}")
@@ -2536,7 +2536,7 @@ class CellpyCell:
         lengths = []
         min_amount = 0
         for counter, item in enumerate(tbl["raw_data_name"]):
-            fid = core.FileID()
+            fid = ds.FileID()
             try:
                 fid.name = internals.OtherPath(item).name
             except NotImplementedError:
@@ -2603,9 +2603,9 @@ class CellpyCell:
             start_time_2 = t2.meta_common.start_datetime
 
             if self.tester in ["arbin_res"]:
-                diff_time = core.xldate_as_datetime(
+                diff_time = ds.xldate_as_datetime(
                     start_time_2
-                ) - core.xldate_as_datetime(start_time_1)
+                ) - ds.xldate_as_datetime(start_time_1)
             else:
                 diff_time = start_time_2 - start_time_1
             diff_time = diff_time.total_seconds()
@@ -4473,7 +4473,7 @@ class CellpyCell:
                                 }
                             )
                             if interpolated:
-                                _first_df = core.interpolate_y_on_x_per_monotonic_segments(
+                                _first_df = ds.interpolate_y_on_x_per_monotonic_segments(
                                     _first_df,
                                     y=y_col,
                                     x=x_col,
@@ -4497,7 +4497,7 @@ class CellpyCell:
                                 }
                             )
                             if interpolated:
-                                _last_df = core.interpolate_y_on_x_per_monotonic_segments(
+                                _last_df = ds.interpolate_y_on_x_per_monotonic_segments(
                                     _last_df,
                                     y=y_col,
                                     x=x_col,
@@ -4727,7 +4727,7 @@ class CellpyCell:
             groupby_list = [cycle_label, step_label]
 
             for name, group in selected_df.groupby(groupby_list):
-                new_group = core.interpolate_y_on_x(
+                new_group = ds.interpolate_y_on_x(
                     group,
                     x=step_time_label,
                     y=voltage_label,
@@ -5009,12 +5009,12 @@ class CellpyCell:
         if value is None:
             value = self.data.nom_cap
 
-        value = core.Q(value, self.cellpy_units["nominal_capacity"])
+        value = ds.Q(value, self.cellpy_units["nominal_capacity"])
 
         if nom_cap_specifics == "gravimetric":
-            specific = core.Q(specific, self.cellpy_units["mass"])
+            specific = ds.Q(specific, self.cellpy_units["mass"])
         elif nom_cap_specifics == "areal":
-            specific = core.Q(specific, self.cellpy_units["area"])
+            specific = ds.Q(specific, self.cellpy_units["area"])
         elif nom_cap_specifics == "absolute":
             specific = 1
 
@@ -5023,7 +5023,7 @@ class CellpyCell:
             raise NotImplementedError("volumetric not implemented yet")
 
         if convert_charge_units:
-            conversion_factor_charge = core.Q(1, self.cellpy_units["charge"]) / core.Q(
+            conversion_factor_charge = ds.Q(1, self.cellpy_units["charge"]) / ds.Q(
                 1, self.data.raw_units["charge"]
             )
         else:
@@ -5108,7 +5108,7 @@ class CellpyCell:
         if as_str:
             return f"{_value} {_unit}"
 
-        return core.Q(_value, _unit)
+        return ds.Q(_value, _unit)
 
     def to_cellpy_unit(self, value, physical_property):
         """Convert value to cellpy units.
@@ -5129,7 +5129,7 @@ class CellpyCell:
         if not isinstance(value, externals.pint.Quantity):
             if isinstance(value, numbers.Number):
                 try:
-                    value = core.Q(value, self.data.raw_units[physical_property])
+                    value = ds.Q(value, self.data.raw_units[physical_property])
                     logging.debug(f"With unit from raw-units: {value}")
                 except NoDataFound:
                     raise NoDataFound(
@@ -5142,9 +5142,9 @@ class CellpyCell:
                         "You have to provide a valid physical_property"
                     ) from e
             elif isinstance(value, tuple):
-                value = core.Q(*value)
+                value = ds.Q(*value)
             else:
-                value = core.Q(value)
+                value = ds.Q(value)
 
         value = value.to(self.cellpy_units[physical_property])
 
@@ -5166,7 +5166,7 @@ class CellpyCell:
         )
 
         old_unit = self.data.raw_units[physical_property]
-        value = core.Q(1, old_unit)
+        value = ds.Q(1, old_unit)
         value = value.to(unit)
         return value.m
 
@@ -5204,22 +5204,22 @@ class CellpyCell:
 
         if mode == "gravimetric":
             value = value or dataset.mass
-            value = core.Q(value, new_units["mass"])
-            to_unit_specific = core.Q(1.0, new_units["specific_gravimetric"])
+            value = ds.Q(value, new_units["mass"])
+            to_unit_specific = ds.Q(1.0, new_units["specific_gravimetric"])
 
         elif mode == "areal":
             value = value or dataset.active_electrode_area
-            value = core.Q(value, new_units["area"])
-            to_unit_specific = core.Q(1.0, new_units["specific_areal"])
+            value = ds.Q(value, new_units["area"])
+            to_unit_specific = ds.Q(1.0, new_units["specific_areal"])
 
         elif mode == "volumetric":
             value = value or dataset.volume
-            value = core.Q(value, new_units["volume"])
-            to_unit_specific = core.Q(1.0, new_units["specific_volumetric"])
+            value = ds.Q(value, new_units["volume"])
+            to_unit_specific = ds.Q(1.0, new_units["specific_volumetric"])
 
         elif mode == "absolute":
-            value = core.Q(1.0, None)
-            to_unit_specific = core.Q(1.0, None)
+            value = ds.Q(1.0, None)
+            to_unit_specific = ds.Q(1.0, None)
 
         elif mode is None:
             return 1.0
@@ -5228,8 +5228,8 @@ class CellpyCell:
             logging.debug(f"mode={mode} not supported!")
             return 1.0
 
-        from_unit_cap = core.Q(1.0, old_units["charge"])
-        to_unit_cap = core.Q(1.0, new_units["charge"])
+        from_unit_cap = ds.Q(1.0, old_units["charge"])
+        to_unit_cap = ds.Q(1.0, new_units["charge"])
 
         # from unit is always in absolute values:
         from_unit = from_unit_cap
@@ -5885,7 +5885,7 @@ class CellpyCell:
                     "c.data.raw = c.data.raw[~raw.index.duplicated(keep='first')]"
                 )
 
-        # cellpy-core seam: delegate the per-cycle summary pipeline to the core.
+        # cellpy-core seam: delegate the per-cycle summary pipeline to the ds.
         # ``make_core_summary`` builds the base summary (cycle-end selection +
         # index reset + column pruning) and the absolute / IR / end-voltage /
         # C-rate columns; ``add_scaled_summary_columns`` adds the meta-dependent
@@ -5897,8 +5897,8 @@ class CellpyCell:
         # the core summary engine needs no pint.
         current_conversion_factor = float(
             (
-                core.Q(1.0, data.raw_units["current"])
-                / core.Q(1.0, self.cellpy_units["current"])
+                ds.Q(1.0, data.raw_units["current"])
+                / ds.Q(1.0, self.cellpy_units["current"])
             )
             .to_reduced_units()
             .magnitude
@@ -6258,7 +6258,7 @@ class CellpyCell:
         logging.debug("Extracting C-rates")
 
         def rate_to_cellpy_units(rate):
-            conversion_factor = core.Q(1.0, self.data.raw_units["current"]) / core.Q(
+            conversion_factor = ds.Q(1.0, self.data.raw_units["current"]) / ds.Q(
                 1.0, self.cellpy_units["current"]
             )
             conversion_factor = conversion_factor.to_reduced_units().magnitude
@@ -7185,7 +7185,7 @@ def instruments_dict():
     instruments = dict()
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        for name, value in core.instrument_configurations().items():
+        for name, value in ds.instrument_configurations().items():
             instruments[name] = []
             instrument_models = value["__all__"].copy()
             instrument_models.remove("default")
@@ -7199,7 +7199,7 @@ def print_instruments():
     print(80 * "=")
     print(f"Implemented instrument loaders")
     print(80 * "=")
-    for name, value in core.instrument_configurations().items():
+    for name, value in ds.instrument_configurations().items():
         print(name)
         instrument_models = value["__all__"].copy()
         instrument_models.remove("default")

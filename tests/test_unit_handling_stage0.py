@@ -23,15 +23,23 @@ from .unit_parity_support import (
 )
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="Unit plan Phase 1: unify pint registries before cross-boundary Quantity math",
-)
+@pytest.mark.essential
 def test_cellpy_and_cellpycore_quantities_interoperate():
-    """Multiply quantities from separate pint registries; passes after Phase 1."""
-    # Two registries today: cellpy.readers.data_structures vs cellpycore.units.
-    result = (cellpy_Q(1, "mAh") * core_Q(1, "h")).to("mAh")
+    """cellpy and cellpycore ``Q`` share one registry — cross-boundary math works (#450)."""
+    result = (cellpy_Q(1, "mAh/h") * core_Q(1, "h")).to("mAh")
     assert result.m == pytest.approx(1.0)
+
+
+@pytest.mark.essential
+def test_single_pint_registry_per_process():
+    """One memoized UnitRegistry from cellpycore (issue #450 acceptance)."""
+    from cellpycore.units.converters import _get_unit_registry
+
+    reg_a = _get_unit_registry()
+    reg_b = _get_unit_registry()
+    assert reg_a is reg_b
+    _ = cellpy_Q(1, "mAh")
+    assert _get_unit_registry() is reg_a
 
 
 @pytest.mark.essential

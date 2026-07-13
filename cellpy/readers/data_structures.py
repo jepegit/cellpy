@@ -40,60 +40,8 @@ HEADERS_STEP_TABLE = get_headers_step_table()  # TODO @jepe refactor this (not n
 LOADERS_NOT_READY_FOR_PROD = [
     "ext_nda_reader"
 ]  # used by the instruments_configurations helper function (move?)
-UNIT_REGISTER_LOADED = False
-_ureg = None
 
-
-def _create_unit_registry():
-    global UNIT_REGISTER_LOADED, _ureg
-    if UNIT_REGISTER_LOADED:
-        return _ureg
-
-    _ureg = externals.pint.UnitRegistry()
-    try:
-        _ureg.formatter.default_format = "~P"
-    except AttributeError:
-        _ureg.default_format = "~P"
-    UNIT_REGISTER_LOADED = True
-
-
-def Q(*args, **kwargs):
-    global _ureg, UNIT_REGISTER_LOADED
-    if not UNIT_REGISTER_LOADED:
-        _create_unit_registry()
-    return _ureg.Quantity(*args, **kwargs)
-
-
-class ureg:
-    """Unit registry for pint.
-
-    This is a wrapper around the pint unit registry.
-    """
-
-    # For some reason, this does not work as expected (might be something to do with globals).
-    # Propose that we do not use the ureg directly but use the Q function instead.
-
-    @staticmethod
-    def __getattr__(name):
-        global _ureg, UNIT_REGISTER_LOADED
-        if not UNIT_REGISTER_LOADED:
-            _create_unit_registry()
-        return getattr(_ureg, name)
-
-    @staticmethod
-    def __dir__(*args, **kwargs):
-        global _ureg, UNIT_REGISTER_LOADED
-        if not UNIT_REGISTER_LOADED:
-            _create_unit_registry()
-        return dir(_ureg)
-
-
-def get_ureg():
-    # backup-solution until we have fixed the ureg class
-    global _ureg, UNIT_REGISTER_LOADED
-    if not UNIT_REGISTER_LOADED:
-        _create_unit_registry()
-    return _ureg
+from cellpycore.units import Q  # single process-wide pint registry (#450)
 
 
 # https://stackoverflow.com/questions/60067953/
