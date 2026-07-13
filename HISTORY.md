@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+* Stage 1.4: redirect out-of-band HDF5 readers to `cellpy_file.read_table` / `read_fid_table`; `CorruptCellpyFile` for missing keys; `cellpy convert` CLI for v<8 upgrades (#449)
 * Units Phase 1: re-export ``CellpyUnits`` and ``Q`` from cellpycore; remove cellpy-local pint registry; rename ``cellreader`` ``data_structures`` alias to ``ds`` (#450)
 * Deprecation: `cellpy.utils.easyplot` warns on import via `warn_once`; use `plotutils`/`collectors` instead (removed in 2.0, #438 decision 5) (#479)
 * Fix: loader PEC golden compares all datetime columns by epoch-ns (Windows `datetime64[us]` vs `ns`); benchmark baseline gate warns above +20% slowdown and fails only above +100% (#476)

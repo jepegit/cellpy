@@ -1,6 +1,6 @@
 # Issue #449 — status
 
-- [ ] Done
+- [x] Done
 
 ## What's done
 
@@ -11,7 +11,8 @@
 - Added `cellpy convert` CLI (v4→v8 upgrade path).
 - Tests: updated failure-mode oracle, `read_table` parity, convert CLI.
 - Essential suite: 86 passed.
+- PR #484 opened against `master`.
 
 ## Remaining work
 
-- PR review and merge via `/iflow-close`.
+- None.
