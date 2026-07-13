@@ -71,6 +71,11 @@ from cellpy.parameters.internal_settings import (
 # still expects. cellpy-core's __init__ is intentionally empty, so import submodules.
 from cellpycore.cell_core import OldCellpyCellCore
 
+from cellpy.readers.cellpy_file import dtype as cellpy_file_dtype
+from cellpy.readers.cellpy_file import fids as cellpy_file_fids
+from cellpy.readers.cellpy_file import keys as cellpy_file_keys
+from cellpy.readers.cellpy_file import meta as cellpy_file_meta
+
 DIGITS_C_RATE = 5
 
 HEADERS_NORMAL = get_headers_normal()  # TODO @jepe refactor this (not needed)
@@ -1732,32 +1737,9 @@ class CellpyCell:
 
     # TODO @jepe: move this to its own module (e.g. as a cellpy-loader in instruments?):
     def _get_cellpy_file_version(self, filename, meta_dir=None, parent_level=None):
-        if meta_dir is None:
-            meta_dir = prms._cellpyfile_common_meta
-
-        if parent_level is None:
-            parent_level = prms._cellpyfile_root
-
-        with externals.pandas.HDFStore(filename) as store:
-            try:
-                meta_table = store.select(parent_level + meta_dir)
-            except KeyError:
-                raise WrongFileVersion(
-                    "This file is VERY old - cannot read file version number"
-                )
-        try:
-            # cellpy_file_version = self._extract_from_dict(
-            #     meta_table, "cellpy_file_version"
-            # )
-            meta_dict = meta_table.to_dict(orient="list")
-            cellpy_file_version = self._extract_from_meta_dictionary(
-                meta_dict, "cellpy_file_version"
-            )
-        except Exception as e:
-            warnings.warn(f"Unhandled exception raised: {e}")
-            return 0
-
-        return cellpy_file_version
+        return cellpy_file_meta.get_cellpy_file_version(
+            filename, meta_dir=meta_dir, parent_level=parent_level
+        )
 
     # TODO @jepe: move this to its own module (e.g. as a cellpy-loader in instruments?):
     def _load_hdf5(self, filename, parent_level=None, accept_old=False, selector=None):
@@ -2170,19 +2152,9 @@ class CellpyCell:
     # TODO @jepe: move this to its own module (e.g. as a cellpy-loader in instruments?):
     @staticmethod
     def _check_keys_in_cellpy_file(meta_dir, parent_level, raw_dir, store, summary_dir):
-        required_keys = [raw_dir, summary_dir, meta_dir]
-        required_keys = ["/" + parent_level + _ for _ in required_keys]
-
-        for key in required_keys:
-            if key not in store.keys():
-                logging.info(
-                    f"This cellpy-file is not good enough - "
-                    f"at least one key is missing: {key}"
-                )
-                raise Exception(
-                    f"OH MY GOD! At least one crucial key is missing {key}!"
-                )
-        logging.debug(f"Keys in current cellpy-file: {store.keys()}")
+        return cellpy_file_keys.check_keys_in_cellpy_file(
+            meta_dir, parent_level, raw_dir, store, summary_dir
+        )
 
     # TODO @jepe: move this to its own module (e.g. as a cellpy-loader in instruments?):
     def _hdf5_locate_data_points_from_max_cycle_number(
@@ -2435,15 +2407,9 @@ class CellpyCell:
     def _extract_from_meta_dictionary(
         meta_dict, attribute, default_value=None, hard=False
     ):
-        try:
-            value = meta_dict[attribute][0]
-            if not value:
-                value = None
-        except KeyError as e:
-            if hard:
-                raise KeyError from e
-            value = default_value
-        return value
+        return cellpy_file_meta.extract_from_meta_dictionary(
+            meta_dict, attribute, default_value=default_value, hard=hard
+        )
 
     # TODO @jepe: move this to its own module (e.g. as a cellpy-exporters?):
     def _create_infotable(self):
@@ -2485,81 +2451,12 @@ class CellpyCell:
     # TODO @jepe: move this to its own module (e.g. as a cellpy-exporters?):
     @staticmethod
     def _convert2fid_table(cell):
-        # used when saving cellpy-file
-        logging.debug("converting FileID object to fid-table that can be saved")
-        fidtable = collections.OrderedDict()
-        fidtable["raw_data_name"] = []
-        fidtable["raw_data_full_name"] = []
-        fidtable["raw_data_size"] = []
-        fidtable["raw_data_last_modified"] = []
-        fidtable["raw_data_last_accessed"] = []
-        fidtable["raw_data_last_info_changed"] = []
-        fidtable["raw_data_location"] = []
-        # TODO: consider deprecating this as we now have implemented last_data_point:
-        fidtable["raw_data_files_length"] = []
-
-        fidtable["last_data_point"] = []
-        fids = cell.raw_data_files
-        if fids:
-            for fid, length in zip(fids, cell.raw_data_files_length):
-                try:
-                    fidtable["raw_data_name"].append(fid.name)
-                    fidtable["raw_data_full_name"].append(fid.full_name)
-                    fidtable["raw_data_size"].append(fid.size)
-                    fidtable["raw_data_last_modified"].append(fid.last_modified)
-                    fidtable["raw_data_last_accessed"].append(fid.last_accessed)
-                    fidtable["raw_data_last_info_changed"].append(fid.last_info_changed)
-                except AttributeError:  # TODO: this is probably not needed anymore
-                    logging.debug("this is probably not from a file")
-                    fidtable["raw_data_name"].append("db")
-                    fidtable["raw_data_full_name"].append("db")
-                    fidtable["raw_data_size"].append(fid.size)
-                    fidtable["raw_data_last_modified"].append("db")
-                    fidtable["raw_data_last_accessed"].append("db")
-                    fidtable["raw_data_last_info_changed"].append("db")
-
-                fidtable["raw_data_location"].append(fid.location)
-                fidtable["raw_data_files_length"].append(length)
-                fidtable["last_data_point"].append(
-                    fid.last_data_point
-                )  # will most likely be the same as length
-        else:
-            warnings.warn("seems you lost info about your raw-data (missing fids)")
-        return fidtable
+        return cellpy_file_fids.convert2fid_table(cell)
 
     # TODO @jepe: move this to its own module (e.g. as a cellpy-loader in instruments?):
     @staticmethod
     def _convert2fid_list(tbl):
-        # used when reading cellpy-file
-        logging.debug("converting loaded fid-table to FileID object")
-        fids = []
-        lengths = []
-        min_amount = 0
-        for counter, item in enumerate(tbl["raw_data_name"]):
-            fid = ds.FileID()
-            try:
-                fid.name = internals.OtherPath(item).name
-            except NotImplementedError:
-                fid.name = item
-            fid.full_name = tbl["raw_data_full_name"][counter]
-            fid.size = tbl["raw_data_size"][counter]
-            fid.last_modified = tbl["raw_data_last_modified"][counter]
-            fid.last_accessed = tbl["raw_data_last_accessed"][counter]
-            fid.last_info_changed = tbl["raw_data_last_info_changed"][counter]
-            fid.location = tbl["raw_data_location"][counter]
-            length = tbl["raw_data_files_length"][counter]
-            if "last_data_point" in tbl.columns:
-                fid.last_data_point = tbl["last_data_point"][counter]
-            else:
-                fid.last_data_point = 0
-            if "is_db" in tbl.columns:
-                fid.is_db = tbl["is_db"][counter]
-            fids.append(fid)
-            lengths.append(length)
-            min_amount = 1
-        if min_amount < 1:
-            logging.debug("info about raw files missing")
-        return fids, lengths
+        return cellpy_file_fids.convert2fid_list(tbl)
 
     # -------------------- cellpy file handling end ----------------------
 
@@ -3677,21 +3574,7 @@ class CellpyCell:
 
     # --------------helper-functions--------------------------------------------
     def _fix_dtype_step_table(self, dataset):
-        # used when saving to cellpy format
-        hst = get_headers_step_table()
-        try:
-            cols = dataset.steps.columns
-        except AttributeError:
-            logging.info("Could not extract columns from steps")
-            return
-        for col in cols:
-            if col not in [hst.cycle, hst.sub_step, hst.info]:
-                dataset.steps[col] = dataset.steps[col].apply(
-                    externals.pandas.to_numeric
-                )
-            else:
-                dataset.steps[col] = dataset.steps[col].astype("str")
-        return dataset
+        return cellpy_file_dtype.fix_dtype_step_table(dataset)
 
     # TODO: check if this is useful and if it is rename, if not delete
     def _cap_mod_summary(self, summary, capacity_modifier="reset"):
