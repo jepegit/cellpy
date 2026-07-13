@@ -4,11 +4,11 @@
 
 ## What's done
 
-- Plan confirmed (`issue447_plan.md`).
+- **Commit 1:** Stateless helpers moved to `cellpy_file/{keys,meta,fids,dtype}.py` with one-line `CellpyCell` delegators.
+- **Commit 2:** `LoadSelector` / `LoadLimits` in `cellpy_file/selectors.py`; extractors thread explicit limits; `load()` assigns `self.limit_*` from returned limits.
+- Tests: `uv run pytest -m essential` (82 passed) + `tests/test_cellpy_file_roundtrip.py` (10 passed) after each commit.
+- Acceptance grep: `self.limit_*` in `cellreader.py` only in `__init__`, repr, and `load()`.
 
 ## Remaining work
 
-- Commit 1: move stateless helpers to `cellpy_file/` with delegators.
-- Commit 2: `LoadSelector` / `LoadLimits`; kill `self.limit_*` side channel in extractors.
-- Run essential + cellpy-file roundtrip tests after each commit.
-- Acceptance grep on `self.limit_*` in `cellreader.py`.
+- `/iflow-close`: PR, push final review, mark Done.
