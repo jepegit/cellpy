@@ -22,6 +22,7 @@ from matplotlib.ticker import FuncFormatter
 
 import cellpy
 from cellpy import log
+from cellpy._deprecation import warn_once
 from cellpy.parameters.internal_settings import (
     get_headers_journal,
     keys_journal_session,
@@ -29,6 +30,13 @@ from cellpy.parameters.internal_settings import (
 from cellpy.utils.batch_tools.batch_journals import LabJournal
 
 hdr_journal = get_headers_journal()
+
+warn_once(
+    "cellpy.utils.easyplot",
+    "cellpy.utils.plotutils and cellpy.utils.collectors",
+    removal="2.0",
+    introduced="1.1",
+)
 
 # Dictionary of all possible user input arguments(as keys) with example values of correct type
 # Value is a tuple (immutable) of type and default value.
