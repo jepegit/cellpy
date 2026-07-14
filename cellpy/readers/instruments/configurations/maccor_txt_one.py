@@ -1,5 +1,9 @@
 """Configuration for tab-delimited Maccor txt files with three comment rows (used by UBham in the SIMBA project)."""
 
+from cellpy.parameters.internal_settings import get_headers_normal
+
+headers_normal = get_headers_normal()
+
 # currently skips the comment rows instead of parsing them (change this by modifying the formatters
 # and add preprocessing step for parsing them)
 
@@ -62,9 +66,9 @@ normal_headers_renaming_dict = {
 
 # not observed yet
 not_implemented_in_cellpy_yet_renaming_dict = {
-    f"Power({unit_labels['power']})": "power",
+    f"Power({unit_labels['power']})": headers_normal.power_txt,
     f"ACR({unit_labels['resistance']})": "acr",
-    f"dV/dt({incremental_unit_labels['dv_dt']})": "dv_dt",
+    f"dV/dt({incremental_unit_labels['dv_dt']})": headers_normal.dv_dt_txt,
     f"dQ/dV({incremental_unit_labels['dq_dv']})": "dq_dv",
     f"dV/dQ({incremental_unit_labels['dv_dq']})": "dv_dq",
 }

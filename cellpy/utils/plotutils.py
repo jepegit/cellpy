@@ -310,7 +310,7 @@ def _plotly_legend_replacer(trace, df, group_legends=True):
         return trace
 
     cell_label = df.loc[
-        (df["group"] == group) & (df["sub_group"] == subgroup), "cell"
+        (df[_hdr_journal.group] == group) & (df[_hdr_journal.sub_group] == subgroup), "cell"
     ].values[0]
     if group_legends:
         trace.update(
@@ -5368,25 +5368,25 @@ def _cycle_info_plot_plotly(
     table = cell.data.steps.copy()
 
     if cycle is None:
-        cycle = list(data["cycle_index"].unique())
+        cycle = list(data[_hdr_raw.cycle_index_txt].unique())
 
     if not isinstance(cycle, (list, tuple)):
         cycle = [cycle]
 
     delta = "_delta"
-    v_delta = step_hdr["voltage"] + delta
-    i_delta = step_hdr["current"] + delta
-    c_delta = step_hdr["charge"] + delta
-    dc_delta = step_hdr["discharge"] + delta
-    cycle_ = step_hdr["cycle"]
-    step_ = step_hdr["step"]
-    type_ = step_hdr["type"]
+    v_delta = step_hdr.voltage + delta
+    i_delta = step_hdr.current + delta
+    c_delta = step_hdr.charge + delta
+    dc_delta = step_hdr.discharge + delta
+    cycle_ = step_hdr.cycle
+    step_ = step_hdr.step
+    type_ = step_hdr.type
 
-    time_hdr = raw_hdr["test_time_txt"]
-    cycle_hdr = raw_hdr["cycle_index_txt"]
-    step_number_hdr = raw_hdr["step_index_txt"]
-    current_hdr = raw_hdr["current_txt"]
-    voltage_hdr = raw_hdr["voltage_txt"]
+    time_hdr = raw_hdr.test_time_txt
+    cycle_hdr = raw_hdr.cycle_index_txt
+    step_number_hdr = raw_hdr.step_index_txt
+    current_hdr = raw_hdr.current_txt
+    voltage_hdr = raw_hdr.voltage_txt
 
     data = data[
         [
@@ -5490,8 +5490,7 @@ def _plot_step(ax, x, y, color):
 
 
 def _get_info(table, cycle, step):
-    # obs! hard-coded col-names. Please fix me.
-    m_table = (table.cycle == cycle) & (table.step == step)
+    m_table = (table[_hdr_steps.cycle] == cycle) & (table[_hdr_steps.step] == step)
     p1, p2 = table.loc[m_table, ["point_min", "point_max"]].values[0]
     c1, c2 = table.loc[m_table, ["current_min", "current_max"]].abs().values[0]
     d_voltage, d_current = table.loc[
@@ -5501,8 +5500,8 @@ def _get_info(table, cycle, step):
         m_table, ["discharge_delta", "charge_delta"]
     ].values[0]
     current_max = (c1 + c2) / 2
-    rate = table.loc[m_table, "rate_avr"].values[0]
-    step_type = table.loc[m_table, "type"].values[0]
+    rate = table.loc[m_table, _hdr_steps.rate_avr].values[0]
+    step_type = table.loc[m_table, _hdr_steps.type].values[0]
     return [step_type, rate, current_max, d_voltage, d_current, d_discharge, d_charge]
 
 
@@ -5535,8 +5534,8 @@ def _cycle_info_plot_matplotlib(
     voltage_color = "#008B8B"
     current_color = "#CD5C5C"
 
-    m_cycle_data = data.cycle_index == cycle
-    all_steps = data[m_cycle_data]["step_index"].unique()
+    m_cycle_data = data[_hdr_raw.cycle_index_txt] == cycle
+    all_steps = data[m_cycle_data][_hdr_raw.step_index_txt].unique()
 
     color = itertools.cycle(span_colors)
 
@@ -5557,10 +5556,10 @@ def _cycle_info_plot_matplotlib(
     annotations_4 = []  # info
 
     for i, s in enumerate(all_steps):
-        m = m_cycle_data & (data.step_index == s)
-        c = data.loc[m, "current"] * i_scaler
-        v = data.loc[m, "voltage"] * v_scaler
-        t = data.loc[m, "test_time"] * t_scaler
+        m = m_cycle_data & (data[_hdr_raw.step_index_txt] == s)
+        c = data.loc[m, _hdr_raw.current_txt] * i_scaler
+        v = data.loc[m, _hdr_raw.voltage_txt] * v_scaler
+        t = data.loc[m, _hdr_raw.test_time_txt] * t_scaler
         step_type, rate, current_max, dv, dc, d_discharge, d_charge = _get_info(
             table, cycle, s
         )

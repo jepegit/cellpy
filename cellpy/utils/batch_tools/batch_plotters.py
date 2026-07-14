@@ -785,7 +785,7 @@ def generate_summary_frame_for_plotting(pages, experiment, **kwargs) -> pd.DataF
     trim_pages = kwargs.pop("trim_pages", False)
     capacity_specifics = kwargs.get("capacity_specifics", "gravimetric")
     only_selected = kwargs.get("only_selected", False)
-    hdr_journal_selected = "selected"  # TODO: add this to hdr_journal
+    hdr_journal_selected = hdr_journal.selected
     selected = None
 
     if only_selected:
@@ -854,16 +854,16 @@ def generate_summary_frame_for_plotting(pages, experiment, **kwargs) -> pd.DataF
                 :,
                 [
                     "cell",
-                    "mass",
-                    "total_mass",
-                    "loading",
-                    "nom_cap",
-                    "area",
-                    "label",
-                    "cell_type",
-                    "instrument",
-                    "group",
-                    "sub_group",
+                    hdr_journal.mass,
+                    hdr_journal.total_mass,
+                    hdr_journal.loading,
+                    hdr_journal.nom_cap,
+                    hdr_journal.area,
+                    hdr_journal.label,
+                    hdr_journal.cell_type,
+                    hdr_journal.instrument,
+                    hdr_journal.group,
+                    hdr_journal.sub_group,
                 ],
             ]
         except KeyError as e:
@@ -896,7 +896,7 @@ def _plotly_legend_replacer(trace, df, group_legends=True, inverted_mode=False):
     if inverted_mode:
         group, subgroup = subgroup, group
     cell_label = df.loc[
-        (df["group"] == group) & (df["sub_group"] == subgroup), "cell"
+        (df[hdr_journal.group] == group) & (df[hdr_journal.sub_group] == subgroup), "cell"
     ].values[0]
     if group_legends:
         trace.update(
@@ -956,22 +956,22 @@ def _make_plotly_template(name="axis"):
 
 def _make_labels():
     labels = {
-        "cycle_index": "Cycle number",
-        "charge_capacity_gravimetric": "Gravimetric Charge Capacity",
-        "charge_capacity_areal": "Areal Charge Capacity",
-        "charge_capacity_absolute": "Absolute Charge Capacity",
-        "charge_capacity": "Charge Capacity",
-        "discharge_capacity_gravimetric": "Gravimetric Discharge Capacity",
-        "discharge_capacity_areal": "Areal Discharge Capacity",
-        "discharge_capacity_absolute": "Absolute Discharge Capacity",
-        "discharge_capacity": "Discharge Capacity",
-        "charge_c_rate": "C-rate (charge)",
-        "discharge_c_rate": "C-rate (discharge)",
-        "coulombic_efficiency": "Coulombic Efficiency",
-        "ir_charge": "IR (charge)",
-        "ir_discharge": "IR (discharge)",
-        "group": "Group",
-        "sub_group": "Sub-group",
+        hdr_summary.cycle_index: "Cycle number",
+        hdr_summary["charge_capacity_gravimetric"]: "Gravimetric Charge Capacity",
+        hdr_summary["charge_capacity_areal"]: "Areal Charge Capacity",
+        hdr_summary["charge_capacity_absolute"]: "Absolute Charge Capacity",
+        hdr_summary.charge_capacity: "Charge Capacity",
+        hdr_summary["discharge_capacity_gravimetric"]: "Gravimetric Discharge Capacity",
+        hdr_summary["discharge_capacity_areal"]: "Areal Discharge Capacity",
+        hdr_summary["discharge_capacity_absolute"]: "Absolute Discharge Capacity",
+        hdr_summary.discharge_capacity: "Discharge Capacity",
+        hdr_summary.charge_c_rate: "C-rate (charge)",
+        hdr_summary.discharge_c_rate: "C-rate (discharge)",
+        hdr_summary.coulombic_efficiency: "Coulombic Efficiency",
+        hdr_summary.ir_charge: "IR (charge)",
+        hdr_summary.ir_discharge: "IR (discharge)",
+        hdr_journal.group: "Group",
+        hdr_journal.sub_group: "Sub-group",
         "variable": "Variable",
         "value": "Value",
     }
@@ -1034,8 +1034,8 @@ def plot_cycle_life_summary_plotly(summaries: pd.DataFrame, **kwargs):
     hdr_ir_discharge = hdr_summary["ir_discharge"]
     hdr_charge_rate = hdr_summary["charge_c_rate"]
     hdr_discharge_rate = hdr_summary["discharge_c_rate"]
-    hdr_group = "group"
-    hdr_sub_group = "sub_group"
+    hdr_group = hdr_journal.group
+    hdr_sub_group = hdr_journal.sub_group
 
     legend_dict = {"title": "<b>Cell</b>", "orientation": "v"}
 
@@ -1217,8 +1217,8 @@ def plot_cycle_life_summary_seaborn(summaries: pd.DataFrame, **kwargs):
     hdr_ir_discharge = hdr_summary["ir_discharge"]
     hdr_charge_rate = hdr_summary["charge_c_rate"]
     hdr_discharge_rate = hdr_summary["discharge_c_rate"]
-    hdr_group = "group"
-    hdr_sub_group = "sub_group"
+    hdr_group = hdr_journal.group
+    hdr_sub_group = hdr_journal.sub_group
 
     legend_dict = {"title": "<b>Cell</b>", "orientation": "v"}
 

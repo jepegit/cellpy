@@ -19,6 +19,10 @@ import numpy as np
 import pandas as pd
 
 from cellpy import cellreader
+from cellpy.parameters.internal_settings import get_headers_normal, get_headers_step_table
+
+hdr_raw = get_headers_normal()
+hdr_steps = get_headers_step_table()
 
 # TODO: (28.05.2017 jepe) Docstrings are missing!!!!!!!! - AU: fix!
 
@@ -85,7 +89,7 @@ def select_ocv_points(
     step_table = cellpydata.data.steps
     dfdata = cellpydata.data.raw
 
-    ocv_steps = step_table.loc[step_table["cycle"].isin(cycles), :]
+    ocv_steps = step_table.loc[step_table[hdr_steps.cycle].isin(cycles), :]
     ocv_steps = ocv_steps.loc[ocv_steps.type.str.startswith(ocv_rlx_id, na=False), :]
 
     if selection_method in ["fixed_times", "fixed_points", "selected_times"]:
@@ -132,12 +136,12 @@ def select_ocv_points(
             row["step_time_delta"],
         )
 
-        cycle, step = (row["cycle"], row["step"])
-        info = row["type"]
+        cycle, step = (row[hdr_steps.cycle], row[hdr_steps.step])
+        info = row[hdr_steps.type]
 
         v_df = dfdata.loc[
-            (dfdata["cycle_index"] == cycle) & (dfdata["step_index"] == step),
-            ["step_time", "voltage"],
+            (dfdata[hdr_raw.cycle_index_txt] == cycle) & (dfdata[hdr_raw.step_index_txt] == step),
+            [hdr_raw.step_time_txt, hdr_raw.voltage_txt],
         ]
 
         poi = []
@@ -174,16 +178,16 @@ def select_ocv_points(
         if selection_method == "martin":
             poi.reverse()
 
-        df_poi = pd.DataFrame({"step_time": poi})
-        df_poi["voltage"] = np.nan
+        df_poi = pd.DataFrame({hdr_raw.step_time_txt: poi})
+        df_poi[hdr_raw.voltage_txt] = np.nan
 
         v_df = pd.concat([v_df, df_poi], ignore_index=True)
-        v_df = v_df.sort_values("step_time").reset_index(drop=True)
-        v_df["new"] = v_df["voltage"].interpolate()
+        v_df = v_df.sort_values(hdr_raw.step_time_txt).reset_index(drop=True)
+        v_df["new"] = v_df[hdr_raw.voltage_txt].interpolate()
 
         voi = []
         for p in poi:
-            _v = v_df.loc[v_df["step_time"].isin([p]), "new"].values
+            _v = v_df.loc[v_df[hdr_raw.step_time_txt].isin([p]), "new"].values
             _v = _v - voltage_reference
             voi.append(_v[0])
 
@@ -193,12 +197,12 @@ def select_ocv_points(
             poi.append(end)
             voi.append(last - voltage_reference)
 
-        d1 = {"cycle": cycle}
+        d1 = {hdr_steps.cycle: cycle}
         d2 = {h: [v] for h, v in zip(headers2, voi)}
         d = {**d1, **d2}
         result = pd.DataFrame(d)
-        result["step"] = step
-        result["type"] = info
+        result[hdr_steps.step] = step
+        result[hdr_steps.type] = info
         results_list.append(result)
 
         if "t0" not in info_dict:
@@ -210,9 +214,9 @@ def select_ocv_points(
     final = pd.concat(results_list)
 
     if direction == "down":
-        final = final.loc[final["type"] == "ocvrlx_down", :]
+        final = final.loc[final[hdr_steps.type] == "ocvrlx_down", :]
     elif direction == "up":
-        final = final.loc[final["type"] == "ocvrlx_up", :]
+        final = final.loc[final[hdr_steps.type] == "ocvrlx_up", :]
 
     if cell_label is not None:
         final = final.assign(cell=cell_label)
@@ -366,22 +370,22 @@ class MultiCycleOcvFit:
         end_voltage = 0
         if direction == "up":
             end_voltage = step_table[
-                (step_table["cycle"] == cycle)
-                & (step_table["type"].isin(["discharge"]))
+                (step_table[hdr_steps.cycle] == cycle)
+                & (step_table[hdr_steps.type].isin(["discharge"]))
             ][hdr.voltage + "_last"].values[0]
 
             end_current = step_table[
-                (step_table["cycle"] == cycle)
-                & (step_table["type"].isin(["discharge"]))
+                (step_table[hdr_steps.cycle] == cycle)
+                & (step_table[hdr_steps.type].isin(["discharge"]))
             ][hdr.current + "_last"].values[0]
 
         elif direction == "down":
             end_voltage = step_table[
-                (step_table["cycle"] == cycle) & (step_table["type"].isin(["charge"]))
+                (step_table[hdr_steps.cycle] == cycle) & (step_table[hdr_steps.type].isin(["charge"]))
             ][hdr.voltage + "_last"].values[0]
 
             end_current = step_table[
-                (step_table["cycle"] == cycle) & (step_table["type"].isin(["charge"]))
+                (step_table[hdr_steps.cycle] == cycle) & (step_table[hdr_steps.type].isin(["charge"]))
             ][hdr.current + "_last"].values[0]
 
         return end_current, end_voltage
@@ -523,9 +527,9 @@ class MultiCycleOcvFit:
         """Convenience function for creating a dataframe of the summary of the
         fit (translated)"""
         data = self.get_best_fit_parameters_translated_grouped()
-        data["cycle"] = self.get_fit_cycles()
+        data[hdr_steps.cycle] = self.get_fit_cycles()
         df = pd.DataFrame(data)
-        df = df.set_index("cycle")
+        df = df.set_index(hdr_steps.cycle)
         return df
 
 

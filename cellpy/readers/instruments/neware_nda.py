@@ -8,6 +8,8 @@ from cellpy import prms
 from cellpy.parameters.internal_settings import HeaderDict, get_headers_normal
 from cellpy.readers.data_structures import Data
 
+headers_normal = get_headers_normal()
+
 """Neware NDA (or NDAX) data"""
 
 
@@ -43,7 +45,7 @@ normal_headers_renaming_dict = {
     "test_time_txt": "total_time_s",
     "step_time_txt": "step_time_s",
     "cycle_index_txt": FASTNDA_CYCLE_COLUMN,
-    "step_index_txt": "step_index",
+    "step_index_txt": headers_normal.step_index_txt,
     "current_txt": "current_mA",
     "voltage_txt": "voltage_V",
     # "charge_power_txt": CHARGE_DISCHARGE_POWER_COLUMNS["charge"],  # not available yet

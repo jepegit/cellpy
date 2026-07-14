@@ -912,41 +912,41 @@ class LabJournal(BaseJournal, ABC):
 
     def select_all(self) -> None:
         """Select all cells."""
-        self.pages["selected"] = 1
+        self.pages[hdr_journal.selected] = 1
 
     def unselect_all(self) -> None:
         """Unselect all cells."""
-        self.pages["selected"] = 0
+        self.pages[hdr_journal.selected] = 0
 
     def select_group(self, group: int) -> None:
         """Toggle the selected status of a group of cells."""
         if group not in self.pages[hdr_journal.group].unique():
             logging.critical(f"group {group} does not exist")
             return
-        self.pages.loc[self.pages[hdr_journal.group] == group, "selected"] = 1
+        self.pages.loc[self.pages[hdr_journal.group] == group, hdr_journal.selected] = 1
 
     def unselect_group(self, group: int) -> None:
         """Toggle the selected status of a group of cells."""
         if group not in self.pages[hdr_journal.group].unique():
             logging.critical(f"group {group} does not exist")
             return
-        self.pages.loc[self.pages[hdr_journal.group] == group, "selected"] = 0
+        self.pages.loc[self.pages[hdr_journal.group] == group, hdr_journal.selected] = 0
 
     def toggle_selected(self, cell_name: str) -> None:
         """Toggle the selected status of a cell."""
         if cell_name in self.pages.index:
-            if self.pages.loc[cell_name, "selected"]:
-                self.pages.loc[cell_name, "selected"] = 0
+            if self.pages.loc[cell_name, hdr_journal.selected]:
+                self.pages.loc[cell_name, hdr_journal.selected] = 0
             else:
-                self.pages.loc[cell_name, "selected"] = 1
+                self.pages.loc[cell_name, hdr_journal.selected] = 1
 
     def select_by(self, criterion: str) -> None:
         """Select only cells based on criterion as used by the pandas query method."""
         df = self.pages.copy()
         try:
             selected = df.query(criterion).index
-            df.loc[df.index.isin(selected), "selected"] = 1
-            df.loc[~df.index.isin(selected), "selected"] = 0
+            df.loc[df.index.isin(selected), hdr_journal.selected] = 1
+            df.loc[~df.index.isin(selected), hdr_journal.selected] = 0
         except Exception as e:
             logging.critical(f"Could not select by {criterion}: {e}")
             return
@@ -958,7 +958,7 @@ class LabJournal(BaseJournal, ABC):
             logging.critical(f"column {column_name} does not exist")
             return
         criterion = self.pages[column_name] == value
-        self.pages.loc[criterion, "selected"] = 1
+        self.pages.loc[criterion, hdr_journal.selected] = 1
 
     def update_group_labels(self, group_labels: dict) -> None:
         if hdr_journal.group in self.pages.columns:
