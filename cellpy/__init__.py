@@ -32,10 +32,8 @@ from cellpy.readers import cellreader, dbreader, filefinder, do
 
 logging.getLogger(__name__).addHandler(logging.NullHandler())
 
-# TODO: (v2.0) remove this and enforce using for example `import cellpy.session as clp` and then
-#  run `prmreader.initialize` in that `__init__` instead:
-init = parameters.prmreader.initialize
-init()
+# Config loads lazily on first ``cellpy.config`` / ``config.*`` access, or via
+# ``cellpy.parameters.prmreader.initialize()`` (issue #453).
 
 # TODO: (v2.0) remove this and enforce using `cellpy.get` (or `cellpy.cellreader.get`) instead:
 get = cellreader.get
@@ -49,7 +47,6 @@ __all__ = [
     "filefinder",
     "get",
     "do",
-    "init",
     # "ureg",
     # "Q",
 ]

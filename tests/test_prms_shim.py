@@ -69,3 +69,48 @@ Reader:
     )
     assert result.config.reader.cycle_mode == "cathode"
     assert result.provenance.get("reader.cycle_mode") == SourceLayer.USER_FILE
+
+
+@pytest.mark.essential
+def test_import_cellpy_no_file_io():
+    """``import cellpy`` must not read config files (issue #453 acceptance)."""
+
+    import subprocess
+    import sys
+
+    script = """
+import builtins
+from pathlib import Path
+
+reads = []
+_real_open = builtins.open
+
+def _track_open(path, *args, **kwargs):
+    reads.append(str(path))
+    return _real_open(path, *args, **kwargs)
+
+builtins.open = _track_open
+_real_read_text = Path.read_text
+
+def _track_read_text(self, *args, **kwargs):
+    reads.append(str(self))
+    return _real_read_text(self, *args, **kwargs)
+
+Path.read_text = _track_read_text
+
+import cellpy  # noqa: F401
+
+config_reads = [
+    p
+    for p in reads
+    if ".cellpy_prms" in p or p.endswith("cellpy.toml") or p.endswith(".env_cellpy")
+]
+assert not config_reads, config_reads
+"""
+    result = subprocess.run(
+        [sys.executable, "-c", script],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr or result.stdout
