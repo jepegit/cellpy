@@ -1,4 +1,5 @@
 """arbin MS SQL Server exported h5 data"""
+import cellpy.config as config
 
 import datetime
 import logging
@@ -16,7 +17,7 @@ from cellpy.readers.data_structures import Data, FileID
 from cellpy.readers.instruments.base import BaseLoader
 from pathlib import Path
 
-DEBUG_MODE = prms.Reader.diagnostics  # not used
+DEBUG_MODE = config.reader.diagnostics  # not used
 ALLOW_MULTI_TEST_FILE = prms._allow_multi_test_file  # not used
 DATE_TIME_FORMAT = prms._date_time_format  # not used
 

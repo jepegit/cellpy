@@ -10,6 +10,8 @@ Examples:
     >>> c.save("super_battery_run.h5")
 """
 
+import cellpy.config as config
+
 import collections
 import copy
 import csv
@@ -238,8 +240,8 @@ class CellpyCell:
         """
         # TODO v 1.1: move to data (allow for multiple testers for same cell)
         if tester is None:
-            self.tester = prms.Instruments.tester
-            logging.debug(f"reading instrument from prms: {prms.Instruments}")
+            self.tester = config.instruments.tester
+            logging.debug(f"reading instrument from prms: {config.instruments}")
         else:
             self.tester = tester
 
@@ -264,7 +266,7 @@ class CellpyCell:
         self.profile = profile
 
         self.minimum_selection = {}
-        self.filestatuschecker = filestatuschecker or prms.Reader.filestatuschecker
+        self.filestatuschecker = filestatuschecker or config.reader.filestatuschecker
         self.forced_errors = 0
 
         self.file_names = filenames or []
@@ -295,18 +297,18 @@ class CellpyCell:
             "not_known",
         ]
         # - options
-        self.force_step_table_creation = prms.Reader.force_step_table_creation
-        self.force_all = prms.Reader.force_all
-        self.sep = prms.Reader.sep
+        self.force_step_table_creation = config.reader.force_step_table_creation
+        self.force_all = config.reader.force_all
+        self.sep = config.reader.sep
         self._cycle_mode = None
-        self.select_minimal = prms.Reader.select_minimal
-        self.limit_loaded_cycles = prms.Reader.limit_loaded_cycles
+        self.select_minimal = config.reader.select_minimal
+        self.limit_loaded_cycles = config.reader.limit_loaded_cycles
         self.limit_data_points = None
-        self.ensure_step_table = prms.Reader.ensure_step_table
-        self.ensure_summary_table = prms.Reader.ensure_summary_table
-        self.raw_datadir = internals.OtherPath(prms.Paths.rawdatadir)
-        self.cellpy_datadir = internals.OtherPath(prms.Paths.cellpydatadir)
-        self.auto_dirs = prms.Reader.auto_dirs  # v2.0
+        self.ensure_step_table = config.reader.ensure_step_table
+        self.ensure_summary_table = config.reader.ensure_summary_table
+        self.raw_datadir = internals.OtherPath(config.paths.rawdatadir)
+        self.cellpy_datadir = internals.OtherPath(config.paths.cellpydatadir)
+        self.auto_dirs = config.reader.auto_dirs  # v2.0
 
         # - headers and instruments
         self.headers_normal = headers_normal
@@ -842,11 +844,11 @@ class CellpyCell:
         if instrument and instrument.endswith(".yml"):
             instrument_file = instrument
             instrument = "local_instrument"
-            prms.Instruments.custom_instrument_definitions_file = instrument_file
+            config.instruments.custom_instrument_definitions_file = instrument_file
             if _override_local_instrument_path:
                 instrument_file = Path(instrument_file)
             else:
-                instrument_file = Path(prms.Paths.instrumentdir) / instrument_file
+                instrument_file = Path(config.paths.instrumentdir) / instrument_file
 
             if not instrument_file.is_file():
                 raise FileNotFoundError(f"Could not locate {instrument_file}")
@@ -1330,7 +1332,7 @@ class CellpyCell:
         except AttributeError:
             logging.debug("could not set instrument name")
 
-        max_raw_files_to_merge = prms.Reader.max_raw_files_to_merge
+        max_raw_files_to_merge = config.reader.max_raw_files_to_merge
         if len(self.file_names) > max_raw_files_to_merge:
             logging.debug("ERROR? Too many files to merge")
             raise ValueError(
@@ -1390,7 +1392,7 @@ class CellpyCell:
 
         logging.debug("finished loading the raw-files")
 
-        if not prms.Reader.sorted_data:
+        if not config.reader.sorted_data:
             logging.debug("sorting data")
             data = self._sort_data(data)
 
@@ -1995,7 +1997,7 @@ class CellpyCell:
         #     # for arbin at least).
         #     raise NotImplementedError
 
-        step_specs = externals.pandas.read_csv(file_name, sep=prms.Reader.sep)
+        step_specs = externals.pandas.read_csv(file_name, sep=config.reader.sep)
         if "step" not in step_specs.columns:
             logging.info("Missing column: step")
             raise IOError
@@ -3756,7 +3758,7 @@ class CellpyCell:
 
         if interpolated:
             if dx is None and number_of_points is None:
-                dx = prms.Reader.time_interpolation_step
+                dx = config.reader.time_interpolation_step
             new_dfs = list()
             groupby_list = [cycle_label, step_label]
 
@@ -4736,7 +4738,7 @@ class CellpyCell:
             ensure_step_table = self.ensure_step_table
 
         if use_cellpy_stat_file is None:
-            use_cellpy_stat_file = prms.Reader.use_cellpy_stat_file
+            use_cellpy_stat_file = config.reader.use_cellpy_stat_file
             logging.debug("using use_cellpy_stat_file from prms")
             logging.debug(f"use_cellpy_stat_file: {use_cellpy_stat_file}")
 

@@ -22,6 +22,7 @@ from cellpy.parameters import prmreader
 from cellpy.parameters.internal_settings import OTHERPATHS
 from cellpy.internals.connections import OtherPath
 from cellpy.utils.template_registry import REGISTERED_TEMPLATES
+import cellpy.config as config
 
 DIFFICULT_MISSING_MODULES = {}
 
@@ -336,17 +337,17 @@ def _update_paths(
             h = h / default_dir
 
     if not reset:
-        outdatadir = pathlib.Path(prmreader.prms.Paths.outdatadir)
-        rawdatadir = OtherPath(prmreader.prms.Paths.rawdatadir)
-        cellpydatadir = OtherPath(prmreader.prms.Paths.cellpydatadir)
-        filelogdir = pathlib.Path(prmreader.prms.Paths.filelogdir)
-        examplesdir = pathlib.Path(prmreader.prms.Paths.examplesdir)
-        db_path = pathlib.Path(prmreader.prms.Paths.db_path)
-        db_filename = prmreader.prms.Paths.db_filename
-        notebookdir = pathlib.Path(prmreader.prms.Paths.notebookdir)
-        batchfiledir = pathlib.Path(prmreader.prms.Paths.batchfiledir)
-        templatedir = pathlib.Path(prmreader.prms.Paths.templatedir)
-        instrumentdir = pathlib.Path(prmreader.prms.Paths.instrumentsdir)
+        outdatadir = pathlib.Path(config.paths.outdatadir)
+        rawdatadir = OtherPath(config.paths.rawdatadir)
+        cellpydatadir = OtherPath(config.paths.cellpydatadir)
+        filelogdir = pathlib.Path(config.paths.filelogdir)
+        examplesdir = pathlib.Path(config.paths.examplesdir)
+        db_path = pathlib.Path(config.paths.db_path)
+        db_filename = config.paths.db_filename
+        notebookdir = pathlib.Path(config.paths.notebookdir)
+        batchfiledir = pathlib.Path(config.paths.batchfiledir)
+        templatedir = pathlib.Path(config.paths.templatedir)
+        instrumentdir = pathlib.Path(config.paths.instrumentsdir)
     else:
         outdatadir = "out"
         rawdatadir = "raw"
@@ -412,17 +413,17 @@ def _update_paths(
             click.echo(f"dry run (so I did not create {d})")
 
     # update config-file based on suggestions
-    prmreader.prms.Paths.outdatadir = str(outdatadir)
-    prmreader.prms.Paths.rawdatadir = str(rawdatadir)
-    prmreader.prms.Paths.cellpydatadir = str(cellpydatadir)
-    prmreader.prms.Paths.filelogdir = str(filelogdir)
-    prmreader.prms.Paths.examplesdir = str(examplesdir)
-    prmreader.prms.Paths.db_path = str(db_path)
-    prmreader.prms.Paths.db_filename = str(db_filename)
-    prmreader.prms.Paths.notebookdir = str(notebookdir)
-    prmreader.prms.Paths.batchfiledir = str(batchfiledir)
-    prmreader.prms.Paths.templatedir = str(templatedir)
-    prmreader.prms.Paths.instrumentdir = str(instrumentdir)
+    config.paths.outdatadir = str(outdatadir)
+    config.paths.rawdatadir = str(rawdatadir)
+    config.paths.cellpydatadir = str(cellpydatadir)
+    config.paths.filelogdir = str(filelogdir)
+    config.paths.examplesdir = str(examplesdir)
+    config.paths.db_path = str(db_path)
+    config.paths.db_filename = str(db_filename)
+    config.paths.notebookdir = str(notebookdir)
+    config.paths.batchfiledir = str(batchfiledir)
+    config.paths.templatedir = str(templatedir)
+    config.paths.instrumentdir = str(instrumentdir)
 
 
 def _ask_about_path(q, p):
@@ -510,8 +511,8 @@ def _check_import_pyodbc():
     ODBC = prms._odbc
     SEARCH_FOR_ODBC_DRIVERS = prms._search_for_odbc_driver
 
-    use_subprocess = prms.Instruments.Arbin.use_subprocess
-    detect_subprocess_need = prms.Instruments.Arbin.detect_subprocess_need
+    use_subprocess = config.instruments.Arbin.use_subprocess
+    detect_subprocess_need = config.instruments.Arbin.detect_subprocess_need
     click.echo(f" This is needed for loading Arbin .res files")
     click.echo(f" parsing prms")
     click.echo(
@@ -521,7 +522,7 @@ def _check_import_pyodbc():
     click.echo(f" - SEARCH_FOR_ODBC_DRIVERS: {SEARCH_FOR_ODBC_DRIVERS}")
     click.echo(f" - use_subprocess: {use_subprocess}")
     click.echo(f" - detect_subprocess_need: {detect_subprocess_need}")
-    click.echo(f" - stated office version: {prms.Instruments.Arbin.office_version}")
+    click.echo(f" - stated office version: {config.instruments.Arbin.office_version}")
 
     click.echo(" checking system")
     is_posix = False
@@ -539,10 +540,10 @@ def _check_import_pyodbc():
     click.echo(f" - os version: {os_version}")
 
     if not is_posix:
-        if not prms.Instruments.Arbin.sub_process_path:
+        if not config.instruments.Arbin.sub_process_path:
             sub_process_path = str(prms._sub_process_path)
         else:
-            sub_process_path = str(prms.Instruments.Arbin.sub_process_path)
+            sub_process_path = str(config.instruments.Arbin.sub_process_path)
         click.echo(f" stated path to sub-process: {sub_process_path}")
         if not os.path.isfile(sub_process_path):
             click.echo(f" - OBS! missing")
@@ -596,7 +597,7 @@ def _check_import_pyodbc():
     # not posix - checking for odbc drivers
     # 1) checking if you have defined one
     try:
-        driver = prms.Instruments.Arbin.odbc_driver
+        driver = config.instruments.Arbin.odbc_driver
         if not driver:
             raise AttributeError
         click.echo(" You have defined an odbc driver in your config file")
@@ -1193,7 +1194,7 @@ def _run_journal(file_name, debug, silent, raw, cellpyfile, minimal, nom_cap):
     from cellpy import prms
     from cellpy.utils import batch
 
-    batchfiledir = pathlib.Path(prms.Paths.batchfiledir)
+    batchfiledir = pathlib.Path(config.paths.batchfiledir)
     file = pathlib.Path(file_name)
     if not file.is_file():
         click.echo(f"file_name={file_name} not found - looking into batchfiledir")
@@ -1223,7 +1224,7 @@ def _run_list(batchfiledir):
     from cellpy import prms
 
     if batchfiledir == "NONE" or batchfiledir is None:
-        batchfiledir = pathlib.Path(prms.Paths.batchfiledir)
+        batchfiledir = pathlib.Path(config.paths.batchfiledir)
     else:
         batchfiledir = pathlib.Path(batchfiledir).resolve()
 
@@ -1305,7 +1306,7 @@ def _run_db(debug, silent):
     if debug:
         click.echo("running in debug-mode, but nothing to tell")
 
-    db_path = Path(prms.Paths.db_path) / prms.Paths.db_filename
+    db_path = Path(config.paths.db_path) / config.paths.db_filename
 
     if platform.system() == "Windows":
         try:
@@ -1346,7 +1347,7 @@ def pull(tests, examples, clone, directory, password):
     if directory is not None:
         click.echo(f"[cellpy] (pull) custom directory: {directory}")
     else:
-        directory = pathlib.Path(prmreader.prms.Paths.examplesdir)
+        directory = pathlib.Path(config.paths.examplesdir)
 
     if password is not None:
         click.echo("DEV MODE: password provided")
@@ -1469,7 +1470,7 @@ def _get_pw(method):
 
 def _pull(gdirpath="examples", rootpath=None, u=None, pw=None):
     if rootpath is None:
-        rootpath = prmreader.prms.Paths.examplesdir
+        rootpath = config.paths.examplesdir
 
     rootpath = pathlib.Path(rootpath)
 
@@ -1526,7 +1527,7 @@ def _pull(gdirpath="examples", rootpath=None, u=None, pw=None):
 def _get_default_template():
     template = "standard"
     try:
-        template = prmreader.prms.Batch.template
+        template = config.batch.template
     except:
         logging.debug("You dont have any default template defined in you .conf file")
     return template
@@ -1534,7 +1535,7 @@ def _get_default_template():
 
 def _read_local_templates(local_templates_path=None):
     if local_templates_path is None:
-        local_templates_path = pathlib.Path(prmreader.prms.Paths.templatedir)
+        local_templates_path = pathlib.Path(config.paths.templatedir)
     templates = {}
     for p in list(local_templates_path.rglob("cellpy_cookie*.zip")):
         label = p.stem.strip()[len("cellpy_cookie_") :]
@@ -1669,7 +1670,7 @@ def _new(
 
         default_template = _get_default_template()
         local_templates = _read_local_templates()
-        local_templates_path = prmreader.prms.Paths.templatedir
+        local_templates_path = config.paths.templatedir
         registered_templates = REGISTERED_TEMPLATES
         click.echo(f"[cellpy] - default: {default_template}")
         click.echo("[cellpy] - registered templates (on github):")
@@ -1717,7 +1718,7 @@ def _new(
 
     if directory is None:
         logging.debug("no dir given")
-        directory = prms.Paths.notebookdir
+        directory = config.paths.notebookdir
 
     if not os.path.isdir(directory):
         click.echo("Sorry. This did not work as expected!")
@@ -1875,7 +1876,7 @@ def serve(lab, directory, executable):
     from cellpy.parameters import prms
 
     if directory is None:
-        directory = prms.Paths.notebookdir
+        directory = config.paths.notebookdir
     elif directory == "home":
         directory = Path().home()
     elif directory == "here":
@@ -1989,7 +1990,7 @@ def _cli_setup_interactive():
     click.echo(result.output)
     from pprint import pprint
 
-    pprint(prmreader.prms.Paths)
+    pprint(config.paths)
     click.echo(" conf-file ".center(80, "."))
     click.echo(init_file)
     click.echo()

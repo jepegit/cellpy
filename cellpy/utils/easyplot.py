@@ -4,6 +4,8 @@ Author: Amund M. Raniseth
 Date: 01.07.2021
 """
 
+import cellpy.config as config
+
 import logging
 import os
 import warnings
@@ -466,13 +468,15 @@ class EasyPlot:
         pwd="Changeme123",
         driver="ODBC Driver 17 for SQL Server",
     ):
-        """Sets cellpy.prms.Instruments.Arbin details to fit what is inserted.
+        """Sets cellpy.config.instruments.Arbin details to fit what is inserted.
         Parameters: Server = 'IP of server', uid = 'username', pwd = 'password', driver = 'ODBC Driver 17 for SQL Server'
         """
-        cellpy.prms.Instruments.Arbin["SQL_server"] = server
-        cellpy.prms.Instruments.Arbin["SQL_UID"] = uid
-        cellpy.prms.Instruments.Arbin["SQL_PWD"] = pwd
-        cellpy.prms.Instruments.Arbin["SQL_Driver"] = driver
+        from cellpy.readers.instruments.arbin_sql_config import set_arbin_sql_value
+
+        set_arbin_sql_value("SQL_server", server)
+        set_arbin_sql_value("SQL_UID", uid)
+        set_arbin_sql_value("SQL_PWD", pwd)
+        set_arbin_sql_value("SQL_Driver", driver)
         self.use_arbin_sql = True
 
     def give_color(self):

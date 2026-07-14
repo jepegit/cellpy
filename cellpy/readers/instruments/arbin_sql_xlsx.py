@@ -1,4 +1,5 @@
 """arbin MS SQL Server csv data"""
+import cellpy.config as config
 
 import logging
 import pathlib
@@ -16,7 +17,7 @@ from cellpy.readers.instruments.base import BaseLoader
 
 headers_normal = get_headers_normal()
 
-DEBUG_MODE = prms.Reader.diagnostics  # not used
+DEBUG_MODE = config.reader.diagnostics  # not used
 ALLOW_MULTI_TEST_FILE = prms._allow_multi_test_file  # not used
 
 SHEET_NAME_KEYWORD = "Channel"

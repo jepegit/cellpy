@@ -1,4 +1,5 @@
 """arbin MS SQL Server data"""
+import cellpy.config as config
 
 import datetime
 import logging
@@ -25,19 +26,16 @@ from cellpy.readers.data_structures import (
     xldate_as_datetime,
 )
 from cellpy.readers.instruments.base import BaseLoader
+from cellpy.readers.instruments.arbin_sql_config import arbin_sql_value
 
 # TODO: @muhammad - get more meta data from the SQL db
 # TODO: @jepe - update the batch functionality (including filefinder)
 # TODO: @muhammad - make routine for "setting up the SQL Server" so that it is accessible and document it
 
-DEBUG_MODE = prms.Reader.diagnostics  # not used
+DEBUG_MODE = config.reader.diagnostics  # not used
 ALLOW_MULTI_TEST_FILE = prms._allow_multi_test_file  # not used
 ODBC = prms._odbc
 SEARCH_FOR_ODBC_DRIVERS = prms._search_for_odbc_driver  # not used
-SQL_SERVER = prms.Instruments.Arbin["SQL_server"]
-SQL_UID = prms.Instruments.Arbin["SQL_UID"]
-SQL_PWD = prms.Instruments.Arbin["SQL_PWD"]
-SQL_DRIVER = prms.Instruments.Arbin["SQL_Driver"]
 DATE_TIME_FORMAT = prms._date_time_format
 
 # Names of the tables in the SQL Server db that is used by cellpy
@@ -143,7 +141,7 @@ class DataLoader(BaseLoader):
         self.arbin_headers_aux_global = self.get_headers_aux_global()
         self.arbin_headers_aux = self.get_headers_aux()
         self.current_chunk = 0  # use this to set chunks to load
-        self.server = SQL_SERVER
+        self.server = arbin_sql_value("SQL_server")
 
     @staticmethod
     def get_headers_normal():
@@ -259,7 +257,7 @@ class DataLoader(BaseLoader):
 
         # selecting only one value (might implement multi-channel/id use later)
         test_id = data_df["Test_ID"].iloc[0]
-        id_name = f"{SQL_SERVER}:{name}:{test_id}"
+        id_name = f"{arbin_sql_value('SQL_server')}:{name}:{test_id}"
 
         channel_id = data_df["Channel_ID"].iloc[0]
 
@@ -365,7 +363,8 @@ class DataLoader(BaseLoader):
         # TODO: refactor and include optional SQL arguments
         name_str = f"('{name}', '')"
         con_str = (
-            f"Driver={{{SQL_DRIVER}}};" + f"Server={SQL_SERVER};Trusted_Connection=yes;"
+            f"Driver={{{arbin_sql_value('SQL_Driver')}}};"
+            + f"Server={arbin_sql_value('SQL_server')};Trusted_Connection=yes;"
         )
 
         # TODO: use variable for the name of the main db (ArbinPro8....)
@@ -478,7 +477,7 @@ def _check_query():
     import pathlib
 
     name = ["20201106_HC03B1W_1_cc_01"]
-    dd, ds = check_sql_loader(SQL_SERVER, name)
+    dd, ds = check_sql_loader(arbin_sql_value("SQL_server"), name)
     out = pathlib.Path(r"C:\scripts\notebooks\Div")
     input("x")
 

@@ -1,4 +1,5 @@
 """arbin MS SQL Server data for MITS 7.0"""
+import cellpy.config as config
 
 import datetime
 import logging
@@ -27,19 +28,16 @@ from cellpy.readers.data_structures import (
     xldate_as_datetime,
 )
 from cellpy.readers.instruments.base import BaseLoader
+from cellpy.readers.instruments.arbin_sql_config import arbin_sql_value
 
 # TODO: @muhammad - get more meta data from the SQL db
 # TODO: @jepe - update the batch functionality (including filefinder)
 # TODO: @muhammad - make routine for "setting up the SQL Server" so that it is accessible and document it
 
-DEBUG_MODE = prms.Reader.diagnostics  # not used
+DEBUG_MODE = config.reader.diagnostics  # not used
 ALLOW_MULTI_TEST_FILE = prms._allow_multi_test_file  # not used
 ODBC = prms._odbc
 SEARCH_FOR_ODBC_DRIVERS = prms._search_for_odbc_driver  # not used
-SQL_SERVER = prms.Instruments.Arbin["SQL_server"]
-SQL_UID = prms.Instruments.Arbin["SQL_UID"]
-SQL_PWD = prms.Instruments.Arbin["SQL_PWD"]
-SQL_DRIVER = prms.Instruments.Arbin["SQL_Driver"]
 
 # Names of the tables in the SQL Server db that is used by cellpy
 
@@ -144,7 +142,7 @@ class DataLoader(BaseLoader):
         self.arbin_headers_aux_global = self.get_headers_aux_global()
         self.arbin_headers_aux = self.get_headers_aux()
         self.current_chunk = 0  # use this to set chunks to load
-        self.server = SQL_SERVER
+        self.server = arbin_sql_value("SQL_server")
 
     @staticmethod
     def get_headers_normal():
@@ -265,7 +263,7 @@ class DataLoader(BaseLoader):
         # init data
         # selecting only one value (might implement id selection later)
         test_id = meta_data["Test_ID"].iloc[0]
-        id_name = f"{SQL_SERVER}:{self.name}:{test_id}"
+        id_name = f"{arbin_sql_value('SQL_server')}:{self.name}:{test_id}"
 
         channel_id = meta_data["IV_Ch_ID"][0]
 
@@ -368,11 +366,11 @@ class DataLoader(BaseLoader):
 
         # prepare engine
         params = urllib.parse.quote_plus(
-            f"DRIVER={SQL_DRIVER};"
-            f"SERVER={SQL_SERVER};"
+            f"DRIVER={arbin_sql_value('SQL_Driver')};"
+            f"SERVER={arbin_sql_value('SQL_server')};"
             f"DATABASE=ArbinMasterData;"
-            f"UID={SQL_UID};"
-            f"PWD={SQL_PWD}"
+            f"UID={arbin_sql_value('SQL_UID')};"
+            f"PWD={arbin_sql_value('SQL_PWD')}"
         )
 
         # Create engine to SQL server using SQLAlchemy (mssql+pyodbc)
@@ -512,7 +510,7 @@ def _check_query():
     import pathlib
 
     name = ["20201106_HC03B1W_1_cc_01"]
-    dd, ds = check_sql_loader(SQL_SERVER, name)
+    dd, ds = check_sql_loader(arbin_sql_value("SQL_server"), name)
     out = pathlib.Path(r"C:\scripts\notebooks\Div")
     input("x")
 

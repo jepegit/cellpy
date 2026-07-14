@@ -1,4 +1,5 @@
 """Tools for getting some data to play with"""
+import cellpy.config as config
 
 from enum import Enum
 import logging
@@ -45,14 +46,14 @@ You can set up cellpy through the command line interface:
 or you can set the path to the example data directory manually in your script:
 
     >>> from cellpy import prms
-    >>> prms.Paths.examplesdir = "/path/to/your/example/data"
+    >>> config.paths.examplesdir = "/path/to/your/example/data"
 
 """
 
 
 def _user_examples_dir():
     """Get the path to the user's examples directory"""
-    examples_dir = Path(prms.Paths.examplesdir)
+    examples_dir = Path(config.paths.examplesdir)
     if not examples_dir.is_dir():
         warnings.warn(f"Could not find {examples_dir}")
         print(_example_data_download_help)

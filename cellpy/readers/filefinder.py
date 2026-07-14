@@ -14,6 +14,7 @@ from . import externals as externals
 import cellpy.exceptions
 from cellpy.parameters import prms
 from cellpy.internals.connections import OtherPath
+import cellpy.config as config
 
 
 # TODO: @jepe - add function for dumping the raw-file directory to a file,
@@ -76,7 +77,7 @@ def find_in_raw_file_directory(
     file_list = []
 
     if raw_file_dir is None:
-        raw_file_dir = prms.Paths.rawdatadir
+        raw_file_dir = config.paths.rawdatadir
 
     # 'dressing' the raw_file_dir in a list in case we want to
     # search in several folders (not implemented yet):
@@ -182,7 +183,7 @@ def list_raw_file_directory(
     file_list = []
 
     if raw_file_dir is None:
-        raw_file_dir = prms.Paths.rawdatadir
+        raw_file_dir = config.paths.rawdatadir
 
     # 'dressing' the raw_file_dir in a list in case we want to
     # search in several folders (not implemented yet):
@@ -274,16 +275,16 @@ def search_for_files(
     t0 = time.time()
 
     if reg_exp is None:
-        reg_exp = prms.FileNames.reg_exp
+        reg_exp = config.file_names.reg_exp
 
     if raw_extension is None:
-        raw_extension = prms.FileNames.raw_extension
+        raw_extension = config.file_names.raw_extension
 
     if raw_extension is None:
-        raw_extension = prms.FileNames.raw_extension
+        raw_extension = config.file_names.raw_extension
 
     if cellpy_file_extension is None:
-        cellpy_file_extension = prms.FileNames.cellpy_file_extension
+        cellpy_file_extension = config.file_names.cellpy_file_extension
 
     # backward compatibility check:
     if cellpy_file_extension.startswith("."):
@@ -293,10 +294,10 @@ def search_for_files(
         cellpy_file_extension = cellpy_file_extension[1:]
 
     if raw_file_dir is None:
-        raw_file_dir = prms.Paths.rawdatadir
+        raw_file_dir = config.paths.rawdatadir
 
     if file_name_format is None:
-        file_name_format = prms.FileNames.file_name_format
+        file_name_format = config.file_names.file_name_format
 
     # 'dressing' the raw_file_dir in a list in case we want to
     # search in several folders (not implemented yet):
@@ -316,14 +317,14 @@ def search_for_files(
         logging.debug("Sorry, reading prm file is not implemented yet.")
 
     if cellpy_file_dir is None:
-        cellpy_file_dir = OtherPath(prms.Paths.cellpydatadir)
+        cellpy_file_dir = OtherPath(config.paths.cellpydatadir)
     else:
         cellpy_file_dir = OtherPath(cellpy_file_dir)
 
     if file_name_format is None and reg_exp is None:
         try:
             # To be implemented in version 0.5:
-            file_name_format = prms.FileNames.file_name_format
+            file_name_format = config.file_names.file_name_format
         except AttributeError:
             file_name_format = "YYYYMMDD_[name]EEE_CC_TT_RR"
 
@@ -471,7 +472,7 @@ def _check_03():
     from cellpy import prms
     from pprint import pprint
 
-    prms.Paths.rawdatadir = r"C:\scripting\processing_cellpy\raw"
+    config.paths.rawdatadir = r"C:\scripting\processing_cellpy\raw"
     file_list = list_raw_file_directory(
         raw_file_dir=None,
         project_dir=None,

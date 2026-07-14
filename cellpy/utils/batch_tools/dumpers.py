@@ -2,6 +2,7 @@
 Keyword Args: experiments, farms, barn, engine
 Returns nothing.
 """
+import cellpy.config as config
 
 import logging
 import os
@@ -39,7 +40,7 @@ def csv_dumper(**kwargs):
             file_name = os.path.join(out_dir, "summary_%s_%s.csv" % (animal.name, name))
             logging.debug(f"processing {name}::{animal.name}")
             logging.info(f"-> {file_name}")
-            animal.to_csv(file_name, sep=prms.Reader.sep)
+            animal.to_csv(file_name, sep=config.reader.sep)
 
 
 def excel_dumper(**kwargs):

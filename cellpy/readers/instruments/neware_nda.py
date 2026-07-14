@@ -7,13 +7,14 @@ from cellpy.readers.instruments.base import BaseLoader
 from cellpy import prms
 from cellpy.parameters.internal_settings import HeaderDict, get_headers_normal
 from cellpy.readers.data_structures import Data
+import cellpy.config as config
 
 headers_normal = get_headers_normal()
 
 """Neware NDA (or NDAX) data"""
 
 
-DEBUG_MODE = prms.Reader.diagnostics  # not used
+DEBUG_MODE = config.reader.diagnostics  # not used
 ALLOW_MULTI_TEST_FILE = prms._allow_multi_test_file  # not used
 DATE_TIME_FORMAT = prms._date_time_format  # not used
 USE_LOCAL_FASTNDA = prms._use_local_fastnda

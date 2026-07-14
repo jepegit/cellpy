@@ -9,6 +9,7 @@ from typing import List, Optional
 from . import externals as externals
 from cellpy.parameters import prms
 from cellpy.readers import data_structures as core
+import cellpy.config as config
 
 # logger = logging.getLogger(__name__)
 
@@ -17,7 +18,7 @@ class DbSheetCols:
     # Note to developers: this should only be used for this Excell reader
     # (it works, and that is its only reason to still exist)
     def __init__(self):
-        db_cols_from_prms = asdict(prms.DbCols)
+        db_cols_from_prms = asdict(config.db_cols)
         self.keys = []
         self.headers = []
         for table_key, value in db_cols_from_prms.items():
@@ -52,29 +53,29 @@ class Reader(core.BaseSimpleDbReader):
             batch_col_name (str): name of the column in the db-file that contains the batch name.
         """
 
-        self.db_sheet_table = prms.Db.db_table_name
-        self.db_header_row = prms.Db.db_header_row
-        self.db_unit_row = prms.Db.db_unit_row
-        self.db_data_start_row = prms.Db.db_data_start_row
-        self.db_search_start_row = prms.Db.db_search_start_row
-        self.db_search_end_row = prms.Db.db_search_end_row
+        self.db_sheet_table = config.db.db_table_name
+        self.db_header_row = config.db.db_header_row
+        self.db_unit_row = config.db.db_unit_row
+        self.db_data_start_row = config.db.db_data_start_row
+        self.db_search_start_row = config.db.db_search_start_row
+        self.db_search_end_row = config.db.db_search_end_row
 
         self.db_sheet_cols = DbSheetCols()
         self.selected_batch = None
 
         if not db_datadir:
-            self.db_datadir = prms.Paths.rawdatadir
+            self.db_datadir = config.paths.rawdatadir
         else:
             self.db_datadir = db_datadir
 
         if not db_datadir_processed:
-            self.db_datadir_processed = prms.Paths.cellpydatadir
+            self.db_datadir_processed = config.paths.cellpydatadir
         else:
             self.db_datadir_processed = db_datadir_processed
 
         if not db_file:
-            self.db_path = prms.Paths.db_path
-            self.db_filename = prms.Paths.db_filename
+            self.db_path = config.paths.db_path
+            self.db_filename = config.paths.db_filename
             self.db_file = os.path.join(self.db_path, self.db_filename)
         else:
             self.db_path = os.path.dirname(db_file)
@@ -483,8 +484,8 @@ class Reader(core.BaseSimpleDbReader):
             logging.warning(
                 "Could not read the cycle mode (using value from prms instead)"
             )
-            logging.debug(f"cycle mode: {prms.Reader.cycle_mode}")
-            return prms.Reader.cycle_mode
+            logging.debug(f"cycle mode: {config.reader.cycle_mode}")
+            return config.reader.cycle_mode
 
     def get_loading(self, serial_number):
         column_name = self.db_sheet_cols.loading

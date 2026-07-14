@@ -28,3 +28,4 @@ to grow over time.
 | --- | --- | --- |
 | `scan_member_usage.py` | AST scan for `Data` / `CellpyCell` `.member` access in given package paths | Stage-0/1 consumer inventory reports (e.g. issue #435) |
 | `scan_hardcoded_headers.py` | AST scan for canonical header string literals in column-access contexts | Stage-0 header inventory / migration planning |
+| `migrate_prms_calls.py` | Bulk replace `prms.<Section>` → `config.<section>` and add imports | Issue #453 M2 mechanical migration (review arbin/SQL/module-level edge cases manually) |

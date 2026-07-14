@@ -7,17 +7,18 @@ import sqlalchemy as sa
 import pandas as pd
 
 import cellpy
+import cellpy.config as config
 from cellpy import prms
 from cellpy.parameters.internal_settings import (
     TABLE_NAME_SQLITE,
     COLUMNS_RENAMER,
 )
 
-DB_FILE_EXCEL = prms.Paths.db_filename
-DB_FILE_SQLITE = prms.Db.db_file_sqlite
-TABLE_NAME_EXCEL = prms.Db.db_table_name
-HEADER_ROW = prms.Db.db_header_row
-UNIT_ROW = prms.Db.db_unit_row
+DB_FILE_EXCEL = config.paths.db_filename
+DB_FILE_SQLITE = config.db.db_file_sqlite
+TABLE_NAME_EXCEL = config.db.db_table_name
+HEADER_ROW = config.db.db_header_row
+UNIT_ROW = config.db.db_unit_row
 
 
 @dataclass
@@ -29,10 +30,10 @@ class DbColsRenamer:
 
 
 def create_column_names_from_prms():
-    """Create a list of DbColsRenamer objects from the cellpy.prms.DbCols object."""
-    logging.debug(cellpy.prms.DbCols.keys())
+    """Create a list of DbColsRenamer objects from the cellpy.config.db_cols object."""
+    logging.debug(cellpy.config.db_cols.keys())
     logging.debug("----")
-    attrs = cellpy.prms.DbCols.keys()
+    attrs = cellpy.config.db_cols.keys()
     dtypes = cellpy.prms._db_cols_unit
     columns = []
     for attr in attrs:
@@ -43,7 +44,7 @@ def create_column_names_from_prms():
         col = DbColsRenamer(
             cellpy_col=attr,
             dtype=getattr(dtypes, attr),
-            excel_col=getattr(cellpy.prms.DbCols, attr),
+            excel_col=getattr(cellpy.config.db_cols, attr),
             db_col=db_col,
         )
         columns.append(col)
@@ -126,9 +127,9 @@ def clean_up(df, columns):
 
 def run():
     db_exel_file = (
-        pathlib.Path(cellpy.prms.Paths.db_path) / cellpy.prms.Paths.db_filename
+        pathlib.Path(cellpy.config.paths.db_path) / cellpy.config.paths.db_filename
     )
-    db_sqlite_file = pathlib.Path(cellpy.prms.Paths.db_path) / DB_FILE_SQLITE
+    db_sqlite_file = pathlib.Path(cellpy.config.paths.db_path) / DB_FILE_SQLITE
     columns = create_column_names_from_prms()
     df = load_xlsx(db_file=db_exel_file)
     df = clean_up(df, columns=columns)
@@ -140,7 +141,7 @@ def main():
     if not db_exel_file.exists():
         print(f"File not found: {db_exel_file}")
         sys.exit(1)
-    db_sqlite_file = pathlib.Path(cellpy.prms.Paths.db_path) / DB_FILE_SQLITE
+    db_sqlite_file = pathlib.Path(cellpy.config.paths.db_path) / DB_FILE_SQLITE
     columns = create_column_names_from_prms()
     df = load_xlsx(db_file=db_exel_file)
     df = clean_up(df, columns=columns)
@@ -149,8 +150,8 @@ def main():
 
 def _check():
     print("Settings:")
-    print(f"{cellpy.prms.Paths.db_path=}")
-    print(f"{cellpy.prms.Paths.db_filename=}")
+    print(f"{cellpy.config.paths.db_path=}")
+    print(f"{cellpy.config.paths.db_filename=}")
 
     print("But choosing:")
     db_exel_file = pathlib.Path("2022_Cell_Analysis_db_001.xlsx").resolve()

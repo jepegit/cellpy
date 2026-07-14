@@ -1,4 +1,5 @@
 """Set up logger instance"""
+import cellpy.config as config
 
 import datetime
 import json
@@ -58,7 +59,7 @@ def setup_logging(
         elif custom_log_dir:
             log_dir = custom_log_dir
         else:
-            log_dir = os.path.abspath(prms.Paths.filelogdir)
+            log_dir = os.path.abspath(config.paths.filelogdir)
 
         if not os.path.isdir(log_dir):
             warning_txt = (

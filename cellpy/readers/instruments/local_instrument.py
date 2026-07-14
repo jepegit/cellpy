@@ -5,7 +5,8 @@ As a "short-cut", this loader will be used if you set the ``instrument``
 to the name of the instrument file (with the ``.yml`` extension) e.g.
 ``c = cellpy.get(rawfile, instrument="instrumentfile.yml")``.
 The default instrument file is defined in the cellpy configuration file
-(available through ``prms.Instruments.custom_instrument_definitions_file``)."""
+(available through ``config.instruments.custom_instrument_definitions_file``)."""
+import cellpy.config as config
 
 from cellpy.readers.instruments.base import TxtLoader
 from cellpy.readers.instruments.configurations import (

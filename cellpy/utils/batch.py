@@ -1,4 +1,5 @@
 """Routines for batch processing of cells (v2)."""
+import cellpy.config as config
 
 import logging
 import os
@@ -876,7 +877,7 @@ class Batch:
         logging.info(f"project: {self.experiment.journal.project}")
 
         if auto_use_file_list is None:
-            auto_use_file_list = prms.Batch.auto_use_file_list
+            auto_use_file_list = config.batch.auto_use_file_list
 
         to_project_folder = kwargs.pop("to_project_folder", False)
         # Backward compatibility: accept both old and new parameter names
@@ -970,11 +971,11 @@ class Batch:
                 duplicate_to_project_folder=duplicate_to_project_folder,
             )
 
-            if to_project_folder and pathlib.Path(prms.Paths.batchfiledir).is_dir():
+            if to_project_folder and pathlib.Path(config.paths.batchfiledir).is_dir():
                 logging.debug(
                     "duplicating journal to batch directory (will be a deprecated feature in the future)"
                 )
-                self.duplicate_journal(prms.Paths.batchfiledir)
+                self.duplicate_journal(config.paths.batchfiledir)
 
         else:
             is_str = isinstance(description, str)
@@ -1078,8 +1079,8 @@ class Batch:
             )
             self.experiment.journal.generate_folder_names(use_outdatadir=False)
             self.experiment.journal.paginate()
-            if to_project_folder and pathlib.Path(prms.Paths.batchfiledir).is_dir():
-                self.duplicate_journal(prms.Paths.batchfiledir)
+            if to_project_folder and pathlib.Path(config.paths.batchfiledir).is_dir():
+                self.duplicate_journal(config.paths.batchfiledir)
 
     def _create_folder_structure(self) -> None:
         warnings.warn("Deprecated - use paginate instead.", DeprecationWarning)
@@ -1096,7 +1097,7 @@ class Batch:
         """Save journal and cellpy files.
 
         The journal file will be saved in the project directory and in the
-        batch-file-directory (``prms.Paths.batchfiledir``). The latter is useful
+        batch-file-directory (``config.paths.batchfiledir``). The latter is useful
         for processing several batches using the ``iterate_batches`` functionality.
 
         The name and location of the cellpy files is determined by the journal pages.
@@ -1109,13 +1110,13 @@ class Batch:
         """Save the journal (json-format).
 
         The journal file will be saved to the current directory by default. Optionally,
-        it can be copied to the project directory in prms.Paths.outdatadir and/or
-        the batch-file-directory (``prms.Paths.batchfiledir``).
+        it can be copied to the project directory in config.paths.outdatadir and/or
+        the batch-file-directory (``config.paths.batchfiledir``).
 
         Args:
             paginate (bool): paginate the journal pages, i.e. create a project folder structure inside your
                 'out' folder (default False).
-            duplicate_to_project_folder (bool): if True, copy the journal to prms.Paths.outdatadir/project/
+            duplicate_to_project_folder (bool): if True, copy the journal to config.paths.outdatadir/project/
                 (default False).
         """
 
@@ -1132,10 +1133,10 @@ class Batch:
             logging.info("copied journal pages to project folder")
 
         if (
-            pathlib.Path(prms.Paths.batchfiledir).is_dir()
+            pathlib.Path(config.paths.batchfiledir).is_dir()
             and duplicate_to_project_folder
         ):
-            self.duplicate_journal(prms.Paths.batchfiledir)
+            self.duplicate_journal(config.paths.batchfiledir)
             logging.info("duplicated journal pages to batch dir")
 
     def export_journal(self, filename=None) -> None:
@@ -1179,7 +1180,7 @@ class Batch:
         """
 
         pages = self.experiment.journal.pages
-        cellpy_file_dir = OtherPath(prms.Paths.cellpydatadir)
+        cellpy_file_dir = OtherPath(config.paths.cellpydatadir)
 
         if location == "standard":
             batch_data_dir = pathlib.Path("data") / "interim"
@@ -1406,7 +1407,7 @@ class Batch:
             self.summary_collector.do(reset=True)
 
         if backend is None:
-            backend = prms.Batch.backend
+            backend = config.batch.backend
             if backend in ["bokeh", "matplotlib"]:
                 logging.debug(
                     f"over-riding default backend ('{backend}' will soon be deprecated)"
@@ -1414,7 +1415,7 @@ class Batch:
                 backend = "plotly"
 
         if backend in ["bokeh", "matplotlib", "plotly", "seaborn"]:
-            prms.Batch.backend = backend
+            config.batch.backend = backend
 
         if backend == "bokeh":
             print("...Using old plotter - this will change soon")
@@ -1467,25 +1468,25 @@ class Batch:
             self.summary_collector.do(reset=True)
 
         if backend is None:
-            backend = prms.Batch.backend
+            backend = config.batch.backend
 
         if backend in ["bokeh", "matplotlib"]:
-            prms.Batch.backend = backend
+            config.batch.backend = backend
 
         if backend == "bokeh":
             try:
                 import bokeh.plotting  # pyright: ignore[reportMissingImports]
 
-                prms.Batch.backend = "bokeh"
+                config.batch.backend = "bokeh"
 
                 if output_filename is not None:
                     bokeh.plotting.output_file(output_filename)
                 else:
-                    if prms.Batch.notebook:
+                    if config.batch.notebook:
                         bokeh.plotting.output_notebook()
 
             except ModuleNotFoundError:
-                prms.Batch.backend = "matplotlib"
+                config.batch.backend = "matplotlib"
                 logging.warning(
                     "could not find the bokeh module -> using matplotlib instead"
                 )
@@ -1984,9 +1985,9 @@ def process_batch(*args, **kwargs) -> Batch:
     backend = kwargs.pop("backend", None)
 
     if backend is not None:
-        prms.Batch.backend = backend
+        config.batch.backend = backend
     else:
-        prms.Batch.backend = "matplotlib"
+        config.batch.backend = "matplotlib"
 
     dpi = kwargs.pop("dpi", 300)
 
@@ -2137,12 +2138,12 @@ def _check_standard():
     out_data_path = Path(out_data_path)
 
     logging.info("---SETTING SOME PRMS---")
-    prms.Paths.db_filename = "cellpy_db.xlsx"
-    prms.Paths.cellpydatadir = test_data_path / "hdf5"
-    prms.Paths.outdatadir = out_data_path
-    prms.Paths.rawdatadir = test_data_path / "data"
-    prms.Paths.db_path = test_data_path / "db"
-    prms.Paths.filelogdir = test_data_path / "log"
+    config.paths.db_filename = "cellpy_db.xlsx"
+    config.paths.cellpydatadir = test_data_path / "hdf5"
+    config.paths.outdatadir = out_data_path
+    config.paths.rawdatadir = test_data_path / "data"
+    config.paths.db_path = test_data_path / "db"
+    config.paths.filelogdir = test_data_path / "log"
 
     project = "prebens_experiment"
     name = "test"

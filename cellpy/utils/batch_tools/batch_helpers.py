@@ -9,6 +9,7 @@ import pandas as pd
 import cellpy.parameters.internal_settings
 from cellpy import filefinder, prms
 from cellpy.readers import data_structures as core
+import cellpy.config as config
 
 hdr_summary = cellpy.parameters.internal_settings.get_headers_summary()
 hdr_journal = cellpy.parameters.internal_settings.get_headers_journal()
@@ -47,7 +48,7 @@ def create_folder_structure(project_name, batch_name):
     Returns: (info_file, (project_dir, batch_dir, raw_dir))
 
     """
-    out_data_dir = prms.Paths.outdatadir
+    out_data_dir = config.paths.outdatadir
     project_dir = os.path.join(out_data_dir, project_name)
     batch_dir = os.path.join(project_dir, batch_name)
     raw_dir = os.path.join(batch_dir, "raw_data")
@@ -120,7 +121,7 @@ def find_files(
     if skip_file_search:
         return info_dict
 
-    sub_folders = sub_folders or prms.FileNames.sub_folders
+    sub_folders = sub_folders or config.file_names.sub_folders
     instrument_factory = create_factory()
     file_name_indicators = info_dict.get(
         hdr_journal["file_name_indicator"], hdr_journal["filename"]
@@ -141,7 +142,7 @@ def find_files(
             instrument = info_dict[hdr_journal["instrument"]][i]
             raw_ext = instrument_factory.query(instrument, "raw_ext")
             if raw_ext:
-                prms.FileNames.raw_extension = raw_ext
+                config.file_names.raw_extension = raw_ext
         except IndexError:
             warnings.warn(f"no instrument given for {run_name}")
 
@@ -356,7 +357,7 @@ def join_summaries(
 def generate_folder_names(name, project):
     """Creates sensible folder names."""
 
-    out_data_dir = prms.Paths.outdatadir
+    out_data_dir = config.paths.outdatadir
     project_dir = os.path.join(out_data_dir, project)
     batch_dir = os.path.join(project_dir, name)
     raw_dir = os.path.join(batch_dir, "raw_data")

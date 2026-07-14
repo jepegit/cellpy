@@ -16,6 +16,7 @@ from cellpy.internals.connections import OtherPath
 from cellpy.utils.batch_tools import batch_helpers as helper
 from cellpy.utils.batch_tools.batch_core import BaseExperiment
 from cellpy.utils.batch_tools.batch_journals import LabJournal
+import cellpy.config as config
 
 hdr_journal = get_headers_journal()
 hdr_summary = get_headers_summary()
@@ -403,14 +404,14 @@ class CyclingExperiment(BaseExperiment):
             if hdr_journal.nom_cap_specifics in row:
                 nom_cap_specifics = row[hdr_journal.nom_cap_specifics]
             else:
-                nom_cap_specifics = prms.Materials.default_nom_cap_specifics
+                nom_cap_specifics = config.defaults.materials.default_nom_cap_specifics
             if hdr_journal.loading in row:
                 loading = row[hdr_journal.loading]
             if hdr_journal.area in row:
                 area = row[hdr_journal.area]
 
             summary_kwargs = {
-                "use_cellpy_stat_file": prms.Reader.use_cellpy_stat_file,
+                "use_cellpy_stat_file": config.reader.use_cellpy_stat_file,
                 "find_ir": find_ir,
             }
 
@@ -556,7 +557,7 @@ class CyclingExperiment(BaseExperiment):
                 pbar.set_description(n_txt, refresh=True)
                 cell_data.to_csv(
                     self.journal.raw_dir,
-                    sep=prms.Reader.sep,
+                    sep=config.reader.sep,
                     cycles=self.export_cycles,
                     shifted=self.shifted_cycles,
                     raw=self.export_raw,
@@ -569,7 +570,7 @@ class CyclingExperiment(BaseExperiment):
                     helper.export_dqdv(
                         cell_data,
                         savedir=self.journal.raw_dir,
-                        sep=prms.Reader.sep,
+                        sep=config.reader.sep,
                         last_cycle=self.last_cycle,
                     )
                 except Exception as e:
@@ -752,7 +753,7 @@ class CyclingExperiment(BaseExperiment):
                     area = row[hdr_journal.area]
 
                 summary_kwargs = {
-                    "use_cellpy_stat_file": prms.Reader.use_cellpy_stat_file,
+                    "use_cellpy_stat_file": config.reader.use_cellpy_stat_file,
                     "find_ir": find_ir,
                     "find_end_voltage": find_end_voltage,
                 }
@@ -878,7 +879,7 @@ class CyclingExperiment(BaseExperiment):
                     pbar.set_description(n_txt, refresh=True)
                     cell_data.to_csv(
                         self.journal.raw_dir,
-                        sep=prms.Reader.sep,
+                        sep=config.reader.sep,
                         cycles=self.export_cycles,
                         shifted=self.shifted_cycles,
                         raw=self.export_raw,
@@ -891,7 +892,7 @@ class CyclingExperiment(BaseExperiment):
                         helper.export_dqdv(
                             cell_data,
                             savedir=self.journal.raw_dir,
-                            sep=prms.Reader.sep,
+                            sep=config.reader.sep,
                             last_cycle=self.last_cycle,
                         )
                     except Exception as e:

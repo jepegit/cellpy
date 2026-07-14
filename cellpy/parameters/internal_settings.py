@@ -1,9 +1,10 @@
 """Internal settings and definitions and functions for getting them."""
+import cellpy.config as config
 
 import logging
 import warnings
 from collections import UserDict
-from dataclasses import dataclass, fields, asdict
+from dataclasses import dataclass, field, fields, asdict
 from typing import List, Optional
 
 from . import externals as externals
@@ -142,7 +143,9 @@ class CellpyMetaCommon(CellpyMeta):
     cell_name: Optional[str] = None  # used as property
     start_datetime: Optional[str] = None
     time_zone: Optional[str] = None
-    comment: Optional[prms.CellPyDataConfig] = prms.CellInfo.comment
+    comment: Optional[prms.CellPyDataConfig] = field(
+        default_factory=lambda: config.defaults.cell_info.comment
+    )
     file_errors: Optional[str] = None  # not in use at the moment
     raw_id: Optional[str] = None  # used as property
     cellpy_file_version: int = CELLPY_FILE_VERSION
@@ -154,53 +157,63 @@ class CellpyMetaCommon(CellpyMeta):
     tester_calibration_date: Optional[prms.CellPyDataConfig] = None
 
     # about cell
-    material: Optional[prms.CellPyDataConfig] = prms.Materials.default_material
+    material: Optional[prms.CellPyDataConfig] = field(
+        default_factory=lambda: config.defaults.materials.default_material
+    )
     # TODO @jepe: Maybe we should use values with units here instead (pint)?
-    mass: Optional[prms.CellPyDataConfig] = (
-        prms.Materials.default_mass
+    mass: Optional[prms.CellPyDataConfig] = field(
+        default_factory=lambda: config.defaults.materials.default_mass
     )  # active material
-    tot_mass: Optional[prms.CellPyDataConfig] = (
-        prms.Materials.default_mass
+    tot_mass: Optional[prms.CellPyDataConfig] = field(
+        default_factory=lambda: config.defaults.materials.default_mass
     )  # total material
-    nom_cap: Optional[prms.CellPyDataConfig] = (
-        prms.Materials.default_nom_cap
+    nom_cap: Optional[prms.CellPyDataConfig] = field(
+        default_factory=lambda: config.defaults.materials.default_nom_cap
     )  # nominal capacity   # used as property
-    nom_cap_specifics: Optional[prms.CellPyDataConfig] = (
-        prms.Materials.default_nom_cap_specifics
+    nom_cap_specifics: Optional[prms.CellPyDataConfig] = field(
+        default_factory=lambda: config.defaults.materials.default_nom_cap_specifics
     )  # nominal capacity type  # used as property
 
-    active_electrode_area: Optional[prms.CellPyDataConfig] = (
-        prms.CellInfo.active_electrode_area
+    active_electrode_area: Optional[prms.CellPyDataConfig] = field(
+        default_factory=lambda: config.defaults.cell_info.active_electrode_area
     )
-    active_electrode_thickness: Optional[prms.CellPyDataConfig] = (
-        prms.CellInfo.active_electrode_thickness
+    active_electrode_thickness: Optional[prms.CellPyDataConfig] = field(
+        default_factory=lambda: config.defaults.cell_info.active_electrode_thickness
     )
-    active_electrode_loading: Optional[prms.CellPyDataConfig] = (
-        prms.CellInfo.active_electrode_loading
+    active_electrode_loading: Optional[prms.CellPyDataConfig] = field(
+        default_factory=lambda: config.defaults.cell_info.active_electrode_loading
     )  # mAh/cm2
-    # volume: Optional[prms.CellPyDataConfig] = prms.CellInfo.volume  # cm3
+    # volume: Optional[prms.CellPyDataConfig] = config.defaults.cell_info.volume  # cm3
 
-    electrolyte_volume: Optional[prms.CellPyDataConfig] = (
-        prms.CellInfo.electrolyte_volume
+    electrolyte_volume: Optional[prms.CellPyDataConfig] = field(
+        default_factory=lambda: config.defaults.cell_info.electrolyte_volume
     )
-    electrolyte_type: Optional[prms.CellPyDataConfig] = prms.CellInfo.electrolyte_type
-    active_electrode_type: Optional[prms.CellPyDataConfig] = (
-        prms.CellInfo.active_electrode_type
+    electrolyte_type: Optional[prms.CellPyDataConfig] = field(
+        default_factory=lambda: config.defaults.cell_info.electrolyte_type
     )
-    counter_electrode_type: Optional[prms.CellPyDataConfig] = (
-        prms.CellInfo.counter_electrode_type
+    active_electrode_type: Optional[prms.CellPyDataConfig] = field(
+        default_factory=lambda: config.defaults.cell_info.active_electrode_type
     )
-    reference_electrode_type: Optional[prms.CellPyDataConfig] = (
-        prms.CellInfo.reference_electrode_type
+    counter_electrode_type: Optional[prms.CellPyDataConfig] = field(
+        default_factory=lambda: config.defaults.cell_info.counter_electrode_type
     )
-    experiment_type: Optional[prms.CellPyDataConfig] = prms.CellInfo.experiment_type
-    cell_type: Optional[prms.CellPyDataConfig] = prms.CellInfo.cell_type
-    separator_type: Optional[prms.CellPyDataConfig] = prms.CellInfo.separator_type
-    active_electrode_current_collector: Optional[prms.CellPyDataConfig] = (
-        prms.CellInfo.active_electrode_current_collector
+    reference_electrode_type: Optional[prms.CellPyDataConfig] = field(
+        default_factory=lambda: config.defaults.cell_info.reference_electrode_type
     )
-    reference_electrode_current_collector: Optional[prms.CellPyDataConfig] = (
-        prms.CellInfo.reference_electrode_current_collector
+    experiment_type: Optional[prms.CellPyDataConfig] = field(
+        default_factory=lambda: config.defaults.cell_info.experiment_type
+    )
+    cell_type: Optional[prms.CellPyDataConfig] = field(
+        default_factory=lambda: config.defaults.cell_info.cell_type
+    )
+    separator_type: Optional[prms.CellPyDataConfig] = field(
+        default_factory=lambda: config.defaults.cell_info.separator_type
+    )
+    active_electrode_current_collector: Optional[prms.CellPyDataConfig] = field(
+        default_factory=lambda: config.defaults.cell_info.active_electrode_current_collector
+    )
+    reference_electrode_current_collector: Optional[prms.CellPyDataConfig] = field(
+        default_factory=lambda: config.defaults.cell_info.reference_electrode_current_collector
     )
 
 
@@ -215,9 +228,15 @@ class CellpyMetaIndividualTest(CellpyMeta):
     test_type: Optional[prms.CellPyDataConfig] = (
         None  # Not used (and might be put inside test_ID)
     )
-    voltage_lim_low: Optional[prms.CellPyDataConfig] = prms.CellInfo.voltage_lim_low
-    voltage_lim_high: Optional[prms.CellPyDataConfig] = prms.CellInfo.voltage_lim_high
-    cycle_mode: Optional[prms.CellPyDataConfig] = prms.Reader.cycle_mode
+    voltage_lim_low: Optional[prms.CellPyDataConfig] = field(
+        default_factory=lambda: config.defaults.cell_info.voltage_lim_low
+    )
+    voltage_lim_high: Optional[prms.CellPyDataConfig] = field(
+        default_factory=lambda: config.defaults.cell_info.voltage_lim_high
+    )
+    cycle_mode: Optional[prms.CellPyDataConfig] = field(
+        default_factory=lambda: config.reader.cycle_mode
+    )
     test_ID: Optional[prms.CellPyDataConfig] = (
         None  # id for the test - currently just a number; could become a list or more in the future
     )

@@ -1,4 +1,5 @@
 """arbin MS SQL Server csv data"""
+import cellpy.config as config
 
 import pandas as pd
 from dateutil.parser import parse
@@ -10,7 +11,7 @@ from cellpy.readers.instruments.base import BaseLoader
 
 headers_normal = get_headers_normal()
 
-DEBUG_MODE = prms.Reader.diagnostics  # not used
+DEBUG_MODE = config.reader.diagnostics  # not used
 ALLOW_MULTI_TEST_FILE = prms._allow_multi_test_file  # not used
 
 # Not used yet - only supporting loading raw data (normal)
@@ -213,8 +214,8 @@ class DataLoader(BaseLoader):
         return data
 
     def _query_csv(self, name):
-        # NOTE! I am using the prms.Reader.sep prm as the delimiter.
-        data_df = pd.read_csv(name, sep=prms.Reader.sep)
+        # NOTE! I am using the config.reader.sep prm as the delimiter.
+        data_df = pd.read_csv(name, sep=config.reader.sep)
         return data_df
 
 
@@ -306,7 +307,7 @@ def _check_seamless_files():
     c = cellreader.CellpyCell()
     c.set_instrument("arbin_sql_csv")
 
-    prms.Reader.sep = ";"
+    config.reader.sep = ";"
 
     c.from_raw(name1)
     c.set_mass(0.016569)
