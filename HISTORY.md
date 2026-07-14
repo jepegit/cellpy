@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+* Stage 1.7: parallel `cellpy/config/` pydantic-settings stack — typed models, layered TOML loader, provenance, `override()`, inventory parity vs #430; not wired into legacy `prms` yet (#452)
 * Fix: full-suite test failures — `extract_fids` test uses module helper; external `check_file_ids` test avoids live SCP; Arbin `.res` loader closes ODBC connections (#491)
 * Stage 1.10: replace hard-coded column-header literals with canonical `headers_*` lookups in journal pages, ocv_rlx/plotutils, and instrument loaders (priorities 1–3); delete dead easyplot block (#455)
 * Stage 1.4: redirect out-of-band HDF5 readers to `cellpy_file.read_table` / `read_fid_table`; `CorruptCellpyFile` for missing keys; `cellpy convert` CLI for v<8 upgrades (#449)
