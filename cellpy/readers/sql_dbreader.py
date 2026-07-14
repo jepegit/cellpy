@@ -1,4 +1,5 @@
 """This module is an example of how to implement a custom database reader for the batch utility in cellpy."""
+import cellpy.config as config
 
 import logging
 import pathlib
@@ -27,11 +28,11 @@ from cellpy.parameters.internal_settings import (
 from cellpy.readers.data_structures import BaseSimpleDbReader
 
 # ----------------- USED WHEN CONVERTING FROM EXCEL -----------------
-DB_FILE_EXCEL = prms.Paths.db_filename
-DB_FILE_SQLITE = prms.Db.db_file_sqlite
-TABLE_NAME_EXCEL = prms.Db.db_table_name
-HEADER_ROW = prms.Db.db_header_row
-UNIT_ROW = prms.Db.db_unit_row
+DB_FILE_EXCEL = config.paths.db_filename
+DB_FILE_SQLITE = config.db.db_file_sqlite
+TABLE_NAME_EXCEL = config.db.db_table_name
+HEADER_ROW = config.db.db_header_row
+UNIT_ROW = config.db.db_unit_row
 
 # ------------------- USED BY NEW CELLPY DB --------------------------
 DB_URI = f"sqlite:///cellpy.db"

@@ -1,4 +1,5 @@
 """arbin res-type data files"""
+import cellpy.config as config
 
 import logging
 import os
@@ -28,7 +29,7 @@ from cellpy.readers.instruments.base import MINIMUM_SELECTION, BaseLoader
 
 # TODO: use InstrumentSettings (dataclass) from internal_settings instead of HeaderDict.
 
-DEBUG_MODE = prms.Reader.diagnostics
+DEBUG_MODE = config.reader.diagnostics
 ALLOW_MULTI_TEST_FILE = False
 USE_SQLALCHEMY_ACCESS_ENGINE = True
 
@@ -36,8 +37,8 @@ USE_SQLALCHEMY_ACCESS_ENGINE = True
 ODBC = prms._odbc
 SEARCH_FOR_ODBC_DRIVERS = prms._search_for_odbc_driver
 
-_use_subprocess = prms.Instruments.Arbin.use_subprocess
-_detect_subprocess_need = prms.Instruments.Arbin.detect_subprocess_need
+_use_subprocess = config.instruments.Arbin.use_subprocess
+_detect_subprocess_need = config.instruments.Arbin.detect_subprocess_need
 
 _is_posix = False
 _is_macos = False
@@ -58,7 +59,7 @@ if DEBUG_MODE:
 if _detect_subprocess_need:
     logging.debug("detect_subprocess_need is True: checking versions")
     python_version, os_version = platform.architecture()
-    if python_version == "64bit" and prms.Instruments.Arbin.office_version == "32bit":
+    if python_version == "64bit" and config.instruments.Arbin.office_version == "32bit":
         logging.debug("python 64bit and office 32bit -> setting use_subprocess to True")
         _use_subprocess = True
 
@@ -67,16 +68,16 @@ if _use_subprocess and not _is_posix:
     logging.debug(
         "using subprocess (most likely mdbtools) on non-posix (most likely windows)"
     )
-    if not prms.Instruments.Arbin.sub_process_path:
+    if not config.instruments.Arbin.sub_process_path:
         _sub_process_path = str(prms.sub_process_path)
     else:
-        _sub_process_path = str(prms.Instruments.Arbin.sub_process_path)
+        _sub_process_path = str(config.instruments.Arbin.sub_process_path)
 
 if _is_posix:
     _sub_process_path = "mdb-export"
 
 try:
-    driver_dll = prms.Instruments.Arbin.odbc_driver
+    driver_dll = config.instruments.Arbin.odbc_driver
 except AttributeError:
     driver_dll = None
 
@@ -147,7 +148,7 @@ NORMAL_HEADERS_RENAMING_DICT = {
 class DataLoader(BaseLoader):
     """Class for loading arbin-data from res-files.
 
-    Parameters from configuration (`prms.Instruments.Arbin`)::
+    Parameters from configuration (`config.instruments.Arbin`)::
 
         - max_res_filesize: break if file size exceeds this limit.
         - chunk_size: size of chunks to load.
@@ -171,7 +172,7 @@ class DataLoader(BaseLoader):
         self.logger = logging.getLogger(__name__)
         # use the following prm to limit to loading only
         # one cycle or from cycle>x to cycle<x+n
-        # prms.Reader.limit_loaded_cycles = [cycle from, cycle to]
+        # config.reader.limit_loaded_cycles = [cycle from, cycle to]
 
         self.arbin_headers_normal = (
             self.get_headers_normal()
@@ -565,7 +566,7 @@ class DataLoader(BaseLoader):
             )
             # TODO 216: add order by on test_time as well in sql query
             summary_df = self._load_res_summary_table(conn, test_id)
-            if summary_df.empty and prms.Reader.use_cellpy_stat_file:
+            if summary_df.empty and config.reader.use_cellpy_stat_file:
                 txt = "\nCould not find any summary (stats-file)!"
                 txt += "\n -> issue make_summary(use_cellpy_stat_file=False)"
                 logging.debug(txt)
@@ -750,7 +751,7 @@ class DataLoader(BaseLoader):
             aux_global_data_df, aux_df, normal_df
         )
 
-        if summary_df.empty and prms.Reader.use_cellpy_stat_file:
+        if summary_df.empty and config.reader.use_cellpy_stat_file:
             txt = "\nCould not find any summary (stats-file)!"
             txt += "\n -> issue make_summary(use_cellpy_stat_file=False)"
             logging.debug(txt)
@@ -775,13 +776,13 @@ class DataLoader(BaseLoader):
         hfilesize = humanize_bytes(file_size)
         txt = f"File size: {file_size} ({hfilesize})"
         self.logger.debug(txt)
-        if file_size > prms.Instruments.Arbin.max_res_filesize:
+        if file_size > config.instruments.Arbin.max_res_filesize:
             error_message = "\nERROR (loader):\n"
             error_message += (
-                f"{hfilesize} > {humanize_bytes(prms.Instruments.Arbin.max_res_filesize)} "
+                f"{hfilesize} > {humanize_bytes(config.instruments.Arbin.max_res_filesize)} "
                 f"- File is too big!\n"
             )
-            error_message += "(edit prms.Instruments.Arbin ['max_res_filesize'])\n"
+            error_message += "(edit config.instruments.Arbin ['max_res_filesize'])\n"
             logging.critical(error_message)
             return False
         return True
@@ -996,16 +997,16 @@ class DataLoader(BaseLoader):
 
                 normal_df = normal_df.loc[~selector, :]
 
-        if prms.Reader.limit_loaded_cycles:
+        if config.reader.limit_loaded_cycles:
             logging.debug("Not yet tested for aux data")
-            if len(prms.Reader.limit_loaded_cycles) > 1:
-                c1, c2 = prms.Reader.limit_loaded_cycles
+            if len(config.reader.limit_loaded_cycles) > 1:
+                c1, c2 = config.reader.limit_loaded_cycles
                 selector = (
                     normal_df[self.arbin_headers_normal.cycle_index_txt] > c1
                 ) & (normal_df[self.arbin_headers_normal.cycle_index_txt] < c2)
 
             else:
-                c1 = prms.Reader.limit_loaded_cycles[0]
+                c1 = config.reader.limit_loaded_cycles[0]
                 selector = normal_df[self.arbin_headers_normal.cycle_index_txt] == c1
 
             normal_df = normal_df.loc[selector, :]
@@ -1113,7 +1114,7 @@ class DataLoader(BaseLoader):
 
         table_name_normal = TABLE_NAMES["normal"]
 
-        if prms.Reader.select_minimal:  # SETTING
+        if config.reader.select_minimal:  # SETTING
             columns = MINIMUM_SELECTION
             columns_txt = ", ".join(["%s"] * len(columns)) % tuple(columns)
         else:
@@ -1137,20 +1138,20 @@ class DataLoader(BaseLoader):
                 )
                 sql_4 += f"AND {self.arbin_headers_normal.step_index_txt}={bad_step}) "
 
-        if prms.Reader.limit_loaded_cycles:
-            if len(prms.Reader.limit_loaded_cycles) > 1:
+        if config.reader.limit_loaded_cycles:
+            if len(config.reader.limit_loaded_cycles) > 1:
                 sql_4 += "AND %s>%i " % (
                     self.arbin_headers_normal.cycle_index_txt,
-                    prms.Reader.limit_loaded_cycles[0],
+                    config.reader.limit_loaded_cycles[0],
                 )
                 sql_4 += "AND %s<%i " % (
                     self.arbin_headers_normal.cycle_index_txt,
-                    prms.Reader.limit_loaded_cycles[-1],
+                    config.reader.limit_loaded_cycles[-1],
                 )
             else:
                 sql_4 = "AND %s=%i " % (
                     self.arbin_headers_normal.cycle_index_txt,
-                    prms.Reader.limit_loaded_cycles[0],
+                    config.reader.limit_loaded_cycles[0],
                 )
 
         if data_points is not None:
@@ -1170,20 +1171,20 @@ class DataLoader(BaseLoader):
             current_memory_usage = sys.getsizeof(self)
             self.logger.debug(f"current memory usage: {current_memory_usage}")
 
-        if not prms.Instruments.Arbin.chunk_size:
+        if not config.instruments.Arbin.chunk_size:
             self.logger.debug("no chunk-size given")
             # memory here
             normal_df = pd.read_sql_query(sql=sa.text(sql), con=conn.connect())
             # memory here
             length_of_test = normal_df.shape[0]
         else:
-            self.logger.debug(f"chunk-size: {prms.Instruments.Arbin.chunk_size}")
+            self.logger.debug(f"chunk-size: {config.instruments.Arbin.chunk_size}")
             self.logger.debug("creating a pd.read_sql_query generator")
 
             normal_df_reader = pd.read_sql_query(
                 sql=sa.text(sql),
                 con=conn.connect(),
-                chunksize=prms.Instruments.Arbin.chunk_size,
+                chunksize=config.instruments.Arbin.chunk_size,
             )
             normal_df = None
             chunk_number = 0
@@ -1191,15 +1192,15 @@ class DataLoader(BaseLoader):
             self.logger.debug("iterating chunk-wise")
             for i, chunk in enumerate(normal_df_reader):
                 self.logger.debug(f"iteration number {i}")
-                if prms.Instruments.Arbin.max_chunks:
+                if config.instruments.Arbin.max_chunks:
                     self.logger.debug(
                         f"max number of chunks mode "
-                        f"({prms.Instruments.Arbin.max_chunks})"
+                        f"({config.instruments.Arbin.max_chunks})"
                     )
-                    if chunk_number < prms.Instruments.Arbin.max_chunks:
+                    if chunk_number < config.instruments.Arbin.max_chunks:
                         normal_df = pd.concat([normal_df, chunk], ignore_index=True)
                         self.logger.debug(
-                            f"chunk {i} of {prms.Instruments.Arbin.max_chunks}"
+                            f"chunk {i} of {config.instruments.Arbin.max_chunks}"
                         )
                     else:
                         break
@@ -1215,7 +1216,7 @@ class DataLoader(BaseLoader):
                             f"Last successfully loaded chunk number: {chunk_number}"
                         )
                         self.logger.error(
-                            f"Chunk size: {prms.Instruments.Arbin.chunk_size}"
+                            f"Chunk size: {config.instruments.Arbin.chunk_size}"
                         )
                         break
                 chunk_number += 1

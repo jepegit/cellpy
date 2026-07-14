@@ -1,4 +1,5 @@
 """ batmo outputs in BDF format. """
+import cellpy.config as config
 
 import pandas as pd
 
@@ -32,7 +33,7 @@ class DataLoader(TxtLoader):
     instrument_name = "batmo"
     raw_ext = "csv"
 
-    default_model = prms.Instruments.Batmo["default_model"]  # Required
+    default_model = config.instruments.Batmo.default_model  # Required
     supported_models = SUPPORTED_MODELS  # Required
 
     def _post_rename_headers(self, data):

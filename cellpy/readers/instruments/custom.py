@@ -2,6 +2,7 @@
 If no ``instrument_file`` is given (either directly or through the use
 of the ``::`` separator), the default instrument file (yaml) will be used.
 """
+import cellpy.config as config
 
 # This module works, but is by no means finished. The module is meant to
 # be developed further allowing for example
@@ -36,7 +37,7 @@ class DataLoader(AutoLoader, ABC):
             # currently using the name custom_instrument_definitions_file for this also
             # consider adding a separate config parameter for the default instrument file
             # e.g. local_instrument_default_file
-            instrument_file = prms.Instruments.custom_instrument_definitions_file
+            instrument_file = config.instruments.custom_instrument_definitions_file
         if not instrument_file:
             raise FileExistsError(
                 "Missing instrument definition file "
@@ -44,7 +45,7 @@ class DataLoader(AutoLoader, ABC):
             )
         if not Path(instrument_file).is_file():
             # searching in the Instruments folder:
-            instrument_dir = Path(prms.Paths.instrumentdir)
+            instrument_dir = Path(config.paths.instrumentdir)
             logging.debug(f"Looking for file in {instrument_dir}")
             instrument_file_in_instrument_dir = instrument_dir / instrument_file
             if not instrument_file_in_instrument_dir.is_file():

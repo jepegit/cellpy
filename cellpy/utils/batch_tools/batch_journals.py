@@ -11,6 +11,7 @@ from abc import ABC
 import pandas as pd
 
 from cellpy.exceptions import UnderDefined
+import cellpy.config as config
 from cellpy.parameters import prms
 from cellpy.parameters.internal_settings import (
     get_headers_journal,
@@ -73,7 +74,7 @@ class LabJournal(BaseJournal, ABC):
                 self.db_reader = None
                 return
             if db_reader == "default":
-                db_reader = prms.Db.db_type
+                db_reader = config.db.db_type
 
             if db_reader == "simple_excel_reader":
                 self.db_reader = dbreader.Reader()
@@ -174,9 +175,9 @@ class LabJournal(BaseJournal, ABC):
         else:
             file_name = pathlib.Path(file_name)
         if to_project_folder:
-            # When saving to project folder, use prms.Paths.outdatadir
+            # When saving to project folder, use config.paths.outdatadir
             file_name = file_name.with_suffix(".json").name
-            out_data_dir = prms.Paths.outdatadir
+            out_data_dir = config.paths.outdatadir
             project_dir = pathlib.Path(out_data_dir) / self.project
             file_name = project_dir / file_name
         self.file_name = file_name  # updates object (maybe not smart)
@@ -667,9 +668,9 @@ class LabJournal(BaseJournal, ABC):
         Args:
             file_name (str or pathlib.Path): journal file name (.json or .xlsx)
             paginate (bool): make project folders
-            to_project_folder (bool): if True, save journal file to prms.Paths.outdatadir/project/
+            to_project_folder (bool): if True, save journal file to config.paths.outdatadir/project/
                 (default False, saves to current directory)
-            duplicate_to_project_folder (bool): if True, copy journal file to prms.Paths.outdatadir/project/
+            duplicate_to_project_folder (bool): if True, copy journal file to config.paths.outdatadir/project/
                 after saving to current directory (default False)
             duplicate_to_local_folder (bool): Deprecated. For backward compatibility only.
                 If provided, it is ignored since the default behavior now saves to current directory.
@@ -750,9 +751,9 @@ class LabJournal(BaseJournal, ABC):
             self.paginate()
 
         if duplicate_to_project_folder:
-            # Copy to prms.Paths.outdatadir/project/ if requested
+            # Copy to config.paths.outdatadir/project/ if requested
             if self.project:
-                out_data_dir = prms.Paths.outdatadir
+                out_data_dir = config.paths.outdatadir
                 project_dir = pathlib.Path(out_data_dir) / self.project
                 project_dir.mkdir(parents=True, exist_ok=True)
                 target_file = project_dir / file_name.name
@@ -810,7 +811,7 @@ class LabJournal(BaseJournal, ABC):
         """Set appropriate folder names.
 
         Args:
-            use_outdatadir (bool): if True, use prms.Paths.outdatadir as base for all directories,
+            use_outdatadir (bool): if True, use config.paths.outdatadir as base for all directories,
                 otherwise use current_directory as base.
         """
         logging.debug("creating folder names")
@@ -819,7 +820,7 @@ class LabJournal(BaseJournal, ABC):
             if self.project and isinstance(self.project, (pathlib.Path, str)):
                 logging.debug("got project name")
                 logging.debug(self.project)
-                self.project_dir = os.path.join(prms.Paths.outdatadir, self.project)
+                self.project_dir = os.path.join(config.paths.outdatadir, self.project)
             else:
                 logging.critical(
                     "Could not create project dir (missing project definition)"
@@ -835,7 +836,7 @@ class LabJournal(BaseJournal, ABC):
             self.project_dir = pathlib.Path.cwd()
             if self.project and isinstance(self.project, (pathlib.Path, str)):
                 self.legacy_project_dir = os.path.join(
-                    prms.Paths.outdatadir, self.project
+                    config.paths.outdatadir, self.project
                 )
             else:
                 logging.critical(
@@ -970,7 +971,7 @@ class LabJournal(BaseJournal, ABC):
         self, cellpy_directory: pathlib.Path = None
     ) -> None:
         if cellpy_directory is None:
-            cellpy_directory = prms.Paths.cellpydatadir
+            cellpy_directory = config.paths.cellpydatadir
         try:
             pages = self.pages.copy()
             pages[hdr_journal.cellpy_file_name] = self.pages[
@@ -1034,7 +1035,7 @@ class LabJournal(BaseJournal, ABC):
         """generate a suitable file name for the experiment
 
         Args:
-            to_project_folder (bool): if True, save to prms.Paths.outdatadir/project/,
+            to_project_folder (bool): if True, save to config.paths.outdatadir/project/,
                 otherwise save to current directory (default False)
         """
         if not self.name:
@@ -1045,7 +1046,7 @@ class LabJournal(BaseJournal, ABC):
         if to_project_folder:
             if not self.project:
                 raise UnderDefined("project name not given")
-            out_data_dir = prms.Paths.outdatadir
+            out_data_dir = config.paths.outdatadir
             project_dir = pathlib.Path(out_data_dir) / self.project
             self.file_name = project_dir / file_name
         else:

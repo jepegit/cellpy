@@ -12,6 +12,7 @@ from dataclasses import asdict
 from ruamel.yaml import YAML
 from ruamel.yaml.error import YAMLError
 
+import cellpy.config as config
 from cellpy.config.legacy import (
     DEFAULT_FILENAME,
     DEFAULT_FILENAME_END,
@@ -66,7 +67,7 @@ def initialize():
 def _load_env_file():
     """Loads the environment file into ``os.environ`` (legacy OtherPath consumers)."""
 
-    env_file = pathlib.Path(prms.Paths.env_file)
+    env_file = pathlib.Path(config.paths.env_file)
     env_file_in_user_dir = pathlib.Path.home() / env_file.name
     if env_file.is_file():
         dotenv.load_dotenv(env_file)
@@ -264,7 +265,7 @@ def _save_current_prms_to_user_dir():
 def get_env_file_name():
     """Returns the location of the env-file"""
 
-    env_file = pathlib.Path(prms.Paths.env_file)
+    env_file = pathlib.Path(config.paths.env_file)
     return env_file
 
 
@@ -314,7 +315,7 @@ def _main():
     print("INFO:")
     info()
     print(prms)
-    pprint(str(prms.Batch.summary_plot_height_fractions), width=1)
+    pprint(str(config.batch.summary_plot_height_fractions), width=1)
 
 
 if __name__ == "__main__":

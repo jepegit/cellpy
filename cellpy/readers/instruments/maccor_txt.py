@@ -1,4 +1,5 @@
 """Maccor txt data"""
+import cellpy.config as config
 
 import pandas as pd
 
@@ -42,7 +43,7 @@ class DataLoader(TxtLoader):
     instrument_name = "maccor_txt"
     raw_ext = "txt"
 
-    default_model = prms.Instruments.Maccor["default_model"]  # Required
+    default_model = config.instruments.Maccor.default_model  # Required
     supported_models = SUPPORTED_MODELS  # Required
 
     @staticmethod
@@ -92,7 +93,7 @@ def _check_retrieve_file(n=1):
     import pathlib
 
     pd.options.display.max_columns = 100
-    # prms.Reader.sep = "\t"
+    # config.reader.sep = "\t"
     data_root = pathlib.Path(r"C:\scripting\cellpy_dev_resources")
     data_dir = data_root / r"2021_leafs_data\Charge-Discharge\Maccor series 4000"
     if n == 2:
@@ -112,7 +113,7 @@ def _check_dev_loader(name=None, model=None):
         name = check_retrieve_file()
 
     pd.options.display.max_columns = 100
-    # prms.Reader.sep = "\t"
+    # config.reader.sep = "\t"
 
     sep = "\t"
     loader1 = DataLoader(sep=sep, model=model)
@@ -154,7 +155,7 @@ def c_heck_loader(name=None, number=1, model="one"):
         name = check_retrieve_file(number)
     print(name)
     pd.options.display.max_columns = 100
-    # prms.Reader.sep = "\t"
+    # config.reader.sep = "\t"
 
     loader = DataLoader(sep="\t", model=model)
     dd = loader.loader(name)

@@ -49,7 +49,7 @@ def check_connection(
     the OtherPath class has been updated to work with python >= 3.12.
 
     Args:
-        p (str, pathlib.Path or OtherPath, optional): The path to check. Defaults to prms.Paths.rawdatadir.
+        p (str, pathlib.Path or OtherPath, optional): The path to check. Defaults to config.paths.rawdatadir.
 
     """
     # Note: users run this function from helpers.py
@@ -61,8 +61,9 @@ def check_connection(
 
         # need to import prms here to avoid circular imports:
         from cellpy import prms
+        import cellpy.config as config
 
-        p = prms.Paths.rawdatadir
+        p = config.paths.rawdatadir
 
     # recreating the OtherPath object to OtherPath since core is imported in the top __init__.py
     # file resulting in isinstance(p, OtherPath) to be False

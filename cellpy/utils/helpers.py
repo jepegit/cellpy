@@ -10,6 +10,7 @@ import pandas as pd
 from scipy import stats
 
 import cellpy
+import cellpy.config as config
 from cellpy import prms
 from cellpy.parameters.internal_settings import (
     get_headers_journal,
@@ -175,7 +176,7 @@ def update_journal_cellpy_data_dir(
 
     Args:
         pages: the (batch.experiment.)journal.pages object (pandas.DataFrame)
-        new_path: the base path (uses prms.Paths.cellpydatadir if not given)
+        new_path: the base path (uses config.paths.cellpydatadir if not given)
         from_path: type of path to convert from.
         to_path: type of path to convert to.
 
@@ -186,7 +187,7 @@ def update_journal_cellpy_data_dir(
     # TODO: move this to batch?
 
     if new_path is None:
-        new_path = prms.Paths.cellpydatadir
+        new_path = config.paths.cellpydatadir
 
     from_path = getattr(pathlib, from_path)
     to_path = getattr(pathlib, to_path)
@@ -1589,7 +1590,7 @@ def load_and_save_resfile(filename, outfile=None, outdir=None, mass=1.00):
     d = CellpyCell()
 
     if not outdir:
-        outdir = prms.Paths.cellpydatadir
+        outdir = config.paths.cellpydatadir
 
     if not outfile:
         outfile = os.path.basename(filename).split(".")[0] + ".h5"

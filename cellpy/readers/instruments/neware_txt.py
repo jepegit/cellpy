@@ -37,6 +37,7 @@
 
 5. Put a file in test_data and create at least one test.
 """
+import cellpy.config as config
 
 import pandas as pd
 
@@ -77,7 +78,7 @@ class DataLoader(TxtLoader):
     instrument_name = "neware_txt"
     raw_ext = "csv"
 
-    default_model = prms.Instruments.Neware["default_model"]  # Required
+    default_model = config.instruments.Neware.default_model  # Required
     supported_models = SUPPORTED_MODELS  # Required
 
     @staticmethod

@@ -15,6 +15,7 @@ from cellpy.exceptions import UnderDefined
 from cellpy.parameters.internal_settings import get_headers_journal, get_headers_summary
 from cellpy.utils.batch_tools.batch_core import BasePlotter
 from cellpy.utils.batch_tools.batch_experiments import CyclingExperiment
+import cellpy.config as config
 
 
 plotly_available = importlib.util.find_spec("plotly") is not None
@@ -92,7 +93,7 @@ def create_plot_option_dicts(
         try:
             # palette = bokeh.palettes.brewer['YlGnBu']
             palette = bokeh.palettes.d3["Category20"]
-            # palette = bokeh.palettes.brewer[prms.Batch.bokeh_palette']
+            # palette = bokeh.palettes.brewer[config.batch.bokeh_palette']
         except (NameError, AttributeError) as e:
             logging.info(f"could not create the palette {e}")
             palette = {
@@ -341,7 +342,7 @@ def plot_cycle_life_summary_bokeh(
     if height_fractions is None:
         height_fractions = [0.3, 0.4, 0.3]
     logging.debug(f"   * stacking and plotting")
-    logging.debug(f"      backend: {prms.Batch.backend}")
+    logging.debug(f"      backend: {config.batch.backend}")
     logging.debug(f"      received kwargs: {kwargs}")
 
     idx = pd.IndexSlice
@@ -587,7 +588,7 @@ def plot_cycle_life_summary_matplotlib(
     )
 
     logging.debug(f"   * stacking and plotting")
-    logging.debug(f"      backend: {prms.Batch.backend}")
+    logging.debug(f"      backend: {config.batch.backend}")
     logging.debug(f"      received kwargs: {kwargs}")
 
     # Not used (yet?) - requires a more advanced generation of sub-plots
@@ -726,8 +727,8 @@ def summary_plotting_engine(**kwargs):
     experiments = kwargs.pop("experiments")
     farms = kwargs.pop("farms")
     barn = None
-    backend = prms.Batch.backend
-    logging.debug(f"Using {prms.Batch.backend} for plotting summaries")
+    backend = config.batch.backend
+    logging.debug(f"Using {config.batch.backend} for plotting summaries")
     if backend not in available_plotting_backends:
         warnings.warn(f"The back-end {backend} is not available.")
         warnings.warn(f"Available back-ends are: {available_plotting_backends}")
@@ -760,7 +761,7 @@ def summary_plotting_engine(**kwargs):
 
 def generate_summary_plots(experiment, **kwargs):
     pages = experiment.journal.pages
-    backend = prms.Batch.backend
+    backend = config.batch.backend
     plotters = {
         "plotly": plot_cycle_life_summary_plotly,
         "seaborn": plot_cycle_life_summary_seaborn,
@@ -1353,20 +1354,20 @@ def _get_ranges(summaries, plotted_summaries, defaults=None):
 def _plotting_data_legacy(pages, summaries, width, height, height_fractions, **kwargs):
     # sub-sub-engine
     canvas = None
-    if prms.Batch.backend == "bokeh":
+    if config.batch.backend == "bokeh":
         canvas = plot_cycle_life_summary_bokeh(
             pages, summaries, width, height, height_fractions, **kwargs
         )
-    elif prms.Batch.backend == "plotly":
+    elif config.batch.backend == "plotly":
         print("plotly not implemented yet")
 
-    elif prms.Batch.backend == "matplotlib":
+    elif config.batch.backend == "matplotlib":
         logging.info("[obs! experimental]")
         canvas = plot_cycle_life_summary_matplotlib(
             pages, summaries, width, height, height_fractions, **kwargs
         )
     else:
-        logging.info(f"the {prms.Batch.backend} back-end is not implemented yet.")
+        logging.info(f"the {config.batch.backend} back-end is not implemented yet.")
 
     return canvas
 
@@ -1376,11 +1377,11 @@ def _preparing_data_and_plotting_legacy(**kwargs):
     logging.debug("    - _preparing_data_and_plotting_legacy")
     experiments = kwargs.pop("experiments")
     farms = kwargs.pop("farms")
-    width = kwargs.pop("width", prms.Batch.summary_plot_width)
-    height = kwargs.pop("height", prms.Batch.summary_plot_height)
+    width = kwargs.pop("width", config.batch.summary_plot_width)
+    height = kwargs.pop("height", config.batch.summary_plot_height)
 
     height_fractions = kwargs.pop(
-        "height_fractions", prms.Batch.summary_plot_height_fractions
+        "height_fractions", config.batch.summary_plot_height_fractions
     )
 
     for experiment in experiments:

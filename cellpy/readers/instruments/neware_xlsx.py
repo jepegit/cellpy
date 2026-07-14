@@ -1,4 +1,5 @@
 """neware xlsx exported data"""
+import cellpy.config as config
 
 from dataclasses import dataclass
 import datetime
@@ -20,7 +21,7 @@ from cellpy.readers.instruments.base import BaseLoader
 from cellpy.readers.instruments.processors import post_processors as pp
 from pathlib import Path
 
-DEBUG_MODE = prms.Reader.diagnostics  # not used
+DEBUG_MODE = config.reader.diagnostics  # not used
 ALLOW_MULTI_TEST_FILE = prms._allow_multi_test_file  # not used
 DATE_TIME_FORMAT = prms._date_time_format  # not used
 
