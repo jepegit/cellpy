@@ -2,7 +2,6 @@ import logging
 import os
 import re
 import warnings
-from dataclasses import asdict
 from datetime import datetime
 from typing import List, Optional
 
@@ -18,7 +17,9 @@ class DbSheetCols:
     # Note to developers: this should only be used for this Excell reader
     # (it works, and that is its only reason to still exist)
     def __init__(self):
-        db_cols_from_prms = asdict(config.db_cols)
+        # config.db_cols is a pydantic model since Stage 1.8 M2 (#453);
+        # dataclasses.asdict() no longer applies.
+        db_cols_from_prms = config.db_cols.model_dump()
         self.keys = []
         self.headers = []
         for table_key, value in db_cols_from_prms.items():

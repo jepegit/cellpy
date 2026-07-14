@@ -18,7 +18,8 @@ def _coerce_otherpath(value: Any) -> OtherPath:
     return OtherPath(value)
 
 
-def _serialize_otherpath(value: OtherPath) -> str:
+def _serialize_otherpath(value: Any) -> str:
+    # defensive: tolerate raw strings that bypassed assignment validation
     return str(value).replace("\\", "/")
 
 
@@ -35,8 +36,9 @@ def _coerce_path(value: Any) -> Path:
     return Path(value)
 
 
-def _serialize_path(value: Path) -> str:
-    return value.as_posix()
+def _serialize_path(value: Any) -> str:
+    # defensive: tolerate raw strings that bypassed assignment validation
+    return Path(value).as_posix()
 
 
 PathField = Annotated[
