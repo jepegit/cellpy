@@ -481,7 +481,8 @@ class DataLoader(BaseLoader):
         if sql is None:
             sql = f"select * from {table_name}"
         self.logger.debug(f"sql statement: {sql}")
-        df = pd.read_sql_query(sql=sa.text(sql), con=conn.connect())
+        with conn.connect() as connection:
+            df = pd.read_sql_query(sql=sa.text(sql), con=connection)
         return df
 
     def _make_name_from_frame(self, df, aux_index, data_type, dx_dt=False):
@@ -522,68 +523,71 @@ class DataLoader(BaseLoader):
             time_0 = time.time()
 
         conn = self._get_connection_or_engine(temp_filename)
+        try:
+            self.logger.debug("reading global data table")
 
-        self.logger.debug("reading global data table")
+            global_data_df = self._query_table(table_name=table_name_global, conn=conn)
+            tests = global_data_df[self.arbin_headers_normal.test_id_txt]
+            number_of_sets = len(tests)
+            self.logger.debug(f"number of datasets: {number_of_sets}")
 
-        global_data_df = self._query_table(table_name=table_name_global, conn=conn)
-        tests = global_data_df[self.arbin_headers_normal.test_id_txt]
-        number_of_sets = len(tests)
-        self.logger.debug(f"number of datasets: {number_of_sets}")
+            if dataset_number is not None:
+                self.logger.info(f"Dataset number given: {dataset_number}")
+                self.logger.info(f"Available dataset numbers: {tests}")
+                # check if dataset_number is valid
+                #
 
-        if dataset_number is not None:
-            self.logger.info(f"Dataset number given: {dataset_number}")
-            self.logger.info(f"Available dataset numbers: {tests}")
-            # check if dataset_number is valid
-            #
+            else:
+                dataset_number = None
 
-        else:
-            dataset_number = None
+            data = self._init_data(file_name, global_data_df, dataset_number)
+            self.logger.debug("reading raw-data")
+            test_id = data._internal_test_number
 
-        data = self._init_data(file_name, global_data_df, dataset_number)
-        self.logger.debug("reading raw-data")
-        test_id = data._internal_test_number
+            # --------- read stats-data (summary-data) ---------------------
 
-        # --------- read stats-data (summary-data) ---------------------
-
-        # --------- read raw-data (normal-data) ------------------------
-        length_of_test, normal_df = self._load_res_normal_table(
-            conn, test_id, bad_steps, data_points
-        )
-        # --------- read auxiliary data (aux-data) ---------------------
-        normal_df = self._load_win_res_auxiliary_table(
-            conn, normal_df, table_name_aux, table_name_aux_global, test_id
-        )
-        # FIX: error in order by since datetime is not accurate enough (also need sorting on test-time)
-        #   sorting dataframe:
-        normal_df = normal_df.sort_values(
-            by=[
-                self.arbin_headers_normal.datetime_txt,
-                self.arbin_headers_normal.test_time_txt,
-            ],
-            ascending=True,
-        )
-        # TODO 216: add order by on test_time as well in sql query
-        summary_df = self._load_res_summary_table(conn, test_id)
-        if summary_df.empty and prms.Reader.use_cellpy_stat_file:
-            txt = "\nCould not find any summary (stats-file)!"
-            txt += "\n -> issue make_summary(use_cellpy_stat_file=False)"
-            logging.debug(txt)
-            # TODO: Enforce creating a summary df or modify renaming summary df (post process part)
-        # normal_df = normal_df.set_index("Data_Point")
-
-        data.summary = summary_df
-        if DEBUG_MODE:
-            mem_usage = normal_df.memory_usage()
-            logging.debug(
-                f"memory usage for "
-                f"loaded data: \n{mem_usage}"
-                f"\ntotal: {humanize_bytes(mem_usage.sum())}"
+            # --------- read raw-data (normal-data) ------------------------
+            length_of_test, normal_df = self._load_res_normal_table(
+                conn, test_id, bad_steps, data_points
             )
-            logging.debug(f"time used: {(time.time() - time_0):2.4f} s")
+            # --------- read auxiliary data (aux-data) ---------------------
+            normal_df = self._load_win_res_auxiliary_table(
+                conn, normal_df, table_name_aux, table_name_aux_global, test_id
+            )
+            # FIX: error in order by since datetime is not accurate enough (also need sorting on test-time)
+            #   sorting dataframe:
+            normal_df = normal_df.sort_values(
+                by=[
+                    self.arbin_headers_normal.datetime_txt,
+                    self.arbin_headers_normal.test_time_txt,
+                ],
+                ascending=True,
+            )
+            # TODO 216: add order by on test_time as well in sql query
+            summary_df = self._load_res_summary_table(conn, test_id)
+            if summary_df.empty and prms.Reader.use_cellpy_stat_file:
+                txt = "\nCould not find any summary (stats-file)!"
+                txt += "\n -> issue make_summary(use_cellpy_stat_file=False)"
+                logging.debug(txt)
+                # TODO: Enforce creating a summary df or modify renaming summary df (post process part)
+            # normal_df = normal_df.set_index("Data_Point")
 
-        data.raw = normal_df
-        data.raw_data_files_length.append(length_of_test)
-        return data
+            data.summary = summary_df
+            if DEBUG_MODE:
+                mem_usage = normal_df.memory_usage()
+                logging.debug(
+                    f"memory usage for "
+                    f"loaded data: \n{mem_usage}"
+                    f"\ntotal: {humanize_bytes(mem_usage.sum())}"
+                )
+                logging.debug(f"time used: {(time.time() - time_0):2.4f} s")
+
+            data.raw = normal_df
+            data.raw_data_files_length.append(length_of_test)
+            return data
+        finally:
+            if conn is not None:
+                conn.dispose()
 
     def _load_win_res_auxiliary_table(
         self, conn, normal_df, table_name_aux, table_name_aux_global, test_id
