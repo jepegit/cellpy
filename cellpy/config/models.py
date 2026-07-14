@@ -13,7 +13,11 @@ from cellpy.config.types import LimitLoadedCycles, OtherPathField, PathField
 class PathsConfig(BaseModel):
     """Paths used in cellpy."""
 
-    model_config = ConfigDict(arbitrary_types_allowed=True)
+    # validate_assignment keeps the mutable-session ergonomics *validated*
+    # (config plan §3.1): assigning a plain string re-runs the PathField /
+    # OtherPathField coercion instead of storing a raw str that breaks
+    # serialization later (seen via `cellpy info --params` after batch runs).
+    model_config = ConfigDict(arbitrary_types_allowed=True, validate_assignment=True)
 
     outdatadir: PathField = Path.cwd()
     rawdatadir: OtherPathField = Path.cwd()

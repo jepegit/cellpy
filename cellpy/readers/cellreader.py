@@ -71,6 +71,7 @@ from cellpy.parameters.internal_settings import (
 # pipeline to cellpy-core. OldCellpyCellCore is the legacy bridge that restores the
 # old headers/units (identical to cellpy.parameters.internal_settings) that cellpy
 # still expects. cellpy-core's __init__ is intentionally empty, so import submodules.
+from cellpycore import units as core_units
 from cellpycore.cell_core import OldCellpyCellCore
 
 from cellpy.readers.cellpy_file import dtype as cellpy_file_dtype
@@ -4018,104 +4019,23 @@ class CellpyCell:
         nom_cap_specifics=None,
         convert_charge_units=False,
     ):
-        """Get the nominal capacity as absolute value."""
+        """Get the nominal capacity as absolute value.
 
-        # TODO: implement handling of edge-cases (i.e. the raw capacity is not in absolute values)
-        if self.debug:
-            print("nominal_capacity_as_absolute".center(80, "="))
-            print(f"{value=}")
-            print(f"{specific=}")
-            print(f"{nom_cap_specifics=}")
-            print(f"{convert_charge_units=}")
-            print(80 * "-")
-
-        if nom_cap_specifics is None:
-            nom_cap_specifics = "gravimetric"
-
-        if specific is None:
-            if nom_cap_specifics == "gravimetric":
-                specific = self.data.mass
-            elif nom_cap_specifics == "areal":
-                specific = self.data.active_electrode_area
-
-            # TODO: implement volumetric
-            elif nom_cap_specifics == "volumetric":
-                raise NotImplementedError("volumetric not implemented yet")
-
-        if value is None:
-            value = self.data.nom_cap
-
-        value = ds.Q(value, self.cellpy_units["nominal_capacity"])
-
-        if nom_cap_specifics == "gravimetric":
-            specific = ds.Q(specific, self.cellpy_units["mass"])
-        elif nom_cap_specifics == "areal":
-            specific = ds.Q(specific, self.cellpy_units["area"])
-        elif nom_cap_specifics == "absolute":
-            specific = 1
-
-        # TODO: implement volumetric
-        elif nom_cap_specifics == "volumetric":
-            raise NotImplementedError("volumetric not implemented yet")
-
-        if convert_charge_units:
-            conversion_factor_charge = ds.Q(1, self.cellpy_units["charge"]) / ds.Q(
-                1, self.data.raw_units["charge"]
-            )
-        else:
-            conversion_factor_charge = 1.0
-
-        try:
-            absolute_value = (
-                (value * conversion_factor_charge * specific)
-                .to_reduced_units()
-                .to("Ah")
-            )
-        except externals.pint.errors.PerformanceWarning as e:
-            print(" DimensionalityError ".center(80, "="))
-            print("Could not convert nominal capacity to absolute value!")
-            print(
-                "This is probably because the nominal capacity is given in "
-                "different unit than the given specifics."
-            )
-            print(
-                " - Maybe you have given nominal capacity in mAh/cm**2 and your "
-                "specifics is set to 'gravimetric'?"
-            )
-            print(
-                " - Maybe you have given nominal capacity in mAh/g and your "
-                "specifics is set to 'areal'?"
-            )
-            print("Please check your input parameters!")
-            print(
-                "\n[hint 1] try to set the parameter 'nom_cap_specifics' in the get function:\n"
-            )
-            print(
-                "    c = cellpy.get(filename, area=1.55, nom_cap='1.2 mAh/cm**2', nom_cap_specifics='areal')"
-            )
-            print(
-                "\n[hint 2] try to set it on the cellpy object directly after loading, "
-                "\n  but before processing (making the step-table etc):\n"
-            )
-            print("    c = cellpy.get(filename, auto_summary=False)")
-            print("    c.nom_cap_specifics = 'areal'")
-            print("    ... # set other stuff if needed")
-            print("    c.make_step_table()")
-            print("    c.make_summary()")
-            print("\nRe-raising the exception.")
-            print(80 * "=")
-            raise e
-
-        if self.debug:
-            print(f"{self.mass=}")
-            print(f"{self.active_electrode_area=}")
-            print(f"{self.nom_cap=}")
-            print(f"{self.cellpy_units=}")
-            print(
-                f"nominal capacity: {value} [{self.cellpy_units.nominal_capacity}] -> {absolute_value:.3f} [Ah]"
-            )
-            print(80 * "=")
-        return absolute_value.m
+        Delegated to ``cellpycore.units.nominal_capacity_as_absolute``
+        (#451, unit plan Phase 2). A ``DimensionalityError`` here usually
+        means the nominal capacity is given in a different unit than the
+        chosen ``nom_cap_specifics`` — e.g. ``nom_cap='1.2 mAh/cm**2'`` with
+        gravimetric specifics; pass ``nom_cap_specifics='areal'`` (or set it
+        on the cell before processing).
+        """
+        return core_units.nominal_capacity_as_absolute(
+            data=self.data,
+            value=value,
+            specific=specific,
+            nom_cap_specifics=nom_cap_specifics or "gravimetric",
+            convert_charge_units=convert_charge_units,
+            cellpy_units=self.cellpy_units,
+        )
 
     def with_cellpy_unit(self, parameter, as_str=False):
         """Return quantity as `pint.Quantity` object."""
@@ -4157,34 +4077,24 @@ class CellpyCell:
         Returns (numeric):
             the value in cellpy units
         """
-        logging.debug(f"value {value} is numeric? {isinstance(value, numbers.Number)}")
-        logging.debug(
-            f"value {value} is a pint quantity? {isinstance(value, externals.pint.Quantity)}"
+        # Delegated to cellpycore.units.convert_value (#451); pint Quantity
+        # inputs are handled here since core's public API takes plain values.
+        if isinstance(value, externals.pint.Quantity):
+            return value.to(self.cellpy_units[physical_property]).m
+        try:
+            raw_units = self.data.raw_units
+        except NoDataFound:
+            raise NoDataFound(
+                "If you dont have any cells you cannot convert"
+                " values to cellpy units without providing what"
+                " unit to convert from!"
+            )
+        return core_units.convert_value(
+            value,
+            physical_property,
+            from_units=raw_units,
+            to_units=self.cellpy_units,
         )
-
-        if not isinstance(value, externals.pint.Quantity):
-            if isinstance(value, numbers.Number):
-                try:
-                    value = ds.Q(value, self.data.raw_units[physical_property])
-                    logging.debug(f"With unit from raw-units: {value}")
-                except NoDataFound:
-                    raise NoDataFound(
-                        "If you dont have any cells you cannot convert"
-                        " values to cellpy units without providing what"
-                        " unit to convert from!"
-                    )
-                except KeyError as e:
-                    raise KeyError(
-                        "You have to provide a valid physical_property"
-                    ) from e
-            elif isinstance(value, tuple):
-                value = ds.Q(*value)
-            else:
-                value = ds.Q(value)
-
-        value = value.to(self.cellpy_units[physical_property])
-
-        return value.m
 
     def unit_scaler_from_raw(self, unit, physical_property):
         """Get the conversion factor going from raw to given unit.
@@ -4197,14 +4107,10 @@ class CellpyCell:
         Returns (numeric):
             conversion factor (scaler)
         """
-        logging.debug(
-            f"value {unit} is a pint quantity? {isinstance(unit, externals.pint.Quantity)}"
+        # Delegated to cellpycore.units.calculate_scaler (#451).
+        return core_units.calculate_scaler(
+            self.data.raw_units[physical_property], unit
         )
-
-        old_unit = self.data.raw_units[physical_property]
-        value = ds.Q(1, old_unit)
-        value = value.to(unit)
-        return value.m
 
     def get_converter_to_specific(
         self,
@@ -4232,49 +4138,20 @@ class CellpyCell:
         """
         # TODO @jepe: implement handling of edge-cases
         # TODO @jepe: fix all the instrument readers (replace floats in raw_units with strings)
+        # Delegated to cellpycore.units (#451, unit plan Phase 2); the core
+        # port is the extended verbatim copy, guarded by converter-parity
+        # fixtures on both sides.
+        if mode is None:
+            return 1.0
         if dataset is None:
             dataset = self.data
-
-        new_units = to_units or self.cellpy_units
-        old_units = from_units or dataset.raw_units
-
-        if mode == "gravimetric":
-            value = value or dataset.mass
-            value = ds.Q(value, new_units["mass"])
-            to_unit_specific = ds.Q(1.0, new_units["specific_gravimetric"])
-
-        elif mode == "areal":
-            value = value or dataset.active_electrode_area
-            value = ds.Q(value, new_units["area"])
-            to_unit_specific = ds.Q(1.0, new_units["specific_areal"])
-
-        elif mode == "volumetric":
-            value = value or dataset.volume
-            value = ds.Q(value, new_units["volume"])
-            to_unit_specific = ds.Q(1.0, new_units["specific_volumetric"])
-
-        elif mode == "absolute":
-            value = ds.Q(1.0, None)
-            to_unit_specific = ds.Q(1.0, None)
-
-        elif mode is None:
-            return 1.0
-
-        else:
-            logging.debug(f"mode={mode} not supported!")
-            return 1.0
-
-        from_unit_cap = ds.Q(1.0, old_units["charge"])
-        to_unit_cap = ds.Q(1.0, new_units["charge"])
-
-        # from unit is always in absolute values:
-        from_unit = from_unit_cap
-
-        to_unit = to_unit_cap / to_unit_specific
-
-        conversion_factor = (from_unit / to_unit / value).to_reduced_units()
-        logging.debug(f"conversion factor: {conversion_factor}")
-        return conversion_factor.m
+        return core_units.get_converter_to_specific(
+            data=dataset,
+            value=value,
+            from_units=from_units,
+            to_units=to_units or self.cellpy_units,
+            mode=mode,
+        )
 
     def _set_mass(self, value):
         # TODO: replace with setter
@@ -4931,15 +4808,10 @@ class CellpyCell:
         # cellpy-core takes unit conversions by value: cellpy (the consumer, which
         # owns cellpy_units and pint) computes the factors and passes them in, so
         # the core summary engine needs no pint.
-        current_conversion_factor = float(
-            (
-                ds.Q(1.0, data.raw_units["current"])
-                / ds.Q(1.0, self.cellpy_units["current"])
-            )
-            .to_reduced_units()
-            .magnitude
+        current_conversion_factor = core_units.calculate_current_conversion_factor(
+            data.raw_units["current"], to_units=self.cellpy_units
         )
-        specific_converters = {
+        specific_conversion_factors = {
             mode: self.get_converter_to_specific(
                 dataset=data, mode=mode, to_units=self.cellpy_units
             )
@@ -4957,7 +4829,7 @@ class CellpyCell:
             nom_cap_abs=nom_cap_abs,
             normalization_cycles=normalization_cycles,
             specifics=specifics,
-            specific_converters=specific_converters,
+            specific_conversion_factors=specific_conversion_factors,
         )
 
         if sort_my_columns:

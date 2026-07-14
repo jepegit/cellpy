@@ -1,5 +1,7 @@
 """Set up logger instance"""
-import cellpy.config as config
+# distinct alias: setup_logging shadows the name ``config`` with the
+# logging.json dict, which broke the M2 rewrite's config.paths lookup (#453)
+import cellpy.config as cellpy_config
 
 import datetime
 import json
@@ -59,7 +61,7 @@ def setup_logging(
         elif custom_log_dir:
             log_dir = custom_log_dir
         else:
-            log_dir = os.path.abspath(config.paths.filelogdir)
+            log_dir = os.path.abspath(cellpy_config.paths.filelogdir)
 
         if not os.path.isdir(log_dir):
             warning_txt = (
