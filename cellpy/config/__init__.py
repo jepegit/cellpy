@@ -1,7 +1,7 @@
-"""Parallel pydantic-settings configuration stack (issue #452).
+"""Parallel pydantic-settings configuration stack (issues #452, #453).
 
-Nothing in legacy ``prms`` imports this package yet — it is built alongside the old
-system for parity testing and will replace it in #453.
+Production code should use ``cellpy.config`` directly. Legacy ``cellpy.parameters.prms``
+forwards here via a deprecated shim.
 """
 
 from __future__ import annotations

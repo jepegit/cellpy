@@ -60,9 +60,9 @@ def test_make_new_cell_uses_warn_once():
         make_new_cell()
         make_new_cell()
 
-    assert len(caught) == 1
-    assert "make_new_cell is deprecated" in str(caught[0].message)
-    assert "CellpyCell.vacant" in str(caught[0].message)
+    make_new_cell_warnings = [w for w in caught if "make_new_cell" in str(w.message)]
+    assert len(make_new_cell_warnings) == 1
+    assert "CellpyCell.vacant" in str(make_new_cell_warnings[0].message)
 
 
 @pytest.mark.essential

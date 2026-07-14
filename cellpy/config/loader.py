@@ -34,6 +34,7 @@ class LoadOptions:
     cwd: Path | None = None
     skip_files: bool = False
     skip_env: bool = False
+    legacy_yaml_file: Path | None = None
 
 
 @dataclass
@@ -68,11 +69,29 @@ def _read_toml(path: Path) -> dict[str, Any]:
 def _deep_merge(base: dict[str, Any], overlay: dict[str, Any]) -> dict[str, Any]:
     merged = dict(base)
     for key, value in overlay.items():
+        if value is None:
+            continue
         if key in merged and isinstance(merged[key], dict) and isinstance(value, dict):
             merged[key] = _deep_merge(merged[key], value)
         else:
             merged[key] = value
     return merged
+
+
+def _strip_none_values(payload: dict[str, Any]) -> dict[str, Any]:
+    """Drop ``None`` entries (legacy YAML often omits or nulls optional fields)."""
+
+    cleaned: dict[str, Any] = {}
+    for key, value in payload.items():
+        if value is None:
+            continue
+        if isinstance(value, dict):
+            nested = _strip_none_values(value)
+            if nested:
+                cleaned[key] = nested
+        else:
+            cleaned[key] = value
+    return cleaned
 
 
 def _collect_env_overrides(env_file: Path | None) -> dict[str, Any]:
@@ -132,12 +151,23 @@ def load_config(
 
     user_file_path: Path | None = None
     if not opts.skip_files:
+        from cellpy.config.legacy import find_legacy_yaml_file, load_legacy_yaml_dict
+
         user_file = opts.user_config_file or user_config_path()
+        user_toml_loaded = False
         if user_file.is_file():
             user_file_path = user_file
+            user_toml_loaded = True
             user_data = _read_toml(user_file)
             merged = _deep_merge(merged, user_data)
             _record_layer(registry, SourceLayer.USER_FILE, user_data)
+
+        if not user_toml_loaded:
+            legacy_path = opts.legacy_yaml_file or find_legacy_yaml_file()
+            if legacy_path is not None and legacy_path.is_file():
+                legacy_data = load_legacy_yaml_dict(legacy_path)
+                merged = _deep_merge(merged, legacy_data)
+                _record_layer(registry, SourceLayer.USER_FILE, legacy_data)
 
         project_file = opts.project_config_file
         if project_file is None and not opts.skip_files:
@@ -161,10 +191,10 @@ def load_config(
             _record_layer(registry, SourceLayer.ENV, env_data)
 
     if overrides:
-        merged = _deep_merge(merged, overrides)
+        merged = _deep_merge(merged, _strip_none_values(overrides))
         _record_layer(registry, SourceLayer.RUNTIME, overrides)
 
-    config = CellpyConfig.model_validate(merged)
+    config = CellpyConfig.model_validate(_strip_none_values(merged))
     return LoadResult(config=config, provenance=registry)
 
 

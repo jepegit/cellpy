@@ -290,14 +290,9 @@ class MaterialsClass(CellPyDataConfig):
     default_nom_cap_specifics: str = "gravimetric"
 
 
-Paths = PathsClass()
-FileNames = FileNamesClass()
-Reader = ReaderClass()
-Db = DbClass()
-DbCols = DbColsClass()
-CellInfo = CellInfoClass()
-Materials = MaterialsClass()
-Batch = BatchClass(backend="plotly")
+
+
+# Section singletons removed — access via deprecated shim (``__getattr__`` → config).
 
 
 # ------------------------------------------------------------------------------
@@ -349,16 +344,6 @@ Neware = externals.box.Box(_Neware)
 
 _Batmo = {"default_model": "bdf"}
 Batmo = externals.box.Box(_Batmo)
-
-Instruments = InstrumentsClass(
-    tester=None,  # TODO: moving this to DataSetClass (deprecate)
-    custom_instrument_definitions_file=None,
-    Arbin=Arbin,
-    Maccor=Maccor,
-    Neware=Neware,
-    Batmo=Batmo,
-)
-
 
 # ------------------------------------------------------------------------------
 # Other secret- or non-config (only for developers and super-users)
@@ -438,3 +423,12 @@ def _set_arbin_res_subprocess_exporter(sub_process_path: str):
     Instruments.Arbin.use_subprocess = True
     Instruments.Arbin.detect_subprocess_need = False
     Instruments.Arbin.sub_process_path = sub_process_path
+
+
+from cellpy.parameters._shim import _SHIM_SECTIONS, _get_shim_section
+
+
+def __getattr__(name: str):
+    if name in _SHIM_SECTIONS:
+        return _get_shim_section(name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
