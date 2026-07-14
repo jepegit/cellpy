@@ -500,12 +500,16 @@ def test_check_file_ids(parameters):
     assert check
 
 
-def test_check_file_ids_external_not_accessible(parameters):
+def test_check_file_ids_external_not_accessible(parameters, monkeypatch):
     from cellpy import cellreader
 
     c = cellreader.CellpyCell()
     cellpy_file = OtherPath(parameters.cellpy_file_path_external)
     raw_file = OtherPath(parameters.res_file_path)
+
+    # External OtherPath assumes remote files exist; simulate inaccessible file
+    # without opening a live SCP connection (read_fid_table would hang/time out).
+    monkeypatch.setattr(cellpy_file, "is_file", lambda *args, **kwargs: False)
 
     print(f"{cellpy_file=} :: {type(cellpy_file)=}")
     print(f"{raw_file=} :: {type(raw_file)=}")
@@ -562,8 +566,8 @@ def test_pack_meta_convert2fid_table(parameters):
 
 
 def test_extract_fids_from_cellpy_file(parameters, tmp_path):
-    from cellpy import cellreader
     from cellpy import prms
+    from cellpy.readers.cellpy_file.read import extract_fids_from_cellpy_file
 
     import pandas as pd
 
@@ -572,9 +576,8 @@ def test_extract_fids_from_cellpy_file(parameters, tmp_path):
 
     cellpy_file = OtherPath(parameters.cellpy_file_path)
 
-    c = cellreader.CellpyCell()
     with pd.HDFStore(cellpy_file) as store:
-        fid_table, fid_table_selected = c._extract_fids_from_cellpy_file(
+        fid_table, fid_table_selected = extract_fids_from_cellpy_file(
             fid_dir, parent_level, store
         )
 
@@ -586,7 +589,7 @@ def test_extract_fids_from_cellpy_file(parameters, tmp_path):
     fids0 = c0.data.raw_data_files
 
     with pd.HDFStore(new_cellpy_file_path) as store:
-        fid_table2, fid_table_selected2 = c._extract_fids_from_cellpy_file(
+        fid_table2, fid_table_selected2 = extract_fids_from_cellpy_file(
             fid_dir, parent_level, store
         )
     assert fid_table["raw_data_name"][0] == fid_table2["raw_data_name"][0]
