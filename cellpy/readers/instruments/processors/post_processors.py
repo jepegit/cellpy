@@ -231,13 +231,13 @@ def cumulate_capacity_within_cycle(data: Data, config_params: ModelParameters) -
     # is_charge = config_params.states["charge_keys"]
     # is_discharge = config_params.states["discharge_keys"]
 
-    cycles = data.raw.groupby("cycle_index")
+    cycles = data.raw.groupby(headers_normal.cycle_index_txt)
     cumulated = []
-    charge_hdr = "charge_capacity"
-    discharge_hdr = "discharge_capacity"
+    charge_hdr = headers_normal.charge_capacity_txt
+    discharge_hdr = headers_normal.discharge_capacity_txt
 
     for i, (cycle_number, cycle) in enumerate(cycles):
-        steps = cycle.groupby("step_index")
+        steps = cycle.groupby(headers_normal.step_index_txt)
         last_charge = 0.0
         last_discharge = 0.0
         for step_number, step in steps:

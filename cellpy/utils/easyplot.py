@@ -726,26 +726,6 @@ class EasyPlot:
                     + ", r=%g" % r,
                 )
 
-            """if self.kwargs["cyclelife_ir"]:
-                chg_ir = []
-                dchg_ir = []
-
-
-                steptable = cpobj.steps
-                print(steptable)
-                newdf = steptable[["ir", "cycle", "type"]]
-                for i,elem in enumerate(newdf.iterrows()):
-                    if elem[1]["type"] == "charge":
-                        chg_ir.append(elem[1]["ir"])
-                    elif elem[1]["type"] == "discharge":
-                        dchg_ir.append(elem[1]["ir"])
-                print(chg_ir)
-
-                for cyc in keys:
-                    if cyc in cyc_nums:
-                        ax_ir.scatter(cyc, chg_ir[cyc], c = color, marker = "*")
-                        """
-
             if self.kwargs["cyclelife_separate_data"]:
                 # Set all plot settings from Plot object
                 self.fix_cyclelife(fig, ax)

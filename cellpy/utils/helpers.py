@@ -738,7 +738,7 @@ def concatenate_summaries(
     group_nest = []
 
     if group_it:
-        g = b.pages.groupby("group")
+        g = b.pages.groupby(hdr_journal.group)
         # this ensures that order is kept and grouping is correct
         # it is therefore ok to assume from now on that all the cells within a list belongs to the same group
         for gno, b_sub in g:
@@ -798,8 +798,8 @@ def concatenate_summaries(
         keys_sub = []
         for cell_id in cell_names:
             logging.debug(f"Processing [{cell_id}]")
-            group = b.pages.loc[cell_id, "group"]
-            sub_group = b.pages.loc[cell_id, "sub_group"]
+            group = b.pages.loc[cell_id, hdr_journal.group]
+            sub_group = b.pages.loc[cell_id, hdr_journal.sub_group]
             try:
                 c = b.experiment.data[cell_id]
             except KeyError as e:
@@ -1048,12 +1048,12 @@ def concat_summaries(
         pages = pages.loc[experimental_feature_cell_selector].copy()
 
     # selection is performed here:
-    if only_selected and "selected" in pages.columns:
+    if only_selected and hdr_journal.selected in pages.columns:
         # might be too strict to use the == 1 here (consider allowing for all true values)
         pages = pages.loc[pages.selected == 1, :].copy()
 
     if group_it:
-        g = pages.groupby("group")
+        g = pages.groupby(hdr_journal.group)
         for gno, b_sub in g:
             if len(b_sub) < 2:
                 print("Can not group with less than two cells")
@@ -1062,7 +1062,7 @@ def concat_summaries(
                 break
 
     if group_it:
-        g = pages.groupby("group")
+        g = pages.groupby(hdr_journal.group)
         # this ensures that order is kept and grouping is correct
         # it is therefore ok to assume from now on that all the cells within a list belongs to the same group
 
@@ -1129,15 +1129,15 @@ def concat_summaries(
         for cell_id in cell_names:
             output_columns_current_cell = output_columns.copy()
             logging.debug(f"Processing [{cell_id}]")
-            group = pages.loc[cell_id, "group"]
-            sub_group = pages.loc[cell_id, "sub_group"]
-            if "group_label" in pages.columns:
-                group_label = pages.loc[cell_id, "group_label"]
+            group = pages.loc[cell_id, hdr_journal.group]
+            sub_group = pages.loc[cell_id, hdr_journal.sub_group]
+            if hdr_journal.group_label in pages.columns:
+                group_label = pages.loc[cell_id, hdr_journal.group_label]
             else:
                 group_label = None
 
-            if "label" in pages.columns:
-                label = pages.loc[cell_id, "label"]
+            if hdr_journal.label in pages.columns:
+                label = pages.loc[cell_id, hdr_journal.label]
             else:
                 label = None
             try:
@@ -1344,8 +1344,8 @@ def create_group_names(custom_group_labels, gno, key_index_bounds, keys_sub, pag
         return cell_id
 
     if pages is not None:
-        if "group_label" in pages.columns:
-            cell_id = pages.loc[pages["group"] == gno, "group_label"].values[0]
+        if hdr_journal.group_label in pages.columns:
+            cell_id = pages.loc[pages[hdr_journal.group] == gno, hdr_journal.group_label].values[0]
             if isinstance(cell_id, str) and cell_id not in ["", "none"]:
                 return cell_id
 
@@ -1392,8 +1392,8 @@ def collect_frames(
     """Helper function for concat_summaries."""
     cycle_header = "cycle"
     normalized_cycle_header = "equivalent_cycle"
-    group_header = "group"
-    sub_group_header = "sub_group"
+    group_header = hdr_journal.group
+    sub_group_header = hdr_journal.sub_group
     cell_header = "cell"
     id_vars = [cell_header, cycle_header]
     cdf = pd.concat(frames, keys=keys, axis=0, names=id_vars)

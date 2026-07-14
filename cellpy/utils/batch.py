@@ -19,6 +19,7 @@ from cellpy import log, prms
 from cellpy.readers import filefinder
 from cellpy.parameters.internal_settings import (
     headers_journal,
+    headers_normal,
     headers_step_table,
     headers_summary,
 )
@@ -274,25 +275,25 @@ class Batch:
             else:
                 cell_name = cell.cell_name
 
-            info_df["filename"].append(cell_name)
-            info_df["mass"].append(cell.active_mass)
-            info_df["total_mass"].append(cell.tot_mass)
-            info_df["loading"].append(cell.data.loading)
-            info_df["nom_cap"].append(cell.nominal_capacity)
-            info_df["label"].append(cell.data.cell_name)
-            info_df["cell_type"].append(cell.data.meta_common.cell_type)
+            info_df[headers_journal.filename].append(cell_name)
+            info_df[headers_journal.mass].append(cell.active_mass)
+            info_df[headers_journal.total_mass].append(cell.tot_mass)
+            info_df[headers_journal.loading].append(cell.data.loading)
+            info_df[headers_journal.nom_cap].append(cell.nominal_capacity)
+            info_df[headers_journal.label].append(cell.data.cell_name)
+            info_df[headers_journal.cell_type].append(cell.data.meta_common.cell_type)
             if cellpy_file_name is not None:
-                info_df["cellpy_file_name"].append(cellpy_file_name)
+                info_df[headers_journal.cellpy_file_name].append(cellpy_file_name)
             else:
-                info_df["cellpy_file_name"].append(cell.data.cell_name + ".h5")
-            info_df["nom_cap_specifics"].append(cell.nom_cap_specifics)
+                info_df[headers_journal.cellpy_file_name].append(cell.data.cell_name + ".h5")
+            info_df[headers_journal.nom_cap_specifics].append(cell.nom_cap_specifics)
             raw_file_names = [f.name for f in cell.data.raw_data_files]
-            info_df["raw_file_names"].append(raw_file_names)
-            info_df["group"].append(cell.group or "none")
-            info_df["group_label"].append(cell.group or "none")
+            info_df[headers_journal.raw_file_names].append(raw_file_names)
+            info_df[headers_journal.group].append(cell.group or "none")
+            info_df[headers_journal.group_label].append(cell.group or "none")
             self.experiment.cell_data_frames[cell_name] = cell
 
-        cellpy_file_names = info_df["cellpy_file_name"]
+        cellpy_file_names = info_df[headers_journal.cellpy_file_name]
         flag = len(set(cellpy_file_names)) == len(cellpy_file_names)
         if not flag:
             logging.critical("Not all cellpy file names are unique")
@@ -300,7 +301,7 @@ class Batch:
             logging.critical(cellpy_file_names)
             return
 
-        info_df["group"] = batch_helpers.fix_groups(info_df["group"])
+        info_df[headers_journal.group] = batch_helpers.fix_groups(info_df[headers_journal.group])
         meta = {}
         session = {}
 
@@ -341,7 +342,7 @@ class Batch:
         error_code = 0
         try:
             c = self.experiment.data[cell_id]
-            if not c.has_no_partial_duplicates(subset="data_point"):
+            if not c.has_no_partial_duplicates(subset=headers_normal.data_point_txt):
                 error_code = 1
             return error_code
         except Exception as e:
@@ -503,21 +504,21 @@ class Batch:
 
         if grouped:
             # TODO: currently does not use cumulative values - consider implementing this
-            r_pages["group"] = pages.group
+            r_pages[headers_journal.group] = pages.group
             r_pages["group_avg_last_cycle"] = r_pages.group.map(
-                r_pages.groupby("group").last_cycle.mean()
+                r_pages.groupby(headers_journal.group).last_cycle.mean()
             )
             r_pages["group_avg_max_capacity"] = r_pages.group.map(
-                r_pages.groupby("group").max_capacity.mean()
+                r_pages.groupby(headers_journal.group).max_capacity.mean()
             )
             r_pages["group_avg_min_capacity"] = r_pages.group.map(
-                r_pages.groupby("group").min_capacity.mean()
+                r_pages.groupby(headers_journal.group).min_capacity.mean()
             )
             r_pages["group_avg_std_capacity"] = r_pages.group.map(
-                r_pages.groupby("group").std_capacity.mean()
+                r_pages.groupby(headers_journal.group).std_capacity.mean()
             )
             r_pages["group_avg_average_capacity"] = r_pages.group.map(
-                r_pages.groupby("group").average_capacity.mean()
+                r_pages.groupby(headers_journal.group).average_capacity.mean()
             )
 
         if stylize:
@@ -1213,7 +1214,7 @@ class Batch:
                 logging.info("File not found! Cannot copy it!")
 
         # save the journal pages
-        pages["cellpy_file_name"] = pages["new_cellpy_file_name"]
+        pages[headers_journal.cellpy_file_name] = pages["new_cellpy_file_name"]
         self.experiment.journal.pages = pages[columns]
         journal_file_name = pathlib.Path(self.experiment.journal.file_name).name
         self.experiment.journal.to_file(

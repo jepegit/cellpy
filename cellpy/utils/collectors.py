@@ -19,10 +19,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 import cellpy
+from cellpy.parameters.internal_settings import get_headers_journal
 from cellpy.readers.data_structures import group_by_interpolate
 from cellpy.utils.batch import Batch
 from cellpy.utils.helpers import concat_summaries
 from cellpy.utils import ica
+
+hdr_journal = get_headers_journal()
 
 supported_backends = []
 
@@ -689,7 +692,13 @@ class BatchCollector:
 
     def preprocess_data_for_csv(self):
         logging.debug(f"the data layout {self.csv_layout} is not supported yet!")
-        not_needed_columns = ["group", "sub_group", "group_label", "label", "selected"]
+        not_needed_columns = [
+            hdr_journal.group,
+            hdr_journal.sub_group,
+            hdr_journal.group_label,
+            hdr_journal.label,
+            hdr_journal.selected,
+        ]
         wide_data = self.data.copy()
         if "mean" in wide_data.columns:
             values = ["mean", "std"]
@@ -1161,11 +1170,11 @@ class BatchSummaryCollector(BatchCollector):
             print("Could not find index")
             return self.data
 
-        if "sub_group" in cols:
-            cols.remove("sub_group")
+        if hdr_journal.sub_group in cols:
+            cols.remove(hdr_journal.sub_group)
 
-        if "group" in cols:
-            cols.remove("group")
+        if hdr_journal.group in cols:
+            cols.remove(hdr_journal.group)
 
         for _col in cols:
             if _col in ["cell", "variable"]:
@@ -1513,12 +1522,12 @@ def pick_named_cell(b, label_mapper=None):
 
     cell_names = b.cell_names
     for n in cell_names:
-        group = b.pages.loc[n, "group"]
-        sub_group = b.pages.loc[n, "sub_group"]
+        group = b.pages.loc[n, hdr_journal.group]
+        sub_group = b.pages.loc[n, hdr_journal.sub_group]
         logging.debug(f"processing {n} (group={group}, sub_group={sub_group})")
         # putting this check here for backwards compatibility:
-        if "selected" in b.pages.columns:
-            selected = b.pages.loc[n, "selected"]
+        if hdr_journal.selected in b.pages.columns:
+            selected = b.pages.loc[n, hdr_journal.selected]
         else:
             selected = True
 
@@ -1535,7 +1544,7 @@ def pick_named_cell(b, label_mapper=None):
                 label = n
         else:
             try:
-                label = b.pages.loc[n, "label"]
+                label = b.pages.loc[n, hdr_journal.label]
 
                 if label is None:
                     logging.info(
@@ -1761,7 +1770,7 @@ def legend_replacer(trace, df, group_legends=True):
         return trace
 
     cell_label = df.loc[
-        (df["group"] == group) & (df["sub_group"] == subgroup), "cell"
+        (df[hdr_journal.group] == group) & (df[hdr_journal.sub_group] == subgroup), "cell"
     ].values[0]
     if group_legends:
         trace.update(
@@ -1961,8 +1970,8 @@ def sequence_plotter(
     z: str = "cycle",
     g: str = "cell",
     standard_deviation: str = None,
-    group: str = "group",
-    subgroup: str = "sub_group",
+    group: str = hdr_journal.group,
+    subgroup: str = hdr_journal.sub_group,
     x_label: str = "Capacity",
     x_unit: str = "mAh/g",
     y_label: str = "Voltage",
@@ -2352,9 +2361,9 @@ def sequence_plotter(
             sns.set_theme(style="darkgrid")
             x = seaborn_arguments.get("x", "capacity")
             y = seaborn_arguments.get("y", "voltage")
-            row = seaborn_arguments.get("row", "group")
+            row = seaborn_arguments.get("row", hdr_journal.group)
             hue = seaborn_arguments.get("hue", "cycle")
-            col = seaborn_arguments.get("col", "sub_group")
+            col = seaborn_arguments.get("col", hdr_journal.sub_group)
             height = seaborn_arguments.get("height", 3)
             aspect = seaborn_arguments.get("aspect", 1)
 
@@ -2646,7 +2655,7 @@ def summary_plotter(collected_curves, cycles_to_plot=None, backend="plotly", **k
     col_headers = collected_curves.columns.to_list()
 
     # need to manually update this if new columns are added to collected_curves that should not be plotted:
-    not_available_for_plotting = ["label", "group_label", "selected"]
+    not_available_for_plotting = [hdr_journal.label, hdr_journal.group_label, hdr_journal.selected]
 
     possible_id_vars = [
         "cell",
@@ -2655,8 +2664,8 @@ def summary_plotter(collected_curves, cycles_to_plot=None, backend="plotly", **k
         "value",
         "mean",
         "std",
-        "group",
-        "sub_group",
+        hdr_journal.group,
+        hdr_journal.sub_group,
     ]
     id_vars = []
     for n in possible_id_vars:
@@ -2673,7 +2682,7 @@ def summary_plotter(collected_curves, cycles_to_plot=None, backend="plotly", **k
         )
 
     normalize_cycles = True if "equivalent_cycle" in id_vars else False
-    group_it = False if "group" in id_vars else True
+    group_it = False if hdr_journal.group in id_vars else True
 
     cols = kwargs.pop("cols", 1)
 
