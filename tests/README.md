@@ -28,6 +28,17 @@ other summary columns must match exactly.
 Legacy fixture locations are unchanged: `../testdata/` (raw instrument inputs),
 [`fixtures/`](fixtures/) (older JSON helpers).
 
+### Config stack (`test_config.py`, issue #452)
+
+Parallel pydantic-settings package under `cellpy/config/` — not wired into legacy
+`prms` yet (#453). Essential gate:
+
+- `test_config_inventory_parity` — field defaults match #430 inventory (minus SQL→secrets)
+- `test_units_defaults_match_cellpycore`
+- `test_config_override_fixture` / `test_secrets_read_legacy_env`
+
+Full loader/precedence/migrate coverage: `uv run pytest tests/test_config.py`.
+
 Philosophy (loader-free core vs loaderful cellpy): see
 [`cellpy-core/.issueflows/04-designs-and-guides/test-data-and-fixtures.md`](../../cellpy-core/.issueflows/04-designs-and-guides/test-data-and-fixtures.md).
 
