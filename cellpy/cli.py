@@ -147,7 +147,7 @@ def cli():
 
 
 # ----------------------- setup --------------------------------------
-@click.command()
+@click.group("setup", invoke_without_command=True)
 @click.option(
     "--interactive",
     "-i",
@@ -206,7 +206,9 @@ def cli():
 @click.option(
     "--no-deps", is_flag=True, help="Don't install missing dependencies"
 )
+@click.pass_context
 def setup(
+    ctx,
     interactive,
     not_relative,
     dry_run,
@@ -218,6 +220,10 @@ def setup(
     no_deps,
 ):
     """This will help you to set up cellpy."""
+
+    if ctx.invoked_subcommand is not None:
+        # a subcommand (e.g. ``cellpy setup migrate``) runs instead
+        return
 
     click.echo("[cellpy] (setup)")
     click.echo(f"[cellpy] root-dir: {root_dir}")
@@ -289,6 +295,7 @@ def setup(
             interactive=True,
         )
         _write_config_file(user_dir, dst_file, init_filename, dry_run)
+        _write_toml_config_file(dst_file, dry_run, test_user=test_user)
         _write_env_file(user_dir, env_file, dry_run)
         _check(dry_run=dry_run)
 
@@ -304,8 +311,104 @@ def setup(
                 silent=silent,
             )
         _write_config_file(user_dir, dst_file, init_filename, dry_run)
+        _write_toml_config_file(dst_file, dry_run, test_user=test_user)
         _write_env_file(user_dir, env_file, dry_run)
         _check(dry_run=dry_run, full_check=False)
+
+
+def _write_toml_config_file(dst_file, dry_run, test_user=None):
+    """Write the ``cellpy.toml`` twin generated from the config models (#454).
+
+    The TOML is the single source of truth going forward (config plan Step 5):
+    it is *generated* from the resolved ``CellpyConfig`` models (secrets
+    excluded), so adding a field is a one-file change in the models. In
+    test-user (DEV) mode the file lands next to the legacy conf instead of the
+    real platform config dir.
+    """
+    from cellpy import config as cellpy_config
+    from cellpy.config import loader as config_loader
+
+    if test_user:
+        toml_path = pathlib.Path(dst_file).with_name("cellpy.toml")
+    else:
+        toml_path = config_loader.user_config_path()
+
+    if dry_run:
+        click.echo(f"[cellpy] (setup) dry-run: would write {toml_path}")
+        return
+
+    data = cellpy_config.get_config().model_dump_for_file()
+    toml_path.parent.mkdir(parents=True, exist_ok=True)
+    config_loader.write_toml(toml_path, data)
+    click.echo(f"[cellpy] (setup) wrote {toml_path}")
+
+
+@setup.command("migrate", short_help="Convert the legacy .conf (YAML) to cellpy.toml.")
+@click.option(
+    "--src",
+    default=None,
+    type=click.Path(exists=True),
+    help="Legacy config file to convert (auto-detected when not given).",
+)
+@click.option(
+    "--dst",
+    default=None,
+    type=click.Path(),
+    help="Target cellpy.toml (defaults to the platform user-config location).",
+)
+@click.option(
+    "--dry-run",
+    "-dr",
+    is_flag=True,
+    default=False,
+    help="Only print what would be done.",
+)
+@click.option(
+    "--force",
+    "-f",
+    is_flag=True,
+    default=False,
+    help="Overwrite an existing cellpy.toml.",
+)
+def setup_migrate(src, dst, dry_run, force):
+    """One-time conversion of the legacy YAML .conf file to cellpy.toml.
+
+    The old file is left untouched (it keeps working through the v2.0
+    deprecation window); the generated TOML takes precedence once present.
+    """
+    from cellpy.config import loader as config_loader
+    from cellpy.config import migrate as config_migrate
+
+    if src is None:
+        try:
+            src = prmreader._get_prm_file()
+        except Exception:
+            src = None
+        if src is None or not pathlib.Path(src).is_file():
+            click.echo(
+                "[cellpy] (setup migrate) no legacy config file found - "
+                "nothing to migrate (run `cellpy setup` to create a fresh one)."
+            )
+            return
+    src = pathlib.Path(src)
+
+    toml_path = pathlib.Path(dst) if dst else config_loader.user_config_path()
+    if toml_path.is_file() and not force:
+        click.echo(
+            f"[cellpy] (setup migrate) {toml_path} already exists "
+            "- use --force to overwrite."
+        )
+        return
+
+    click.echo(f"[cellpy] (setup migrate) source: {src}")
+    click.echo(f"[cellpy] (setup migrate) target: {toml_path}")
+    if dry_run:
+        click.echo("[cellpy] (setup migrate) dry-run: not writing anything.")
+        return
+
+    toml_path.parent.mkdir(parents=True, exist_ok=True)
+    config_migrate.convert_yaml_file_to_toml(src, toml_path)
+    click.echo("[cellpy] (setup migrate) done - the old file is kept untouched.")
 
 
 def _update_paths(
@@ -971,12 +1074,19 @@ def edit(name, default_editor, debug, silent):
 )
 @click.option("--params", "-p", is_flag=True, help="Dump all parameters to screen.")
 @click.option(
+    "--config",
+    "-C",
+    "show_config",
+    is_flag=True,
+    help="Print the resolved configuration values with provenance.",
+)
+@click.option(
     "--check",
     "-c",
     is_flag=True,
     help="Do a sanity check to see if things works as they should.",
 )
-def info(version, configloc, params, check):
+def info(version, configloc, params, show_config, check):
     """This will give you some valuable information about your cellpy."""
     complete_info = True
 
@@ -996,9 +1106,30 @@ def info(version, configloc, params, check):
         complete_info = False
         _dump_params()
 
+    if show_config:
+        complete_info = False
+        _dump_config_resolved()
+
     if complete_info:
         _version()
         _configloc()
+
+
+def _dump_config_resolved():
+    """Print resolved config values with per-field provenance (#454)."""
+    from cellpy import config as cellpy_config
+
+    data = cellpy_config.get_config().model_dump_for_file()
+    provenance = cellpy_config.sources()
+    click.echo("[cellpy] resolved configuration (value  # source-layer):")
+    for section, fields in data.items():
+        click.echo(f"\n[{section}]")
+        if not isinstance(fields, dict):
+            click.echo(f"  {fields!r}")
+            continue
+        for key, value in fields.items():
+            layer = provenance.get(f"{section}.{key}", "default")
+            click.echo(f"  {key} = {value!r}  # {layer}")
 
 
 # ----------------------- run ----------------------------------------
