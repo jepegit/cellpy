@@ -27,7 +27,6 @@ The `cellpy` repository is structured as follows:
 ├── 📄 HISTORY.rst        <-- picked up by sphinx (in docs)
 ├── 📄 LICENSE            <-- picked up by sphinx (in docs)
 ├── 📄 MANIFEST.in
-├── 📄 notes.md           <-- log of notes
 ├── 📄 pyproject.toml
 ├── 📄 dev_environment.yml
 ├── 📄 environment.yml
