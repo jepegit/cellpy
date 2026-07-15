@@ -10,6 +10,7 @@ dependencies:
     - coverage
     - cryptography
     - dateparser
+    - defusedxml
     - fabric
     - graphviz
     - hdf5
@@ -17,6 +18,7 @@ dependencies:
     - ipykernel
     - ipython
     - ipywidgets
+    - jinja2-time
     - jupyterlab
     - lmfit
     - matplotlib
@@ -26,11 +28,15 @@ dependencies:
     - nox
     - numpy >= 2.2.6
     - openpyxl
-    - pandas < 3
+    - pandas >= 3.0.3,<4
     - pandoc
     - pint
     - pip
+    - platformdirs >= 4.10.0
     - plotly
+    - polars
+    - pyarrow >= 16
+    - pydantic-settings >= 2.14.2
     - pyodbc
     - pytables
     - pytest
@@ -38,6 +44,7 @@ dependencies:
     - pytest-timeout
     - python-box
     - python-dotenv
+    - python-isal
     - requests
     - rich
     - ruamel.yaml
@@ -51,26 +58,17 @@ dependencies:
     - sqlalchemy-access
     - tqdm
     - twine
+    - typer
     - xlrd
+    - xmltodict
     - charset-normalizer
     - pip:
+        # PyPI-only (no conda-forge package).
+        - cellpycore==0.2.1
+        # Optional external fastnda; cellpy defaults to cellpy.libs.local_fastnda.
         - fastnda
-        - pyarrow>=23
-        # bumpver is installed via pip because its dependency `lexid` has no
-        # conda-forge build for Python 3.13 (pure-Python, so pip works fine).
-        - bumpver
-        - bump-my-version
-        - isort
-        - jinja2_time
-        - jupyterlab-code-formatter
+        # Old plotly kaleido 0.1.x (python-kaleido on conda-forge is 1.x).
         - kaleido==0.1.*
+        # Docs extras not needed for runtime/CI.
         - myst_nb
-        - pip-tools
-        - pipdeptree
-        - pydeps
         - sphinx-book-theme
-        # cellpy-core is consumed as a git dependency until it is released on PyPI.
-        # For dual-repo development install it editable instead: pip install -e ../cellpy-core
-        - cellpycore @ git+https://github.com/cellpy/cellpy-core.git@main
-
-

@@ -2,29 +2,37 @@ name: cellpy
 channels:
     - conda-forge
 dependencies:
+    - python >= 3.13
+    - charset-normalizer
     - click
     - cookiecutter
     - cryptography
     - dateparser
+    - defusedxml
     - fabric
     - hdf5
     - ipykernel
     - ipython
     - ipywidgets
+    - jinja2-time
     - lmfit
     - matplotlib
     - numpy >= 2.2.6
     - openpyxl
-    - pandas < 3
+    - pandas >= 3.0.3,<4
     - pint
     - pip
+    - platformdirs >= 4.10.0
     - plotly
+    - polars
+    - pyarrow >= 16
+    - pydantic-settings >= 2.14.2
     - pygithub
     - pyodbc
     - pytables
     - python-box
     - python-dotenv
-    - python >= 3.13
+    - python-isal
     - requests
     - rich
     - ruamel.yaml
@@ -33,15 +41,13 @@ dependencies:
     - sqlalchemy
     - sqlalchemy-access
     - tqdm
+    - typer
     - xlrd
-# This version of kaleido is not available for macOS M-chip:
-    - kaleido==0.1.*
-    - jinja2_time
-    - charset-normalizer
+    - xmltodict
     - pip:
+        # PyPI-only (no conda-forge package).
+        - cellpycore==0.2.1
+        # Optional external fastnda; cellpy defaults to cellpy.libs.local_fastnda.
         - fastnda
-        - pyarrow>=23
-        # cellpy-core is consumed as a git dependency until it is released on PyPI.
-        - cellpycore @ git+https://github.com/cellpy/cellpy-core.git@main
-
-
+        # Old plotly kaleido 0.1.x (python-kaleido on conda-forge is 1.x).
+        - kaleido==0.1.*

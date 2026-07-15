@@ -3,6 +3,7 @@ channels:
     - conda-forge
     - defaults
 dependencies:
+    - python
     - PyGithub
     - charset-normalizer
     - click
@@ -10,45 +11,44 @@ dependencies:
     - coverage
     - cryptography
     - dateparser
+    - defusedxml
     - fabric
     - hdf5
+    - jinja2-time
     - lmfit
     - matplotlib
     - nbmake
-    - numpy>=2.2.6
+    - numpy >= 2.2.6
     - openpyxl
-    - pandas<3
+    - pandas >= 3.0.3,<4
     - pint
     - pip
+    - platformdirs >= 4.10.0
     - plotly
     - polars
+    - pyarrow >= 16
+    - pydantic-settings >= 2.14.2
     - pyodbc
     - pytables
     - pytest
     - pytest-benchmark
     - pytest-timeout
-    - python
     - python-box
     - python-dotenv
+    - python-isal
     - requests
     - rich
     - ruamel.yaml
     - scipy
     - setuptools
-    - tqdm
     - sqlalchemy
+    - sqlalchemy-access
+    - tqdm
+    - typer
     - xlrd
+    - xmltodict
     - pip:
+        # PyPI-only (no conda-forge package).
+        - cellpycore==0.2.1
+        # Optional external fastnda; cellpy defaults to cellpy.libs.local_fastnda.
         - fastnda
-        - pyarrow>=23
-        - sqlalchemy-access
-        - jinja2_time
-        - defusedxml
-        - isal
-        - typer
-        - xmltodict
-        # cellpy-core is consumed as a git dependency until it is released on PyPI.
-        - cellpycore @ git+https://github.com/cellpy/cellpy-core.git@main
-
-
-
