@@ -87,7 +87,6 @@ dev = [
     "build",
     "coverage",
     "flake8",
-    "invoke",
     "ipykernel",
     "nox",
     "lmfit",

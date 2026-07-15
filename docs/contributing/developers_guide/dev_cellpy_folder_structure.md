@@ -35,7 +35,6 @@ The `cellpy` repository is structured as follows:
 ├── 📄 requirements.txt
 ├── 🐍 noxfile.py
 ├── 🐍 setup.py
-└── 🐍 tasks.py           <-- invoke tasks
 ```
 
 The `cellpy` source code is structured as follows:

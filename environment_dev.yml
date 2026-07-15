@@ -14,7 +14,6 @@ dependencies:
     - fabric
     - graphviz
     - hdf5
-    - invoke
     - ipykernel
     - ipython
     - ipywidgets

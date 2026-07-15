@@ -1,28 +1,27 @@
+"""Nox sessions for cellpy.
+
+Installs the project and its extras/dev group from ``pyproject.toml``
+"""
+
 import nox
 
-from yaml import safe_load
-from pathlib import Path
+PYTHON_VERSIONS = ["3.13", "3.14"]
 
-CONDA_ENV = "github_actions_environment.yml"
-PYTHON_VERSIONS = ["3.13","3.14"]
+
+def _install_project(session: nox.Session) -> None:
+    """Editable install with optional extras + ``[dependency-groups].dev``."""
+    session.install("-e", ".[all]", "--group", "dev")
 
 
 @nox.session(python=PYTHON_VERSIONS)
-def tests(session):
-    """Run the test suite."""
-    session.install("-r", "requirements_dev.txt")
-    session.run("pytest")
+def tests(session: nox.Session) -> None:
+    """Run the test suite in a virtualenv."""
+    _install_project(session)
+    session.run("pytest", *session.posargs)
 
 
 @nox.session(python=PYTHON_VERSIONS, venv_backend="conda")
-def conda_tests(session):
-    """Run the test suite."""
-    environment = safe_load(Path(CONDA_ENV).read_text())
-    conda = environment.get("dependencies")
-    requirements = conda.pop(-1).get("pip")
-
-    for package in conda:
-        session.conda_install(package)
-    for requirement in requirements:
-        session.install(requirement)
-        session.run("pytest")
+def conda_tests(session: nox.Session) -> None:
+    """Run the test suite in a conda-backed env (same pyproject deps)."""
+    _install_project(session)
+    session.run("pytest", *session.posargs)
