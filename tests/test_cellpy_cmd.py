@@ -377,3 +377,75 @@ def test_cli_new_different_and_missing_default(tmp_path):
             ["new"],
         )
     assert "This template does not exist" in result.output
+
+
+def test_setup_writes_toml_twin(tmp_path):
+    """The setup TOML twin is generated from the config models (#454).
+
+    The helper is exercised directly: the full ``cellpy setup`` flow is
+    interactive when a custom root dir is given, which a CliRunner cannot
+    answer.
+    """
+    import tomllib
+
+    from cellpy.config.models import CellpyConfig
+
+    dst_file = tmp_path / ".cellpy_prms_tester.conf"
+    cli._write_toml_config_file(dst_file, dry_run=False, test_user="tester")
+
+    toml_file = tmp_path / "cellpy.toml"
+    assert toml_file.is_file()
+    data = tomllib.loads(toml_file.read_text(encoding="utf-8"))
+    assert set(data).issubset(set(CellpyConfig.model_fields))
+    assert "secrets" not in data
+    assert "paths" in data
+
+    # dry-run must not touch the file
+    toml_file.unlink()
+    cli._write_toml_config_file(dst_file, dry_run=True, test_user="tester")
+    assert not toml_file.is_file()
+
+    # the subcommand is registered on the setup group
+    runner = CliRunner()
+    result = runner.invoke(cli.cli, ["setup", "--help"])
+    assert result.exit_code == 0
+    assert "migrate" in result.output
+
+
+def test_setup_migrate_converts_legacy_conf(tmp_path):
+    """`cellpy setup migrate` converts the legacy YAML conf to TOML (#454)."""
+    import pathlib
+    import tomllib
+
+    import cellpy.parameters
+
+    runner = CliRunner()
+    src = pathlib.Path(cellpy.parameters.__file__).parent / ".cellpy_prms_default.conf"
+    assert src.is_file(), f"packaged default conf missing: {src}"
+    dst = tmp_path / "cellpy.toml"
+    result = runner.invoke(
+        cli.cli, ["setup", "migrate", "--src", str(src), "--dst", str(dst)]
+    )
+    print("\n", result.output)
+    assert result.exit_code == 0
+    assert dst.is_file()
+    data = tomllib.loads(dst.read_text(encoding="utf-8"))
+    assert "paths" in data
+
+    # second run refuses to overwrite without --force
+    result2 = runner.invoke(
+        cli.cli, ["setup", "migrate", "--src", str(src), "--dst", str(dst)]
+    )
+    assert result2.exit_code == 0
+    assert "already exists" in result2.output
+
+
+def test_info_config_with_provenance():
+    """`cellpy info --config` prints resolved values with provenance (#454)."""
+    runner = CliRunner()
+    result = runner.invoke(cli.cli, ["info", "--config"])
+    print("\n", result.output)
+    assert result.exit_code == 0
+    assert "[paths]" in result.output
+    assert "#" in result.output
+    assert "[secrets]" not in result.output
