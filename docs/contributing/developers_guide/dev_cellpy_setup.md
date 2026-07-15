@@ -13,7 +13,7 @@ Good alternatives are
 PyCharm (<https://www.jetbrains.com/pycharm/>) and
 VSCode (<https://code.visualstudio.com/>).
 
-## Install python 3.10 or higher
+## Install python 3.13 or higher
 
 There are many ways to install python. We recommend using the Miniconda distribution.
 You can download it from here: <https://docs.conda.io/en/latest/miniconda.html>
@@ -33,19 +33,19 @@ Once you have installed conda, you should create a new environment for developin
 look at the [documentation for conda] to learn more about environments and how to use them if you
 are not familiar with this concept.
 
-The easiest way to create a working environment is to use the `dev_environment.yml` file in the
-root of the `cellpy` repository. This will generate an environment called `cellpy_dev` with all the
+The easiest way to create a working environment is to use the `environment_dev.yml` file in the
+root of the `cellpy` repository. This will generate an environment called `cellpy_dev_313` with all the
 packages needed to develop `cellpy`.
 You can create the environment by running the following command in a terminal:
 
 ```
-conda env create -f dev_environment.yml
+conda env create -f environment_dev.yml
 ```
 
 You can then activate the environment by running:
 
 ```
-conda activate cellpy_dev
+conda activate cellpy_dev_313
 ```
 
 Next, you need to install `cellpy` in development mode. This is done by running the following from

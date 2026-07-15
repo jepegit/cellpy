@@ -11,29 +11,25 @@ The `cellpy` repository is structured as follows:
 ├── 📂 cellpy           # the main folder for the cellpy package
 ├── 📂 docs             # the main folder for the cellpy documentation
 ├── 📂 examples
-├── 📂 test_journal     # data etc for the tests
 ├── 📂 testdata         # data etc for the tests
 ├── 📂 tests            # here are the tests
-├── 📄 .coverage
-├── 📄 .env_example
 ├── 📄 .gitattributes
 ├── 📄 .gitignore
 ├── 📄 .readthedocs.yaml
-├── 📄 bumpver.toml
-├── 📄 AUTHORS.rst        <-- picked up by sphinx (in docs)
-├── 📄 README.rst         <-- picked up by sphinx (in docs)
+├── 📄 AGENTS.md
+├── 📄 AUTHORS.md         <-- picked up by sphinx (in docs)
 ├── 📄 CODE_OF_CONDUCT.md
-├── 📄 CONTRIBUTING.rst   <-- picked up by sphinx (in docs)
-├── 📄 HISTORY.rst        <-- picked up by sphinx (in docs)
-├── 📄 LICENSE            <-- picked up by sphinx (in docs)
-├── 📄 MANIFEST.in
+├── 📄 CONTRIBUTING.md
+├── 📄 DEPRECATIONS.md
+├── 📄 HISTORY.md         <-- picked up by sphinx (in docs)
+├── 📄 LICENSE.md
+├── 📄 README.md
 ├── 📄 pyproject.toml
-├── 📄 dev_environment.yml
+├── 📄 uv.lock
 ├── 📄 environment.yml
-├── 📄 requirements_dev.txt
-├── 📄 requirements.txt
+├── 📄 environment_dev.yml
+├── 📄 github_actions_environment.yml
 ├── 🐍 noxfile.py
-├── 🐍 setup.py
 ```
 
 The `cellpy` source code is structured as follows:

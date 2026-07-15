@@ -64,7 +64,7 @@ ProjectVersion -> writes version number
 
 Dependencies:
 
-- python >=3.10
+- python >=3.13
 - pip
 - Sphinx
 - pandoc

@@ -74,7 +74,7 @@ templates_path = ["_templates"]
 source_suffix = ".rst"
 master_doc = "index"
 project = "cellpy"
-copyright = "2025, Jan Petter Maehlen"
+copyright = "2026, Jan Petter Maehlen"
 version = version_ns["__version__"]
 release = version_ns["__version__"]
 

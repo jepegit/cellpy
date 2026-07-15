@@ -135,7 +135,7 @@ $ python -m pip install -e .
 ```
 
 (assuming that you are in the project folder, *i.e.* the folder that
-contains the setup.py file)
+contains the ``pyproject.toml`` file)
 
 (cellpy_dependencies)=
 ## Dependencies
@@ -246,7 +246,7 @@ If the words “virtual environment” or “miniconda” do not ring any bells,
 you should install the Anaconda scientific Python distribution. Go to
 [www.anaconda.com](https://www.anaconda.com/) and select the
 Anaconda distribution (press the `Download Now` button).
-Use at least python 3.9, and select the 64 bit version
+Use at least python 3.13, and select the 64 bit version
 (if you fail at installing the 64 bit version, then you can try the
 weaker 32 bit version). Download it and let it install.
 
