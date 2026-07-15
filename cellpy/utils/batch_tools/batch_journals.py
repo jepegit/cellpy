@@ -310,7 +310,9 @@ class LabJournal(BaseJournal, ABC):
         session, pages = self._clean_session(session, pages)
 
         if hdr_journal.filename in pages.columns:
-            pages = pages.set_index(hdr_journal.filename)
+            # Polars Phase A (#457): keep the key as a column too (drop=False);
+            # the index itself goes away with utils wave 1.
+            pages = pages.set_index(hdr_journal.filename, drop=False)
 
         self.pages = pages
         self.session = session
@@ -408,7 +410,8 @@ class LabJournal(BaseJournal, ABC):
             logging.critical("could not find any pages in the journal")
             raise UnderDefined
         pages = cls._clean_pages(pages)
-        pages = pages.set_index(hdr_journal.filename)
+        # Polars Phase A (#457): keep the key as a column too (drop=False).
+        pages = pages.set_index(hdr_journal.filename, drop=False)
 
         if meta is None:
             meta = _meta
@@ -591,7 +594,8 @@ class LabJournal(BaseJournal, ABC):
                 self.pages[hdr] = None
 
         if hdr_journal.filename in self.pages.columns:
-            self.pages = self.pages.set_index(hdr_journal.filename)
+            # Polars Phase A (#457): keep the key as a column too (drop=False).
+            self.pages = self.pages.set_index(hdr_journal.filename, drop=False)
 
         if paginate is None:
             if self.name and self.project:
@@ -631,7 +635,8 @@ class LabJournal(BaseJournal, ABC):
 
         col_names = list(hdr_journal.values())
         pages = pd.DataFrame(columns=col_names)
-        pages.set_index(hdr_journal.filename, inplace=True)
+        # Polars Phase A (#457): keep the key as a column too (drop=False).
+        pages = pages.set_index(hdr_journal.filename, drop=False)
         return pages
 
     def duplicate_journal(self, folder=None) -> None:

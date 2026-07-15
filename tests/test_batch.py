@@ -400,11 +400,10 @@ def test_load_full_journal_excel_and_check_headers_generated(
     )
     assert len(b.pages) == 2
     missing = [hdr for hdr in hdr_journal.values() if hdr not in b.pages.columns]
-    assert len(missing) == 1
+    # Polars Phase A (#457): filename now also lives in a column (drop=False),
+    # so no journal header is missing from the columns anymore.
+    assert len(missing) == 0
     assert b.pages.index.name == index_name
-    assert (
-        missing[0] == index_name
-    )  # this is the only missing column since it is now the index
 
 
 def test_load_full_journal_excel_from_labjournal_class(parameters):

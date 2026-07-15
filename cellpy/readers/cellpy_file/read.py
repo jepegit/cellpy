@@ -170,6 +170,15 @@ def extract_summary_from_cellpy_file(
         logging.debug(f"upgrading from {old} to {new}")
         data.summary = rename_summary_columns(data.summary, old, new)
 
+    # Polars Phase A (#457): keys live in columns. The frozen v8 storage keeps
+    # cycle_index as the stored index (the where-clauses above rely on it);
+    # in memory it becomes a plain column.
+    hdr_cycle = _headers_summary().cycle_index
+    if data.summary.index.name == hdr_cycle:
+        data.summary = data.summary.reset_index(
+            drop=hdr_cycle in data.summary.columns
+        )
+
     try:
         max_data_point = data.summary[_headers_summary().data_point].max()
     except KeyError as e:
@@ -198,6 +207,17 @@ def extract_raw_from_cellpy_file(
         old, new = upgrade_from_to
         logging.debug(f"upgrading from {old} to {new}")
         data.raw = rename_raw_columns(data.raw, old, new)
+
+    # Polars Phase A (#457): keys live in columns. The frozen v8 storage keeps
+    # data_point as the stored index (saved with drop=False, so the column is
+    # also present); in memory the frame carries a plain RangeIndex.
+    from cellpy.parameters.internal_settings import get_headers_normal
+
+    hdr_data_point = get_headers_normal().data_point_txt
+    if data.raw.index.name == hdr_data_point:
+        data.raw = data.raw.reset_index(
+            drop=hdr_data_point in data.raw.columns
+        )
 
 
 def extract_steps_from_cellpy_file(

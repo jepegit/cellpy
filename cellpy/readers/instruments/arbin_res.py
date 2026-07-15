@@ -401,7 +401,10 @@ class DataLoader(BaseLoader):
 
     def _post_process(self, data):
         fix_datetime = True
-        set_index = True
+        # Polars Phase A (#457): keys live in columns, never in an index —
+        # the loader no longer promotes data_point to the raw index (the
+        # cellpy-file v8 writer still sets it at the storage boundary).
+        set_index = False
         rename_headers = True
 
         # TODO:  insert post-processing and div tests here

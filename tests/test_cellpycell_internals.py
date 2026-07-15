@@ -16,13 +16,13 @@ log.setup_logging(default_level="DEBUG", testing=True)
 
 
 def test_cellpyfile_has_data_point_as_index(cell):
-    """Check if the raw data has data_point as index."""
-    assert cell.has_data_point_as_index()
+    """Polars Phase A (#457): data_point lives in a column, not the index."""
+    assert not cell.has_data_point_as_index()
 
 
 def test_raw_has_data_point_as_index(raw_cell):
-    """Check if the raw data has data_point as index."""
-    assert raw_cell.has_data_point_as_index()
+    """Polars Phase A (#457): data_point lives in a column, not the index."""
+    assert not raw_cell.has_data_point_as_index()
 
 
 def test_cellpyfile_has_data_point_as_column(cell):

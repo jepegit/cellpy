@@ -115,7 +115,9 @@ def test_v8_load_selector_max_cycle_truncates_consistently():
     assert selected.limit_loaded_cycles == max_cycle
     assert selected.limit_data_points == 3119
     assert len(selected.data.summary) == max_cycle
-    assert selected.data.summary.index.max() == max_cycle
+    # Polars Phase A (#457): summary keys live in columns, not the index.
+    hs = get_headers_summary()
+    assert selected.data.summary[hs.cycle_index].max() == max_cycle
 
     hn = get_headers_normal()
     cycle_col = hn.cycle_index_txt
@@ -139,10 +141,9 @@ def test_legacy_v4_v7_load_shapes_and_columns(label, filename, version):
     assert cell.data.summary.shape[0] > 0
     assert hn.data_point_txt in cell.data.raw.columns
     assert hn.cycle_index_txt in cell.data.raw.columns
-    if version >= 6:
-        assert cell.data.summary.index.name == hs.cycle_index
-    else:
-        assert hs.cycle_index in cell.data.summary.columns
+    # Polars Phase A (#457): summary keys live in columns for every version.
+    assert hs.cycle_index in cell.data.summary.columns
+    assert cell.data.summary.index.name is None
     assert hs.data_point in cell.data.summary.columns
     assert hs.discharge_capacity in cell.data.summary.columns
     assert cell.data.meta_common.cellpy_file_version == version
