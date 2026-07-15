@@ -668,7 +668,8 @@ class CellpyCell:
             new_cell = CellpyCell.vacant(cell=self)
             old_cell = CellpyCell.vacant(cell=self)
 
-            summary0 = summary0.set_index(h_summary_index)
+            # Polars Phase A (#457): keys live in columns — no re-promotion
+            # of cycle_index to the summary index.
 
             new_cell.data.steps = steptable0
             new_cell.data.raw = data0
@@ -718,7 +719,7 @@ class CellpyCell:
         new_data = data[data[h_raw_index].isin(cycles)]
         new_summary = summary[summary[h_summary_index].isin(cycles)]
 
-        new_summary = new_summary.set_index(h_summary_index)
+        # Polars Phase A (#457): keys live in columns — no re-promotion.
 
         new_cell = CellpyCell.vacant(cell=self)
         new_cell.data.steps = new_steptable
@@ -4720,7 +4721,8 @@ class CellpyCell:
         if nom_cap_specifics is None:
             nom_cap_specifics = self.nom_cap_specifics
         specifics = ["gravimetric", "areal", "absolute"]
-        cycle_index_as_index = True
+        # Polars Phase A (#457): keys live in columns, never in an index.
+        cycle_index_as_index = False
         time_00 = time.time()
         logging.debug("start making summary")
 
@@ -4909,7 +4911,8 @@ class CellpyCell:
         if nom_cap_specifics is None:
             nom_cap_specifics = self.nom_cap_specifics
         specifics = ["gravimetric", "areal"]
-        cycle_index_as_index = True
+        # Polars Phase A (#457): keys live in columns, never in an index.
+        cycle_index_as_index = False
         time_00 = time.time()
         logging.debug("start making summary")
 

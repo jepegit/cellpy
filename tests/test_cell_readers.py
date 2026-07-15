@@ -634,8 +634,11 @@ def test_from_raw_local(cellpy_data_instance, parameters):
     my_test = cellpy_data_instance.data
     summary = my_test.summary
     print(summary.head().T)
-    assert my_test.summary.loc[1, "data_point"] == data_point
-    assert step_time == pytest.approx(my_test.raw.loc[5, "step_time"], 0.1)
+    # Polars Phase A (#457): keys live in columns, not indexes.
+    first_cycle = summary.loc[summary["cycle_index"] == 1]
+    assert int(first_cycle["data_point"].iloc[0]) == data_point
+    raw_row = my_test.raw.loc[my_test.raw["data_point"] == 5, "step_time"]
+    assert step_time == pytest.approx(raw_row.iloc[0], 0.1)
 
 
 def test_make_step_table(cellpy_data_instance, parameters):
@@ -854,8 +857,11 @@ def test_load_cellpyfile(cellpy_data_instance, parameters):
     unique_cycles = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]
     unique_cycles_read = my_test.steps.loc[:, "cycle"].unique()
     assert any(map(lambda v: v in unique_cycles_read, unique_cycles))
-    assert my_test.summary.loc[cycle_number, "data_point"] == data_point
-    assert step_time == pytest.approx(my_test.raw.loc[5, "step_time"], 0.1)
+    # Polars Phase A (#457): keys live in columns, not indexes.
+    first_cycle = my_test.summary.loc[my_test.summary["cycle_index"] == cycle_number]
+    assert int(first_cycle["data_point"].iloc[0]) == data_point
+    raw_row = my_test.raw.loc[my_test.raw["data_point"] == 5, "step_time"]
+    assert step_time == pytest.approx(raw_row.iloc[0], 0.1)
     assert sum_test_time == pytest.approx(
         my_test.summary.loc[:, "test_time"].sum(), 0.1
     )

@@ -452,7 +452,13 @@ def remove_outliers_from_summary_on_index(s, indexes=None, remove_last=False):
     if indexes is None:
         indexes = []
 
-    selection = s.index.isin(indexes)
+    hdr_cycle = hdr_summary.cycle_index
+    if hdr_cycle in s.columns:
+        # Polars Phase A (#457): summaries carry cycle_index as a column;
+        # the supplied indexes are cycle numbers, so select on the column.
+        selection = s[hdr_cycle].isin(indexes).to_numpy().copy()
+    else:
+        selection = s.index.isin(indexes)
     if remove_last:
         selection[-1] = True
     return s[~selection]

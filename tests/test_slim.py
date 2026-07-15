@@ -64,7 +64,9 @@ def test_make_summary_through_core(cpi, parameters):
     ):
         assert col in summary.columns
     # golden value (matches the legacy/pre-seam summary; see test_from_raw_local)
-    assert summary.loc[1, h.data_point] == 1457
+    # Polars Phase A (#457): look up by the cycle_index column, not the index.
+    first_cycle = summary.loc[summary[h.cycle_index] == 1]
+    assert int(first_cycle[h.data_point].iloc[0]) == 1457
 
 
 def test_make_summary_save_roundtrip(cpi, parameters, tmp_path):

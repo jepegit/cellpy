@@ -138,16 +138,20 @@ def test_select_summary_based_on_rate(cell):
 
 
 def test_remove_outliers_on_index(cell):
+    # Polars Phase A (#457): cycle numbers live in the cycle_index column.
+    hdr_cycle = helpers.hdr_summary.cycle_index
     last = cell.get_cycle_numbers()[-1]
     s1 = helpers.remove_outliers_from_summary_on_index(cell.data.summary, indexes=[15])
     s2 = helpers.remove_outliers_from_summary_on_index(
         cell.data.summary, indexes=[15], remove_last=True
     )
-    assert 14 in s1.index
-    assert 15 not in s1.index
-    assert last in s1.index
-    assert last not in s2.index
-    assert 15 not in s2.index
+    cycles1 = set(s1[hdr_cycle])
+    cycles2 = set(s2[hdr_cycle])
+    assert 14 in cycles1
+    assert 15 not in cycles1
+    assert last in cycles1
+    assert last not in cycles2
+    assert 15 not in cycles2
 
 
 def test_concatenate_summaries(cell):
