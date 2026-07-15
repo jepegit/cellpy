@@ -2,10 +2,31 @@
 
 ## [Unreleased]
 
+## 1.1.0.post1 - 2026-07-15
+
+* Sync conda env files (`environment.yml`, `environment_dev.yml`,
+  `github_actions_environment.yml`) with `pyproject.toml`: pandas ≥3.0.3,
+  `cellpycore==0.2.1` from PyPI, drop obsolete pip tooling
+* Remove invoke `tasks.py`; `noxfile.py` installs from `pyproject.toml`
+  (`.[all]` + dependency-group `dev`)
+* Docs: require Python 3.13+, copyright 2026; remove scratch root notes /
+  Jupyter ZMQ fix markdown; refresh developer folder-structure tree
+
+## 1.1.0 - 2026-07-15
+
+* Pin `cellpycore==0.2.1` (bridge honors `cycle_mode` for coulombic columns);
+  regenerate `pipeline_smoke` goldens and fix native summary parity helper
+* Stage 1.8: config migration — prms shim / legacy YAML path, migrate internal
+  call sites, remove import-time config init (#453); `cellpy setup` writes
+  `cellpy.toml` twin + `setup migrate`; `info --config` (#454)
+* Stage 1.15 / 1.14: dormant native↔legacy frame translation (#458); Polars
+  Phase A — de-index raw/summary/journal (#457)
+* Stage 1.6: delegate duplicated unit converters to `cellpycore.units` (#451)
 * Stage 1.7: parallel `cellpy/config/` pydantic-settings stack — typed models, layered TOML loader, provenance, `override()`, inventory parity vs #430; not wired into legacy `prms` yet (#452)
 * Fix: full-suite test failures — `extract_fids` test uses module helper; external `check_file_ids` test avoids live SCP; Arbin `.res` loader closes ODBC connections (#491)
 * Stage 1.10: replace hard-coded column-header literals with canonical `headers_*` lookups in journal pages, ocv_rlx/plotutils, and instrument loaders (priorities 1–3); delete dead easyplot block (#455)
 * Stage 1.4: redirect out-of-band HDF5 readers to `cellpy_file.read_table` / `read_fid_table`; `CorruptCellpyFile` for missing keys; `cellpy convert` CLI for v<8 upgrades (#449)
+* Stage 1.3: move cellpy-file read/write paths into `cellpy_file/` (#448)
 * Units Phase 1: re-export ``CellpyUnits`` and ``Q`` from cellpycore; remove cellpy-local pint registry; rename ``cellreader`` ``data_structures`` alias to ``ds`` (#450)
 * Deprecation: `cellpy.utils.easyplot` warns on import via `warn_once`; use `plotutils`/`collectors` instead (removed in 2.0, #438 decision 5) (#479)
 * Fix: loader PEC golden compares all datetime columns by epoch-ns (Windows `datetime64[us]` vs `ns`); benchmark baseline gate warns above +20% slowdown and fails only above +100% (#476)
