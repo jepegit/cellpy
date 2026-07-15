@@ -62,7 +62,7 @@ dependencies = [
     # a known core revision. For dual-repo development, install the sibling
     # checkout editable after sync (see CONTRIBUTING.md); do not commit a
     # [tool.uv.sources] path override — it breaks Dependabot lock updates.
-    "cellpycore==0.2.0",
+    "cellpycore==0.2.1",
     "pydantic-settings>=2.14.2",
     "platformdirs>=4.10.0",
 ]
