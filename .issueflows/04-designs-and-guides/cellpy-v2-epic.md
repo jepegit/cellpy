@@ -26,7 +26,7 @@ or a merge of branch 334. Integration stays on branches of the real `cellpy` rep
 
 **All v2 epic work lands on the long-lived `v2` branch.** `master` remains the stable **1.x**
 line for other contributors. PRs for epic #402 and child issues **target `v2`**, not
-`master`. Phase 0 gate work (#384, #385) may land on `master` when parity tests prove
+`master`. Phase 0 gate work (#385; #384 done) may land on `master` when parity tests prove
 behaviour is unchanged.
 
 Full conventions: [`cellpy-v2-branching.md`](cellpy-v2-branching.md) — including **two-way
@@ -49,7 +49,8 @@ are ✅ as of 2026-07. v2 work **starts after Phase 0** (below) and assumes:
 | PyPI release + pin (`cellpycore>=0.1.2`, core #44) | ✅ | Reproducible releases without git hacks |
 | Golden oracle (STEP-06) | 🟡 ongoing | Extend as v2 loaders/merge paths grow |
 | Unit boundary (STEP-12) | 🟡 partly | cellpy still duplicates converters; v2 should delegate |
-| Legacy engine cleanup (#384, #385) | ⬜ open | v2 must not carry two compute paths |
+| Pin + parity smoke (#384) | ✅ | Closed 2026-07-14; essential suite + Arbin goldens on `cellpycore==0.1.5` |
+| Legacy engine cleanup (#385) | ⬜ open | v2 must not carry two compute paths |
 
 ## Goal (one sentence)
 
@@ -107,11 +108,11 @@ integration issues; not part of the v2 version bump itself but blocks a clean ba
 
 | Theme | Anchor | Work | Done when |
 |-------|--------|------|-----------|
-| Pin + parity smoke | jepegit/cellpy#384 | Sync to current `cellpycore` (PyPI or editable), run `-m essential` + full suite, confirm Arbin goldens (103 steps / 18 cycles / cyc-1 `data_point` 1457) | Essential + full suite green on pinned core |
+| Pin + parity smoke | jepegit/cellpy#384 ✅ | Sync to current `cellpycore` (PyPI or editable), run `-m essential` + full suite, confirm Arbin goldens (103 steps / 18 cycles / cyc-1 `data_point` 1457) | Essential + full suite green on pinned core |
 | Retire legacy engine | jepegit/cellpy#385 | Inventory/remove `_make_summar_legacy`, `old=True` summary path, dead step helpers in `cellreader.py`; optional oracle test before removal | No parallel compute engine in cellpy |
 | Delegate unit converters | STEP-12 cellpy side | Route `get_converter_to_specific` / `nominal_capacity_as_absolute` through `cellpycore.units`; extend parity tests | Converter parity tests pass; duplicates retired or thin wrappers |
 | Header single source | ad hoc | Drop redundant `HEADERS_*` module constants in `cellreader.py` where core legacy is authoritative | No third copy of header strings |
-| Close alignment umbrella | jepegit/cellpy#387 | Close when 384+385+unit delegation land | — |
+| Close alignment umbrella | jepegit/cellpy#387 | Close when #385 + unit delegation land (#384 done) | — |
 | Archive blueprint issue | jepegit/cellpy#334 | Close as superseded by #377 (do not merge branch) | — |
 
 **Test commands (integration inner loop):**
@@ -190,11 +191,11 @@ Can proceed alongside Phases 1–3 where dependencies allow. Tracked primarily o
 
 ## Status at a glance (epic themes)
 
-Reconciled **2026-07-03**. Update this table when phases start/complete.
+Reconciled **2026-07-14**. Update this table when phases start/complete.
 
 | Phase | Theme ID | Title | Status |
 |-------|----------|-------|--------|
-| 0 | — | Finish v1 handoff (gate) | 🟡 #384 #385 open; STEP-12 cellpy partly |
+| 0 | — | Finish v1 handoff (gate) | 🟡 #384 ✅; #385 open; STEP-12 cellpy partly |
 | 1 | V2-01 | `TestMetaCollection` on `Data` | ⬜ |
 | 1 | V2-02 | Per-test `cycle_mode` | ⬜ |
 | 1 | V2-03 | Composite group keys in merge/engine path | ⬜ |
@@ -230,7 +231,7 @@ flowchart TD
     H -.-> P2
 ```
 
-1. **Phase 0** — mandatory gate (#384, #385, unit delegation).
+1. **Phase 0** — mandatory gate (#385, unit delegation; #384 done).
 2. **Phase 1** — data model first (everything else hangs off `test_id` + `TestMeta`).
 3. **Phase 2** — loaders and merge (validates Phase 1 on real campaigns).
 4. **Phase 3** — refactor and API (safer once model is stable).
@@ -276,7 +277,7 @@ When carving GitHub issues from this epic, suggested grouping:
 
 | GitHub issue slug (proposed) | Epic themes | Repo |
 |------------------------------|-------------|------|
-| `v2-gate-parity-and-legacy-cleanup` | Phase 0 (#384, #385, headers) | cellpy |
+| `v2-gate-parity-and-legacy-cleanup` | Phase 0 (#385, headers; #384 done) | cellpy |
 | `v2-testmeta-on-data` | V2-01, V2-02, V2-04 | cellpy |
 | `v2-composite-keys-merge` | V2-03, V2-07 | cellpy |
 | `v2-loader-harmonized-raw` | V2-05, V2-06, V2-08 | cellpy |
@@ -295,7 +296,7 @@ Parent epic issue on GitHub: [#402](https://github.com/jepegit/cellpy/issues/402
 - **Architecture diagram:** [`cellpy-v2-architecture.excalidraw`](cellpy-v2-architecture.excalidraw)
 - **This document:** `.issueflows/04-designs-and-guides/cellpy-v2-epic.md`
 - **Integration roadmap (engine):** `cellpy-core/.issueflows/04-designs-and-guides/cellpy-core-integration-roadmap.md`
-- **Open gate issues:** jepegit/cellpy#384, #385, #387
+- **Open gate issues:** jepegit/cellpy#385, #387 (#384 closed 2026-07-14)
 - **Core hardening (parallel):** cellpy/cellpy-core#67, #68, #70
 
 Update the [Status at a glance](#status-at-a-glance-epic-themes) table when starting or
