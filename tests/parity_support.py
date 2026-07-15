@@ -102,14 +102,15 @@ def build_native_summary(cell) -> pd.DataFrame:
     nd = Data()
     nd.raw = native_raw
     nd.steps = native_steps
-    summarizers.make_summary(nd, schema)
+    # Honor cycle_mode the same way the legacy bridge does (cellpycore #129).
+    test_mode = _cycle_mode_to_test_mode(cell.core.cycle_mode)
+    summarizers.make_summary(nd, schema, test_mode=test_mode)
     if schema.raw.internal_resistance in native_raw.columns:
         summarizers.ir_to_summary(nd, schema)
     summarizers.c_rates_to_summary(
         nd, schema, current_conversion_factor=_current_conversion_factor(cell)
     )
 
-    test_mode = _cycle_mode_to_test_mode(cell.core.cycle_mode)
     step_txt = (
         schema.cycle.discharge_capacity
         if test_mode.name == "INVERTED"
