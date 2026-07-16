@@ -1,5 +1,7 @@
 # History
 
+Note! Only v1 related changes are collected here.
+
 ## [Unreleased]
 
 ## 1.1.0.post1 - 2026-07-15
