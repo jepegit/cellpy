@@ -63,6 +63,14 @@ class LoaderError(CellpyError):
     pass
 
 
+class MixedCycleModesError(CellpyError):
+    """Raised when engine compute is requested on a multi-test object whose
+    tests carry different ``cycle_mode`` values (per-test engine polarity is
+    not implemented yet; see issues #506/#507)."""
+
+    pass
+
+
 class DeprecatedFeature(Error):
     """Raised when the feature is recently deprecated"""
 
@@ -107,6 +115,7 @@ __all__ = [
     "ConfigurationError",
     "UnitsError",
     "LoaderError",
+    "MixedCycleModesError",
     "DeprecatedFeature",
     "ExportFailed",
     "IOError",
