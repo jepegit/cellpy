@@ -1638,18 +1638,83 @@ class CellpyCell:
 
     # -------------------- cellpy file handling end ----------------------
 
-    def merge(self, datasets: list, **kwargs):
-        """This function merges datasets into one set."""
-        logging.info("Merging")
-        self.data = datasets.pop(0)
-        for data in datasets:
-            self.data = self._append(self.data, data, **kwargs)
-            for raw_data_file, file_size in zip(
-                data.raw_data_files,
-                data.raw_data_files_length,
-            ):
-                self.data.raw_data_files.append(raw_data_file)
-                self.data.raw_data_files_length.append(file_size)
+    def merge(self, cells, mode="campaign", renumber_cycles=True, **kwargs):
+        """Merge other cells/datasets into this one.
+
+        Two distinct semantics (issue #507, epic #402 V2-03/V2-07):
+
+        - ``mode="campaign"`` (default): the sources are *different tests*
+          (possibly different cells or programs). Each source keeps its
+          identity via a distinct compact ``test_id`` stamped on the raw
+          frame (this **overwrites** tester-assigned ids such as Arbin's
+          ``Test_ID`` — those remain as provenance in
+          ``meta_test_dependent.test_ID``), and its metadata becomes a
+          record in ``self.data.tests``. Cycle numbers are renumbered to be
+          globally unique; data points are offset; ``test_time`` /
+          ``date_time`` are *not* shifted (independent timelines). Sources
+          are never mutated. Mixing different ``cycle_mode`` values is
+          allowed here, but computing steps/summary on the merged object
+          then raises ``MixedCycleModesError``.
+        - ``mode="continuation"``: the sources are the *same physical test*
+          resumed across files — the classic fold, numerically identical to
+          ``from_raw([file1, file2])`` (cycles, data points and test time
+          are renumbered into one continuous run; source metadata is
+          dropped). Extra ``**kwargs`` (e.g. ``recalc``) are forwarded.
+
+        Args:
+            cells: a CellpyCell or Data instance, or a sequence of them.
+            mode (str): "campaign" (default) or "continuation".
+            renumber_cycles (bool): campaign mode only. v1 supports only
+                ``True`` (the legacy summary format cannot represent
+                duplicate cycle numbers); ``False`` raises
+                ``NotImplementedError`` (tracked for the native-schema path).
+            **kwargs: forwarded to the continuation fold.
+
+        Returns:
+            self (chainable), with ``self.data`` holding the merged object.
+        """
+        from cellpy.readers import merger
+
+        if cells is None:
+            raise TypeError(
+                "merge() requires the cells/datasets to merge into this one "
+                "(a CellpyCell/Data or a sequence of them)"
+            )
+        if isinstance(cells, (CellpyCell, ds.Data)):
+            cells = [cells]
+        datas = [c.data if isinstance(c, CellpyCell) else c for c in cells]
+
+        if mode == "continuation":
+            logging.info("Merging (continuation)")
+            for other in datas:
+                self.data = self._append(self.data, other, **kwargs)
+                for raw_data_file, file_size in zip(
+                    other.raw_data_files,
+                    other.raw_data_files_length,
+                ):
+                    self.data.raw_data_files.append(raw_data_file)
+                    self.data.raw_data_files_length.append(file_size)
+            return self
+
+        if mode != "campaign":
+            raise ValueError(f"unknown merge mode: {mode!r}")
+        if not renumber_cycles:
+            raise NotImplementedError(
+                "campaign merge with original (overlapping) cycle numbers "
+                "requires per-test summary support through the core bridge; "
+                "tracked for the native-schema path (#511)"
+            )
+
+        logging.info("Merging (campaign)")
+        for other in datas:
+            merger.campaign_fold(self.data, other, **kwargs)
+        modes = test_meta.cycle_modes_in_data(self.data)
+        if len(modes) > 1:
+            logging.warning(
+                f"merged object stores tests with different cycle_modes "
+                f"{sorted(modes)}; computing steps/summary will raise "
+                f"MixedCycleModesError until per-test engine polarity lands"
+            )
         return self
 
     def _append(self, t1, t2, merge_summary=False, merge_step_table=False, recalc=True):
@@ -1718,7 +1783,6 @@ class CellpyCell:
         raw = externals.pandas.concat([t1.raw, t2.raw], ignore_index=True)
         data.raw = raw
         data.loaded_from.append(t2.loaded_from)
-        step_table_made = False
 
         if merge_summary:
             # checking if we already have made a summary file of these datasets
@@ -1738,12 +1802,6 @@ class CellpyCell:
             except KeyError:
                 summary_made = False
                 logging.info("The summary is not complete - run make_summary()")
-
-            # checking if we already have made step tables for these datasets
-            if t1.has_steps and t2.has_steps:
-                step_table_made = True
-            else:
-                step_table_made = False
 
             if summary_made:
                 # check if (self-made) summary exists.
@@ -1777,12 +1835,14 @@ class CellpyCell:
                 )
 
         if merge_step_table:
-            if step_table_made:
-                cycle_index_header = self.headers_normal.cycle_index_txt
-                t2.steps[self.headers_step_table.cycle] = (
-                    t2.raw[self.headers_step_table.cycle] + last_cycle
-                )
-
+            # (fixed in #507: was gated on a flag only set inside the
+            # merge_summary branch, offset the wrong frame, and NameError'd
+            # on last_cycle when recalc=False)
+            if t1.has_steps and t2.has_steps:
+                if recalc:
+                    t2.steps[self.headers_step_table.cycle] = (
+                        t2.steps[self.headers_step_table.cycle] + last_cycle
+                    )
                 steps2 = externals.pandas.concat(
                     [t1.steps, t2.steps], ignore_index=True
                 )
@@ -2172,6 +2232,24 @@ class CellpyCell:
 
         if from_data_point is not None:
             return result
+
+        # Campaign objects only (issue #507): re-stamp test_id onto the step
+        # table. The core bridge groups steps by (test_id, cycle, step) using
+        # the raw test_id column but strips the column from the returned
+        # legacy frame; putting it back makes the subsequent summary use
+        # per-test windowing (use_tid) instead of cycle-only grouping. Gated
+        # on _extra_tests so single-test and continuation objects (including
+        # multi-tester-id Arbin raw) are untouched.
+        if self.data._extra_tests and not self.data.steps.empty:
+            from cellpy.readers import merger
+
+            test_id_hdr = self.headers_normal.test_id_txt
+            if test_id_hdr in self.data.raw.columns:
+                point_first = f"{self.headers_step_table.point}_first"
+                self.data.steps[test_id_hdr] = merger._steps_test_id_from_raw(
+                    self.data, self.data.steps, point_first
+                )
+
         return self
 
     def select_steps(self, step_dict, append_df=False):
@@ -5231,6 +5309,35 @@ class CellpyCell:
         # self.status_dataset = self._validate_cell()
         # self._invent_a_cell_name()
         return self
+
+
+def merge_cells(cells, mode="campaign", **kwargs) -> "CellpyCell":
+    """Merge several cells into a new CellpyCell without mutating any of them.
+
+    Convenience wrapper around :meth:`CellpyCell.merge` (issue #507): the
+    first cell is deep-copied and the rest are folded in. See the method
+    docstring for the "campaign" vs "continuation" semantics.
+
+    Args:
+        cells: sequence of CellpyCell (or Data) instances; order matters.
+        mode (str): "campaign" (default) or "continuation".
+        **kwargs: forwarded to :meth:`CellpyCell.merge`.
+
+    Returns:
+        A new CellpyCell holding the merged object.
+    """
+    cells = list(cells)
+    if not cells:
+        raise ValueError("merge_cells() needs at least one cell")
+    first, rest = cells[0], cells[1:]
+    if isinstance(first, CellpyCell):
+        merged = copy.deepcopy(first)
+    else:
+        merged = CellpyCell(initialize=True)
+        merged.data = copy.deepcopy(first)
+    if rest:
+        merged.merge(rest, mode=mode, **kwargs)
+    return merged
 
 
 def get(

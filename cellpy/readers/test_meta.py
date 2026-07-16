@@ -151,3 +151,26 @@ def cycle_modes_in_data(data) -> Set[str]:
         if mode is not None:
             modes.add(mode)
     return modes
+
+
+def cycle_ranges_per_test(data) -> dict:
+    """Per-test cycle ranges ``{test_id: (cycle_min, cycle_max)}``.
+
+    Derived from the raw frame's ``test_id`` column (campaign-merged objects,
+    issue #507), so it survives save/load of raw without extra state. A raw
+    frame without the column reports the active test spanning all cycles.
+    """
+    from cellpy.parameters.internal_settings import get_headers_normal
+
+    hn = get_headers_normal()
+    raw = data.raw
+    if raw.empty:
+        return {}
+    if hn.test_id_txt not in raw.columns:
+        cycles = raw[hn.cycle_index_txt]
+        return {data.active_test_id: (int(cycles.min()), int(cycles.max()))}
+    grouped = raw.groupby(hn.test_id_txt)[hn.cycle_index_txt].agg(["min", "max"])
+    return {
+        int(test_id): (int(row["min"]), int(row["max"]))
+        for test_id, row in grouped.iterrows()
+    }
