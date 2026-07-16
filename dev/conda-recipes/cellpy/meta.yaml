@@ -1,0 +1,94 @@
+{% set name = "cellpy" %}
+{% set version = "1.1.0.post1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  # Wheel avoids hatchling/uv-dynamic-versioning needing a git checkout.
+  url: https://pypi.org/packages/py3/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}-py3-none-any.whl
+  sha256: bb5b530a7becd9f513a2f7b961c9b1d9bda50bfc2495f42afbfec5225e17b05d
+
+build:
+  number: 0
+  # cellpy requires-python >=3.13
+  skip: true  # [py<313]
+  entry_points:
+    - cellpy=cellpy.cli:cli
+  script: {{ PYTHON }} -m pip install {{ name }}-{{ version }}-py3-none-any.whl -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+    # PyPI [project.dependencies] (conda names)
+    # NOTE: requires cellpycore on conda-forge first (see staged-recipes draft).
+    - cellpycore ==0.2.1
+    - charset-normalizer
+    - click
+    - cookiecutter >=2.1
+    - dateparser
+    - defusedxml
+    - fabric >=3.1
+    - jinja2-time
+    - matplotlib-base >=3.7
+    - numpy >=1.24
+    - openpyxl >=3.1.1
+    - pandas >=3.0.3,<4
+    - pint >=0.20
+    - platformdirs >=4.10.0
+    - polars
+    - pyarrow >=16
+    - pydantic-settings >=2.14.2
+    - pygithub >=2.2.0
+    - pyodbc >=4.0
+    - python-box >=7.0
+    - python-dotenv >=1.0.1
+    - python-isal
+    - pytables >=3.8
+    - requests
+    - rich >=13.5
+    - ruamel.yaml >=0.17.21
+    - scipy >=1.10.1
+    - setuptools >=67.7
+    - sqlalchemy >=2.0.0
+    - tqdm >=4.65
+    - typer
+    - xmltodict
+    - sqlalchemy-access >=2.0.2  # [win]
+    # Conda UX extras historically bundled with cellpy (optional on PyPI)
+    - hdf5 >=1.14
+    - ipykernel >=6.29.0
+    - ipython >=8.18.1
+    - ipywidgets >=8.1.1
+    - jupyterlab >=4.1
+    - lmfit >=1.2
+    - plotly >=5.18.0
+    - python-kaleido >0.1.0
+    - xlrd >=2.0.1
+
+test:
+  imports:
+    - cellpy
+    - cellpycore
+  commands:
+    - cellpy --help
+    - cellpy info --version
+
+about:
+  home: https://github.com/jepegit/cellpy
+  license: MIT
+  license_family: MIT
+  license_file: {{ name }}-{{ version }}.dist-info/licenses/LICENSE.md
+  summary: Extract and manipulate data from different battery cell testers.
+  description: |
+    Extract and manipulate data from different battery cell testers.
+  doc_url: https://cellpy.readthedocs.io/
+  dev_url: https://github.com/jepegit/cellpy
+
+extra:
+  recipe-maintainers:
+    - jepegit
