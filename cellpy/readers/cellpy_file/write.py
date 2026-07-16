@@ -56,6 +56,12 @@ def create_infotable(data, fmt: CellpyFileFormat = FORMAT_V8):
 def save(data, path, *, format_spec: CellpyFileFormat = FORMAT_V8) -> None:
     """Write ``Data`` to a cellpy-file (HDF5) with a single owned store lifecycle."""
     fmt = format_spec
+    if getattr(data, "_extra_tests", None):
+        logging.warning(
+            f"this object holds TestMeta records for non-active test_ids "
+            f"{sorted(data._extra_tests)}; cellpy-file format v8 only persists "
+            "the active test's metadata (full collection persistence: #510)"
+        )
     common_meta_table, test_dependent_meta_table, fid_table = create_infotable(
         data, fmt=fmt
     )

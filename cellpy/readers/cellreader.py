@@ -33,10 +33,12 @@ import numpy as np
 
 from . import externals as externals
 from cellpy.readers import data_structures as ds
+from cellpy.readers import test_meta
 import cellpy.internals.connections as internals
 
 from cellpy.exceptions import (
     DeprecatedFeature,
+    MixedCycleModesError,
     NullData,
     WrongFileVersion,
     NoDataFound,
@@ -515,6 +517,8 @@ class CellpyCell:
         if cell is not None:
             new_cell.data.meta_common = cell.data.meta_common
             new_cell.data.meta_test_dependent = cell.data.meta_test_dependent
+            new_cell.data._extra_tests = dict(cell.data._extra_tests)
+            new_cell.data._active_test_id = cell.data._active_test_id
 
             new_cell.data.raw_data_files = cell.data.raw_data_files
             new_cell.data.raw_data_files_length = cell.data.raw_data_files_length
@@ -880,7 +884,12 @@ class CellpyCell:
 
     @property
     def cycle_mode(self):
-        # TODO: v2.0 edit this from scalar to list
+        """The active test's ``cycle_mode`` (scalar).
+
+        For per-test access on multi-test objects, use
+        ``self.data.get_cycle_mode(test_id)`` / ``set_cycle_mode`` and the
+        ``self.data.tests`` collection (issue #506).
+        """
         try:
             data = self.data
             m = data.meta_test_dependent.cycle_mode
@@ -903,6 +912,26 @@ class CellpyCell:
             self._cycle_mode = cycle_mode
         except NoDataFound:
             self._cycle_mode = cycle_mode
+
+    def _guard_mixed_cycle_modes(self):
+        """Refuse engine compute when tests present carry different cycle_modes.
+
+        The engine applies one global charge/discharge convention; running it
+        on a merged object mixing e.g. anode and cathode tests would silently
+        apply the wrong convention to some tests (issue #506; per-test engine
+        polarity is future work, #507).
+        """
+        try:
+            modes = test_meta.cycle_modes_in_data(self.data)
+        except NoDataFound:
+            return
+        if len(modes) > 1:
+            raise MixedCycleModesError(
+                f"tests in this object carry different cycle_modes {sorted(modes)} "
+                f"(test_ids: {self.data.tests.test_ids}); the engine applies one "
+                "global convention, so computing steps/summary would be wrong for "
+                "some tests. Per-test engine polarity is tracked in #507/#510."
+            )
 
     # TODO: this probably does not need to be here
     def set_raw_datadir(self, directory=None):
@@ -2089,6 +2118,8 @@ class CellpyCell:
                 "all_steps will be deprecated, use usteps instead", FutureWarning
             )
             usteps = True
+
+        self._guard_mixed_cycle_modes()
 
         time_00 = time.time()
 
@@ -4618,6 +4649,8 @@ class CellpyCell:
         except NoDataFound:
             logging.info("Empty test (no data found)")
             return
+
+        self._guard_mixed_cycle_modes()
 
         if isinstance(test.loaded_from, (list, tuple)):
             for f in test.loaded_from:

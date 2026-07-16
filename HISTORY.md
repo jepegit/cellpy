@@ -2,6 +2,20 @@
 
 ## [Unreleased]
 
+* Per-test metadata API (#506, v2 Phase 1, themes V2-01/02/04): `Data.tests`
+  exposes a `cellpycore.metadata.TestMetaCollection` keyed by `test_id`
+  (active record derived from the legacy meta boxes, which stay authoritative;
+  extra records stored in memory), with `Data.set_test_meta`,
+  `Data.get_cycle_mode(test_id)` / `set_cycle_mode(mode, test_id)` and
+  `Data.active_test_id`. v1-v8 cellpy files load as a single-test collection
+  (`test_id=0`). Engine compute on objects mixing different `cycle_mode`s now
+  raises `MixedCycleModesError` instead of silently applying one convention
+  (per-test engine polarity: #507/#510). On-disk format v8 unchanged; only the
+  active test's metadata is persisted (full collection persistence: #510).
+  Adds the legacy<->core metadata mapping contract tests that
+  `cellpycore.legacy.meta_mapping` assigns to cellpy. Future vocabulary/export
+  alignment target: BattINFO (BIG-MAP).
+
 * Header single source (#505, v2 Phase 0 gate): drop the redundant module-level
   `HEADERS_NORMAL` / `HEADERS_SUMMARY` / `HEADERS_STEP_TABLE` constants in
   `cellreader.py` and `data_structures.py`; use the instance attributes /

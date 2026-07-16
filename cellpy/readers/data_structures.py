@@ -20,6 +20,9 @@ from typing import Any, Tuple, Dict, List, Union, Optional
 from typing import TypedDict
 
 from . import externals as externals
+from . import test_meta as test_meta_helpers
+
+from cellpycore.metadata.models import TestMeta, TestMetaCollection
 
 from cellpy.exceptions import NullData
 from cellpy.internals.connections import OtherPath
@@ -345,8 +348,18 @@ class Data:
         raw (pandas.DataFrame): raw data.
         summary (pandas.DataFrame): summary data.
         steps (pandas.DataFrame): step data.
-        meta_common (CellpyMetaCommon): common meta-data.
-        meta_test_dependent (CellpyMetaIndividualTest): test-dependent meta-data.
+        meta_common (CellpyMetaCommon): common meta-data (authoritative for the
+            active test; see ``tests``).
+        meta_test_dependent (CellpyMetaIndividualTest): test-dependent meta-data
+            (authoritative for the active test; see ``tests``).
+        tests (TestMetaCollection): per-test metadata keyed by ``test_id``. The
+            active test's record is *derived on access* from the legacy meta
+            boxes above (mutating it does not persist — use ``set_test_meta`` /
+            ``set_cycle_mode`` or the legacy attributes); records for other
+            ``test_id`` values are stored and survive in memory, but are not
+            written to cellpy files in format v8 (full persistence: #510).
+        active_test_id (int): compact grouping key of the active test (0 for a
+            single, unmerged test; matches the engine's ``test_id`` column).
         custom_info (Any): custom meta-data.
         raw_units (dict): dictionary with units for the raw data.
         raw_limits (dict): dictionary with limits for the raw data.
@@ -374,6 +387,10 @@ class Data:
                     "populate_defaults",
                 ]:
                     value = self.__getattribute__(p)
+                    # a bound method's repr embeds repr(self) -> infinite
+                    # recursion; skip callables
+                    if callable(value):
+                        continue
                     txt += f"{p}: {value}\n"
             if p == "raw_data_files":
                 fid_txt = "raw data files: ["
@@ -436,6 +453,10 @@ class Data:
                     "populate_defaults",
                 ]:
                     value = self.__getattribute__(p)
+                    # a bound method's repr embeds repr(self) -> infinite
+                    # recursion; skip callables
+                    if callable(value):
+                        continue
                     txt += f"<b>{p}</b>: {value}<br>"
             if p == "raw_data_files":
                 fid_txt = "<b>raw data files</b>:"
@@ -502,8 +523,16 @@ class Data:
         self.steps = externals.pandas.DataFrame()
 
         self.meta_common = CellpyMetaCommon()
-        # TODO: v2.0 consider making this a list of several CellpyMetaIndividualTest
+        # Authoritative box for the *active* test; per-test records for other
+        # test_ids live in _extra_tests and surface through the ``tests``
+        # property (issue #506).
         self.meta_test_dependent = CellpyMetaIndividualTest()
+        self._extra_tests: Dict[int, TestMeta] = {}
+        # Compact per-test grouping key of the active test (0 = single,
+        # unmerged; matches the engine's test_id convention). Note: the legacy
+        # ``meta_test_dependent.test_ID`` is the *tester-assigned* id (e.g.
+        # Arbin's Test_ID) — provenance, not this key.
+        self._active_test_id: int = 0
 
         self.custom_info = None  # Placeholder for custom meta-data
 
@@ -605,6 +634,88 @@ class Data:
                 stacklevel=2,
             )
         self.meta_common.nom_cap = value  # nominal capacity
+
+    # ---------------- per-test metadata (issue #506, v2 Phase 1) -----------------
+
+    @property
+    def active_test_id(self) -> int:
+        """Compact grouping key of the active test (0 = single, unmerged).
+
+        Matches the engine's ``test_id`` convention (raw/steps/summary are
+        stamped 0 for a single test). Distinct from the legacy
+        ``meta_test_dependent.test_ID``, which is the tester-assigned id and
+        stays available as provenance.
+        """
+        return self._active_test_id
+
+    @property
+    def tests(self) -> TestMetaCollection:
+        """Per-test metadata keyed by ``test_id`` (a fresh collection each access).
+
+        The active test's record is derived from ``meta_common`` /
+        ``meta_test_dependent`` (which stay authoritative — the core engine
+        reads them live), so mutating the returned record is a snapshot edit
+        and does not persist. Use :meth:`set_test_meta` /
+        :meth:`set_cycle_mode` (or the legacy attributes) to write.
+        """
+        collection = TestMetaCollection()
+        active_id = self.active_test_id
+        collection.add(test_meta_helpers.build_active_test_meta(self))
+        for test_id, record in self._extra_tests.items():
+            if test_id == active_id:
+                logging.warning(
+                    f"dropping stale extra TestMeta record for test_id={test_id} "
+                    f"(collides with the active test)"
+                )
+                continue
+            collection.add(record)
+        return collection
+
+    def set_test_meta(self, meta: TestMeta, *, replace: bool = True) -> None:
+        """Store a ``TestMeta`` record, routed by its ``test_id``.
+
+        The active test's record is written back onto the legacy meta boxes
+        (fields without a legacy home, e.g. ``uuid`` / ``source_*``, are
+        skipped); records for other ``test_id`` values are kept in memory but
+        are not persisted in cellpy-file format v8 (see #510).
+        """
+        if meta.test_id == self.active_test_id:
+            test_meta_helpers.apply_test_meta_to_legacy(
+                meta, self.meta_common, self.meta_test_dependent
+            )
+            return
+        if not replace and meta.test_id in self._extra_tests:
+            raise KeyError(f"test_id {meta.test_id} already present")
+        self._extra_tests[meta.test_id] = meta
+
+    def get_cycle_mode(self, test_id: Optional[int] = None) -> Optional[str]:
+        """``cycle_mode`` for the given test (``None`` = the active test)."""
+        if test_id is None or test_id == self.active_test_id:
+            return test_meta_helpers._unwrap(self.meta_test_dependent.cycle_mode)
+        try:
+            return self._extra_tests[test_id].cycle_mode
+        except KeyError:
+            raise KeyError(
+                f"no TestMeta record for test_id={test_id} "
+                f"(known: {sorted([self.active_test_id, *self._extra_tests])})"
+            ) from None
+
+    def set_cycle_mode(self, cycle_mode: str, test_id: Optional[int] = None) -> None:
+        """Set ``cycle_mode`` for the given test (``None`` = the active test).
+
+        The active test writes through to ``meta_test_dependent.cycle_mode``
+        — the attribute the processing engine reads.
+        """
+        if test_id is None or test_id == self.active_test_id:
+            self.meta_test_dependent.cycle_mode = cycle_mode
+            return
+        try:
+            self._extra_tests[test_id].cycle_mode = cycle_mode
+        except KeyError:
+            raise KeyError(
+                f"no TestMeta record for test_id={test_id} "
+                f"(known: {sorted([self.active_test_id, *self._extra_tests])})"
+            ) from None
 
     @staticmethod
     def _header_str(hdr):
