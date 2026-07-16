@@ -11,7 +11,7 @@ import pytest
 import cellpy.readers.data_structures
 from cellpy import log, prms
 from cellpy.exceptions import DeprecatedFeature, WrongFileVersion
-from cellpy.parameters.internal_settings import get_headers_summary
+from cellpy.parameters.internal_settings import get_headers_normal, get_headers_summary
 from cellpy.internals.connections import OtherPath
 
 log.setup_logging(default_level="DEBUG", testing=True)
@@ -114,31 +114,30 @@ def test_cellpy_version_5(cellpy_data_instance, parameters):
     # print(f"cellpy version: {v}")
 
 
-def test_merge(cellpy_data_instance, parameters):
-    # TODO @jepe: refactor and use col names directly from HeadersNormal instead
+def test_merge_continuation_matches_from_raw_list(parameters):
+    """merge(mode='continuation') is numerically identical to from_raw([f1, f2])."""
+    from cellpy import cellreader
+
     f1 = parameters.res_file_path
     f2 = parameters.res_file_path2
     assert os.path.isfile(f1)
     assert os.path.isfile(f2)
-    cellpy_data_instance.from_raw(f1)
-    cellpy_data_instance.from_raw(f2)
 
-    assert len(cellpy_data_instance.datasets) == 2
+    via_list = cellreader.CellpyCell()
+    via_list.from_raw([f1, f2])
 
-    table_first = cellpy_data_instance.data.raw.describe()
-    count_first = table_first.loc["count", "data_point"]
+    left = cellreader.CellpyCell()
+    left.from_raw(f1)
+    right = cellreader.CellpyCell()
+    right.from_raw(f2)
+    left.merge(right, mode="continuation")
 
-    table_second = cellpy_data_instance.datasets[1].raw.describe()
-    count_second = table_second.loc["count", "data_point"]
-
-    cellpy_data_instance.merge()
-    assert len(cellpy_data_instance.datasets) == 2
-
-    table_all = cellpy_data_instance.datasets[0].raw.describe()
-    count_all = table_all.loc["count", "data_point"]
-    assert len(cellpy_data_instance.datasets) == 1
-
-    assert pytest.approx(count_all, 0.001) == (count_first + count_second)
+    hn = get_headers_normal()
+    for col in (hn.data_point_txt, hn.cycle_index_txt, hn.test_time_txt):
+        assert left.data.raw[col].reset_index(drop=True).equals(
+            via_list.data.raw[col].reset_index(drop=True)
+        ), f"continuation merge differs from from_raw list on {col}"
+    assert len(left.data.raw) == len(via_list.data.raw)
 
 
 def test_merge_auto_from_list(parameters):
@@ -359,11 +358,6 @@ def test_set_raw_datadir(dataset):
 
 def test_set_logger(dataset):
     print("missing test")
-
-
-def test_merge(dataset):
-    print("missing test")
-    print("maybe deprecated")
 
 
 def test_fid(cellpy_data_instance, parameters):

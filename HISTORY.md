@@ -2,6 +2,19 @@
 
 ## [Unreleased]
 
+* Campaign merge (#507, v2 Phase 1-2, themes V2-03/V2-07): `CellpyCell.merge`
+  is rewritten (old signature was dead code) — `merge(cells, mode="campaign")`
+  folds different tests into one multi-test object: distinct compact `test_id`
+  per source stamped on raw (overwrites tester-assigned ids; provenance stays
+  in `meta_test_dependent.test_ID`), per-test metadata records in `Data.tests`,
+  globally renumbered cycles, offset data points, unshifted timelines, and no
+  cumulative carry-forward (summaries window per test on recompute).
+  `mode="continuation"` keeps the classic fold (identical to
+  `from_raw([f1, f2])`, which is untouched). New non-mutating `merge_cells()`
+  helper and `test_meta.cycle_ranges_per_test()`. Step tables of campaign
+  objects carry a `test_id` column so the engine groups and windows per test
+  end-to-end. Also fixes latent bugs in `_append`'s `merge_step_table` branch.
+
 * Per-test metadata API (#506, v2 Phase 1, themes V2-01/02/04): `Data.tests`
   exposes a `cellpycore.metadata.TestMetaCollection` keyed by `test_id`
   (active record derived from the legacy meta boxes, which stay authoritative;
