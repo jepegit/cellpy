@@ -51,9 +51,6 @@ from cellpy.parameters.legacy.update_headers import (
 )
 from cellpy.parameters.internal_settings import (
     get_cellpy_units,
-    get_headers_normal,
-    get_headers_step_table,
-    get_headers_summary,
     headers_normal,
     headers_step_table,
     headers_summary,
@@ -81,9 +78,6 @@ from cellpy.readers.cellpy_file import write as cellpy_file_write
 
 DIGITS_C_RATE = 5
 
-HEADERS_NORMAL = get_headers_normal()  # TODO @jepe refactor this (not needed)
-HEADERS_SUMMARY = get_headers_summary()  # TODO @jepe refactor this (not needed)
-HEADERS_STEP_TABLE = get_headers_step_table()  # TODO @jepe refactor this (not needed)
 
 # TODO: @jepe - new feature - method for assigning new cycle numbers and step numbers
 #   - Sometimes the user forgets to increment the cycle number and it would be good
@@ -630,9 +624,9 @@ class CellpyCell:
             List of CellpyCell objects
 
         """
-        h_summary_index = HEADERS_SUMMARY.cycle_index
-        h_raw_index = HEADERS_NORMAL.cycle_index_txt
-        h_step_cycle = HEADERS_STEP_TABLE.cycle
+        h_summary_index = self.headers_summary.cycle_index
+        h_raw_index = self.headers_normal.cycle_index_txt
+        h_step_cycle = self.headers_step_table.cycle
 
         if base_cycles is None:
             all_cycles = self.get_cycle_numbers()
@@ -698,9 +692,9 @@ class CellpyCell:
             A new CellpyCell object containing only the selected cycles.
 
         """
-        h_summary_index = HEADERS_SUMMARY.cycle_index
-        h_raw_index = HEADERS_NORMAL.cycle_index_txt
-        h_step_cycle = HEADERS_STEP_TABLE.cycle
+        h_summary_index = self.headers_summary.cycle_index
+        h_raw_index = self.headers_normal.cycle_index_txt
+        h_step_cycle = self.headers_step_table.cycle
 
         if isinstance(cycles, int):
             cycles = [cycles]

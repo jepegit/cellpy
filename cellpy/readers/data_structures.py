@@ -25,17 +25,12 @@ from cellpy.exceptions import NullData
 from cellpy.internals.connections import OtherPath
 from cellpy.parameters.internal_settings import (
     get_headers_normal,
-    get_headers_step_table,
-    get_headers_summary,
     get_default_raw_units,
     get_default_raw_limits,
     CellpyMetaCommon,
     CellpyMetaIndividualTest,
 )
 
-HEADERS_NORMAL = get_headers_normal()  # TODO @jepe refactor this (not needed)
-HEADERS_SUMMARY = get_headers_summary()  # TODO @jepe refactor this (not needed)
-HEADERS_STEP_TABLE = get_headers_step_table()  # TODO @jepe refactor this (not needed)
 
 LOADERS_NOT_READY_FOR_PROD = [
     "ext_nda_reader"
@@ -940,7 +935,7 @@ def identify_last_data_point(data):
     """Find the last data point and store it in the fid instance"""
 
     logging.debug("searching for last data point")
-    hdr_data_point = HEADERS_NORMAL.data_point_txt
+    hdr_data_point = get_headers_normal().data_point_txt
     try:
         if hdr_data_point in data.raw.columns:
             last_data_point = data.raw[hdr_data_point].max()
@@ -1364,12 +1359,13 @@ def group_by_interpolate(
     """
     # TODO: @jepe - create more tests
     time_00 = time.time()
+    headers_normal = get_headers_normal()
     if x is None:
-        x = HEADERS_NORMAL.step_time_txt
+        x = headers_normal.step_time_txt
     if y is None:
-        y = HEADERS_NORMAL.voltage_txt
+        y = headers_normal.voltage_txt
     if group_by is None:
-        group_by = [HEADERS_NORMAL.cycle_index_txt]
+        group_by = [headers_normal.cycle_index_txt]
 
     if not isinstance(group_by, (list, tuple)):
         group_by = [group_by]
