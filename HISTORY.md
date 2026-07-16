@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+* Header single source (#505, v2 Phase 0 gate): drop the redundant module-level
+  `HEADERS_NORMAL` / `HEADERS_SUMMARY` / `HEADERS_STEP_TABLE` constants in
+  `cellreader.py` and `data_structures.py`; use the instance attributes /
+  `get_headers_*()` accessors from `internal_settings` instead.
 * Decommission the in-repo legacy summary engine (#385, v2 Phase 0 gate):
   remove `_make_summar_legacy`, `_generate_absolute_summary_columns`,
   `_ir_to_summary`, `_end_voltage_to_summary` and the `make_summary(old=True)`
