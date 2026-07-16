@@ -18,29 +18,26 @@ jobs:
           TAG: ${{ github.event.release.tag_name }}
         run: |
           set -euo pipefail
-          git fetch origin master v2
+          # Post-v1.1 scheme (see .issueflows/04-designs-and-guides/cellpy-v2-branching.md):
+          # v2 develops on master; 1.x maintenance lives on the v1.x branch.
+          git fetch origin master v1.x
 
           on_branch() {
             git merge-base --is-ancestor HEAD "origin/$1"
           }
 
           if [[ "$TAG" =~ ^v1\. ]]; then
-            on_branch master || {
-              echo "::error::1.x release $TAG must point to a commit on master"
-              exit 1
-            }
-          elif [[ "$TAG" =~ ^v2\.0\.0(a|b|rc) ]]; then
-            on_branch v2 || {
-              echo "::error::v2.0 pre-release $TAG must point to a commit on v2"
+            on_branch v1.x || {
+              echo "::error::1.x release $TAG must point to a commit on v1.x"
               exit 1
             }
           elif [[ "$TAG" =~ ^v2\. ]]; then
             on_branch master || {
-              echo "::error::v2.x stable release $TAG must point to a commit on master"
+              echo "::error::v2 release $TAG (stable or pre) must point to a commit on master"
               exit 1
             }
           else
-            echo "::error::Tag $TAG is not allowed. Use v1.* (master), v2.0.0a/b/rc* (v2), or v2.* stable (master)."
+            echo "::error::Tag $TAG is not allowed. Use v1.* (v1.x branch) or v2.* (master)."
             exit 1
           fi
 
