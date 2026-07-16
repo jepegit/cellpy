@@ -1,239 +1,168 @@
-# cellpy v2.0 — branching conventions
+# cellpy v2.0 — branching conventions (post-v1.1)
 
-How to develop **v2** without disrupting **1.x** work on `master`. Companion to
-[`cellpy-v2-epic.md`](cellpy-v2-epic.md) and GitHub epic [#402](https://github.com/jepegit/cellpy/issues/402).
+How to develop **v2 on `master`** while keeping a quiet **`v1.x`** maintenance line
+for 1.x fixes. Companion to [`cellpy-v2-epic.md`](cellpy-v2-epic.md) and GitHub epic
+[#402](https://github.com/jepegit/cellpy/issues/402).
+
+> **Scheme change (2026-07-16).** Up to v1.1 this document prescribed the inverse
+> layout (`master` = stable 1.x, long-lived `v2` integration branch). With v1.1
+> released and v2 becoming the dominant line of development, the scheme was
+> flipped: **v2 develops on `master`**, and 1.x maintenance moved to the **`v1.x`**
+> branch (created at `v1.1.0.post1`). The old `origin/v2` branch is retired — its
+> only unique commits were sync/workflow artifacts whose content is already on
+> `master`; do not base new work on it. This section is the marker for anyone
+> holding stale clones or reading old issue references.
 
 ## Summary
 
 | Branch | Role | PR target | Releases |
 |--------|------|-----------|----------|
-| **`master`** | Stable **1.x** line | `master` | Tags `v1.x.y` |
-| **`v2`** | Long-lived **v2.0** integration (epic #402) | `v2` | None until v2.0; then merge → `master` and tag `v2.0.0` |
+| **`master`** | **v2 development** (epic #402) — *unstable during the v2 cycle* | `master` | Pre-releases `v2.0.0a1`, … then `v2.0.0` |
+| **`v1.x`** | Stable **1.x maintenance** — fixes only | `v1.x` | Tags `v1.1.1`, `v1.2.0`, … |
 | **`<N>-<slug>`** | Short-lived issue branches | Parent line (see below) | — |
 
-**Golden rule:** Same repo, same issues/CI — branch, don't fork (no `cellpy-next` clone).
+**Golden rule:** same repo, same issues/CI — branch, don't fork.
 
-**Parity goal (both directions):** `master` and `v2` should not drift. Stable, shared work
-belongs on **`master` as soon as it is verified** — not only at v2.0. The `v2` branch carries
-v2-only design ahead of release; everything else should flow through `master` promptly.
+**Direction of flow:** shared fixes land on **`master` first**, then are
+**cherry-picked to `v1.x`** when 1.x users need them. `v1.x` never merges back
+wholesale; only the rare fix developed directly on `v1.x` (because master has
+diverged too far) flows master-ward, also as a cherry-pick.
 
 ## Who branches from where
 
 ```
-master  ──►  391-batch-collector-default     ──►  master     (v1 maintenance / features)
-master  ──►  384-bump-core-parity           ──►  master     (Phase 0 — preferred if 1.x-safe)
-v2      ──►  402-v2-testmeta-on-data        ──►  v2         (v2 epic themes V2-01+)
-master  ──merge before each v2 issue──►  v2   (1.x fixes into integration line)
-v2      ──backport when stable──►  master    (shared fixes/cleanup — see below)
-v2      ──once at release──►  master          (full v2.0 integration merge only)
+master ──► 501-v2-testmeta-on-data  ──► master   (v2 development — the default)
+master ──► 502-fix-shared-bug       ──► master   (bugfix), then cherry-pick → v1.x
+v1.x   ──► 503-v1-only-fix          ──► v1.x     (only when the fix doesn't apply to master)
 ```
 
 ### Default PR target
 
-- **Unlabeled / general work → `master`**
-- **Epic #402 / label `v2` / title prefix `v2:` → `v2`**
+- **Everything → `master`** unless it is a 1.x-only fix.
+- **1.x backports / v1-only fixes → `v1.x`** (label `v1x`, or state
+  "Target branch: `v1.x`" in the issue).
 
-### What belongs on `master` vs `v2`
+### What belongs where
 
 | Work | Branch | Rationale |
 |------|--------|-----------|
-| Bugfixes, docs, plot/batch/CLI tweaks | **`master` first** | 1.x users get fixes immediately; merge into `v2` before next v2 issue |
-| Phase 0 gate (#384, #385, STEP-12 units) | **`master` first** when parity tests show no behaviour change | Shared cleanup — ideal on `master` ASAP |
-| Phase 0 that might change output | `v2` first, then **backport** to `master` only after proven stable | Protect 1.x until verified |
-| V2-01 … V2-15 (metadata, merge, API, file format) | **`v2` only** | Breaking / v2-only surface — do not backport |
-| `cellpycore` pin bump | **`master`** once essential + full suite green; mirror on `v2` at next sync | 1.x line stays current |
+| V2 themes (metadata, merge, API, file format) | **`master`** | The active line |
+| Bugfixes in shared modules | **`master` first**, cherry-pick to `v1.x` if 1.x users are affected | One source of truth |
+| Docs, CI, tests | **`master`**; backport only if the `v1.x` release process needs them | Keep `v1.x` quiet |
+| Fix that only makes sense pre-v2 (removed/rewritten code on master) | **`v1.x` directly** | Nothing to cherry-pick from |
+| `cellpycore` pin bump | **`master`** freely as v2 needs; **`v1.x`** stays on the conservative exact pin (`cellpycore==0.2.1`) unless a fix demands a patch bump | Protect the stable line |
 
-## Keeping 1.x safe on `master`
+## Backporting to `v1.x`
 
-1. **No v2 data model or file-format work on `master`** — even behind flags, if persistence or public API changes.
-2. **CI must pass** before merge (`uv run pytest`; use `-m essential` for inner loop).
-3. **Conservative core pin on `master`:** e.g. `cellpycore>=0.1.2,<0.2` until v2 needs a newer API.
-4. **Do not wholesale-merge `v2` → `master`** except the single v2.0 release — but **do
-   backport** stable, 1.x-safe commits promptly (see below).
+When a merged `master` fix should reach 1.x users:
 
-## Backporting stable work to `master`
+1. `git checkout v1.x && git pull --ff-only`, branch `<N>-backport-<slug>`.
+2. **Cherry-pick the squash commit(s)** from master (`git cherry-pick <sha>`);
+   resolve conflicts in favour of the 1.x code.
+3. Run `uv run pytest -m essential` (minimum) — full suite before a `v1.x` release.
+4. PR against **`v1.x`**, referencing the original master PR.
 
-When work lands on `v2` first but is **100% stable** and **does not depend on v2-only design**
-(metadata model, file format v2, breaking API), get it onto **`master` as soon as possible**
-— do not wait for v2.0.
+**Rule of thumb:** if a 1.x user is hurting, backport; otherwise let master carry it.
+Do not backport v2 design (metadata model, file format, API changes) under any flag.
 
-### Prefer `master` first (best case)
+## Keeping the lines healthy
 
-If you already know a change is behaviour-neutral for 1.x (bugfix, CI, docs, Phase 0 cleanup
-with green `-m essential` + full suite):
-
-1. Branch from **`master`**, PR to **`master`**
-2. After merge, sync into `v2` (`git merge origin/master` on `v2`)
-
-This keeps the source of truth for shared code on the line everyone uses.
-
-### Backport from `v2` (when work started there)
-
-If a merged `v2` PR contains **only** 1.x-safe commits (or a subset of a PR):
-
-1. **Cherry-pick** those commits onto a branch from `master`, or open a **dedicated backport
-   PR** with the same diff scoped to shared files
-2. Run **`uv run pytest -m essential`** (minimum) and full suite before merging to `master`
-3. Reference the original `v2` PR in the backport PR body
-
-| Safe to backport to `master` | Never backport (v2-only until release) |
-|------------------------------|----------------------------------------|
-| Bugfixes in shared modules | `TestMetaCollection` / keyed metadata |
-| Phase 0 engine cleanup (#384, #385) after parity proof | HDF5 / cellpy file format v2 |
-| Unit delegation to `cellpycore.units` | Public API removals / deprecations shipped as v2 |
-| Tests, CI, docs (non-v2) | Multi-test merge behaviour |
-| Conservative `cellpycore` pin bump | Native-schema opt-in defaults |
-
-**Rule of thumb:** if a 1.x user would not notice the change (or only benefits), it belongs
-on `master` now. If it requires v2 metadata or breaks saved files, keep it on `v2`.
-
-### Split PRs when mixed
-
-If one piece of work touches both shared cleanup and v2-only design, **split into two PRs**:
-
-- PR A → `master` (stable slice, merge first)
-- PR B → `v2` (v2-only slice, branch after syncing `v2` with updated `master`)
-
-## Before starting a v2 issue
-
-**Always update `v2` from `master` before you create an issue branch.** Do not branch from a
-stale `v2` — you will miss 1.x bugfixes and make the eventual v2.0 merge harder.
-
-```bash
-git fetch origin
-git checkout v2
-git pull --ff-only origin v2
-git merge origin/master   # bring 1.x fixes into the integration line
-# resolve conflicts (see below), then:
-uv sync
-uv run pytest -m essential
-git checkout -b 402-v2-testmeta-on-data
-```
-
-### What to take from `master`
-
-| From `master` | Action on `v2` |
-|---------------|----------------|
-| Bugfixes, CI, docs, behaviour-neutral refactors | **Take** — keep v2 current |
-| Phase 0 shared cleanup (#384, #385) if already on `master` | **Take** if parity tests still pass on `v2` |
-| 1.x-only behaviour you intentionally changed on `v2` | **Resolve in favour of `v2`** during the merge |
-| New 1.x features that **conflict with the v2 epic** (e.g. alternate data model, API v2 rejects) | **Do not blindly keep** — resolve consciously; prefer the v2 design and drop or re-implement the 1.x path on `v2` only |
-
-There is no automatic “exclude list”. During `git merge origin/master`, read conflicting
-commits: if a `master` change **directly works against a v2 goal** documented in
-[`cellpy-v2-epic.md`](cellpy-v2-epic.md), keep the **`v2` side** (or a v2-appropriate rewrite),
-not the 1.x version. When unsure, note the conflict in the PR and link epic #402.
-
-### What not to do
-
-- **Do not** wholesale-merge the **`v2` branch** into `master` until v2.0 (backport **commits**, not the integration branch).
-- **Do not** let stable shared fixes **only** live on `v2` — backport or land on `master` first.
-- **Do not** branch a v2 issue from `master` — branch from **updated `v2`**.
-- **Do not** assume `git pull` on `v2` alone is enough if `master` has moved; you must
-  **merge `origin/master` into `v2`** (or rebase `v2` onto `master` if the team agrees —
-  merge is the default here).
-
-After your issue branch is done, open the PR against **`v2`**, not `master`.
-
-## Reality check: what “1.x on master” means today
-
-`master` already includes the **cellpy-core seam** (#377), Python **≥ 3.13**, and a PyPI
-`cellpycore` dependency. “1.x” here means **post-seam 1.x** — not pre-core cellpy. v2 adds
-metadata, multi-test merge, API cleanup, and file-format changes on top.
+1. **`v1.x` is fixes-only.** No features, no refactors, no dependency churn beyond
+   what a fix requires. Every commit should be releasable as `v1.1.x`.
+2. **CI must pass on both lines** before merge (`uv run pytest`; `-m essential`
+   for the inner loop).
+3. **Do not merge `v1.x` ↔ `master`** in either direction — cherry-pick individual
+   commits. The lines are allowed to diverge; that is the point.
+4. **master may be unstable** during the v2 cycle. Users installing from GitHub
+   master get v2-in-progress; released versions come from PyPI tags only.
 
 ## Releases and PyPI
 
 Full procedure: [`release-procedure.md`](release-procedure.md). Summary:
 
 | Line | GitHub release from | Tag examples | PyPI |
-|------|---------------------|--------------|------|
-| **1.x (now)** | **`master`** | `v1.0.4a1` → `v1.0.4` | alpha first, then stable |
-| **v2 integration** | **`v2`** (optional) | `v2.0.0a1` | pre-release only (`--pre`) |
-| **2.x (after v2.0 merge)** | **`master`** | `v2.0.0`, `v2.1.0` | stable |
+|------|--------------------|--------------|------|
+| **1.x maintenance** | **`v1.x`** | `v1.1.1`, `v1.2.0` | stable |
+| **v2 pre-releases** | **`master`** | `v2.0.0a1`, `v2.0.0b1` | pre-release only (`--pre`) |
+| **v2.0 and beyond** | **`master`** | `v2.0.0`, `v2.1.0` | stable |
 
-**Workflow:** `release: published` → validate tag/branch → test (`UV_NO_SOURCES=1`) →
-`uv build` → PyPI trusted publish (`.github/workflows/release.yml`).
-
-**Two-way parity + releases:** stable fixes should land on **`master` first** (or backport
-immediately) so the next **`v1.x.y` GitHub release** on `master` ships them to PyPI. Do not
-accumulate 1.x-safe fixes only on `v2`.
+**Workflow:** `release: published` → validate tag/branch → test (`UV_NO_SOURCES=1`)
+→ `uv build` → PyPI trusted publish (`.github/workflows/release.yml`).
+**Check per release line:** the workflow's tag/branch validation must accept
+`v1.x.y` tags cut from the **`v1.x` branch** (it historically assumed `master`) —
+verify before cutting the first `v1.1.1`.
 
 **Versioning:** tag name = version (`uv-dynamic-versioning`); no separate bump in
-`pyproject.toml`. Pin exact `cellpycore==…` in the release commit on `master` when cutting
-1.x tags.
+`pyproject.toml`. Pin exact `cellpycore==…` in the release commit on **whichever
+line** is being released.
 
 ## Local development
 
-### v1 work (default)
+### v2 work (default)
 
 ```bash
 git checkout master
 git pull --ff-only
-git checkout -b 391-batch-collector-default
+git checkout -b 501-v2-testmeta-on-data
 uv sync
 uv run pytest -m essential   # fast smoke
 ```
 
-### v2 work
-
-**Prerequisite:** merge `origin/master` into `v2` first — see
-[Before starting a v2 issue](#before-starting-a-v2-issue).
+### v1 maintenance work
 
 ```bash
-git fetch origin
-git checkout v2
-git pull --ff-only origin v2
-git merge origin/master          # sync 1.x fixes; resolve conflicts (v2 wins on v2-only design)
+git checkout v1.x
+git pull --ff-only
+git checkout -b 503-backport-fix-xyz
 uv sync
 uv run pytest -m essential
-git checkout -b 402-v2-testmeta-on-data
 ```
 
 ### Side-by-side with worktrees
 
 ```bash
 git fetch origin
-git worktree add ../cellpy-v2 v2
-# ../cellpy     → master (v1)
-# ../cellpy-v2  → v2
+git worktree add ../cellpy-v1x v1.x
+# ../cellpy      → master (v2)
+# ../cellpy-v1x  → v1.x  (1.x maintenance)
 ```
 
-Editable `cellpycore` (`[tool.uv.sources]` in `pyproject.toml`) applies in both; use **uv**,
-not conda, for integration tests.
+Editable `cellpycore` (`[tool.uv.sources]` in `pyproject.toml`) applies in both;
+use **uv**, not conda, for integration tests.
 
 ## GitHub hygiene
 
-- **Default branch stays `master`** for clones and casual contributors.
-- Label **`v2`** on issues/PRs tied to epic #402; set PR base to `v2`. (Label created:
-  purple **`v2`** — *cellpy v2.0 epic work — PRs should target the v2 branch*.)
-- Child issues carved from the epic should state **Target branch: `v2`** in the body.
-- **Branch protection** on **`master`** and **`v2`** (configured 2026-07-03):
-  - Require PR before merge (0 approvals — merge when CI green, no reviewer gate)
-  - Required checks: **`Run pytest on linux (conda)`**, **`Installing using pip on posix`**
-  - Branches must be up to date before merge (`strict`)
-  - No force-push; no branch deletion
-  - Admins may bypass (`enforce_admins: false`)
-- Close **#334** as superseded by #377 — do not merge that branch.
+- **Default branch stays `master`** — now the v2 line; clones and casual PRs land
+  on active development by default.
+- **Branch protection:** `master` keeps its existing rules; apply the same to
+  **`v1.x`** (require PR, required checks `Run pytest on linux (conda)` +
+  `Installing using pip on posix`, strict up-to-date, no force-push, no deletion).
+  The old `v2` branch's protection can be dropped when the branch is deleted.
+- The **`v2` PR label** is obsolete for targeting (everything targets master);
+  use a **`v1x`** label for backport/maintenance PRs instead.
+- Issues that are 1.x-only should state **Target branch: `v1.x`** in the body.
 
 ## Dependency policy (cellpy-core)
 
 | Line | `pyproject.toml` | Notes |
 |------|------------------|-------|
-| `master` | `cellpycore>=0.1.2,<0.2` (example) | Avoid pulling breaking core API accidentally |
-| `v2` | Pin exact or tighter range as needed | Can trail core `#67` / `#68` fixes |
+| `master` | Track newer `cellpycore` as v2 needs (exact `==` pin at each release commit) | v2 co-evolves with core |
+| `v1.x` | `cellpycore==0.2.1` (the v1.1 pin) | Bump only for a fix, and only to a patch release |
 
-Before tagging any **1.x** release, ensure `[tool.uv.sources]` editable override is not relied
-on for the release build (PyPI pin is consumer truth — see cellpy-core migration guide).
+Before tagging any release, ensure the `[tool.uv.sources]` editable override is
+not relied on for the release build (PyPI pin is consumer truth — see the
+cellpy-core migration guide).
 
 ## At v2.0 release (checklist)
 
-- [ ] Full `uv run pytest` green on `v2`
-- [ ] Merge `master` → `v2` one last time; resolve conflicts
-- [ ] Merge `v2` → `master` (single integration PR)
+- [ ] Full `uv run pytest` green on `master`
 - [ ] Tag `v2.0.0` on `master`
-- [ ] Pin exact `cellpycore==…` in release commit
-- [ ] Publish migration guide (v1 files → v2 read path)
+- [ ] Pin exact `cellpycore==…` in the release commit
+- [ ] Publish migration guide (v1 files → v2 read path; see
+      `architecture-plan/cellpy-v104-migration-notes.md` for the 1.0.3→1.0.4 part)
 - [ ] Update epic #402; archive issue-flow docs to `03-solved-issues`
+- [ ] `v1.x` remains open for critical fixes as long as needed; announce its
+      end-of-life explicitly when the time comes
 
 ## Tracking
 
