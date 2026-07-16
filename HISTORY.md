@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+* Decommission the in-repo legacy summary engine (#385, v2 Phase 0 gate):
+  remove `_make_summar_legacy`, `_generate_absolute_summary_columns`,
+  `_ir_to_summary`, `_end_voltage_to_summary` and the `make_summary(old=True)`
+  branch — the cellpy-core engine is the only summary path. Breaking: the `old`
+  kwarg is gone (1.x users keep it on the `v1.x` branch). The arbin_sql_h5 test
+  now runs on the core path (verified value-identical; core prunes 13 duplicate
+  raw rows, 47→34).
+
 ## 1.1.0.post1 - 2026-07-15
 
 * Sync conda env files (`environment.yml`, `environment_dev.yml`,
