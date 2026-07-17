@@ -176,6 +176,15 @@ def campaign_fold(left, right, *, merge_steps=True, merge_summary=True) -> None:
         right_summary[hs.cycle_index] = right_summary[hs.cycle_index] + cycle_offset
         if hs.data_point in right_summary.columns:
             right_summary[hs.data_point] = right_summary[hs.data_point] + dp_offset
+        # test_id: bridge summaries carry it since cellpycore 0.2.2 (#136);
+        # remap the right side onto its new ids (mirrors the raw handling).
+        if test_id_hdr in right_summary.columns:
+            if right._extra_tests:
+                right_summary[test_id_hdr] = right_summary[test_id_hdr].map(
+                    lambda v: id_map[int(v)]
+                )
+            else:
+                right_summary[test_id_hdr] = id_map[right.active_test_id]
         left.summary = externals.pandas.concat(
             [left.summary, right_summary], ignore_index=True
         )
