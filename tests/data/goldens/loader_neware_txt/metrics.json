@@ -1,6 +1,6 @@
 {
   "instrument": "neware_txt",
-  "n_columns": 26,
+  "n_columns": 27,
   "n_rows": 9065,
   "source": "testdata/data/neware_uio.csv",
   "suite": "loader_neware_txt"

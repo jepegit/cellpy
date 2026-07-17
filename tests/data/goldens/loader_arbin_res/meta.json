@@ -31,10 +31,10 @@
     "tot_mass": 1.0
   },
   "meta_test_dependent": {
-    "channel_index": null,
-    "creator": null,
+    "channel_index": 3,
+    "creator": "hfa",
     "cycle_mode": "anode",
-    "test_ID": null,
+    "test_ID": "",
     "test_type": null,
     "voltage_lim_high": 1.0,
     "voltage_lim_low": 0.0

@@ -1,6 +1,6 @@
 {
   "instrument": "custom",
-  "n_columns": 10,
+  "n_columns": 11,
   "n_rows": 2444,
   "source": "testdata/data/custom_data_001.csv",
   "suite": "loader_custom"
