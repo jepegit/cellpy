@@ -31,6 +31,7 @@ from . import externals as externals
 from cellpy.readers import data_structures as ds
 from cellpy.exporters import tabular as exporters_tabular
 from cellpy.readers import capacity_curves
+from cellpy.readers import slicing
 from cellpy.readers import test_meta
 import cellpy.internals.connections as internals
 
@@ -536,203 +537,47 @@ class CellpyCell:
             new_cell.data._raw_id = cell.data.raw_id
         return new_cell
 
+    # The split/drop-cycle helpers live in cellpy.readers.slicing (issue
+    # #519); thin delegates below keep the public API and subclass dispatch.
     def mod_raw_split_cycle(self, data_points: List) -> None:
-        """Split cycle(s) into several cycles.
-
-        Args:
-            data_points: list of the first data point(s) for additional cycle(s).
-
-        """
-
-        logging.info(f"splitting cycles at {data_points}")
-        for data_point in data_points:
-            self._mod_raw_split_cycle(data_point)
-        logging.warning(
-            f"splitting cycles at {data_points} -re-run make_step_table and make_summary to propagate change!"
-        )
+        """Split cycle(s) into several cycles. See :func:`cellpy.readers.slicing.mod_raw_split_cycle`."""
+        return slicing.mod_raw_split_cycle(self, data_points)
 
     def _mod_raw_split_cycle(self, data_point: int) -> None:
-        r = self.data.raw
-
-        hdr_data_point = self.headers_normal.data_point_txt
-        hdr_cycle = self.headers_normal.cycle_index_txt
-        hdr_c_cap = self.headers_normal.charge_capacity_txt
-        hdr_d_cap = self.headers_normal.discharge_capacity_txt
-        hdr_c_energy = self.headers_normal.charge_energy_txt
-        hdr_d_energy = self.headers_normal.discharge_energy_txt
-
-        # modifying cycle numbers
-        c_mask = r[hdr_data_point] >= data_point
-        r.loc[c_mask, hdr_cycle] = r.loc[c_mask, hdr_cycle] + 1
-
-        # resetting capacities
-        initial_values = r.loc[r[hdr_data_point] == data_point - 1, :]
-        cycle = r.loc[r[hdr_data_point] == data_point, hdr_cycle].values[0]
-
-        c_cap, d_cap, c_energy, d_energy = initial_values[
-            [hdr_c_cap, hdr_d_cap, hdr_c_energy, hdr_d_energy]
-        ].values[0]
-        cycle_mask = r[hdr_cycle] == cycle
-        r.loc[cycle_mask, hdr_c_cap] = r.loc[cycle_mask, hdr_c_cap] - c_cap
-        r.loc[cycle_mask, hdr_d_cap] = r.loc[cycle_mask, hdr_d_cap] - d_cap
-        r.loc[cycle_mask, hdr_c_energy] = r.loc[cycle_mask, hdr_c_energy] - c_energy
-        r.loc[cycle_mask, hdr_d_energy] = r.loc[cycle_mask, hdr_d_energy] - d_energy
+        """See :func:`cellpy.readers.slicing._mod_raw_split_cycle`."""
+        return slicing._mod_raw_split_cycle(self, data_point)
 
     def split(self, cycle=None):
-        """Split experiment (CellpyCell object) into two sub-experiments. if cycle
-        is not give, it will split on the median cycle number"""
-
-        if isinstance(cycle, int) or cycle is None:
-            return self.split_many(base_cycles=cycle)
+        """Split experiment into two sub-experiments. See :func:`cellpy.readers.slicing.split`."""
+        return slicing.split(self, cycle=cycle)
 
     def drop_from(self, cycle=None):
-        """Select first part of experiment (CellpyCell object) up to cycle number
-        'cycle'"""
-
-        if isinstance(cycle, int):
-            c1, c2 = self.split_many(base_cycles=cycle)
-            return c1
+        """Select first part of experiment up to cycle. See :func:`cellpy.readers.slicing.drop_from`."""
+        return slicing.drop_from(self, cycle=cycle)
 
     def drop_to(self, cycle=None):
-        """Select last part of experiment (CellpyCell object) from cycle number
-        'cycle'"""
-
-        if isinstance(cycle, int):
-            c1, c2 = self.split_many(base_cycles=cycle)
-            return c2
+        """Select last part of experiment from cycle. See :func:`cellpy.readers.slicing.drop_to`."""
+        return slicing.drop_to(self, cycle=cycle)
 
     def from_cycle(self, cycle: int) -> "CellpyCell":
-        """Select experiment (CellpyCell object) from cycle number 'cycle'"""
-        if isinstance(cycle, int):
-            return self.split_many(base_cycles=cycle)[1]
-        else:
-            raise ValueError("cycle must be an integer")
+        """Select experiment from cycle number. See :func:`cellpy.readers.slicing.from_cycle`."""
+        return slicing.from_cycle(self, cycle)
 
     def to_cycle(self, cycle: int) -> "CellpyCell":
-        """Select experiment (CellpyCell object) to cycle number 'cycle'"""
-        if isinstance(cycle, int):
-            return self.split_many(base_cycles=cycle+1)[0]
-        else:
-            raise ValueError("cycle must be an integer")
+        """Select experiment to cycle number. See :func:`cellpy.readers.slicing.to_cycle`."""
+        return slicing.to_cycle(self, cycle)
 
     def drop_edges(self, start: int, end: int) -> "CellpyCell":
-        """Select middle part of experiment (CellpyCell object) from cycle
-        number 'start' to 'end'"""
-
-        if end < start:
-            raise ValueError("end cannot be larger than start")
-        if end == start:
-            raise ValueError("end cannot be the same as start")
-        return self.split_many([start, end])[1]
+        """Select middle part of experiment. See :func:`cellpy.readers.slicing.drop_edges`."""
+        return slicing.drop_edges(self, start, end)
 
     def split_many(self, base_cycles: Optional[Union[int, List[int]]] = None) -> List["CellpyCell"]:
-        """Split experiment (CellpyCell object) into several sub-experiments.
-
-        Args:
-            base_cycles (int or list of ints): cycle(s) to do the split on.
-
-        Returns:
-            List of CellpyCell objects
-
-        """
-        h_summary_index = self.headers_summary.cycle_index
-        h_raw_index = self.headers_normal.cycle_index_txt
-        h_step_cycle = self.headers_step_table.cycle
-
-        if base_cycles is None:
-            all_cycles = self.get_cycle_numbers()
-            base_cycles = int(externals.numpy.median(all_cycles))
-
-        cells = list()
-        if not isinstance(base_cycles, (list, tuple)):
-            base_cycles = [base_cycles]
-
-        dataset = self.data
-        steptable = dataset.steps
-        data = dataset.raw
-        summary = dataset.summary
-
-        # In case Cycle_Index has been promoted to index [#index]
-        if h_summary_index not in summary.columns:
-            summary = summary.reset_index(drop=False)
-
-        for b_cycle in base_cycles:
-            steptable0, steptable = [
-                steptable[steptable[h_step_cycle] < b_cycle],
-                steptable[steptable[h_step_cycle] >= b_cycle],
-            ]
-            data0, data = [
-                data[data[h_raw_index] < b_cycle],
-                data[data[h_raw_index] >= b_cycle],
-            ]
-            summary0, summary = [
-                summary[summary[h_summary_index] < b_cycle],
-                summary[summary[h_summary_index] >= b_cycle],
-            ]
-
-            new_cell = CellpyCell.vacant(cell=self)
-            old_cell = CellpyCell.vacant(cell=self)
-
-            # Polars Phase A (#457): keys live in columns — no re-promotion
-            # of cycle_index to the summary index.
-
-            new_cell.data.steps = steptable0
-            new_cell.data.raw = data0
-            new_cell.data.summary = summary0
-            new_cell.data = ds.identify_last_data_point(new_cell.data)
-
-            old_cell.data.steps = steptable
-            old_cell.data.raw = data
-            old_cell.data.summary = summary
-            old_cell.data = ds.identify_last_data_point(old_cell.data)
-
-            cells.append(new_cell)
-
-        cells.append(old_cell)
-        return cells
+        """Split experiment into several sub-experiments. See :func:`cellpy.readers.slicing.split_many`."""
+        return slicing.split_many(self, base_cycles=base_cycles)
 
     def with_cycles(self, cycles: Union[int, List[int]]) -> "CellpyCell":
-        """Select a subset of cycles from the experiment (CellpyCell object).
-
-        This method should only be used for quick selection of cycles (e.g. for plotting).
-
-        Args:
-            cycles (int or iterable of ints): cycle number(s) to keep.
-
-        Returns:
-            A new CellpyCell object containing only the selected cycles.
-
-        """
-        h_summary_index = self.headers_summary.cycle_index
-        h_raw_index = self.headers_normal.cycle_index_txt
-        h_step_cycle = self.headers_step_table.cycle
-
-        if isinstance(cycles, int):
-            cycles = [cycles]
-        cycles = list(cycles)
-
-        dataset = self.data
-        steptable = dataset.steps
-        data = dataset.raw
-        summary = dataset.summary
-
-        # In case Cycle_Index has been promoted to index [#index]
-        if h_summary_index not in summary.columns:
-            summary = summary.reset_index(drop=False)
-
-        new_steptable = steptable[steptable[h_step_cycle].isin(cycles)]
-        new_data = data[data[h_raw_index].isin(cycles)]
-        new_summary = summary[summary[h_summary_index].isin(cycles)]
-
-        # Polars Phase A (#457): keys live in columns — no re-promotion.
-
-        new_cell = CellpyCell.vacant(cell=self)
-        new_cell.data.steps = new_steptable
-        new_cell.data.raw = new_data
-        new_cell.data.summary = new_summary
-        new_cell.data = ds.identify_last_data_point(new_cell.data)
-
-        return new_cell
+        """Select a subset of cycles. See :func:`cellpy.readers.slicing.with_cycles`."""
+        return slicing.with_cycles(self, cycles)
 
     # ------------------- SPLITTING AND DROPPING FINISHED -----------
 

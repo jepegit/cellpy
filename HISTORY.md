@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+* Split/drop-cycle helpers extracted from `cellreader.py` into
+  `cellpy.readers.slicing` (#519, V2-09 follow-up): `split`, `split_many`,
+  `drop_from`/`drop_to`, `from_cycle`/`to_cycle`, `drop_edges`,
+  `with_cycles`, `mod_raw_split_cycle` moved verbatim (instance-first
+  functions, thin delegates keep the public API); new pin tests added where
+  coverage was thin.
+
 * Exporter family extracted from `cellreader.py` into
   `cellpy.exporters.tabular` (#518, V2-09 follow-up): `to_csv` / `to_excel`
   and the `_export_*` helpers moved verbatim (instance-first functions, thin
