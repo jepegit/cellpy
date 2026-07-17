@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+* Header column literals in `utils/helpers.py` and `filters/summary.py` use
+  header-object attributes (#538, native-headers Phase-0 prerequisite): the
+  base-name string-keyed `hdr_summary["charge_capacity"]`-style lookups become
+  attribute access, and `filter_summary`'s `rate_columns` default is resolved
+  from `HeadersSummary` (was a hard-coded `("charge_c_rate", "discharge_c_rate")`
+  tuple). Postfix/specific columns (`*_gravimetric`, `areal_*`) keep string-key
+  composition. Behavior-identical.
+
 * Journal-page column literals use `HeadersJournal` attributes (#537, native-
   headers Phase-0 prerequisite): the string-keyed `hdr_journal["mass"]`-style
   lookups in `batch_plotters.py` and `helpers.py` become attribute access

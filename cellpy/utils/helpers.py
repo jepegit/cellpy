@@ -37,8 +37,8 @@ def _make_average_legacy(
 ):
     if key_index_bounds is None:
         key_index_bounds = [1, -2]
-    hdr_norm_cycle = hdr_summary["normalized_cycle_index"]
-    hdr_cum_charge = hdr_summary["cumulated_charge_capacity"]
+    hdr_norm_cycle = hdr_summary.normalized_cycle_index
+    hdr_cum_charge = hdr_summary.cumulated_charge_capacity
     cell_id = ""
     not_a_number = np.nan
     new_frames = []
@@ -103,7 +103,7 @@ def _make_average(
     skip_st_dev_for_equivalent_cycle_index=True,
     average_method="mean",
 ):
-    hdr_norm_cycle = hdr_summary["normalized_cycle_index"]
+    hdr_norm_cycle = hdr_summary.normalized_cycle_index
     not_a_number = np.nan
     new_frames = []
 
@@ -225,7 +225,7 @@ def add_normalized_cycle_index(summary, nom_cap, column_name=None):
     Returns:
         data object now with normalized cycle index in its summary.
     """
-    hdr_norm_cycle = hdr_summary["normalized_cycle_index"]
+    hdr_norm_cycle = hdr_summary.normalized_cycle_index
     hdr_cum_charge = hdr_summary["cumulated_charge_capacity_gravimetric"]
 
     if column_name is None:
@@ -260,7 +260,7 @@ def add_c_rate(cell, nom_cap=None, column_name=None):
     # now also included in step_table
     # TODO: remove this function
     if column_name is None:
-        column_name = hdr_steps["rate_avr"]
+        column_name = hdr_steps.rate_avr
     if nom_cap is None:
         nom_cap = cell.data.nom_cap
 
@@ -278,10 +278,10 @@ def add_areal_capacity(cell, cell_id, journal):
     loading = journal.pages.loc[cell_id, hdr_journal.loading]
 
     cell.data.summary[hdr_summary["areal_charge_capacity"]] = (
-        cell.data.summary[hdr_summary["charge_capacity"]] * loading / 1000
+        cell.data.summary[hdr_summary.charge_capacity] * loading / 1000
     )
     cell.data.summary[hdr_summary["areal_discharge_capacity"]] = (
-        cell.data.summary[hdr_summary["discharge_capacity"]] * loading / 1000
+        cell.data.summary[hdr_summary.discharge_capacity] * loading / 1000
     )
     return cell
 
@@ -303,7 +303,7 @@ def remove_outliers_from_summary_on_window(
 ):
     """Removes outliers based on neighbours"""
     if col_name is None:
-        col = hdr_summary["charge_capacity"]
+        col = hdr_summary.charge_capacity
 
     else:
         col = hdr_summary[col_name]
@@ -344,8 +344,8 @@ def remove_outliers_from_summary_on_nn_distance(
     """
     if filter_cols is None:
         filter_cols = [
-            hdr_summary["charge_capacity"],
-            hdr_summary["discharge_capacity"],
+            hdr_summary.charge_capacity,
+            hdr_summary.discharge_capacity,
         ]
 
     def neighbour_window(y):
@@ -391,8 +391,8 @@ def remove_outliers_from_summary_on_zscore(
 
     if filter_cols is None:
         filter_cols = [
-            hdr_summary["charge_capacity"],
-            hdr_summary["discharge_capacity"],
+            hdr_summary.charge_capacity,
+            hdr_summary.discharge_capacity,
         ]
 
     s2 = s[filter_cols].copy()
@@ -424,8 +424,8 @@ def remove_outliers_from_summary_on_value(
     """
     if filter_cols is None:
         filter_cols = [
-            hdr_summary["charge_capacity"],
-            hdr_summary["discharge_capacity"],
+            hdr_summary.charge_capacity,
+            hdr_summary.discharge_capacity,
         ]
 
     s2 = s[filter_cols].copy()
@@ -756,7 +756,7 @@ def concatenate_summaries(
         group_nest.append(b.pages.group.to_list())
 
     default_columns = [hdr_summary["charge_capacity_gravimetric"]]
-    hdr_norm_cycle = hdr_summary["normalized_cycle_index"]
+    hdr_norm_cycle = hdr_summary.normalized_cycle_index
 
     if columns is None:
         columns = []
@@ -786,16 +786,16 @@ def concatenate_summaries(
 
     if normalize_capacity_on is not None:
         normalize_capacity_headers = [
-            hdr_summary["normalized_charge_capacity"],
-            hdr_summary["normalized_discharge_capacity"],
+            hdr_summary.normalized_charge_capacity,
+            hdr_summary.normalized_discharge_capacity,
         ]
         output_columns = [
             col
             for col in output_columns
             if col
             not in [
-                hdr_summary["charge_capacity"],
-                hdr_summary["discharge_capacity"],
+                hdr_summary.charge_capacity,
+                hdr_summary.discharge_capacity,
             ]
         ]
         output_columns.extend(normalize_capacity_headers)
@@ -917,7 +917,7 @@ def _partition_summary_based_on_cv_steps(
     import pandas as pd
 
     if not x:
-        x = hdr_summary["cycle_index"]
+        x = hdr_summary.cycle_index
 
     summary = c.data.summary.copy()
 
@@ -1081,7 +1081,7 @@ def concat_summaries(
         group_nest.append(pages.group.to_list())
 
     default_columns = [hdr_summary["charge_capacity_gravimetric"]]
-    hdr_norm_cycle = hdr_summary["normalized_cycle_index"]
+    hdr_norm_cycle = hdr_summary.normalized_cycle_index
 
     if columns is None:
         columns = []
@@ -1111,16 +1111,16 @@ def concat_summaries(
 
     if normalize_capacity_on is not None:
         normalize_capacity_headers = [
-            hdr_summary["normalized_charge_capacity"],
-            hdr_summary["normalized_discharge_capacity"],
+            hdr_summary.normalized_charge_capacity,
+            hdr_summary.normalized_discharge_capacity,
         ]
         output_columns = [
             col
             for col in output_columns
             if col
             not in [
-                hdr_summary["charge_capacity"],
-                hdr_summary["discharge_capacity"],
+                hdr_summary.charge_capacity,
+                hdr_summary.discharge_capacity,
             ]
         ]
         output_columns.extend(normalize_capacity_headers)
@@ -1462,10 +1462,10 @@ def select_summary_based_on_rate(
             on = [on]
 
     if rate_column is None:
-        rate_column = hdr_steps["rate_avr"]
+        rate_column = hdr_steps.rate_avr
 
     if on:
-        on_column = hdr_steps["type"]
+        on_column = hdr_steps.type
 
     if rate is None:
         rate = 0.05
@@ -1473,7 +1473,7 @@ def select_summary_based_on_rate(
     if rate_std is None:
         rate_std = 0.1 * rate
 
-    cycle_number_header = hdr_summary["cycle_index"]
+    cycle_number_header = hdr_summary.cycle_index
 
     step_table = cell.data.steps
 
@@ -1545,10 +1545,10 @@ def add_normalized_capacity(
     if norm_cycles is None:
         norm_cycles = [1, 2, 3, 4, 5]
 
-    col_name_charge = hdr_summary["charge_capacity"]
-    col_name_discharge = hdr_summary["discharge_capacity"]
-    col_name_norm_charge = hdr_summary["normalized_charge_capacity"]
-    col_name_norm_discharge = hdr_summary["normalized_discharge_capacity"]
+    col_name_charge = hdr_summary.charge_capacity
+    col_name_discharge = hdr_summary.discharge_capacity
+    col_name_norm_charge = hdr_summary.normalized_charge_capacity
+    col_name_norm_discharge = hdr_summary.normalized_discharge_capacity
 
     try:
         norm_val_charge = cell.data.summary.loc[norm_cycles, col_name_charge].mean()

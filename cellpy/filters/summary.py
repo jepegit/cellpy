@@ -29,6 +29,8 @@ import logging
 from collections.abc import Mapping, Sequence
 from typing import Any, Callable, Optional, Union
 
+from cellpy.parameters.internal_settings import get_headers_summary
+
 import pandas as pd
 
 logger = logging.getLogger(__name__)
@@ -145,7 +147,7 @@ def filter_summary(
     df: pd.DataFrame,
     *,
     rate: RangeArg = None,
-    rate_columns: ColumnsArg = ("charge_c_rate", "discharge_c_rate"),
+    rate_columns: ColumnsArg = None,
     **extra_filters: Any,
 ) -> pd.DataFrame:
     """Filter rows of a cellpy summary DataFrame.
@@ -159,6 +161,8 @@ def filter_summary(
             mapping ``{"value": v, "delta": d}`` (keep rows with
             ``v - d < value <= v + d``).
         rate_columns: Which column(s) the ``rate`` filter applies to.
+            ``None`` (default) resolves to the summary C-rate columns
+            (``HeadersSummary.charge_c_rate`` / ``.discharge_c_rate``).
             A single string is coerced to a one-element tuple. With more
             than one column the predicate is AND-ed across columns - a
             row is kept only if *every* listed column lies in range.
@@ -176,6 +180,10 @@ def filter_summary(
             argument is malformed.
         TypeError: A range argument has an unsupported type.
     """
+    if rate_columns is None:
+        hdr_summary = get_headers_summary()
+        rate_columns = (hdr_summary.charge_c_rate, hdr_summary.discharge_c_rate)
+
     range_kwargs = {k: v for k, v in extra_filters.items() if not k.endswith("_columns")}
     column_kwargs = {k: v for k, v in extra_filters.items() if k.endswith("_columns")}
 
