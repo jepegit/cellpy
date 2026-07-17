@@ -237,6 +237,7 @@ def test_single_test_steps_have_no_test_id_column(parameters):
 
 
 def test_campaign_save_warns_and_reloads_single(campaign_cell, tmp_path, caplog):
+    """v8 HDF5 escape still drops non-active TestMeta (legacy limitation)."""
     campaign_cell.make_step_table()
     campaign_cell.make_summary(find_ir=False, find_end_voltage=False)
     outfile = tmp_path / "campaign.h5"
@@ -247,6 +248,35 @@ def test_campaign_save_warns_and_reloads_single(campaign_cell, tmp_path, caplog)
     reloaded = cellreader.CellpyCell()
     reloaded.load(outfile)
     assert reloaded.data.tests.test_ids == [0]
+
+
+@pytest.mark.essential
+def test_campaign_v9_roundtrip_preserves_tests_and_test_id(campaign_cell, tmp_path):
+    """Milestone B: v9 save/load keeps both TestMeta rows and frame test_id."""
+    campaign_cell.make_step_table()
+    campaign_cell.make_summary(find_ir=False, find_end_voltage=False)
+    before_meta = {
+        tid: core_meta_io.to_dict(campaign_cell.data.tests.get(tid))
+        for tid in campaign_cell.data.tests.test_ids
+    }
+    before_raw_ids = set(campaign_cell.data.raw[HN.test_id_txt].unique())
+    before_step_ids = set(campaign_cell.data.steps[HN.test_id_txt].unique())
+
+    outfile = tmp_path / "campaign.cellpy"
+    campaign_cell.save(outfile)
+
+    reloaded = cellreader.CellpyCell()
+    reloaded.load(outfile)
+
+    assert sorted(reloaded.data.tests.test_ids) == [0, 1]
+    after_meta = {
+        tid: core_meta_io.to_dict(reloaded.data.tests.get(tid))
+        for tid in reloaded.data.tests.test_ids
+    }
+    assert after_meta == before_meta
+    assert set(reloaded.data.raw[HN.test_id_txt].unique()) == before_raw_ids
+    assert HN.test_id_txt in reloaded.data.steps.columns
+    assert set(reloaded.data.steps[HN.test_id_txt].unique()) == before_step_ids
 
 
 # ------------------------------------------------------- steps/summary concat ----
