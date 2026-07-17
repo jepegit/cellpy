@@ -266,8 +266,12 @@ def test_posix_path_coercion_keeps_single_leading_slash():
     abs_path = pathlib.Path("/cellpy_inventory_root")
     op = cellpy.internals.connections.OtherPath(abs_path)
     assert op.original == "/cellpy_inventory_root"
-    assert str(op) == "/cellpy_inventory_root"
+    # str() uses the platform separator (Windows gives "\\cellpy_inventory_root");
+    # the guarded regression is slash-doubling, so compare against plain pathlib
+    assert str(op) == str(abs_path)
+    assert op.as_posix() == "/cellpy_inventory_root"
     assert not str(op).startswith("//")
+    assert not str(op).startswith("\\\\")
 
 
 def test_copy_local(parameters, tmp_path):
