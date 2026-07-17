@@ -144,8 +144,17 @@ def test_campaign_guards():
     with pytest.raises(ValueError, match="raw_units differ"):
         left.merge(other)
 
-    with pytest.raises(NotImplementedError, match="original"):
-        left.merge(_mini_data(name="three"), renumber_cycles=False)
+    # renumber_cycles=False is supported since #529 (cellpycore 0.2.2 carries
+    # test_id through the bridge): original cycle numbers are kept.
+    three = _mini_data(name="three")
+    three_cycles = set(three.raw[HN.cycle_index_txt].unique())
+    left.merge(three, renumber_cycles=False)
+    merged = left.data.raw
+    new_tid = max(merged[HN.test_id_txt].unique())
+    assert set(
+        merged[merged[HN.test_id_txt] == new_tid][HN.cycle_index_txt].unique()
+    ) == three_cycles
+    assert merged[HN.data_point_txt].is_unique
 
     with pytest.raises(ValueError, match="unknown merge mode"):
         left.merge(_mini_data(name="four"), mode="bogus")
@@ -226,6 +235,83 @@ def test_campaign_recompute_stamps_steps_and_windows_summary(campaign_cell):
     assert first_row[cum_col] == pytest.approx(
         first_row["charge_capacity"], rel=1e-6
     )
+
+
+def test_campaign_merge_original_cycle_numbers(parameters):
+    """renumber_cycles=False (#529): sources keep their own cycle numbers;
+    the key becomes (test_id, cycle); data points stay globally unique."""
+    left = cellreader.CellpyCell()
+    left.from_raw(parameters.res_file_path)
+    right = cellreader.CellpyCell()
+    right.from_raw(parameters.res_file_path2)
+    left_cycles = set(left.data.raw[HN.cycle_index_txt].unique())
+    right_cycles = set(right.data.raw[HN.cycle_index_txt].unique())
+    left_max_dp = int(left.data.raw[HN.data_point_txt].max())
+    assert left_cycles & right_cycles  # the fixture overlaps, so the flag matters
+
+    left.merge(right, renumber_cycles=False)
+
+    raw = left.data.raw
+    assert set(raw[HN.test_id_txt].unique()) == {0, 1}
+    t0 = raw[raw[HN.test_id_txt] == 0]
+    t1 = raw[raw[HN.test_id_txt] == 1]
+    assert set(t0[HN.cycle_index_txt].unique()) == left_cycles
+    assert set(t1[HN.cycle_index_txt].unique()) == right_cycles
+    assert raw[HN.data_point_txt].is_unique
+    assert int(t1[HN.data_point_txt].min()) > left_max_dp
+
+
+def test_campaign_original_cycles_pipeline_and_v9_roundtrip(parameters, tmp_path):
+    """renumber_cycles=False (#529): steps/summary group on (test_id, cycle),
+    cumulatives reset per test, and everything round-trips through v9."""
+    left = cellreader.CellpyCell()
+    left.from_raw(parameters.res_file_path)
+    right = cellreader.CellpyCell()
+    right.from_raw(parameters.res_file_path2)
+    left.merge(right, renumber_cycles=False)
+
+    left.make_step_table()
+    steps = left.data.steps
+    assert set(steps[HN.test_id_txt].unique()) == {0, 1}
+    # duplicate cycle numbers overall, unique per (test_id, cycle, step)
+    assert steps.duplicated(subset=[HN.test_id_txt, "cycle", "step"]).sum() == 0
+    assert steps["cycle"].min() == 1
+    assert set(steps[steps[HN.test_id_txt] == 1]["cycle"].unique()) == set(
+        right.data.raw[HN.cycle_index_txt].unique()
+    )
+
+    left.make_summary(find_ir=False, find_end_voltage=False)
+    summary = left.data.summary
+    assert set(summary[HS.test_id].astype(int).unique()) == {0, 1}
+    # (test_id, cycle_index) is the key: unique pairs, repeated cycle numbers
+    assert summary.duplicated(subset=[HS.test_id, HS.cycle_index]).sum() == 0
+    assert summary[HS.cycle_index].duplicated().any()
+    # per-test windowing: the cumulation restarts at the test boundary
+    cum_col = "cumulated_charge_capacity"
+    block1 = summary[summary[HS.test_id] == 1]
+    first_row = block1.sort_values(HS.cycle_index).iloc[0]
+    assert first_row[cum_col] == pytest.approx(first_row["charge_capacity"], rel=1e-6)
+
+    outfile = tmp_path / "campaign_original_cycles.cellpy"
+    left.save(outfile)
+    reloaded = cellreader.CellpyCell()
+    reloaded.load(outfile)
+    r_raw = reloaded.data.raw
+    assert set(r_raw[HN.test_id_txt].unique()) == {0, 1}
+    for tid in (0, 1):
+        assert set(
+            r_raw[r_raw[HN.test_id_txt] == tid][HN.cycle_index_txt].unique()
+        ) == set(raw_cycles_per_test(left.data)[tid])
+    assert sorted(reloaded.data.tests.test_ids) == [0, 1]
+
+
+def raw_cycles_per_test(data):
+    """The set of raw cycle numbers per test_id (test helper)."""
+    raw = data.raw
+    return {
+        int(tid): set(raw[raw[HN.test_id_txt] == tid][HN.cycle_index_txt].unique())
+        for tid in raw[HN.test_id_txt].unique()
+    }
 
 
 def test_campaign_merge_remaps_summary_test_id(parameters):
