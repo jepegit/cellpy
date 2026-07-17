@@ -15,18 +15,12 @@
 
 - **C (V2-15):**
   - [x] v1→v2 migration guide (draft in tree; polish/link review still OK)
-  - [ ] exact `cellpycore==` pin for the release commit — **blocked** (see gate)
-  - [ ] `UV_NO_SOURCES=1 uv lock` + essential green against that pin
+  - [x] pin gate cleared: cellpy-core #136 → `cellpycore==0.2.2` on PyPI
+  - [x] `HeadersSummary` / `HeadersStepTable.test_id` parity + pipeline_smoke golden regen
+  - [ ] PR #523 CI green / merge
   - [ ] follow `release-procedure.md` / cut `v2.0.0aN` when ready (tag timing may slip)
 
 ## Pin gate — cellpy-core #136
 
-Do **not** treat the current `cellpycore==0.2.1` bump as the v2.0 release pin until:
-
-1. [cellpy/cellpy-core#136](https://github.com/cellpy/cellpy-core/issues/136) is fixed
-   (legacy bridge: preserve `test_id` on steps/summary; legacy-schema `merge_data`),
-2. cellpy-core gets a **version bump + PyPI release** (next tag after `v0.2.1`),
-3. cellpy re-pins to that exact `cellpycore==X.Y.Z` with `UV_NO_SOURCES=1 uv lock`.
-
-Until then, campaign merge in cellpy still relies on the #507 re-stamp workaround;
-pinning 0.2.1 again does not close V2-15.
+Cleared (2026-07-17): core #136 shipped as `cellpycore==0.2.2`. cellpy pin +
+header parity + pipeline_smoke golden updated on this branch.

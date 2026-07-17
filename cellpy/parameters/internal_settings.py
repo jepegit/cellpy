@@ -456,6 +456,7 @@ class HeadersSummary(BaseHeaders):
     postfixes = ["gravimetric", "areal", "absolute"]
 
     cycle_index: str = "cycle_index"
+    test_id: str = "test_id"
     data_point: str = "data_point"
     test_time: str = "test_time"
     datetime: str = "date_time"
@@ -554,6 +555,7 @@ class HeadersStepTable(BaseHeaders):
     """Headers used for the steps table (used as column headers for the steps pandas DataFrames)"""
 
     test: str = "test"
+    test_id: str = "test_id"
     ustep: str = "ustep"
     cycle: str = "cycle"
     step: str = "step"
