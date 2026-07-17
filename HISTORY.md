@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+* Native schema opt-in (#511, V2-11): `CellpyCell(native_schema=True)` keeps
+  frames in native cellpy-core column names and runs the polars engine
+  directly — no legacy rename sandwich. Supported pipeline: `from_raw` /
+  `load` → `make_step_table` → `make_summary` → `save` (v9). Legacy path
+  stays the default; legacy-named consumers (`get_cap`, exporters, plotting,
+  campaign merge) are not supported on a native-schema cell yet.
+
 * cellpycore 0.2.2 sync: the legacy bridge now carries `test_id` on steps and
   summary for all objects (core #136), so the #507 re-stamp workaround in
   `make_step_table` is removed and the campaign merger remaps the right-hand

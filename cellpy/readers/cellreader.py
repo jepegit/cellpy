@@ -211,6 +211,7 @@ class CellpyCell:
         cellpy_units=None,
         output_units=None,
         debug=False,
+        native_schema=False,
     ):
         """
         Args:
@@ -225,6 +226,13 @@ class CellpyCell:
             cellpy_units (dict): sent to cellpy.parameters.internal_settings.get_cellpy_units
             output_units (dict): sent to cellpy.parameters.internal_settings.get_default_output_units
             debug (bool): set to True if you want to see debug messages.
+            native_schema (bool): opt-in feature flag (issue #511, V2-11).
+                When True, frames are kept in native cellpy-core column names
+                and the polars engine runs directly (no legacy rename
+                sandwich). Supported pipeline: ``from_raw`` / ``load`` →
+                ``make_step_table`` → ``make_summary`` → ``save`` (v9).
+                Legacy-named consumers (``get_cap``, exporters, plotting,
+                campaign merge) are not supported on a native-schema cell.
         """
         # TODO v 1.1: move to data (allow for multiple testers for same cell)
         if tester is None:
@@ -240,8 +248,16 @@ class CellpyCell:
         # cellpy-core seam: the core owns the Data object and runs the per-cycle
         # summary pipeline. Construct it without initializing so that cellpy's own
         # initialize() creates the cellpy ``ds.Data`` it expects (the data
-        # property reads/writes ``self.core._data``).
-        self.core = OldCellpyCellCore(initialize=False, debug=debug)
+        # property reads/writes ``self.core._data``). Under the ``native_schema``
+        # opt-in (#511) the legacy bridge is replaced by the rename-free
+        # pandas<->polars adapter.
+        self.native_schema = bool(native_schema)
+        if self.native_schema:
+            from cellpy.readers.native_core import NativeCellpyCellCore
+
+            self.core = NativeCellpyCellCore(initialize=False, debug=debug)
+        else:
+            self.core = OldCellpyCellCore(initialize=False, debug=debug)
 
         self._cell_name = None
         self._initial_cells = None
@@ -1449,6 +1465,12 @@ class CellpyCell:
         }
 
         self.data = data
+        if self.native_schema:
+            # #511 opt-in: translate once at the I/O boundary; everything
+            # downstream stays in native column names.
+            from cellpy.readers.cellpy_file import translate as cellpy_file_translate
+
+            cellpy_file_translate.to_native(self.data)
         self._invent_a_cell_name(self.file_names)  # TODO (v1.0.0): fix me
         self.last_uploaded_from = "raw"
         self.last_uploaded_at = datetime.datetime.now()
@@ -1535,6 +1557,14 @@ class CellpyCell:
 
         if data:
             self.data = data
+            if self.native_schema:
+                # #511 opt-in: cellpy-file readers emit legacy names; translate
+                # once at the I/O boundary.
+                from cellpy.readers.cellpy_file import (
+                    translate as cellpy_file_translate,
+                )
+
+                cellpy_file_translate.to_native(self.data)
             self.limit_loaded_cycles = limits.limit_loaded_cycles
             self.limit_data_points = limits.limit_data_points
 
@@ -1639,6 +1669,11 @@ class CellpyCell:
                 f"Unknown cellpy_file_format={cellpy_file_format!r}; using v9"
             )
             fmt = "v9"
+        if fmt == "hdf5" and self.native_schema:
+            raise ValueError(
+                "the legacy HDF5 (v8) writer expects legacy column names; "
+                "a native-schema cell (#511 opt-in) must save v9 (.cellpy)"
+            )
 
         if outfile_all.is_file():
             logging.debug("Outfile exists")
@@ -1731,6 +1766,12 @@ class CellpyCell:
         """
         from cellpy.readers import merger
 
+        if self.native_schema:
+            raise NotImplementedError(
+                "merge() is not supported on a native-schema cell yet "
+                "(#511 opt-in scope); merge on the legacy path and load the "
+                "result into a native-schema cell instead"
+            )
         if cells is None:
             raise TypeError(
                 "merge() requires the cells/datasets to merge into this one "
@@ -4204,14 +4245,19 @@ class CellpyCell:
         )
 
         if sort_my_columns:
-            logging.debug("sorting columns")
-            new_first_col_list = [
-                self.headers_normal.datetime_txt,
-                self.headers_normal.test_time_txt,
-                self.headers_normal.data_point_txt,
-                self.headers_normal.cycle_index_txt,
-            ]
-            data.summary = self.set_col_first(data.summary, new_first_col_list)
+            if self.native_schema:
+                # #511 opt-in: the legacy first-column names do not exist on the
+                # native summary; keep the engine's column order.
+                logging.debug("native path: skipping legacy column sort")
+            else:
+                logging.debug("sorting columns")
+                new_first_col_list = [
+                    self.headers_normal.datetime_txt,
+                    self.headers_normal.test_time_txt,
+                    self.headers_normal.data_point_txt,
+                    self.headers_normal.cycle_index_txt,
+                ]
+                data.summary = self.set_col_first(data.summary, new_first_col_list)
 
         if cycle_index_as_index:
             index_col = self.headers_summary.cycle_index

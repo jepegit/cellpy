@@ -196,21 +196,21 @@ Reconciled **2026-07-14**. Update this table when phases start/complete.
 | Phase | Theme ID | Title | Status |
 |-------|----------|-------|--------|
 | 0 | — | Finish v1 handoff (gate) | 🟡 #384 ✅; #385 open; STEP-12 cellpy partly |
-| 1 | V2-01 | `TestMetaCollection` on `Data` | ⬜ |
-| 1 | V2-02 | Per-test `cycle_mode` | ⬜ |
-| 1 | V2-03 | Composite group keys in merge/engine path | ⬜ |
-| 1 | V2-04 | v1 file backward compat | ⬜ |
-| 2 | V2-05 | Loaders emit `test_id` + `raw_units` | ⬜ |
-| 2 | V2-06 | Populate `TestMeta` on load | ⬜ |
-| 2 | V2-07 | Multi-file merge | ⬜ |
-| 2 | V2-08 | Vendor metadata (Arbin etc.) | ⬜ |
-| 3 | V2-09 | Slim `CellpyCell` | ⬜ |
-| 3 | V2-10 | Public API cleanup | ⬜ |
-| 3 | V2-11 | Native schema opt-in | ⬜ |
-| 3 | V2-12 | `exclude_step_types` on `make_summary` | ⬜ |
-| 4 | V2-13 | HDF5 / cellpy file v2 | ⬜ |
-| 4 | V2-14 | Metadata persistence (cellpy-owned) | ⬜ |
-| 4 | V2-15 | Release pin + migration guide | ⬜ |
+| 1 | V2-01 | `TestMetaCollection` on `Data` | ✅ #506 |
+| 1 | V2-02 | Per-test `cycle_mode` | ✅ #506 |
+| 1 | V2-03 | Composite group keys in merge/engine path | ✅ #507 |
+| 1 | V2-04 | v1 file backward compat | ✅ #506 |
+| 2 | V2-05 | Loaders emit `test_id` + `raw_units` | ✅ #508 |
+| 2 | V2-06 | Populate `TestMeta` on load | ✅ #508 |
+| 2 | V2-07 | Multi-file merge | ✅ #507 |
+| 2 | V2-08 | Vendor metadata (Arbin etc.) | ✅ #508 |
+| 3 | V2-09 | Slim `CellpyCell` | ✅ #509 (follow-ups #518–#520 open) |
+| 3 | V2-10 | Public API cleanup | ✅ #509 |
+| 3 | V2-11 | Native schema opt-in | ✅ #511 |
+| 3 | V2-12 | `exclude_step_types` on `make_summary` | ✅ #509 |
+| 4 | V2-13 | HDF5 / cellpy file v2 | ✅ #510 (v9 zip-of-parquet) |
+| 4 | V2-14 | Metadata persistence (cellpy-owned) | ✅ #510 |
+| 4 | V2-15 | Release pin + migration guide | ✅ #510 |
 
 ## Recommended sequencing
 
