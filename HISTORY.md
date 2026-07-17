@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+* Exporter family extracted from `cellreader.py` into
+  `cellpy.exporters.tabular` (#518, V2-09 follow-up): `to_csv` / `to_excel`
+  and the `_export_*` helpers moved verbatim (instance-first functions, thin
+  delegates keep the public API); the near-dead `_cap_mod_*` helpers moved
+  along with their removal deferred to #520. A stray `print(externals)` debug
+  line in `to_excel` was dropped.
+
 * Native schema opt-in (#511, V2-11): `CellpyCell(native_schema=True)` keeps
   frames in native cellpy-core column names and runs the polars engine
   directly — no legacy rename sandwich. Supported pipeline: `from_raw` /

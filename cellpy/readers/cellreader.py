@@ -14,8 +14,6 @@ import cellpy.config as config
 
 import collections
 import copy
-import csv
-import itertools
 import logging
 import numbers
 import os
@@ -31,6 +29,7 @@ import numpy as np
 
 from . import externals as externals
 from cellpy.readers import data_structures as ds
+from cellpy.exporters import tabular as exporters_tabular
 from cellpy.readers import capacity_curves
 from cellpy.readers import test_meta
 import cellpy.internals.connections as internals
@@ -2365,6 +2364,8 @@ class CellpyCell:
             return v
 
     # TODO: move this out of CellpyCell
+    # The tabular exporters live in cellpy.exporters.tabular (issue #518);
+    # thin delegates below keep the public API and subclass dispatch.
     def _export_cycles(
         self,
         setname=None,
@@ -2375,128 +2376,35 @@ class CellpyCell:
         shift=0.0,
         last_cycle=None,
     ):
-        # export voltage - capacity curves to .csv file
-
-        logging.debug("START exporing cycles")
-        time_00 = time.time()
-        lastname = "_cycles.csv"
-        if sep is None:
-            sep = self.sep
-        if outname is None:
-            outname = setname + lastname
-
-        logging.debug(f"outname: {outname}")
-
-        list_of_cycles = self.get_cycle_numbers()
-        if last_cycle is not None:
-            list_of_cycles = [c for c in list_of_cycles if c <= int(last_cycle)]
-            logging.debug(f"only processing up to cycle {last_cycle}")
-            logging.debug(f"you have {len(list_of_cycles)}cycles to process")
-        out_data = []
-        c = None
-        if not method:
-            method = "back-and-forth"
-        if shifted:
-            method = "back-and-forth"
-            shift = 0.0
-            _last = 0.0
-        logging.debug(f"number of cycles: {len(list_of_cycles)}")
-        for cycle in list_of_cycles:
-            try:
-                if shifted and c is not None:
-                    shift = _last
-                    # print(f"shifted = {shift}, first={_first}")
-                df = self.get_cap(cycle, method=method, shift=shift)
-                if df.empty:
-                    logging.debug("NoneType from get_cap")
-                else:
-                    c = df["capacity"]
-                    v = df["voltage"]
-
-                    _last = c.iat[-1]
-                    _first = c.iat[0]
-
-                    c = c.tolist()
-                    v = v.tolist()
-                    header_x = "cap cycle_no %i" % cycle
-                    header_y = "voltage cycle_no %i" % cycle
-                    c.insert(0, header_x)
-                    v.insert(0, header_y)
-                    out_data.append(c)
-                    out_data.append(v)
-                    # txt = "extracted cycle %i" % cycle
-                    # logging.debug(txt)
-            except IndexError as e:
-                txt = "Could not extract cycle %i" % cycle
-                logging.info(txt)
-                logging.debug(e)
-
-        # Saving cycles in one .csv file (x,y,x,y,x,y...)
-        # print "saving the file with delimiter '%s' " % (sep)
-        logging.debug("writing cycles to file")
-        with open(outname, "w", newline="") as f:
-            writer = csv.writer(f, delimiter=sep)
-            writer.writerows(itertools.zip_longest(*out_data))
-            # star (or asterix) means transpose (writing cols instead of rows)
-
-        logging.info(f"The file {outname} was created")
-        logging.debug(f"(dt: {(time.time() - time_00):4.2f}s)")
-        logging.debug("END exporting cycles")
+        """Export voltage-capacity curves to a .csv file. See :func:`cellpy.exporters.tabular.export_cycles`."""
+        return exporters_tabular.export_cycles(
+            self,
+            setname=setname,
+            sep=sep,
+            outname=outname,
+            shifted=shifted,
+            method=method,
+            shift=shift,
+            last_cycle=last_cycle,
+        )
 
     def _export_normal(self, data, setname=None, sep=None, outname=None):
-        time_00 = time.time()
-        lastname = "_normal.csv"
-        if sep is None:
-            sep = self.sep
-        if outname is None:
-            outname = setname + lastname
-        txt = outname
-        try:
-            data.raw.to_csv(outname, sep=sep)
-            txt += " OK"
-        except Exception as e:
-            txt += " Could not save it!"
-            logging.debug(e)
-            warnings.warn(f"Unhandled exception raised: {e}")
-        logging.info(txt)
-        logging.debug(f"(dt: {(time.time() - time_00):4.2f}s)")
+        """Export the raw frame to a .csv file. See :func:`cellpy.exporters.tabular.export_normal`."""
+        return exporters_tabular.export_normal(
+            self, data, setname=setname, sep=sep, outname=outname
+        )
 
     def _export_stats(self, data, setname=None, sep=None, outname=None):
-        time_00 = time.time()
-        lastname = "_stats.csv"
-        if sep is None:
-            sep = self.sep
-        if outname is None:
-            outname = setname + lastname
-        txt = outname
-        try:
-            data.summary.to_csv(outname, sep=sep)
-            txt += " OK"
-        except Exception as e:
-            txt += " Could not save it!"
-            logging.debug(e)
-            warnings.warn(f"Unhandled exception raised: {e}")
-        logging.info(txt)
-        logging.debug(f"(dt: {(time.time() - time_00):4.2f}s)")
+        """Export the summary frame to a .csv file. See :func:`cellpy.exporters.tabular.export_stats`."""
+        return exporters_tabular.export_stats(
+            self, data, setname=setname, sep=sep, outname=outname
+        )
 
     def _export_steptable(self, data, setname=None, sep=None, outname=None):
-        # TODO 259: rename to _export_steps_csv
-        time_00 = time.time()
-        lastname = "_steps.csv"
-        if sep is None:
-            sep = self.sep
-        if outname is None:
-            outname = setname + lastname
-        txt = outname
-        try:
-            data.steps.to_csv(outname, sep=sep)
-            txt += " OK"
-        except Exception as e:
-            txt += " Could not save it!"
-            logging.debug(e)
-            warnings.warn(f"Unhandled exception raised: {e}")
-        logging.info(txt)
-        logging.debug(f"(dt: {(time.time() - time_00):4.2f}s)")
+        """Export the steps frame to a .csv file. See :func:`cellpy.exporters.tabular.export_steptable`."""
+        return exporters_tabular.export_steptable(
+            self, data, setname=setname, sep=sep, outname=outname
+        )
 
     def to_excel(
         self,
@@ -2508,135 +2416,17 @@ class CellpyCell:
         get_cap_kwargs=None,
         to_excel_kwargs=None,
     ):
-        """Saves the data as .xlsx file(s).
-
-        Args:
-            filename: name of the Excel file.
-            cycles: (None, bool, or list of ints) export voltage-capacity curves if given.
-            raw: (bool) export raw-data if True.
-            steps: (bool) export steps if True.
-            nice: (bool) use nice formatting if True.
-            get_cap_kwargs: (dict) kwargs for CellpyCell.get_cap method.
-            to_excel_kwargs: (dict) kwargs for pandas.DataFrame.to_excel method.
-        """
-        to_excel_method_kwargs = {"index": True, "header": True}
-        get_cap_method_kwargs = {
-            "method": "forth-and-forth",
-            "label_cycle_number": True,
-            "categorical_column": True,
-            "interpolated": True,
-            "number_of_points": 1000,
-            "capacity_then_voltage": True,
-        }
-        if to_excel_kwargs is not None:
-            to_excel_method_kwargs.update(to_excel_kwargs)
-        if get_cap_kwargs is not None:
-            get_cap_method_kwargs.update(get_cap_kwargs)
-
-        print(externals)
-
-        border = externals.openpyxl.styles.Border()
-        face_color = "00EEEEEE"
-        meta_alignment_left = externals.openpyxl.styles.Alignment(
-            horizontal="left", vertical="bottom"
+        """Saves the data as .xlsx file(s). See :func:`cellpy.exporters.tabular.to_excel`."""
+        return exporters_tabular.to_excel(
+            self,
+            filename=filename,
+            cycles=cycles,
+            raw=raw,
+            steps=steps,
+            nice=nice,
+            get_cap_kwargs=get_cap_kwargs,
+            to_excel_kwargs=to_excel_kwargs,
         )
-        meta_width = 34
-        meta_alignment_right = externals.openpyxl.styles.Alignment(
-            horizontal="right", vertical="bottom"
-        )
-        fill = externals.openpyxl.styles.PatternFill(
-            start_color=face_color, end_color=face_color, fill_type="solid"
-        )
-
-        if filename is None:
-            pre = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"{pre}_cellpy.xlsx"
-            filename = Path(filename).resolve()
-            logging.critical(f"generating filename: {filename}")
-
-        summary_frame = self.data.summary
-        meta_common_frame = self.data.meta_common.to_frame()
-        meta_test_dependent_frame = self.data.meta_test_dependent.to_frame()
-        cellpy_units = self.cellpy_units.to_frame()
-        cellpy_units.index = "cellpy_units_" + cellpy_units.index
-        raw_units = self.raw_units.to_frame()
-        raw_units.index = "raw_units_" + raw_units.index
-
-        meta_common_frame = externals.pandas.concat(
-            [meta_common_frame, cellpy_units, raw_units]
-        )
-
-        with externals.pandas.ExcelWriter(filename, engine="openpyxl") as writer:
-            meta_common_frame.to_excel(
-                writer, sheet_name="meta_common", **to_excel_method_kwargs
-            )
-            meta_test_dependent_frame.to_excel(
-                writer, sheet_name="meta_test_dependent", **to_excel_method_kwargs
-            )
-            summary_frame.to_excel(
-                writer, sheet_name="summary", **to_excel_method_kwargs
-            )
-
-            if raw:
-                # TODO: raw-table has two columns called "data_point" at the moment,
-                #  so this should be fixed (probably the .set_index("data_point") should be checked)
-                logging.debug("exporting raw data")
-                raw = self.data.raw
-                max_len = 1_048_576
-                if len(raw) < max_len:
-                    raw.to_excel(writer, sheet_name="raw", **to_excel_method_kwargs)
-                else:
-                    logging.warning(
-                        "Raw data is too large to fit in one sheet. "
-                        "Splitting raw data into chunks. This is not tested yet"
-                    )
-                    n_chunks = len(raw) // max_len + 1
-                    for i in range(n_chunks):
-                        raw.iloc[i * max_len : (i + 1) * max_len].to_excel(
-                            writer, sheet_name=f"raw_{i:02}", **to_excel_method_kwargs
-                        )
-
-            if steps:
-                logging.debug("exporting steps")
-                # TODO: step-table has a columns called "index" at the moment,
-                #  so setting index=False for dataframe.to_excel
-                #  Maybe best to make sure that step table does not have a column called "index" in the future?
-                self.data.steps.to_excel(
-                    writer, sheet_name="steps", index=False, header=True
-                )
-            if cycles:
-                logging.debug("exporting cycles")
-                if cycles is True:
-                    cycles = self.get_cycle_numbers()
-                for cycle in cycles:
-                    try:
-                        _curves = self.get_cap(cycle=cycle, **get_cap_method_kwargs)
-                        _curves.to_excel(
-                            writer,
-                            sheet_name=f"cycle_{cycle:03}",
-                            index=False,
-                            header=True,
-                        )
-                    except Exception as e:
-                        logging.debug(f"Could not export cycle {cycle}: {e}")
-                        continue
-            if nice:
-                for sheet in writer.sheets.values():
-                    if sheet.title.startswith("meta"):
-                        sheet.column_dimensions["A"].width = meta_width
-                        for xl_cell in sheet["A"]:
-                            xl_cell.alignment = meta_alignment_left
-                            xl_cell.border = border
-                        for xl_cell in sheet["B"]:
-                            xl_cell.alignment = meta_alignment_right
-                            xl_cell.border = border
-                    else:
-                        for xl_cell in sheet["A"]:
-                            xl_cell.border = border
-
-                    for xl_cell in sheet["1"]:
-                        xl_cell.border = border
-                        xl_cell.fill = fill
 
     def to_csv(
         self,
@@ -2650,84 +2440,19 @@ class CellpyCell:
         shift=0.0,
         last_cycle=None,
     ):
-        """Saves the data as .csv file(s).
-
-        Args:
-            datadir: folder where to save the data (uses current folder if not
-                given).
-            sep: the separator to use in the csv file
-                (defaults to CellpyCell.sep).
-            cycles: (bool) export voltage-capacity curves if True.
-            raw: (bool) export raw-data if True.
-            summary: (bool) export summary if True.
-            shifted (bool): export with cumulated shift.
-            method (str): how the curves are given:
-
-                - "back-and-forth" - standard back and forth; discharge (or charge)
-                  reversed from where charge (or discharge) ends.
-                - "forth" - discharge (or charge) continues along x-axis.
-                - "forth-and-forth" - discharge (or charge) also starts at 0
-                  (or shift if not shift=0.0)
-
-            shift: start-value for charge (or discharge)
-            last_cycle: process only up to this cycle (if not None).
-
-        Returns:
-            None
-
-        """
-
-        if sep is None:
-            sep = self.sep
-
-        logging.debug("saving to csv")
-
-        try:
-            data = self.data
-        except NoDataFound:
-            logging.info("to_csv -")
-            logging.info("NoDataFound: not saved!")
-            return
-
-        if isinstance(data.loaded_from, (list, tuple)):
-            txt = "merged file"
-            txt += "using first file as basename"
-            logging.debug(txt)
-            no_merged_sets = len(data.loaded_from)
-            no_merged_sets = "_merged_" + str(no_merged_sets).zfill(3)
-            filename = data.loaded_from[0]
-        else:
-            filename = data.loaded_from
-            no_merged_sets = ""
-
-        firstname, extension = os.path.splitext(filename)
-        firstname += no_merged_sets
-        if datadir:
-            firstname = os.path.join(datadir, os.path.basename(firstname))
-
-        if raw:
-            outname_normal = firstname + "_normal.csv"
-            self._export_normal(data, outname=outname_normal, sep=sep)
-            if data.has_steps is True:
-                outname_steps = firstname + "_steps.csv"
-                self._export_steptable(data, outname=outname_steps, sep=sep)
-            else:
-                logging.debug("steps_made is not True")
-
-        if summary:
-            outname_stats = firstname + "_stats.csv"
-            self._export_stats(data, outname=outname_stats, sep=sep)
-
-        if cycles:
-            outname_cycles = firstname + "_cycles.csv"
-            self._export_cycles(
-                outname=outname_cycles,
-                sep=sep,
-                shifted=shifted,
-                method=method,
-                shift=shift,
-                last_cycle=last_cycle,
-            )
+        """Saves the data as .csv file(s). See :func:`cellpy.exporters.tabular.to_csv`."""
+        return exporters_tabular.to_csv(
+            self,
+            datadir=datadir,
+            sep=sep,
+            cycles=cycles,
+            raw=raw,
+            summary=summary,
+            shifted=shifted,
+            method=method,
+            shift=shift,
+            last_cycle=last_cycle,
+        )
 
     def to_bdf(
         self,
@@ -2821,92 +2546,19 @@ class CellpyCell:
     def _fix_dtype_step_table(self, dataset):
         return cellpy_file_dtype.fix_dtype_step_table(dataset)
 
-    # TODO: check if this is useful and if it is rename, if not delete
+    # near-dead, test-pinned only; moved to cellpy.exporters.tabular (#518),
+    # removal decision deferred to the DI pass (#520)
     def _cap_mod_summary(self, summary, capacity_modifier="reset"):
-        # Why did I make this method?
-        # OBS! modifies the summary table
-        time_00 = time.time()
-        discharge_title = self.headers_normal.discharge_capacity_txt
-        charge_title = self.headers_normal.charge_capacity_txt
-        chargecap = 0.0
-        dischargecap = 0.0
+        """See :func:`cellpy.exporters.tabular.cap_mod_summary`."""
+        return exporters_tabular.cap_mod_summary(
+            self, summary, capacity_modifier=capacity_modifier
+        )
 
-        # TODO: @jepe - use externals.pandas.loc[row,column]
-
-        if capacity_modifier == "reset":
-            for index, row in summary.iterrows():
-                dischargecap_2 = row[discharge_title]
-                summary.loc[index, discharge_title] = dischargecap_2 - dischargecap
-                dischargecap = dischargecap_2
-                chargecap_2 = row[charge_title]
-                summary.loc[index, charge_title] = chargecap_2 - chargecap
-                chargecap = chargecap_2
-        else:
-            raise NotImplementedError
-
-        logging.debug(f"(dt: {(time.time() - time_00):4.2f}s)")
-        return summary
-
-    # TODO: check if this is useful and if it is rename, if not delete
     def _cap_mod_normal(self, capacity_modifier="reset", allctypes=True):
-        # Why did I make this method?
-        # OBS! modifies the normal table
-        time_00 = time.time()
-        logging.debug("Not properly checked yet! Use with caution!")
-
-        cycle_index_header = self.headers_normal.cycle_index_txt
-        step_index_header = self.headers_normal.step_index_txt
-        discharge_index_header = self.headers_normal.discharge_capacity_txt
-        discharge_energy_index_header = self.headers_normal.discharge_energy_txt
-        charge_index_header = self.headers_normal.charge_capacity_txt
-        charge_energy_index_header = self.headers_normal.charge_energy_txt
-
-        raw = self.data.raw
-
-        if capacity_modifier == "reset":
-            # discharge cycles
-            no_cycles = externals.numpy.amax(raw[cycle_index_header])
-            for j in range(1, no_cycles + 1):
-                cap_type = "discharge"
-                e_header = discharge_energy_index_header
-                cap_header = discharge_index_header
-                discharge_cycles = self.get_step_numbers(
-                    steptype=cap_type, allctypes=allctypes, cycle_number=j
-                )
-
-                steps = discharge_cycles[j]
-                txt = "Cycle  %i (discharge):  " % j
-                logging.debug(txt)
-                # TODO: @jepe - use externals.pandas.loc[row,column] e.g. externals.pandas.loc[:,"charge_cap"]
-                # for col or externals.pandas.loc[(externals.pandas.["step"]==1),"x"]
-                selection = (raw[cycle_index_header] == j) & (
-                    raw[step_index_header].isin(steps)
-                )
-                c0 = raw[selection].iloc[0][cap_header]
-                e0 = raw[selection].iloc[0][e_header]
-                raw.loc[selection, cap_header] = raw.loc[selection, cap_header] - c0
-                raw.loc[selection, e_header] = raw.loc[selection, e_header] - e0
-
-                cap_type = "charge"
-                e_header = charge_energy_index_header
-                cap_header = charge_index_header
-                charge_cycles = self.get_step_numbers(
-                    steptype=cap_type, allctypes=allctypes, cycle_number=j
-                )
-                steps = charge_cycles[j]
-                txt = "Cycle  %i (charge):  " % j
-                logging.debug(txt)
-
-                selection = (raw[cycle_index_header] == j) & (
-                    raw[step_index_header].isin(steps)
-                )
-
-                if any(selection):
-                    c0 = raw[selection].iloc[0][cap_header]
-                    e0 = raw[selection].iloc[0][e_header]
-                    raw.loc[selection, cap_header] = raw.loc[selection, cap_header] - c0
-                    raw.loc[selection, e_header] = raw.loc[selection, e_header] - e0
-        logging.debug(f"(dt: {(time.time() - time_00):4.2f}s)")
+        """See :func:`cellpy.exporters.tabular.cap_mod_normal`."""
+        return exporters_tabular.cap_mod_normal(
+            self, capacity_modifier=capacity_modifier, allctypes=allctypes
+        )
 
     def get_mass(self):
         """Returns the mass of the active material (in mg).
