@@ -63,4 +63,7 @@ The `Data` object contains the data and the meta-data for the cell characterisat
 
 ## The cellpy file format
 
-As default, cellpy stores files in the hdf5 format.
+As default (cellpy 2.x / file version 9), cellpy stores files as a zip of
+parquet tables plus ``meta.json`` (``.cellpy``). Older HDF5 layouts (v4–v8)
+remain readable; pass a ``.h5`` path or ``cellpy_file_format="hdf5"`` to write
+HDF5. See {doc}`../../getting_started/migration_v1_to_v2`.
