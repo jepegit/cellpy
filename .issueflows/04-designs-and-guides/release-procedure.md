@@ -1,128 +1,175 @@
 # Release procedure — GitHub release → PyPI
 
-**Context.** cellpy publishes to **PyPI as `cellpy`**. A published GitHub release triggers
-`.github/workflows/release.yml`: test → build → PyPI trusted publishing. Pattern mirrors
-[`cellpy-core/release-procedure.md`](../../cellpy-core/.issueflows/04-designs-and-guides/release-procedure.md).
+**Context.** cellpy publishes to **PyPI as `cellpy`**. A published GitHub release
+triggers `.github/workflows/release.yml`: validate tag/branch → test → build →
+PyPI trusted publishing.
 
-Branch policy for releases lives in [`cellpy-v2-branching.md`](cellpy-v2-branching.md)
-(Releases and PyPI).
+**Authoritative companions (do not contradict these):**
+
+| Doc | Owns |
+|-----|------|
+| [`cellpy-v2-branching.md`](cellpy-v2-branching.md) | Branch layout after the 2026-07-16 flip |
+| [`architecture-plan/cellpy2-release-and-branching-plan.md`](../../../architecture-plan/cellpy2-release-and-branching-plan.md) | Support matrix, cross-repo merge order (F9), final-legacy gates |
+| [`build-and-versioning.md`](build-and-versioning.md) | Tag-derived versioning (`uv-dynamic-versioning`) |
+
+> **Scheme (post-v1.1):** **`master` = v2 development**; **`v1.x` = 1.x
+> maintenance**. The old long-lived `v2` branch is retired — do not release from
+> it. See `cellpy-v2-branching.md`.
+
+---
 
 ## The moving parts
 
-- **Version** is derived from **git tags** via `uv-dynamic-versioning` (see
-  [`build-and-versioning.md`](build-and-versioning.md)). There is no hand-edited
-  `project.version` in `pyproject.toml`. The **GitHub release tag** (`vX.Y.Z`) is the version
-  source at build time.
-- **Cut a release** by creating a GitHub release on the correct branch (usually `master` for
-  1.x). The tag name must match the version you intend to ship (`v1.0.4` → PyPI `1.0.4`).
-- **`.github/workflows/release.yml`** runs on `release: published`:
-  - **validate** — tag/branch rules (1.x on `master`, v2.0 pre-releases on `v2`, stable 2.x on
-    `master`)
-  - **test** — `UV_NO_SOURCES=1 uv sync` (PyPI `cellpycore` only) → `pytest -m essential`
-  - **publish** — `uv build` → PyPI **trusted publishing** (`pypi` environment,
-    `id-token: write` — configure once in GitHub repo settings, same as cellpy-core)
+- **Version** comes from the **git tag** via `uv-dynamic-versioning`. There is no
+  hand-edited `project.version`. Tag `vX.Y.Z` → PyPI version `X.Y.Z`.
+- **Cut a release** with `gh release create` targeting the correct branch. CI
+  checks that the tag’s commit is on that branch.
+- **`.github/workflows/release.yml`** on `release: published`:
+  - **validate** — `v1.*` must be on `origin/v1.x`; `v2.*` must be on
+    `origin/master`; anything else fails
+  - **test** — `UV_NO_SOURCES=1 uv sync` (PyPI `cellpycore` only) →
+    `pytest -m essential`
+  - **publish** — `uv build` → PyPI trusted publishing (`pypi` environment,
+    `id-token: write`)
+
+---
 
 ## Which branch to release from
 
 | Tag pattern | Branch | PyPI channel |
 |-------------|--------|--------------|
-| `v1.x.y` (stable 1.x) | **`master`** | stable (default `pip install cellpy`) |
-| `v1.x.yaN` / `bN` / `rcN` (1.x pre) | **`master`** | pre-release (`pip install cellpy --pre`) |
-| `v2.0.0aN` / `bN` / `rcN` | **`v2`** | pre-release (v2 integration testing only) |
-| `v2.0.0` and later `v2.x.y` | **`master`** (after v2 merge) | stable |
+| `v1.x.y` / `v1.x.y.postN` | **`v1.x`** | stable |
+| `v1.x.yaN` / `bN` / `rcN` | **`v1.x`** | pre-release (`pip install cellpy --pre`) |
+| `v2.0.0aN` / `bN` / `rcN` | **`master`** | pre-release only |
+| `v2.0.0` and later `v2.x.y` | **`master`** | stable |
 
-The workflow **fails** if e.g. `v1.0.5` points at a commit that is not on `origin/master`.
+Current line (as of mid-2026): stable 1.x tops out at **`v1.1.0.post1`** on
+`v1.x`; v2 pre-releases (e.g. **`v2.0.0a1`**) ship from `master`.
 
-## Bootstrap: first automated PyPI release
+---
 
-After merging PR #403 (or whenever `release.yml` first lands on `master`), cut an **alpha**
-before the first **stable** 1.x tag:
+## Cutting a release (happy path)
 
-| Step | Tag | Why |
-|------|-----|-----|
-| 1 | **`v1.0.4a1`** on `master` | Smoke-test trusted publishing + workflow; stays off default `pip install` |
-| 2 | `v1.0.4a2`, … | Fix-ups if the pipeline or PyPI metadata needs iteration |
-| 3 | **`v1.0.4`** on `master` | Stable 1.x once CI publish is proven and you are happy with the tree |
+### A. 1.x maintenance (`v1.x` branch)
 
-This matches the current line: latest tag is `v1.0.3a6`, `HISTORY.md` still documents 1.0.3
-as pre-release, and post-seam / `cellpycore` integration has not yet shipped on a stable
-PyPI tag.
+```bash
+git switch v1.x && git pull --ff-only
 
-Install the alpha with `pip install cellpy --pre` (or `pip install cellpy==1.0.4a1`).
+# Pin / HISTORY / tests — see checklist below
+UV_NO_SOURCES=1 uv lock && UV_NO_SOURCES=1 uv sync
+uv run pytest -m essential   # full suite before a real 1.x ship
 
-## Cutting a 1.x release (happy path)
+git status   # must be clean
+
+gh release create v1.1.1 --target v1.x --generate-notes
+
+gh run list --workflow release.yml --limit 1
+gh run watch <run-id>
+```
+
+### B. v2 pre-release or stable (`master`)
 
 ```bash
 git switch master && git pull --ff-only
 
-# 1. Ensure dependency pin is release-ready
-#    Pin exact cellpycore for the release if needed (see checklist below).
-UV_NO_SOURCES=1 uv lock
-UV_NO_SOURCES=1 uv sync
-uv run pytest -m essential
+UV_NO_SOURCES=1 uv lock && UV_NO_SOURCES=1 uv sync
+uv run pytest -m essential   # full suite before v2.0.0 stable
 
-# 2. Clean tree — everything for this release is merged on master
 git status   # must be clean
 
-# 3. Create the GitHub release (tag = version)
-#    First automated publish: use v1.0.4a1 (alpha) before v1.0.4 stable — see Bootstrap above.
-gh release create v1.0.4a1 --target master --generate-notes   # alpha
-# gh release create v1.0.4 --target master --generate-notes  # stable, after alpha is green
+# Pre-release while v2 is unfinished:
+gh release create v2.0.0a2 --target master --generate-notes
+# Stable (only when flip + gates are done — see architecture plan):
+# gh release create v2.0.0 --target master --generate-notes
 
-# 4. Watch CI
-gh run watch --workflow release.yml
+gh run list --workflow release.yml --limit 1
+gh run watch <run-id>
 ```
 
-**Version preview locally** (optional): checkout the tag you plan to ship, then `uv build` and
-inspect `dist/` metadata.
+**Optional local preview:** check out the tag, `uv build`, inspect `dist/`
+metadata.
 
 ### Failure modes
 
-- **Test job red:** fix on `master`, merge, cut a **new** patch tag — tags are not reused.
-- **Publish job red but release exists:** PyPI may not have the version; fix and release
-  `v1.0.5` (or next appropriate tag).
-- **Wrong branch:** validation job fails; delete the GitHub release/tag and recreate on the
-  correct branch.
+- **Validate red (wrong branch):** delete the GitHub release **and** the tag,
+  recreate with `--target` set correctly. Do not reuse a bad tag name if the
+  commit was wrong; fix the tree first.
+- **Test job red:** fix on the release line, merge, cut a **new** patch/pre tag —
+  tags are never reused.
+- **Publish red but release exists:** PyPI may lack that version; ship the next
+  tag after the fix.
 
-## Pre-release checklist
+---
 
-- [ ] All changes for this release are merged to **`master`** (or **`v2`** for v2.0 alphas only).
-- [ ] **`cellpycore` pin** in `[project.dependencies]` reflects the intended core revision.
-      Use `UV_NO_SOURCES=1 uv lock` so the lock resolves from PyPI, not the editable path.
-- [ ] **`uv run pytest -m essential`** (or full suite) green locally with `UV_NO_SOURCES=1`.
-- [ ] **No `[tool.uv.sources]` path override** in committed `pyproject.toml` (CI and
-      Dependabot use PyPI via `UV_NO_SOURCES=1`).
-- [ ] **`HISTORY.md`** updated (Keep a Changelog) before or with the release PR.
-- [ ] Tag name follows **`vX.Y.Z`** going forward (legacy inconsistent tags still tolerated
-      by `uv-dynamic-versioning` but avoid adding new ones).
+## Pre-release checklist (both lines)
 
-## cellpy-core coordination
+- [ ] Changes merged to the **correct branch** (`v1.x` or `master`).
+- [ ] Exact **`cellpycore==…`** pin in `[project.dependencies]` for the release
+      commit (line-specific policy in `cellpy-v2-branching.md`).
+- [ ] `UV_NO_SOURCES=1 uv lock && UV_NO_SOURCES=1 uv sync` — lock resolves from
+      PyPI, not an editable path.
+- [ ] No committed `[tool.uv.sources]` path override relied on for the build
+      (dev-only; CI uses `UV_NO_SOURCES=1`).
+- [ ] Tests green: `-m essential` minimum; **full suite** before stable ships.
+- [ ] **`HISTORY.md`** updated (Keep a Changelog).
+- [ ] Tag follows **`vX.Y.Z`** (legacy inconsistent tags exist; do not add more).
 
-After each **cellpy-core** PyPI release, update cellpy's consumer pin on **`master`**:
+### Extra gates for the final legacy 1.x ship
 
-1. Bump `cellpycore` in `[project.dependencies]` (exact `==` before a cellpy release).
+See architecture plan §1 / §6.1 and
+[`cellpy-v103-vs-v104a3-observations.md`](../../../architecture-plan/cellpy-v103-vs-v104a3-observations.md):
+behavior deltas vs 1.0.3 (CE / coulombic-difference, dropped columns, step
+classification) must be intended **and** release-noted (or fixed) before that
+tag. User-facing notes:
+[`cellpy-v104-migration-notes.md`](../../../architecture-plan/cellpy-v104-migration-notes.md).
+
+### Extra gates for `v2.0.0` stable
+
+See `cellpy-v2-branching.md` “At v2.0 release” and the architecture release plan
+(support matrix, benchmarks, dependency budget). No stable 2.x until the flip
+criteria are met.
+
+---
+
+## cellpy-core coordination (F9)
+
+**Additions** (cellpy needs new core API):
+
+1. core PR → core release (tag / PyPI `cellpycore`)
+2. cellpy re-pins on the line being released
+3. cellpy PR → then cellpy GitHub release
+
+**Removals** (core drops a cellpy-used API): cellpy migrates off first, then core
+deletes.
+
+After each core PyPI release that a line needs:
+
+1. Bump `cellpycore` in that line’s `[project.dependencies]`
 2. `UV_NO_SOURCES=1 uv lock && UV_NO_SOURCES=1 uv sync`
-3. `uv run pytest -m essential` / seam tests
-4. Merge to `master`, then include in the next cellpy GitHub release
+3. `uv run pytest -m essential` (seam tests as appropriate)
+4. Merge, then include in the next cellpy release on that line
 
-See `cellpy-core/.issueflows/04-designs-and-guides/cellpy-core-migration.md` §2.
+`v1.x` stays on a conservative pin unless a fix demands a bump; `master` tracks
+newer core as v2 needs it. Details:
+`cellpy-core/.issueflows/04-designs-and-guides/cellpy-core-migration.md` §2.
 
-## v2 branch and PyPI
-
-- **No stable PyPI releases from `v2`** until v2.0 merges to `master`.
-- Optional **v2.0 alphas** (`v2.0.0a1`, …) from `v2` for early testers (`pip install cellpy --pre`).
-- Stable shared fixes discovered on `v2` should **backport to `master`** and ship on the next
-  **1.x** tag — do not leave 1.x users waiting for v2.0.
+---
 
 ## One-time GitHub setup (maintainers)
 
-1. **PyPI trusted publisher** for `cellpy` → GitHub repo `jepegit/cellpy`, workflow
-   `release.yml`, environment `pypi` (mirror cellpy-core setup).
-2. **GitHub environment `pypi`** with protection rules if desired (optional approval gate).
+1. **PyPI trusted publisher** for `cellpy` → repo `jepegit/cellpy`, workflow
+   `release.yml`, environment `pypi`.
+2. Optional: protection rules on the GitHub `pypi` environment.
+3. Branch protection on **`master`** and **`v1.x`** (see
+   `cellpy-v2-branching.md`).
+
+---
 
 ## Tracking
 
 - Workflow: `.github/workflows/release.yml`
-- Branching + release line policy: [`cellpy-v2-branching.md`](cellpy-v2-branching.md)
-- Build/versioning basics: [`build-and-versioning.md`](build-and-versioning.md)
+- Branching: [`cellpy-v2-branching.md`](cellpy-v2-branching.md)
+- Build/versioning: [`build-and-versioning.md`](build-and-versioning.md)
+- Architecture release plan:
+  [`architecture-plan/cellpy2-release-and-branching-plan.md`](../../../architecture-plan/cellpy2-release-and-branching-plan.md)
 - Epic: [#402](https://github.com/jepegit/cellpy/issues/402)
