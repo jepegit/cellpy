@@ -12,7 +12,6 @@ initpkg(
             # "sqlalchemy": "sqlalchemy",
             # "tqdm": "tqdm",
             # "xlrd": "xlrd",
-            "fabric": "fabric",
         },
     },
 )

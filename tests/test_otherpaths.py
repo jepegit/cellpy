@@ -4,7 +4,6 @@ import pathlib
 import shutil
 
 import dotenv
-import fabric
 import pytest
 
 import cellpy.internals.connections
@@ -262,6 +261,15 @@ def test_load_environment(parameters):
     assert config.get("CELLPY_HOST") == parameters.env_cellpy_host
 
 
+def test_posix_path_coercion_keeps_single_leading_slash():
+    """Path('/foo') must not become '//foo' via OtherPath (inventory / prms)."""
+    abs_path = pathlib.Path("/cellpy_inventory_root")
+    op = cellpy.internals.connections.OtherPath(abs_path)
+    assert op.original == "/cellpy_inventory_root"
+    assert str(op) == "/cellpy_inventory_root"
+    assert not str(op).startswith("//")
+
+
 def test_copy_local(parameters, tmp_path):
     p1 = cellpy.internals.connections.OtherPath(parameters.res_file_path)
     p2 = p1.copy()
@@ -279,20 +287,47 @@ def test_copy_remote_simple(
     mock_env_cellpy_user,
     mock_env_cellpy_key_filename,
 ):
-    def mock_return(n, _host, _connect_kwargs, _destination):
-        # TODO: include more realistic ssh session
-        #   with mock password authentication etc
-        if os.name == "nt":
-            # hack to allow running tests on Windows:
-            shutil.copy2(n._raw_other_path.lstrip("/"), _destination)
-        else:
-            shutil.copy2(n.raw_path, _destination)
+    class _FakeFS:
+        def get(self, remote_path, local_path):
+            # FakeUPath.path is a posix-style absolute path of the local fixture.
+            # Keep the leading slash on POSIX; only strip/normalize for Windows.
+            src = remote_path
+            if os.name == "nt":
+                src = remote_path.lstrip("/")
+                if not pathlib.Path(src).is_file():
+                    # Windows: URI raw_path may keep a drive letter under /
+                    src = remote_path.split("/", 1)[-1] if ":" in remote_path else src
+            shutil.copy2(src, local_path)
 
-    monkeypatch.setattr(
-        cellpy.internals.connections.OtherPath, "_copy_with_fabric", mock_return
-    )
+        def info(self, path):
+            return {"size": 1, "mtime": 0, "atime": 0}
 
-    p1 = str(parameters.res_file_path)
+    class _FakeUPath:
+        def __init__(self, *args, **kwargs):
+            self._url = str(args[0])
+            # path after host: ssh://user@host/<raw>
+            after_scheme = self._url.split("://", 1)[-1]
+            self.path = "/" + after_scheme.split("/", 1)[-1]
+            self.storage_options = kwargs
+            self.fs = _FakeFS()
+            self.protocol = "ssh"
+            self.name = pathlib.PurePosixPath(self.path).name
+
+        def __str__(self):
+            return self._url
+
+        def exists(self):
+            return True
+
+        def is_file(self):
+            return True
+
+        def is_dir(self):
+            return False
+
+    monkeypatch.setattr("cellpy.internals.otherpath.UPath", _FakeUPath)
+
+    p1 = str(parameters.res_file_path).replace("\\", "/")
     host = os.getenv("CELLPY_HOST")
     user = os.getenv("CELLPY_USER")
     p2 = f"ssh://{user}@{host}/{p1}"
@@ -301,6 +336,60 @@ def test_copy_remote_simple(
     assert local_file_path.is_file()
     assert remote_file_path is not local_file_path
     assert isinstance(local_file_path, pathlib.Path)
-    # cellpy version 1.0.0 will not support copying to a remote location
-    #   therefore, the returned object will always be a pathlib.Path object
+    # Remote copy always returns a local pathlib.Path (never OtherPath).
     assert not isinstance(local_file_path, cellpy.internals.connections.OtherPath)
+
+
+def test_unsupported_scheme_raises():
+    with pytest.raises(ValueError, match="not supported"):
+        cellpy.internals.connections.OtherPath("http://example.com/file.res")
+
+
+def test_save_rejects_remote_path(parameters):
+    from cellpy import cellreader
+
+    c = cellreader.CellpyCell()
+    c.from_raw(parameters.res_file_path)
+    c.make_step_table()
+    c.make_summary()
+    with pytest.raises(ValueError, match="remote path"):
+        c.save("sftp://user@host/tmp/out.cellpy", force=True)
+
+
+def test_scp_alias_parses_as_external():
+    p = cellpy.internals.connections.OtherPath(
+        "scp://jepe@server.ife.no/home/jepe/file.res"
+    )
+    assert p.is_external
+    assert p.uri_prefix == "scp://"
+    assert p.location == "jepe@server.ife.no"
+
+
+def test_remote_exists_uses_upath(monkeypatch, mock_env_cellpy_key_filename):
+    class _FakeUPath:
+        def __init__(self, *args, **kwargs):
+            self._url = str(args[0])
+            self.path = "/home/jepe/file.res"
+            self.storage_options = kwargs
+            self.fs = type("FS", (), {"info": lambda self, p: {"size": 3}})()
+            self.name = "file.res"
+            self.protocol = "sftp"
+
+        def __str__(self):
+            return self._url
+
+        def exists(self):
+            return True
+
+        def is_file(self):
+            return True
+
+        def is_dir(self):
+            return False
+
+    monkeypatch.setattr("cellpy.internals.otherpath.UPath", _FakeUPath)
+    p = cellpy.internals.connections.OtherPath(
+        "sftp://jepe@server.ife.no/home/jepe/file.res"
+    )
+    assert p.exists(testing=True) is True
+    assert p.is_file(testing=True) is True

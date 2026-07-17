@@ -43,7 +43,6 @@ dependencies = [
     "sqlalchemy>=2.0.0",
     "sqlalchemy-access; platform_system == 'Windows'",
     "python-dotenv",
-    "fabric",
     "dateparser",
     "cookiecutter",
     "jinja2_time",
@@ -65,6 +64,8 @@ dependencies = [
     "cellpycore==0.2.2",
     "pydantic-settings>=2.14.2",
     "platformdirs>=4.10.0",
+    "universal-pathlib>=0.3.10",
+    "paramiko>=5.0.0",
 ]
 
 [project.optional-dependencies]
@@ -133,6 +134,7 @@ markers = [
     "skip_on_macos: skip this test when running on macOS (e.g. CI flakiness)",
     "essential: marks the core smoke tests of the read -> step-table -> summary pipeline and the cellpy/cellpy-core parity contract (run with '-m essential')",
     "benchmark: opt-in performance benchmarks (run benchmarks/ or pytest -m benchmark)",
+    "onlylocal: needs local resources (Docker SFTP, live SSH, etc.); deselected by default addopts",
 ]
 filterwarnings = [
     "ignore::DeprecationWarning:dateparser",

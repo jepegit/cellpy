@@ -45,10 +45,21 @@ The default `addopts` in `pyproject.toml` deselects slow/local/unfinished tests:
 
 ### Marker policy
 - `slowtest` - benchmarks and network/GitHub/cookiecutter pulls; deselected by default.
+- `onlylocal` - needs local resources (Docker SFTP for `tests/test_otherpaths_sftp.py`, live SSH, etc.); deselected by default `addopts`.
 - `skip(reason="only run locally")` - needs local resources (sftp, mdbtools, real raw data).
 - `skip(reason="...not needed in CI/CD...")` - downloads example data; run manually when needed.
 - `skip_on_macos` - macOS CI flakiness.
 - `xfail` - documents deprecated / not-implemented behavior; expected to fail.
+
+### Docker SFTP (`OtherPath`)
+
+```bash
+uv run pytest tests/test_otherpaths_sftp.py -m onlylocal
+```
+
+Uses `docker/sftp-test/compose.yml` (`atmoz/sftp` on `127.0.0.1:2223`). The
+session fixture starts/stops compose when the Docker daemon is up; otherwise
+the tests skip.
 - CI additionally `--ignore=tests/test_plotutils_summary_plot.py`; that file runs fine locally once
   the `[all]` extras (plotly/seaborn/kaleido) are installed.
 

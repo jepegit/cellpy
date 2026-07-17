@@ -732,7 +732,9 @@ class LabJournal(BaseJournal, ABC):
 
             def json_default_handler(obj):
                 """Handle objects that can't be serialized by default JSON encoder."""
-                if isinstance(obj, pathlib.Path):
+                from cellpy.internals.connections import OtherPath
+
+                if isinstance(obj, (pathlib.Path, OtherPath)):
                     return str(obj)
                 elif hasattr(obj, "to_json"):
                     # For pandas DataFrames and Series

@@ -10,7 +10,6 @@ import time
 from typing import Optional, Union, List, Tuple
 import warnings
 
-from . import externals as externals
 import cellpy.exceptions
 from cellpy.parameters import prms
 from cellpy.internals.connections import OtherPath
@@ -67,12 +66,8 @@ def find_in_raw_file_directory(
         >>>)
 
     Notes:
-        Uses 'find' and 'ssh' to search for files.
+        Uses ``OtherPath.rglob`` (local pathlib or remote UPath/fsspec).
     """
-
-    logging.info("--- EXPERIMENTAL ---")
-    logging.info("This function uses 'find' and 'ssh' to search for files.")
-    logging.info("Not all systems have these commands available.")
 
     file_list = []
 
@@ -98,40 +93,29 @@ def find_in_raw_file_directory(
         else:
             glob_txt = f"{glob_txt}.{extension}"
 
-    platform = sys.platform
     logging.info(f"Searching for files matching: {glob_txt}")
     for d in raw_file_dir:
         logging.debug(f"searching in folder: {d}")
-        connect_kwargs, host = d.connection_info()
-        if not host and platform == "win32":
-            logging.info("Windows platform detected - assuming 'find' is not available")
-            _file_list = glob.glob(f"{d.raw_path}/**/{glob_txt}", recursive=True)
-            f = _file_list[0]
-        else:
-            # TODO: make a better error-message if the d.raw_path does not exist:
-            with externals.fabric.Connection(
-                host, connect_kwargs=connect_kwargs
-            ) as conn:
-                find_command = f'find -L {d.raw_path} -name "{glob_txt}"'
-                out = conn.run(f"{find_command}", hide="both", warn=True)
-            if out.return_code != 0:
-                logging.critical(
-                    f"Errors encounter when running the find command in {d.raw_path}"
-                )
-                logging.debug(f"{find_command} -> {out.stderr}")
-                if allow_error_level == 1:
-                    raise cellpy.exceptions.SearchError(
-                        f"Following errors encounter when running the find command in ({d.raw_path}) ->\n{out.stderr}"
-                    )
-                elif allow_error_level == 2:
-                    logging.critical("Skipping this folder")
-                    continue
-                elif allow_error_level == 3:
-                    logging.critical("Trying to process the stdout regardless")
+        try:
+            matches = list(d.rglob(glob_txt))
+        except Exception as exc:
+            logging.critical(
+                f"Errors encounter when searching in {d.raw_path}: {exc}"
+            )
+            if allow_error_level == 1:
+                raise cellpy.exceptions.SearchError(
+                    f"Errors encounter when searching in ({d.raw_path}) ->\n{exc}"
+                ) from exc
+            if allow_error_level == 2:
+                logging.critical("Skipping this folder")
+                continue
+            matches = []
 
-            _file_list = out.stdout.splitlines()
-
-        file_list += list(map(lambda x: f"{d.uri_prefix}{host}" + x, _file_list))
+        for match in matches:
+            if match.is_external:
+                file_list.append(match.full_path)
+            else:
+                file_list.append(str(match).replace("\\", "/"))
     number_of_files = len(file_list)
     if number_of_files == 0:
         logging.critical("No files found")
@@ -419,53 +403,20 @@ def _check_01():
 
 def _check_02():
     import dotenv
-    import fabric
-    import stat
 
     dotenv.load_dotenv(r"C:\scripting\cellpy\local\.env_cellpy_local")
     host = os.getenv("CELLPY_HOST")
     user = os.getenv("CELLPY_USER")
-    key_file = os.getenv("CELLPY_KEY_FILENAME")
     print(f"host: {host}")
     print(f"user: {user}")
-    connect_kwargs = {"key_filename": key_file}
-
-    with fabric.Connection(host, connect_kwargs=connect_kwargs) as conn:
-        sftp_conn = conn.sftp()
-        sftp_conn.chdir("tmp")
-        print("===================")
-        for fileattr in sftp_conn.listdir_attr():
-            if stat.S_ISDIR(fileattr.st_mode):
-                print(f"dir: {fileattr.filename}")
-            else:
-                print(f"file: {fileattr.filename}")
-        print("===================")
-        glob_str = "20*.res"
-        sub_dirs = [
-            f for f in sftp_conn.listdir() if stat.S_ISDIR(sftp_conn.stat(f).st_mode)
-        ]
-        files = [
-            f
-            for f in sftp_conn.listdir()
-            if not stat.S_ISDIR(sftp_conn.stat(f).st_mode)
-        ]
-        filtered_files = fnmatch.filter(files, glob_str)
-        for sub_dir in sub_dirs:
-            sftp_conn.chdir(sub_dir)
-            new_files = [
-                f
-                for f in sftp_conn.listdir()
-                if not stat.S_ISDIR(sftp_conn.stat(f).st_mode)
-            ]
-            new_filtered_files = fnmatch.filter(new_files, glob_str)
-            new_filtered_files = [
-                f"{sub_dir}{path_separator}{f}" for f in new_filtered_files
-            ]
-            filtered_files += new_filtered_files
-            sftp_conn.chdir("..")
-
-        for f in filtered_files:
-            print(f"file: {f} of type {type(f)}")
+    remote = OtherPath(f"sftp://{user}@{host}/tmp")
+    print("===================")
+    for child in remote.listdir(levels=0):
+        kind = "dir" if child.is_dir() else "file"
+        print(f"{kind}: {child.name}")
+    print("===================")
+    for match in remote.rglob("20*.res"):
+        print(f"file: {match} of type {type(match)}")
 
 
 def _check_03():
