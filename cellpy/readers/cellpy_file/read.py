@@ -303,6 +303,15 @@ def extract_meta_from_cellpy_file(
     test_dependent_meta_dict = test_dependent_meta_table.to_dict(orient="list")
     data.meta_test_dependent.update(as_list=True, **test_dependent_meta_dict)
 
+    # Older files can carry a double-nested cycle_mode (e.g. [['anode']] when
+    # a list-valued box was saved and re-wrapped by the as_list load above);
+    # the engine needs a scalar (issue #509). Recursively unwrap.
+    from cellpy.readers import test_meta
+
+    data.meta_test_dependent.cycle_mode = test_meta._unwrap(
+        data.meta_test_dependent.cycle_mode
+    )
+
 
 def _assign_fids_from_table(data: "Data", fid_table, fid_table_selected: bool) -> None:
     if fid_table_selected:

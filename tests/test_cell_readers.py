@@ -759,70 +759,76 @@ def test_make_summary_new_version(parameters):
     print(s2.columns)
 
 
-def test_select_without(rate_dataset):
-    """Test the _select_without method for filtering and modifying cell cycling data.
+def test_make_summary_exclude_step_types(rate_dataset):
+    """exclude_step_types subtracts per-cycle excluded-step capacity deltas.
 
-    This test verifies that:
-    1. The method returns correct data when no exclusions are specified
-    2. It properly excludes specified step types
-    3. It properly excludes specified steps
-    4. It correctly adjusts the data values by subtracting excluded step contributions
-    5. It handles NaN values appropriately
+    Mirrors cellpy-core tests/test_exclude_types.py (issue #509 / core #54) —
+    behavioral replacement for the removed legacy ``_select_without``
+    implementation: the excluded summary equals the base summary minus the
+    per-cycle ``(last - first)`` capacity deltas of the cv_ steps.
     """
+    import numpy as np
+    import pandas as pd
 
-    print("\n=== TEST SELECT WITHOUT ===")
-    # Test 1: No exclusions
-    result1 = rate_dataset._select_without()
-    print("\nResult 1 (no exclusions):")
-    print(f"Number of rows: {len(result1)}")
-    assert not result1.empty
-    assert len(result1) > 0
+    c = rate_dataset
+    hst = c.headers_step_table
+    hs = c.headers_summary
 
-    # Test 2: non-cv
-    exclude_types = ["cv_"]
-    result2 = rate_dataset._select_without(exclude_types=exclude_types)
-    print("\nResult 2 (exclude charge):")
-    print(f"Number of rows: {len(result2)}")
-    assert not result2.empty
-    assert len(result2) > 0
+    base = c.make_summary(create_copy=True).data.summary
+    excl = c.make_summary(exclude_step_types=["cv_"], create_copy=True).data.summary
 
-    # Test 3: only-cv
-    exclude_types = ["charge", "discharge"]
-    result2 = rate_dataset._select_without(exclude_types=exclude_types)
-    print("\nResult 3 (exclude charge):")
-    print(f"Number of rows: {len(result2)}")
-    assert not result2.empty
-    assert len(result2) > 0
+    steps = c.data.steps
+    cv = steps[steps[hst.type].str.startswith("cv_", na=False)]
+    assert not cv.empty, "fixture must contain cv_ steps for this test"
+    d_chg = (
+        (cv[f"{hst.charge}_last"] - cv[f"{hst.charge}_first"])
+        .groupby(cv[hst.cycle])
+        .sum()
+    )
+    d_dchg = (
+        (cv[f"{hst.discharge}_last"] - cv[f"{hst.discharge}_first"])
+        .groupby(cv[hst.cycle])
+        .sum()
+    )
 
-    # Test 3: Exclude specific steps
-    result3 = rate_dataset._select_without(exclude_steps=[1, 2])
-    assert not result3.empty
-    assert len(result3) > 0
+    b = base.set_index(hs.cycle_index)
+    e = excl.set_index(hs.cycle_index)
+    assert list(b.index) == list(e.index)
+    for cyc in b.index:
+        assert e.loc[cyc, hs.charge_capacity] == pytest.approx(
+            b.loc[cyc, hs.charge_capacity] - d_chg.get(cyc, 0.0), rel=1e-6, abs=1e-12
+        )
+        assert e.loc[cyc, hs.discharge_capacity] == pytest.approx(
+            b.loc[cyc, hs.discharge_capacity] - d_dchg.get(cyc, 0.0),
+            rel=1e-6,
+            abs=1e-12,
+        )
 
-    # Test 4: Exclude both types and steps
-    result4 = rate_dataset._select_without(exclude_types="charge", exclude_steps=[1, 2])
-    assert not result4.empty
-    assert len(result4) > 0
+    # something must actually have been excluded
+    assert not e[hs.charge_capacity].equals(b[hs.charge_capacity])
 
-    # Test 5: Verify data adjustments
-    # Get original data for a cycle
-    cycle = 1
-    original_data = rate_dataset.data.raw[rate_dataset.data.raw.cycle_index == cycle]
+    # derived columns are recomputed from the adjusted capacities: CE follows
+    # whatever orientation the base summary uses (derive it, don't hard-code)
+    ratio_d_over_c = 100 * b[hs.discharge_capacity] / b[hs.charge_capacity]
+    if np.allclose(
+        b[hs.coulombic_efficiency].to_numpy(dtype=float),
+        ratio_d_over_c.to_numpy(dtype=float),
+        rtol=1e-6,
+        equal_nan=True,
+    ):
+        expected_ce = 100 * e[hs.discharge_capacity] / e[hs.charge_capacity]
+    else:
+        expected_ce = 100 * e[hs.charge_capacity] / e[hs.discharge_capacity]
+    assert np.allclose(
+        e[hs.coulombic_efficiency].to_numpy(dtype=float),
+        expected_ce.to_numpy(dtype=float),
+        rtol=1e-6,
+        equal_nan=True,
+    )
 
-    # Get data with exclusions
-    excluded_data = rate_dataset._select_without(exclude_types="charge")
-    excluded_cycle_data = excluded_data[excluded_data.cycle_index == cycle]
-
-    # Verify that the data has been adjusted
-    assert not original_data.equals(excluded_cycle_data)
-
-    # Test 6: NaN handling
-    result6 = rate_dataset._select_without(replace_nan=True)
-    assert result6.isna().sum().sum() == 0  # No NaN values when replace_nan=True
-
-    result7 = rate_dataset._select_without(replace_nan=False)
-    # We don't assert anything about NaN values here as they might or might not exist
-    # depending on the data
+    # base path unaffected by the new kwarg's existence
+    base_again = c.make_summary(create_copy=True).data.summary
+    pd.testing.assert_frame_equal(base, base_again)
 
 
 @pytest.mark.essential
