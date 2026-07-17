@@ -9,5 +9,6 @@ exporters from here only - it never imports export logic from
 """
 
 from cellpy.exporters.bdf import to_bdf
+from cellpy.exporters.tabular import to_csv, to_excel
 
-__all__ = ["to_bdf"]
+__all__ = ["to_bdf", "to_csv", "to_excel"]
