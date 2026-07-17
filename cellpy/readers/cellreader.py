@@ -771,7 +771,12 @@ class CellpyCell:
         """
         box = data.meta_test_dependent
         for attr in ("test_ID", "channel_index", "creator", "schedule_file_name"):
-            value = getattr(data, attr, None)
+            # normalize absent-ish values: raw-file backends differ by
+            # platform (Windows ODBC yields '' where Linux mdbtools yields
+            # NaN) - both mean "not provided"
+            value = test_meta._unwrap(getattr(data, attr, None))
+            if isinstance(value, str) and not value.strip():
+                value = None
             if value is not None:
                 setattr(box, attr, value)
 

@@ -1128,8 +1128,14 @@ class DataLoader(BaseLoader):
             ].values[0]
         except (KeyError, IndexError):
             comments = None
-        if comments and data.meta_common.comment in (None, ""):
-            data.meta_common.comment = str(comments)
+        # empty values differ by platform (Windows ODBC: '', Linux mdbtools:
+        # NaN) - only map a real, non-empty string
+        if (
+            isinstance(comments, str)
+            and comments.strip()
+            and data.meta_common.comment in (None, "")
+        ):
+            data.meta_common.comment = comments
 
         data.raw_data_files.append(self.fid)
         return data

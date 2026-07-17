@@ -34,7 +34,7 @@
     "channel_index": 3,
     "creator": "hfa",
     "cycle_mode": "anode",
-    "test_ID": "",
+    "test_ID": null,
     "test_type": null,
     "voltage_lim_high": 1.0,
     "voltage_lim_low": 0.0
