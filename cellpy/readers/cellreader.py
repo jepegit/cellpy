@@ -212,6 +212,8 @@ class CellpyCell:
         output_units=None,
         debug=False,
         native_schema=False,
+        core=None,
+        instrument_factory=None,
     ):
         """
         Args:
@@ -226,6 +228,13 @@ class CellpyCell:
             cellpy_units (dict): sent to cellpy.parameters.internal_settings.get_cellpy_units
             output_units (dict): sent to cellpy.parameters.internal_settings.get_default_output_units
             debug (bool): set to True if you want to see debug messages.
+            core (CellpyCellCore): injected core seam (issue #520, DI). When
+                given it is used as-is (it owns the ``Data`` object and runs
+                the step/summary engine); when None the default is built from
+                the ``native_schema`` flag.
+            instrument_factory (InstrumentFactory): injected loader registry
+                (issue #520, DI). When None,
+                ``register_instrument_readers()`` builds the default factory.
             native_schema (bool): opt-in feature flag (issue #511, V2-11).
                 When True, frames are kept in native cellpy-core column names
                 and the polars engine runs directly (no legacy rename
@@ -250,9 +259,12 @@ class CellpyCell:
         # initialize() creates the cellpy ``ds.Data`` it expects (the data
         # property reads/writes ``self.core._data``). Under the ``native_schema``
         # opt-in (#511) the legacy bridge is replaced by the rename-free
-        # pandas<->polars adapter.
+        # pandas<->polars adapter. An injected ``core`` (#520, DI) wins over
+        # both defaults.
         self.native_schema = bool(native_schema)
-        if self.native_schema:
+        if core is not None:
+            self.core = core
+        elif self.native_schema:
             from cellpy.readers.native_core import NativeCellpyCellCore
 
             self.core = NativeCellpyCellCore(initialize=False, debug=debug)
@@ -318,7 +330,7 @@ class CellpyCell:
         self.headers_normal = headers_normal
         self.headers_summary = headers_summary
         self.headers_step_table = headers_step_table
-        self.instrument_factory = None
+        self.instrument_factory = instrument_factory  # injected (#520) or None
         self.register_instrument_readers()
         self.set_instrument()
         # - units used by cellpy
@@ -592,9 +604,14 @@ class CellpyCell:
         return
 
     def register_instrument_readers(self):
-        """Register instrument readers."""
+        """Register instrument readers.
 
-        self.instrument_factory = ds.generate_default_factory()
+        Builds the default factory only when none is set — an injected
+        ``instrument_factory`` (#520, DI) is kept as-is. Set
+        ``self.instrument_factory = None`` first to force a rebuild.
+        """
+        if self.instrument_factory is None:
+            self.instrument_factory = ds.generate_default_factory()
         # instruments = find_all_instruments()
         # for instrument_id, instrument in instruments.items():
         #     self.instrument_factory.register_builder(instrument_id, instrument)
