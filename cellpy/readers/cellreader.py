@@ -2290,23 +2290,6 @@ class CellpyCell:
         if from_data_point is not None:
             return result
 
-        # Campaign objects only (issue #507): re-stamp test_id onto the step
-        # table. The core bridge groups steps by (test_id, cycle, step) using
-        # the raw test_id column but strips the column from the returned
-        # legacy frame; putting it back makes the subsequent summary use
-        # per-test windowing (use_tid) instead of cycle-only grouping. Gated
-        # on _extra_tests so single-test and continuation objects (including
-        # multi-tester-id Arbin raw) are untouched.
-        if self.data._extra_tests and not self.data.steps.empty:
-            from cellpy.readers import merger
-
-            test_id_hdr = self.headers_normal.test_id_txt
-            if test_id_hdr in self.data.raw.columns:
-                point_first = f"{self.headers_step_table.point}_first"
-                self.data.steps[test_id_hdr] = merger._steps_test_id_from_raw(
-                    self.data, self.data.steps, point_first
-                )
-
         return self
 
     def _select_usteps(self, cycle: int, steps: Union[list, np.ndarray]):

@@ -228,12 +228,33 @@ def test_campaign_recompute_stamps_steps_and_windows_summary(campaign_cell):
     )
 
 
-def test_single_test_steps_have_no_test_id_column(parameters):
-    """Safety pin: the re-stamp gate stays off for non-campaign objects."""
+def test_campaign_merge_remaps_summary_test_id(parameters):
+    """The merged (pre-recompute) summary keeps per-test ids: the bridge
+    summaries carry test_id since cellpycore 0.2.2 (#136), so the merger must
+    remap the right side instead of concatenating two test_id=0 blocks."""
+    left = cellreader.CellpyCell()
+    left.from_raw(parameters.res_file_path)
+    left.make_step_table()
+    left.make_summary(find_ir=False, find_end_voltage=False)
+    right = cellreader.CellpyCell()
+    right.from_raw(parameters.res_file_path2)
+    right.make_step_table()
+    right.make_summary(find_ir=False, find_end_voltage=False)
+    left.merge(right)
+
+    summary = left.data.summary
+    assert HS.test_id in summary.columns
+    assert set(summary[HS.test_id].astype(int).unique()) == {0, 1}
+
+
+def test_single_test_steps_carry_test_id_zero(parameters):
+    """Since cellpycore 0.2.2 (#136) the bridge carries test_id through the
+    legacy step table; single-test objects get the injected id 0."""
     c = cellreader.CellpyCell()
     c.from_raw(parameters.res_file_path)
     c.make_step_table()
-    assert HN.test_id_txt not in c.data.steps.columns
+    assert HN.test_id_txt in c.data.steps.columns
+    assert set(c.data.steps[HN.test_id_txt].unique()) == {0}
 
 
 def test_campaign_save_warns_and_reloads_single(campaign_cell, tmp_path, caplog):

@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+* cellpycore 0.2.2 sync: the legacy bridge now carries `test_id` on steps and
+  summary for all objects (core #136), so the #507 re-stamp workaround in
+  `make_step_table` is removed and the campaign merger remaps the right-hand
+  summary's `test_id` onto its new ids (previously the merged, pre-recompute
+  summary showed `test_id=0` everywhere).
+
 * Cellpy-file format v9 (#510, V2-13/14): default `save()` writes
   zip-of-parquet + `meta.json` (``.cellpy``); `load()` still reads v4–v8 HDF5
   and sniffs v9. Full `TestMetaCollection` (+ units/limits) persists on v9;
