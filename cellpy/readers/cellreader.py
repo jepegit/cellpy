@@ -1518,7 +1518,7 @@ class CellpyCell:
         for kwarg in kwargs:
             logging.debug(f"received (still) un-supported keyword argument {kwarg=}")
 
-        logging.debug("loading cellpy-file (hdf5):")
+        logging.debug("loading cellpy-file:")
         logging.debug(cellpy_file)
         logging.debug(f"{type(cellpy_file)=}")
         cellpy_file = internals.OtherPath(cellpy_file)
@@ -1556,12 +1556,16 @@ class CellpyCell:
         filename,
         force=False,
         overwrite=None,
-        extension="h5",
+        extension="cellpy",
         ensure_step_table=None,
         ensure_summary_table=None,
-        cellpy_file_format="hdf5",
+        cellpy_file_format=None,
     ):
         """Save the data structure to cellpy-format.
+
+        Default on-disk format is **v9** (zip-of-parquet + ``meta.json``,
+        ``.cellpy``). Pass ``cellpy_file_format="hdf5"`` / ``"v8"`` or a
+        ``.h5`` / ``.hdf5`` path to write the legacy HDF5 layout.
 
         Args:
             filename: (str or pathlib.Path) the name you want to give the file
@@ -1569,23 +1573,23 @@ class CellpyCell:
                 (not recommended)
             overwrite: (bool) save the new version of the file even if old one
                 exists.
-            extension: (str) filename extension.
+            extension: (str) filename extension when ``filename`` has no suffix
+                (default ``cellpy``).
             ensure_step_table: (bool) make step-table if missing.
             ensure_summary_table: (bool) make summary-table if missing.
-            cellpy_file_format: (str) format of the cellpy-file (only hdf5 is supported so far).
+            cellpy_file_format: (str | None) ``"v9"`` / ``"cellpy"`` (default),
+                or ``"hdf5"`` / ``"v8"`` for the legacy HDF5 writer. When
+                omitted, inferred from the path suffix (``.h5``/``.hdf5`` →
+                hdf5, otherwise v9).
 
         Returns:
             None
 
         """
+        from cellpy.readers.cellpy_file import v9 as cellpy_file_v9
+
         logging.debug(f"Trying to save cellpy-file to {filename}")
         logging.info(f" -> {filename}")
-
-        if cellpy_file_format.lower() != "hdf5":
-            logging.critical(
-                "Sorry, but only hdf5 is supported at the moment. Setting cellpy_file_format to hdf5."
-            )
-            cellpy_file_format = "hdf5"
 
         # some checks to find out what you want
         if overwrite is None:
@@ -1619,6 +1623,23 @@ class CellpyCell:
             logging.debug("No suffix given - adding one")
             outfile_all = outfile_all.with_suffix(f".{extension}")
 
+        fmt = (cellpy_file_format or "").lower().strip()
+        suffix = outfile_all.suffix.lower()
+        if not fmt:
+            if suffix in {".h5", ".hdf5"}:
+                fmt = "hdf5"
+            else:
+                fmt = "v9"
+        if fmt in {"h5", "hdf", "hdf5", "v8"}:
+            fmt = "hdf5"
+        elif fmt in {"v9", "cellpy", "zip"}:
+            fmt = "v9"
+        else:
+            logging.warning(
+                f"Unknown cellpy_file_format={cellpy_file_format!r}; using v9"
+            )
+            fmt = "v9"
+
         if outfile_all.is_file():
             logging.debug("Outfile exists")
             if overwrite:
@@ -1646,10 +1667,20 @@ class CellpyCell:
                 logging.debug("save: creating summary table")
                 self.make_summary()
 
-        logging.debug(f"trying to save to file: {outfile_all}")
-        if cellpy_file_format == "hdf5":
+        logging.debug(f"trying to save to file: {outfile_all} (format={fmt})")
+        if fmt == "hdf5":
             cellpy_file_write.save(my_data, outfile_all)
             logging.debug(" all -> hdf5 OK")
+        else:
+            units = None
+            try:
+                units = self.cellpy_units.to_frame()["value"].to_dict()
+            except Exception:
+                logging.debug(
+                    "could not serialize cellpy_units for v9 meta", exc_info=True
+                )
+            cellpy_file_v9.save(my_data, outfile_all, cellpy_units=units)
+            logging.debug(" all -> v9 .cellpy OK")
 
     # TODO @jepe: move this to its own module (e.g. as a cellpy-exporters?):
     @staticmethod

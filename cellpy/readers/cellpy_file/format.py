@@ -1,25 +1,37 @@
-"""Cellpy-file (HDF5) layout specification.
+"""Cellpy-file layout specification.
 
 Single source of truth for table keys, meta dirs, compression, and pandas
-store formats. Version-specific layouts for historical file versions v4–v8.
+store formats. Version-specific layouts for historical file versions v4–v8
+(HDF5) and v9 (zip-of-parquet + ``meta.json``).
 
-Canonical file-version integers remain in ``internal_settings``; the values
-below are duplicated here to avoid an import cycle (``internal_settings`` imports
-``prms``, and ``prms`` aliases onto this module).
+Canonical file-version integers are mirrored in ``internal_settings``; the
+values below are duplicated here to avoid an import cycle
+(``internal_settings`` imports ``prms``, and ``prms`` aliases onto this module).
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 
-# Must match cellpy.parameters.internal_settings (canonical site).
-CELLPY_FILE_VERSION = 8
+# Latest on-disk format written by default (v9 zip-of-parquet).
+CELLPY_FILE_VERSION = 9
 MINIMUM_CELLPY_FILE_VERSION = 4
+# Last HDF5 layout version (still readable; written when format="hdf5"/".h5").
+HDF5_FILE_VERSION = 8
+
+# v9 zip members
+META_JSON_NAME = "meta.json"
+V9_RAW_PARQUET = "raw.parquet"
+V9_STEPS_PARQUET = "steps.parquet"
+V9_SUMMARY_PARQUET = "summary.parquet"
+V9_FID_PARQUET = "fid.parquet"
+V9_EXTENSION = ".cellpy"
+ZIP_LOCAL_HEADER_MAGIC = b"PK\x03\x04"
 
 
 @dataclass(frozen=True)
 class CellpyFileFormat:
-    """Frozen layout spec for one cellpy-file format version."""
+    """Frozen layout spec for one cellpy-file format version (HDF5 family)."""
 
     version: int
     root: str
@@ -97,7 +109,7 @@ _FORMAT_BY_VERSION: dict[int, CellpyFileFormat] = {
 
 
 def get_format(version: int) -> CellpyFileFormat:
-    """Return the layout spec for a cellpy-file version.
+    """Return the HDF5 layout spec for a cellpy-file version.
 
     Args:
         version: On-disk ``cellpy_file_version`` (4–8 supported here).
@@ -106,6 +118,6 @@ def get_format(version: int) -> CellpyFileFormat:
         The matching ``CellpyFileFormat`` instance.
 
     Raises:
-        KeyError: If ``version`` has no registered layout.
+        KeyError: If ``version`` has no registered HDF5 layout (e.g. v9).
     """
     return _FORMAT_BY_VERSION[version]

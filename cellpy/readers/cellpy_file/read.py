@@ -12,8 +12,8 @@ from cellpy.exceptions import WrongFileVersion
 from cellpy.parameters import prms
 from cellpy.parameters.internal_settings import PICKLE_PROTOCOL
 from cellpy.readers.cellpy_file.format import (
-    CELLPY_FILE_VERSION,
     FORMAT_V8,
+    HDF5_FILE_VERSION,
     MINIMUM_CELLPY_FILE_VERSION,
     CellpyFileFormat,
     get_format,
@@ -385,8 +385,12 @@ def load(
     selector=None,
     parent_level: str | None = None,
 ) -> LoadResult:
-    """Load a cellpy-file and return populated ``Data`` with explicit limits."""
+    """Load a cellpy-file and return populated ``Data`` with explicit limits.
+
+    Dispatches by container sniff: zip (v9 ``.cellpy``) vs HDF5 (v4–v8).
+    """
     from cellpy.readers.cellpy_file import legacy_read
+    from cellpy.readers.cellpy_file import v9 as cellpy_file_v9
 
     if parent_level is None:
         parent_level = prms._cellpyfile_root
@@ -400,16 +404,21 @@ def load(
         logging.info(f"File does not exist: {filename}")
         raise IOError(f"File does not exist: {filename}")
 
+    # v9 zip-of-parquet (sniff magic; extension is only a hint)
+    if cellpy_file_v9.is_zip_cellpy(filename):
+        logging.debug(f"Loading v9 zip cellpy-file: {filename}")
+        return cellpy_file_v9.load(filename, selector=selector)
+
     with ds.pickle_protocol(PICKLE_PROTOCOL):
         cellpy_file_version = cellpy_file_meta.get_cellpy_file_version(filename)
         logging.debug(
             f"Cellpy file version {cellpy_file_version}; selector={selector}"
         )
 
-        if cellpy_file_version > CELLPY_FILE_VERSION:
+        if cellpy_file_version > HDF5_FILE_VERSION:
             raise WrongFileVersion(
-                f"File format too new: {filename} :: version: {cellpy_file_version}"
-                f"Reload from raw or upgrade your cellpy!"
+                f"File format too new for HDF5 reader: {filename} :: "
+                f"version: {cellpy_file_version}. Reload from raw or upgrade cellpy."
             )
 
         if cellpy_file_version < MINIMUM_CELLPY_FILE_VERSION:
@@ -418,7 +427,7 @@ def load(
                 f"Reload from raw or downgrade your cellpy!"
             )
 
-        if cellpy_file_version < CELLPY_FILE_VERSION:
+        if cellpy_file_version < HDF5_FILE_VERSION:
             if accept_old:
                 logging.debug(f"old cellpy file version {cellpy_file_version}")
                 logging.debug(f"filename: {filename}")

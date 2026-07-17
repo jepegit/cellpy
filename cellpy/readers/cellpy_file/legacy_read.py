@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Union
 
 from cellpy.exceptions import WrongFileVersion
 from cellpy.parameters import prms
-from cellpy.readers.cellpy_file.format import CELLPY_FILE_VERSION
+from cellpy.readers.cellpy_file.format import HDF5_FILE_VERSION
 from cellpy.readers import data_structures as ds
 from cellpy.readers import externals
 from cellpy.readers.cellpy_file import keys as cellpy_file_keys
@@ -101,7 +101,7 @@ def load_v7(filename, selector=None) -> tuple["Data", LoadLimits]:
         )
 
     extract_meta_from_old_cellpy_file_max_v7(
-        data, meta_table, filename, upgrade_from_to=(7, CELLPY_FILE_VERSION)
+        data, meta_table, filename, upgrade_from_to=(7, HDF5_FILE_VERSION)
     )
     _assign_fids_from_table(data, fid_table, fid_table_selected)
     return data, limits
@@ -112,7 +112,7 @@ def load_v6(filename, selector=None) -> tuple["Data", LoadLimits]:
     fmt = FORMAT_V6
     parent_level = fmt.root
     limits = LoadLimits()
-    upgrade = (6, CELLPY_FILE_VERSION)
+    upgrade = (6, HDF5_FILE_VERSION)
 
     with externals.pandas.HDFStore(filename) as store:
         data, meta_table = create_initial_data_set_from_cellpy_file(
@@ -162,7 +162,7 @@ def load_v5(filename, selector=None) -> tuple["Data", LoadLimits]:
     fmt = FORMAT_V5
     parent_level = fmt.root
     limits = LoadLimits()
-    upgrade = (5, CELLPY_FILE_VERSION)
+    upgrade = (5, HDF5_FILE_VERSION)
 
     with externals.pandas.HDFStore(filename) as store:
         data, meta_table = create_initial_data_set_from_cellpy_file(
@@ -212,7 +212,7 @@ def load_v3_to_v4(filename, selector=None) -> tuple["Data", LoadLimits]:
     fmt = FORMAT_V4
     parent_level = fmt.root
     limits = LoadLimits()
-    upgrade = (4, CELLPY_FILE_VERSION)
+    upgrade = (4, HDF5_FILE_VERSION)
 
     with externals.pandas.HDFStore(filename) as store:
         data, meta_table = create_initial_data_set_from_cellpy_file(
