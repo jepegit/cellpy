@@ -1,4 +1,31 @@
-"""arbin res-type data files"""
+"""arbin res-type data files.
+
+Vendor metadata mapping (issue #508, V2-08 — "no silent drops"): the Arbin
+``Global_Table`` columns and what cellpy does with them:
+
+===============================  ==============================================
+Global_Table column              destination
+===============================  ==============================================
+Channel_Index                    ``meta_test_dependent.channel_index``
+Creator                          ``meta_test_dependent.creator``
+Item_ID                          ``meta_test_dependent.test_ID`` (tester id;
+                                 provenance — the compact grouping key is
+                                 ``Data.active_test_id``)
+Schedule_File_Name               ``meta_test_dependent.schedule_file_name``
+Start_DateTime                   ``meta_common.start_datetime``
+Test_Name                        ``Data.test_name`` (orphan attribute; no home
+                                 in the metadata model yet)
+Comments                         ``meta_common.comment`` (when non-empty and
+                                 the box still holds its default)
+Test_ID                          raw ``test_id`` column during intra-file
+                                 multi-test stitching (``_merge``); overwritten
+                                 with the compact key after load
+Applications_Path,               deliberately dropped (tester housekeeping,
+Channel_Number, Channel_Type,    no metadata value)
+DAQ_Index, Log_* flags,
+Mapped_Aux_* columns
+===============================  ==============================================
+"""
 import cellpy.config as config
 
 import logging
@@ -1092,6 +1119,17 @@ class DataLoader(BaseLoader):
         data.test_name = selected_global_data_df[
             self.arbin_headers_global.test_name_txt
         ].values[0]
+
+        # vendor metadata mining (issue #508, V2-08): Comments -> comment,
+        # only when non-empty and the box still holds its default.
+        try:
+            comments = selected_global_data_df[
+                self.arbin_headers_global.comments_txt
+            ].values[0]
+        except (KeyError, IndexError):
+            comments = None
+        if comments and data.meta_common.comment in (None, ""):
+            data.meta_common.comment = str(comments)
 
         data.raw_data_files.append(self.fid)
         return data

@@ -2,6 +2,22 @@
 
 ## [Unreleased]
 
+* Loaders emit per-test metadata (#508, v2 Phase 2, themes V2-05/06/08):
+  `from_raw` now routes loader-parsed metadata (tester `test_ID`,
+  `channel_index`, `creator`, `schedule_file_name`) into `meta_test_dependent`
+  (so it persists and surfaces in `Data.tests`; the orphan attributes remain
+  set for backward compatibility), stamps the compact `test_id` grouping key
+  (0) onto raw (tester ids stay as provenance — note: this overwrites Arbin's
+  per-row tester Test_ID values in the raw column), and records load
+  provenance (`uuid` — new per load until #510 persists it, `source_kind`,
+  `source_type`, `source_uri`, `raw_file_names`, `loaded_datetime`) that the
+  derived `TestMeta` record now carries. Config-driven loaders stamp
+  instrument `raw_units` on the returned `Data` (shared
+  `internal_settings.merge_raw_units` helper). Arbin `Global_Table.Comments`
+  now maps to `meta_common.comment`; the full vendor-column mapping (incl.
+  deliberately dropped columns) is documented in the arbin_res module
+  docstring. Loader goldens regenerated accordingly.
+
 * Campaign merge (#507, v2 Phase 1-2, themes V2-03/V2-07): `CellpyCell.merge`
   is rewritten (old signature was dead code) — `merge(cells, mode="campaign")`
   folds different tests into one multi-test object: distinct compact `test_id`
