@@ -36,14 +36,6 @@ cellpy.utils.diagnostics module
    :undoc-members:
    :show-inheritance:
 
-cellpy.utils.easyplot module
-----------------------------
-
-.. automodule:: cellpy.utils.easyplot
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 cellpy.utils.example\_data module
 ---------------------------------
 
