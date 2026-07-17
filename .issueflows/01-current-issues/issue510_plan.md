@@ -95,4 +95,9 @@ Prefer **three stacked PRs** on `510-…`, all closing #510 only when C lands (o
 
 ## Open questions
 
-- None — ready for `/iflow-start` (Milestone A first).
+- None for A/B (shipped).
+- **Pin gate (C):** exact `cellpycore==` for the v2 release waits on
+  [cellpy/cellpy-core#136](https://github.com/cellpy/cellpy-core/issues/136)
+  + a new core PyPI release, then re-pin (see
+  `04-designs-and-guides/v2-cellpycore-pin-gate.md`). Do not treat `==0.2.1`
+  as the V2-15 pin.

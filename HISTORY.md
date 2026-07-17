@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+* Cellpy-file format v9 (#510, V2-13/14): default `save()` writes
+  zip-of-parquet + `meta.json` (``.cellpy``); `load()` still reads v4–v8 HDF5
+  and sniffs v9. Full `TestMetaCollection` (+ units/limits) persists on v9;
+  campaign-merged multi-`test_id` objects round-trip. Escape: ``.h5`` /
+  `cellpy_file_format="hdf5"`. Cellpy-owned `save_meta_archive` /
+  `load_meta_archive` (core archive stubs stay stubs). User guide:
+  `docs/getting_started/migration_v1_to_v2.md`.
+
 * `make_summary` gains `exclude_step_types` (#509, v2 theme V2-12): step-type
   prefixes (e.g. `["cv_"]`) whose per-cycle capacity contribution is subtracted
   from cycle-end charge/discharge capacities before derived columns — the
