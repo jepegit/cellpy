@@ -4,9 +4,12 @@ Implements the v2 "campaign" merge (issue #507, epic #402 themes V2-03/V2-07):
 each source keeps its identity via a distinct compact ``test_id`` stamped on the
 raw frame, and its metadata becomes a record in the per-test collection
 (``Data.tests``, issue #506). Cycle numbers are renumbered to be globally
-unique (v1 — the legacy summary format cannot represent duplicate cycle
-numbers; keeping original per-test numbering is deferred to the native-schema
-path). ``test_time`` / ``date_time`` are *not* shifted — campaign sources have
+unique by default; with ``renumber_cycles=False`` (#529, unblocked by
+cellpycore 0.2.2 carrying ``test_id`` through the bridge) the sources keep
+their original cycle numbers and the identifying key becomes
+``(test_id, cycle)`` — cycle-keyed consumers then see the union of matching
+cycles. Data points are always offset to stay globally unique.
+``test_time`` / ``date_time`` are *not* shifted — campaign sources have
 independent timelines (mirrors ``cellpycore.merge.merge_data``).
 
 This intentionally mirrors the semantics of ``cellpycore.merge.merge_data`` +
@@ -80,12 +83,15 @@ def fold_test_metadata(left, right) -> Dict[int, int]:
     return id_map
 
 
-def campaign_fold(left, right, *, merge_steps=True, merge_summary=True) -> None:
+def campaign_fold(
+    left, right, *, merge_steps=True, merge_summary=True, renumber_cycles=True
+) -> None:
     """Fold ``right`` (a ``Data`` object) into ``left`` as a distinct test.
 
     Mutates ``left`` in place; never mutates ``right``. See the module
-    docstring for the semantics (compact test_id stamping, global cycle
-    renumbering, no time shifting, per-test metadata records).
+    docstring for the semantics (compact test_id stamping, cycle renumbering
+    by default / original per-test numbering with ``renumber_cycles=False``,
+    no time shifting, per-test metadata records).
     """
     hn = get_headers_normal()
     hs = get_headers_summary()
@@ -127,7 +133,10 @@ def campaign_fold(left, right, *, merge_steps=True, merge_summary=True) -> None:
     dp_hdr = hn.data_point_txt
     cyc_raw_hdr = hn.cycle_index_txt
     dp_offset = int(left.raw[dp_hdr].max())
-    cycle_offset = int(left.raw[cyc_raw_hdr].max())
+    # Data points must stay globally unique (fid / step lookups key on them).
+    # Cycles are renumbered only when requested — with renumber_cycles=False
+    # the key is (test_id, cycle) and cycle numbers repeat across tests (#529).
+    cycle_offset = int(left.raw[cyc_raw_hdr].max()) if renumber_cycles else 0
     right_raw[dp_hdr] = right_raw[dp_hdr] + dp_offset
     right_raw[cyc_raw_hdr] = right_raw[cyc_raw_hdr] + cycle_offset
 

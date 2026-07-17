@@ -1602,7 +1602,8 @@ class CellpyCell:
           ``Test_ID`` — those remain as provenance in
           ``meta_test_dependent.test_ID``), and its metadata becomes a
           record in ``self.data.tests``. Cycle numbers are renumbered to be
-          globally unique; data points are offset; ``test_time`` /
+          globally unique by default (see ``renumber_cycles``); data points
+          are offset; ``test_time`` /
           ``date_time`` are *not* shifted (independent timelines). Sources
           are never mutated. Mixing different ``cycle_mode`` values is
           allowed here, but computing steps/summary on the merged object
@@ -1616,10 +1617,15 @@ class CellpyCell:
         Args:
             cells: a CellpyCell or Data instance, or a sequence of them.
             mode (str): "campaign" (default) or "continuation".
-            renumber_cycles (bool): campaign mode only. v1 supports only
-                ``True`` (the legacy summary format cannot represent
-                duplicate cycle numbers); ``False`` raises
-                ``NotImplementedError`` (tracked for the native-schema path).
+            renumber_cycles (bool): campaign mode only. If True (default),
+                cycle numbers are renumbered to be globally unique. If False
+                (#529, needs cellpycore >= 0.2.2), sources keep their original
+                cycle numbers: the identifying key becomes
+                ``(test_id, cycle)`` and cycle numbers repeat across tests —
+                cycle-keyed consumers (``get_cap(cycle=...)``, ``split`` /
+                ``with_cycles``, exporters) then operate on the union of the
+                matching cycles. Data points are always offset to stay
+                globally unique.
             **kwargs: forwarded to the continuation fold.
 
         Returns:
@@ -1656,16 +1662,12 @@ class CellpyCell:
 
         if mode != "campaign":
             raise ValueError(f"unknown merge mode: {mode!r}")
-        if not renumber_cycles:
-            raise NotImplementedError(
-                "campaign merge with original (overlapping) cycle numbers "
-                "requires per-test summary support through the core bridge; "
-                "tracked for the native-schema path (#511)"
-            )
 
         logging.info("Merging (campaign)")
         for other in datas:
-            merger.campaign_fold(self.data, other, **kwargs)
+            merger.campaign_fold(
+                self.data, other, renumber_cycles=renumber_cycles, **kwargs
+            )
         modes = test_meta.cycle_modes_in_data(self.data)
         if len(modes) > 1:
             logging.warning(
