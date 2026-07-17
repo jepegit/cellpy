@@ -50,7 +50,7 @@ def create_legend(info, c, option="clean", use_index=False):
 
     logging.debug("    - creating legends")
     mass, loading, label = info.loc[
-        c, [hdr_journal["mass"], hdr_journal["loading"], hdr_journal["label"]]
+        c, [hdr_journal.mass, hdr_journal.loading, hdr_journal.label]
     ]
 
     if use_index or not label:
@@ -73,7 +73,7 @@ def create_legend(info, c, option="clean", use_index=False):
 
 def look_up_group(info, c):
     logging.debug("    - looking up groups")
-    g, sg = info.loc[c, [hdr_journal["group"], hdr_journal["sub_group"]]]
+    g, sg = info.loc[c, [hdr_journal.group, hdr_journal.sub_group]]
     return int(g), int(sg)
 
 

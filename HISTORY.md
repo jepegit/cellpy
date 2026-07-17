@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+* Journal-page column literals use `HeadersJournal` attributes (#537, native-
+  headers Phase-0 prerequisite): the string-keyed `hdr_journal["mass"]`-style
+  lookups in `batch_plotters.py` and `helpers.py` become attribute access
+  (`hdr_journal.mass`, …) so a journal-header rename touches the header class
+  only. Behavior-identical.
+
 * Remote paths via `universal_pathlib` (#375, #371): `OtherPath` is now a thin
   wrapper around `UPath` (fsspec/Paramiko) instead of Fabric. Supported schemes
   remain `ssh://` / `sftp://` / `scp://` (scp aliased to sftp). Remote
