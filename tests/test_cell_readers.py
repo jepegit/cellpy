@@ -186,17 +186,6 @@ def test_c_rate_calc(dataset):
     assert len(unique) == 6
 
 
-@pytest.mark.xfail(raises=DeprecatedFeature)
-def test_select_steps(dataset):
-    step_dict = dict()
-    dataset.select_steps(step_dict)
-
-
-@pytest.mark.xfail(raises=DeprecatedFeature)
-def test_populate_step_dict(dataset):
-    dataset.populate_step_dict(step="charge")
-
-
 def test_cap_mod_summary(dataset):
     summary = dataset.data.summary
     dataset._cap_mod_summary(summary, "reset")
