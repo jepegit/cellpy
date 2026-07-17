@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Annotated, Any
 
@@ -33,6 +34,8 @@ OtherPathField = Annotated[
 def _coerce_path(value: Any) -> Path:
     if isinstance(value, Path):
         return value
+    if isinstance(value, OtherPath):
+        return Path(os.fspath(value))
     return Path(value)
 
 

@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+* Remote paths via `universal_pathlib` (#375, #371): `OtherPath` is now a thin
+  wrapper around `UPath` (fsspec/Paramiko) instead of Fabric. Supported schemes
+  remain `ssh://` / `sftp://` / `scp://` (scp aliased to sftp). Remote
+  `exists` / `is_file` / `is_dir` are truthful (no longer stubbed as always
+  true). Saving a cellpy file to a remote URI raises a clear error. Credentials
+  still come from `CELLPY_KEY_FILENAME` / `CELLPY_PASSWORD`. See
+  `docs/getting_started/remote_paths.md`.
+
 * Units are per-cell now (#427): `get_cellpy_units` returns a fresh
   `CellpyUnits` per call (optionally seeded from its argument, which used to
   be silently ignored), so changing units on one `CellpyCell` — directly, via

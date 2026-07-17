@@ -490,14 +490,12 @@ def test_check_file_ids_external_not_accessible(parameters, monkeypatch):
     cellpy_file = OtherPath(parameters.cellpy_file_path_external)
     raw_file = OtherPath(parameters.res_file_path)
 
-    # External OtherPath assumes remote files exist; simulate inaccessible file
-    # without opening a live SCP connection (read_fid_table would hang/time out).
+    # Simulate inaccessible remote without opening a live SSH connection.
     monkeypatch.setattr(cellpy_file, "is_file", lambda *args, **kwargs: False)
+    monkeypatch.setattr(cellpy_file, "exists", lambda *args, **kwargs: False)
 
     print(f"{cellpy_file=} :: {type(cellpy_file)=}")
     print(f"{raw_file=} :: {type(raw_file)=}")
-    print(f"{cellpy_file.exists()=}")
-    print(f"{raw_file.exists()=}")
 
     check = c.check_file_ids(rawfiles=raw_file, cellpyfile=cellpy_file)
     assert not check

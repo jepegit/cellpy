@@ -1510,6 +1510,11 @@ class CellpyCell:
             return
 
         outfile_all = internals.OtherPath(filename)
+        if outfile_all.is_external:
+            raise ValueError(
+                "Saving to a remote path is not supported. "
+                "Provide a local path (or save locally and upload separately)."
+            )
         if not outfile_all.suffix:
             logging.debug("No suffix given - adding one")
             outfile_all = outfile_all.with_suffix(f".{extension}")

@@ -1,0 +1,23 @@
+# Ephemeral SFTP server for OtherPath integration tests.
+# Usage (from repo root):
+#   docker compose -f docker/sftp-test/compose.yml up -d
+#   uv run pytest tests/test_otherpaths_sftp.py -m onlylocal
+#   docker compose -f docker/sftp-test/compose.yml down -v
+
+services:
+  cellpy-sftp:
+    image: atmoz/sftp:alpine
+    ports:
+      # 2222 is often taken by other local SSH fixtures; keep cellpy on 2223.
+      - "2223:22"
+    # user:pass:uid[:gid[:dirs...]]
+    # User is chrooted to /home/cellpy; data volume appears as /testdata.
+    command: cellpy:cellpy:1001:100:testdata
+    volumes:
+      - ./data:/home/cellpy/testdata:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep sshd >/dev/null || exit 1"]
+      interval: 2s
+      timeout: 2s
+      retries: 15
+      start_period: 2s

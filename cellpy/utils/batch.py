@@ -985,9 +985,13 @@ class Batch:
                 description = pathlib.Path(description)
                 is_file = True
 
-            if isinstance(description, pathlib.Path):
-                logging.debug("pathlib.Path object given")
+            from cellpy.internals.connections import OtherPath
+
+            if isinstance(description, (pathlib.Path, OtherPath)):
+                logging.debug("path-like object given")
                 is_file = True
+                if isinstance(description, OtherPath) and not description.is_external:
+                    description = pathlib.Path(os.fspath(description))
 
             if is_file:
                 logging.info(f"loading file {description}")

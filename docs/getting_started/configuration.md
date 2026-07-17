@@ -115,7 +115,8 @@ FileNames:
 
 The first part contains definitions of the different paths, files and file-patterns
 that `cellpy` will use. This is the place where you most likely will have to do
-some edits sometime.
+some edits sometime. `rawdatadir` (and optionally `cellpydatadir`) may also be a
+remote URI — see [Remote paths](remote_paths.md).
 
 The next part contains definitions required when using a database:
 
