@@ -613,6 +613,9 @@ headers_step_table = HeadersStepTable()
 headers_journal = HeadersJournal()
 headers_summary = HeadersSummary()
 headers_normal = HeadersNormal()
+# Legacy module-level instance. NOT handed out anymore: ``get_cellpy_units``
+# returns a fresh object per call so units are per-cell (issue #427). Kept
+# only so external code importing it directly does not break.
 cellpy_units = CellpyUnits()
 
 base_columns_float = [
@@ -633,9 +636,21 @@ base_columns_int = [
 ]
 
 
-def get_cellpy_units(*args, **kwargs) -> CellpyUnits:
-    """Returns an augmented global dictionary with units"""
-    return cellpy_units
+def get_cellpy_units(units=None, *args, **kwargs) -> CellpyUnits:
+    """Return a fresh ``CellpyUnits`` instance, optionally seeded from ``units``.
+
+    Every call returns a **new** instance: mutating one cell's units must
+    never leak into other cells in the same session (issue #427 — this used
+    to hand out a shared module-level singleton and ignore ``units``).
+
+    Args:
+        units: optional mapping (or ``CellpyUnits``) whose entries override
+            the defaults on the returned instance.
+    """
+    fresh = CellpyUnits()
+    if units:
+        fresh.update(dict(units))
+    return fresh
 
 
 def get_default_output_units(*args, **kwargs) -> CellpyUnits:

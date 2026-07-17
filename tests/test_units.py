@@ -201,3 +201,45 @@ def test_pint_nom_cap_conversion(nom_cap_tuple, expected):
     print(f"{nom_cap_areal=}")
     print(80 * "-")
     assert nom_cap_abs.m == pytest.approx(expected, 0.0001)
+
+
+# --- per-cell units isolation (#427) ----------------------------------------
+def test_cellpy_units_are_per_cell():
+    """Mutating one cell's units must not leak into another (issue #427)."""
+    from cellpy import cellreader
+
+    c1 = cellreader.CellpyCell()
+    c2 = cellreader.CellpyCell()
+    assert c1.cellpy_units is not c2.cellpy_units
+
+    before = c2.cellpy_units["charge"]
+    c1.cellpy_units["charge"] = "kAh"
+    assert c2.cellpy_units["charge"] == before
+
+    # a later cell still starts from the defaults
+    c3 = cellreader.CellpyCell()
+    assert c3.cellpy_units["charge"] == before
+
+
+def test_cellpy_units_constructor_seed():
+    """The cellpy_units constructor argument seeds the per-cell units
+    (it used to be silently ignored)."""
+    from cellpy import cellreader
+
+    c = cellreader.CellpyCell(cellpy_units={"charge": "Ah", "mass": "g"})
+    assert c.cellpy_units["charge"] == "Ah"
+    assert c.cellpy_units["mass"] == "g"
+    # untouched entries keep their defaults; other cells are unaffected
+    plain = cellreader.CellpyCell()
+    assert plain.cellpy_units["charge"] == "mAh"
+    assert plain.cellpy_units["mass"] == "mg"
+
+
+def test_get_units_kwarg_does_not_leak(dataset):
+    """cellpy.get(units=...) updates only that instance (issue #427)."""
+    from cellpy import cellreader
+    from cellpy.readers.cellreader import _update_meta
+
+    _update_meta(dataset, units={"charge": "kAh"})
+    assert dataset.cellpy_units["charge"] == "kAh"
+    assert cellreader.CellpyCell().cellpy_units["charge"] == "mAh"
