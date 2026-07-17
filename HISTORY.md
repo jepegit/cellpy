@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+* Units are per-cell now (#427): `get_cellpy_units` returns a fresh
+  `CellpyUnits` per call (optionally seeded from its argument, which used to
+  be silently ignored), so changing units on one `CellpyCell` — directly, via
+  the constructor, or via `cellpy.get(units=...)` — no longer changes them
+  for every other cell in the session.
+
 * Campaign merge supports `renumber_cycles=False` (#529, unblocked by
   cellpycore 0.2.2): sources keep their original cycle numbers — the
   identifying key becomes `(test_id, cycle)` and cycle-keyed consumers see
