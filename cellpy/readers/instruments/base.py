@@ -18,7 +18,7 @@ import pandas as pd
 from cellpy.exceptions import WrongFileVersion
 import cellpy.internals.connections
 import cellpy.readers.data_structures as core
-from cellpy.parameters.internal_settings import headers_normal
+from cellpy.parameters.internal_settings import headers_normal, merge_raw_units
 from cellpy.readers.instruments.configurations import (
     ModelParameters,
     register_configuration_from_module,
@@ -602,6 +602,10 @@ class AutoLoader(BaseLoader):
 
         data.raw = data_df
         data.raw_data_files_length.append(len(data_df))
+        # stamp instrument units by value so a Data obtained directly from the
+        # loader carries correct raw_units (issue #508); CellpyCell.from_raw
+        # re-applies the same merge (idempotent).
+        data.raw_units = merge_raw_units(self.get_raw_units())
         data.summary = (
             pd.DataFrame()
         )  # creating an empty frame - loading summary is not implemented

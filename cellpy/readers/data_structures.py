@@ -528,6 +528,11 @@ class Data:
         # property (issue #506).
         self.meta_test_dependent = CellpyMetaIndividualTest()
         self._extra_tests: Dict[int, TestMeta] = {}
+        # Load provenance for the active test (issue #508): keys restricted to
+        # the core-only TestMeta fields (uuid, source_*, raw_file_names,
+        # loaded_datetime). Filled by CellpyCell.from_raw; merged into the
+        # derived TestMeta record; NOT persisted in cellpy-file v8 (#510).
+        self._provenance: Dict[str, Any] = {}
         # Compact per-test grouping key of the active test (0 = single,
         # unmerged; matches the engine's test_id convention). Note: the legacy
         # ``meta_test_dependent.test_ID`` is the *tester-assigned* id (e.g.

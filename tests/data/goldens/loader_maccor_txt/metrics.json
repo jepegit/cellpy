@@ -1,6 +1,6 @@
 {
   "instrument": "maccor_txt",
-  "n_columns": 62,
+  "n_columns": 63,
   "n_rows": 6704,
   "source": "testdata/data/maccor_001.txt",
   "suite": "loader_maccor_txt"

@@ -23,6 +23,7 @@ import os
 import sys
 import time
 import datetime
+import uuid
 import warnings
 from pathlib import Path
 from typing import Union, Sequence, List, Optional, Iterable, Any
@@ -57,6 +58,7 @@ from cellpy.parameters.internal_settings import (
     headers_step_table,
     headers_summary,
     get_default_raw_units,
+    merge_raw_units,
     get_default_output_units,
     CELLPY_FILE_VERSION,
     MINIMUM_CELLPY_FILE_VERSION,
@@ -99,6 +101,11 @@ _module_logger = logging.getLogger(__name__)
 #     """Convert value to pint quantity."""
 #     ureg, Q = ds.get_pint_unit_registry()
 #     return Q(value, *args, **kwargs)
+
+
+# Instruments that read from a database rather than a file (used for the
+# provenance ``source_kind`` and for cellpy.get's db-path detection).
+DB_READER_INSTRUMENTS = ("arbin_sql", "arbin_sql_7")
 
 
 class CellpyCell:
@@ -519,6 +526,7 @@ class CellpyCell:
             new_cell.data.meta_test_dependent = cell.data.meta_test_dependent
             new_cell.data._extra_tests = dict(cell.data._extra_tests)
             new_cell.data._active_test_id = cell.data._active_test_id
+            new_cell.data._provenance = dict(cell.data._provenance)
 
             new_cell.data.raw_data_files = cell.data.raw_data_files
             new_cell.data.raw_data_files_length = cell.data.raw_data_files_length
@@ -748,14 +756,29 @@ class CellpyCell:
         #     self.instrument_factory.register_builder(instrument_id, instrument)
 
     def _set_raw_units(self):
-        raw_units = get_default_raw_units()
-        new_raw_units = self.loader_class.get_raw_units()
-        for key in new_raw_units:
-            if key in raw_units:
-                raw_units[key] = new_raw_units[key]
-            else:
-                logging.debug(f"Got unconventional raw-unit label: {key}")
-        return raw_units
+        return merge_raw_units(self.loader_class.get_raw_units())
+
+    @staticmethod
+    def _route_loader_meta_to_boxes(data):
+        """Route loader-set orphan attributes into the meta boxes (issue #508).
+
+        Loaders historically parked parsed metadata as plain attributes on
+        ``Data`` (never serialized, invisible to ``Data.tests``). Copy them
+        into ``meta_test_dependent`` so they persist and surface in the
+        derived ``TestMeta`` record. The orphan attributes stay set for
+        backward compatibility. ``test_name`` has no home in the metadata
+        model and remains orphan-only.
+        """
+        box = data.meta_test_dependent
+        for attr in ("test_ID", "channel_index", "creator", "schedule_file_name"):
+            # normalize absent-ish values: raw-file backends differ by
+            # platform (Windows ODBC yields '' where Linux mdbtools yields
+            # NaN) - both mean "not provided"
+            value = test_meta._unwrap(getattr(data, attr, None))
+            if isinstance(value, str) and not value.strip():
+                value = None
+            if value is not None:
+                setattr(box, attr, value)
 
     def _set_instrument(self, instrument, **kwargs):
         self.loader_class = self.instrument_factory.create(instrument, **kwargs)
@@ -1422,6 +1445,24 @@ class CellpyCell:
             data = self._sort_data(data)
 
         data.raw_units = self._set_raw_units()
+
+        # issue #508 (V2-05/06): finalize per-test metadata on the loaded object.
+        # - route loader-parsed orphan attributes into the meta boxes
+        # - stamp the compact test_id grouping key onto raw (0 for a single,
+        #   unmerged test; tester-assigned ids remain as provenance in
+        #   meta_test_dependent.test_ID) - must run after the loader's own
+        #   intra-file merging (e.g. arbin_res) and the continuation folds
+        # - record load provenance for the derived TestMeta record
+        self._route_loader_meta_to_boxes(data)
+        data.raw[self.headers_normal.test_id_txt] = data.active_test_id
+        data._provenance = {
+            "uuid": str(uuid.uuid4()),
+            "source_kind": "db" if self.tester in DB_READER_INSTRUMENTS else "file",
+            "source_type": self.tester,
+            "source_uri": str(data.loaded_from),
+            "raw_file_names": [f.name for f in data.raw_data_files],
+            "loaded_datetime": datetime.datetime.now().isoformat(),
+        }
 
         self.data = data
         self._invent_a_cell_name(self.file_names)  # TODO (v1.0.0): fix me
@@ -5464,7 +5505,7 @@ def get(
 
     from cellpy import log
 
-    db_readers = ["arbin_sql", "arbin_sql_7"]
+    db_readers = list(DB_READER_INSTRUMENTS)
     instruments_with_colliding_file_suffix = ["arbin_sql_h5"]
 
     step_kwargs = step_kwargs or {}

@@ -90,6 +90,14 @@ def build_active_test_meta(data) -> TestMeta:
     cell, test = meta_mapping.legacy_meta_to_core(common, individual)
     test.cell = cell
     test.test_id = data.active_test_id
+    # Load provenance (issue #508): the core-only TestMeta fields have no
+    # legacy home, so they come from Data._provenance (filled at load time,
+    # not persisted in cellpy-file v8 - see #510).
+    provenance = getattr(data, "_provenance", None) or {}
+    for key in _CORE_ONLY_TEST_FIELDS - {"cell", "comment"}:
+        value = provenance.get(key)
+        if value is not None:
+            setattr(test, key, value)
     return test
 
 

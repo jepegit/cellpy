@@ -652,6 +652,22 @@ def get_default_raw_units(*args, **kwargs) -> CellpyUnits:
     )
 
 
+def merge_raw_units(loader_units) -> CellpyUnits:
+    """Overlay instrument-declared raw units onto the defaults (issue #508).
+
+    Single source for the merge used both by loaders (stamping
+    ``data.raw_units`` at load time) and by ``CellpyCell._set_raw_units``.
+    Unknown unit labels are logged and skipped.
+    """
+    raw_units = get_default_raw_units()
+    for key in loader_units or {}:
+        if key in raw_units:
+            raw_units[key] = loader_units[key]
+        else:
+            logging.debug(f"Got unconventional raw-unit label: {key}")
+    return raw_units
+
+
 def get_default_raw_limits() -> CellpyLimits:
     """Returns an augmented dictionary with units as default for raw data"""
     return CellpyLimits()
