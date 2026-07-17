@@ -2,6 +2,34 @@
 
 ## [Unreleased]
 
+* Dependency-injection tail of V2-09 (#520): `CellpyCell(core=...,
+  instrument_factory=...)` — the core seam and the loader registry are now
+  constructor-injectable (defaults unchanged);
+  `register_instrument_readers()` keeps an injected factory instead of
+  silently rebuilding. ADR:
+  `.issueflows/04-designs-and-guides/cellpycell-di-restructuring.md`.
+
+* Split/drop-cycle helpers extracted from `cellreader.py` into
+  `cellpy.readers.slicing` (#519, V2-09 follow-up): `split`, `split_many`,
+  `drop_from`/`drop_to`, `from_cycle`/`to_cycle`, `drop_edges`,
+  `with_cycles`, `mod_raw_split_cycle` moved verbatim (instance-first
+  functions, thin delegates keep the public API); new pin tests added where
+  coverage was thin.
+
+* Exporter family extracted from `cellreader.py` into
+  `cellpy.exporters.tabular` (#518, V2-09 follow-up): `to_csv` / `to_excel`
+  and the `_export_*` helpers moved verbatim (instance-first functions, thin
+  delegates keep the public API); the near-dead `_cap_mod_*` helpers moved
+  along with their removal deferred to #520. A stray `print(externals)` debug
+  line in `to_excel` was dropped.
+
+* Native schema opt-in (#511, V2-11): `CellpyCell(native_schema=True)` keeps
+  frames in native cellpy-core column names and runs the polars engine
+  directly — no legacy rename sandwich. Supported pipeline: `from_raw` /
+  `load` → `make_step_table` → `make_summary` → `save` (v9). Legacy path
+  stays the default; legacy-named consumers (`get_cap`, exporters, plotting,
+  campaign merge) are not supported on a native-schema cell yet.
+
 * cellpycore 0.2.2 sync: the legacy bridge now carries `test_id` on steps and
   summary for all objects (core #136), so the #507 re-stamp workaround in
   `make_step_table` is removed and the campaign merger remaps the right-hand
