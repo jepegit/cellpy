@@ -261,6 +261,15 @@ def test_load_environment(parameters):
     assert config.get("CELLPY_HOST") == parameters.env_cellpy_host
 
 
+def test_posix_path_coercion_keeps_single_leading_slash():
+    """Path('/foo') must not become '//foo' via OtherPath (inventory / prms)."""
+    abs_path = pathlib.Path("/cellpy_inventory_root")
+    op = cellpy.internals.connections.OtherPath(abs_path)
+    assert op.original == "/cellpy_inventory_root"
+    assert str(op) == "/cellpy_inventory_root"
+    assert not str(op).startswith("//")
+
+
 def test_copy_local(parameters, tmp_path):
     p1 = cellpy.internals.connections.OtherPath(parameters.res_file_path)
     p2 = p1.copy()
@@ -280,10 +289,14 @@ def test_copy_remote_simple(
 ):
     class _FakeFS:
         def get(self, remote_path, local_path):
-            src = remote_path.lstrip("/")
-            if os.name == "nt" and not pathlib.Path(src).is_file():
-                # Windows: URI raw_path may keep a drive letter under /
-                src = remote_path.split("/", 1)[-1] if ":" in remote_path else src
+            # FakeUPath.path is a posix-style absolute path of the local fixture.
+            # Keep the leading slash on POSIX; only strip/normalize for Windows.
+            src = remote_path
+            if os.name == "nt":
+                src = remote_path.lstrip("/")
+                if not pathlib.Path(src).is_file():
+                    # Windows: URI raw_path may keep a drive letter under /
+                    src = remote_path.split("/", 1)[-1] if ":" in remote_path else src
             shutil.copy2(src, local_path)
 
         def info(self, path):

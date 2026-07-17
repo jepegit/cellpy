@@ -68,8 +68,8 @@ def _clean_up_original_path_string(path_string: Any) -> str:
                 parts = [""]
             parts[0] = parts[0].replace("\\", "")
             return "/".join(parts)
-        if isinstance(path_string, pathlib.PosixPath):
-            return "/".join(path_string.parts)
+        # PosixPath.parts keeps "/" as its own element; joining with "/"
+        # would turn "/foo" into "//foo". as_posix() is the correct form.
         return path_string.as_posix()
     return str(path_string) if path_string else "."
 
