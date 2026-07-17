@@ -35,8 +35,12 @@ logging.getLogger(__name__).addHandler(logging.NullHandler())
 # Config loads lazily on first ``cellpy.config`` / ``config.*`` access, or via
 # ``cellpy.parameters.prmreader.initialize()`` (issue #453).
 
-# TODO: (v2.0) remove this and enforce using `cellpy.get` (or `cellpy.cellreader.get`) instead:
+# Sanctioned top-level API (v2, issue #509): ``cellpy.get`` is the primary
+# entry point; ``cellpy.merge_cells`` and ``cellpy.print_instruments`` are the
+# supporting conveniences. Everything else is reached via explicit module
+# paths (``cellpy.cellreader``, ``cellpy.config`` / ``cellpy.config.session``).
 get = cellreader.get
+merge_cells = cellreader.merge_cells
 print_instruments = readers.cellreader.print_instruments
 
 __all__ = [
@@ -46,6 +50,8 @@ __all__ = [
     "prms",
     "filefinder",
     "get",
+    "merge_cells",
+    "print_instruments",
     "do",
     # "ureg",
     # "Q",
