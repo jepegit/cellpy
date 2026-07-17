@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+* Dependency-injection tail of V2-09 (#520): `CellpyCell(core=...,
+  instrument_factory=...)` — the core seam and the loader registry are now
+  constructor-injectable (defaults unchanged);
+  `register_instrument_readers()` keeps an injected factory instead of
+  silently rebuilding. ADR:
+  `.issueflows/04-designs-and-guides/cellpycell-di-restructuring.md`.
+
 * Split/drop-cycle helpers extracted from `cellreader.py` into
   `cellpy.readers.slicing` (#519, V2-09 follow-up): `split`, `split_many`,
   `drop_from`/`drop_to`, `from_cycle`/`to_cycle`, `drop_edges`,

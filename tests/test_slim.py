@@ -107,3 +107,45 @@ def test_make_summary_selector_kwargs_deprecated(cpi, parameters):
         cpi.make_summary(selector_type="non-cv")
     assert cpi.data.summary is not None
     assert not cpi.data.summary.empty
+
+
+# --- dependency injection (#520, V2-09 tail; see the ADR in
+# --- .issueflows/04-designs-and-guides/cellpycell-di-restructuring.md) ------
+def test_injected_core_is_used_by_pipeline(parameters):
+    """An injected core seam owns the Data object and runs the pipeline."""
+    from cellpy import cellreader
+
+    core = OldCellpyCellCore(initialize=False)
+    cpi = cellreader.CellpyCell(core=core)
+    assert cpi.core is core
+
+    cpi.set_instrument("arbin_res")
+    cpi.from_raw(parameters.res_file_path)
+    cpi.make_step_table()
+
+    assert cpi.core is core
+    assert core._data is cpi.data
+    assert not cpi.data.steps.empty
+
+
+def test_injected_instrument_factory_is_used():
+    """An injected factory is used by set_instrument and never rebuilt."""
+    from cellpy import cellreader
+    from cellpy.readers import data_structures as ds
+
+    factory = ds.generate_default_factory()
+    calls = []
+    original_create = factory.create
+
+    def counting_create(instrument, **kwargs):
+        calls.append(instrument)
+        return original_create(instrument, **kwargs)
+
+    factory.create = counting_create
+    cpi = cellreader.CellpyCell(instrument_factory=factory)
+    assert cpi.instrument_factory is factory
+    assert calls  # __init__ -> set_instrument went through the injected factory
+
+    # register_instrument_readers keeps the injected factory (idempotent)
+    cpi.register_instrument_readers()
+    assert cpi.instrument_factory is factory
