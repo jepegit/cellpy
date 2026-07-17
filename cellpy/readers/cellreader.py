@@ -15,7 +15,6 @@ import cellpy.config as config
 import collections
 import copy
 import csv
-import functools
 import itertools
 import logging
 import numbers
@@ -26,9 +25,7 @@ import datetime
 import uuid
 import warnings
 from pathlib import Path
-from typing import Union, Sequence, List, Optional, Iterable, Any
-from typing import TYPE_CHECKING
-from dataclasses import asdict
+from typing import Union, List, Optional, Iterable, Any
 
 import numpy as np
 
@@ -41,32 +38,18 @@ import cellpy.internals.connections as internals
 from cellpy.exceptions import (
     DeprecatedFeature,
     MixedCycleModesError,
-    NullData,
-    WrongFileVersion,
     NoDataFound,
-    UnderDefined,
 )
 from cellpy.parameters import prms
-from cellpy.parameters.legacy.update_headers import (
-    rename_summary_columns,
-    rename_raw_columns,
-    rename_fid_columns,
-    rename_step_columns,
-)
 from cellpy.parameters.internal_settings import (
     get_cellpy_units,
     headers_normal,
     headers_step_table,
     headers_summary,
-    get_default_raw_units,
     merge_raw_units,
     get_default_output_units,
-    CELLPY_FILE_VERSION,
-    MINIMUM_CELLPY_FILE_VERSION,
     PICKLE_PROTOCOL,
     CellpyUnits,
-    CellpyMetaCommon,
-    CellpyMetaIndividualTest,
 )
 
 # cellpy-core seam: CellpyCell delegates Data ownership and the per-cycle summary
@@ -177,9 +160,9 @@ class CellpyCell:
         try:
             data_txt = self.data._repr_html_()
         except NoDataFound:
-            cell_txt += f"<h3>No data</h3>"
+            cell_txt += "<h3>No data</h3>"
         else:
-            cell_txt += f"<h3>data</h3>"
+            cell_txt += "<h3>data</h3>"
             cell_txt += f"<blockquote>{data_txt}</blockquote>"
         return header + all_vars + cell_txt
 
@@ -1094,7 +1077,7 @@ class CellpyCell:
             return False
         return True
 
-    def _check_cellpy_file(self, filename: "OtherPath"):
+    def _check_cellpy_file(self, filename: "OtherPath"):  # noqa: F821  # pyright: ignore[reportUndefinedVariable]
         """Get the file-ids for the cellpy_file."""
 
         if not isinstance(filename, internals.OtherPath):
@@ -1257,7 +1240,7 @@ class CellpyCell:
             similar = False
         else:
             similar = self.check_file_ids(raw_files, cellpy_file)
-            logging.debug(f"checked if the files were similar")
+            logging.debug("checked if the files were similar")
         logging.debug(f"similar: {similar}")
 
         if similar:
@@ -1478,7 +1461,7 @@ class CellpyCell:
         v = True
         if level == 0:
             try:
-                data = self.data
+                _ = self.data
                 return True
             except NoDataFound:
                 return False
@@ -1828,6 +1811,7 @@ class CellpyCell:
             logging.debug(f"diff time: {diff_time}")
 
             sort_key = self.headers_normal.datetime_txt  # DateTime
+            logging.debug(f"sort key: {sort_key}")
             # mod data points for set 2
             data_point_header = self.headers_normal.data_point_txt
             try:
@@ -1932,7 +1916,7 @@ class CellpyCell:
     # TODO: check if this can be moved to helpers
     def _validate_step_table(self, simple=False):
         step_index_header = self.headers_normal.step_index_txt
-        logging.debug("-validating step table")
+        logging.debug(f"-validating step table ({step_index_header=!r})")
         d = self.data.raw
         s = self.data.steps
 
@@ -2855,9 +2839,6 @@ class CellpyCell:
 
         raw = self.data.raw
 
-        chargecap = 0.0
-        dischargecap = 0.0
-
         if capacity_modifier == "reset":
             # discharge cycles
             no_cycles = externals.numpy.amax(raw[cycle_index_header])
@@ -3684,7 +3665,7 @@ class CellpyCell:
 
     def get_converter_to_specific(
         self,
-        dataset: "Data" = None,
+        dataset: ds.Data = None,
         value: float = None,
         from_units: CellpyUnits = None,
         to_units: CellpyUnits = None,
@@ -3833,7 +3814,7 @@ class CellpyCell:
         column_headings = column_headings.tolist()
         try:
             for col_name in col_names:
-                i = column_headings.index(col_name)
+                _ = column_headings.index(col_name)
                 column_headings.pop(column_headings.index(col_name))
                 column_headings.insert(0, col_name)
 
@@ -4619,7 +4600,7 @@ def get(
     if filename and cellpy_file and not load_cellpy_file:
         try:
             similar = cellpy_instance.check_file_ids(filename, cellpy_file)
-            logging.debug(f"checked if the files were similar")
+            logging.debug("checked if the files were similar")
             if similar:
                 load_cellpy_file = True
                 filename = internals.OtherPath(cellpy_file)
@@ -4795,7 +4776,7 @@ def instruments_dict():
 def print_instruments():
     """Prints out the available instrument loaders and their models."""
     print(80 * "=")
-    print(f"Implemented instrument loaders")
+    print("Implemented instrument loaders")
     print(80 * "=")
     for name, value in ds.instrument_configurations().items():
         print(name)
