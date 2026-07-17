@@ -1,4 +1,7 @@
-# Fast merge gate (Tier 1): PRs and pushes to master only.
+# Merge gate (Tier 1): PRs and pushes to master only.
+# ``essential`` is the fast signal; ``full`` runs the whole linux suite and is
+# the intended required check (issue #530 — four non-essential test failures
+# once landed on master through the essential-only gate).
 # Full conda / pip matrix runs in ci-scheduled.yml (Tier 3).
 name: CI
 on:
@@ -50,3 +53,25 @@ jobs:
         run: uv run cellpy setup --silent
       - name: Run cellpy check
         run: uv run cellpy info --check
+
+  full:
+    name: full (linux / uv)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      UV_NO_SOURCES: 1
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v5
+        with:
+          version: "latest"
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y mdbtools
+      - run: uv python install 3.13
+      - name: Sync dependencies (PyPI cellpycore only)
+        run: uv sync
+      - name: Run the full test suite
+        # same ignore as the tier-3 linux job (plotutils summary plot needs a
+        # display); everything else runs — this is the gate that catches
+        # non-essential regressions (issue #530)
+        run: uv run pytest --ignore=tests/test_plotutils_summary_plot.py
