@@ -34,6 +34,7 @@ import numpy as np
 
 from . import externals as externals
 from cellpy.readers import data_structures as ds
+from cellpy.readers import capacity_curves
 from cellpy.readers import test_meta
 import cellpy.internals.connections as internals
 
@@ -2293,24 +2294,6 @@ class CellpyCell:
 
         return self
 
-    def select_steps(self, step_dict, append_df=False):
-        """Select steps (not documented yet)."""
-        raise DeprecatedFeature
-
-    def _select_steps(self, cycle: int, steps: Union[list, np.ndarray]):
-        # TODO: @jepe - insert sub_step here
-        c_txt = self.headers_normal.cycle_index_txt
-        s_txt = self.headers_normal.step_index_txt
-        v = self.data.raw[
-            (self.data.raw[c_txt] == cycle) & (self.data.raw[s_txt].isin(steps))
-        ]
-
-        if self._is_empty_array(v):
-            logging.debug("empty dataframe")
-            return None
-        else:
-            return v
-
     def _select_usteps(self, cycle: int, steps: Union[list, np.ndarray]):
         # TODO: @jepe - insert sub_step here
         s_hdr = self.headers_step_table.step
@@ -2341,11 +2324,6 @@ class CellpyCell:
             return None
         else:
             return v
-
-    def populate_step_dict(self, step):
-        """Returns a dict with cycle numbers as keys
-        and corresponding steps (list) as values."""
-        raise DeprecatedFeature
 
     # TODO: move this out of CellpyCell
     def _export_cycles(
@@ -2425,77 +2403,6 @@ class CellpyCell:
         logging.info(f"The file {outname} was created")
         logging.debug(f"(dt: {(time.time() - time_00):4.2f}s)")
         logging.debug("END exporting cycles")
-
-    # TODO: remove this
-    def _export_cycles_old(
-        self,
-        setname=None,
-        sep=None,
-        outname=None,
-        shifted=False,
-        method=None,
-        shift=0.0,
-        last_cycle=None,
-    ):
-        # export voltage - capacity curves to .csv file
-
-        logging.debug("*** OLD EXPORT-CYCLES METHOD***")
-        lastname = "_cycles.csv"
-        if sep is None:
-            sep = self.sep
-        if outname is None:
-            outname = setname + lastname
-
-        list_of_cycles = self.get_cycle_numbers()
-        logging.debug(f"you have {len(list_of_cycles)} cycles")
-        if last_cycle is not None:
-            list_of_cycles = [c for c in list_of_cycles if c <= int(last_cycle)]
-            logging.debug(f"only processing up to cycle {last_cycle}")
-            logging.debug(f"you have {len(list_of_cycles)}cycles to process")
-        out_data = []
-        c = None
-        if not method:
-            method = "back-and-forth"
-        if shifted:
-            method = "back-and-forth"
-            shift = 0.0
-            _last = 0.0
-
-        for cycle in list_of_cycles:
-            try:
-                if shifted and c is not None:
-                    shift = _last
-                    # print(f"shifted = {shift}, first={_first}")
-                c, v = self.get_cap(cycle, method=method, shift=shift)
-                if c is None:
-                    logging.debug("NoneType from get_cap")
-                else:
-                    _last = c.iat[-1]
-                    _first = c.iat[0]
-
-                    c = c.tolist()
-                    v = v.tolist()
-                    header_x = "cap cycle_no %i" % cycle
-                    header_y = "voltage cycle_no %i" % cycle
-                    c.insert(0, header_x)
-                    v.insert(0, header_y)
-                    out_data.append(c)
-                    out_data.append(v)
-                    # txt = "extracted cycle %i" % cycle
-                    # logging.debug(txt)
-            except IndexError as e:
-                txt = "Could not extract cycle %i" % cycle
-                logging.info(txt)
-                logging.debug(e)
-
-        # Saving cycles in one .csv file (x,y,x,y,x,y...)
-        # print "saving the file with delimiter '%s' " % (sep)
-        logging.debug("writing cycles to file")
-        with open(outname, "w", newline="") as f:
-            writer = csv.writer(f, delimiter=sep)
-            writer.writerows(itertools.zip_longest(*out_data))
-            # star (or asterix) means transpose (writing cols instead of rows)
-        logging.info(f"The file {outname} was created")
 
     def _export_normal(self, data, setname=None, sep=None, outname=None):
         time_00 = time.time()
@@ -3271,88 +3178,55 @@ class CellpyCell:
             return True
         return False
 
-    # TODO: the capacity getters have become so big that they deserve their own module:
+    # The capacity/curve getters live in cellpy.readers.capacity_curves
+    # (issue #509); these delegates keep the public API and subclass
+    # dispatch unchanged.
+
     def get_dcap(
         self,
         cycle=None,
         converter=None,
-        mode="gravimetric",
+        mode='gravimetric',
         as_frame=True,
         usteps=False,
         **kwargs,
     ):
-        """Returns discharge capacity and voltage for the selected cycle.
-
-        Args:
-            cycle (int): cycle number.
-            converter (float): a multiplication factor that converts the values to
-                specific values (i.e. from Ah to mAh/g). If not provided (or None),
-                the factor is obtained from the self.get_converter_to_specific() method.
-            mode (str): 'gravimetric', 'areal' or 'absolute'. Defaults to 'gravimetric'. Used
-                if converter is not provided (or None).
-            as_frame (bool): if True: returns externals.pandas.DataFrame instead of capacity, voltage series.
-            **kwargs (dict): additional keyword arguments sent to the internal _get_cap method.
-
-        Returns:
-            ``pandas.DataFrame`` or list of ``pandas.Series`` if cycle=None and as_frame=False.
-
-        """
-
-        if converter is None:
-            converter = self.get_converter_to_specific(mode=mode)
-
-        dc, v = self._get_cap(
-            cycle, "discharge", converter=converter, usteps=usteps, **kwargs
+        """Returns discharge capacity and voltage for the selected cycle. See :func:`cellpy.readers.capacity_curves.get_dcap`."""
+        return capacity_curves.get_dcap(
+            self,
+            cycle=cycle,
+            converter=converter,
+            mode=mode,
+            as_frame=as_frame,
+            usteps=usteps,
+            **kwargs,
         )
-        if as_frame:
-            cycle_df = externals.pandas.concat([v, dc], axis=1)
-            return cycle_df
-        else:
-            return dc, v
 
     def get_ccap(
         self,
         cycle=None,
         converter=None,
-        mode="gravimetric",
+        mode='gravimetric',
         as_frame=True,
         usteps=False,
         **kwargs,
     ):
-        """Returns charge capacity and voltage for the selected cycle.
-
-        Args:
-            cycle (int): cycle number.
-            converter (float): a multiplication factor that converts the values to
-                specific values (i.e. from Ah to mAh/g). If not provided (or None),
-                the factor is obtained from the self.get_converter_to_specific() method.
-            mode (str): 'gravimetric', 'areal' or 'absolute'. Defaults to 'gravimetric'. Used
-                if converter is not provided (or None).
-            as_frame (bool): if True: returns externals.pandas.DataFrame instead of capacity, voltage series.
-            **kwargs (dict): additional keyword arguments sent to the internal _get_cap method.
-
-        Returns:
-            ``pandas.DataFrame`` or list of ``pandas.Series`` if cycle=None and as_frame=False.
-
-        """
-
-        if converter is None:
-            converter = self.get_converter_to_specific(mode=mode)
-        cc, v = self._get_cap(
-            cycle, "charge", converter=converter, usteps=usteps, **kwargs
+        """Returns charge capacity and voltage for the selected cycle. See :func:`cellpy.readers.capacity_curves.get_ccap`."""
+        return capacity_curves.get_ccap(
+            self,
+            cycle=cycle,
+            converter=converter,
+            mode=mode,
+            as_frame=as_frame,
+            usteps=usteps,
+            **kwargs,
         )
-
-        if as_frame:
-            cycle_df = externals.pandas.concat([v, cc], axis=1)
-            return cycle_df
-        else:
-            return cc, v
 
     def get_cap(
         self,
         cycle=None,
         cycles=None,
-        method="back-and-forth",
+        method='back-and-forth',
         insert_nan=None,
         shift=0.0,
         categorical_column=False,
@@ -3365,7 +3239,7 @@ class CellpyCell:
         inter_cycle_shift=True,
         interpolate_along_cap=False,
         capacity_then_voltage=False,
-        mode="gravimetric",
+        mode='gravimetric',
         mass=None,
         area=None,
         volume=None,
@@ -3374,380 +3248,38 @@ class CellpyCell:
         dynamic=False,
         **kwargs,
     ):
-        """Gets the capacity for the run.
-
-        Args:
-            cycle (int, list): cycle number (s).
-            cycles (list): list of cycle numbers.
-            method (str): how the curves are given
-
-                - "back-and-forth" - standard back and forth; discharge
-                  (or charge) reversed from where charge (or discharge) ends.
-                - "forth" - discharge (or charge) continues along x-axis.
-                - "forth-and-forth" - discharge (or charge) also starts at 0
-                  (or shift if not shift=0.0)
-
-            insert_nan (bool): insert a externals.numpy.nan between the charge and discharge curves.
-                Defaults to True for "forth-and-forth", else False
-            shift: start-value for charge (or discharge) (typically used when
-                plotting shifted-capacity).
-            categorical_column: add a categorical column showing if it is
-                charge or discharge.
-            label_cycle_number (bool): add column for cycle number
-                (tidy format).
-            split (bool): return a list of c and v instead of the default
-                that is to return them combined in a DataFrame. This is only
-                possible for some specific combinations of options (neither
-                categorical_column=True or label_cycle_number=True are
-                allowed).
-            interpolated (bool): set to True if you would like to get
-                interpolated data (typically if you want to save disk space
-                or memory). Defaults to False.
-            dx (float): the step used when interpolating.
-            number_of_points (int): number of points to use (over-rides dx)
-                for interpolation (i.e. the length of the interpolated data).
-            ignore_errors (bool): don't break out of loop if an error occurs.
-            inter_cycle_shift (bool): cumulative shifts between consecutive
-                cycles. Defaults to True.
-            interpolate_along_cap (bool): interpolate along capacity axis instead
-                of along the voltage axis. Defaults to False.
-            capacity_then_voltage (bool): return capacity and voltage instead of
-                voltage and capacity. Defaults to False.
-            mode (str): 'gravimetric', 'areal', 'volumetric' or 'absolute'. Defaults
-                to 'gravimetric'.
-            mass (float): mass of active material (in set cellpy unit, typically mg).
-            area (float): area of electrode (in set cellpy units, typically cm2).
-            volume (float): volume of electrode (in set cellpy units, typically cm3).
-            cycle_mode (str): if 'anode' the first step is assumed to be the discharge,
-                else charge (defaults to ``CellpyCell.cycle_mode``).
-            dynamic: for dynamic retrieving data from cellpy-file.
-                [NOT IMPLEMENTED YET]
-            **kwargs: sent to ``get_ccap`` and ``get_dcap``.
-
-        Returns:
-            ``pandas.DataFrame`` ((cycle) voltage, capacity, (direction (-1, 1)))
-            unless split is explicitly set to True. Then it returns a tuple
-            with capacity and voltage.
-        """
-
-        # TODO: allow for fixing the interpolation range (so that it is possible
-        #   to run the function on several cells and have a common x-axis)
-
-        # if cycle is not given, then this function should
-        # iterate through cycles
-
-        def last(df):
-            try:
-                return df.iat[-1]
-            except TypeError:
-                return 0.0
-
-        def first(df):
-            try:
-                return df.iat[0]
-            except TypeError:
-                return 0.0
-
-        if usteps is None:
-            usteps = self._using_usteps()
-            logging.debug(
-                f"Since usteps is None, it is set automatically (usteps={usteps})"
-            )
-
-        experimental = True
-
-        cycle_mode = cycle_mode or self.cycle_mode
-
-        available_cycles = self.get_cycle_numbers()
-        if cycles is not None:
-            cycle = cycles
-
-        if cycle is None:
-            cycle = available_cycles
-
-        if not isinstance(cycle, collections.abc.Iterable):
-            cycle = [cycle]
-
-        cycle = list(set(cycle).intersection(set(available_cycles)))
-
-        if split and not (categorical_column or label_cycle_number):
-            return_dataframe = False
-        else:
-            return_dataframe = True
-
-        method = method.lower()
-        if method not in ["back-and-forth", "forth", "forth-and-forth"]:
-            warnings.warn(
-                f"method '{method}' is not a valid option - setting to 'back-and-forth'"
-            )
-            method = "back-and-forth"
-
-        if insert_nan is None:
-            if method == "forth-and-forth":
-                insert_nan = True
-            else:
-                insert_nan = False
-
-        if insert_nan:
-            _nan = externals.pandas.DataFrame(
-                {"capacity": [externals.numpy.nan], "voltage": [externals.numpy.nan]}
-            )
-
-        converter_kwargs = dict()
-        if mass is not None:
-            logging.info(
-                f"mass of {mass} {self.cellpy_units['mass']} given - using gravimetric mode"
-            )
-            converter_kwargs["value"] = mass
-            mode = "gravimetric"
-
-        if area is not None:
-            logging.info(
-                f"area of {area} {self.cellpy_units['area']} given - using areal mode"
-            )
-            converter_kwargs["value"] = area
-            mode = "areal"
-
-        if volume is not None:
-            logging.info(
-                f"volume of {volume} {self.cellpy_units['volume']} given - using volumetric mode"
-            )
-            converter_kwargs["value"] = volume
-            mode = "volumetric"
-
-        if mode == "absolute":
-            logging.info("absolute mode - no conversion")
-
-        capacity = None
-        voltage = None
-        specific_converter = self.get_converter_to_specific(
-            mode=mode, **converter_kwargs
+        """Gets the capacity for the run. See :func:`cellpy.readers.capacity_curves.get_cap`."""
+        return capacity_curves.get_cap(
+            self,
+            cycle=cycle,
+            cycles=cycles,
+            method=method,
+            insert_nan=insert_nan,
+            shift=shift,
+            categorical_column=categorical_column,
+            label_cycle_number=label_cycle_number,
+            split=split,
+            interpolated=interpolated,
+            dx=dx,
+            number_of_points=number_of_points,
+            ignore_errors=ignore_errors,
+            inter_cycle_shift=inter_cycle_shift,
+            interpolate_along_cap=interpolate_along_cap,
+            capacity_then_voltage=capacity_then_voltage,
+            mode=mode,
+            mass=mass,
+            area=area,
+            volume=volume,
+            cycle_mode=cycle_mode,
+            usteps=usteps,
+            dynamic=dynamic,
+            **kwargs,
         )
-        cycle_df = externals.pandas.DataFrame()
-
-        initial = True
-        for current_cycle in cycle:
-            cc = externals.pandas.DataFrame()
-            cv = externals.pandas.DataFrame()
-            dc = externals.pandas.DataFrame()
-            dv = externals.pandas.DataFrame()
-            error = False
-            try:
-                cc, cv = self.get_ccap(
-                    current_cycle,
-                    converter=specific_converter,
-                    as_frame=False,
-                    usteps=usteps,
-                    **kwargs,
-                )
-
-            except NullData as e:
-                error = True
-                logging.info(e)
-                if not ignore_errors:
-                    logging.debug("breaking out of loop")
-                    break
-
-            try:
-                dc, dv = self.get_dcap(
-                    current_cycle,
-                    converter=specific_converter,
-                    as_frame=False,
-                    usteps=usteps,
-                    **kwargs,
-                )
-
-            except NullData as e:
-                error = True
-                logging.info(e)
-                if not ignore_errors:
-                    logging.debug("breaking out of loop")
-                    break
-
-            if not error or experimental:
-                if cc.empty:
-                    logging.debug("get_ccap returns empty cc Series")
-
-                if dc.empty:
-                    logging.debug("get_ccap returns empty dc Series")
-
-                if initial:
-                    prev_end = shift
-                    initial = False
-
-                if cycle_mode == "anode":
-                    first_interpolation_direction = -1
-                    _first_step_c = dc
-                    _first_step_v = dv
-                    last_interpolation_direction = 1
-                    _last_step_c = cc
-                    _last_step_v = cv
-                else:
-                    first_interpolation_direction = 1
-                    _first_step_c = cc
-                    _first_step_v = cv
-                    last_interpolation_direction = -1
-                    _last_step_c = dc
-                    _last_step_v = dv
-
-                if method == "back-and-forth":
-                    _last = last(_first_step_c)
-                    _first = None
-                    _new_first = None
-
-                    if not inter_cycle_shift:
-                        prev_end = 0.0
-
-                    if _last_step_c is not None:
-                        _last_step_c = _last - _last_step_c + prev_end
-
-                    else:
-                        logging.info("no last charge step found")
-
-                    if _first_step_c is not None:
-                        _first = first(_first_step_c)
-                        _first_step_c += prev_end
-                        _new_first = first(_first_step_c)
-
-                    else:
-                        logging.info("probably empty (_first_step_c is None)")
-                    prev_end = last(_last_step_c)
-
-                elif method == "forth":
-                    _last = last(_first_step_c)
-                    if _last_step_c is not None:
-                        _last_step_c += _last + prev_end
-                    else:
-                        logging.debug("no last charge step found")
-                    if _first_step_c is not None:
-                        _first_step_c += prev_end
-                    else:
-                        logging.debug("no first charge step found")
-
-                    if inter_cycle_shift:
-                        prev_end = last(_last_step_c)
-                    else:
-                        prev_end = 0.0
-
-                elif method == "forth-and-forth":
-                    if _last_step_c is not None:
-                        _last_step_c += shift
-                    else:
-                        logging.debug("no last charge step found")
-                    if _first_step_c is not None:
-                        _first_step_c += shift
-                    else:
-                        logging.debug("no first charge step found")
-
-                if return_dataframe:
-                    x_col = "voltage"
-                    y_col = "capacity"
-                    if interpolate_along_cap:
-                        x_col, y_col = y_col, x_col
-
-                    try:
-                        # processing first
-                        if not _first_step_c.empty:
-                            _first_df = externals.pandas.DataFrame(
-                                {
-                                    "voltage": _first_step_v,
-                                    "capacity": _first_step_c,
-                                }
-                            )
-                            if interpolated:
-                                _first_df = ds.interpolate_y_on_x_per_monotonic_segments(
-                                    _first_df,
-                                    y=y_col,
-                                    x=x_col,
-                                    dx=dx,
-                                    number_of_points=number_of_points,
-                                    direction=first_interpolation_direction,
-                                )
-                            if insert_nan:
-                                _first_df = externals.pandas.concat([_first_df, _nan])
-                            if categorical_column:
-                                _first_df["direction"] = -1
-                        else:
-                            _first_df = externals.pandas.DataFrame()
-
-                        # processing last
-                        if not _last_step_c.empty:
-                            _last_df = externals.pandas.DataFrame(
-                                {
-                                    "voltage": _last_step_v.values,
-                                    "capacity": _last_step_c.values,
-                                }
-                            )
-                            if interpolated:
-                                _last_df = ds.interpolate_y_on_x_per_monotonic_segments(
-                                    _last_df,
-                                    y=y_col,
-                                    x=x_col,
-                                    dx=dx,
-                                    number_of_points=number_of_points,
-                                    direction=last_interpolation_direction,
-                                )
-                            if insert_nan:
-                                _last_df = externals.pandas.concat([_last_df, _nan])
-                            if categorical_column:
-                                _last_df["direction"] = 1
-                        else:
-                            _last_df = externals.pandas.DataFrame()
-
-                        if interpolate_along_cap:
-                            if method == "forth":
-                                _first_df = _first_df.loc[::-1].reset_index(drop=True)
-                            elif method == "back-and-forth":
-                                _first_df = _first_df.loc[::-1].reset_index(drop=True)
-                                _last_df = _last_df.loc[::-1].reset_index(drop=True)
-
-                    except AttributeError:
-                        logging.info(f"Could not extract cycle {current_cycle}")
-                    else:
-                        c = externals.pandas.concat([_first_df, _last_df], axis=0)
-                        if label_cycle_number:
-                            c.insert(0, "cycle", current_cycle)
-                            # c["cycle"] = current_cycle
-                            # c = c[["cycle", "voltage", "capacity", "direction"]]
-                        if cycle_df.empty:
-                            cycle_df = c
-                        else:
-                            cycle_df = externals.pandas.concat([cycle_df, c], axis=0)
-                    if capacity_then_voltage:
-                        cols = cycle_df.columns.to_list()
-                        new_cols = [
-                            cols.pop(cols.index("capacity")),
-                            cols.pop(cols.index("voltage")),
-                        ]
-                        new_cols.extend(cols)
-                        cycle_df = cycle_df[new_cols]
-                else:
-                    logging.warning("returning non-dataframe")
-                    _non_empty_c = []
-                    _non_empty_v = []
-                    if not _first_step_c.empty:
-                        _non_empty_c.append(_first_step_c)
-                        _non_empty_v.append(_first_step_v)
-                    if not _last_step_c.empty:
-                        _non_empty_c.append(_last_step_c)
-                        _non_empty_v.append(_last_step_v)
-
-                    c = externals.pandas.concat(_non_empty_c, axis=0)
-                    v = externals.pandas.concat(_non_empty_v, axis=0)
-
-                    if not c.empty:
-                        capacity = externals.pandas.concat([capacity, c], axis=0)
-                        voltage = externals.pandas.concat([voltage, v], axis=0)
-
-        if return_dataframe:
-            return cycle_df
-        else:
-            return capacity, voltage
 
     def _get_cap(
         self,
         cycle=None,
-        cap_type="charge",
+        cap_type='charge',
         trim_taper_steps=None,
         steps_to_skip=None,
         steptable=None,
@@ -3755,176 +3287,38 @@ class CellpyCell:
         usteps=False,
         detailed=False,
     ):
-        # TODO: @jepe - does not allow for constant voltage yet?
-        # TODO: @jepe - refactor this (can be done without making the individual lists first)
-
-        data_points = None
-        test_time = None
-
-        if cap_type.lower() == "charge_capacity":
-            cap_type = "charge"
-        elif cap_type.lower() == "discharge_capacity":
-            cap_type = "discharge"
-
-        cycles = self.get_step_numbers(
-            steptype=cap_type,
-            allctypes=False,
-            cycle_number=cycle,
+        """ See :func:`cellpy.readers.capacity_curves._get_cap`."""
+        return capacity_curves._get_cap(
+            self,
+            cycle=cycle,
+            cap_type=cap_type,
             trim_taper_steps=trim_taper_steps,
             steps_to_skip=steps_to_skip,
             steptable=steptable,
+            converter=converter,
             usteps=usteps,
+            detailed=detailed,
         )
-        if cap_type == "charge":
-            column_txt = self.headers_normal.charge_capacity_txt
-        else:
-            column_txt = self.headers_normal.discharge_capacity_txt
-
-        if cycle:
-            steps = cycles[cycle]
-            _v = []
-            _c = []
-            _t = []
-            _p = []
-
-            if len(set(steps)) < len(steps) and not usteps:
-                raise ValueError(f"You have duplicate step numbers!")
-
-            if usteps:
-                selected = self._select_usteps(cycle, steps)
-                if not self._is_empty_array(selected):
-                    _v.append(selected[self.headers_normal.voltage_txt])
-                    _c.append(selected[column_txt] * converter)
-                    if detailed:
-                        _t.append(selected[self.headers_normal.test_time_txt])
-                        _p.append(selected[self.headers_normal.data_point_txt])
-                else:
-                    logging.debug(f"Steps {steps} is empty")
-            else:
-                for step in sorted(steps):
-                    selected_step = self._select_step(cycle, step)
-                    if not self._is_empty_array(selected_step):
-                        _v.append(selected_step[self.headers_normal.voltage_txt])
-                        _c.append(selected_step[column_txt] * converter)
-                        if detailed:
-                            _t.append(selected_step[self.headers_normal.test_time_txt])
-                            _p.append(selected_step[self.headers_normal.data_point_txt])
-                    else:
-                        logging.debug(f"Step {step} is empty")
-            try:
-                voltage = externals.pandas.concat(_v, axis=0)
-                cap = externals.pandas.concat(_c, axis=0)
-                if detailed:
-                    test_time = externals.pandas.concat(_t, axis=0)
-                    data_points = externals.pandas.concat(_p, axis=0)
-            except Exception:
-                logging.debug("could not find any steps for this cycle")
-                raise NullData(f"no steps found (c:{cycle} s:{steps} type:{cap_type})")
-        else:
-            # get all the discharge cycles
-            # this is a dataframe filtered on step and cycle
-            # This functionality is not crucial since get_cap (that uses this method) has it
-            # (but it might be nice to improve performance)
-            raise NotImplementedError(
-                "Not yet possible to extract without giving cycle numbers (use get_cap instead)"
-            )
-        if detailed:
-            return data_points, test_time, cap, voltage
-        return cap, voltage
 
     def get_ocv(
         self,
         cycles=None,
-        direction="up",
+        direction='up',
         remove_first=False,
         interpolated=False,
         dx=None,
         number_of_points=None,
-    ) -> "externals.pandas.DataFrame":
-        """Get the open circuit voltage relaxation curves.
-
-        Args:
-            cycles (list of ints or None): the cycles to extract from
-                (selects all if not given).
-            direction ("up", "down", or "both"): extract only relaxations that
-                is performed during discharge for "up" (because then the
-                voltage relaxes upwards) etc.
-            remove_first: remove the first relaxation curve (typically,
-                the first curve is from the initial rest period between
-                assembling the data to the actual testing/cycling starts)
-            interpolated (bool): set to True if you want the data to be
-                interpolated (e.g. for creating smaller files)
-            dx (float): the step used when interpolating.
-            number_of_points (int): number of points to use (over-rides dx)
-                for interpolation (i.e. the length of the interpolated data).
-
-        Returns:
-            ``pandas.DataFrame`` with cycle-number, step-number, step-time, and voltage columns.
-
-        """
-        # TODO: use proper column header pickers
-        if cycles is None:
-            cycles = self.get_cycle_numbers()
-        else:
-            if not isinstance(cycles, (list, tuple, externals.numpy.ndarray)):
-                cycles = [cycles]
-            else:
-                remove_first = False
-
-        ocv_rlx_id = "ocvrlx"
-        if direction == "up":
-            ocv_rlx_id += "_up"
-        elif direction == "down":
-            ocv_rlx_id += "_down"
-
-        steps = self.data.steps
-        raw = self.data.raw
-
-        ocv_steps = steps.loc[steps["cycle"].isin(cycles), :]
-
-        ocv_steps = ocv_steps.loc[
-            ocv_steps.type.str.startswith(ocv_rlx_id, na=False), :
-        ]
-
-        if remove_first:
-            ocv_steps = ocv_steps.iloc[1:, :]
-
-        step_time_label = self.headers_normal.step_time_txt
-        voltage_label = self.headers_normal.voltage_txt
-        cycle_label = self.headers_normal.cycle_index_txt
-        step_label = self.headers_normal.step_index_txt
-
-        selected_df = raw.loc[
-            (
-                raw[cycle_label].isin(ocv_steps.cycle)
-                & raw[step_label].isin(ocv_steps.step)
-            ),
-            [cycle_label, step_label, step_time_label, voltage_label],
-        ]
-
-        if interpolated:
-            if dx is None and number_of_points is None:
-                dx = config.reader.time_interpolation_step
-            new_dfs = list()
-            groupby_list = [cycle_label, step_label]
-
-            for name, group in selected_df.groupby(groupby_list):
-                new_group = ds.interpolate_y_on_x(
-                    group,
-                    x=step_time_label,
-                    y=voltage_label,
-                    dx=dx,
-                    number_of_points=number_of_points,
-                )
-
-                for i, j in zip(groupby_list, name):
-                    new_group[i] = j
-                new_dfs.append(new_group)
-
-            selected_df = externals.pandas.concat(new_dfs)
-
-        return selected_df
-
+    ):
+        """Get the open circuit voltage relaxation curves. See :func:`cellpy.readers.capacity_curves.get_ocv`."""
+        return capacity_curves.get_ocv(
+            self,
+            cycles=cycles,
+            direction=direction,
+            remove_first=remove_first,
+            interpolated=interpolated,
+            dx=dx,
+            number_of_points=number_of_points,
+        )
     def get_number_of_cycles(self, steptable=None):
         """Get the number of cycles in the test."""
         if steptable is None:
@@ -4533,167 +3927,6 @@ class CellpyCell:
         last_items = raw[d_txt].isin(steps)
         return last_items
 
-    # TODO: @jepe - this method might be valuable for users and could be made
-    #  public when it is fixed:
-    def _select_without(self, exclude_types=None, exclude_steps=None, replace_nan=True):
-        """Filter and modify cell cycling data by excluding specific step types and steps.
-
-        This method processes raw cell cycling data by:
-        1. Selecting the last data point for each cycle
-        2. Excluding specified step types and step numbers
-        3. Adjusting the raw data values by subtracting the contributions from excluded steps
-
-        Parameters
-        ----------
-        exclude_types : str or list of str, optional
-            Step types to exclude (e.g., 'charge', 'discharge'). If None, no step types are excluded.
-        exclude_steps : int or list of int, optional
-            Step numbers to exclude. If None, no specific steps are excluded.
-        replace_nan : bool, default True
-            Whether to replace NaN values with 0.0 in the resulting dataframe.
-
-        Returns
-        -------
-        pandas.DataFrame
-            A filtered and modified dataframe containing the cell cycling data with excluded
-            steps removed and their contributions subtracted from the raw values.
-
-
-        """
-
-        # summary_no_cv = self.make_summary(selector_type="non-cv", create_copy=True).data.summary
-        # summary_only_cv = self.make_summary(selector_type="only-cv", create_copy=True).data.summary
-        # if selector is None:
-        #     if selector_type == "non-cv":
-        #         exclude_types = ["cv_"]
-        #     elif selector_type == "non-rest":
-        #         exclude_types = ["rest_"]
-        #     elif selector_type == "non-ocv":
-        #         exclude_types = ["ocv_"]
-        #     elif selector_type == "only-cv":
-        #         exclude_types = ["charge", "discharge"]
-        #     selector = functools.partial(
-        #         self._select_without,
-        #         exclude_types=exclude_types,
-        #         exclude_steps=exclude_steps,
-        #     )
-
-        steps = self.data.steps
-        raw = self.data.raw.copy()
-
-        # unravel the headers:
-        hdrn_data_point = self.headers_normal.data_point_txt
-        hdrn_voltage = self.headers_normal.voltage_txt
-        hdrn_cycle_index = self.headers_normal.cycle_index_txt
-        hdrn_step_index = self.headers_normal.step_index_txt
-        hdrn_current = self.headers_normal.current_txt
-        hdrn_charge_capacity = self.headers_normal.charge_capacity_txt
-        hdrn_discharge_capacity = self.headers_normal.discharge_capacity_txt
-
-        hdrst_data_point = self.headers_step_table.point
-        hdrst_voltage = self.headers_step_table.voltage
-        hdrst_cycle = self.headers_step_table.cycle
-        hdrst_current = self.headers_step_table.current
-        hdrst_charge = self.headers_step_table.charge
-        hdrst_discharge = self.headers_step_table.discharge
-        hdrst_type = self.headers_step_table.type
-        hdrst_step = self.headers_step_table.step
-
-        _first = "_first"
-        _last = "_last"
-        _delta_label = "_diff"
-
-        # TODO: implement also for energy and power (and probably others as well) - this will
-        #  require changing step-table to also include energy and power etc. If implementing
-        #  this, you should also include diff in the step-table. You should preferably also use this
-        #  opportunity to also make both the headers in the tables as well as the names used for
-        #  the headers more aligned (e.g. for header_normal.data_point_txt -> header_normal.point;
-        #  "cycle_index" -> "cycle")
-
-        # TODO: @jepe - this method might be a bit slow for large datasets - consider using
-        #  more "native" pandas methods and get rid of all looping (need some timing to check first)
-
-        last_data_points = (
-            steps.loc[:, [hdrst_cycle, hdrst_data_point + _last]]
-            .groupby(hdrst_cycle)
-            .last()
-            .values.ravel()
-        )
-        last_items = raw[hdrn_data_point].isin(last_data_points)
-        selected = raw[last_items]
-
-        if exclude_types is None and exclude_steps is None:
-            return selected
-
-        if not isinstance(exclude_types, (list, tuple)):
-            if exclude_types is None:
-                exclude_types = []
-            else:
-                exclude_types = [exclude_types]
-
-        if not isinstance(exclude_steps, (list, tuple)):
-            if exclude_steps is None:
-                exclude_steps = []
-            else:
-                exclude_steps = [exclude_steps]
-
-        if not exclude_types and not exclude_steps:
-            return selected
-
-        # create the selector for the not excluded steps (selecting ~q will then select the data points that are excluded):
-        q = None
-        for exclude_type in exclude_types:
-            _q = ~steps[hdrst_type].str.startswith(exclude_type, na=False)
-            q = _q if q is None else q & _q
-
-        if exclude_steps:
-            _q = ~steps[hdrst_step].isin(exclude_steps)
-            q = _q if q is None else q & _q
-
-        # create the deltas (to be subtracted from the raw data) due to the excluded steps:
-        _delta_columns = [
-            hdrst_current,
-            hdrst_voltage,
-            hdrst_charge,
-            hdrst_discharge,
-        ]
-        _raw_columns = [
-            hdrn_current,
-            hdrn_voltage,
-            hdrn_charge_capacity,
-            hdrn_discharge_capacity,
-        ]
-        _diff_columns = [f"{col}{_delta_label}" for col in _delta_columns]
-
-        delta_first = [f"{col}{_first}" for col in _delta_columns]
-        delta_last = [f"{col}{_last}" for col in _delta_columns]
-        delta_columns = delta_first + delta_last
-
-        # select the data points that are excluded:
-        delta = steps.loc[
-            ~q, [hdrst_type, hdrst_cycle, hdrst_data_point + _last, *delta_columns]
-        ].copy()
-
-        for col in _delta_columns:
-            delta[col + _delta_label] = delta[col + _last] - delta[col + _first]
-        delta = delta.drop(columns=delta_columns)
-        delta = delta.groupby(hdrst_cycle).sum()
-        delta = delta.reset_index()
-
-        selected = selected.merge(
-            delta, how="left", left_on=hdrn_cycle_index, right_on=hdrst_cycle
-        )
-        if replace_nan:
-            selected = selected.fillna(0.0)
-
-        for col_n, col_diff in zip(_raw_columns, _diff_columns):
-            selected[col_n] -= selected[col_diff]
-        selected = selected.drop(
-            columns=_diff_columns + [hdrst_cycle, hdrst_data_point + _last, hdrst_type]
-        )
-
-        return selected
-
     # ----------making-summary------------------------------------------------------
     def make_summary(
         self,
@@ -4710,6 +3943,7 @@ class CellpyCell:
         exclude_steps=None,
         selector_type=None,
         selector=None,
+        exclude_step_types=None,
         **kwargs,
     ):
         """Convenience function that makes a summary of the cycling data.
@@ -4729,6 +3963,14 @@ class CellpyCell:
             exclude_steps (list of int): deprecated, has no effect.
             selector_type (str): deprecated, has no effect.
             selector (callable): deprecated, has no effect.
+            exclude_step_types (list of str): step-type *prefixes* whose capacity
+                contributions are excluded from the summary (issue #509, core #54).
+                E.g. ``["cv_"]`` matches ``cv_charge`` and ``cv_discharge``; the
+                capacity gained during the excluded steps is subtracted per cycle
+                from the cycle-end charge/discharge capacities before derived
+                columns (coulombic efficiency, losses, cumulated and specific
+                columns) are computed — a summary "as if those steps never
+                happened". Replaces the removed selector-based exclusion.
             **kwargs: additional keyword arguments sent to internal method (check source for info).
 
         Returns:
@@ -4789,6 +4031,7 @@ class CellpyCell:
             nom_cap=nom_cap,
             nom_cap_specifics=nom_cap_specifics,
             create_copy=create_copy,
+            exclude_step_types=exclude_step_types,
             **kwargs,
         )
         if create_copy:
@@ -4814,6 +4057,7 @@ class CellpyCell:
         use_cellpy_stat_file=False,
         normalization_cycles=None,
         create_copy=True,
+        exclude_step_types=None,
         **kwargs,
     ):
         # ---------------- discharge loss --------------------------------------
@@ -4954,6 +4198,7 @@ class CellpyCell:
             find_end_voltage=find_end_voltage,
             select_columns=select_columns,
             current_conversion_factor=current_conversion_factor,
+            exclude_step_types=exclude_step_types,
         )
         data = self.core.add_scaled_summary_columns(
             data,
@@ -5129,227 +4374,6 @@ class CellpyCell:
             nc = None
 
         return nc
-
-    # ================ Experimental features =================
-
-    # ---------------------- update --------------------------
-
-    def _dev_update(self, file_names=None, **kwargs):
-        """Experimental method for updating a cellpy-file with new raw-files."""
-
-        print("NOT FINISHED YET!")
-        if len(self.data.raw_data_files) != 1:
-            logging.warning("Merged data. But can only update based on the last file")
-            print(self.data.raw_data_files)
-            for fid in self.data.raw_data_files:
-                print(fid)
-        last = self.data.raw_data_files[0].last_data_point
-
-        self._dev_update_from_raw(
-            file_names=file_names, data_points=[last, None], **kwargs
-        )
-        print("lets try to merge")
-        self.data = self._dev_update_merge()
-        print("now it is time to update the step table")
-        self._dev_update_make_steps()
-        print("and finally, lets update the summary")
-        self._dev_update_make_summary()
-
-    def _dev_update_loadcell(
-        self,
-        raw_files,
-        cellpy_file=None,
-        mass=None,
-        summary_on_raw=False,
-        summary_ir=True,
-        summary_end_v=True,
-        force_raw=False,
-        use_cellpy_stat_file=None,
-        nom_cap=None,
-        selector=None,
-        **kwargs,
-    ):
-        """Load cell from raw-files or cellpy-file.
-
-        This is an experimental method. It is not finished yet and the logics
-        in this method will most likely be moved to other methods since
-        new versions of cellpy is now based on the get method (it implements
-        similar logic as loadcell, but is more flexible and easier to use).
-
-
-
-        """
-        logging.info("Started cellpy.cellreader._dev_update_loadcell")
-
-        if cellpy_file is None or force_raw:
-            similar = None
-        else:
-            similar = self.check_file_ids(raw_files, cellpy_file, detailed=True)
-
-        logging.debug("checked if the files were similar")
-
-        if similar is None:
-            # forcing to load only raw_files
-            self.from_raw(raw_files, **kwargs)
-            if self._validate_cell():
-                if mass:
-                    self.set_mass(mass)
-                if summary_on_raw:
-                    self.make_summary(
-                        find_ir=summary_ir,
-                        find_end_voltage=summary_end_v,
-                        use_cellpy_stat_file=use_cellpy_stat_file,
-                        nom_cap=nom_cap,
-                    )
-            else:
-                logging.warning("Empty run!")
-            return self
-
-        self.load(cellpy_file, selector=selector)
-        if mass:
-            self.set_mass(mass)
-
-        if all(similar.values()):
-            logging.info("Everything is up to date")
-            return
-
-        start_file = True
-        for i, f in enumerate(raw_files):
-            # TODO: -> OtherPath?
-            f = Path(f)
-            if not similar[f.name] and start_file:
-                try:
-                    last_data_point = self.data.raw_data_files[i].last_data_point
-                except IndexError:
-                    last_data_point = 0
-
-                self._dev_update_from_raw(
-                    file_names=f, data_points=[last_data_point, None]
-                )
-                self.data = self._dev_update_merge()
-
-            elif not similar[f.name]:
-                try:
-                    last_data_point = self.data.raw_data_files[i].last_data_point
-                except IndexError:
-                    last_data_point = 0
-
-                self._dev_update_from_raw(
-                    file_names=f, data_points=[last_data_point, None]
-                )
-                self.merge()
-
-            start_file = False
-
-        self._dev_update_make_steps()
-        self._dev_update_make_summary(
-            # all_tests=False,
-            # find_ocv=summary_ocv,
-            find_ir=summary_ir,
-            find_end_voltage=summary_end_v,
-            use_cellpy_stat_file=use_cellpy_stat_file,
-        )
-        return self
-
-    # TODO @jepe (v.1.0.0): update this to use single data instances (i.e. to cell from cells)
-    def _dev_update_merge(self, t1, t2):
-        print("NOT FINISHED YET - but very close")
-
-        if t1.raw.empty:
-            logging.debug("OBS! the first dataset is empty")
-
-        if t2.raw.empty:
-            logging.debug("the second dataset was empty")
-            logging.debug(" -> merged contains only first")
-            return t1
-        test = t1
-
-        cycle_index_header = self.headers_normal.cycle_index_txt
-
-        if not t1.raw.empty:
-            t1.raw = t1.raw.iloc[:-1]
-            raw2 = externals.pandas.concat([t1.raw, t2.raw], ignore_index=True)
-            test.raw = raw2
-        else:
-            test = t2
-        logging.debug(" -> merged with new dataset")
-
-        return test
-
-    def _dev_update_make_steps(self, **kwargs):
-        old_steps = self.data.steps.iloc[:-1]
-        # Note! hard-coding header name (might fail if changing default headers)
-        from_data_point = self.data.steps.iloc[-1].point_first
-        new_steps = self.make_step_table(from_data_point=from_data_point, **kwargs)
-        merged_steps = externals.pandas.concat([old_steps, new_steps]).reset_index(
-            drop=True
-        )
-        self.data.steps = merged_steps
-
-    def _dev_update_make_summary(self, **kwargs):
-        print("NOT FINISHED YET - but not critical")
-        # Update not implemented yet, running full summary calculations for now.
-        # For later:
-        # old_summary = self.data.summary.iloc[:-1]
-        cycle_index_header = self.headers_summary.cycle_index
-        from_cycle = self.data.summary.iloc[-1][cycle_index_header]
-        self.make_summary(from_cycle=from_cycle, **kwargs)
-        # For later:
-        # (Remark! need to solve how to merge cumulated columns)
-        # new_summary = self.make_summary(from_cycle=from_cycle)
-        # merged_summary = externals.pandas.concat([old_summary, new_summary]).reset_index(drop=True)
-        # self.data.summary = merged_summary
-
-    def _dev_update_from_raw(self, file_names=None, data_points=None, **kwargs):
-        """This method is under development. Using this to develop updating files
-        with only new data.
-        """
-        print("NOT FINISHED YET")
-        # TODO @jepe: implement changes from original from_raw method introduced after this one was last edited.
-        if file_names:
-            self.file_names = file_names
-
-        if file_names is None:
-            logging.info(
-                "No filename given and no stored in the file_names "
-                "attribute. Returning None"
-            )
-            return None
-
-        if not isinstance(self.file_names, (list, tuple)):
-            self.file_names = [file_names]
-
-        raw_file_loader = self.loader
-
-        set_number = 0
-        cell = None
-
-        logging.debug("start iterating through file(s)")
-
-        for f in self.file_names:
-            logging.debug("loading raw file:")
-            logging.debug(f"{f}")
-
-            # get a list of cellpy.readers.data_structures.Data objects
-            # cell = raw_file_loader(f, data_points=data_points, **kwargs)
-            # remark that the bounds are included (i.e. the first datapoint
-            # is 5000.
-
-            logging.debug(
-                "added the data set - merging file info  - oh no; I am not implemented yet"
-            )
-
-            # raw_data_file = copy.deepcopy(test[set_number].raw_data_files[0])
-            # file_size = test[set_number].raw_data_files_length[0]
-
-            # test[set_number].raw_data_files.append(raw_data_file)
-            # test[set_number].raw_data_files_length.append(file_size)
-            # return test
-        # cell[set_number].raw_units = self._set_raw_units()
-        # self.cells.append(cell[set_number])
-        # self.status_dataset = self._validate_cell()
-        # self._invent_a_cell_name()
-        return self
 
 
 def merge_cells(cells, mode="campaign", **kwargs) -> "CellpyCell":
@@ -5752,236 +4776,3 @@ def print_instruments():
             print(model_text)
 
 
-# ============== Internal tests =================
-
-
-def _check_raw():
-    import cellpy
-    from cellpy.utils import example_data
-
-    cellpy_data_instance = CellpyCell()
-    res_file_path = example_data.arbin_file_path()
-    cellpy.get(res_file_path)
-
-    data_point = 2283
-    step_time = 1500.05
-    sum_discharge_time = 362198.12
-    my_test = cellpy_data_instance.data
-
-    summary = my_test.summary
-    raw = my_test.raw
-    print(summary.columns)
-    print(summary.index)
-    print(summary.head())
-    print(summary.iloc[1, 1])
-    print(summary.loc[:, "Data_Point"])
-    print(summary.loc[1, "Data_Point"])
-
-    print(raw.columns)
-    # assert my_test.summary.loc["1", "data_point"] == data_point
-
-
-def _check_cellpy_file():
-    print("running", end=" ")
-    print(sys.argv[0])
-
-    from cellpy import log
-
-    log.setup_logging(default_level="DEBUG")
-
-    from cellpy.utils import example_data
-
-    f = example_data.cellpy_file_path()
-    print(f)
-    print(f.is_file())
-    c = CellpyCell()
-    c.dev_load(f, accept_old=True)
-    c.make_step_table()
-    c.make_summary()
-    print("Here we have it")
-    print(c.data.summary.columns)
-    print(c.data.steps.columns)
-    print(c.data.raw.columns)
-
-
-def _save_and_load_cellpy_file():
-    # check to see if updating to new cellpy file version works
-    """
-    # How to update the cellpy file version
-
-    ## Top level
-
-    ## Metadata
-
-    ## Summary, Raw, and Step headers
-
-    update_headers.py
-
-    """
-
-    f00 = Path("../../testdata/hdf5/20160805_test001_45_cc.h5")
-    f04 = Path("../../testdata/hdf5/20160805_test001_45_cc_v4.h5")
-    f05 = Path("../../testdata/hdf5/20160805_test001_45_cc_v5.h5")
-    f06 = Path("../../testdata/hdf5/20160805_test001_45_cc_v6.h5")
-    f07 = Path("../../testdata/hdf5/20160805_test001_45_cc_v7.h5")
-    f08 = Path("../../testdata/hdf5/20160805_test001_45_cc_v8.h5")
-    f_tmp = Path("../../tmp/v1.h5")
-
-    old = f08
-    out = f_tmp
-
-    print("LOADING ORIGINAL".center(80, "*"))
-    c = get(old)
-    for a in dir(c.data):
-        if not a.startswith("__"):
-            if a not in ["raw", "summary", "steps"]:
-                v = getattr(c.data, a)
-                print(f"{a}: {v}")
-
-    print("SAVING".center(80, "*"))
-    c.save(out)
-
-    print("LOADING NEW".center(80, "*"))
-    c = get(out)  # , logging_mode="DEBUG"
-    meta_test_dependent = c.data.meta_test_dependent
-    meta_common = c.data.meta_common
-    print(f"{meta_test_dependent=}")
-    print(f"{meta_common=}")
-    print(f"{c.data.raw_limits=}")
-    print(f"{c.data.raw_units=}")
-
-    for a in dir(c.data):
-        if not a.startswith("__"):
-            if a not in ["raw", "summary", "steps"]:
-                v = getattr(c.data, a)
-                print(f"{a}: {v}")
-    # print("Here we have it")
-    # print(c.data.summary.columns)
-    # print(c.data.steps.columns)
-    # print(c.data.raw.columns)
-
-
-def _load_and_save_to_excel():
-    from pathlib import Path
-    from pprint import pprint
-
-    print(" loading cellpy file and saving to excel ".center(80, "="))
-
-    raw_file = Path("../../testdata/data/20160805_test001_45_cc_01.res")
-    cellpy_file = Path("../../tmp/20160805_test001_45_cc.h5")
-    # excel_file1 = Path("../../tmp/01_gravimetric_old_20160805_test001_45_cc.xlsx")
-    excel_file2 = Path("../../tmp/02_gravimetric_20160805_test001_45_cc.xlsx")
-    # excel_file3 = Path("../../tmp/03_areal_20160805_test001_45_cc.xlsx")
-    # excel_file4 = Path("../../tmp/04_areal_20160805_test001_45_cc.xlsx")
-    # excel_file5 = Path("../../tmp/05_areal_20160805_test001_45_cc.xlsx")
-
-    # c = get(raw_file, area=1.55, cycle_mode="anode", nominal_capacity=2.0, summary_kwargs={"nom_cap_specifics": "areal"}, debug=True)
-    # c.to_excel(excel_file1, cycles=True)
-    c = get(
-        raw_file,
-        mass=1.55,
-        cycle_mode="anode",
-        nominal_capacity="3579 mAh/g",
-        debug=True,
-    )
-    c.to_excel(excel_file2, cycles=True)
-    # c = get(raw_file, area=1.55, cycle_mode="anode", nominal_capacity=2.0, nom_cap_specifics="areal", debug=True)
-    # c.to_excel(excel_file3, cycles=True)
-    # c = get(raw_file, area="1.55 cm**2", cycle_mode="anode", nominal_capacity="2.0 mAh/cm**2", nom_cap_specifics="areal", debug=True)
-    # c.to_excel(excel_file4, cycles=True)
-    # print("saved ...")
-    #
-    # c.save(cellpy_file)
-    # c2 = get(cellpy_file)
-    # pprint(c2.cellpy_units)
-    # pprint(c2.data.meta_common)
-    # print("loaded again ...")
-    # c2.to_excel(excel_file5, raw=True, cycles=True)
-    # print("saved again ...")
-
-
-def _check_excel():
-    import externals.openpyxl
-    from externals.openpyxl.styles import Border, Side
-    import pandas as pd
-
-    from pathlib import Path
-
-    print(" checking excel ".center(80, "="))
-    excel_file = Path("../../tmp/nothing.xlsx")
-    to_excel_method_kwargs = {"index": True, "header": True}
-
-    df = externals.pandas.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6]})
-    n_rows, n_cols = df.shape
-    with externals.pandas.ExcelWriter(
-        excel_file, engine="externals.openpyxl"
-    ) as writer:
-        df.to_excel(writer, sheet_name="first", **to_excel_method_kwargs)
-        ws = writer.sheets["first"]
-        border = Border()
-        face_color = "00EEEEEE"
-        fill = externals.openpyxl.styles.PatternFill(
-            start_color=face_color, end_color=face_color, fill_type="solid"
-        )
-
-        for cell in ws["A"]:
-            print(cell)
-            cell.border = border
-        for cell in ws[1]:
-            print(cell)
-            cell.border = border
-            cell.fill = fill
-
-    print("done")
-
-
-def _check_new_dot_get_methods():
-    from pathlib import Path
-    from pprint import pprint
-    import numpy as np
-
-    print(" loading file and checking the .get methods ".center(80, "="))
-    raw_file = Path("../../testdata/data/20160805_test001_45_cc_01.res")
-    c = get(
-        raw_file,
-        mass=1.55,
-        cycle_mode="anode",
-        nominal_capacity="3579 mAh/g",
-        debug=True,
-    )
-    # pprint(c.headers_normal)
-    cycles_a = [1, 2, 3]
-    cycles_b = externals.numpy.array([1, 2, 3])
-    cycles_c = [1, 2, 3]
-    a = c.get_timestamp(cycles_a, with_index=True, units="raw")
-    print(f"{cycles_a=} raw".center(80, "-"))
-    pprint(a)
-
-    a = c.get_timestamp(cycles_a, units="seconds")
-    print(f"{cycles_a=} seconds".center(80, "-"))
-    pprint(a)
-
-    a = c.get_timestamp(cycles_a, units="minutes")
-    print(f"{cycles_a=} minutes".center(80, "-"))
-    pprint(a)
-
-    a = c.get_timestamp(cycles_a, units="hours")
-    print(f"{cycles_a=} hours".center(80, "-"))
-    pprint(a)
-
-    a = c.get_timestamp(cycles_a, in_minutes=True, units="hours")
-    print(f"{cycles_a=} hours".center(80, "-"))
-    pprint(a)
-
-    #
-    #
-    # print(f"{cycles_b=}".center(80, "-"))
-    # b = c.get_timestamp(cycles_b)
-    # pprint(b)
-    # print(f"{cycles_c=}".center(80, "-"))
-    # c = c.get_timestamp(cycles_c, with_index=False, as_frame=False)
-    # pprint(c)
-
-
-if __name__ == "__main__":
-    _check_new_dot_get_methods()

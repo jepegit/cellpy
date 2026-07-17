@@ -2,6 +2,29 @@
 
 ## [Unreleased]
 
+* `make_summary` gains `exclude_step_types` (#509, v2 theme V2-12): step-type
+  prefixes (e.g. `["cv_"]`) whose per-cycle capacity contribution is subtracted
+  from cycle-end charge/discharge capacities before derived columns — the
+  core-native replacement (cellpy-core #54) for the removed selector-based
+  exclusion. The deprecated no-effect `exclude_types`/`exclude_steps`/
+  `selector_type`/`selector` kwargs still only warn. Also fixes a latent load
+  bug: older cellpy files with a double-nested `cycle_mode` (`[['anode']]`) are
+  now unwrapped at the file-load boundary.
+* Slim `CellpyCell` (#509, v2 theme V2-09): remove dead/experimental code —
+  the `_dev_update*` family (broken call signatures, never wired), the
+  module-level `_check*`/`__main__` dev-scratch harness, `_export_cycles_old`,
+  `_select_steps`, the long-dead `select_steps`/`populate_step_dict`
+  (raised `DeprecatedFeature` since 1.x), and the superseded `_select_without`
+  legacy exclusion. The capacity/curve getters (`get_cap`, `get_ccap`,
+  `get_dcap`, `get_ocv`) moved verbatim to the new
+  `cellpy.readers.capacity_curves` module with thin delegate methods — public
+  API unchanged, curve goldens byte-identical. `cellreader.py`: 5987 → 4778
+  lines (−20%). Follow-ups tracked separately: exporter extraction, split/drop
+  extraction, dependency-injection restructuring.
+* Top-level API (#509, v2 theme V2-10): `cellpy.get` confirmed as the
+  sanctioned entry point (stale removal-TODO dropped); `cellpy.merge_cells`
+  and `cellpy.print_instruments` now exported at package level.
+
 * Loaders emit per-test metadata (#508, v2 Phase 2, themes V2-05/06/08):
   `from_raw` now routes loader-parsed metadata (tester `test_ID`,
   `channel_index`, `creator`, `schedule_file_name`) into `meta_test_dependent`
