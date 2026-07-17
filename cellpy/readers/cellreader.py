@@ -58,6 +58,7 @@ from cellpy.parameters.internal_settings import (
 # still expects. cellpy-core's __init__ is intentionally empty, so import submodules.
 from cellpycore import units as core_units
 from cellpycore.cell_core import OldCellpyCellCore
+from cellpycore.config import STEP_TYPES
 
 from cellpy.readers.cellpy_file import dtype as cellpy_file_dtype
 from cellpy.readers.cellpy_file import fids as cellpy_file_fids
@@ -297,21 +298,9 @@ class CellpyCell:
 
         self.capacity_modifiers = ["reset"]
 
-        self.list_of_step_types = [
-            "charge",
-            "discharge",
-            "cv_charge",
-            "cv_discharge",
-            "taper_charge",
-            "taper_discharge",
-            "charge_cv",
-            "discharge_cv",
-            "ocvrlx_up",
-            "ocvrlx_down",
-            "ir",
-            "rest",
-            "not_known",
-        ]
+        # single source of the step-type vocabulary (cellpycore #543);
+        # was a hand-maintained duplicate of config.STEP_TYPES.
+        self.list_of_step_types = list(STEP_TYPES)
         # - options
         self.force_step_table_creation = config.reader.force_step_table_creation
         self.force_all = config.reader.force_all

@@ -9,6 +9,8 @@ import numpy as np
 import pandas as pd
 from scipy import stats
 
+from cellpycore.config import StepType
+
 import cellpy
 import cellpy.config as config
 from cellpy import prms
@@ -1456,7 +1458,7 @@ def select_summary_based_on_rate(
         filtered summary (Pandas.DataFrame).
     """
     if on is None:
-        on = ["charge"]
+        on = [StepType.CHARGE.value]
     else:
         if not isinstance(on, (list, tuple)):
             on = [on]

@@ -18,6 +18,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
+from cellpycore.config import StepType
+
 from cellpy import cellreader
 from cellpy.parameters.internal_settings import get_headers_normal, get_headers_step_table
 
@@ -371,21 +373,21 @@ class MultiCycleOcvFit:
         if direction == "up":
             end_voltage = step_table[
                 (step_table[hdr_steps.cycle] == cycle)
-                & (step_table[hdr_steps.type].isin(["discharge"]))
+                & (step_table[hdr_steps.type].isin([StepType.DISCHARGE.value]))
             ][hdr.voltage + "_last"].values[0]
 
             end_current = step_table[
                 (step_table[hdr_steps.cycle] == cycle)
-                & (step_table[hdr_steps.type].isin(["discharge"]))
+                & (step_table[hdr_steps.type].isin([StepType.DISCHARGE.value]))
             ][hdr.current + "_last"].values[0]
 
         elif direction == "down":
             end_voltage = step_table[
-                (step_table[hdr_steps.cycle] == cycle) & (step_table[hdr_steps.type].isin(["charge"]))
+                (step_table[hdr_steps.cycle] == cycle) & (step_table[hdr_steps.type].isin([StepType.CHARGE.value]))
             ][hdr.voltage + "_last"].values[0]
 
             end_current = step_table[
-                (step_table[hdr_steps.cycle] == cycle) & (step_table[hdr_steps.type].isin(["charge"]))
+                (step_table[hdr_steps.cycle] == cycle) & (step_table[hdr_steps.type].isin([StepType.CHARGE.value]))
             ][hdr.current + "_last"].values[0]
 
         return end_current, end_voltage

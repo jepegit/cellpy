@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+* Step-type string literals use the `cellpycore` vocabulary (#543, native-
+  headers Phase-0 prerequisite): `CellpyCell.list_of_step_types` is now
+  `list(config.STEP_TYPES)` (was a hand-maintained duplicate of the 13
+  step-type names), and the step-table `type` comparisons in `utils/ocv_rlx.py`
+  / `utils/helpers.py` use `StepType.CHARGE.value` / `.DISCHARGE.value` instead
+  of bare `"charge"` / `"discharge"` literals. Behavior-identical.
+
 * Header column literals in `utils/helpers.py` and `filters/summary.py` use
   header-object attributes (#538, native-headers Phase-0 prerequisite): the
   base-name string-keyed `hdr_summary["charge_capacity"]`-style lookups become
