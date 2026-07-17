@@ -11,8 +11,11 @@ from . import externals as externals
 from cellpy import prms
 from cellpycore.units import CellpyUnits
 
-CELLPY_FILE_VERSION = 8
+# Latest on-disk format (v9 zip-of-parquet). Mirrored in cellpy_file.format.
+CELLPY_FILE_VERSION = 9
 MINIMUM_CELLPY_FILE_VERSION = 4
+# Last HDF5 layout version (written when saving .h5 / format="hdf5").
+HDF5_FILE_VERSION = 8
 STEP_TABLE_VERSION = 5
 RAW_TABLE_VERSION = 5
 SUMMARY_TABLE_VERSION = 7
@@ -148,7 +151,9 @@ class CellpyMetaCommon(CellpyMeta):
     )
     file_errors: Optional[str] = None  # not in use at the moment
     raw_id: Optional[str] = None  # used as property
-    cellpy_file_version: int = CELLPY_FILE_VERSION
+    # In-memory / raw-load default stays at the last HDF5 layout; v9 save/load
+    # stamps CELLPY_FILE_VERSION (9) explicitly.
+    cellpy_file_version: int = HDF5_FILE_VERSION
 
     # about tester
     tester_ID: Optional[prms.CellPyDataConfig] = None

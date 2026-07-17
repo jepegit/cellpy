@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import Dict, List, Tuple
 
 from .. import externals as externals
-from cellpy.parameters.internal_settings import BaseHeaders, CELLPY_FILE_VERSION
+from cellpy.parameters.internal_settings import BaseHeaders, HDF5_FILE_VERSION
 
 HEADERS_KEYS_STEP_TABLE_EXTENDED = [
     "point",
@@ -411,7 +411,7 @@ headers_journal_v0 = HeadersJournalV5()
 def rename_step_columns(
     steps: "externals.pandas.DataFrame",
     old_version: int,
-    new_version: int = CELLPY_FILE_VERSION,
+    new_version: int = HDF5_FILE_VERSION,
     **kwargs,
 ) -> "externals.pandas.DataFrame":
     logging.debug("renaming headers")
@@ -429,7 +429,7 @@ def rename_step_columns(
 def rename_raw_columns(
     raw: "externals.pandas.DataFrame",
     old_version: int,
-    new_version: int = CELLPY_FILE_VERSION,
+    new_version: int = HDF5_FILE_VERSION,
     **kwargs,
 ) -> "externals.pandas.DataFrame":
     logging.debug("renaming headers")
@@ -447,7 +447,7 @@ def rename_raw_columns(
 def rename_summary_columns(
     summary: "externals.pandas.DataFrame",
     old_version: int,
-    new_version: int = CELLPY_FILE_VERSION,
+    new_version: int = HDF5_FILE_VERSION,
     **kwargs,
 ) -> "externals.pandas.DataFrame":
     """Rename the summary headers to new format.
@@ -478,7 +478,7 @@ def rename_summary_columns(
 def rename_fid_columns(
     fid_table: "externals.pandas.DataFrame",
     old_version: int,
-    new_version: int = CELLPY_FILE_VERSION,
+    new_version: int = HDF5_FILE_VERSION,
     **kwargs,
 ) -> "externals.pandas.DataFrame":
     logging.debug("renaming headers")

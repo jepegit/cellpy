@@ -7,7 +7,7 @@ import warnings
 from dataclasses import asdict
 
 from cellpy.parameters.internal_settings import PICKLE_PROTOCOL
-from cellpy.readers.cellpy_file.format import CELLPY_FILE_VERSION, FORMAT_V8, CellpyFileFormat
+from cellpy.readers.cellpy_file.format import FORMAT_V8, CellpyFileFormat
 from cellpy.readers import data_structures as ds
 from cellpy.readers import externals
 from cellpy.readers.cellpy_file import dtype as cellpy_file_dtype
@@ -26,7 +26,7 @@ def create_infotable(data, fmt: CellpyFileFormat = FORMAT_V8):
     """Build common meta, test-dependent meta, and fid tables for saving."""
     new_info_table = asdict(data.meta_common)
     new_info_table_test_dependent = asdict(data.meta_test_dependent)
-    new_info_table["cellpy_file_version"] = CELLPY_FILE_VERSION
+    new_info_table["cellpy_file_version"] = fmt.version
 
     limits = data.raw_limits
     for key in limits:

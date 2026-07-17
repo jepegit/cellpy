@@ -1,7 +1,8 @@
-"""Cellpy-file (HDF5) I/O package."""
+"""Cellpy-file I/O package (HDF5 v4–v8 and zip-of-parquet v9)."""
 
 from cellpy.readers.cellpy_file.format import (
     CELLPY_FILE_VERSION,
+    HDF5_FILE_VERSION,
     MINIMUM_CELLPY_FILE_VERSION,
     FORMAT_V4,
     FORMAT_V5,
@@ -15,6 +16,7 @@ from cellpy.readers.cellpy_file.selectors import LoadLimits, LoadResult, LoadSel
 
 __all__ = [
     "CELLPY_FILE_VERSION",
+    "HDF5_FILE_VERSION",
     "MINIMUM_CELLPY_FILE_VERSION",
     "CellpyFileFormat",
     "FORMAT_V4",
