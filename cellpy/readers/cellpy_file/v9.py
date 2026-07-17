@@ -4,30 +4,25 @@ On-disk frames use **native** column names (``cellpycore`` schema). The current
 runtime still speaks legacy names, so ``save`` translates legacy → native before
 writing and ``load`` translates native → legacy after reading (I/O boundary
 adapter; full native runtime is #511).
+
+Metadata document shape is owned by ``meta_archive`` (cellpy policy; core
+``save_archive`` / ``load_archive`` stubs stay stubs).
 """
 
 from __future__ import annotations
 
-import enum
 import io
 import json
 import logging
 import zipfile
-from datetime import date, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Mapping, Optional, Union
 
-from cellpycore.config import Cols, default_schema
-from cellpycore.metadata.io import from_dict, to_dict
-from cellpycore.metadata.models import CellMeta, TestMeta
-from cellpycore.units import CellpyUnits
-
 from cellpy.exceptions import CorruptCellpyFile, WrongFileVersion
-from cellpy.parameters.internal_settings import CellpyLimits
 from cellpy.readers import data_structures as ds
 from cellpy.readers import externals
-from cellpy.readers import test_meta as test_meta_helpers
 from cellpy.readers.cellpy_file import fids as cellpy_file_fids
+from cellpy.readers.cellpy_file import meta_archive
 from cellpy.readers.cellpy_file import translate as cellpy_file_translate
 from cellpy.readers.cellpy_file.format import (
     CELLPY_FILE_VERSION,
@@ -47,6 +42,7 @@ if TYPE_CHECKING:
 _module_logger = logging.getLogger(__name__)
 
 PathLike = Union[str, Path]
+_TEST_ID = "test_id"
 
 
 def is_zip_cellpy(path: PathLike) -> bool:
@@ -58,60 +54,44 @@ def is_zip_cellpy(path: PathLike) -> bool:
         return False
 
 
-def _json_default(obj: Any) -> Any:
-    if isinstance(obj, enum.Enum):
-        return obj.value
-    if isinstance(obj, (datetime, date)):
-        return obj.isoformat()
-    if hasattr(obj, "item"):  # numpy scalar
-        return obj.item()
-    raise TypeError(f"Object of type {type(obj)!r} is not JSON serializable")
-
-
-def build_meta_document(
-    data: "Data",
-    *,
-    cellpy_units: Optional[Mapping[str, Any]] = None,
-) -> dict:
-    """Build the v9 ``meta.json`` document from a ``Data`` object."""
-    tests_doc: dict[str, dict] = {}
-    cell_doc: Optional[dict] = None
-    # Compact ``test_id`` (grouping key) is not the tester-assigned ``test_ID``.
-    # Preserve the latter so apply_test_meta_to_legacy does not clobber it.
-    active_tester_id = test_meta_helpers._unwrap(
-        getattr(data.meta_test_dependent, "test_ID", None)
-    )
-    for record in data.tests:
-        payload = to_dict(record)
-        if cell_doc is None and isinstance(payload.get("cell"), dict):
-            cell_doc = payload["cell"]
-        if int(record.test_id) == int(data.active_test_id):
-            payload["tester_assigned_test_id"] = active_tester_id
-        tests_doc[str(record.test_id)] = payload
-
-    if cell_doc is None:
-        cell_doc = to_dict(CellMeta())
-
-    schema = default_schema()
+def _frames_had_test_id(data: "Data") -> dict[str, bool]:
+    """Record which frames already carried ``test_id`` before native inject."""
     return {
-        "cellpy_file_version": CELLPY_FILE_VERSION,
-        "schema_version": Cols.__version__,
-        "raw_schema_version": schema.raw.__version__,
-        "step_schema_version": schema.step.__version__,
-        "cycle_schema_version": schema.cycle.__version__,
-        "cell": cell_doc,
-        "tests": tests_doc,
-        "raw_units": dict(data.raw_units),
-        "cellpy_units": dict(cellpy_units) if cellpy_units else {},
-        "limits": dict(data.raw_limits),
-        "active_test_id": int(data.active_test_id),
-        "loaded_from": getattr(data, "loaded_from", None),
+        "raw": bool(
+            getattr(data, "raw", None) is not None
+            and len(data.raw.columns)
+            and _TEST_ID in data.raw.columns
+        ),
+        "steps": bool(
+            getattr(data, "steps", None) is not None
+            and len(data.steps.columns)
+            and _TEST_ID in data.steps.columns
+        ),
+        "summary": bool(
+            getattr(data, "summary", None) is not None
+            and len(data.summary.columns)
+            and _TEST_ID in data.summary.columns
+        ),
     }
+
+
+def _strip_injected_test_id(data: "Data", had: Mapping[str, bool]) -> None:
+    """Drop ``test_id`` from steps/summary when it was only injected at save."""
+    if not had.get("steps") and getattr(data, "steps", None) is not None:
+        if _TEST_ID in data.steps.columns:
+            data.steps = data.steps.drop(columns=[_TEST_ID])
+    if not had.get("summary") and getattr(data, "summary", None) is not None:
+        if _TEST_ID in data.summary.columns:
+            data.summary = data.summary.drop(columns=[_TEST_ID])
+
+
+def _normalize_frame_nulls(frame):
+    """Align parquet nulls with pandas float-NaN convention used by HDF5 loads."""
+    return frame.replace({None: externals.numpy.nan})
 
 
 def _frame_to_parquet_bytes(frame) -> bytes:
     buf = io.BytesIO()
-    # Reset index so keys live in columns (native / polars convention).
     to_write = frame
     if getattr(frame, "index", None) is not None and frame.index.name is not None:
         name = frame.index.name
@@ -121,12 +101,6 @@ def _frame_to_parquet_bytes(frame) -> bytes:
             to_write = frame.reset_index()
     to_write.to_parquet(buf, index=False, engine="pyarrow")
     return buf.getvalue()
-
-
-def _normalize_frame_nulls(frame):
-    """Align parquet nulls with pandas float-NaN convention used by HDF5 loads."""
-    # pyarrow writes pandas NA/NaN in object columns as Python None on read.
-    return frame.replace({None: externals.numpy.nan})
 
 
 def _read_parquet_member(zf: zipfile.ZipFile, name: str):
@@ -150,7 +124,8 @@ def save(
     ``data`` object is **not** mutated (work is done on copies).
     """
     path = Path(path)
-    # Work on a shallow copy of frames so translate.to_native does not mutate caller.
+    had_test_id = _frames_had_test_id(data)
+
     scratch = ds.Data()
     scratch.raw = data.raw.copy() if data.raw is not None else externals.pandas.DataFrame()
     scratch.steps = (
@@ -174,8 +149,11 @@ def save(
 
     cellpy_file_translate.to_native(scratch)
 
-    meta_doc = build_meta_document(data, cellpy_units=cellpy_units)
-    # Prefer native frames' test_id story from the scratch object for consistency.
+    meta_doc = meta_archive.build_meta_document(
+        data,
+        cellpy_units=cellpy_units,
+        frames_had_test_id=had_test_id,
+    )
     meta_doc["active_test_id"] = int(data.active_test_id)
 
     fid_table = cellpy_file_fids.convert2fid_table(data)
@@ -185,7 +163,7 @@ def save(
     with zipfile.ZipFile(path, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
         zf.writestr(
             META_JSON_NAME,
-            json.dumps(meta_doc, indent=2, default=_json_default),
+            json.dumps(meta_doc, indent=2, default=meta_archive._json_default),
         )
         zf.writestr(V9_RAW_PARQUET, _frame_to_parquet_bytes(scratch.raw))
         zf.writestr(V9_STEPS_PARQUET, _frame_to_parquet_bytes(scratch.steps))
@@ -196,71 +174,9 @@ def save(
     _module_logger.debug("wrote v9 cellpy-file %s", path)
 
 
-def _apply_meta_document(data: "Data", meta_doc: dict) -> None:
-    version = int(meta_doc.get("cellpy_file_version", CELLPY_FILE_VERSION))
-    if version != CELLPY_FILE_VERSION:
-        raise WrongFileVersion(
-            f"v9 reader expected cellpy_file_version={CELLPY_FILE_VERSION}, got {version}"
-        )
-
-    units_payload = dict(meta_doc.get("raw_units") or {})
-    limits_payload = dict(meta_doc.get("limits") or {})
-    data.raw_units = CellpyUnits(**{k: v for k, v in units_payload.items() if k in CellpyUnits()})
-    # Overlay onto defaults so missing keys keep CellpyLimits defaults.
-    limits = CellpyLimits()
-    for key, value in limits_payload.items():
-        if key in limits:
-            limits[key] = value
-    data.raw_limits = limits
-    if meta_doc.get("loaded_from") is not None:
-        data.loaded_from = meta_doc["loaded_from"]
-    data.meta_common.cellpy_file_version = version
-
-    active_id = int(meta_doc.get("active_test_id", 0))
-    data._active_test_id = active_id
-
-    tests_doc = meta_doc.get("tests") or {}
-    cell_fallback = meta_doc.get("cell") or {}
-
-    records: dict[int, TestMeta] = {}
-    tester_assigned: dict[int, Any] = {}
-    for payload in tests_doc.values():
-        if not isinstance(payload, dict):
-            continue
-        tid_key = int(payload.get("test_id", 0))
-        if "tester_assigned_test_id" in payload:
-            tester_assigned[tid_key] = payload.get("tester_assigned_test_id")
-        record = from_dict(TestMeta, payload)
-        if record.cell is None and cell_fallback:
-            record.cell = from_dict(CellMeta, cell_fallback)
-        records[int(record.test_id)] = record
-
-    if active_id not in records and records:
-        active_id = next(iter(records))
-        data._active_test_id = active_id
-
-    active_record = records.get(active_id)
-    data._extra_tests = {tid: rec for tid, rec in records.items() if tid != active_id}
-
-    if active_record is not None:
-        test_meta_helpers.apply_test_meta_to_legacy(
-            active_record, data.meta_common, data.meta_test_dependent
-        )
-        # apply maps TestMeta.test_id → legacy test_ID; restore tester-assigned.
-        if active_id in tester_assigned:
-            data.meta_test_dependent.test_ID = tester_assigned[active_id]
-        # Core-only fields have no legacy home — keep them in _provenance.
-        provenance = {}
-        for key in test_meta_helpers._CORE_ONLY_TEST_FIELDS - {"cell", "comment"}:
-            value = getattr(active_record, key, None)
-            if value is not None:
-                provenance[key] = value
-        data._provenance = provenance
-
-
 def load(filename: PathLike, *, selector=None) -> LoadResult:
     """Load a v9 ``.cellpy`` zip into a legacy-named ``Data`` object."""
-    del selector  # max_cycle selection not implemented for v9 in Milestone A
+    del selector  # max_cycle selection not implemented for v9 yet
     path = Path(filename)
     if not path.is_file():
         raise IOError(f"File does not exist: {filename}")
@@ -293,9 +209,15 @@ def load(filename: PathLike, *, selector=None) -> LoadResult:
             data.raw_data_files = []
             data.raw_data_files_length = []
 
-    _apply_meta_document(data, meta_doc)
-    # Runtime still expects legacy headers.
-    cellpy_file_translate.to_legacy(data, injected_test_id=True)
+    meta_archive.apply_meta_document(data, meta_doc)
+    # Keep real campaign test_id columns; strip only injected ones.
+    cellpy_file_translate.to_legacy(data, injected_test_id=False)
+    had = meta_doc.get("frames_had_test_id") or {
+        "raw": True,
+        "steps": False,
+        "summary": False,
+    }
+    _strip_injected_test_id(data, had)
     data.loaded_from = str(path)
 
     limits = LoadLimits()
@@ -312,3 +234,8 @@ def get_version_from_zip(path: PathLike) -> int:
 def suggest_extension() -> str:
     """Default filename extension for v9 (without the leading dot)."""
     return V9_EXTENSION.lstrip(".")
+
+
+# Re-export for callers that imported these from v9 during Milestone A.
+build_meta_document = meta_archive.build_meta_document
+apply_meta_document = meta_archive.apply_meta_document

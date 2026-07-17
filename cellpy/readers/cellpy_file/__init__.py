@@ -29,9 +29,11 @@ __all__ = [
     "LoadSelector",
     "get_format",
     "load",
+    "load_meta_archive",
     "read_fid_table",
     "read_table",
     "save",
+    "save_meta_archive",
 ]
 
 
@@ -52,4 +54,12 @@ def __getattr__(name: str):
         from cellpy.readers.cellpy_file.fids import read_fid_table
 
         return read_fid_table
+    if name == "save_meta_archive":
+        from cellpy.readers.cellpy_file.meta_archive import save_meta_archive
+
+        return save_meta_archive
+    if name == "load_meta_archive":
+        from cellpy.readers.cellpy_file.meta_archive import load_meta_archive
+
+        return load_meta_archive
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
