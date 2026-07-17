@@ -1,6 +1,6 @@
 # Issue #510 — status
 
-- [ ] Done
+- [x] Done
 
 ## What's done
 
@@ -17,7 +17,7 @@
   - [x] v1→v2 migration guide (draft in tree; polish/link review still OK)
   - [x] pin gate cleared: cellpy-core #136 → `cellpycore==0.2.2` on PyPI
   - [x] `HeadersSummary` / `HeadersStepTable.test_id` parity + pipeline_smoke golden regen
-  - [ ] PR #523 CI green / merge
+  - [x] PR #523 CI green / merge
   - [ ] follow `release-procedure.md` / cut `v2.0.0aN` when ready (tag timing may slip)
 
 ## Pin gate — cellpy-core #136
