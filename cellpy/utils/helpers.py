@@ -275,7 +275,7 @@ def add_c_rate(cell, nom_cap=None, column_name=None):
 def add_areal_capacity(cell, cell_id, journal):
     """Adds areal capacity to the summary."""
 
-    loading = journal.pages.loc[cell_id, hdr_journal["loading"]]
+    loading = journal.pages.loc[cell_id, hdr_journal.loading]
 
     cell.data.summary[hdr_summary["areal_charge_capacity"]] = (
         cell.data.summary[hdr_summary["charge_capacity"]] * loading / 1000
