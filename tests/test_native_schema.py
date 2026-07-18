@@ -30,8 +30,15 @@ def native_cell(parameters):
     return c
 
 
-def test_flag_defaults_to_legacy_bridge():
+def test_flag_defaults_to_native():
+    # native-headers flip (Stage 5a): the default runtime is native.
     c = cellreader.CellpyCell()
+    assert c.native_schema is True
+    assert isinstance(c.core, NativeCellpyCellCore)
+
+
+def test_flag_false_selects_legacy_bridge():
+    c = cellreader.CellpyCell(native_schema=False)
     assert c.native_schema is False
     assert isinstance(c.core, OldCellpyCellCore)
 
@@ -82,7 +89,7 @@ def test_native_summary_value_parity_with_legacy_path(parameters, native_cell):
         native_cell.data.summary.copy()
     )
 
-    legacy = cellreader.CellpyCell()
+    legacy = cellreader.CellpyCell(native_schema=False)
     legacy.from_raw(parameters.res_file_path)
     legacy.make_summary(find_ir=False)
     legacy_summary = legacy.data.summary
@@ -138,11 +145,21 @@ def test_native_v9_roundtrip(native_cell, tmp_path):
         )
 
 
-def test_native_hdf5_save_raises(native_cell, tmp_path):
+def test_native_hdf5_save_roundtrips_via_to_legacy(native_cell, tmp_path):
+    """Saving a native cell to v8/HDF5 routes through to_legacy (Stage 5a);
+    self.data stays native and the file loads back (into a legacy cell)."""
     native_cell.make_step_table()
     native_cell.make_summary(find_ir=False)
-    with pytest.raises(ValueError, match="native-schema"):
-        native_cell.save(tmp_path / "nope.h5")
+    outfile = tmp_path / "native_as_v8.h5"
+    native_cell.save(outfile)
+    assert outfile.is_file()
+    # the in-memory cell is untouched (still native)
+    assert SCHEMA.raw.potential in native_cell.data.raw.columns
+    assert "voltage" not in native_cell.data.raw.columns
+    # the v8 file carries legacy names -> loads on the legacy path
+    reloaded = cellreader.CellpyCell(native_schema=False)
+    reloaded.load(outfile)
+    assert "voltage" in reloaded.data.raw.columns
 
 
 def test_native_merge_raises(native_cell, parameters):

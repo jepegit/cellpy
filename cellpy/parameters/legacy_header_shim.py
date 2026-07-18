@@ -12,12 +12,15 @@ through without warning.
 All legacy→native knowledge lives in ``cellpycore.legacy.mapping`` — this
 module only adapts it to attribute/subscript access and owns the warning. The
 mapping already handles the ``discharge_capacity`` / ``discharge_capacity_raw``
-shared-value pair and lists legacy-only attributes (raised here as a clear
-error).
+shared-value pair. **Legacy-only** attributes (columns the flip does not rename)
+resolve to their unchanged legacy name via the legacy ``BaseHeaders`` object —
+``to_native`` passes those columns through untouched, so the native frame still
+carries them under that name (e.g. ``headers_normal.datetime_txt`` → ``date_time``,
+``headers_normal.test_id_txt`` → ``test_id``).
 
-**Not wired into ``CellpyCell`` yet.** The flip (Stage 5) substitutes these
-shims for the legacy ``Headers*`` objects; until then this module is inert,
-tested infrastructure and changes no runtime behavior.
+**Wired into ``CellpyCell`` at the flip (Stage 5a).** When the runtime is native,
+``CellpyCell`` substitutes these shims for the legacy ``Headers*`` objects so
+legacy attribute access keeps resolving to the native column names.
 
 Scope note: statistic step columns composed by callers as ``f"{hdr.voltage}_avr"``
 are *not* interceptable here (they are built strings, not attribute access) —
@@ -56,9 +59,20 @@ class LegacyHeaderShim:
             ``"cycle"``.
         native_cols: The native ``config.Cols`` object for that frame; native
             attribute access passes through to it unchanged (no warning).
+        legacy_cols: The legacy ``BaseHeaders`` object for that frame
+            (``HeadersNormal`` / ``HeadersStepTable`` / ``HeadersSummary``).
+            Used to resolve **legacy-only** attributes: columns the flip does
+            not rename (``to_native`` passes them through unchanged), so the
+            native frame still carries them under their legacy name — the shim
+            returns that name rather than raising.
     """
 
-    def __init__(self, frame: str, native_cols: "config.Cols") -> None:
+    def __init__(
+        self,
+        frame: str,
+        native_cols: "config.Cols",
+        legacy_cols: object | None = None,
+    ) -> None:
         if frame not in mapping.LEGACY_ATTR_TO_SCHEMA:
             raise ValueError(
                 f"unknown frame {frame!r}; expected one of "
@@ -67,6 +81,7 @@ class LegacyHeaderShim:
         # Set via __dict__ so __getattr__ never sees these.
         object.__setattr__(self, "_frame", frame)
         object.__setattr__(self, "_native", native_cols)
+        object.__setattr__(self, "_legacy", legacy_cols)
 
     # -- resolution -----------------------------------------------------------
     def _resolve(self, name: str) -> str:
@@ -101,9 +116,16 @@ class LegacyHeaderShim:
                     self._warn(name)
                     return f"{native_base}{suffix}"
 
+        # Legacy-only attribute: the flip does not rename this column, so the
+        # native frame carries it under its (unchanged) legacy name. Return that
+        # name — no warning, because there is no native name to migrate to.
+        legacy = self._legacy
+        if legacy is not None and not name.startswith("_") and hasattr(legacy, name):
+            return getattr(legacy, name)
+
         raise KeyError(
             f"{_FRAME_LABEL[frame]}: {name!r} is not a native column and has no "
-            f"legacy mapping (legacy-only or unknown attribute)."
+            f"legacy mapping (unknown attribute)."
         )
 
     def _warn(self, name: str) -> None:
@@ -132,12 +154,23 @@ class LegacyHeaderShim:
 def build_legacy_shims(schema: "config.Schema") -> dict[str, LegacyHeaderShim]:
     """Return the three legacy-header shims for a native ``config.Schema``.
 
-    Keys are the ``CellpyCell`` header attribute names the flip (Stage 5) will
-    point at these shims: ``headers_normal`` / ``headers_step_table`` /
-    ``headers_summary``.
+    Keys are the ``CellpyCell`` header attribute names the flip (Stage 5) points
+    at these shims: ``headers_normal`` / ``headers_step_table`` /
+    ``headers_summary``. Each shim also gets the matching legacy ``BaseHeaders``
+    object so legacy-only (un-renamed) columns keep resolving to their name.
     """
+    from cellpy.parameters.internal_settings import (
+        get_headers_normal,
+        get_headers_step_table,
+        get_headers_summary,
+    )
+
     return {
-        "headers_normal": LegacyHeaderShim("raw", schema.raw),
-        "headers_step_table": LegacyHeaderShim("step", schema.step),
-        "headers_summary": LegacyHeaderShim("cycle", schema.cycle),
+        "headers_normal": LegacyHeaderShim("raw", schema.raw, get_headers_normal()),
+        "headers_step_table": LegacyHeaderShim(
+            "step", schema.step, get_headers_step_table()
+        ),
+        "headers_summary": LegacyHeaderShim(
+            "cycle", schema.cycle, get_headers_summary()
+        ),
     }
