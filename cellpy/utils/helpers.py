@@ -1457,6 +1457,11 @@ def select_summary_based_on_rate(
     Returns:
         filtered summary (Pandas.DataFrame).
     """
+    # use the cell's own headers (native names via the shim after the flip)
+    # rather than the module-level legacy singletons.
+    hdr_steps = cell.headers_step_table
+    hdr_summary = cell.headers_summary
+
     if on is None:
         on = [StepType.CHARGE.value]
     else:

@@ -68,5 +68,5 @@ def test_pipeline_smoke_summary_matches_golden_parquet():
         pytest.skip("pipeline_smoke goldens or Arbin .res testdata not available")
 
     expected = pd.read_parquet(PIPELINE_SMOKE_SUMMARY)
-    summary, _ = _run_pipeline_smoke()
+    summary, _, _ = _run_pipeline_smoke()
     assert_summary_matches_golden(summary, expected)
