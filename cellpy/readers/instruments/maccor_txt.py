@@ -160,20 +160,25 @@ def c_heck_loader(name=None, number=1, model="one"):
     loader = DataLoader(sep="\t", model=model)
     dd = loader.loader(name)
     raw = dd[0].raw
-    raw.plot(x="data_point", y="current", title="current vs data-point")
+    caps = [headers_normal.charge_capacity_txt, headers_normal.discharge_capacity_txt]
     raw.plot(
-        x="data_point",
-        y=["charge_capacity", "discharge_capacity"],
+        x=headers_normal.data_point_txt,
+        y=headers_normal.current_txt,
+        title="current vs data-point",
+    )
+    raw.plot(
+        x=headers_normal.data_point_txt,
+        y=caps,
         title="capacity vs data-point",
     )
     raw.plot(
-        x="test_time",
-        y=["charge_capacity", "discharge_capacity"],
+        x=headers_normal.test_time_txt,
+        y=caps,
         title="capacity vs test-time",
     )
     raw.plot(
-        x="step_time",
-        y=["charge_capacity", "discharge_capacity"],
+        x=headers_normal.step_time_txt,
+        y=caps,
         title="capacity vs step-time",
     )
     print(raw.head())
@@ -212,10 +217,15 @@ def _check_loader_from_outside():
     steps.to_csv(r"C:\scripts\notebooks\Div\trash\steps.csv", sep=";")
     summary.to_csv(r"C:\scripts\notebooks\Div\trash\summary.csv", sep=";")
 
+    hdr = c.headers_normal
     fig_1, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(6, 10))
-    raw.plot(x="test_time", y="voltage", ax=ax1)
-    raw.plot(x="test_time", y=["charge_capacity", "discharge_capacity"], ax=ax3)
-    raw.plot(x="test_time", y="current", ax=ax2)
+    raw.plot(x=hdr.test_time_txt, y=hdr.voltage_txt, ax=ax1)
+    raw.plot(
+        x=hdr.test_time_txt,
+        y=[hdr.charge_capacity_txt, hdr.discharge_capacity_txt],
+        ax=ax3,
+    )
+    raw.plot(x=hdr.test_time_txt, y=hdr.current_txt, ax=ax2)
 
     n = c.get_number_of_cycles()
     print(f"number of cycles: {n}")
@@ -223,8 +233,12 @@ def _check_loader_from_outside():
     cycle = c.get_cap(1, method="forth-and-forth")
     print(cycle.head())
 
+    # get_cap returns a native CurveCols frame (capacity / potential).
+    from cellpycore.config import CurveCols
+
+    curve_cols = CurveCols()
     fig_2, (ax4, ax5, ax6) = plt.subplots(1, 3)
-    cycle.plot(x="capacity", y="voltage", ax=ax4)
+    cycle.plot(x=curve_cols.capacity, y=curve_cols.potential, ax=ax4)
     s = c.get_step_numbers()
     t = c.sget_timestamp(1, s[1])
     v = c.sget_voltage(1, s[1])
@@ -243,8 +257,8 @@ def _check_loader_from_outside():
     ax6.plot(t, steps, label="steps")
 
     fig_3, (ax7, ax8) = plt.subplots(2, sharex=True)
-    raw.plot(x="test_time", y="voltage", ax=ax7)
-    raw.plot(x="test_time", y="step_index", ax=ax8)
+    raw.plot(x=hdr.test_time_txt, y=hdr.voltage_txt, ax=ax7)
+    raw.plot(x=hdr.test_time_txt, y=hdr.step_index_txt, ax=ax8)
 
     plt.legend()
     plt.show()
@@ -281,12 +295,16 @@ def _check_loader_from_outside_with_get():
     steps.to_csv(r"C:\scripting\trash\steps.csv", sep=";")
     summary.to_csv(r"C:\scripting\trash\summary.csv", sep=";")
 
+    hdr = c.headers_normal
     fig_1, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(6, 10))
-    raw.plot(x="test_time", y="voltage", ax=ax1, title="voltage")
+    raw.plot(x=hdr.test_time_txt, y=hdr.voltage_txt, ax=ax1, title="voltage")
     raw.plot(
-        x="test_time", y=["charge_capacity", "discharge_capacity"], ax=ax3, title="caps"
+        x=hdr.test_time_txt,
+        y=[hdr.charge_capacity_txt, hdr.discharge_capacity_txt],
+        ax=ax3,
+        title="caps",
     )
-    raw.plot(x="test_time", y="current", ax=ax2, title="current")
+    raw.plot(x=hdr.test_time_txt, y=hdr.current_txt, ax=ax2, title="current")
 
     n = c.get_number_of_cycles()
     print(f"number of cycles: {n}")
@@ -313,8 +331,8 @@ def _check_loader_from_outside_with_get():
     ax6.plot(t, steps, label="steps")
 
     fig_3, (ax7, ax8) = plt.subplots(2, sharex=True)
-    raw.plot(x="test_time", y="voltage", ax=ax7, title="voltage")
-    raw.plot(x="test_time", y="step_index", ax=ax8, title="step index")
+    raw.plot(x=hdr.test_time_txt, y=hdr.voltage_txt, ax=ax7, title="voltage")
+    raw.plot(x=hdr.test_time_txt, y=hdr.step_index_txt, ax=ax8, title="step index")
 
     plt.legend()
     plt.show()
@@ -384,6 +402,7 @@ def _check_loader_from_outside_with_get2():
     )
     print(f"loaded the file - now lets see what we got")
     raw = c.data.raw
+    hdr = c.headers_normal
     print(raw.head())
     c.make_step_table()
 
@@ -401,12 +420,15 @@ def _check_loader_from_outside_with_get2():
         constrained_layout=True,
         sharex=True,
     )
-    raw.plot(x="test_time", y="voltage", ax=ax1, xlabel="")
-    raw.plot(x="test_time", y="current", ax=ax2, xlabel="")
+    raw.plot(x=hdr.test_time_txt, y=hdr.voltage_txt, ax=ax1, xlabel="")
+    raw.plot(x=hdr.test_time_txt, y=hdr.current_txt, ax=ax2, xlabel="")
     raw.plot(
-        x="test_time", y=["charge_capacity", "discharge_capacity"], ax=ax3, xlabel=""
+        x=hdr.test_time_txt,
+        y=[hdr.charge_capacity_txt, hdr.discharge_capacity_txt],
+        ax=ax3,
+        xlabel="",
     )
-    raw.plot(x="test_time", y="cycle_index", ax=ax4)
+    raw.plot(x=hdr.test_time_txt, y=hdr.cycle_index_txt, ax=ax4)
     fig_1.suptitle(f"{name.name}", fontsize=16)
 
     n = c.get_number_of_cycles()
@@ -451,6 +473,7 @@ def _fix_bugs_now():
     )
     print(f"loaded the file - now lets see what we got")
     raw = c.data.raw
+    hdr = c.headers_normal
     print(raw.head())
     c.make_step_table()
     steps = c.data.steps
@@ -467,12 +490,15 @@ def _fix_bugs_now():
         constrained_layout=True,
         sharex=True,
     )
-    raw.plot(x="test_time", y="voltage", ax=ax1, xlabel="")
-    raw.plot(x="test_time", y="current", ax=ax2, xlabel="")
+    raw.plot(x=hdr.test_time_txt, y=hdr.voltage_txt, ax=ax1, xlabel="")
+    raw.plot(x=hdr.test_time_txt, y=hdr.current_txt, ax=ax2, xlabel="")
     raw.plot(
-        x="test_time", y=["charge_capacity", "discharge_capacity"], ax=ax3, xlabel=""
+        x=hdr.test_time_txt,
+        y=[hdr.charge_capacity_txt, hdr.discharge_capacity_txt],
+        ax=ax3,
+        xlabel="",
     )
-    raw.plot(x="test_time", y="cycle_index", ax=ax4)
+    raw.plot(x=hdr.test_time_txt, y=hdr.cycle_index_txt, ax=ax4)
     fig_1.suptitle(f"{name.name}", fontsize=16)
 
     n = c.get_number_of_cycles()
