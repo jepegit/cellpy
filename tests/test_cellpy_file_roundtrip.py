@@ -116,10 +116,10 @@ def test_v8_load_selector_max_cycle_truncates_consistently():
     assert selected.limit_data_points == 3119
     assert len(selected.data.summary) == max_cycle
     # Polars Phase A (#457): summary keys live in columns, not the index.
-    hs = get_headers_summary()
+    hs = selected.headers_summary
     assert selected.data.summary[hs.cycle_index].max() == max_cycle
 
-    hn = get_headers_normal()
+    hn = selected.headers_normal
     cycle_col = hn.cycle_index_txt
     assert selected.data.raw[cycle_col].max() <= max_cycle
     assert len(selected.data.raw) < len(full.data.raw)
@@ -134,8 +134,8 @@ def test_legacy_v4_v7_load_shapes_and_columns(label, filename, version):
         pytest.skip(f"missing legacy fixture: {path}")
 
     cell = load_cellpy_file(path, accept_old=True)
-    hn = get_headers_normal()
-    hs = get_headers_summary()
+    hn = cell.headers_normal
+    hs = cell.headers_summary
 
     assert cell.data.raw.shape[0] > 0
     assert cell.data.summary.shape[0] > 0
@@ -185,7 +185,10 @@ def test_read_table_steps_max_cycle_matches_selector_load():
     source = _require_v8_with_fids()
     max_cycle = 3
 
-    selected = load_cellpy_file(source, selector={"max_cycle": max_cycle})
+    # read_table is a low-level file read (legacy column names); compare against
+    # a legacy-path load so both sides share the stored schema.
+    selected = cellreader.CellpyCell(native_schema=False)
+    selected.load(source, selector={"max_cycle": max_cycle})
     table = cellpy_file_read.read_table(
         source, prms._cellpyfile_step, max_cycle=max_cycle
     )

@@ -24,6 +24,9 @@ def shims():
 
 
 def _count_dep_warnings(fn):
+    # warn_once dedups per call site globally; clear it so the count reflects
+    # this call only (the wired runtime warms sites in other tests).
+    _deprecation._WARNED_SITES.clear()
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
         value = fn()
