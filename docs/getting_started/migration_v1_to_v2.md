@@ -73,8 +73,10 @@ left.save("campaign.cellpy")      # keeps tests [0, 1] + test_id columns
   exclusion kwargs (those still warn only).
 - Curve helpers live in `cellpy.readers.capacity_curves` with thin
   `CellpyCell` delegates — call sites on `CellpyCell` stay the same.
-- See [`DEPRECATIONS.md`](../../DEPRECATIONS.md) for the registered removal
-  schedule (`easyplot` → 2.0, etc.).
+- `cellpy.utils.easyplot` was **removed** in 2.0 (deprecated since 1.1); use
+  `cellpy.utils.plotutils` and `cellpy.utils.collectors` instead.
+- See [`DEPRECATIONS.md`](../../DEPRECATIONS.md) for the remaining registered
+  removal schedule.
 
 ## Dependencies
 

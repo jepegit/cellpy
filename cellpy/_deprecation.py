@@ -94,12 +94,8 @@ def write_deprecations_md(path: str | Path) -> None:
 def _seed_known_deprecations() -> None:
     """Register deprecations that exist before any runtime call (for doc generation)."""
     _register("make_new_cell", "CellpyCell.vacant", removal="2.1")
-    _register(
-        "cellpy.utils.easyplot",
-        "cellpy.utils.plotutils and cellpy.utils.collectors",
-        removal="2.0",
-        introduced="1.1",
-    )
+    # cellpy.utils.easyplot was removed in 2.0 (#544); it is no longer a
+    # pending deprecation, so it is dropped from the registry / DEPRECATIONS.md.
 
 
 if __name__ == "__main__":

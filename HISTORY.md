@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+* Removed the deprecated `cellpy.utils.easyplot` module (#544). It was
+  deprecated since 1.1 with removal scheduled for 2.0; use
+  `cellpy.utils.plotutils` and `cellpy.utils.collectors` instead. The module,
+  its tests, its docs entry, and its `DEPRECATIONS.md` row are gone.
+
 * Step-type string literals use the `cellpycore` vocabulary (#543, native-
   headers Phase-0 prerequisite): `CellpyCell.list_of_step_types` is now
   `list(config.STEP_TYPES)` (was a hand-maintained duplicate of the 13

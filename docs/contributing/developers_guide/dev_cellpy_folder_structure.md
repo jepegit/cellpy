@@ -111,7 +111,6 @@ The `cellpy` source code is structured as follows:
     ├── 🐍 collectors.py
     ├── 🐍 collectors_old.py
     ├── 🐍 diagnostics.py
-    ├── 🐍 easyplot.py
     ├── 🐍 example_data.py
     ├── 🐍 helpers.py
     ├── 🐍 ica.py

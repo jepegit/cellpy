@@ -66,28 +66,6 @@ def test_make_new_cell_uses_warn_once():
 
 
 @pytest.mark.essential
-def test_easyplot_import_warns_once():
-    import importlib
-    import sys
-
-    _deprecation._WARNED_SITES.clear()
-
-    # Drop cached module so import runs warn_once again in this test process.
-    sys.modules.pop("cellpy.utils.easyplot", None)
-
-    with warnings.catch_warnings(record=True) as caught:
-        warnings.simplefilter("always", DeprecationWarning)
-        importlib.import_module("cellpy.utils.easyplot")
-        importlib.import_module("cellpy.utils.easyplot")
-
-    assert len(caught) == 1
-    message = str(caught[0].message)
-    assert "cellpy.utils.easyplot is deprecated" in message
-    assert "cellpy.utils.plotutils and cellpy.utils.collectors" in message
-    assert "removed in 2.0" in message
-
-
-@pytest.mark.essential
 def test_exception_tree_stubs():
     assert issubclass(CorruptCellpyFile, CellpyError)
     assert issubclass(ConfigurationError, CellpyError)
