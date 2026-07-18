@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+* **Breaking:** `CellpyCell.get_cap` now returns native `cellpycore` curve
+  columns (#540, native-headers flip Stage 1): `voltage` → `potential` and
+  `cycle` → `cycle_num` (`capacity` / `direction` unchanged). All in-repo
+  consumers — `plotutils.cycles_plot`, the batch collectors, `ica`, and the
+  CSV/Excel exporters — are updated; user code that indexes the `get_cap`
+  frame directly must rename. See `docs/getting_started/migration_v1_to_v2.md`.
+
 * Removed the deprecated `cellpy.utils.easyplot` module (#544). It was
   deprecated since 1.1 with removal scheduled for 2.0; use
   `cellpy.utils.plotutils` and `cellpy.utils.collectors` instead. The module,

@@ -78,6 +78,24 @@ left.save("campaign.cellpy")      # keeps tests [0, 1] + test_id columns
 - See [`DEPRECATIONS.md`](../../DEPRECATIONS.md) for the remaining registered
   removal schedule.
 
+## Breaking change: `get_cap` frame columns (#540)
+
+The DataFrame returned by `CellpyCell.get_cap` (and the collectors built on it)
+now uses the **native** `cellpycore` curve-column names:
+
+| was (1.x / early v2) | now (v2) |
+|---|---|
+| `voltage` | `potential` |
+| `cycle` | `cycle_num` |
+| `capacity` | `capacity` (unchanged) |
+| `direction` | `direction` (unchanged) |
+
+If you index the `get_cap` result directly (e.g. `df["voltage"]`,
+`df.groupby("cycle")`), rename to `potential` / `cycle_num`. The in-repo
+consumers (`plotutils.cycles_plot`, the batch collectors, `ica`, the CSV/Excel
+exporters) are already updated. The OCV-curve frame and `ica`'s dQ/dV output
+frame keep their own column names for now.
+
 ## Dependencies
 
 cellpy 2.x depends on **`cellpycore`**. Release builds pin an exact

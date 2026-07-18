@@ -13,8 +13,14 @@ from scipy.signal import savgol_filter
 from scipy.integrate import simpson
 from scipy.ndimage.filters import gaussian_filter1d
 
+from cellpycore.config import CurveCols
+
 from cellpy.exceptions import NullData
 from cellpy.readers.data_structures import collect_capacity_curves
+
+# get_cap curve frames use native CurveCols names (#540): potential, not voltage.
+# (ica's own dQ/dV output frame keeps its "voltage"/"dq" schema for now.)
+_CCOLS = CurveCols()
 
 
 # TODO: @jepe - documentation and tests
@@ -488,7 +494,7 @@ def dqdv_cycle(cycle_df, splitter=True, label_direction=False, **kwargs):
     # first
     try:
         converter = Converter(**kwargs)
-        converter.set_data(c_first["capacity"], c_first["voltage"])
+        converter.set_data(c_first[_CCOLS.capacity], c_first[_CCOLS.potential])
         converter.inspect_data()
         converter.pre_process_data()
         converter.increment_data()
@@ -516,7 +522,7 @@ def dqdv_cycle(cycle_df, splitter=True, label_direction=False, **kwargs):
     # last
     try:
         converter = Converter(**kwargs)
-        converter.set_data(c_last["capacity"], c_last["voltage"])
+        converter.set_data(c_last[_CCOLS.capacity], c_last[_CCOLS.potential])
         converter.inspect_data()
         converter.pre_process_data()
         converter.increment_data()
@@ -620,7 +626,8 @@ def dqdv_cycles(cycles_df, not_merged=False, label_direction=False, **kwargs):
         return pd.DataFrame()
 
     ica_dfs = list()
-    cycle_group = cycles_df.groupby("cycle")
+    # cycles_df is a get_cap curve frame — native CurveCols cycle key (#540).
+    cycle_group = cycles_df.groupby(_CCOLS.cycle_num)
     keys = list()
     for cycle_number, cycle in cycle_group:
         cycle = cycle.dropna()

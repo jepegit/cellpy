@@ -13,11 +13,19 @@ import logging
 import warnings
 from typing import TYPE_CHECKING
 
+from cellpycore.config import CurveCols
+
 import cellpy.config as config
 
 from . import externals as externals
 from cellpy.readers import data_structures as ds
 from cellpy.exceptions import NullData
+
+# Native curve-frame column names (cellpycore #118). get_cap and the
+# single-branch charge/discharge extractors emit these unconditionally on the
+# v2 line (#540): potential/cycle_num replace the legacy voltage/cycle;
+# capacity/direction are unchanged.
+_CCOLS = CurveCols()
 
 if TYPE_CHECKING:
     from cellpy.readers.cellreader import CellpyCell
@@ -241,7 +249,10 @@ def get_cap(
 
     if insert_nan:
         _nan = externals.pandas.DataFrame(
-            {"capacity": [externals.numpy.nan], "voltage": [externals.numpy.nan]}
+            {
+                _CCOLS.capacity: [externals.numpy.nan],
+                _CCOLS.potential: [externals.numpy.nan],
+            }
         )
 
     converter_kwargs = dict()
@@ -391,8 +402,8 @@ def get_cap(
                     logging.debug("no first charge step found")
 
             if return_dataframe:
-                x_col = "voltage"
-                y_col = "capacity"
+                x_col = _CCOLS.potential
+                y_col = _CCOLS.capacity
                 if interpolate_along_cap:
                     x_col, y_col = y_col, x_col
 
@@ -401,8 +412,8 @@ def get_cap(
                     if not _first_step_c.empty:
                         _first_df = externals.pandas.DataFrame(
                             {
-                                "voltage": _first_step_v,
-                                "capacity": _first_step_c,
+                                _CCOLS.potential: _first_step_v,
+                                _CCOLS.capacity: _first_step_c,
                             }
                         )
                         if interpolated:
@@ -417,7 +428,7 @@ def get_cap(
                         if insert_nan:
                             _first_df = externals.pandas.concat([_first_df, _nan])
                         if categorical_column:
-                            _first_df["direction"] = -1
+                            _first_df[_CCOLS.direction] = -1
                     else:
                         _first_df = externals.pandas.DataFrame()
 
@@ -425,8 +436,8 @@ def get_cap(
                     if not _last_step_c.empty:
                         _last_df = externals.pandas.DataFrame(
                             {
-                                "voltage": _last_step_v.values,
-                                "capacity": _last_step_c.values,
+                                _CCOLS.potential: _last_step_v.values,
+                                _CCOLS.capacity: _last_step_c.values,
                             }
                         )
                         if interpolated:
@@ -441,7 +452,7 @@ def get_cap(
                         if insert_nan:
                             _last_df = externals.pandas.concat([_last_df, _nan])
                         if categorical_column:
-                            _last_df["direction"] = 1
+                            _last_df[_CCOLS.direction] = 1
                     else:
                         _last_df = externals.pandas.DataFrame()
 
@@ -457,9 +468,7 @@ def get_cap(
                 else:
                     c = externals.pandas.concat([_first_df, _last_df], axis=0)
                     if label_cycle_number:
-                        c.insert(0, "cycle", current_cycle)
-                        # c["cycle"] = current_cycle
-                        # c = c[["cycle", "voltage", "capacity", "direction"]]
+                        c.insert(0, _CCOLS.cycle_num, current_cycle)
                     if cycle_df.empty:
                         cycle_df = c
                     else:
@@ -467,8 +476,8 @@ def get_cap(
                 if capacity_then_voltage:
                     cols = cycle_df.columns.to_list()
                     new_cols = [
-                        cols.pop(cols.index("capacity")),
-                        cols.pop(cols.index("voltage")),
+                        cols.pop(cols.index(_CCOLS.capacity)),
+                        cols.pop(cols.index(_CCOLS.potential)),
                     ]
                     new_cols.extend(cols)
                     cycle_df = cycle_df[new_cols]
