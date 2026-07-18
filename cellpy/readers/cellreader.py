@@ -1653,12 +1653,6 @@ class CellpyCell:
         """
         from cellpy.readers import merger
 
-        if self.native_schema:
-            raise NotImplementedError(
-                "merge() is not supported on a native-schema cell yet "
-                "(#511 opt-in scope); merge on the legacy path and load the "
-                "result into a native-schema cell instead"
-            )
         if cells is None:
             raise TypeError(
                 "merge() requires the cells/datasets to merge into this one "
@@ -1667,6 +1661,25 @@ class CellpyCell:
         if isinstance(cells, (CellpyCell, ds.Data)):
             cells = [cells]
         datas = [c.data if isinstance(c, CellpyCell) else c for c in cells]
+
+        # Native-headers flip Stage 5b: the merge machinery (_append /
+        # campaign_fold) is written against legacy column names, so on a native
+        # cell we round-trip through legacy — translate this object and copies of
+        # the participants to legacy (keeping test_id on every frame so the
+        # merge's id assignments survive), merge, then translate back to native.
+        # Copies keep the source cells' native frames intact.
+        if self.native_schema:
+            import copy as _copy
+
+            from cellpy.readers.cellpy_file import translate as _merge_translate
+
+            _merge_translate.to_legacy(self.data, injected_test_id=False)
+            legacy_datas = []
+            for other in datas:
+                other_copy = _copy.copy(other)
+                _merge_translate.to_legacy(other_copy, injected_test_id=False)
+                legacy_datas.append(other_copy)
+            datas = legacy_datas
 
         if mode == "continuation":
             logging.info("Merging (continuation)")
@@ -1678,6 +1691,8 @@ class CellpyCell:
                 ):
                     self.data.raw_data_files.append(raw_data_file)
                     self.data.raw_data_files_length.append(file_size)
+            if self.native_schema:
+                _merge_translate.to_native(self.data)
             return self
 
         if mode != "campaign":
@@ -1688,6 +1703,8 @@ class CellpyCell:
             merger.campaign_fold(
                 self.data, other, renumber_cycles=renumber_cycles, **kwargs
             )
+        if self.native_schema:
+            _merge_translate.to_native(self.data)
         modes = test_meta.cycle_modes_in_data(self.data)
         if len(modes) > 1:
             logging.warning(
