@@ -28,6 +28,97 @@ from cellpy.readers import externals
 
 _module_logger = logging.getLogger(__name__)
 
+# Legacy summary "cruft" column names cellpycore's curated native CycleCols
+# deliberately omits (#552). No native schema equivalent — they resolve through
+# the D6 shim as legacy-only (unchanged) names, so we add them under these exact
+# strings. Values are pure cumsums over the native summary's own columns.
+_SHIFTED_CHARGE = "shifted_charge_capacity"
+_SHIFTED_DISCHARGE = "shifted_discharge_capacity"
+_CUM_CE = "cumulated_coulombic_efficiency"
+_CUM_RIC = "cumulated_ric"
+_CUM_RIC_SEI = "cumulated_ric_sei"
+_CUM_RIC_DISCONNECT = "cumulated_ric_disconnect"
+
+
+def _summary_extras_block(s, cc_col, dc_col, ce_col):
+    """Compute the legacy cruft columns on one (already per-test) summary block.
+
+    Mirrors cellpycore's ``OldCellpyCellCore._legacy_summary_cruft_block`` so the
+    native pipeline reproduces the same values (issue #552).
+    """
+    cc = s[cc_col]
+    dc = s[dc_col]
+    s[_CUM_CE] = s[ce_col].cumsum()
+    s[_SHIFTED_CHARGE] = (cc - dc).cumsum()
+    s[_SHIFTED_DISCHARGE] = s[_SHIFTED_CHARGE] + cc
+    s[_CUM_RIC] = ((cc.shift(1) - dc) / dc.shift(1)).cumsum()
+    s[_CUM_RIC_SEI] = ((cc - dc.shift(1)) / dc.shift(1)).cumsum()
+    s[_CUM_RIC_DISCONNECT] = ((dc.shift(1) - dc) / dc.shift(1)).cumsum()
+    return s
+
+
+def _add_summary_extras(summary, schema):
+    """Add the legacy-only cumulated-CE / shifted-capacity / RIC columns (#552).
+
+    These have no native ``CycleCols`` equivalent; they are pure cumsums over the
+    native summary's own ``charge_capacity`` / ``discharge_capacity`` /
+    ``coulombic_efficiency`` columns. When ``test_id`` is present the cumsums are
+    windowed per test so multi-test (campaign-merged) objects do not leak across
+    tests (mirrors cellpycore #136).
+    """
+    cyc = schema.cycle
+    cc_col, dc_col, ce_col = (
+        cyc.charge_capacity,
+        cyc.discharge_capacity,
+        cyc.coulombic_efficiency,
+    )
+    if not {cc_col, dc_col, ce_col}.issubset(summary.columns):
+        return summary
+
+    test_id_col = getattr(cyc, "test_id", "test_id")
+    if test_id_col in summary.columns:
+        import pandas as pd
+
+        parts = [
+            _summary_extras_block(g.copy(), cc_col, dc_col, ce_col)
+            for _, g in summary.groupby(test_id_col, sort=False)
+        ]
+        return pd.concat(parts).sort_index() if parts else summary
+    return _summary_extras_block(summary, cc_col, dc_col, ce_col)
+
+
+def _apply_spec_info(steps, step_specifications, schema, short):
+    """Propagate the ``info`` column from step specifications to the step table.
+
+    cellpycore's native step classifier reads ``step`` / ``cycle`` / ``type`` from
+    the specifications but ignores the optional free-text ``info`` column; this
+    fills it in (matched by step, or by (cycle, step) when not ``short``) under the
+    legacy-only ``"info"`` name the D6 shim resolves ``headers_step_table.info``
+    to. No-op when there are no specifications or no ``info`` column (#554).
+    """
+    if step_specifications is None:
+        return steps
+    if "info" not in getattr(step_specifications, "columns", []):
+        return steps
+
+    step_col = schema.step.step_num
+    cycle_col = schema.step.cycle_num
+    if short:
+        info_by_step = {
+            row.step: row.info for row in step_specifications.itertuples()
+        }
+        steps["info"] = steps[step_col].map(info_by_step)
+    else:
+        info_by_key = {
+            (row.cycle, row.step): row.info
+            for row in step_specifications.itertuples()
+        }
+        steps["info"] = [
+            info_by_key.get((c, s))
+            for c, s in zip(steps[cycle_col], steps[step_col])
+        ]
+    return steps
+
 
 class NativeCellpyCellCore(CellpyCellCore):
     """Pandas ⇄ polars adapter around the native engine (no column renames).
@@ -88,6 +179,10 @@ class NativeCellpyCellCore(CellpyCellCore):
         if from_data_point is not None:
             return native_steps.to_pandas()
         data.steps = native_steps.to_pandas()
+        # cellpycore's native classifier sets step_type from the specifications
+        # but not the free-text `info` column; propagate it here so loading step
+        # specifications works end to end (#554).
+        _apply_spec_info(data.steps, step_specifications, self.schema, short)
         return data
 
     def make_core_summary(
@@ -123,7 +218,8 @@ class NativeCellpyCellCore(CellpyCellCore):
             ir_extractor=ir_extractor,
             exclude_step_types=exclude_step_types,
         )
-        data.summary = tmp.summary.to_pandas()
+        summary = tmp.summary.to_pandas()
+        data.summary = _add_summary_extras(summary, self.schema)
         return data
 
     def add_scaled_summary_columns(
