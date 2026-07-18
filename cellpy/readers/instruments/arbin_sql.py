@@ -518,7 +518,11 @@ def _check_loader_from_outside():
 
     cycle = c.get_cap(1, method="forth")
     print(cycle.head())
-    cycle.plot(x="capacity", y="voltage")
+    # get_cap returns a native CurveCols frame (capacity / potential).
+    from cellpycore.config import CurveCols
+
+    curve_cols = CurveCols()
+    cycle.plot(x=curve_cols.capacity, y=curve_cols.potential)
     plt.show()
 
 
