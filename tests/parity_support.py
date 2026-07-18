@@ -28,6 +28,17 @@ def run_legacy_pipeline(cell) -> None:
     cell.make_summary(find_ir=True, find_end_voltage=True)
 
 
+def run_native_pipeline(cell) -> None:
+    """Full native pipeline on the canonical Arbin ``.res``.
+
+    Identical call sequence to :func:`run_legacy_pipeline` but on a native cell
+    (``CellpyCell(native_schema=True)``, the cellpy 2 default). Frames come out
+    with native cellpycore column names, so the real oracle can compare the two
+    independent pipelines end to end.
+    """
+    run_legacy_pipeline(cell)
+
+
 def _current_conversion_factor(cell) -> float:
     from cellpy.readers import data_structures as core
 
