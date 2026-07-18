@@ -30,6 +30,20 @@ hdr_normal = get_headers_normal()
 hdr_journal = get_headers_journal()
 
 
+def _summary_cycle_column(summary):
+    """Return the cycle-number column present in a summary frame, or None.
+
+    Bare-DataFrame helpers do not carry a cell, so they cannot use the shim;
+    a summary may be native (``cycle_num``) or legacy (``cycle_index``).
+    """
+    from cellpycore.config import default_schema
+
+    for name in (default_schema().cycle.cycle_num, hdr_summary.cycle_index):
+        if name in summary.columns:
+            return name
+    return None
+
+
 def _make_average_legacy(
     frames,
     keys=None,
@@ -454,9 +468,11 @@ def remove_outliers_from_summary_on_index(s, indexes=None, remove_last=False):
     if indexes is None:
         indexes = []
 
-    hdr_cycle = hdr_summary.cycle_index
-    if hdr_cycle in s.columns:
-        # Polars Phase A (#457): summaries carry cycle_index as a column;
+    # bare-df helper: the summary may be native (cycle_num) or legacy
+    # (cycle_index); resolve whichever cycle column is present.
+    hdr_cycle = _summary_cycle_column(s)
+    if hdr_cycle is not None:
+        # Polars Phase A (#457): summaries carry the cycle number as a column;
         # the supplied indexes are cycle numbers, so select on the column.
         selection = s[hdr_cycle].isin(indexes).to_numpy().copy()
     else:
