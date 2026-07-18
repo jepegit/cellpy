@@ -517,13 +517,14 @@ def test_load_step_specs_short(
     file_name = parameters.short_step_table_file_path
     assert os.path.isfile(file_name)
     cellpy_data_instance.load_step_specifications(file_name, short=True)
+    hst = cellpy_data_instance.headers_step_table
     step_table = cellpy_data_instance.data.steps
     t = step_table.loc[
-        (step_table.cycle == cycle) & (step_table.step == step), "type"
+        (step_table[hst.cycle] == cycle) & (step_table[hst.step] == step), hst.type
     ].values[0]
     assert t == expected_type
     i = step_table.loc[
-        (step_table.cycle == cycle) & (step_table.step == step), "info"
+        (step_table[hst.cycle] == cycle) & (step_table[hst.step] == step), hst.info
     ].values[0]
     assert str(i) == expected_info
 

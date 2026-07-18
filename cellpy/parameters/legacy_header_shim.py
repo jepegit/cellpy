@@ -140,8 +140,13 @@ class LegacyHeaderShim:
 
     # -- access protocols -----------------------------------------------------
     def __getattr__(self, name: str) -> str:
-        # __getattr__ only fires when normal attribute lookup fails, so the
-        # real instance attributes (_frame/_native) never reach here.
+        # Never resolve dunder/private names: no legacy header attribute starts
+        # with "_", and resolving them would recurse on the shim's own private
+        # attrs (_frame/_native/_legacy) before they exist during copy/pickle
+        # reconstruction. Raising AttributeError lets copy/deepcopy fall back to
+        # the default reconstruction path.
+        if name.startswith("_"):
+            raise AttributeError(name)
         try:
             return self._resolve(name)
         except KeyError as exc:
