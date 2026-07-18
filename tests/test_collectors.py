@@ -51,12 +51,11 @@ def test_batch_cycles_collector_runs(populated_batch):
     consumer path the flip migrates — #540)."""
     collector = BatchCyclesCollector(populated_batch)
     _assert_ran(collector)
-    # the collected curve frame carries capacity + a cycle-key + a voltage-axis
-    # column; tolerate the legacy/native name for the two that the flip renames.
+    # the collected curve frame carries native CurveCols names (#540):
+    # capacity/potential/cycle_num (voltage/cycle were the legacy names).
     cols = set(collector.data.columns)
-    assert "capacity" in cols
-    assert cols & {"cycle", "cycle_num"}, f"no cycle column in {cols}"
-    assert cols & {"voltage", "potential"}, f"no voltage column in {cols}"
+    assert {"capacity", "potential", "cycle_num"} <= cols, f"missing curve cols in {cols}"
+    assert "voltage" not in cols and "cycle" not in cols, f"legacy curve name in {cols}"
 
 
 def test_batch_ica_collector_runs(populated_batch):

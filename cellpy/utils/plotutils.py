@@ -19,6 +19,8 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 
+from cellpycore.config import CurveCols
+
 from cellpy.parameters.internal_settings import (
     get_headers_journal,
     get_headers_normal,
@@ -26,6 +28,10 @@ from cellpy.parameters.internal_settings import (
     get_headers_summary,
 )
 from cellpy.utils import helpers
+
+# get_cap curve frames use native CurveCols names (#540): potential/cycle_num
+# replace the legacy voltage/cycle (used by cycles_plot below).
+_CCOLS = CurveCols()
 
 plotly_available = importlib.util.find_spec("plotly") is not None
 seaborn_available = importlib.util.find_spec("seaborn") is not None
@@ -5782,14 +5788,14 @@ def cycles_plot(
     )
     df = c.get_cap(cycles=cycles, **kw_arguments)
     # Temporary fix to ensure that the cycles are plotted in the correct order:
-    df = df.sort_values(by=["cycle", "direction"])
+    df = df.sort_values(by=[_CCOLS.cycle_num, "direction"])
 
-    selector = df["cycle"] <= formation_cycles
+    selector = df[_CCOLS.cycle_num] <= formation_cycles
     form_cycles = df.loc[selector, :]
     rest_cycles = df.loc[~selector, :]
 
-    n_form_cycles = len(form_cycles["cycle"].unique())
-    n_rest_cycles = len(rest_cycles["cycle"].unique())
+    n_form_cycles = len(form_cycles[_CCOLS.cycle_num].unique())
+    n_rest_cycles = len(rest_cycles[_CCOLS.cycle_num].unique())
 
     capacity_unit = _get_capacity_unit(c, mode=mode)
 
@@ -5888,8 +5894,8 @@ def _cycles_plotter_matplotlib(
                 "Warning: try setting the figsize to (8, 4) or smaller for better visualization"
             )
         min_cycle, max_cycle = (
-            config.form_cycles["cycle"].min(),
-            config.form_cycles["cycle"].max(),
+            config.form_cycles[_CCOLS.cycle_num].min(),
+            config.form_cycles[_CCOLS.cycle_num].max(),
         )
         norm_formation = Normalize(vmin=min_cycle, vmax=max_cycle)
         cycle_sequence = np.arange(min_cycle, max_cycle + 1, 1)
@@ -5904,10 +5910,10 @@ def _cycles_plotter_matplotlib(
         s_m_formation = matplotlib.cm.ScalarMappable(
             cmap=c_m_formation, norm=norm_formation
         )
-        for name, group in config.form_cycles.groupby("cycle"):
+        for name, group in config.form_cycles.groupby(_CCOLS.cycle_num):
             ax.plot(
                 group["capacity"],
-                group["voltage"],
+                group[_CCOLS.potential],
                 lw=2,  # alpha=0.7,
                 color=s_m_formation.to_rgba(name),
                 label=f"Cycle {name}",
@@ -5916,8 +5922,8 @@ def _cycles_plotter_matplotlib(
             s_m_formation,
             ax=ax,  # label="Formation Cycle",
             ticks=np.arange(
-                config.form_cycles["cycle"].min(),
-                config.form_cycles["cycle"].max() + 1,
+                config.form_cycles[_CCOLS.cycle_num].min(),
+                config.form_cycles[_CCOLS.cycle_num].max() + 1,
                 1,
             ),
             shrink=shrink,
@@ -5932,22 +5938,22 @@ def _cycles_plotter_matplotlib(
         )
 
     norm = Normalize(
-        vmin=config.rest_cycles["cycle"].min(), vmax=config.rest_cycles["cycle"].max()
+        vmin=config.rest_cycles[_CCOLS.cycle_num].min(), vmax=config.rest_cycles[_CCOLS.cycle_num].max()
     )
     if config.cut_colorbar:
         cycle_sequence = np.arange(
-            config.rest_cycles["cycle"].min(), config.rest_cycles["cycle"].max() + 1, 1
+            config.rest_cycles[_CCOLS.cycle_num].min(), config.rest_cycles[_CCOLS.cycle_num].max() + 1, 1
         )
-        n = int(np.round(1.2 * config.rest_cycles["cycle"].max()))
+        n = int(np.round(1.2 * config.rest_cycles[_CCOLS.cycle_num].max()))
         c_m = ListedColormap(plt.get_cmap(config.colormap, n)(cycle_sequence))
     else:
         c_m = plt.get_cmap(config.colormap)
 
     s_m = matplotlib.cm.ScalarMappable(cmap=c_m, norm=norm)
-    for name, group in config.rest_cycles.groupby("cycle"):
+    for name, group in config.rest_cycles.groupby(_CCOLS.cycle_num):
         ax.plot(
             group["capacity"],
-            group["voltage"],
+            group[_CCOLS.potential],
             lw=1,
             color=s_m.to_rgba(name),
             label=f"Cycle {name}",
@@ -6000,9 +6006,9 @@ def _cycles_plotter_plotly(
         colormap = config.colormap
 
     if config.cut_colorbar:
-        range_color = [df["cycle"].min(), 1.2 * df["cycle"].max()]
+        range_color = [df[_CCOLS.cycle_num].min(), 1.2 * df[_CCOLS.cycle_num].max()]
     else:
-        range_color = [df["cycle"].min(), df["cycle"].max()]
+        range_color = [df[_CCOLS.cycle_num].min(), df[_CCOLS.cycle_num].max()]
     if (
         config.n_rest_cycles is not None
         and config.n_rest_cycles < plotly_max_individual_traces_for_lines
@@ -6021,12 +6027,12 @@ def _cycles_plotter_plotly(
         fig = px.line(
             config.rest_cycles,
             x="capacity",
-            y="voltage",
-            color="cycle",
+            y=_CCOLS.potential,
+            color=_CCOLS.cycle_num,
             title=config.fig_title,
             labels={
                 "capacity": f"Capacity ({config.capacity_unit})",
-                "voltage": f"Voltage ({c.cellpy_units.voltage})",
+                _CCOLS.potential: f"Voltage ({c.cellpy_units.voltage})",
             },
             color_discrete_sequence=cmap,
         )
@@ -6037,12 +6043,12 @@ def _cycles_plotter_plotly(
         fig = px.scatter(
             config.rest_cycles,
             x="capacity",
-            y="voltage",
+            y=_CCOLS.potential,
             title=config.fig_title,
-            color="cycle",
+            color=_CCOLS.cycle_num,
             labels={
                 "capacity": f"Capacity ({config.capacity_unit})",
-                "voltage": f"Voltage ({c.cellpy_units.voltage})",
+                _CCOLS.potential: f"Voltage ({c.cellpy_units.voltage})",
             },
             color_continuous_scale=colormap,
             range_color=range_color,
@@ -6051,11 +6057,11 @@ def _cycles_plotter_plotly(
         fig.update_traces(mode="lines+markers", line_color="white", line_width=1)
 
     if not config.form_cycles.empty and config.show_formation:
-        for name, group in config.form_cycles.groupby("cycle"):
+        for name, group in config.form_cycles.groupby(_CCOLS.cycle_num):
             logging.info(f"using go.Scatter for formation cycle(s) {name}")
             trace = go.Scatter(
                 x=group["capacity"],
-                y=group["voltage"],
+                y=group[_CCOLS.potential],
                 name=f"{name} (f.c.)",
                 hovertemplate=f"Formation Cycle {name}<br>Capacity: %{{x}}<br>Voltage: %{{y}}",
                 mode="lines",

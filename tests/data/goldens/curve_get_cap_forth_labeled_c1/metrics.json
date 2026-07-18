@@ -1,9 +1,9 @@
 {
   "columns": [
     "capacity",
-    "cycle",
+    "cycle_num",
     "direction",
-    "voltage"
+    "potential"
   ],
   "expect_null_data": false,
   "func_name": "get_cap",

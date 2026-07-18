@@ -19,7 +19,15 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 import cellpy
+from cellpycore.config import CurveCols
+
 from cellpy.parameters.internal_settings import get_headers_journal
+
+# get_cap curve frames use native CurveCols names (#540): potential/cycle_num
+# replace the legacy voltage/cycle. The capacity-curve plotters below default
+# their x/y/z column selectors to these. (Summary and ICA collectors use their
+# own schemas and are left untouched.)
+_CCOLS = CurveCols()
 from cellpy.readers.data_structures import group_by_interpolate
 from cellpy.utils.batch import Batch
 from cellpy.utils.helpers import concat_summaries
@@ -1163,9 +1171,14 @@ class BatchSummaryCollector(BatchCollector):
         wide_cols = []
         value_cols = []
         sort_by = []
+        # summary collectors label the cycle column "cycle"; curve collectors
+        # carry the native CurveCols name "cycle_num" (#540).
         if "cycle" in cols:
             index = "cycle"
             cols.remove("cycle")
+        elif _CCOLS.cycle_num in cols:
+            index = _CCOLS.cycle_num
+            cols.remove(_CCOLS.cycle_num)
         else:
             print("Could not find index")
             return self.data
@@ -1965,9 +1978,9 @@ def spread_plot(curves, plotly_arguments=None, y_label_mapper=None, **kwargs):
 
 def sequence_plotter(
     collected_curves: pd.DataFrame,
-    x: str = "capacity",
-    y: str = "voltage",
-    z: str = "cycle",
+    x: str = _CCOLS.capacity,
+    y: str = _CCOLS.potential,
+    z: str = _CCOLS.cycle_num,
     g: str = "cell",
     standard_deviation: str = None,
     group: str = hdr_journal.group,
@@ -2359,10 +2372,10 @@ def sequence_plotter(
             seaborn_arguments["height"] = kwargs.pop("height", 3)
             seaborn_arguments["aspect"] = kwargs.pop("height", 1)
             sns.set_theme(style="darkgrid")
-            x = seaborn_arguments.get("x", "capacity")
-            y = seaborn_arguments.get("y", "voltage")
+            x = seaborn_arguments.get("x", _CCOLS.capacity)
+            y = seaborn_arguments.get("y", _CCOLS.potential)
             row = seaborn_arguments.get("row", hdr_journal.group)
-            hue = seaborn_arguments.get("hue", "cycle")
+            hue = seaborn_arguments.get("hue", _CCOLS.cycle_num)
             col = seaborn_arguments.get("col", hdr_journal.sub_group)
             height = seaborn_arguments.get("height", 3)
             aspect = seaborn_arguments.get("aspect", 1)
@@ -2520,9 +2533,9 @@ def sequence_plotter(
 def _cycles_plotter(
     collected_curves,
     cycles=None,
-    x="capacity",
-    y="voltage",
-    z="cycle",
+    x=_CCOLS.capacity,
+    y=_CCOLS.potential,
+    z=_CCOLS.cycle_num,
     g="cell",
     standard_deviation=None,
     default_title="Charge-Discharge Curves",
@@ -2579,7 +2592,7 @@ def _cycles_plotter(
         if cycles is not None:
             number_of_figs = len(cycles)
         else:
-            number_of_figs = len(collected_curves["cycle"].unique())
+            number_of_figs = len(collected_curves[_CCOLS.cycle_num].unique())
     elif method == "summary":
         number_of_figs = len(collected_curves["variable"].unique())
         sub_fig_min_height = 300
@@ -2889,9 +2902,9 @@ def cycles_plotter(
 
     return _cycles_plotter(
         collected_curves,
-        x="capacity",
-        y="voltage",
-        z="cycle",
+        x=_CCOLS.capacity,
+        y=_CCOLS.potential,
+        z=_CCOLS.cycle_num,
         g="cell",
         x_unit=x_unit,
         y_unit=y_unit,

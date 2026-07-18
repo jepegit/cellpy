@@ -23,8 +23,14 @@ import warnings
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from cellpycore.config import CurveCols
+
 from cellpy.exceptions import NoDataFound
 from cellpy.readers import externals
+
+# get_cap emits native CurveCols names (#540): potential/cycle_num, not
+# voltage/cycle.
+_CCOLS = CurveCols()
 
 if TYPE_CHECKING:
     from cellpy.readers.cellreader import CellpyCell
@@ -74,8 +80,8 @@ def export_cycles(
             if df.empty:
                 logging.debug("NoneType from get_cap")
             else:
-                c = df["capacity"]
-                v = df["voltage"]
+                c = df[_CCOLS.capacity]
+                v = df[_CCOLS.potential]
 
                 _last = c.iat[-1]
                 _first = c.iat[0]
