@@ -504,7 +504,7 @@ class CyclingExperiment(BaseExperiment):
                         columns={b"Cycle_Index": "Cycle_Index"}, inplace=True
                     )
                 try:
-                    summary_tmp.set_index("cycle_index", inplace=True)
+                    summary_tmp.set_index(hdr_summary.cycle_index, inplace=True)
                 except KeyError:
                     logging.debug("cycle_index already an index")
 
@@ -829,7 +829,7 @@ class CyclingExperiment(BaseExperiment):
                             columns={b"Cycle_Index": "Cycle_Index"}, inplace=True
                         )
                     try:
-                        summary_tmp.set_index("cycle_index", inplace=True)
+                        summary_tmp.set_index(hdr_summary.cycle_index, inplace=True)
                     except KeyError:
                         logging.debug("cycle_index already an index")
 
