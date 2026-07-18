@@ -316,6 +316,11 @@ class CellpyCell:
         self.auto_dirs = config.reader.auto_dirs  # v2.0
 
         # - headers and instruments
+        # Stage 5 (native-headers flip): when the runtime goes native, replace
+        # these legacy Headers* objects with the D6 shims from
+        # cellpy.parameters.legacy_header_shim.build_legacy_shims(self.core.schema)
+        # so legacy attribute access (headers_normal.voltage_txt, ...) resolves
+        # to native column names with a DeprecationWarning.
         self.headers_normal = headers_normal
         self.headers_summary = headers_summary
         self.headers_step_table = headers_step_table
