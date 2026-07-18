@@ -68,8 +68,11 @@ jobs:
       - name: Install system dependencies
         run: sudo apt-get update && sudo apt-get install -y mdbtools
       - run: uv python install 3.13
-      - name: Sync dependencies (PyPI cellpycore only)
-        run: uv sync
+      - name: Sync dependencies (PyPI cellpycore only, with plotting extras)
+        # --extra batch pulls in plotly/seaborn so the collector/plotter code
+        # paths actually execute under test (they were never exercised in CI
+        # before — the flip's curve-consumer migration needs this net).
+        run: uv sync --extra batch
       - name: Run the full test suite
         # same ignore as the tier-3 linux job (plotutils summary plot needs a
         # display); everything else runs — this is the gate that catches
