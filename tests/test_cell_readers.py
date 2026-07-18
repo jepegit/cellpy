@@ -509,10 +509,6 @@ def test_check_file_ids_external_not_accessible(parameters, monkeypatch):
         pytest.param(1, 8, "ocvrlx_up", "good", marks=pytest.mark.xfail),
     ],
 )
-@pytest.mark.xfail(
-    reason="native make_step_table applies step_specifications differently (#554)",
-    strict=False,
-)
 def test_load_step_specs_short(
     cellpy_data_instance, cycle, step, expected_type, expected_info, parameters
 ):
@@ -754,10 +750,6 @@ def test_make_summary_new_version(parameters):
     print(s2.columns)
 
 
-@pytest.mark.xfail(
-    reason="native exclude_step_types value parity to verify (#554)",
-    strict=False,
-)
 def test_make_summary_exclude_step_types(rate_dataset):
     """exclude_step_types subtracts per-cycle excluded-step capacity deltas.
 
@@ -773,6 +765,10 @@ def test_make_summary_exclude_step_types(rate_dataset):
     hst = c.headers_step_table
     hs = c.headers_summary
 
+    # compute the step table first (normal workflow): exclude_step_types works on
+    # the step table make_summary sees, so summary and the manual delta below must
+    # both use freshly computed steps.
+    c.make_step_table()
     base = c.make_summary(create_copy=True).data.summary
     excl = c.make_summary(exclude_step_types=["cv_"], create_copy=True).data.summary
 
@@ -991,11 +987,6 @@ def test_cellpyfile_roundtrip(tmp_path, parameters):
     cdi.make_summary(find_ir=True, find_end_voltage=True)
 
 
-@pytest.mark.xfail(
-    reason="native summary lacks shifted_* capacity columns (#552)",
-    raises=KeyError,
-    strict=False,
-)
 def test_load_custom_default(cellpy_data_instance, parameters):
     # uses custom.py loader
     from cellpy import prms
@@ -1015,11 +1006,6 @@ def test_load_custom_default(cellpy_data_instance, parameters):
     # assert 593.031 == pytest.approx(val, 0.1)
 
 
-@pytest.mark.xfail(
-    reason="native summary lacks shifted_* capacity columns (#552)",
-    raises=KeyError,
-    strict=False,
-)
 def test_get_custom_default(parameters):
     # uses custom.py loader
     from cellpy import prms
