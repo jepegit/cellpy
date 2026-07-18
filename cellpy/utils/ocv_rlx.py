@@ -91,8 +91,23 @@ def select_ocv_points(
     step_table = cellpydata.data.steps
     dfdata = cellpydata.data.raw
 
+    # use the cell's own headers (native names via the shim after the flip)
+    # rather than the module-level legacy singletons.
+    hdr_steps = cellpydata.headers_step_table
+    hdr_raw = cellpydata.headers_normal
+    # step-table statistic columns are composed as f"{base}_{stat}"; the base
+    # resolves to the native name via the shim (voltage -> potential).
+    v_first = f"{hdr_steps.voltage}_first"
+    v_last = f"{hdr_steps.voltage}_last"
+    v_delta = f"{hdr_steps.voltage}_delta"
+    st_first = f"{hdr_steps.step_time}_first"
+    st_last = f"{hdr_steps.step_time}_last"
+    st_delta = f"{hdr_steps.step_time}_delta"
+
     ocv_steps = step_table.loc[step_table[hdr_steps.cycle].isin(cycles), :]
-    ocv_steps = ocv_steps.loc[ocv_steps.type.str.startswith(ocv_rlx_id, na=False), :]
+    ocv_steps = ocv_steps.loc[
+        ocv_steps[hdr_steps.type].str.startswith(ocv_rlx_id, na=False), :
+    ]
 
     if selection_method in ["fixed_times", "fixed_points", "selected_times"]:
         number_of_points = len(interval) + 1
@@ -115,9 +130,9 @@ def select_ocv_points(
     for index, row in ocv_steps.iterrows():
         # voltage
         first, last, delta = (
-            row["voltage_first"],
-            row["voltage_last"],
-            row["voltage_delta"],
+            row[v_first],
+            row[v_last],
+            row[v_delta],
         )
 
         voltage_reference = 0.0
@@ -125,7 +140,7 @@ def select_ocv_points(
         if relative_voltage:
             if index > 0:
                 reference_row = step_table.iloc[index - 1, :]
-                voltage_reference = reference_row["voltage_last"]
+                voltage_reference = reference_row[v_last]
 
             else:
                 voltage_reference = first
@@ -133,9 +148,9 @@ def select_ocv_points(
 
         # time
         start, end, duration = (
-            row["step_time_first"],
-            row["step_time_last"],
-            row["step_time_delta"],
+            row[st_first],
+            row[st_last],
+            row[st_delta],
         )
 
         cycle, step = (row[hdr_steps.cycle], row[hdr_steps.step])
@@ -309,8 +324,9 @@ class MultiCycleOcvFit:
         ocv_fitter = OcvFit()
         ocv_fitter.set_circuits(self.circuits)
         time_voltage = self.data.get_ocv(direction=direction, cycles=self.cycles[0])
-        time_step = time_voltage.step_time
-        voltage = time_voltage.voltage
+        hdr = self.data.headers_normal
+        time_step = time_voltage[hdr.step_time_txt]
+        voltage = time_voltage[hdr.voltage_txt]
         if voltage is not None and time_step is not None:
             ocv_fitter.set_data(time_step, voltage)
         else:
@@ -331,8 +347,8 @@ class MultiCycleOcvFit:
             time_voltage = self.data.get_ocv(
                 direction=direction, cycles=cycle, remove_first=remove_first
             )
-            time_step = time_voltage.step_time
-            voltage = time_voltage.voltage
+            time_step = time_voltage[hdr.step_time_txt]
+            voltage = time_voltage[hdr.voltage_txt]
 
             if voltage is not None:
                 try:
@@ -372,22 +388,22 @@ class MultiCycleOcvFit:
         end_voltage = 0
         if direction == "up":
             end_voltage = step_table[
-                (step_table[hdr_steps.cycle] == cycle)
-                & (step_table[hdr_steps.type].isin([StepType.DISCHARGE.value]))
+                (step_table[hdr.cycle] == cycle)
+                & (step_table[hdr.type].isin([StepType.DISCHARGE.value]))
             ][hdr.voltage + "_last"].values[0]
 
             end_current = step_table[
-                (step_table[hdr_steps.cycle] == cycle)
-                & (step_table[hdr_steps.type].isin([StepType.DISCHARGE.value]))
+                (step_table[hdr.cycle] == cycle)
+                & (step_table[hdr.type].isin([StepType.DISCHARGE.value]))
             ][hdr.current + "_last"].values[0]
 
         elif direction == "down":
             end_voltage = step_table[
-                (step_table[hdr_steps.cycle] == cycle) & (step_table[hdr_steps.type].isin([StepType.CHARGE.value]))
+                (step_table[hdr.cycle] == cycle) & (step_table[hdr.type].isin([StepType.CHARGE.value]))
             ][hdr.voltage + "_last"].values[0]
 
             end_current = step_table[
-                (step_table[hdr_steps.cycle] == cycle) & (step_table[hdr_steps.type].isin([StepType.CHARGE.value]))
+                (step_table[hdr.cycle] == cycle) & (step_table[hdr.type].isin([StepType.CHARGE.value]))
             ][hdr.current + "_last"].values[0]
 
         return end_current, end_voltage
@@ -529,9 +545,10 @@ class MultiCycleOcvFit:
         """Convenience function for creating a dataframe of the summary of the
         fit (translated)"""
         data = self.get_best_fit_parameters_translated_grouped()
-        data[hdr_steps.cycle] = self.get_fit_cycles()
+        cycle_col = self.data.headers_step_table.cycle
+        data[cycle_col] = self.get_fit_cycles()
         df = pd.DataFrame(data)
-        df = df.set_index(hdr_steps.cycle)
+        df = df.set_index(cycle_col)
         return df
 
 
@@ -635,7 +652,10 @@ class OcvFit(object):
 
         """
         time_voltage = cellpydata.get_ocv(direction=self.direction, cycles=cycle)
-        self.set_data(time_voltage.step_time, time_voltage.voltage)
+        hdr = cellpydata.headers_normal
+        self.set_data(
+            time_voltage[hdr.step_time_txt], time_voltage[hdr.voltage_txt]
+        )
 
     def set_data(self, t, v):
         """Set the data to be fitted."""

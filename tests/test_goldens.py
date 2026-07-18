@@ -32,7 +32,7 @@ def _pipeline_smoke_inputs_available() -> bool:
     )
 
 
-def _run_pipeline_smoke() -> tuple[pd.DataFrame, pd.DataFrame]:
+def _run_pipeline_smoke() -> tuple[pd.DataFrame, pd.DataFrame, str]:
     cell = cellreader.CellpyCell()
     cell.from_raw(str(RES_FILE))
     cell.mass = 1.0
@@ -40,7 +40,8 @@ def _run_pipeline_smoke() -> tuple[pd.DataFrame, pd.DataFrame]:
     cell.make_summary()
     summary = cell.data.summary.reset_index(drop=True)
     steps = cell.data.steps.reset_index(drop=True)
-    return summary, steps
+    # summary per-cycle datapoint column (native name via the header shim)
+    return summary, steps, cell.headers_summary.data_point
 
 
 @pytest.mark.essential
@@ -49,12 +50,12 @@ def test_pipeline_smoke_metrics_match_golden():
         pytest.skip("pipeline_smoke goldens or Arbin .res testdata not available")
 
     expected = json.loads(PIPELINE_SMOKE_METRICS.read_text(encoding="utf-8"))
-    summary, steps = _run_pipeline_smoke()
+    summary, steps, datapoint_col = _run_pipeline_smoke()
 
     actual = {
         "n_steps": len(steps),
         "n_cycles": len(summary),
-        "cycle1_data_point": int(summary.loc[summary.index[0], "data_point"]),
+        "cycle1_data_point": int(summary.loc[summary.index[0], datapoint_col]),
     }
     assert actual["n_steps"] == expected["n_steps"]
     assert actual["n_cycles"] == expected["n_cycles"]
