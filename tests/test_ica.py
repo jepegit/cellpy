@@ -101,7 +101,7 @@ def test_set_data(dataset):
     q, v = dataset.get_ccap(1, as_frame=False)
     data = pd.concat([q, v], axis=1)
     o = ica.Converter()
-    o.set_data(data, capacity_label="charge_capacity", voltage_label="voltage")
+    o.set_data(data, capacity_label=q.name, voltage_label=v.name)
 
 
 def test_inspect_data(converter):

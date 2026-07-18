@@ -27,7 +27,9 @@ log.setup_logging(default_level="DEBUG", testing=True)
 
 @pytest.fixture(scope="module")
 def golden_frames():
-    cell = cellreader.CellpyCell()
+    # translate round-trips start from legacy-named frames; load on the legacy
+    # path so the boundary to_native() does not run first.
+    cell = cellreader.CellpyCell(native_schema=False)
     cell.load(fdv.cellpy_file_path)
     return {
         "raw": cell.data.raw.copy(),

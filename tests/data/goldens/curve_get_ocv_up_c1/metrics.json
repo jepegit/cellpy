@@ -1,9 +1,9 @@
 {
   "columns": [
-    "cycle_index",
-    "step_index",
-    "step_time",
-    "voltage"
+    "cycle_num",
+    "potential",
+    "step_num",
+    "step_time"
   ],
   "expect_null_data": false,
   "func_name": "get_ocv",

@@ -24,6 +24,9 @@ def shims():
 
 
 def _count_dep_warnings(fn):
+    # warn_once dedups per call site globally; clear it so the count reflects
+    # this call only (the wired runtime warms sites in other tests).
+    _deprecation._WARNED_SITES.clear()
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
         value = fn()
@@ -87,16 +90,21 @@ def test_getitem_matches_getattr(shims):
     assert hn["voltage_txt"] == hn.voltage_txt
 
 
-def test_legacy_only_attribute_raises(shims):
+def test_legacy_only_attribute_resolves_to_unchanged_name(shims):
+    # Legacy-only columns are not renamed by the flip (to_native passes them
+    # through), so the shim returns their unchanged legacy name (no warning).
     hn = shims["headers_normal"]
     hst = shims["headers_step_table"]
     hs = shims["headers_summary"]
-    with pytest.raises(AttributeError, match="power_txt"):
-        _ = hn.power_txt
-    with pytest.raises(AttributeError, match="info"):
-        _ = hst.info
-    with pytest.raises(AttributeError, match="shifted_charge_capacity"):
-        _ = hs.shifted_charge_capacity
+    assert _count_dep_warnings(lambda: hn.power_txt) == ("power", 0)
+    assert _count_dep_warnings(lambda: hn.datetime_txt) == ("date_time", 0)
+    assert _count_dep_warnings(lambda: hn.test_id_txt) == ("test_id", 0)
+    assert _count_dep_warnings(lambda: hst.info) == ("info", 0)
+    assert _count_dep_warnings(lambda: hst.ustep) == ("ustep", 0)
+    assert _count_dep_warnings(lambda: hs.shifted_charge_capacity) == (
+        "shifted_charge_capacity",
+        0,
+    )
 
 
 def test_unknown_attribute_raises(shims):

@@ -1,7 +1,7 @@
 {
   "columns": [
-    "charge_capacity",
-    "voltage"
+    "cumulative_charge_capacity",
+    "potential"
   ],
   "expect_null_data": false,
   "func_name": "get_ccap",

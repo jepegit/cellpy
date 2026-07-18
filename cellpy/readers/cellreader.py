@@ -212,7 +212,7 @@ class CellpyCell:
         cellpy_units=None,
         output_units=None,
         debug=False,
-        native_schema=False,
+        native_schema=True,
         core=None,
         instrument_factory=None,
     ):
@@ -236,13 +236,16 @@ class CellpyCell:
             instrument_factory (InstrumentFactory): injected loader registry
                 (issue #520, DI). When None,
                 ``register_instrument_readers()`` builds the default factory.
-            native_schema (bool): opt-in feature flag (issue #511, V2-11).
-                When True, frames are kept in native cellpy-core column names
-                and the polars engine runs directly (no legacy rename
-                sandwich). Supported pipeline: ``from_raw`` / ``load`` →
-                ``make_step_table`` → ``make_summary`` → ``save`` (v9).
-                Legacy-named consumers (``get_cap``, exporters, plotting,
-                campaign merge) are not supported on a native-schema cell.
+            native_schema (bool): the runtime column schema (native-headers
+                flip, Stage 5a). Defaults to True in cellpy 2: frames are kept
+                in native cellpy-core column names and the polars engine runs
+                directly (no legacy rename sandwich); legacy attribute access
+                (``headers_normal.voltage_txt``, ...) is carried by the D6 shim
+                (``legacy_header_shim``). Set False for the legacy bridge
+                (``OldCellpyCellCore``, legacy column names) — the path for v8
+                byte round-trips and ``merge`` until native merge lands (5b).
+                ``get_cap`` / exporters / plotting work on a native cell via the
+                shim; ``merge`` still requires the legacy path.
         """
         # TODO v 1.1: move to data (allow for multiple testers for same cell)
         if tester is None:
@@ -316,14 +319,23 @@ class CellpyCell:
         self.auto_dirs = config.reader.auto_dirs  # v2.0
 
         # - headers and instruments
-        # Stage 5 (native-headers flip): when the runtime goes native, replace
-        # these legacy Headers* objects with the D6 shims from
-        # cellpy.parameters.legacy_header_shim.build_legacy_shims(self.core.schema)
-        # so legacy attribute access (headers_normal.voltage_txt, ...) resolves
-        # to native column names with a DeprecationWarning.
-        self.headers_normal = headers_normal
-        self.headers_summary = headers_summary
-        self.headers_step_table = headers_step_table
+        # Native-headers flip (Stage 5a): on the native runtime the Data frames
+        # carry native cellpycore column names, so substitute the legacy
+        # Headers* objects with the D6 shims that resolve legacy attribute access
+        # (headers_normal.voltage_txt, ...) to the native column name — with a
+        # DeprecationWarning for renamed columns, silently for columns the flip
+        # leaves unchanged. The legacy path keeps the plain Headers* singletons.
+        if self.native_schema:
+            from cellpy.parameters.legacy_header_shim import build_legacy_shims
+
+            _shims = build_legacy_shims(self.core.schema)
+            self.headers_normal = _shims["headers_normal"]
+            self.headers_summary = _shims["headers_summary"]
+            self.headers_step_table = _shims["headers_step_table"]
+        else:
+            self.headers_normal = headers_normal
+            self.headers_summary = headers_summary
+            self.headers_step_table = headers_step_table
         self.instrument_factory = instrument_factory  # injected (#520) or None
         self.register_instrument_readers()
         self.set_instrument()
@@ -1309,7 +1321,9 @@ class CellpyCell:
         #   intra-file merging (e.g. arbin_res) and the continuation folds
         # - record load provenance for the derived TestMeta record
         self._route_loader_meta_to_boxes(data)
-        data.raw[self.headers_normal.test_id_txt] = data.active_test_id
+        # pre-boundary (frames still legacy until to_native below); use the
+        # legacy header singleton.
+        data.raw[headers_normal.test_id_txt] = data.active_test_id
         data._provenance = {
             "uuid": str(uuid.uuid4()),
             "source_kind": "db" if self.tester in DB_READER_INSTRUMENTS else "file",
@@ -1529,11 +1543,6 @@ class CellpyCell:
                 f"Unknown cellpy_file_format={cellpy_file_format!r}; using v9"
             )
             fmt = "v9"
-        if fmt == "hdf5" and self.native_schema:
-            raise ValueError(
-                "the legacy HDF5 (v8) writer expects legacy column names; "
-                "a native-schema cell (#511 opt-in) must save v9 (.cellpy)"
-            )
 
         if outfile_all.is_file():
             logging.debug("Outfile exists")
@@ -1564,7 +1573,19 @@ class CellpyCell:
 
         logging.debug(f"trying to save to file: {outfile_all} (format={fmt})")
         if fmt == "hdf5":
-            cellpy_file_write.save(my_data, outfile_all)
+            data_to_write = my_data
+            if self.native_schema:
+                # the legacy HDF5 (v8) writer expects legacy column names;
+                # translate a shallow copy back to legacy (to_legacy replaces
+                # frames, so self.data stays native).
+                import copy as _copy
+
+                from cellpy.readers.cellpy_file import (
+                    translate as cellpy_file_translate,
+                )
+
+                data_to_write = cellpy_file_translate.to_legacy(_copy.copy(my_data))
+            cellpy_file_write.save(data_to_write, outfile_all)
             logging.debug(" all -> hdf5 OK")
         else:
             units = None
@@ -1694,7 +1715,10 @@ class CellpyCell:
         if not isinstance(t1.loaded_from, (list, tuple)):
             t1.loaded_from = [t1.loaded_from]
 
-        cycle_index_header = self.headers_summary.cycle_index
+        # _append runs during load, before the to_native boundary, so the
+        # frames still carry legacy names; use the legacy header singletons
+        # (identical to self.headers_* on the legacy path).
+        cycle_index_header = headers_summary.cycle_index
         data = t1
         if recalc:
             # finding diff of time
@@ -1713,10 +1737,10 @@ class CellpyCell:
                 logging.warning("Wow! your new dataset is older than the old!")
             logging.debug(f"diff time: {diff_time}")
 
-            sort_key = self.headers_normal.datetime_txt  # DateTime
+            sort_key = headers_normal.datetime_txt  # DateTime
             logging.debug(f"sort key: {sort_key}")
             # mod data points for set 2
-            data_point_header = self.headers_normal.data_point_txt
+            data_point_header = headers_normal.data_point_txt
             try:
                 last_data_point = max(t1.raw[data_point_header])
             except ValueError:
@@ -1734,7 +1758,7 @@ class CellpyCell:
                 last_cycle = 0
             t2.raw[cycle_index_header] = t2.raw[cycle_index_header] + last_cycle
             # mod test time for set 2
-            test_time_header = self.headers_normal.test_time_txt
+            test_time_header = headers_normal.test_time_txt
             t2.raw[test_time_header] = t2.raw[test_time_header] + diff_time
         else:
             logging.debug("not doing recalc")
@@ -2059,9 +2083,11 @@ class CellpyCell:
 
     def _sort_data(self, dataset):
         # TODO: [# index]
-        if self.headers_normal.data_point_txt in dataset.raw.columns:
+        # pre-boundary (frames still legacy until to_native); use the legacy
+        # header singleton.
+        if headers_normal.data_point_txt in dataset.raw.columns:
             dataset.raw = dataset.raw.sort_values(
-                self.headers_normal.data_point_txt
+                headers_normal.data_point_txt
             ).reset_index()
             return dataset
 
@@ -3050,9 +3076,9 @@ class CellpyCell:
                 f"seconds."
             )
 
-        date_time_hdr = "date_time"
-        cycle_index_hdr = "cycle_index"
-        voltage_hdr = "voltage"
+        date_time_hdr = self.headers_normal.datetime_txt
+        cycle_index_hdr = self.headers_normal.cycle_index_txt
+        voltage_hdr = self.headers_normal.voltage_txt
         date_time_format = prms._date_time_format
 
         if cycles is not None:

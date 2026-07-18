@@ -1476,12 +1476,17 @@ def group_by_interpolate(
     # TODO: @jepe - create more tests
     time_00 = time.time()
     headers_normal = get_headers_normal()
+    # bare-df util: the raw frame may be native or legacy; detect from columns.
+    from cellpycore.config import default_schema
+
+    _raw = default_schema().raw
+    _native = _raw.cycle_num in df.columns
     if x is None:
-        x = headers_normal.step_time_txt
+        x = _raw.step_time if _native else headers_normal.step_time_txt
     if y is None:
-        y = headers_normal.voltage_txt
+        y = _raw.potential if _native else headers_normal.voltage_txt
     if group_by is None:
-        group_by = [headers_normal.cycle_index_txt]
+        group_by = [_raw.cycle_num if _native else headers_normal.cycle_index_txt]
 
     if not isinstance(group_by, (list, tuple)):
         group_by = [group_by]

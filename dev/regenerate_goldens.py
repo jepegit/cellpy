@@ -110,7 +110,9 @@ def _regen_pipeline_smoke(out_dir: Path) -> None:
     summary = sort_summary_columns(cell.data.summary.reset_index(drop=True))
     steps = cell.data.steps.reset_index(drop=True)
     metrics = {
-        "cycle1_data_point": int(summary.loc[summary.index[0], "data_point"]),
+        "cycle1_data_point": int(
+            summary.loc[summary.index[0], cell.headers_summary.data_point]
+        ),
         "n_cycles": int(len(summary)),
         "n_steps": int(len(steps)),
         "source": "testdata/data/20160805_test001_45_cc_01.res",

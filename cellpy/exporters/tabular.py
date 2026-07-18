@@ -411,8 +411,10 @@ def cap_mod_summary(cell: "CellpyCell", summary, capacity_modifier="reset"):
     # Why did I make this method?
     # OBS! modifies the summary table
     time_00 = time.time()
-    discharge_title = cell.headers_normal.discharge_capacity_txt
-    charge_title = cell.headers_normal.charge_capacity_txt
+    # operates on the summary frame, so use the summary headers (native summary
+    # discharge/charge differ from the raw names under the flip).
+    discharge_title = cell.headers_summary.discharge_capacity
+    charge_title = cell.headers_summary.charge_capacity
     chargecap = 0.0
     dischargecap = 0.0
 

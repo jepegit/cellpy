@@ -213,7 +213,10 @@ def extract_loader_meta(data) -> dict[str, Any]:
 
 def load_loader_snapshot(spec: LoaderGoldenSpec):
     """Load one vendor file and return normalized raw frame + meta payload."""
-    cell = cellreader.CellpyCell()
+    # The loader golden pins the vendor->legacy parsing contract, so keep the
+    # legacy path (native-headers flip Stage 5a): the boundary to_native()
+    # conversion is exercised separately in test_native_schema.py.
+    cell = cellreader.CellpyCell(native_schema=False)
     if spec.instrument == "custom":
         cell.set_instrument(
             instrument="custom",

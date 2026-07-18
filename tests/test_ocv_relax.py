@@ -19,8 +19,9 @@ def test_get_ocv_rlx_for_fitting(dataset):
         else:
             print("MISSING")
     steps = dataset.data.steps
-    n = steps.loc[steps["cycle"].isin([1]), :]
-    n = n.loc[n["type"].str.startswith("ocvrlx_up"), :]
+    hdr_s = dataset.headers_step_table
+    n = steps.loc[steps[hdr_s.cycle].isin([1]), :]
+    n = n.loc[n[hdr_s.type].str.startswith("ocvrlx_up"), :]
     print(n)
     rlx = dataset.get_ocv(direction="up", cycles=1)
     print(rlx)

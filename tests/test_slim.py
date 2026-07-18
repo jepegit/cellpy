@@ -22,7 +22,9 @@ log.setup_logging(default_level="DEBUG", testing=True)
 def cpi():
     from cellpy import cellreader
 
-    return cellreader.CellpyCell()
+    # These are the legacy-bridge (OldCellpyCellCore) seam acceptance tests
+    # (#377); the native path is covered by test_native_schema.py.
+    return cellreader.CellpyCell(native_schema=False)
 
 
 def test_core_seam_wired(cpi):

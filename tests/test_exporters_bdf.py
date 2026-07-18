@@ -24,7 +24,11 @@ def _make_synthetic_cell(*, with_capacity: bool = True, with_datetime: bool = Tr
     """
     from cellpy import cellreader
 
-    headers = get_headers_normal()
+    # Name the fabricated raw via the cell's own headers so the frame matches
+    # the runtime schema (native after the flip; the shim resolves the legacy
+    # *_txt attrs to the native column names).
+    cell = cellreader.CellpyCell(initialize=True)
+    headers = cell.headers_normal
     n = 6
     raw = pd.DataFrame(
         {
@@ -50,7 +54,6 @@ def _make_synthetic_cell(*, with_capacity: bool = True, with_datetime: bool = Tr
             ]
         )
 
-    cell = cellreader.CellpyCell(initialize=True)
     cell.cellpy_units = CellpyUnits()
     cell.data.raw = raw
     cell.cell_name = "synthetic"

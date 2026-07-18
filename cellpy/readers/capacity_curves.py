@@ -640,10 +640,15 @@ def get_ocv(
     steps = cell.data.steps
     raw = cell.data.raw
 
-    ocv_steps = steps.loc[steps["cycle"].isin(cycles), :]
+    hdr_steps = cell.headers_step_table
+    steps_cycle = hdr_steps.cycle
+    steps_step = hdr_steps.step
+    steps_type = hdr_steps.type
+
+    ocv_steps = steps.loc[steps[steps_cycle].isin(cycles), :]
 
     ocv_steps = ocv_steps.loc[
-        ocv_steps.type.str.startswith(ocv_rlx_id, na=False), :
+        ocv_steps[steps_type].str.startswith(ocv_rlx_id, na=False), :
     ]
 
     if remove_first:
@@ -656,8 +661,8 @@ def get_ocv(
 
     selected_df = raw.loc[
         (
-            raw[cycle_label].isin(ocv_steps.cycle)
-            & raw[step_label].isin(ocv_steps.step)
+            raw[cycle_label].isin(ocv_steps[steps_cycle])
+            & raw[step_label].isin(ocv_steps[steps_step])
         ),
         [cycle_label, step_label, step_time_label, voltage_label],
     ]

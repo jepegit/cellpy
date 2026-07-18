@@ -12,24 +12,27 @@ def test_load_batmo_bdf():
         cycle_mode="anode",
     )
     
+    hn = c.headers_normal
     # Assert that data is loaded
     assert not c.data.raw.empty
-    
+
     # Check that test time is in seconds (max time should be > 1000s)
-    max_time = c.data.raw["test_time"].max()
+    max_time = c.data.raw[hn.test_time_txt].max()
     assert max_time > 1000.0, "Time was not correctly converted to seconds"
-    
+
     # Check that step_index is strictly increasing
-    step_indices = c.data.raw["step_index"].unique()
+    step_indices = c.data.raw[hn.step_index_txt].unique()
     assert len(step_indices) > 100, "Step indices were not cumulated properly"
-    
+
     # Check step index monotonic property
-    assert c.data.raw["step_index"].is_monotonic_increasing, "Step index is not strictly increasing"
+    assert c.data.raw[
+        hn.step_index_txt
+    ].is_monotonic_increasing, "Step index is not strictly increasing"
 
     # Test for missing columns
-    assert "current" in c.data.raw.columns
-    assert "voltage" in c.data.raw.columns
-    assert "cycle_index" in c.data.raw.columns
+    assert hn.current_txt in c.data.raw.columns
+    assert hn.voltage_txt in c.data.raw.columns
+    assert hn.cycle_index_txt in c.data.raw.columns
 
     assert c._validate_step_table()
 
@@ -51,15 +54,18 @@ def test_batmo_bdf_step_index_is_preprocessed_to_continuous_segments():
         cycle_mode="anode",
     )
 
+    hn = c.headers_normal
+    hst = c.headers_step_table
+    si = hn.step_index_txt
     loaded = c.data.raw.reset_index(drop=True)
     pd.testing.assert_series_equal(
-        loaded["step_index"],
-        expected_cellpy_step.astype(loaded["step_index"].dtype).rename("step_index"),
+        loaded[si],
+        expected_cellpy_step.astype(loaded[si].dtype).rename(si),
         check_index=False,
     )
 
-    assert loaded["step_index"].is_monotonic_increasing
-    assert loaded["step_index"].nunique() == len(c.data.steps)
-    assert (loaded.groupby("step_index")["step_time"].min() == 0.0).all()
-    assert {"charge", "discharge"}.issubset(set(c.data.steps["type"]))
+    assert loaded[si].is_monotonic_increasing
+    assert loaded[si].nunique() == len(c.data.steps)
+    assert (loaded.groupby(si)[hn.step_time_txt].min() == 0.0).all()
+    assert {"charge", "discharge"}.issubset(set(c.data.steps[hst.type]))
     assert not c.get_cap(cycle=1, method="forth-and-forth", mode="absolute").empty
