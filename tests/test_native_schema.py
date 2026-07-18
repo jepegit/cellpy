@@ -162,8 +162,40 @@ def test_native_hdf5_save_roundtrips_via_to_legacy(native_cell, tmp_path):
     assert "voltage" in reloaded.data.raw.columns
 
 
-def test_native_merge_raises(native_cell, parameters):
-    other = cellreader.CellpyCell()
+def test_native_campaign_merge_roundtrips_through_legacy(native_cell, parameters):
+    """Stage 5b: campaign merge on a native cell works via the legacy round-trip;
+    the result stays native and carries distinct per-source test_ids."""
+    other = cellreader.CellpyCell(native_schema=True)
     other.from_raw(parameters.res_file_path2)
-    with pytest.raises(NotImplementedError, match="native-schema"):
-        native_cell.merge(other)
+    other_native_raw_cols = set(other.data.raw.columns)
+
+    n_self = len(native_cell.data.raw)
+    n_other = len(other.data.raw)
+    native_cell.merge(other)
+
+    merged = native_cell.data.raw
+    # result is native (not legacy-named) and folds both sources
+    assert SCHEMA.raw.potential in merged.columns
+    assert "voltage" not in merged.columns
+    assert len(merged) == n_self + n_other
+    # distinct compact test_ids per source (campaign identity)
+    assert set(merged[SCHEMA.raw.test_id].unique()) == {0, 1}
+    # the source cell's frames are untouched by the merge (copies used)
+    assert set(other.data.raw.columns) == other_native_raw_cols
+
+    # the merged native cell still computes its pipeline
+    native_cell.make_step_table()
+    native_cell.make_summary(find_ir=False)
+    assert SCHEMA.cycle.cycle_num in native_cell.data.summary.columns
+
+
+def test_native_continuation_merge_roundtrips(native_cell, parameters):
+    """Stage 5b: continuation merge also works on a native cell."""
+    other = cellreader.CellpyCell(native_schema=True)
+    other.from_raw(parameters.res_file_path2)
+    n_self = len(native_cell.data.raw)
+    n_other = len(other.data.raw)
+    native_cell.merge(other, mode="continuation")
+    merged = native_cell.data.raw
+    assert SCHEMA.raw.potential in merged.columns
+    assert len(merged) == n_self + n_other
