@@ -58,7 +58,9 @@ def _mini_data(cycles=(1, 2), dp_start=1, mass=1.0, cycle_mode="anode", name="a"
 
 
 def _cell(data) -> cellreader.CellpyCell:
-    c = cellreader.CellpyCell(initialize=True)
+    # merge()/campaign_fold is legacy-only until native merge lands (Stage 5b);
+    # pin the legacy path so these merge tests keep exercising the feature.
+    c = cellreader.CellpyCell(initialize=True, native_schema=False)
     c.data = data
     return c
 
@@ -198,9 +200,10 @@ def test_campaign_mixed_modes_stored_but_compute_raises(caplog):
 @pytest.fixture
 def campaign_cell(parameters):
     """Two real res files campaign-merged as distinct tests (same cycle_mode)."""
-    left = cellreader.CellpyCell()
+    # merge()/campaign_fold is legacy-only until native merge lands (Stage 5b).
+    left = cellreader.CellpyCell(native_schema=False)
     left.from_raw(parameters.res_file_path)
-    right = cellreader.CellpyCell()
+    right = cellreader.CellpyCell(native_schema=False)
     right.from_raw(parameters.res_file_path2)
     left.merge(right)
     return left
@@ -240,9 +243,9 @@ def test_campaign_recompute_stamps_steps_and_windows_summary(campaign_cell):
 def test_campaign_merge_original_cycle_numbers(parameters):
     """renumber_cycles=False (#529): sources keep their own cycle numbers;
     the key becomes (test_id, cycle); data points stay globally unique."""
-    left = cellreader.CellpyCell()
+    left = cellreader.CellpyCell(native_schema=False)
     left.from_raw(parameters.res_file_path)
-    right = cellreader.CellpyCell()
+    right = cellreader.CellpyCell(native_schema=False)
     right.from_raw(parameters.res_file_path2)
     left_cycles = set(left.data.raw[HN.cycle_index_txt].unique())
     right_cycles = set(right.data.raw[HN.cycle_index_txt].unique())
@@ -264,9 +267,9 @@ def test_campaign_merge_original_cycle_numbers(parameters):
 def test_campaign_original_cycles_pipeline_and_v9_roundtrip(parameters, tmp_path):
     """renumber_cycles=False (#529): steps/summary group on (test_id, cycle),
     cumulatives reset per test, and everything round-trips through v9."""
-    left = cellreader.CellpyCell()
+    left = cellreader.CellpyCell(native_schema=False)
     left.from_raw(parameters.res_file_path)
-    right = cellreader.CellpyCell()
+    right = cellreader.CellpyCell(native_schema=False)
     right.from_raw(parameters.res_file_path2)
     left.merge(right, renumber_cycles=False)
 
@@ -294,7 +297,7 @@ def test_campaign_original_cycles_pipeline_and_v9_roundtrip(parameters, tmp_path
 
     outfile = tmp_path / "campaign_original_cycles.cellpy"
     left.save(outfile)
-    reloaded = cellreader.CellpyCell()
+    reloaded = cellreader.CellpyCell(native_schema=False)
     reloaded.load(outfile)
     r_raw = reloaded.data.raw
     assert set(r_raw[HN.test_id_txt].unique()) == {0, 1}
@@ -318,11 +321,11 @@ def test_campaign_merge_remaps_summary_test_id(parameters):
     """The merged (pre-recompute) summary keeps per-test ids: the bridge
     summaries carry test_id since cellpycore 0.2.2 (#136), so the merger must
     remap the right side instead of concatenating two test_id=0 blocks."""
-    left = cellreader.CellpyCell()
+    left = cellreader.CellpyCell(native_schema=False)
     left.from_raw(parameters.res_file_path)
     left.make_step_table()
     left.make_summary(find_ir=False, find_end_voltage=False)
-    right = cellreader.CellpyCell()
+    right = cellreader.CellpyCell(native_schema=False)
     right.from_raw(parameters.res_file_path2)
     right.make_step_table()
     right.make_summary(find_ir=False, find_end_voltage=False)
@@ -336,7 +339,7 @@ def test_campaign_merge_remaps_summary_test_id(parameters):
 def test_single_test_steps_carry_test_id_zero(parameters):
     """Since cellpycore 0.2.2 (#136) the bridge carries test_id through the
     legacy step table; single-test objects get the injected id 0."""
-    c = cellreader.CellpyCell()
+    c = cellreader.CellpyCell(native_schema=False)
     c.from_raw(parameters.res_file_path)
     c.make_step_table()
     assert HN.test_id_txt in c.data.steps.columns
@@ -352,7 +355,7 @@ def test_campaign_save_warns_and_reloads_single(campaign_cell, tmp_path, caplog)
         campaign_cell.save(outfile)
     assert any("not persist" in r.message or "persists" in r.message for r in caplog.records)
 
-    reloaded = cellreader.CellpyCell()
+    reloaded = cellreader.CellpyCell(native_schema=False)
     reloaded.load(outfile)
     assert reloaded.data.tests.test_ids == [0]
 
@@ -372,7 +375,7 @@ def test_campaign_v9_roundtrip_preserves_tests_and_test_id(campaign_cell, tmp_pa
     outfile = tmp_path / "campaign.cellpy"
     campaign_cell.save(outfile)
 
-    reloaded = cellreader.CellpyCell()
+    reloaded = cellreader.CellpyCell(native_schema=False)
     reloaded.load(outfile)
 
     assert sorted(reloaded.data.tests.test_ids) == [0, 1]
@@ -390,11 +393,11 @@ def test_campaign_v9_roundtrip_preserves_tests_and_test_id(campaign_cell, tmp_pa
 
 
 def test_campaign_merges_precomputed_steps_and_summary(parameters):
-    left = cellreader.CellpyCell()
+    left = cellreader.CellpyCell(native_schema=False)
     left.from_raw(parameters.res_file_path)
     left.make_step_table()
     left.make_summary(find_ir=False, find_end_voltage=False)
-    right = cellreader.CellpyCell()
+    right = cellreader.CellpyCell(native_schema=False)
     right.from_raw(parameters.res_file_path2)
     right.make_step_table()
     right.make_summary(find_ir=False, find_end_voltage=False)
