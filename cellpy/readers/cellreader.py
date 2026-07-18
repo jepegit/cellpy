@@ -1321,7 +1321,9 @@ class CellpyCell:
         #   intra-file merging (e.g. arbin_res) and the continuation folds
         # - record load provenance for the derived TestMeta record
         self._route_loader_meta_to_boxes(data)
-        data.raw[self.headers_normal.test_id_txt] = data.active_test_id
+        # pre-boundary (frames still legacy until to_native below); use the
+        # legacy header singleton.
+        data.raw[headers_normal.test_id_txt] = data.active_test_id
         data._provenance = {
             "uuid": str(uuid.uuid4()),
             "source_kind": "db" if self.tester in DB_READER_INSTRUMENTS else "file",
@@ -1713,7 +1715,10 @@ class CellpyCell:
         if not isinstance(t1.loaded_from, (list, tuple)):
             t1.loaded_from = [t1.loaded_from]
 
-        cycle_index_header = self.headers_summary.cycle_index
+        # _append runs during load, before the to_native boundary, so the
+        # frames still carry legacy names; use the legacy header singletons
+        # (identical to self.headers_* on the legacy path).
+        cycle_index_header = headers_summary.cycle_index
         data = t1
         if recalc:
             # finding diff of time
@@ -1732,10 +1737,10 @@ class CellpyCell:
                 logging.warning("Wow! your new dataset is older than the old!")
             logging.debug(f"diff time: {diff_time}")
 
-            sort_key = self.headers_normal.datetime_txt  # DateTime
+            sort_key = headers_normal.datetime_txt  # DateTime
             logging.debug(f"sort key: {sort_key}")
             # mod data points for set 2
-            data_point_header = self.headers_normal.data_point_txt
+            data_point_header = headers_normal.data_point_txt
             try:
                 last_data_point = max(t1.raw[data_point_header])
             except ValueError:
@@ -1753,7 +1758,7 @@ class CellpyCell:
                 last_cycle = 0
             t2.raw[cycle_index_header] = t2.raw[cycle_index_header] + last_cycle
             # mod test time for set 2
-            test_time_header = self.headers_normal.test_time_txt
+            test_time_header = headers_normal.test_time_txt
             t2.raw[test_time_header] = t2.raw[test_time_header] + diff_time
         else:
             logging.debug("not doing recalc")
@@ -2078,9 +2083,11 @@ class CellpyCell:
 
     def _sort_data(self, dataset):
         # TODO: [# index]
-        if self.headers_normal.data_point_txt in dataset.raw.columns:
+        # pre-boundary (frames still legacy until to_native); use the legacy
+        # header singleton.
+        if headers_normal.data_point_txt in dataset.raw.columns:
             dataset.raw = dataset.raw.sort_values(
-                self.headers_normal.data_point_txt
+                headers_normal.data_point_txt
             ).reset_index()
             return dataset
 
