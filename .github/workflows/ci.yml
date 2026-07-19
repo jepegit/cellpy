@@ -48,7 +48,12 @@ jobs:
       - name: Sync dependencies (PyPI cellpycore only)
         run: uv sync
       - name: Run essential tests
-        run: uv run pytest -m essential --ignore=tests/test_plotutils_summary_plot.py
+        # No plotutils ignore: the summary-plot suite was excluded because it
+        # "needs a display", but it selects the Agg backend itself and runs
+        # headless fine. The exclusion was hiding real breakage (#567).
+        env:
+          MPLBACKEND: Agg
+        run: uv run pytest -m essential
       - name: Run cellpy setup
         run: uv run cellpy setup --silent
       - name: Run cellpy check
@@ -74,7 +79,10 @@ jobs:
         # before — the flip's curve-consumer migration needs this net).
         run: uv sync --extra batch
       - name: Run the full test suite
-        # same ignore as the tier-3 linux job (plotutils summary plot needs a
-        # display); everything else runs — this is the gate that catches
-        # non-essential regressions (issue #530)
-        run: uv run pytest --ignore=tests/test_plotutils_summary_plot.py
+        # The gate that catches non-essential regressions (issue #530). The
+        # plotutils exclusion is gone (#567): with --extra batch this job has
+        # plotly and seaborn, so it is the only place the figure menu actually
+        # renders. Agg keeps matplotlib headless.
+        env:
+          MPLBACKEND: Agg
+        run: uv run pytest
