@@ -235,8 +235,10 @@ def ica_metrics(case: IcaGoldenCase, frame: pd.DataFrame) -> dict[str, Any]:
         "description": case.description,
         "n_columns": int(len(frame.columns)),
         "n_rows": int(len(frame)),
-        # Rounded so that platform-level last-bit noise does not churn the
-        # metrics file; the parquet frame carries the exact values.
+        # Rounded to keep the committed file readable; the parquet frame
+        # carries the exact values. Note that rounding alone does not make
+        # these comparable across platforms - a total that lands on a rounding
+        # boundary still flips - so the test compares them with a tolerance.
         "sums": {
             col: round(float(np.nansum(numeric[col].to_numpy())), 6)
             for col in numeric.columns
@@ -265,4 +267,7 @@ def assert_ica_matches_golden(actual: pd.DataFrame, expected: pd.DataFrame) -> N
     actual = prepare_ica_for_golden(actual)
     expected = prepare_ica_for_golden(expected)
     assert list(actual.columns) == list(expected.columns)
-    assert_frame_equal(actual, expected, check_dtype=False)
+    # Tighter than pandas' 1e-5 default: these are meant to catch numeric drift
+    # in the recipe, and re-running the same recipe should reproduce the golden
+    # to within cross-platform float noise (measured at ~5e-10 per value).
+    assert_frame_equal(actual, expected, check_dtype=False, rtol=1e-8)

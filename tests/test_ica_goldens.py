@@ -51,4 +51,13 @@ def test_ica_metrics_match_golden(case: IcaGoldenCase):
     assert actual["n_rows"] == expected["n_rows"]
     assert actual["n_columns"] == expected["n_columns"]
     assert actual["columns"] == expected["columns"]
-    assert actual["sums"] == expected["sums"]
+
+    # Compared with a tolerance, not exactly. Each sum runs over hundreds to
+    # thousands of floats, so the last bit of the total legitimately differs
+    # between platforms (this first failed on Linux with 122.614595 against a
+    # golden of 122.614594). rel=1e-9 is still many orders of magnitude tighter
+    # than any change to the recipe could produce - the mutation that motivated
+    # these oracles moved the sums by percent, not by parts per billion.
+    assert set(actual["sums"]) == set(expected["sums"])
+    for column, value in expected["sums"].items():
+        assert actual["sums"][column] == pytest.approx(value, rel=1e-9), column
