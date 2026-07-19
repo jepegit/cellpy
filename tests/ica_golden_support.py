@@ -267,7 +267,13 @@ def assert_ica_matches_golden(actual: pd.DataFrame, expected: pd.DataFrame) -> N
     actual = prepare_ica_for_golden(actual)
     expected = prepare_ica_for_golden(expected)
     assert list(actual.columns) == list(expected.columns)
-    # Tighter than pandas' 1e-5 default: these are meant to catch numeric drift
-    # in the recipe, and re-running the same recipe should reproduce the golden
-    # to within cross-platform float noise (measured at ~5e-10 per value).
-    assert_frame_equal(actual, expected, check_dtype=False, rtol=1e-8)
+    # pandas' 1e-5 default, and that is not a shrug. The goldens are recorded
+    # on one machine and re-run on another, and scipy's interpolation and
+    # filtering differ between platforms by **1e-7 to 5e-7 relative** here
+    # (measured: 258.2250118395604 on Windows against 258.2250426021722 on
+    # Linux CI). Anything tighter than ~1e-6 tests the BLAS, not cellpy.
+    #
+    # 1e-5 still leaves 20-100x headroom over that noise, and the drift these
+    # oracles exist to catch - a reordered pipeline stage, a changed default,
+    # a dropped smoothing pass - moves values by percent.
+    assert_frame_equal(actual, expected, check_dtype=False)

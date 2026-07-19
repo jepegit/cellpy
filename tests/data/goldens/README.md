@@ -27,3 +27,9 @@ The `ica_dqdv_*` suites snapshot the **pre-redesign** dQ/dV output (#566). They
 go through the old entry points on purpose: after the redesign those are
 deprecation shims over the new core, and `--verify` then shows the shims are
 numerically unchanged.
+
+Note the two different standards at work. `--verify` regenerates twice on the
+*same* machine and demands byte-identical files. The pytest comparison runs
+against goldens recorded on someone else's machine, so it uses a tolerance:
+scipy's interpolation and filtering differ across platforms by 1e-7 to 5e-7
+relative here, and a check tighter than that tests the BLAS rather than cellpy.
