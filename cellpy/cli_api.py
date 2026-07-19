@@ -10,7 +10,7 @@ is a move, not a redesign — and it makes the eventual Click→Typer cutover (#
 a re-spelling rather than a rewrite.
 
 **Output.** These functions are quiet by default, as a library should be. Each
-takes an ``echo`` callable; the CLI passes ``click.echo``, so the terminal
+takes an ``echo`` callable; the CLI passes ``typer.echo``, so the terminal
 output is byte-identical to before, while a script that calls
 ``cli_api.run_journal(...)`` gets silence unless it asks otherwise::
 
@@ -43,38 +43,92 @@ def _resolve_echo(echo: Optional[Echo]) -> Echo:
 # -- convert --------------------------------------------------------------------
 
 
+#: What ``convert`` can write. v9 is the zip-of-parquet ``.cellpy`` format that
+#: ``CellpyCell.save`` writes by default; v8 is the legacy HDF5 layout.
+CONVERT_TARGETS = ("v9", "v8")
+
+_TARGET_SUFFIX = {"v9": ".cellpy", "v8": ".h5"}
+
+
+#: Destination suffixes that mean "legacy HDF5", matching the rule
+#: ``CellpyCell.save`` already uses to pick a writer.
+_HDF5_SUFFIXES = {".h5", ".hdf5"}
+
+
 def convert(
     source: PathLike,
     destination: Optional[PathLike] = None,
     *,
+    to: Optional[str] = None,
     echo: Optional[Echo] = None,
 ) -> pathlib.Path:
-    """Upgrade a legacy cellpy-file to the current v8 HDF5 layout.
+    """Upgrade a legacy cellpy-file to a current on-disk format.
 
     Args:
         source: the old cellpy file.
-        destination: where to write. Defaults to ``<name>_v8<suffix>`` beside
-            the source, which is what the CLI has always done.
+        destination: where to write. Defaults to ``<name>_<target>`` beside the
+            source, with the suffix the target format uses (``.cellpy`` for v9,
+            ``.h5`` for v8).
+        to: ``"v9"`` (zip-of-parquet — what ``CellpyCell.save`` writes) or
+            ``"v8"`` (legacy HDF5). When omitted the target is inferred from
+            *destination*'s suffix — ``.h5``/``.hdf5`` means v8, anything else
+            means v9 — which is the same rule ``CellpyCell.save`` applies. With
+            no destination either, the target is v9.
         echo: progress reporter; quiet by default.
 
     Returns:
         The path written.
+
+    Raises:
+        ValueError: if *to* is not a known target.
+
+    !!! note "Changed in 2.0"
+        This used to write v8 unconditionally, naming the output ``<name>_v8``.
+        It now produces v9 by default. Pass ``to="v8"`` (or a ``.h5``
+        destination) for the old format.
     """
     say = _resolve_echo(echo)
 
     from cellpy.readers.cellpy_file import load as cellpy_file_load
     from cellpy.readers.cellpy_file import save as cellpy_file_save
+    from cellpy.readers.cellpy_file import v9 as cellpy_file_v9
 
     old_path = pathlib.Path(source)
+
+    if to is None:
+        # Infer from the destination the caller chose, so that
+        # `convert old.h5 new.h5` does not put a zip inside a .h5 file.
+        if destination is not None:
+            suffix = pathlib.Path(destination).suffix.lower()
+            target = "v8" if suffix in _HDF5_SUFFIXES else "v9"
+        else:
+            target = "v9"
+    else:
+        target = to.lower().strip()
+
+    if target not in CONVERT_TARGETS:
+        raise ValueError(
+            f"unknown conversion target {to!r}; expected one of "
+            f"{', '.join(CONVERT_TARGETS)}"
+        )
+
     if destination is None:
-        new_path = old_path.with_name(f"{old_path.stem}_v8{old_path.suffix}")
+        new_path = old_path.with_name(
+            f"{old_path.stem}_{target}{_TARGET_SUFFIX[target]}"
+        )
     else:
         new_path = pathlib.Path(destination)
 
     say(f"[cellpy] (convert) loading {old_path}")
     result = cellpy_file_load(old_path, accept_old=True)
-    say(f"[cellpy] (convert) saving v{result.file_version} -> v8 as {new_path}")
-    cellpy_file_save(result.data, new_path)
+    say(
+        f"[cellpy] (convert) saving v{result.file_version} -> {target} "
+        f"as {new_path}"
+    )
+    if target == "v9":
+        cellpy_file_v9.save(result.data, new_path)
+    else:
+        cellpy_file_save(result.data, new_path)
     say(f"[cellpy] (convert) done: {new_path}")
     return new_path
 

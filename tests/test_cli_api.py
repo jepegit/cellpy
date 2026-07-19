@@ -61,8 +61,8 @@ def test_echo_makes_it_speak(capsys):
 
 @pytest.mark.essential
 def test_the_cli_still_speaks(tmp_path):
-    """The CLI passes click.echo, so terminal output is unchanged."""
-    from click.testing import CliRunner
+    """The CLI passes typer.echo, so terminal output is unchanged."""
+    from typer.testing import CliRunner
 
     from cellpy.cli import cli
 
@@ -132,9 +132,9 @@ def test_run_journal_returns_none_for_a_missing_journal(tmp_path):
 # -- convert ------------------------------------------------------------------------
 
 
-@pytest.mark.essential
-def test_convert_defaults_the_destination_beside_the_source(tmp_path, monkeypatch):
-    """The naming rule the CLI has always used, now assertable directly."""
+@pytest.fixture
+def fake_cellpy_file(monkeypatch):
+    """Stub the file layer and record which writer was asked for."""
     captured = {}
 
     def fake_load(path, accept_old=False):
@@ -145,17 +145,136 @@ def test_convert_defaults_the_destination_beside_the_source(tmp_path, monkeypatc
         captured["loaded"] = path
         return Result()
 
-    def fake_save(data, path):
+    def fake_save_v8(data, path):
         captured["saved"] = path
+        captured["writer"] = "v8"
+
+    def fake_save_v9(data, path, **kwargs):
+        captured["saved"] = path
+        captured["writer"] = "v9"
 
     import cellpy.readers.cellpy_file as cellpy_file
+    from cellpy.readers.cellpy_file import v9 as cellpy_file_v9
 
     monkeypatch.setattr(cellpy_file, "load", fake_load)
-    monkeypatch.setattr(cellpy_file, "save", fake_save)
+    monkeypatch.setattr(cellpy_file, "save", fake_save_v8)
+    monkeypatch.setattr(cellpy_file_v9, "save", fake_save_v9)
+    return captured
 
+
+@pytest.mark.essential
+def test_convert_defaults_the_destination_beside_the_source(
+    tmp_path, fake_cellpy_file
+):
+    """Names the output after the target format, beside the source."""
     source = tmp_path / "old_cell.h5"
     source.write_bytes(b"")
 
     written = cli_api.convert(source)
+    assert written.name == "old_cell_v9.cellpy"
+    assert fake_cellpy_file["saved"] == written
+
+
+@pytest.mark.essential
+def test_convert_defaults_to_v9(tmp_path, fake_cellpy_file):
+    """v9 is what CellpyCell.save writes, so it is what convert produces."""
+    source = tmp_path / "old_cell.h5"
+    source.write_bytes(b"")
+
+    cli_api.convert(source)
+    assert fake_cellpy_file["writer"] == "v9"
+
+
+@pytest.mark.essential
+def test_convert_can_still_target_v8(tmp_path, fake_cellpy_file):
+    source = tmp_path / "old_cell.h5"
+    source.write_bytes(b"")
+
+    written = cli_api.convert(source, to="v8")
+    assert fake_cellpy_file["writer"] == "v8"
     assert written.name == "old_cell_v8.h5"
-    assert captured["saved"] == written
+
+
+@pytest.mark.essential
+def test_convert_rejects_an_unknown_target(tmp_path, fake_cellpy_file):
+    """Better than quietly writing the default format the user did not ask for."""
+    source = tmp_path / "old_cell.h5"
+    source.write_bytes(b"")
+
+    with pytest.raises(ValueError, match="unknown conversion target"):
+        cli_api.convert(source, to="v10")
+    assert "writer" not in fake_cellpy_file
+
+
+@pytest.mark.essential
+def test_convert_honours_an_explicit_destination(tmp_path, fake_cellpy_file):
+    source = tmp_path / "old_cell.h5"
+    source.write_bytes(b"")
+    target = tmp_path / "somewhere_else.cellpy"
+
+    written = cli_api.convert(source, target)
+    assert written == target
+
+
+@pytest.mark.essential
+@pytest.mark.parametrize(
+    "destination, expected_writer",
+    [
+        ("out.h5", "v8"),
+        ("out.hdf5", "v8"),
+        ("out.cellpy", "v9"),
+        ("out.zip", "v9"),
+    ],
+)
+def test_convert_infers_the_format_from_the_destination_suffix(
+    tmp_path, fake_cellpy_file, destination, expected_writer
+):
+    """`convert old.h5 new.h5` must not put a v9 zip inside a .h5 file.
+
+    Same rule CellpyCell.save already uses, so the two agree.
+    """
+    source = tmp_path / "old_cell.h5"
+    source.write_bytes(b"")
+
+    cli_api.convert(source, tmp_path / destination)
+    assert fake_cellpy_file["writer"] == expected_writer
+
+
+@pytest.mark.essential
+def test_an_explicit_target_beats_the_suffix(tmp_path, fake_cellpy_file):
+    source = tmp_path / "old_cell.h5"
+    source.write_bytes(b"")
+
+    cli_api.convert(source, tmp_path / "out.h5", to="v9")
+    assert fake_cellpy_file["writer"] == "v9"
+
+
+@pytest.mark.essential
+@pytest.mark.parametrize("target", ["v9", "v8"])
+def test_convert_really_upgrades_a_legacy_file(tmp_path, target):
+    """The tests above stub the file layer; this one does not.
+
+    A legacy v5 cellpy-file goes in, and the result has to load again with the
+    cycles and rows intact — which is the only thing a user of `cellpy convert`
+    actually cares about.
+    """
+    import pathlib
+    import shutil
+
+    from cellpy import cellreader
+    from tests import fdv
+
+    legacy = pathlib.Path(fdv.cellpy_file_path_v5)
+    if not legacy.is_file():
+        pytest.skip(f"missing legacy fixture {legacy}")
+
+    work = tmp_path / legacy.name
+    shutil.copy(legacy, work)
+
+    written = cli_api.convert(work, to=target)
+    assert written.is_file()
+    assert written.suffix == (".cellpy" if target == "v9" else ".h5")
+
+    reloaded = cellreader.CellpyCell().load(written)
+    assert len(reloaded.get_cycle_numbers()) > 0
+    assert len(reloaded.data.raw) > 0

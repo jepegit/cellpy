@@ -345,7 +345,6 @@ source = { editable = "." }
 dependencies = [
     { name = "cellpycore" },
     { name = "charset-normalizer" },
-    { name = "click" },
     { name = "cookiecutter" },
     { name = "dateparser" },
     { name = "defusedxml" },
@@ -425,7 +424,6 @@ docs = [
 requires-dist = [
     { name = "cellpycore", specifier = "==0.2.3" },
     { name = "charset-normalizer" },
-    { name = "click" },
     { name = "cookiecutter" },
     { name = "dateparser" },
     { name = "defusedxml" },

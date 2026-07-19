@@ -28,7 +28,6 @@ requirements:
     # NOTE: requires cellpycore on conda-forge first (see staged-recipes draft).
     - cellpycore ==0.2.1
     - charset-normalizer
-    - click
     - cookiecutter >=2.1
     - dateparser
     - defusedxml

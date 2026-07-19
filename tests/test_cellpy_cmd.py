@@ -1,7 +1,10 @@
+import contextlib
 import logging
+import os
+import tempfile
 
 import pytest
-from click.testing import CliRunner
+from typer.testing import CliRunner
 
 import cellpy
 from cellpy import cli, prmreader
@@ -10,6 +13,38 @@ from cellpy import prms, log
 NUMBER_OF_DIRS = 11
 
 log.setup_logging(default_level="DEBUG", testing=True)
+
+
+@pytest.fixture(autouse=True)
+def _plain_help_output(monkeypatch):
+    """Render help without ANSI colour, so substring assertions mean something.
+
+    Typer formats help through rich. When colour is on, ``--help`` comes back
+    as ``\\x1b[1;36m-\\x1b[0m\\x1b[1;36m-help\\x1b[0m`` and a plain
+    ``"--help" in result.output`` fails — which it did on CI while passing
+    locally, because rich decides by terminal detection. Pinning it here makes
+    these tests independent of where they run; it is also what a user piping
+    the output to a file gets.
+    """
+    monkeypatch.setenv("NO_COLOR", "1")
+    monkeypatch.setenv("TERM", "dumb")
+
+
+@contextlib.contextmanager
+def isolated_filesystem():
+    """Run the block in a scratch working directory.
+
+    ``typer.testing.CliRunner`` does not subclass Click's, so it has no
+    ``isolated_filesystem()``. These tests need a throwaway cwd — ``cellpy
+    setup`` writes into it — and that is all this provides.
+    """
+    previous = os.getcwd()
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
+        os.chdir(tmp)
+        try:
+            yield tmp
+        finally:
+            os.chdir(previous)
 
 
 def test_get_user_name():
@@ -216,7 +251,7 @@ def test_cli_setup_help():
 
 def test_cli_setup():
     runner = CliRunner()
-    with runner.isolated_filesystem():
+    with isolated_filesystem():
         result = runner.invoke(cli.cli, ["setup", "--dry-run"])
         print(result.output)
         assert result.exit_code == 0
@@ -225,7 +260,7 @@ def test_cli_setup():
 def test_cli_setup_interactive():
     runner = CliRunner()
 
-    with runner.isolated_filesystem():
+    with isolated_filesystem():
         result = runner.invoke(
             cli.cli, ["setup", "-i", "--dry-run"], input=NUMBER_OF_DIRS * "\n"
         )
@@ -236,7 +271,7 @@ def test_cli_setup_interactive():
 def test_cli_setup_custom_dir():
     runner = CliRunner()
 
-    with runner.isolated_filesystem():
+    with isolated_filesystem():
         result = runner.invoke(
             cli.cli,
             ["setup", "-i", "--dry-run", "-d", "just_a_dir"],
@@ -292,7 +327,7 @@ def test_cli_new_list():
     logging.debug("\nSTARTING TEST")
     runner = CliRunner()
 
-    with runner.isolated_filesystem():
+    with isolated_filesystem():
         result = runner.invoke(cli.cli, ["new", "--list"])
     assert "https://github.com/jepegit/cellpy_cookie_standard.git" in result.output
 
@@ -307,7 +342,7 @@ def test_cli_new(tmp_path):
     prms.Paths.notebookdir = notebookdir
 
     interactive_prms = ["1", "another_project", "yes"]
-    with runner.isolated_filesystem():
+    with isolated_filesystem():
         result = runner.invoke(cli.cli, ["new"], "\n".join(interactive_prms))
     assert "[another_project]:" in result.output
     output_paths = str(list(notebookdir.glob("**/*.ipynb")))
@@ -324,7 +359,7 @@ def test_cli_new_with_dir_as_input(tmp_path):
     notebookdir.mkdir(parents=True, exist_ok=True)
 
     interactive_prms = ["1", "another_project", "yes"]
-    with runner.isolated_filesystem():
+    with isolated_filesystem():
         result = runner.invoke(
             cli.cli, ["new", "-d", str(notebookdir)], "\n".join(interactive_prms)
         )
@@ -336,7 +371,12 @@ def test_cli_new_with_dir_as_input(tmp_path):
 
 @pytest.mark.essential
 def test_convert_cli_v4_to_v8(tmp_path):
-    """cellpy convert upgrades a v4 fixture to v8 on disk."""
+    """cellpy convert upgrades a v4 fixture to v8 on disk.
+
+    No `--to` here on purpose: the `.h5` destination is what selects the
+    legacy HDF5 writer (#569). The default target is v9 — see
+    test_convert_cli_v4_to_v9.
+    """
     from pathlib import Path
 
     import pandas as pd
@@ -366,12 +406,66 @@ def test_convert_cli_v4_to_v8(tmp_path):
         assert "/CellpyData/summary" in store.keys()
 
 
+def test_convert_cli_v4_to_v9_by_default(tmp_path):
+    """With no destination, `cellpy convert` now produces v9 (#569).
+
+    v9 is the zip-of-parquet format CellpyCell.save writes; converting to the
+    format cellpy actually saves is the point of the command.
+    """
+    import zipfile
+    from pathlib import Path
+    import shutil
+
+    from cellpy import cellreader
+
+    source = (
+        Path(__file__).resolve().parents[1]
+        / "testdata"
+        / "hdf5"
+        / "20160805_test001_45_cc_v4.h5"
+    )
+    if not source.is_file():
+        pytest.skip(f"missing legacy fixture: {source}")
+
+    work = tmp_path / source.name
+    shutil.copy(source, work)
+
+    runner = CliRunner()
+    result = runner.invoke(cli.cli, ["convert", str(work)])
+    assert result.exit_code == 0, result.output
+
+    out = work.with_name(f"{work.stem}_v9.cellpy")
+    assert out.is_file(), result.output
+    assert zipfile.is_zipfile(out)
+
+    reloaded = cellreader.CellpyCell().load(out)
+    assert reloaded.data.raw.shape[0] > 0
+
+
+def test_convert_cli_rejects_an_unknown_target(tmp_path):
+    from pathlib import Path
+
+    source = (
+        Path(__file__).resolve().parents[1]
+        / "testdata"
+        / "hdf5"
+        / "20160805_test001_45_cc_v4.h5"
+    )
+    if not source.is_file():
+        pytest.skip(f"missing legacy fixture: {source}")
+
+    runner = CliRunner()
+    result = runner.invoke(cli.cli, ["convert", str(source), "--to", "v10"])
+    assert result.exit_code == 2
+    assert "unknown conversion target" in result.output
+
+
 @pytest.mark.slowtest
 def test_cli_new_different_and_missing_default(tmp_path):
     logging.debug("\nSTARTING TEST")
     runner = CliRunner()
     prms.Batch.template = "missing_template"
-    with runner.isolated_filesystem():
+    with isolated_filesystem():
         result = runner.invoke(
             cli.cli,
             ["new"],
