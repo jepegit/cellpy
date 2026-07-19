@@ -536,9 +536,9 @@ def _get_cap(
         usteps=usteps,
     )
     if cap_type == "charge":
-        column_txt = cell.headers_normal.charge_capacity_txt
+        column_txt = cell.schema.raw.cumulative_charge_capacity
     else:
-        column_txt = cell.headers_normal.discharge_capacity_txt
+        column_txt = cell.schema.raw.cumulative_discharge_capacity
 
     if cycle:
         steps = cycles[cycle]
@@ -553,22 +553,22 @@ def _get_cap(
         if usteps:
             selected = cell._select_usteps(cycle, steps)
             if not cell._is_empty_array(selected):
-                _v.append(selected[cell.headers_normal.voltage_txt])
+                _v.append(selected[cell.schema.raw.potential])
                 _c.append(selected[column_txt] * converter)
                 if detailed:
-                    _t.append(selected[cell.headers_normal.test_time_txt])
-                    _p.append(selected[cell.headers_normal.data_point_txt])
+                    _t.append(selected[cell.schema.raw.test_time])
+                    _p.append(selected[cell.schema.raw.datapoint_num])
             else:
                 logging.debug(f"Steps {steps} is empty")
         else:
             for step in sorted(steps):
                 selected_step = cell._select_step(cycle, step)
                 if not cell._is_empty_array(selected_step):
-                    _v.append(selected_step[cell.headers_normal.voltage_txt])
+                    _v.append(selected_step[cell.schema.raw.potential])
                     _c.append(selected_step[column_txt] * converter)
                     if detailed:
-                        _t.append(selected_step[cell.headers_normal.test_time_txt])
-                        _p.append(selected_step[cell.headers_normal.data_point_txt])
+                        _t.append(selected_step[cell.schema.raw.test_time])
+                        _p.append(selected_step[cell.schema.raw.datapoint_num])
                 else:
                     logging.debug(f"Step {step} is empty")
         try:
@@ -654,10 +654,10 @@ def get_ocv(
     if remove_first:
         ocv_steps = ocv_steps.iloc[1:, :]
 
-    step_time_label = cell.headers_normal.step_time_txt
-    voltage_label = cell.headers_normal.voltage_txt
-    cycle_label = cell.headers_normal.cycle_index_txt
-    step_label = cell.headers_normal.step_index_txt
+    step_time_label = cell.schema.raw.step_time
+    voltage_label = cell.schema.raw.potential
+    cycle_label = cell.schema.raw.cycle_num
+    step_label = cell.schema.raw.step_num
 
     selected_df = raw.loc[
         (

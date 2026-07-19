@@ -545,7 +545,7 @@ class MultiCycleOcvFit:
         """Convenience function for creating a dataframe of the summary of the
         fit (translated)"""
         data = self.get_best_fit_parameters_translated_grouped()
-        cycle_col = self.data.headers_step_table.cycle
+        cycle_col = self.data.schema.steps.cycle_num
         data[cycle_col] = self.get_fit_cycles()
         df = pd.DataFrame(data)
         df = df.set_index(cycle_col)

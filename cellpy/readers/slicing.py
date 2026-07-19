@@ -38,10 +38,10 @@ def mod_raw_split_cycle(cell: "CellpyCell", data_points: List) -> None:
 def _mod_raw_split_cycle(cell: "CellpyCell", data_point: int) -> None:
     r = cell.data.raw
 
-    hdr_data_point = cell.headers_normal.data_point_txt
-    hdr_cycle = cell.headers_normal.cycle_index_txt
-    hdr_c_cap = cell.headers_normal.charge_capacity_txt
-    hdr_d_cap = cell.headers_normal.discharge_capacity_txt
+    hdr_data_point = cell.schema.raw.datapoint_num
+    hdr_cycle = cell.schema.raw.cycle_num
+    hdr_c_cap = cell.schema.raw.cumulative_charge_capacity
+    hdr_d_cap = cell.schema.raw.cumulative_discharge_capacity
     hdr_c_energy = cell.headers_normal.charge_energy_txt
     hdr_d_energy = cell.headers_normal.discharge_energy_txt
 
@@ -125,9 +125,9 @@ def split_many(
         List of CellpyCell objects
 
     """
-    h_summary_index = cell.headers_summary.cycle_index
-    h_raw_index = cell.headers_normal.cycle_index_txt
-    h_step_cycle = cell.headers_step_table.cycle
+    h_summary_index = cell.schema.summary.cycle_num
+    h_raw_index = cell.schema.raw.cycle_num
+    h_step_cycle = cell.schema.steps.cycle_num
 
     if base_cycles is None:
         all_cycles = cell.get_cycle_numbers()
@@ -197,9 +197,9 @@ def with_cycles(cell: "CellpyCell", cycles: Union[int, List[int]]) -> "CellpyCel
         A new CellpyCell object containing only the selected cycles.
 
     """
-    h_summary_index = cell.headers_summary.cycle_index
-    h_raw_index = cell.headers_normal.cycle_index_txt
-    h_step_cycle = cell.headers_step_table.cycle
+    h_summary_index = cell.schema.summary.cycle_num
+    h_raw_index = cell.schema.raw.cycle_num
+    h_step_cycle = cell.schema.steps.cycle_num
 
     if isinstance(cycles, int):
         cycles = [cycles]

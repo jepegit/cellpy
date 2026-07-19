@@ -413,8 +413,8 @@ def cap_mod_summary(cell: "CellpyCell", summary, capacity_modifier="reset"):
     time_00 = time.time()
     # operates on the summary frame, so use the summary headers (native summary
     # discharge/charge differ from the raw names under the flip).
-    discharge_title = cell.headers_summary.discharge_capacity
-    charge_title = cell.headers_summary.charge_capacity
+    discharge_title = cell.schema.summary.discharge_capacity
+    charge_title = cell.schema.summary.charge_capacity
     chargecap = 0.0
     dischargecap = 0.0
 
@@ -443,11 +443,11 @@ def cap_mod_normal(cell: "CellpyCell", capacity_modifier="reset", allctypes=True
     time_00 = time.time()
     logging.debug("Not properly checked yet! Use with caution!")
 
-    cycle_index_header = cell.headers_normal.cycle_index_txt
-    step_index_header = cell.headers_normal.step_index_txt
-    discharge_index_header = cell.headers_normal.discharge_capacity_txt
+    cycle_index_header = cell.schema.raw.cycle_num
+    step_index_header = cell.schema.raw.step_num
+    discharge_index_header = cell.schema.raw.cumulative_discharge_capacity
     discharge_energy_index_header = cell.headers_normal.discharge_energy_txt
-    charge_index_header = cell.headers_normal.charge_capacity_txt
+    charge_index_header = cell.schema.raw.cumulative_charge_capacity
     charge_energy_index_header = cell.headers_normal.charge_energy_txt
 
     raw = cell.data.raw
