@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import os
 import tomllib
 from dataclasses import dataclass, field
@@ -13,6 +14,7 @@ from dotenv import dotenv_values
 
 from cellpy.config.models import CellpyConfig
 from cellpy.config.sources import ProvenanceRegistry, SourceLayer
+from cellpy.exceptions import ConfigurationError
 
 CONFIG_FILENAME = "cellpy.toml"
 
@@ -136,6 +138,45 @@ def _record_layer(registry: ProvenanceRegistry, layer: SourceLayer, payload: dic
         registry.record(layer, payload)
 
 
+def _reject_secrets_from_file(data: dict[str, Any], path: Path) -> None:
+    """Refuse a ``[secrets]`` section in a config file (config plan decision 5).
+
+    Secrets are env-only. Silently ignoring the section would be worse than
+    failing: the user would believe the credential was configured. Name the
+    env vars so the error is also the instruction.
+    """
+    secrets = data.get("secrets")
+    if not secrets:
+        return
+    fields = ", ".join(sorted(secrets)) if isinstance(secrets, dict) else "secrets"
+    env_vars = ", ".join(
+        _LEGACY_SECRET_ENV[f] for f in sorted(secrets) if f in _LEGACY_SECRET_ENV
+    ) or ", ".join(sorted(_LEGACY_SECRET_ENV.values()))
+    raise ConfigurationError(
+        f"{path} contains a [secrets] section ({fields}). Credentials are read "
+        f"from the environment only — set {env_vars} in your environment or "
+        f"your .env file instead, and remove the section from the file."
+    )
+
+
+def _drop_legacy_secrets(data: dict[str, Any], path: Path) -> None:
+    """Strip credentials from a *legacy YAML* layer, in place, with a warning.
+
+    Unlike a hand-written ``cellpy.toml``, a legacy YAML is a file the user is
+    migrating *from* — it may carry the old plain-text ``SQL_PWD``. Refusing to
+    load it would strand them, so drop the section and say so.
+    """
+    secrets = data.pop("secrets", None)
+    if secrets:
+        logging.warning(
+            "%s carries credentials (%s); these are ignored — cellpy 2 reads "
+            "them from the environment only (%s). See the configuration docs.",
+            path,
+            ", ".join(sorted(secrets)) if isinstance(secrets, dict) else "secrets",
+            ", ".join(sorted(_LEGACY_SECRET_ENV.values())),
+        )
+
+
 def load_config(
     overrides: dict[str, Any] | None = None,
     options: LoadOptions | None = None,
@@ -159,6 +200,7 @@ def load_config(
             user_file_path = user_file
             user_toml_loaded = True
             user_data = _read_toml(user_file)
+            _reject_secrets_from_file(user_data, user_file)
             merged = _deep_merge(merged, user_data)
             _record_layer(registry, SourceLayer.USER_FILE, user_data)
 
@@ -166,6 +208,10 @@ def load_config(
             legacy_path = opts.legacy_yaml_file or find_legacy_yaml_file()
             if legacy_path is not None and legacy_path.is_file():
                 legacy_data = load_legacy_yaml_dict(legacy_path)
+                # A legacy YAML may legitimately carry the old plain-text
+                # SQL_PWD; drop it with a warning rather than refusing to load
+                # a file the user did not write in this format.
+                _drop_legacy_secrets(legacy_data, legacy_path)
                 merged = _deep_merge(merged, legacy_data)
                 _record_layer(registry, SourceLayer.USER_FILE, legacy_data)
 
@@ -178,6 +224,7 @@ def load_config(
             and project_file != user_file_path
         ):
             project_data = _read_toml(project_file)
+            _reject_secrets_from_file(project_data, project_file)
             merged = _deep_merge(merged, project_data)
             _record_layer(registry, SourceLayer.PROJECT_FILE, project_data)
 

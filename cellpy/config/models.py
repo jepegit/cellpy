@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from cellpycore.units import CellpyUnits
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, SecretStr
 
 from cellpy.config.types import LimitLoadedCycles, OtherPathField, PathField
 
@@ -246,12 +246,28 @@ class UnitsConfig(BaseModel):
 
 
 class SecretsConfig(BaseModel):
-    """Credentials — env / ``.env`` only; never written to TOML."""
+    """Credentials — env / ``.env`` only; never read from or written to TOML.
 
-    password: str | None = None
+    ``password`` is a :class:`~pydantic.SecretStr`, so it does not leak through
+    ``repr()``, logs, tracebacks or ``model_dump()``. Read the actual value with
+    :meth:`get_password` at the point of use, never earlier.
+
+    The other three are *not* secret material — a host, a user name and a path
+    to a key file — so they stay plain strings. They live here because they
+    arrive from the same env layer and the same consumers need them together
+    (config plan decision 5).
+    """
+
+    model_config = ConfigDict(validate_assignment=True)
+
+    password: SecretStr | None = None
     key_filename: str | None = None
     host: str | None = None
     user: str | None = None
+
+    def get_password(self) -> str | None:
+        """The plain password, or None. Call at the point of use."""
+        return None if self.password is None else self.password.get_secret_value()
 
 
 class CellpyConfig(BaseModel):
