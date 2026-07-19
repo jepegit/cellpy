@@ -247,6 +247,23 @@ def harmonize(
     if missing:
         logging.debug("declared vendor columns absent from this file: %s", missing)
 
+    # Unknown vendor columns are warn + drop (#560 decision, 2026-07-20):
+    # dropping keeps the harmonized frame on-spec, warning keeps it honest.
+    # Columns in `declarations.dropped` are known-and-discarded, so they do
+    # not warn (e.g. a state flag a post hook has already consumed).
+    unrecognised = [
+        column
+        for column in raw.columns
+        if column not in mapping and column not in declarations.dropped
+    ]
+    if unrecognised:
+        logging.warning(
+            "dropping vendor column(s) the loader does not recognise: %s "
+            "(declare them - or list them in LoaderDeclarations.dropped if "
+            "they are deliberate discards - to silence this)",
+            unrecognised,
+        )
+
     present = {vendor: native for vendor, native in mapping.items() if vendor in raw.columns}
     raw = raw.select(list(present)).rename(present)
 

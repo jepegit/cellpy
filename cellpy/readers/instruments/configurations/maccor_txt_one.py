@@ -37,8 +37,11 @@ normal_headers_renaming_dict = {
     "step_index_txt": f"Step",
     "current_txt": f"Amps",
     "voltage_txt": f"Volts",
-    "power_txt": f"Watt-hr",
     "charge_capacity_txt": f"Amp-hr",
+    # A Watt-hr column is dimensionally energy; it used to be claimed by
+    # power_txt as well, and first-wins fed it to power (#560 decision,
+    # 2026-07-20: charge_energy is the real mapping; power stays unmapped
+    # for this model).
     "charge_energy_txt": f"Watt-hr",
     "ac_impedance_txt": f"ACImp/{unit_labels['resistance']}",
     "internal_resistance_txt": f"DCIR/{unit_labels['resistance']}",
