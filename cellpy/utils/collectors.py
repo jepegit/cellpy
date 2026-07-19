@@ -33,6 +33,18 @@ from cellpy.utils.batch import Batch
 from cellpy.utils.helpers import concat_summaries
 from cellpy.utils import ica
 
+# Single copies (#567); collectors used to carry its own, and its
+# load_plotly_figure was the unguarded one that raised without plotly.
+from cellpy.plotting.figures import (  # noqa: F401
+    load_figure,
+    load_matplotlib_figure,
+    load_plotly_figure,
+    make_matplotlib_manager,
+    save_matplotlib_figure,
+)
+from cellpy.plotting.labels import legend_replacer, remove_markers  # noqa: F401
+from cellpy.plotting import theme
+
 hdr_journal = get_headers_journal()
 
 supported_backends = []
@@ -73,62 +85,14 @@ def load_data(filename):
     return data
 
 
-def load_figure(filename, backend=None):
-    """Load figure from file."""
-
-    filename = Path(filename)
-
-    if backend is None:
-        suffix = filename.suffix
-        if suffix in [".pkl", ".pickle"]:
-            backend = "matplotlib"
-        elif suffix in [".json", ".plotly", ".jsn"]:
-            backend = "plotly"
-        else:
-            backend = "plotly"
-
-    if backend == "plotly":
-        return load_plotly_figure(filename)
-    elif backend == "seaborn":
-        return load_matplotlib_figure(filename)
-    elif backend == "matplotlib":
-        return load_matplotlib_figure(filename)
-    else:
-        print(f"WARNING: {backend=} is not supported at the moment")
-        return None
 
 
-def save_matplotlib_figure(fig, filename):
-    pkl.dump(fig, open(filename, "wb"))
 
 
-def make_matplotlib_manager(fig):
-    """Create a new manager for a matplotlib figure."""
-    # create a dummy figure and use its
-    # manager to display "fig"  ; based on https://stackoverflow.com/a/54579616/8508004
-    dummy = plt.figure()
-    new_manager = dummy.canvas.manager
-    new_manager.canvas.figure = fig
-    fig.set_canvas(new_manager.canvas)
-    return fig
 
 
-def load_matplotlib_figure(filename, create_new_manager=False):
-    fig = pkl.load(open(filename, "rb"))
-    if create_new_manager:
-        fig = make_matplotlib_manager(fig)
-    return fig
 
 
-def load_plotly_figure(filename):
-    """Load plotly figure from file."""
-    try:
-        fig = pio.read_json(filename)
-    except Exception as e:
-        print("Could not load figure from json file")
-        print(e)
-        return None
-    return fig
 
 
 def generate_output_path(name, directory, serial_number=None):
@@ -205,30 +169,10 @@ if not supported_backends:
     print("WARNING: no supported backends found")
     print("WARNING: install plotly or seaborn to enable plotting")
 
-px_template_all_axis_shown = dict(
-    xaxis=dict(
-        linecolor="rgb(36,36,36)",
-        mirror=True,
-        showline=True,
-        zeroline=False,
-        title={"standoff": 15},
-    ),
-    yaxis=dict(
-        linecolor="rgb(36,36,36)",
-        mirror=True,
-        showline=True,
-        zeroline=False,
-        title={"standoff": 15},
-    ),
-)
-
-fig_pr_cell_template = go.layout.Template(layout=px_template_all_axis_shown)
-
-fig_pr_cycle_template = go.layout.Template(layout=px_template_all_axis_shown)
-
-film_template = go.layout.Template(layout=px_template_all_axis_shown)
-
-summary_template = go.layout.Template(layout=px_template_all_axis_shown)
+# The collector templates live in cellpy.plotting.theme now and are built
+# lazily (#567): constructing them here at import time made this whole module
+# unimportable without the `batch` extra.
+px_template_all_axis_shown = theme.ALL_AXIS_SHOWN
 
 
 def _setup():
@@ -343,10 +287,7 @@ class BatchCollector:
     @staticmethod
     def _set_plotly_templates():
         pio.templates.default = PLOTLY_BASE_TEMPLATE
-        pio.templates["fig_pr_cell"] = fig_pr_cell_template
-        pio.templates["fig_pr_cycle"] = fig_pr_cycle_template
-        pio.templates["film"] = film_template
-        pio.templates["summary"] = summary_template
+        theme.make_collector_templates()
 
     @property
     def data_collector_arguments(self):
@@ -1753,11 +1694,6 @@ def ica_collector(
 # plotter functions (consider moving to plotutils)
 
 
-def remove_markers(trace):
-    """Remove markers from a plotly trace."""
-
-    trace.update(marker=None, mode="lines")
-    return trace
 
 
 def _hist_eq(trace):
@@ -1778,36 +1714,6 @@ def y_axis_replacer(ax, label):
     return ax
 
 
-def legend_replacer(trace, df, group_legends=True):
-    """Replace legend labels with cell names in plotly plots."""
-
-    name = trace.name
-    parts = name.split(",")
-    if len(parts) == 2:
-        group = int(parts[0])
-        subgroup = int(parts[1])
-    else:
-        print(
-            "Have not implemented replacing legend labels that are not on the form a,b yet."
-        )
-        print(f"legend label: {name}")
-        return trace
-
-    cell_label = df.loc[
-        (df[hdr_journal.group] == group) & (df[hdr_journal.sub_group] == subgroup), "cell"
-    ].values[0]
-    if group_legends:
-        trace.update(
-            name=cell_label,
-            legendgroup=group,
-            hovertemplate=f"{cell_label}<br>{trace.hovertemplate}",
-        )
-    else:
-        trace.update(
-            name=cell_label,
-            legendgroup=cell_label,
-            hovertemplate=f"{cell_label}<br>{trace.hovertemplate}",
-        )
 
 
 def _plotly_y_label_cleaner(y_label_mapper, split_at=20):
