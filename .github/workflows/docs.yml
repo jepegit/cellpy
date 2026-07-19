@@ -1,0 +1,63 @@
+# Build the documentation on every change that can break it.
+#
+# Deliberately its own workflow rather than a job in ci.yml: the required
+# checks are "essential (linux / uv)" and "full (linux / uv)", and ci.yml
+# path-ignores docs/** so documentation edits do not spend a full test run.
+# This gives docs their own fast signal without touching that arrangement.
+name: Docs
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "docs/**"
+      - "zensical.toml"
+      - ".readthedocs.yaml"
+      - "dev/render_example_notebooks.py"
+      - ".github/workflows/docs.yml"
+  pull_request:
+    paths:
+      - "docs/**"
+      - "zensical.toml"
+      - ".readthedocs.yaml"
+      - "dev/render_example_notebooks.py"
+      - ".github/workflows/docs.yml"
+
+jobs:
+  build:
+    name: build (zensical)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      # Matches the Read the Docs build: zensical plus the mkdocstrings
+      # handler, and nothing else — not cellpy, not its dependencies.
+      # mkdocstrings reads the source statically with Griffe, so no import is
+      # needed. If this passes and RTD does not, the difference is RTD's
+      # configuration rather than ours.
+      #
+      # Run through `uvx` rather than installing: the runner's system Python is
+      # externally managed, so `uv pip install --system` is refused.
+      - name: Build the site
+        run: |
+          set -o pipefail
+          uvx --with mkdocstrings-python zensical build --clean 2>&1 | tee build.log
+
+      - name: Fail on broken links
+        run: |
+          # zensical reports broken links and missing anchors as warnings and
+          # still exits 0, so a green build alone would not tell us the docs
+          # are intact.
+          #
+          # Match the *count*, not the phrase: a clean build says "No issues
+          # found", which a bare grep for "issues found" also matches — that
+          # first version failed its own clean build.
+          if grep -qE "[0-9]+ issues? found" build.log; then
+            echo "::error::the documentation build reported issues"
+            grep -E "Warning:|[0-9]+ issues? found" build.log || true
+            exit 1
+          fi
+          echo "documentation build is clean"

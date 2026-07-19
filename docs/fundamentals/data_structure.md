@@ -14,16 +14,12 @@ and for the various cell-tester file-formats that can be read. The class
 can contain several tests and each test is stored in a list. The class also
 contains several attributes that can be assigned directly.
 
-```{eval-rst}
-.. graphviz::
-
-   digraph {
-      "CellpyCell" -> "Data";
-      "CellpyCell" -> "session metadata";
-      "CellpyCell" -> "cellpy metadata";
-      "CellpyCell" -> "methods";
-   }
-
+```mermaid
+flowchart TD
+    n0[CellpyCell] --> n1[Data]
+    n0[CellpyCell] --> n2[session metadata]
+    n0[CellpyCell] --> n3[cellpy metadata]
+    n0[CellpyCell] --> n4[methods]
 ```
 
 ## Methods
@@ -52,18 +48,15 @@ Other common methods worth mentioning are:
 The data is stored as an instance of the Data class, `CellpyCell.data`
 (a `cellpy.cellreader.Data` instance).
 
-```{eval-rst}
-.. graphviz::
-
-   digraph {
-    "CellpyCell" -> "Data";
-        "Data" -> "cell metadata (cell)";
-        "Data" -> "cell metadata (test)";
-        "Data" -> "methods";
-        "Data" -> "raw";
-        "Data" -> "steps";
-        "Data" -> "summary";
-   }
+```mermaid
+flowchart TD
+    n0[CellpyCell] --> n1[Data]
+    n1[Data] --> n2[cell metadata (cell)]
+    n1[Data] --> n3[cell metadata (test)]
+    n1[Data] --> n4[methods]
+    n1[Data] --> n5[raw]
+    n1[Data] --> n6[steps]
+    n1[Data] --> n7[summary]
 ```
 
 The Data object contains the data and the metadata for the cell characterisation experiment(s).

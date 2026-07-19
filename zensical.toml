@@ -1,0 +1,196 @@
+# Zensical configuration for the cellpy documentation.
+#
+# Build locally with:  uv run --group docs zensical serve
+# Reference: https://zensical.org/docs/
+#
+# Follows the cellpy-core setup (its .issueflows/04-designs-and-guides/
+# zensical-docs.md) so the two projects' docs behave the same way.
+
+[project]
+site_name = "cellpy"
+site_description = "Extract and manipulate data from battery data testers."
+site_url = "https://cellpy.readthedocs.io/"
+repo_url = "https://github.com/jepegit/cellpy"
+repo_name = "jepegit/cellpy"
+edit_uri = "edit/master/docs/"
+
+copyright = """
+Copyright &copy; The cellpy developers
+"""
+
+# Researcher-first information architecture: ordered by what someone is trying
+# to *do* (install it, load my data, answer a question about my cells), not by
+# how the package is laid out. Module-shaped navigation belongs in the API
+# reference, which is where people go once they already know what they want.
+nav = [
+    { "Home" = "index.md" },
+    { "Getting started" = [
+        "getting_started/index.md",
+        { "Installation" = "getting_started/installation.md" },
+        { "Setup and configuration" = "getting_started/configuration.md" },
+        { "Check your installation" = "getting_started/checkup.md" },
+        { "Basic usage" = "getting_started/basic_usage.md" },
+        { "Coming from cellpy 1.x" = "getting_started/migration_v1_to_v2.md" },
+    ] },
+    { "Tutorials" = [
+        "examples/index.md",
+        { "Loading data" = "examples/01_loading_data.md" },
+        { "Other file formats" = "examples/06_loading_different_formats.md" },
+        { "Writing a custom loader" = "examples/07_custom_loaders.md" },
+        { "First look at your data" = "examples/02_Initial_data_inspection.md" },
+        { "Capacity vs voltage" = "examples/03_capacity_vs_voltage.md" },
+        { "Incremental capacity analysis" = "examples/04_incremental_capacity_analysis.md" },
+        { "GITT" = "examples/05_GITT.md" },
+        { "Batch processing" = "examples/batch_utility/cellpy_batch_processing_docs.md" },
+        { "Templates" = "examples/templates/tutorial_templates.md" },
+    ] },
+    { "How-to guides" = [
+        { "Work with remote files" = "getting_started/remote_paths.md" },
+        { "Write an instrument loader plugin" = "other/writing_a_loader_plugin.md" },
+    ] },
+    { "Concepts" = [
+        "fundamentals/index.md",
+        { "How cellpy is organised" = "fundamentals/fundamentals.md" },
+        { "The data structure" = "fundamentals/data_structure.md" },
+        { "File formats" = "fundamentals/file_formats.md" },
+    ] },
+    { "Reference" = [
+        { "Configuration settings" = "getting_started/configuration_reference.md" },
+        { "Deprecations" = "reference/deprecations.md" },
+        { "Legacy header map" = "other/header_migration_map.md" },
+        { "API" = [
+            "api/index.md",
+            { "cellpy" = "api/cellpy.md" },
+            { "Readers" = "api/readers.md" },
+            { "Instruments" = "api/instruments.md" },
+            { "Utils" = "api/utils.md" },
+            { "Parameters and config" = "api/parameters.md" },
+        ] },
+    ] },
+    { "Development" = [
+        "contributing/index.md",
+        { "Contributing" = "contributing/contributing.md" },
+        { "Developer guide" = [
+            "contributing/developers_guide/index.md",
+            { "Setting up" = "contributing/developers_guide/dev_cellpy_setup.md" },
+            { "Folder structure" = "contributing/developers_guide/dev_cellpy_folder_structure.md" },
+            { "Data structure" = "contributing/developers_guide/dev_cellpy_data_structure.md" },
+            { "Loaders and instruments" = "contributing/developers_guide/dev_loaders_and_instruments.md" },
+            { "Documentation" = "contributing/developers_guide/dev_docs.md" },
+            { "Packaging for PyPI" = "contributing/developers_guide/dev_cellpy_packaging_pypi.md" },
+            { "Conda packages" = "contributing/developers_guide/dev_conda_package.md" },
+            { "Various" = "contributing/developers_guide/dev_various.md" },
+        ] },
+        { "Issue workflow" = "issue-workflow.md" },
+    ] },
+    { "About" = [
+        { "Release history" = "other/project-history.md" },
+        { "Authors" = "other/authors.md" },
+        { "Code of conduct" = "other/code-of-conduct.md" },
+        { "License" = "other/project-license.md" },
+    ] },
+]
+
+[project.theme]
+language = "en"
+features = [
+    "content.action.edit",
+    "content.action.view",
+    "content.code.annotate",
+    "content.code.copy",
+    "content.footnote.tooltips",
+    "content.tabs.link",
+    "content.tooltips",
+    "navigation.footer",
+    "navigation.indexes",
+    "navigation.instant",
+    "navigation.instant.prefetch",
+    "navigation.sections",
+    "navigation.top",
+    "navigation.tracking",
+    "search.highlight",
+]
+
+[[project.theme.palette]]
+scheme = "default"
+toggle.icon = "lucide/sun"
+toggle.name = "Switch to dark mode"
+
+[[project.theme.palette]]
+scheme = "slate"
+toggle.icon = "lucide/moon"
+toggle.name = "Switch to light mode"
+
+[[project.extra.social]]
+icon = "fontawesome/brands/github"
+link = "https://github.com/jepegit/cellpy"
+
+[[project.extra.social]]
+icon = "fontawesome/brands/python"
+link = "https://pypi.org/project/cellpy/"
+
+# ----------------------------------------------------------------------------
+# Markdown extensions
+# ----------------------------------------------------------------------------
+[project.markdown_extensions.abbr]
+[project.markdown_extensions.admonition]
+[project.markdown_extensions.attr_list]
+[project.markdown_extensions.def_list]
+[project.markdown_extensions.footnotes]
+[project.markdown_extensions.md_in_html]
+[project.markdown_extensions.tables]
+[project.markdown_extensions.toc]
+permalink = true
+[project.markdown_extensions.pymdownx.arithmatex]
+generic = true
+[project.markdown_extensions.pymdownx.betterem]
+[project.markdown_extensions.pymdownx.caret]
+[project.markdown_extensions.pymdownx.details]
+[project.markdown_extensions.pymdownx.emoji]
+emoji_generator = "zensical.extensions.emoji.to_svg"
+emoji_index = "zensical.extensions.emoji.twemoji"
+[project.markdown_extensions.pymdownx.highlight]
+anchor_linenums = true
+line_spans = "__span"
+pygments_lang_class = true
+[project.markdown_extensions.pymdownx.inlinehilite]
+[project.markdown_extensions.pymdownx.keys]
+[project.markdown_extensions.pymdownx.magiclink]
+[project.markdown_extensions.pymdownx.mark]
+[project.markdown_extensions.pymdownx.smartsymbols]
+[project.markdown_extensions.pymdownx.superfences]
+custom_fences = [
+  { name = "mermaid", class = "mermaid", format = "pymdownx.superfences.fence_code_format" }
+]
+[project.markdown_extensions.pymdownx.tabbed]
+alternate_style = true
+combine_header_slug = true
+[project.markdown_extensions.pymdownx.tasklist]
+custom_checkbox = true
+[project.markdown_extensions.pymdownx.tilde]
+
+# Allows --8<-- includes of files living outside docs/ (README.md,
+# DEPRECATIONS.md, HISTORY.md) so those keep a single source of truth.
+[project.markdown_extensions.pymdownx.snippets]
+base_path = ["."]
+check_paths = true
+
+# ----------------------------------------------------------------------------
+# API reference (mkdocstrings)
+# https://zensical.org/docs/setup/extensions/mkdocstrings/
+# ----------------------------------------------------------------------------
+[project.plugins.mkdocstrings.handlers.python]
+paths = ["."]
+inventories = ["https://docs.python.org/3/objects.inv"]
+
+[project.plugins.mkdocstrings.handlers.python.options]
+docstring_style = "google"
+docstring_section_style = "list"
+inherited_members = true
+merge_init_into_class = true
+separate_signature = true
+show_root_heading = true
+show_root_full_path = false
+show_signature_annotations = true
+show_source = false
+heading_level = 2

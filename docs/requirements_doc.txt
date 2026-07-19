@@ -1,8 +1,0 @@
-  Sphinx
-  pandoc
-  nbsphinx
-  sphinx_rtd_theme
-  myst-parser
-  myst-nb
-  graphviz
-  sphinx-book-theme
