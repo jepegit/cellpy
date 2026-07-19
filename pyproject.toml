@@ -83,7 +83,6 @@ Documentation = "https://cellpy.readthedocs.io"
 
 [dependency-groups]
 dev = [
-    "Sphinx",
     "black",
     "build",
     "coverage",
@@ -91,10 +90,16 @@ dev = [
     "ipykernel",
     "nox",
     "lmfit",
-    "pandoc",
     "pytest",
     "pytest-benchmark",
     "pytest-timeout",
+]
+docs = [
+    "ipykernel>=7.3.0",
+    "matplotlib>=3.10.6",
+    "mkdocstrings-python>=2.0.5",
+    "nbconvert>=7.17.1",
+    "zensical>=0.0.46",
 ]
 
 [tool.hatch.version]

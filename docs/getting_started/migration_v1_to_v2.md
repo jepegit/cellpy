@@ -75,7 +75,7 @@ left.save("campaign.cellpy")      # keeps tests [0, 1] + test_id columns
   `CellpyCell` delegates — call sites on `CellpyCell` stay the same.
 - `cellpy.utils.easyplot` was **removed** in 2.0 (deprecated since 1.1); use
   `cellpy.utils.plotutils` and `cellpy.utils.collectors` instead.
-- See [`DEPRECATIONS.md`](../../DEPRECATIONS.md) for the remaining registered
+- See [`DEPRECATIONS.md`](../reference/deprecations.md) for the remaining registered
   removal schedule.
 
 ## Breaking change: `get_cap` frame columns (#540)

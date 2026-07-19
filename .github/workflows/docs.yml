@@ -1,0 +1,58 @@
+# Build the documentation on every change that can break it.
+#
+# Deliberately its own workflow rather than a job in ci.yml: the required
+# checks are "essential (linux / uv)" and "full (linux / uv)", and ci.yml
+# path-ignores docs/** so documentation edits do not spend a full test run.
+# This gives docs their own fast signal without touching that arrangement.
+name: Docs
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "docs/**"
+      - "zensical.toml"
+      - ".readthedocs.yaml"
+      - "dev/render_example_notebooks.py"
+      - ".github/workflows/docs.yml"
+  pull_request:
+    paths:
+      - "docs/**"
+      - "zensical.toml"
+      - ".readthedocs.yaml"
+      - "dev/render_example_notebooks.py"
+      - ".github/workflows/docs.yml"
+
+jobs:
+  build:
+    name: build (zensical)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Set up Python
+        run: uv python install 3.13
+
+      # Matches the Read the Docs build: zensical plus the mkdocstrings
+      # handler, no cellpy and no project dependencies. If this passes and RTD
+      # does not, the difference is RTD's configuration, not ours.
+      - name: Install documentation tooling
+        run: uv pip install --system zensical mkdocstrings-python
+
+      - name: Build the site
+        run: zensical build --clean
+
+      - name: Fail on broken links
+        run: |
+          # zensical reports broken links and missing anchors as warnings and
+          # still exits 0, so a green build alone would not tell us the docs
+          # are intact. Re-run and look at what it said.
+          output=$(zensical build --clean 2>&1)
+          echo "$output"
+          if echo "$output" | grep -qE "issues found"; then
+            echo "::error::the documentation build reported issues (see above)"
+            exit 1
+          fi

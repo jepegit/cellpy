@@ -1,3 +1,2 @@
 
-```{include} ../../AUTHORS.md
-```
+--8<-- "AUTHORS.md"

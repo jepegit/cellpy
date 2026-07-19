@@ -6,52 +6,40 @@ ecosystem of scientific tools available for Python. In particular, `cellpy` uses
 makes it easy for the user to apply advanced methods, analyses of or transformations to the data in addition
 to the features implemented in `cellpy`.
 
-The core of `cellpy` is the **CellpyCell** object ({ref}`illustration of the CellpyCell object <fig2>`) that contains
+The core of `cellpy` is the **CellpyCell** object ([illustration of the CellpyCell object](#the-fundamentals-of-cellpy)) that contains
 both the data (stored in the **Data** object) and central methods required to read, process and store battery testing data.
 The CellpyCell provides the appropriate interface and coordination of the resources needed, such as loading
 configurations (*e.g* default reader, default raw-data location), selecting readers for different data formats and
 exporters for saving the data.
 
-```{figure} figures/CellpyCell.jpg
-:name: fig2
-:alt: cellpycell-object
-:align: center
+![cellpycell-object](figures/CellpyCell.jpg){ .center }
 
 Illustration of the core object within ``cellpy``, the **CellpyCell**.
-```
 
 The **CellpyCell Data** object stores the battery test data as well as the corresponding metadata
-({ref}`illustration of the Data object <fig3>`). In addition to the central DataFrame containing the raw data (*raw*),
+([illustration of the Data object](#the-fundamentals-of-cellpy)). In addition to the central DataFrame containing the raw data (*raw*),
 the DataFrames *steps* and *summary* provide step- (*e.g.*, maximum current, mean voltage,
 type-of-step *vs.* step number) and cycle-based (*e.g.*, gravimetric charge capacity, coulombic
 efficiency, C-rates *vs.* cycle number) summaries and statistics respectively.
 
-```{figure} ./figures/CellpyData.jpg
-:name: fig3
-:alt: Data-object
-:align: center
+![Data-object](./figures/CellpyData.jpg){ .center }
 
 Summary of the types of contents in a **CellpyCell Data** object.
-```
 
 The most common data processing routines, such as extraction of charge/discharge voltage curves in different
 formats or selecting data for specified step-types, are implemented as methods on the CellpyCell object. In
-addition, the `cellpy` library also consists of a rich set of utilities ({ref}`cellpy utilities <fig4>`) that can be
+addition, the `cellpy` library also consists of a rich set of utilities ([cellpy utilities](#the-fundamentals-of-cellpy)) that can be
 used for further processing the data, both individually and within batch routines. Utility functions include *e.g.*,
 ICA tools, assisting in creating dQ/dV graphs (employing different data-smoothing algorithms), or tools for
 OCV relaxation analysis.
 
 
-```{figure} ./figures/Cellpy-Utils.jpg
-:name: fig4
-:alt: cellpy-utilities
-:align: center
+![cellpy-utilities](./figures/Cellpy-Utils.jpg){ .center }
 
 The `cellpy` library contains multiple utilities that assists in data analysis.
 A utility can work on (A) a single **CellpyCell** object, or (B) a set of CellpyCell
 objects such as the Batch utility that helps the user in automating
 and comparing results from many data sets.
-```
 
 The `cellpy`-file format (usually stored in HDF5 format) contains all the data contained in
 the Data object together with additional relevant metadata, including information about the file version.

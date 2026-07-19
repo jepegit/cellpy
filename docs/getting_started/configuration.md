@@ -36,11 +36,10 @@ If you want to specify a root folder different from the default (your HOME
 folder), you can use the `-d` option *e.g.*
 `cellpy setup -i -d /Users/kingkong/cellpydir`
 
-:::{hint}
-You can always edit your configurations directly in the cellpy configuration
-file `.cellpy_prms_USER.conf`. This file should be located inside your
-home directory, /. in posix and c:usersUSERNAME in not-too-old windows.
-:::
+!!! hint
+    You can always edit your configurations directly in the cellpy configuration
+    file `.cellpy_prms_USER.conf`. This file should be located inside your
+    home directory, /. in posix and c:usersUSERNAME in not-too-old windows.
 
 To check, where your configuration file is actually located, you can run:
 
@@ -55,9 +54,8 @@ To get the filepath to your config file AND other cellpy info, run:
 cellpy info -l
 ```
 
-:::{note}
-It is recommended to re-run setup each time you update `cellpy`.
-:::
+!!! note
+    It is recommended to re-run setup each time you update `cellpy`.
 
 ## The configuration file
 
@@ -246,7 +244,7 @@ link the test data to the provided metadata.
 
 Currently, `cellpy` ships with a very simple database solution that hardly justifies its name as a database. It reads an excel-file where the first row acts as column headers, the second provides the type (*e.g.* string, bool, etc), and the rest provides the necessary information for each of the cells (one row pr. cell).
 
-The database file is especially useful when working with the `cellpy` batch routine. A sample excel-file ("db-file") is included as part of the example on the usage of the cellpy batch utility (see [examples folder on GitHub](https://github.com/jepegit/cellpy/tree/master/examples/cellpy%20batch%20utility), or corresponding tutorial [here](/examples/cellpy%20batch%20utility/cellpy_batch_processing.ipynb)).
+The database file is especially useful when working with the `cellpy` batch routine. A sample excel-file ("db-file") is included as part of the example on the usage of the cellpy batch utility (see [examples folder on GitHub](https://github.com/jepegit/cellpy/tree/master/examples/cellpy%20batch%20utility), or corresponding tutorial [here](../examples/batch_utility/cellpy_batch_processing_docs.md)).
 
 ## How the configuration parameters are set and read
 

@@ -1,12 +1,12 @@
 # Installation
 
-`cellpy` is available on {ref}`Windows <cellpy_install_windows>` and {ref}`Linux <cellpy_install_linux>` and can be
-installed using `pip` or `conda`, or {ref}`installed from sources <cellpy_install_sources>`.
+`cellpy` is available on [Windows](#installation-on-windows) and [Linux](#installation-on-linux-and-macos) and can be
+installed using `pip` or `conda`, or [installed from sources](#installation-from-sources).
 
-For more details on dependencies, have a look at {ref}`cellpy dependencies <cellpy_dependencies>`.
+For more details on dependencies, have a look at [cellpy dependencies](#dependencies).
 
 For a teaspoon explanation on how to install `cellpy` on Windows, including the
-installation of Python and setup of virtual environments, {ref}`see below <cellpy_setup_teaspoon>`.
+installation of Python and setup of virtual environments, [see below](#the-teaspoon-explanation-including-installation-of-python).
 
 After installing `cellpy`, continue to
 - [Setup and configuration](configuration.md)
@@ -26,7 +26,7 @@ This will also install all the critical dependencies, as well as `jupyter`
 that comes in handy when working with cellpy.
 
 In general, we recommend to install cellpy in a virtual environment (if you do not know what this means,
-have a look the at the {ref}`teaspoon explanation <cellpy_setup_teaspoon>`).
+have a look the at the [teaspoon explanation](#the-teaspoon-explanation-including-installation-of-python)).
 
 ### Pip
 
@@ -39,11 +39,10 @@ pip install cellpy
 Note that `cellpy` uses several packages that are a bit cumbersome to install
 on windows (e.g. `pytables`) and when using pip, you have to take care of this yourself.
 
-:::{hint}
-You can take care of most of the dependencies by creating a virtual environment
-based on the provided [environment.yml](https://github.com/jepegit/cellpy/blob/master/environment.yml) file, or install using the [requirements.txt](https://github.com/jepegit/cellpy/blob/master/requirements.txt) file.
-For windows, make also sure to have the correct drivers for the .res files.
-:::
+!!! hint
+    You can take care of most of the dependencies by creating a virtual environment
+    based on the provided [environment.yml](https://github.com/jepegit/cellpy/blob/master/environment.yml) file, or install using the [requirements.txt](https://github.com/jepegit/cellpy/blob/master/requirements.txt) file.
+    For windows, make also sure to have the correct drivers for the .res files.
 
 (cellpy_install_linux)=
 ## Installation on Linux (and macOS)
@@ -92,21 +91,20 @@ You might also lack hdf5 support, and you can most likely install this using:
 sudo apt-get install libhdf5-serial-dev
 ```
 
-:::{hint}
-To get `cellpy` up and running with Mac M chip, the following steps might work for you as it did for us
-(or more precisely, for our GitHub action):
+!!! hint
+    To get `cellpy` up and running with Mac M chip, the following steps might work for you as it did for us
+    (or more precisely, for our GitHub action):
 
-```console
-brew install mdbtools
-python -m pip install cython
-brew install hdf5
-brew install c-blosc
-export HDF5_DIR=/opt/homebrew/opt/hdf5
-export BLOSC_DIR=/opt/homebrew/opt/c-blosc
-python -m pip install tables
-python -m pip install cellpy
-```
-:::
+    ```console
+    brew install mdbtools
+    python -m pip install cython
+    brew install hdf5
+    brew install c-blosc
+    export HDF5_DIR=/opt/homebrew/opt/hdf5
+    export BLOSC_DIR=/opt/homebrew/opt/c-blosc
+    python -m pip install tables
+    python -m pip install cellpy
+    ```
 
 (cellpy-install-sources)=
 ## Installation from sources
@@ -189,50 +187,45 @@ conda install -c conda-forge jinja2-time git
 conda install -c conda-forge seaborn plotly jupyter python-kaleido
 ```
 
-:::{note}
-The original maintainer for the `kaleido` package seems to have stopped maintaining it. It is
-recommended to use the version `0.1.*` until the situation is resolved (at least that version works
-on our Windows machines at the moment of writing this, while the newer versions appeared to be
-a bit more moody).
-:::
+!!! note
+    The original maintainer for the `kaleido` package seems to have stopped maintaining it. It is
+    recommended to use the version `0.1.*` until the situation is resolved (at least that version works
+    on our Windows machines at the moment of writing this, while the newer versions appeared to be
+    a bit more moody).
 
-:::{note}
-When `plotly` uses the `kaleido` package to export figures (to for example .png or .svg), the `kaleido` python
-wrapper will search for the `kaleido` binary in the system path. If you have installed `kaleido` using conda,
-you might have to add the path to the `kaleido` binary to your system path. For example, if you are using
-conda on posix, you might find the path to the `kaleido` binary by running `which kaleido` in the terminal.
-Then you can  add this path to your system path by running `export PATH=$PATH:/path/to/kaleido` in the terminal.
-After this, `plotly` should be able to find the `kaleido` binary. Remark that if you are running in a
-`jupyterhub` session, the system path might not be the same as your user path, and you might have to
-add the path to the `kaleido` binary in the `jupyterhub` configuration file.
-:::
+!!! note
+    When `plotly` uses the `kaleido` package to export figures (to for example .png or .svg), the `kaleido` python
+    wrapper will search for the `kaleido` binary in the system path. If you have installed `kaleido` using conda,
+    you might have to add the path to the `kaleido` binary to your system path. For example, if you are using
+    conda on posix, you might find the path to the `kaleido` binary by running `which kaleido` in the terminal.
+    Then you can  add this path to your system path by running `export PATH=$PATH:/path/to/kaleido` in the terminal.
+    After this, `plotly` should be able to find the `kaleido` binary. Remark that if you are running in a
+    `jupyterhub` session, the system path might not be the same as your user path, and you might have to
+    add the path to the `kaleido` binary in the `jupyterhub` configuration file.
 
 For more details, have a look at the documentation of these packages.
 
 ### Additional requirements for .res files
 
 (note_windows)=
-:::{admonition} For Windows users
-.res files from Arbin testers are actually in a Microsoft Access format.
-If you do not have one of the most recent Office  versions, you might not be allowed to install a driver
-of different bit than your office version is using (the installers can be found [here](https://www.microsoft.com/en-us/download/details.aspx?id=54920)).
-Also remark that the driver needs to be of the same bit as your Python
-(so, if you are using 32 bit Python, you will need the 32 bit driver).
-:::
+!!! note "For Windows users"
+    .res files from Arbin testers are actually in a Microsoft Access format.
+    If you do not have one of the most recent Office  versions, you might not be allowed to install a driver
+    of different bit than your office version is using (the installers can be found [here](https://www.microsoft.com/en-us/download/details.aspx?id=54920)).
+    Also remark that the driver needs to be of the same bit as your Python
+    (so, if you are using 32 bit Python, you will need the 32 bit driver).
 
-:::{hint}
-If you run into issues when trying to load .res files on Windows, try to install `sqlalchemy-access`:
-```console
-pip install sqlalchemy-access
-```
-:::
+!!! hint
+    If you run into issues when trying to load .res files on Windows, try to install `sqlalchemy-access`:
+    ```console
+    pip install sqlalchemy-access
+    ```
 
-:::{admonition} For POSIX systems
-I have not found any suitable drivers. Instead, `cellpy` will try to use `mdbtools` to first export the data to
-temporary csv-files, and then import from those csv-file (using the`pandas` library).
-You can install `mdbtools` using your systems preferred package manager (*e.g.* `apt-get install mdbtools` on
-ubuntu or if you are on macOS, try `brew install mdbtools`).
-:::
+!!! note "For POSIX systems"
+    I have not found any suitable drivers. Instead, `cellpy` will try to use `mdbtools` to first export the data to
+    temporary csv-files, and then import from those csv-file (using the`pandas` library).
+    You can install `mdbtools` using your systems preferred package manager (*e.g.* `apt-get install mdbtools` on
+    ubuntu or if you are on macOS, try `brew install mdbtools`).
 
 (cellpy_setup_teaspoon)=
 ## The teaspoon explanation including installation of Python
@@ -250,12 +243,11 @@ Use at least python 3.13, and select the 64 bit version
 (if you fail at installing the 64 bit version, then you can try the
 weaker 32 bit version). Download it and let it install.
 
-:::{caution}
-The bin version matters sometimes, so try to make a mental note
-of what you selected. E.g., if you plan to use the Microsoft Access odbc
-driver ({ref}`see above <note_windows>`), and it is 32-bit, you should probably go for
-a 32-bit python version).
-:::
+!!! caution
+    The bin version matters sometimes, so try to make a mental note
+    of what you selected. E.g., if you plan to use the Microsoft Access odbc
+    driver ([see above](#installation-on-windows)), and it is 32-bit, you should probably go for
+    a 32-bit python version).
 
 Python should now be available on your computer, as well as
 a huge amount of python packages. And Anaconda is kind enough
@@ -298,4 +290,4 @@ conda install -c conda-forge cellpy
 Congratulations, you have (hopefully) successfully installed cellpy.
 
 If you run into problems, doublecheck that all your dependencies are
-installed (see {ref}`here <cellpy_dependencies>`).
+installed (see [here](#dependencies)).

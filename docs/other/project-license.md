@@ -1,3 +1,2 @@
 
-```{include} ../../LICENSE.md
-```
+--8<-- "LICENSE.md"

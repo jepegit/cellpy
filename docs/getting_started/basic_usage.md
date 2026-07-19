@@ -2,16 +2,15 @@
 
 As with most software, you are encouraged to play a little with it.
 In this section, we provide a very short overview of the basic functions.
-Some examples are provided in [Examples & tutorials](/examples/index.md) (this is a work
+Some examples are provided in [Examples & tutorials](../examples/index.md) (this is a work
 in progress and will hopefully be updated and extended in the future).
 In addition, we hope there are some useful stuff in the code
 repository (for example in the [examples
 folder](https://github.com/jepegit/cellpy/tree/master/examples)).
 
-:::{hint}
-The `cellpy pull` command can assist in downloading
-both examples and tests.
-:::
+!!! hint
+    The `cellpy pull` command can assist in downloading
+    both examples and tests.
 
 ## Simple usage as a python library
 
@@ -66,10 +65,9 @@ You can also save your data in csv-format easily by using the method `to_csv´:
 >>> c.to_csv(out_folder)
 ```
 
-:::{note}
-The CellpyCell objects store the data (including the summary and step-tables) in pandas DataFrames.
-This means that you can easily export the data to other formats, such as Excel, by using the to_excel method of the DataFrame object. In addition, CellpyCell objects have a method called to_excel that exports the data to an Excel file.
-:::
+!!! note
+    The CellpyCell objects store the data (including the summary and step-tables) in pandas DataFrames.
+    This means that you can easily export the data to other formats, such as Excel, by using the to_excel method of the DataFrame object. In addition, CellpyCell objects have a method called to_excel that exports the data to an Excel file.
 
 ### 4. Basic operations
 
@@ -96,7 +94,7 @@ There are many more methods available, including methods
 for selecting steps and cycles (`get_current`, `get_voltage`, *etc.*)
 or tuning the data (*e.g.* `split` and `merge`).
 
-Have a look at the examples & tutorials [here](/examples/index.md) or on [Github](https://github.com/jepegit/cellpy/tree/master/examples).
+Have a look at the examples & tutorials [here](../examples/index.md) or on [Github](https://github.com/jepegit/cellpy/tree/master/examples).
 
 ## Convenience methods and tools
 
@@ -120,4 +118,4 @@ Here’s how to create and plot one:
 
 Remember that the process of creating a dQ/dV plot can be quite memory-intensive, especially for large datasets, so it may take a while for the plot to appear.
 
-For more examples, have a look at [examples & tutorials](/examples/index.md).
+For more examples, have a look at [examples & tutorials](../examples/index.md).

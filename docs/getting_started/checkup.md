@@ -14,10 +14,9 @@ To run a more complete check of your installation, there exist a
 cellpy info --check
 ```
 
-:::{hint}
-Even though some of the checks fail, you might still be able to use and enjoy several of the `cellpy` features.
-But, if you want to use all the features, you should try to fix the issues that are reported.
-:::
+!!! hint
+    Even though some of the checks fail, you might still be able to use and enjoy several of the `cellpy` features.
+    But, if you want to use all the features, you should try to fix the issues that are reported.
 
 To get the filepath to your configuration file and other cellpy info, run:
 

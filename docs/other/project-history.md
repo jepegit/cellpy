@@ -1,3 +1,2 @@
 
-```{include} ../../HISTORY.md
-```
+--8<-- "HISTORY.md"
