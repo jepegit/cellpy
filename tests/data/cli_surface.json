@@ -1,0 +1,555 @@
+{
+  "commands": [
+    {
+      "name": "convert",
+      "params": [
+        {
+          "is_flag": false,
+          "kind": "argument",
+          "multiple": false,
+          "opts": [
+            "new_h5"
+          ],
+          "required": false
+        },
+        {
+          "is_flag": false,
+          "kind": "argument",
+          "multiple": false,
+          "opts": [
+            "old_h5"
+          ],
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "edit",
+      "params": [
+        {
+          "is_flag": false,
+          "kind": "argument",
+          "multiple": false,
+          "opts": [
+            "name"
+          ],
+          "required": false
+        },
+        {
+          "is_flag": true,
+          "kind": "option",
+          "multiple": false,
+          "opts": [
+            "--debug",
+            "-d"
+          ],
+          "required": false
+        },
+        {
+          "is_flag": false,
+          "kind": "option",
+          "multiple": false,
+          "opts": [
+            "--default-editor",
+            "-e"
+          ],
+          "required": false
+        },
+        {
+          "is_flag": true,
+          "kind": "option",
+          "multiple": false,
+          "opts": [
+            "--silent",
+            "-s"
+          ],
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "info",
+      "params": [
+        {
+          "is_flag": true,
+          "kind": "option",
+          "multiple": false,
+          "opts": [
+            "--check",
+            "-c"
+          ],
+          "required": false
+        },
+        {
+          "is_flag": true,
+          "kind": "option",
+          "multiple": false,
+          "opts": [
+            "--config",
+            "-C"
+          ],
+          "required": false
+        },
+        {
+          "is_flag": true,
+          "kind": "option",
+          "multiple": false,
+          "opts": [
+            "--configloc",
+            "-l"
+          ],
+          "required": false
+        },
+        {
+          "is_flag": true,
+          "kind": "option",
+          "multiple": false,
+          "opts": [
+            "--params",
+            "-p"
+          ],
+          "required": false
+        },
+        {
+          "is_flag": true,
+          "kind": "option",
+          "multiple": false,
+          "opts": [
+            "--version",
+            "-v"
+          ],
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "new",
+      "params": [
+        {
+          "is_flag": false,
+          "kind": "option",
+          "multiple": false,
+          "opts": [
+            "--directory",
+            "-d"
+          ],
+          "required": false
+        },
+        {
+          "is_flag": false,
+          "kind": "option",
+          "multiple": false,
+          "opts": [
+            "--experiment",
+            "-e"
+          ],
+          "required": false
+        },
+        {
+          "is_flag": false,
+          "kind": "option",
+          "multiple": false,
+          "opts": [
+            "--jupyter-executable"
+          ],
+          "required": false
+        },
+        {
+          "is_flag": true,
+          "kind": "option",
+          "multiple": false,
+          "opts": [
+            "--lab",
+            "-j"
+          ],
+          "required": false
+        },
+        {
+          "is_flag": true,
+          "kind": "option",
+          "multiple": false,
+          "opts": [
+            "--list",
+            "-l"
+          ],
+          "required": false
+        },
+        {
+          "is_flag": true,
+          "kind": "option",
+          "multiple": false,
+          "opts": [
+            "--local-user-template",
+            "-u"
+          ],
+          "required": false
+        },
+        {
+          "is_flag": false,
+          "kind": "option",
+          "multiple": false,
+          "opts": [
+            "--project",
+            "-p"
+          ],
+          "required": false
+        },
+        {
+          "is_flag": true,
+          "kind": "option",
+          "multiple": false,
+          "opts": [
+            "--run",
+            "-r"
+          ],
+          "required": false
+        },
+        {
+          "is_flag": true,
+          "kind": "option",
+          "multiple": false,
+          "opts": [
+            "--serve",
+            "-s"
+          ],
+          "required": false
+        },
+        {
+          "is_flag": false,
+          "kind": "option",
+          "multiple": false,
+          "opts": [
+            "--template",
+            "-t"
+          ],
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "pull",
+      "params": [
+        {
+          "is_flag": true,
+          "kind": "option",
+          "multiple": false,
+          "opts": [
+            "--clone",
+            "-c"
+          ],
+          "required": false
+        },
+        {
+          "is_flag": false,
+          "kind": "option",
+          "multiple": false,
+          "opts": [
+            "--directory",
+            "-d"
+          ],
+          "required": false
+        },
+        {
+          "is_flag": true,
+          "kind": "option",
+          "multiple": false,
+          "opts": [
+            "--examples",
+            "-e"
+          ],
+          "required": false
+        },
+        {
+          "is_flag": false,
+          "kind": "option",
+          "multiple": false,
+          "opts": [
+            "--password",
+            "-p"
+          ],
+          "required": false
+        },
+        {
+          "is_flag": true,
+          "kind": "option",
+          "multiple": false,
+          "opts": [
+            "--tests",
+            "-t"
+          ],
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "run",
+      "params": [
+        {
+          "is_flag": false,
+          "kind": "argument",
+          "multiple": false,
+          "opts": [
+            "name"
+          ],
+          "required": false
+        },
+        {
+          "is_flag": false,
+          "kind": "option",
+          "multiple": false,
+          "opts": [
+            "--batch_col"
+          ],
+          "required": false
+        },
+        {
+          "is_flag": true,
+          "kind": "option",
+          "multiple": false,
+          "opts": [
+            "--cellpy-project",
+            "-p"
+          ],
+          "required": false
+        },
+        {
+          "is_flag": true,
+          "kind": "option",
+          "multiple": false,
+          "opts": [
+            "--cellpyfile"
+          ],
+          "required": false
+        },
+        {
+          "is_flag": true,
+          "kind": "option",
+          "multiple": false,
+          "opts": [
+            "--debug",
+            "-d"
+          ],
+          "required": false
+        },
+        {
+          "is_flag": true,
+          "kind": "option",
+          "multiple": false,
+          "opts": [
+            "--folder",
+            "-f"
+          ],
+          "required": false
+        },
+        {
+          "is_flag": true,
+          "kind": "option",
+          "multiple": false,
+          "opts": [
+            "--journal",
+            "-j"
+          ],
+          "required": false
+        },
+        {
+          "is_flag": true,
+          "kind": "option",
+          "multiple": false,
+          "opts": [
+            "--key",
+            "-k"
+          ],
+          "required": false
+        },
+        {
+          "is_flag": true,
+          "kind": "option",
+          "multiple": false,
+          "opts": [
+            "--list",
+            "-l"
+          ],
+          "required": false
+        },
+        {
+          "is_flag": true,
+          "kind": "option",
+          "multiple": false,
+          "opts": [
+            "--minimal"
+          ],
+          "required": false
+        },
+        {
+          "is_flag": false,
+          "kind": "option",
+          "multiple": false,
+          "opts": [
+            "--nom-cap"
+          ],
+          "required": false
+        },
+        {
+          "is_flag": false,
+          "kind": "option",
+          "multiple": false,
+          "opts": [
+            "--project"
+          ],
+          "required": false
+        },
+        {
+          "is_flag": true,
+          "kind": "option",
+          "multiple": false,
+          "opts": [
+            "--raw"
+          ],
+          "required": false
+        },
+        {
+          "is_flag": true,
+          "kind": "option",
+          "multiple": false,
+          "opts": [
+            "--silent",
+            "-s"
+          ],
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "serve",
+      "params": [
+        {
+          "is_flag": false,
+          "kind": "option",
+          "multiple": false,
+          "opts": [
+            "--directory",
+            "-d"
+          ],
+          "required": false
+        },
+        {
+          "is_flag": false,
+          "kind": "option",
+          "multiple": false,
+          "opts": [
+            "--executable",
+            "-e"
+          ],
+          "required": false
+        },
+        {
+          "is_flag": true,
+          "kind": "option",
+          "multiple": false,
+          "opts": [
+            "--lab",
+            "-l"
+          ],
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "setup",
+      "params": [
+        {
+          "is_flag": true,
+          "kind": "option",
+          "multiple": false,
+          "opts": [
+            "--dry-run",
+            "-dr"
+          ],
+          "required": false
+        },
+        {
+          "is_flag": false,
+          "kind": "option",
+          "multiple": false,
+          "opts": [
+            "--folder-name",
+            "-n"
+          ],
+          "required": false
+        },
+        {
+          "is_flag": true,
+          "kind": "option",
+          "multiple": false,
+          "opts": [
+            "--interactive",
+            "-i"
+          ],
+          "required": false
+        },
+        {
+          "is_flag": true,
+          "kind": "option",
+          "multiple": false,
+          "opts": [
+            "--no-deps"
+          ],
+          "required": false
+        },
+        {
+          "is_flag": true,
+          "kind": "option",
+          "multiple": false,
+          "opts": [
+            "--not-relative",
+            "-nr"
+          ],
+          "required": false
+        },
+        {
+          "is_flag": true,
+          "kind": "option",
+          "multiple": false,
+          "opts": [
+            "--reset",
+            "-r"
+          ],
+          "required": false
+        },
+        {
+          "is_flag": false,
+          "kind": "option",
+          "multiple": false,
+          "opts": [
+            "--root-dir",
+            "-d"
+          ],
+          "required": false
+        },
+        {
+          "is_flag": true,
+          "kind": "option",
+          "multiple": false,
+          "opts": [
+            "--silent",
+            "-s"
+          ],
+          "required": false
+        },
+        {
+          "is_flag": false,
+          "kind": "option",
+          "multiple": false,
+          "opts": [
+            "--test_user",
+            "-t"
+          ],
+          "required": false
+        }
+      ],
+      "subcommands": [
+        "migrate"
+      ]
+    }
+  ]
+}
