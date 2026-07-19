@@ -62,9 +62,23 @@ class LoaderDeclarations:
             vendor file. Columns not listed are assumed already cycle-
             cumulative, which is the common case and the target convention.
         aux_map: vendor column → ``aux_<quantity>_<name>``.
+        passthrough: vendor column → the name it keeps, for data the native
+            schema has no column for. See the note below.
         post_hooks: callables applied to the vendor frame *before* renaming,
             for quirks no declaration can express (e.g. Maccor's single
             signed capacity column that must be split by direction).
+
+    **On ``passthrough``.** ``harmonize()`` drops undeclared columns, which is
+    what stops vendor junk leaking into native frames. But some real
+    measurements have no native column *yet* — energies are the live example
+    (cellpy-core#139), and ``date_time`` may never get one. Dropping those
+    would lose data that the current ``to_native()`` path preserves, so they
+    are carried through under a stated name instead.
+
+    This is deliberately a transitional escape hatch, and it is derived rather
+    than hand-written (see ``declarations_from_configuration``): when the
+    legacy⇄native mapping gains an entry, that column moves from
+    ``passthrough`` into ``column_map`` on its own, with no loader edit.
     """
 
     column_map: Mapping[str, str]
@@ -72,6 +86,7 @@ class LoaderDeclarations:
     timezone: str | None = None
     reset_granularity: Mapping[str, ResetGranularity] = field(default_factory=dict)
     aux_map: Mapping[str, str] = field(default_factory=dict)
+    passthrough: Mapping[str, str] = field(default_factory=dict)
     post_hooks: tuple[Callable, ...] = ()
 
     def __post_init__(self) -> None:
@@ -121,6 +136,14 @@ class LoaderDeclarations:
                 f"produces; the declaration would have no effect."
             )
 
+        shadowing = sorted(set(self.passthrough.values()) & native_names)
+        if shadowing:
+            raise LoaderError(
+                f"passthrough keeps {shadowing} under a name the native schema "
+                f"already owns; map those in column_map instead so they are "
+                f"cast and validated like any other native column."
+            )
+
         bad_aux = sorted(
             target for target in self.aux_map.values() if not _AUX_PATTERN.match(target)
         )
@@ -136,3 +159,8 @@ class LoaderDeclarations:
     def native_columns(self) -> tuple[str, ...]:
         """Native columns this loader produces, aux included."""
         return tuple(self.column_map.values()) + tuple(self.aux_map.values())
+
+    @property
+    def all_columns(self) -> tuple[str, ...]:
+        """Every column the loader emits, passthrough included."""
+        return self.native_columns + tuple(self.passthrough.values())

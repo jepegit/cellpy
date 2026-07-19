@@ -236,7 +236,13 @@ def harmonize(
     for hook in declarations.post_hooks:
         raw = hook(raw)
 
-    mapping = {**declarations.column_map, **declarations.aux_map}
+    # Passthrough columns are renamed alongside the native ones; they simply
+    # keep a name the schema does not own (see LoaderDeclarations.passthrough).
+    mapping = {
+        **declarations.column_map,
+        **declarations.aux_map,
+        **declarations.passthrough,
+    }
     missing = [vendor for vendor in mapping if vendor not in raw.columns]
     if missing:
         logging.debug("declared vendor columns absent from this file: %s", missing)

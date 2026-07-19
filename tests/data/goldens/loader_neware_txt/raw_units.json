@@ -9,7 +9,7 @@
   "nominal_capacity": "mAh/g",
   "power": "W",
   "pressure": "bar",
-  "resistance": "mOhm",
+  "resistance": "mohm",
   "specific_areal": "cm**2",
   "specific_gravimetric": "g",
   "specific_volumetric": "cm**3",
