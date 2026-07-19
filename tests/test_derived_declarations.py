@@ -127,16 +127,30 @@ def test_vendor_test_id_is_not_carried_into_raw():
 
 
 @pytest.mark.essential
-def test_energies_are_passthrough_until_the_core_mapping_lands():
-    """Documents the cellpy-core#139 gap as a tested fact, not a surprise.
+def test_energies_map_natively_since_cellpycore_0_2_3():
+    """cellpy-core#139 landed; the energies are real native columns now.
 
-    The native schema has ``cumulative_charge_energy`` but no legacy attribute
-    maps to it, so energy data survives only as a passthrough. When core adds
-    the entry this test should start failing — which is the point.
+    This test used to assert the opposite — that energy data survived only as a
+    passthrough — and was written to fail the moment core added the mapping.
+    It did, on the 0.2.3 re-pin, which is what a tripwire is for. No loader or
+    configuration changed: the derivation picked the new entries up on its own.
     """
     declarations = declarations_from_configuration(_config("neware_txt_one"))
-    assert "charge_energy" in declarations.passthrough.values()
-    assert SCHEMA.cumulative_charge_energy not in declarations.column_map.values()
+    assert SCHEMA.cumulative_charge_energy in declarations.column_map.values()
+    assert SCHEMA.cumulative_discharge_energy in declarations.column_map.values()
+    assert "charge_energy" not in declarations.passthrough.values()
+
+
+@pytest.mark.essential
+def test_date_time_is_still_a_passthrough():
+    """The mechanism is still needed: not every legacy column has a native home.
+
+    ``date_time`` has no native counterpart (the native schema carries
+    ``epoch_time_utc`` instead, which is not a rename), so it is still carried
+    through under its legacy name.
+    """
+    declarations = declarations_from_configuration(_config("neware_txt_one"))
+    assert "date_time" in declarations.passthrough.values()
 
 
 @pytest.mark.essential
