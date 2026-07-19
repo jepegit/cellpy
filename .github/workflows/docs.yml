@@ -51,9 +51,13 @@ jobs:
           # zensical reports broken links and missing anchors as warnings and
           # still exits 0, so a green build alone would not tell us the docs
           # are intact.
-          if grep -qE "issues found" build.log; then
+          #
+          # Match the *count*, not the phrase: a clean build says "No issues
+          # found", which a bare grep for "issues found" also matches — that
+          # first version failed its own clean build.
+          if grep -qE "[0-9]+ issues? found" build.log; then
             echo "::error::the documentation build reported issues"
-            grep -E "Warning:|issues found" build.log || true
+            grep -E "Warning:|[0-9]+ issues? found" build.log || true
             exit 1
           fi
           echo "documentation build is clean"
