@@ -33,26 +33,27 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v5
 
-      - name: Set up Python
-        run: uv python install 3.13
-
       # Matches the Read the Docs build: zensical plus the mkdocstrings
-      # handler, no cellpy and no project dependencies. If this passes and RTD
-      # does not, the difference is RTD's configuration, not ours.
-      - name: Install documentation tooling
-        run: uv pip install --system zensical mkdocstrings-python
-
+      # handler, and nothing else — not cellpy, not its dependencies.
+      # mkdocstrings reads the source statically with Griffe, so no import is
+      # needed. If this passes and RTD does not, the difference is RTD's
+      # configuration rather than ours.
+      #
+      # Run through `uvx` rather than installing: the runner's system Python is
+      # externally managed, so `uv pip install --system` is refused.
       - name: Build the site
-        run: zensical build --clean
+        run: |
+          set -o pipefail
+          uvx --with mkdocstrings-python zensical build --clean 2>&1 | tee build.log
 
       - name: Fail on broken links
         run: |
           # zensical reports broken links and missing anchors as warnings and
           # still exits 0, so a green build alone would not tell us the docs
-          # are intact. Re-run and look at what it said.
-          output=$(zensical build --clean 2>&1)
-          echo "$output"
-          if echo "$output" | grep -qE "issues found"; then
-            echo "::error::the documentation build reported issues (see above)"
+          # are intact.
+          if grep -qE "issues found" build.log; then
+            echo "::error::the documentation build reported issues"
+            grep -E "Warning:|issues found" build.log || true
             exit 1
           fi
+          echo "documentation build is clean"
