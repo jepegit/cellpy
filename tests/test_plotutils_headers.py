@@ -179,3 +179,48 @@ def test_cv_split_plot_leaves_the_summary_frame_alone(cell):
     )
     assert list(cell.data.summary.columns) == before
     assert cell.data.summary.index.name != "cycle_num"
+
+
+# --- summary_plot_legacy is a delegate now ------------------------------------
+
+
+@pytest.mark.essential
+@pytest.mark.skipif(not seaborn_available, reason="seaborn not installed")
+def test_summary_plot_legacy_delegates_and_warns(cell):
+    """The old implementation could not draw anything at all.
+
+    Its first statement unpacked the return value of
+    `SummaryPlotInfo._create_col_info`, which stores its results as attributes
+    and returns None — so every call raised TypeError, on any cell, since the
+    refactor that introduced the class (#567). The name now delegates to
+    summary_plot, which is strictly better than the TypeError callers got.
+    """
+    import warnings as _warnings
+
+    from tests.figure_spec_support import describe_figure
+
+    with _warnings.catch_warnings(record=True) as caught:
+        _warnings.simplefilter("always")
+        via_legacy = plotutils.summary_plot_legacy(
+            cell, y="capacities_gravimetric", interactive=False
+        )
+    assert any(
+        issubclass(w.category, DeprecationWarning)
+        and "summary_plot_legacy" in str(w.message)
+        for w in caught
+    )
+
+    direct = plotutils.summary_plot(
+        cell, y="capacities_gravimetric", interactive=False
+    )
+    assert describe_figure(via_legacy) == describe_figure(direct)
+
+    import matplotlib.pyplot as plt
+
+    plt.close(via_legacy)
+    plt.close(direct)
+
+
+@pytest.mark.essential
+def test_the_dead_helper_went_with_it():
+    assert not hasattr(plotutils, "_report_summary_plot_info")
