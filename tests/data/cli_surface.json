@@ -20,6 +20,15 @@
             "old_h5"
           ],
           "required": true
+        },
+        {
+          "is_flag": false,
+          "kind": "option",
+          "multiple": false,
+          "opts": [
+            "--to"
+          ],
+          "required": false
         }
       ]
     },

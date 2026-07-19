@@ -21,15 +21,25 @@ SNAPSHOT_PATH = REPO_ROOT / "tests" / "data" / "cli_surface.json"
 
 
 def _describe(command: Any, name: str) -> dict:
-    import click
+    """Describe one command, without asking *which* Click it is built on.
 
+    Deliberately duck-typed. The first version of this script used
+    ``isinstance(param, click.Argument)`` and ``isinstance(command,
+    click.Group)`` against the installed ``click`` — which quietly stops
+    working under Typer, because Typer vendors its own Click as
+    ``typer._click``. Both checks returned False, so every argument would have
+    been recorded as an option and every group as a leaf command: the snapshot
+    would have "passed" the framework change by describing the CLI wrongly.
+
+    ``param_type_name`` is Click's own class attribute (``"argument"`` /
+    ``"option"``), and a group is a thing with ``.commands``. Both hold for
+    either Click.
+    """
     entry: dict[str, Any] = {"name": name, "params": []}
     for param in command.params:
         entry["params"].append(
             {
-                "kind": "argument"
-                if isinstance(param, click.Argument)
-                else "option",
+                "kind": getattr(param, "param_type_name", "option"),
                 "opts": sorted(param.opts + param.secondary_opts),
                 "is_flag": bool(getattr(param, "is_flag", False)),
                 "required": bool(getattr(param, "required", False)),
@@ -37,7 +47,7 @@ def _describe(command: Any, name: str) -> dict:
             }
         )
     entry["params"].sort(key=lambda item: (item["kind"], item["opts"]))
-    if isinstance(command, click.Group):
+    if hasattr(command, "commands"):
         entry["subcommands"] = sorted(command.commands)
     return entry
 

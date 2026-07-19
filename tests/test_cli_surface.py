@@ -119,7 +119,98 @@ def test_subcommands_are_unchanged(expected, actual):
 
 
 @pytest.mark.essential
+def test_arguments_did_not_become_options(expected, actual):
+    """Positional arguments must stay positional.
+
+    Worth its own test because this is the check the *first* version of the
+    snapshot script could not make: it classified parameters with
+    `isinstance(param, click.Argument)` against the installed Click, and Typer
+    vendors its own, so under Typer every argument would have been silently
+    recorded as an option and this comparison would have passed either way.
+    """
+    expected_by_name = {c["name"]: c for c in expected["commands"]}
+    differences = []
+
+    for command in actual["commands"]:
+        before = expected_by_name.get(command["name"])
+        if before is None:
+            continue
+        before_kind = {tuple(p["opts"]): p["kind"] for p in before["params"]}
+        for param in command["params"]:
+            key = tuple(param["opts"])
+            if key in before_kind and before_kind[key] != param["kind"]:
+                differences.append(
+                    f"{command['name']}: {'/'.join(key)} became "
+                    f"{param['kind']} (was {before_kind[key]})"
+                )
+
+    assert not differences, "\n  ".join(differences)
+    # and there really are arguments to check
+    assert any(
+        p["kind"] == "argument" for c in expected["commands"] for p in c["params"]
+    )
+
+
+@pytest.mark.essential
 def test_the_snapshot_is_not_empty(expected):
     """Guard against a truncated snapshot silently passing everything."""
     assert len(expected["commands"]) >= 8
     assert sum(len(c["params"]) for c in expected["commands"]) >= 50
+
+
+@pytest.mark.essential
+def test_click_is_not_a_declared_dependency():
+    """cellpy speaks Typer now; Click comes along only inside it (#569)."""
+    import tomllib
+
+    pyproject = Path(__file__).resolve().parents[1] / "pyproject.toml"
+    data = tomllib.loads(pyproject.read_text(encoding="utf-8"))
+    declared = data["project"]["dependencies"]
+    bare = {
+        d.split(">")[0].split("<")[0].split("=")[0].split(";")[0].strip()
+        for d in declared
+    }
+    assert "click" not in bare, "click is back in the dependency list"
+    assert "typer" in bare
+
+
+@pytest.mark.essential
+@pytest.mark.parametrize(
+    "manifest",
+    [
+        "environment.yml",
+        "environment_dev.yml",
+        "github_actions_environment.yml",
+        "dev/conda-recipes/cellpy/meta.yaml",
+    ],
+)
+def test_click_is_gone_from_the_packaging_manifests(manifest):
+    """pyproject is not the only place a dependency is declared.
+
+    Parsed line-wise rather than as YAML: the conda recipe is a Jinja
+    template, so a YAML parser chokes on it.
+    """
+    path = Path(__file__).resolve().parents[1] / manifest
+    if not path.is_file():
+        pytest.skip(f"missing {manifest}")
+
+    listed = [
+        line.strip()
+        for line in path.read_text(encoding="utf-8").splitlines()
+        if line.strip() in {"- click", "- click,"}
+    ]
+    assert not listed, f"{manifest} still lists click"
+
+
+@pytest.mark.essential
+def test_the_cli_module_does_not_import_click():
+    """A declared-dependency check alone would miss a stray `import click`."""
+    source = (
+        Path(__file__).resolve().parents[1] / "cellpy" / "cli.py"
+    ).read_text(encoding="utf-8")
+    offenders = [
+        line.strip()
+        for line in source.splitlines()
+        if line.strip().startswith(("import click", "from click"))
+    ]
+    assert not offenders, offenders

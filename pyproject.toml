@@ -34,7 +34,6 @@ dependencies = [
     "ruamel.yaml",
     "matplotlib",
     "openpyxl",
-    "click",
     "PyGithub",
     "tqdm",
     "pint",
@@ -143,7 +142,7 @@ markers = [
 ]
 filterwarnings = [
     "ignore::DeprecationWarning:dateparser",
-    "ignore::UserWarning:click",
+    "ignore::UserWarning:click",  # click ships inside typer
     "ignore::FutureWarning:numpy",
     "ignore::UserWarning:uncertainties",
 ]
