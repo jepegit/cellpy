@@ -2,10 +2,10 @@
 
 1. Update SUPPORTED_MODELS, raw_ext and default_model
 2. Add instrument to prms.py
-    a. create the boxed item:
+    a. create the settings item:
 
         Neware = {"default_model": "UIO"}
-        Neware = box.Box(Neware)
+        Neware = AttrDict(Neware)
 
         ...
     b. add it to Instruments:
@@ -20,9 +20,9 @@
         class InstrumentsClass(CellPyConfig):
             tester: str
             custom_instrument_definitions_file: Union[str, None]
-            Arbin: box.Box
-            Maccor: box.Box
-            Neware: box.Box
+            Arbin: AttrDict
+            Maccor: AttrDict
+            Neware: AttrDict
 
 3. (optionally) add Neware defaults to .cellpy_prms_default.conf
 

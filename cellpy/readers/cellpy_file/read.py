@@ -17,6 +17,7 @@ from cellpy.readers.cellpy_file.format import (
     MINIMUM_CELLPY_FILE_VERSION,
     CellpyFileFormat,
     get_format,
+    require_hdf5_support,
 )
 from cellpy.parameters.legacy.update_headers import (
     rename_fid_columns,
@@ -408,6 +409,9 @@ def load(
     if cellpy_file_v9.is_zip_cellpy(filename):
         logging.debug(f"Loading v9 zip cellpy-file: {filename}")
         return cellpy_file_v9.load(filename, selector=selector)
+
+    # From here on the file is HDF5 (v4-v8), which needs PyTables (#570).
+    require_hdf5_support(f"loading the HDF5 cellpy-file {filename}")
 
     with ds.pickle_protocol(PICKLE_PROTOCOL):
         cellpy_file_version = cellpy_file_meta.get_cellpy_file_version(filename)

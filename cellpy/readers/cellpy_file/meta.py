@@ -7,6 +7,7 @@ import warnings
 from cellpy.readers import externals
 from cellpy.exceptions import WrongFileVersion
 from cellpy.parameters import prms
+from cellpy.readers.cellpy_file.format import require_hdf5_support
 
 
 def extract_from_meta_dictionary(
@@ -24,6 +25,7 @@ def extract_from_meta_dictionary(
 
 
 def get_cellpy_file_version(filename, meta_dir=None, parent_level=None):
+    require_hdf5_support(f"reading the HDF5 cellpy-file {filename}")
     if meta_dir is None:
         meta_dir = prms._cellpyfile_common_meta
 

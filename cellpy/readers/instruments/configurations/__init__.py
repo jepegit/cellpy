@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from importlib import import_module
 from pathlib import Path
 
-from ruamel import yaml
+import yaml
 
 # TODO: make tests.
 # TODO: move this into its own module (not __init__).
@@ -82,9 +82,8 @@ def register_local_configuration_from_yaml_file(instrument) -> ModelParameters:
 
     """
 
-    yml = yaml.YAML()
     with open(instrument, "r") as ff:
-        settings = yml.load(ff.read())
+        settings = yaml.safe_load(ff.read())
 
     name = Path(instrument).name
 

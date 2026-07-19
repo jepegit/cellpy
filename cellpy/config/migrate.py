@@ -5,11 +5,10 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from ruamel.yaml import YAML
+import yaml
 
 from cellpy.config.loader import write_toml
 
-_YAML = YAML(typ="safe")
 
 
 def _yaml_section_to_config_key(section: str) -> str | None:
@@ -38,7 +37,7 @@ def _camel_to_snake(name: str) -> str:
 def convert_yaml_to_toml_dict(yaml_text: str) -> dict[str, Any]:
     """Convert legacy ``.cellpy_prms_*.conf`` YAML into new-stack TOML-shaped dict."""
 
-    raw = _YAML.load(yaml_text) or {}
+    raw = yaml.safe_load(yaml_text) or {}
     out: dict[str, Any] = {}
     cell_info: dict[str, Any] = {}
     materials: dict[str, Any] = {}
