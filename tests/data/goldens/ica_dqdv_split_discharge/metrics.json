@@ -1,0 +1,16 @@
+{
+  "columns": [
+    "cycle",
+    "dq",
+    "voltage"
+  ],
+  "description": "dqdv(cell, split=True) discharge frame (long)",
+  "n_columns": 3,
+  "n_rows": 1800,
+  "source": "testdata/data/20160805_test001_45_cc_01.res",
+  "suite": "ica_dqdv_split_discharge",
+  "sums": {
+    "dq": -881143.360687,
+    "voltage": 2600.809121
+  }
+}

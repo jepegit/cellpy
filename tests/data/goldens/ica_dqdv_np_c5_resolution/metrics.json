@@ -1,0 +1,15 @@
+{
+  "columns": [
+    "dqdv",
+    "voltage"
+  ],
+  "description": "dqdv_np with voltage_resolution and diff smoothing",
+  "n_columns": 2,
+  "n_rows": 169,
+  "source": "testdata/data/20160805_test001_45_cc_01.res",
+  "suite": "ica_dqdv_np_c5_resolution",
+  "sums": {
+    "dqdv": 305962.74063,
+    "voltage": 97.306747
+  }
+}

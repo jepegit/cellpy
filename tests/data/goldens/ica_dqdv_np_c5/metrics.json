@@ -1,0 +1,15 @@
+{
+  "columns": [
+    "dqdv",
+    "voltage"
+  ],
+  "description": "dqdv_np on the cycle-5 charge curve with default options",
+  "n_columns": 2,
+  "n_rows": 213,
+  "source": "testdata/data/20160805_test001_45_cc_01.res",
+  "suite": "ica_dqdv_np_c5",
+  "sums": {
+    "dqdv": 385562.530595,
+    "voltage": 122.641048
+  }
+}
