@@ -104,7 +104,12 @@ class _InstrumentConfigProxy:
             secret_field, replacement = _LEGACY_ARBIN_SQL_KEYS[key]
             if secret_field is not None and replacement is not None:
                 warn_once(f"prms.Instruments.Arbin[{key!r}]", replacement)
-                return getattr(get_config().secrets, secret_field)
+                secrets = get_config().secrets
+                # The legacy shim promised a plain string; unwrap the SecretStr
+                # here rather than leaking the wrapper into 1.x-shaped code.
+                if secret_field == "password":
+                    return secrets.get_password()
+                return getattr(secrets, secret_field)
         if hasattr(self._model, key):
             return getattr(self._model, key)
         extras = getattr(self._model, "model_extra", None) or {}

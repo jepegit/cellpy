@@ -69,10 +69,12 @@ def check_connection(
     if scheme not in IMPLEMENTED_PROTOCOLS:
         print(f"   - uri_prefix {scheme.replace(':', '')} not implemented yet")
 
-    password = os.getenv(ENV_VAR_CELLPY_PASSWORD, None)
+    from cellpy.config import credentials
+
+    password = credentials.get_password()
     info["password"] = "********" if password is not None else None
 
-    key_filename = os.getenv(ENV_VAR_CELLPY_KEY_FILENAME, None)
+    key_filename = credentials.get_key_filename()
     if password is None and key_filename is None:
         print(
             f"   - You must define either {ENV_VAR_CELLPY_PASSWORD} "

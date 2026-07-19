@@ -276,3 +276,26 @@ prms.Reader.sep = ','
 # Changing the default folder for processed (output) data
 prms.Paths.outdatadir = 'experiment01/processed_data'
 ```
+
+## Credentials
+
+Passwords, ssh keys and remote host details are **not** stored in the
+configuration file. They are read from the environment (or your `.env` file)
+only:
+
+| Setting | Environment variable |
+| --- | --- |
+| password | `CELLPY_PASSWORD` |
+| ssh key file | `CELLPY_KEY_FILENAME` |
+| host | `CELLPY_HOST` |
+| user | `CELLPY_USER` |
+
+Putting a `[secrets]` section in a `cellpy.toml` is an error rather than a
+silent override — a credential you believe is configured should never quietly
+fail to be. The password is held as a `SecretStr`, so it does not appear in
+reprs, logs, tracebacks or any config dump.
+
+## Every setting
+
+See the generated [configuration reference](configuration_reference.md) for the
+full list of settings, their types and defaults.

@@ -136,7 +136,9 @@ def test_secrets_read_legacy_env(monkeypatch):
     monkeypatch.setenv("CELLPY_PASSWORD", "secret-pass")
     monkeypatch.setenv("CELLPY_USER", "alice")
     result = load_config(options=LoadOptions(skip_files=True, skip_env=False))
-    assert result.config.secrets.password == "secret-pass"
+    # password is a SecretStr as of #565 — the value only comes out on request
+    assert result.config.secrets.get_password() == "secret-pass"
+    assert "secret-pass" not in repr(result.config.secrets)
     assert result.config.secrets.user == "alice"
 
 

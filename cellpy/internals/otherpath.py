@@ -101,9 +101,13 @@ def _scheme_from_uri_prefix(uri_prefix: str) -> str:
 
 
 def _credentials_from_env(*, testing: bool = False) -> Dict[str, Any]:
-    """Build Paramiko/fsspec ``storage_options`` from cellpy env vars."""
-    password = os.getenv(ENV_VAR_CELLPY_PASSWORD, None)
-    key_filename = os.getenv(ENV_VAR_CELLPY_KEY_FILENAME, None)
+    """Build Paramiko/fsspec ``storage_options`` from cellpy credentials."""
+    # Single resolution path (config plan Step 6): session config first, live
+    # environment as fallback — see cellpy.config.credentials.
+    from cellpy.config import credentials
+
+    password = credentials.get_password()
+    key_filename = credentials.get_key_filename()
     if password is None and key_filename is None:
         raise UnderDefined(
             f"You must define either {ENV_VAR_CELLPY_PASSWORD} "
