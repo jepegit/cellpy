@@ -100,7 +100,7 @@ def _seed_known_deprecations() -> None:
     # at runtime (cellpy.parameters.legacy_header_shim).
     _register(
         "legacy header attribute access (headers_normal / _summary / _step_table)",
-        "the native cellpycore schema column names",
+        "c.schema.raw / c.schema.steps / c.schema.summary",
         removal="2.1",
         introduced="2.0",
     )

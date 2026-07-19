@@ -50,6 +50,15 @@ _FRAME_LABEL = {
     "cycle": "headers_summary",
 }
 
+# Frame label -> the public replacement frame on ``CellpyCell.schema`` (#558).
+# Note the frames are spelled as they are on ``c.data`` (raw/steps/summary),
+# not as cellpy-core spells them (raw/step/cycle).
+_SCHEMA_FRAME = {
+    "raw": "raw",
+    "step": "steps",
+    "cycle": "summary",
+}
+
 
 class LegacyHeaderShim:
     """Resolve legacy header attributes/keys to native column names, with a warning.
@@ -99,7 +108,7 @@ class LegacyHeaderShim:
             native_name = None
 
         if native_name is not None:
-            self._warn(name)
+            self._warn(name, native_name)
             return native_name
 
         # Summary specific column by key: strip the postfix, resolve the base,
@@ -113,7 +122,7 @@ class LegacyHeaderShim:
                         native_base = mapping.legacy_attr_to_native("cycle", base)
                     except KeyError:
                         break
-                    self._warn(name)
+                    self._warn(name, f"{native_base}{suffix}")
                     return f"{native_base}{suffix}"
 
         # Legacy-only attribute: the flip does not rename this column, so the
@@ -128,11 +137,14 @@ class LegacyHeaderShim:
             f"legacy mapping (unknown attribute)."
         )
 
-    def _warn(self, name: str) -> None:
+    def _warn(self, name: str, native_name: str) -> None:
         label = _FRAME_LABEL[self._frame]
+        # Name the exact replacement, not just the concept: the user needs the
+        # attribute they should type, and we know it here (conventions plan §3).
+        replacement = f"c.schema.{_SCHEMA_FRAME[self._frame]}.{native_name}"
         warn_once(
             f"{label}.{name}",
-            "the native cellpycore schema column names",
+            replacement,
             removal="2.1",
             introduced="2.0",
             stacklevel=4,
