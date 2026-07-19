@@ -17,6 +17,13 @@ from cellpy.utils.batch_tools.batch_core import BasePlotter
 from cellpy.utils.batch_tools.batch_experiments import CyclingExperiment
 import cellpy.config as config
 
+# Single copies (#567). batch_plotters' legend replacer was the superset —
+# it is the one that moved, inverted_mode and all — and its template builder
+# was competing with plotutils' for the same plotly registry key.
+from cellpy.plotting.labels import legend_replacer as _plotly_legend_replacer
+from cellpy.plotting.labels import remove_markers as _plotly_remove_markers
+from cellpy.plotting.theme import make_plotly_template as _make_plotly_template
+
 
 plotly_available = importlib.util.find_spec("plotly") is not None
 bokeh_available = importlib.util.find_spec("bokeh") is not None
@@ -877,82 +884,10 @@ def generate_summary_frame_for_plotting(pages, experiment, **kwargs) -> pd.DataF
 
 
 # plotly helpers
-def _plotly_remove_markers(trace):
-    trace.update(marker=None, mode="lines")
-    return trace
 
 
-def _plotly_legend_replacer(trace, df, group_legends=True, inverted_mode=False):
-    name = trace.name
-    parts = name.split(",")
-    if len(parts) == 2:
-        group = int(parts[0])
-        subgroup = int(parts[1])
-    else:
-        print(
-            "Have not implemented replacing legend labels that are not on the form a,b yet."
-        )
-        print(f"legend label: {name}")
-        return trace
-    if inverted_mode:
-        group, subgroup = subgroup, group
-    cell_label = df.loc[
-        (df[hdr_journal.group] == group) & (df[hdr_journal.sub_group] == subgroup), "cell"
-    ].values[0]
-    if group_legends:
-        trace.update(
-            name=cell_label,
-            legendgroup=group,
-            hovertemplate=f"{cell_label}<br>{trace.hovertemplate}",
-        )
-    else:
-        trace.update(
-            name=cell_label,
-            legendgroup=cell_label,
-            hovertemplate=f"{cell_label}<br>{trace.hovertemplate}",
-        )
 
 
-def _make_plotly_template(name="axis"):
-    tick_label_width = 6
-    title_font_size = 22
-    title_font_family = "Arial"
-    axis_font_size = 16
-    axis_standoff = 15
-    linecolor = "rgb(36,36,36)"
-
-    t = go.layout.Template(
-        layout=dict(
-            font_family=title_font_family,
-            title=dict(
-                font_size=title_font_size,
-                x=0,
-                xref="paper",
-            ),
-            xaxis=dict(
-                linecolor=linecolor,
-                mirror=True,
-                showline=True,
-                zeroline=False,
-                title=dict(
-                    standoff=axis_standoff,
-                    font_size=axis_font_size,
-                ),
-            ),
-            yaxis=dict(
-                linecolor=linecolor,
-                mirror=True,
-                showline=True,
-                zeroline=False,
-                tickformat=f"{tick_label_width}",
-                title=dict(
-                    standoff=axis_standoff,
-                    font_size=axis_font_size,
-                ),
-            ),
-        )
-    )
-    pio.templates[name] = t
 
 
 def _make_labels():

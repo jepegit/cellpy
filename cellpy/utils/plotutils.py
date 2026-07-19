@@ -34,6 +34,20 @@ from cellpy.exceptions import UnitsError
 from cellpy.units import units_label, with_cellpy_unit
 from cellpy.utils import helpers
 
+# Single copies of the plotting plumbing that used to be duplicated across
+# plotutils / collectors / batch_plotters (#567). Re-exported here so the
+# `from cellpy.utils.plotutils import load_figure` spelling keeps working.
+from cellpy.plotting.figures import (  # noqa: F401
+    load_figure,
+    load_matplotlib_figure,
+    load_plotly_figure,
+    make_matplotlib_manager,
+    save_matplotlib_figure,
+)
+from cellpy.plotting.labels import legend_replacer as _plotly_legend_replacer
+from cellpy.plotting.labels import remove_markers as _plotly_remove_markers
+from cellpy.plotting.theme import make_plotly_template as _make_plotly_template
+
 # get_cap curve frames use native CurveCols names (#540): potential/cycle_num
 # replace the legacy voltage/cycle (used by cycles_plot below).
 _CCOLS = CurveCols()
@@ -111,69 +125,14 @@ def notebook_docstring_printer(func, default_show_docstring=False):
 
 
 # from collectors - tools for loading and saving plots:
-def load_figure(filename, backend=None):
-    """Load figure from file."""
-
-    filename = Path(filename)
-
-    if backend is None:
-        suffix = filename.suffix
-        if suffix in [".pkl", ".pickle"]:
-            backend = "matplotlib"
-        elif suffix in [".json", ".plotly", ".jsn"]:
-            backend = "plotly"
-        else:
-            backend = "plotly"
-
-    if backend == "plotly":
-        return load_plotly_figure(filename)
-    elif backend == "seaborn":
-        return load_matplotlib_figure(filename)
-    elif backend == "matplotlib":
-        return load_matplotlib_figure(filename)
-    else:
-        print(f"WARNING: {backend=} is not supported at the moment")
-        return None
 
 
-def save_matplotlib_figure(fig, filename):
-    pkl.dump(fig, open(filename, "wb"))
 
 
-def make_matplotlib_manager(fig):
-    """Create a new manager for a matplotlib figure."""
-    # create a dummy figure and use its
-    # manager to display "fig"  ; based on https://stackoverflow.com/a/54579616/8508004
-    dummy = plt.figure()
-    new_manager = dummy.canvas.manager
-    new_manager.canvas.figure = fig
-    fig.set_canvas(new_manager.canvas)
-    return fig
 
 
-def load_matplotlib_figure(filename, create_new_manager=False):
-    fig = pkl.load(open(filename, "rb"))
-    if create_new_manager:
-        fig = make_matplotlib_manager(fig)
-    return fig
 
 
-def load_plotly_figure(filename):
-    """Load plotly figure from file."""
-
-    # TODO: create a decorator for this:
-    if not plotly_available:
-        print("Plotly not available")
-        return None
-    import plotly.io as pio
-
-    try:
-        fig = pio.read_json(filename)
-    except Exception as e:
-        print("Could not load figure from json file")
-        print(e)
-        return None
-    return fig
 
 
 def _image_exporter_plotly(figure, filename, timeout=IMAGE_TO_FILE_TIMEOUT, **kwargs):
@@ -253,88 +212,11 @@ def save_image_files(
         print(f"TODO: implement saving {filename_json}")
 
 
-def _make_plotly_template(name="axis"):
-    if not plotly_available:
-        print("Plotly not available")
-        return None
-    import plotly.graph_objects as go
-    import plotly.io as pio
-
-    tick_label_width = 6
-    title_font_size = 22
-    title_font_family = "Arial"
-    axis_font_size = 16
-    axis_standoff = 15
-    linecolor = "rgb(36,36,36)"
-
-    t = go.layout.Template(
-        layout=dict(
-            font_family=title_font_family,
-            title=dict(
-                font_size=title_font_size,
-                x=0,
-                xref="paper",
-            ),
-            xaxis=dict(
-                linecolor=linecolor,
-                mirror=True,
-                showline=True,
-                zeroline=False,
-                title=dict(
-                    standoff=axis_standoff,
-                    font_size=axis_font_size,
-                ),
-            ),
-            yaxis=dict(
-                linecolor=linecolor,
-                mirror=True,
-                showline=True,
-                zeroline=False,
-                tickformat=f"{tick_label_width}",
-                title=dict(
-                    standoff=axis_standoff,
-                    font_size=axis_font_size,
-                ),
-            ),
-        )
-    )
-    pio.templates[name] = t
 
 
 # from batch_plotters:
-def _plotly_remove_markers(trace):
-    trace.update(marker=None, mode="lines")
-    return trace
 
 
-def _plotly_legend_replacer(trace, df, group_legends=True):
-    name = trace.name
-    parts = name.split(",")
-    if len(parts) == 2:
-        group = int(parts[0])
-        subgroup = int(parts[1])
-    else:
-        print(
-            "Have not implemented replacing legend labels that are not on the form a,b yet."
-        )
-        print(f"legend label: {name}")
-        return trace
-
-    cell_label = df.loc[
-        (df[_hdr_journal.group] == group) & (df[_hdr_journal.sub_group] == subgroup), "cell"
-    ].values[0]
-    if group_legends:
-        trace.update(
-            name=cell_label,
-            legendgroup=group,
-            hovertemplate=f"{cell_label}<br>{trace.hovertemplate}",
-        )
-    else:
-        trace.update(
-            name=cell_label,
-            legendgroup=cell_label,
-            hovertemplate=f"{cell_label}<br>{trace.hovertemplate}",
-        )
 
 
 

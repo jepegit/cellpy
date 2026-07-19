@@ -62,6 +62,7 @@ nav = [
             "api/index.md",
             { "cellpy" = "api/cellpy.md" },
             { "ICA and DVA" = "api/ica.md" },
+            { "Plotting" = "api/plotting.md" },
             { "Readers" = "api/readers.md" },
             { "Instruments" = "api/instruments.md" },
             { "Utils" = "api/utils.md" },
