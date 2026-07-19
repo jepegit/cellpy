@@ -15,6 +15,21 @@ NUMBER_OF_DIRS = 11
 log.setup_logging(default_level="DEBUG", testing=True)
 
 
+@pytest.fixture(autouse=True)
+def _plain_help_output(monkeypatch):
+    """Render help without ANSI colour, so substring assertions mean something.
+
+    Typer formats help through rich. When colour is on, ``--help`` comes back
+    as ``\\x1b[1;36m-\\x1b[0m\\x1b[1;36m-help\\x1b[0m`` and a plain
+    ``"--help" in result.output`` fails — which it did on CI while passing
+    locally, because rich decides by terminal detection. Pinning it here makes
+    these tests independent of where they run; it is also what a user piping
+    the output to a file gets.
+    """
+    monkeypatch.setenv("NO_COLOR", "1")
+    monkeypatch.setenv("TERM", "dumb")
+
+
 @contextlib.contextmanager
 def isolated_filesystem():
     """Run the block in a scratch working directory.
