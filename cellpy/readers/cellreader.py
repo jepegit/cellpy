@@ -4405,4 +4405,21 @@ def print_instruments():
             model_text += ", ".join(instrument_models)
             print(model_text)
 
+    # Loaders installed by other packages via the ``cellpy.loaders`` entry
+    # point (#210). Listed separately: they are not shipped with cellpy, and
+    # "why can't cellpy see my loader?" should be answerable from here.
+    from cellpy.readers.instruments import registry
+
+    plugins = registry.available_loaders()
+    if plugins:
+        print()
+        print(80 * "=")
+        print("Instrument loaders installed by other packages")
+        print(80 * "=")
+        for name, info in plugins.items():
+            print(name)
+            print(f"  instrument: {info['instrument']}")
+            print(f"  suffixes: {', '.join(info['supported_suffixes']) or '-'}")
+            print(f"  from: {info['module']}")
+
 
