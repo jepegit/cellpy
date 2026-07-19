@@ -170,21 +170,23 @@ PARITY_CASES = (
 
 
 def _vendor_header(source: str, config) -> set[str]:
-    """The vendor column names actually present in the file."""
-    import polars as pl
+    """The vendor column names actually present in the file.
 
+    Reads the header line directly rather than via a CSV parser: we only want
+    the names, and asking a parser for them means it also infers dtypes from
+    the data, which then fails on values the inference sample did not cover
+    (it did, on Linux, for neware's ``Capacity(Ah)``).
+    """
     formatters = getattr(config, "formatters", {}) or {}
-    frame = pl.read_csv(
-        source,
-        separator=formatters.get("sep") or ",",
-        skip_rows=formatters.get("skiprows", 0) or 0,
-        has_header=True,
-        encoding="utf8-lossy",
-        truncate_ragged_lines=True,
-        n_rows=1,
-        infer_schema_length=1,
-    )
-    return set(frame.columns)
+    separator = formatters.get("sep") or ","
+    skiprows = formatters.get("skiprows", 0) or 0
+
+    with open(source, "r", encoding="utf-8", errors="replace") as handle:
+        for _ in range(skiprows):
+            handle.readline()
+        header = handle.readline()
+
+    return {name.strip() for name in header.rstrip("\n").split(separator)}
 
 
 @pytest.mark.essential
