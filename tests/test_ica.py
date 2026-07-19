@@ -43,8 +43,11 @@ def test_ica_converter(dataset):
     converter.post_process_data()
 
 
-@pytest.mark.xfail(raises=TypeError)
+@pytest.mark.xfail(raises=NullData)
 def test_none_data():
+    # 1.x got a TypeError out of `assert len(capacity) == len(voltage)` on
+    # None. The core checks for missing data first, so "no data" now raises
+    # the exception cellpy has for exactly that (#566).
     ica.dqdv_np(None, None)
 
 
@@ -167,19 +170,31 @@ def test_dqdv_split(dataset):
 
 
 def test_dqdv_one_cycle_tidy(dataset):
+    # `cycle=` is the deprecated spelling of `cycles=`, so this returns the
+    # 2.0 specced frame. It has one row fewer than the 1.x frame per cycle:
+    # 1.x inserted a NaN "splitter" row between the two half-cycles so that a
+    # naive line plot would not join them, which the direction column makes
+    # unnecessary.
     df_ica = ica.dqdv(dataset, cycle=2)
-    assert "voltage" in df_ica.columns
-    assert "cycle" in df_ica.columns
-    assert "dq" in df_ica.columns
-    assert df_ica.size == 2280
+    assert list(df_ica.columns) == [
+        "cycle",
+        "direction",
+        "voltage",
+        "capacity",
+        "dqdv",
+        "dq",
+    ]
+    assert not df_ica["voltage"].isna().any()
+    assert len(df_ica) == 759
 
 
 def test_dqdv_multi_cycles_tidy(dataset):
     df_ica = ica.dqdv(dataset)
     assert "voltage" in df_ica.columns
     assert "cycle" in df_ica.columns
-    assert "dq" in df_ica.columns
-    assert df_ica.size == 26667
+    assert "dqdv" in df_ica.columns
+    # 8889 rows in 1.x, less one splitter row for each of the 18 cycles.
+    assert len(df_ica) == 8889 - 18
 
 
 def test_dqdv_multi_cycles_wide(dataset):

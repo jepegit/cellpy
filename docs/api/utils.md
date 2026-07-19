@@ -12,7 +12,8 @@ Batch processing, plotting, and the analysis helpers.
 
 ## Analysis
 
-::: cellpy.utils.ica
+Incremental capacity analysis lives at [`cellpy.ica`](ica.md) since 2.0;
+`cellpy.utils.ica` re-exports it.
 
 ::: cellpy.utils.ocv_rlx
 

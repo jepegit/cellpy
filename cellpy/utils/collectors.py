@@ -1716,7 +1716,18 @@ def ica_collector(
                 inverse=inverse,
             )
             cycles = list(set(filtered_cycles).intersection(set(cycles)))
-        curves = ica.dqdv(
+        # Deliberately still on the 1.x frame (private entry point, so no
+        # user-facing DeprecationWarning fires from inside a collector).
+        #
+        # The blocker is a convention clash, not effort: `ica_plotter` selects
+        # `direction < 0` and calls it "charge", while `get_cap` gives -1 to
+        # the *first* half-cycle, which for cellpy's default cycle_mode="anode"
+        # is the cell **discharge**. Both readings are defensible - one is
+        # electrode-centric, the other cell-centric - so moving this to the
+        # specced frame's spelled-out "charge"/"discharge" would flip the
+        # labels on every batch ICA plot depending on which one we pick.
+        # That needs a maintainer decision, not a refactor. See cellpy#566.
+        curves = ica._dqdv_combined_frame(
             c,
             cycle=cycles,
             voltage_resolution=voltage_resolution,
