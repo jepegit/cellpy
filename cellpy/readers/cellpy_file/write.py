@@ -7,7 +7,7 @@ import warnings
 from dataclasses import asdict
 
 from cellpy.parameters.internal_settings import PICKLE_PROTOCOL
-from cellpy.readers.cellpy_file.format import FORMAT_V8, CellpyFileFormat
+from cellpy.readers.cellpy_file.format import FORMAT_V8, CellpyFileFormat, require_hdf5_support
 from cellpy.readers import data_structures as ds
 from cellpy.readers import externals
 from cellpy.readers.cellpy_file import dtype as cellpy_file_dtype
@@ -55,6 +55,7 @@ def create_infotable(data, fmt: CellpyFileFormat = FORMAT_V8):
 
 def save(data, path, *, format_spec: CellpyFileFormat = FORMAT_V8) -> None:
     """Write ``Data`` to a cellpy-file (HDF5) with a single owned store lifecycle."""
+    require_hdf5_support(f"writing the HDF5 cellpy-file {path}")
     fmt = format_spec
     if getattr(data, "_extra_tests", None):
         logging.warning(

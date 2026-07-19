@@ -10,6 +10,10 @@ from pathlib import Path
 from typing import Any
 
 import platformdirs
+# python-dotenv is not a *direct* dependency (#570): pydantic-settings
+# declares it as a hard requirement, so it is guaranteed present wherever
+# this stack runs. If pydantic-settings ever drops it, this import is the
+# signal to re-declare it in pyproject.toml.
 from dotenv import dotenv_values
 
 from cellpy.config.models import CellpyConfig

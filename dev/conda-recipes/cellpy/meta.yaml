@@ -29,6 +29,7 @@ requirements:
     - cellpycore ==0.2.1
     - charset-normalizer
     - cookiecutter >=2.1
+    - pyyaml
     - dateparser
     - defusedxml
     - fabric >=3.1
@@ -44,13 +45,10 @@ requirements:
     - pydantic-settings >=2.14.2
     - pygithub >=2.2.0
     - pyodbc >=4.0
-    - python-box >=7.0
-    - python-dotenv >=1.0.1
     - python-isal
     - pytables >=3.8
     - requests
     - rich >=13.5
-    - ruamel.yaml >=0.17.21
     - scipy >=1.10.1
     - setuptools >=67.7
     - sqlalchemy >=2.0.0

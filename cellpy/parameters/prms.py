@@ -305,17 +305,38 @@ class MaterialsClass(CellPyDataConfig):
 
 
 # This can stay global:
-# remark! using box.Box for each instrument
+class AttrDict(dict):
+    """A dict whose keys are also attributes.
+
+    Replaces ``python-box`` (#570): the four instrument-settings objects below
+    were the package's only remaining use, and the only Box features they
+    leaned on were attribute access and ``.to_dict()``.
+    """
+
+    def __getattr__(self, name):
+        try:
+            return self[name]
+        except KeyError:
+            raise AttributeError(name) from None
+
+    def __setattr__(self, name, value):
+        self[name] = value
+
+    def to_dict(self) -> dict:
+        return dict(self)
+
+
+# remark! using AttrDict for each instrument
 @dataclass
 class InstrumentsClass(CellPyConfig):
     """Settings for the instruments."""
 
     tester: Union[str, None]
     custom_instrument_definitions_file: Union[str, None]
-    Arbin: externals.box.Box
-    Maccor: externals.box.Box
-    Neware: externals.box.Box
-    Batmo: externals.box.Box
+    Arbin: AttrDict
+    Maccor: AttrDict
+    Neware: AttrDict
+    Batmo: AttrDict
 
 
 # Pre-defined instruments:
@@ -334,16 +355,16 @@ _Arbin = {
     "SQL_Driver": "SQL Server",
 }
 
-Arbin = externals.box.Box(_Arbin)
+Arbin = AttrDict(_Arbin)
 
 _Maccor = {"default_model": "one"}
-Maccor = externals.box.Box(_Maccor)
+Maccor = AttrDict(_Maccor)
 
 _Neware = {"default_model": "one"}
-Neware = externals.box.Box(_Neware)
+Neware = AttrDict(_Neware)
 
 _Batmo = {"default_model": "bdf"}
-Batmo = externals.box.Box(_Batmo)
+Batmo = AttrDict(_Batmo)
 
 # ------------------------------------------------------------------------------
 # Other secret- or non-config (only for developers and super-users)

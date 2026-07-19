@@ -29,9 +29,7 @@ dependencies = [
     "scipy",
     "numpy",
     "pandas>=3.0.3,<4",
-    "python-box",
     "setuptools",
-    "ruamel.yaml",
     "matplotlib",
     "openpyxl",
     "PyGithub",
@@ -41,11 +39,10 @@ dependencies = [
     "pyodbc",
     "sqlalchemy>=2.0.0",
     "sqlalchemy-access; platform_system == 'Windows'",
-    "python-dotenv",
     "dateparser",
     "cookiecutter",
+    "pyyaml",
     "jinja2_time",
-    "tables",
     "ipykernel",
     "rich",
     "charset-normalizer",
@@ -70,7 +67,8 @@ dependencies = [
 [project.optional-dependencies]
 batch = ["ipython", "jupyter", "plotly", "seaborn", "kaleido>=0.1,<1.4"]
 fit = ["lmfit"]
-all = ["ipython", "jupyter", "plotly", "seaborn", "kaleido>=0.1,<1.4", "lmfit"]
+legacy-files = ["tables"]
+all = ["ipython", "jupyter", "plotly", "seaborn", "kaleido>=0.1,<1.4", "lmfit", "tables"]
 
 [project.scripts]
 cellpy = "cellpy.cli:cli"
@@ -82,6 +80,9 @@ Documentation = "https://cellpy.readthedocs.io"
 
 [dependency-groups]
 dev = [
+    # tables is a `legacy-files` extra for users, but the test suite reads
+    # and writes v8 HDF5 fixtures throughout, so dev envs always carry it.
+    "tables",
     "black",
     "build",
     "coverage",

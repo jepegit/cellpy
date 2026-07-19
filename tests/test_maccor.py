@@ -46,14 +46,12 @@ def test_cellpy_get_model_one(parameters):
 
 def test_load_custom_yaml_file(parameters):
     definitions_file = parameters.custom_instrument_path
-    from pprint import pprint
 
-    from ruamel import yaml
+    import yaml
 
-    yml = yaml.YAML()
     with open(definitions_file, "r") as ff:
-        settings = yml.load(ff.read())
-    pprint(settings)
+        settings = yaml.safe_load(ff.read())
+    assert settings, "custom instrument yaml parsed to nothing"
 
 
 def test_cellpy_get_model_one_custom_instrument_file(parameters):

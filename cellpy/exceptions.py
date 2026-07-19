@@ -45,6 +45,16 @@ class CorruptCellpyFile(IOError, CellpyError):
     pass
 
 
+class OptionalDependencyError(ImportError, CellpyError):
+    """A feature needs an optional dependency that is not installed.
+
+    The message names the extra to install (e.g. ``pip install
+    cellpy[legacy-files]``), so the fix travels with the error.
+    """
+
+    pass
+
+
 class ConfigurationError(CellpyError):
     """Raised when configuration validation fails."""
 

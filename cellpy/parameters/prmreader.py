@@ -9,8 +9,8 @@ from pprint import pprint
 from rich import print
 import dotenv
 from dataclasses import asdict
-from ruamel.yaml import YAML
-from ruamel.yaml.error import YAMLError
+import yaml
+from yaml import YAMLError
 
 import cellpy.config as config
 from cellpy.config.legacy import (
@@ -45,7 +45,6 @@ ENVIRONMENT_EXAMPLE = """
 # CELLPY_USER=<user>
 """
 
-yaml = YAML()
 
 
 def initialize():
@@ -115,11 +114,14 @@ def _write_prm_file(file_name=None):
 
     try:
         with open(file_name, "w") as config_file:
-            yaml.allow_unicode = True
-            yaml.default_flow_style = False
-            yaml.explicit_start = True
-            yaml.explicit_end = True
-            yaml.dump(config_dict, config_file)
+            yaml.safe_dump(
+                config_dict,
+                config_file,
+                allow_unicode=True,
+                default_flow_style=False,
+                explicit_start=True,
+                explicit_end=True,
+            )
     except YAMLError:
         raise ConfigFileNotWritten
 
@@ -229,7 +231,7 @@ def _read_prm_file_without_updating(prm_filename):
     logging.debug("Reading config-file: %s" % prm_filename)
     try:
         with open(prm_filename, "r") as config_file:
-            prm_dict = yaml.load(config_file)
+            prm_dict = yaml.safe_load(config_file)
 
     except YAMLError as e:
         raise ConfigFileNotRead from e

@@ -121,3 +121,34 @@ def get_format(version: int) -> CellpyFileFormat:
         KeyError: If ``version`` has no registered HDF5 layout (e.g. v9).
     """
     return _FORMAT_BY_VERSION[version]
+
+
+def require_hdf5_support(context: str) -> None:
+    """Raise a typed error when PyTables is missing and *context* needs it.
+
+    ``tables`` moved from a required dependency to the ``legacy-files`` extra
+    in 2.0 (#570): the default on-disk format is v9 (zip-of-parquet), so a
+    plain install no longer pays for the HDF5 stack. Without this guard, a
+    v4-v8 file on such an install would die inside pandas with
+    ``ImportError: Missing optional dependency 'tables'`` - accurate, but
+    naming neither the file format nor the fix.
+
+    Args:
+        context: what the caller was trying to do, for the error message.
+
+    Raises:
+        OptionalDependencyError: naming the extra to install.
+    """
+    import importlib.util
+
+    if importlib.util.find_spec("tables") is not None:
+        return
+
+    from cellpy.exceptions import OptionalDependencyError
+
+    raise OptionalDependencyError(
+        f"{context} needs the HDF5 stack (PyTables), which is not installed. "
+        "cellpy-files in the v4-v8 HDF5 layout are a legacy format; install "
+        "the extra with:  pip install cellpy[legacy-files]  - or convert the "
+        "file once with `cellpy convert` on an environment that has it."
+    )
