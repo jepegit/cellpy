@@ -7,7 +7,7 @@ raw_units = {
     "voltage": "V",
     "energy": "Wh",
     "power": "W",
-    "resistance": "Ohm",
+    "resistance": "ohm",  # pint-parsable ("Ohm" is not); #560
 }
 
 normal_headers_renaming_dict = {

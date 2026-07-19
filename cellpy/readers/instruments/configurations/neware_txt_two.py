@@ -7,7 +7,7 @@ raw_units = {
     "voltage": "V",
     "energy": "mWh",
     "power": "mW",
-    "resistance": "mOhm",
+    "resistance": "mohm",  # pint-parsable ("mOhm" is not); #560
 }
 
 unit_labels = {
