@@ -107,6 +107,46 @@ def _seed_known_deprecations() -> None:
     # cellpy.utils.easyplot was removed in 2.0 (#544); it is no longer a
     # pending deprecation, so it is dropped from the registry / DEPRECATIONS.md.
 
+    # ICA redesign (#566). The 1.x entry points survive as shims over the new
+    # pure core and reproduce the old numbers exactly; they warn per call site.
+    _register(
+        "ica.Converter",
+        "cellpy.ica.transform_half_cycle with IcaOptions",
+        removal="2.1",
+    )
+    _register(
+        "ica.dqdv_cycle",
+        "cellpy.ica.dqdv (returns the specced long frame)",
+        removal="2.1",
+    )
+    _register(
+        "ica.dqdv_cycles",
+        "cellpy.ica.dqdv (returns the specced long frame)",
+        removal="2.1",
+    )
+    _register(
+        "ica.dqdv_np",
+        "cellpy.ica.transform_half_cycle with IcaOptions",
+        removal="2.1",
+    )
+    _register("ica.dqdv(cycle=...)", "cellpy.ica.dqdv(cycles=...)", removal="2.1")
+    _register(
+        "ica.dqdv(label_direction=...)",
+        "the direction column, which the specced frame always carries",
+        removal="2.1",
+    )
+    _register(
+        "ica.dqdv(split=... / tidy=...)",
+        "cellpy.ica.dqdv(direction=...) and cellpy.ica.to_wide()",
+        removal="2.1",
+    )
+    # The ICA output frame carries both spellings for one release.
+    _register(
+        "the 'dq' column of the ica output frame",
+        "the 'dqdv' column of the same frame",
+        removal="2.1",
+    )
+
 
 if __name__ == "__main__":
     _seed_known_deprecations()

@@ -367,7 +367,12 @@ def generate_folder_names(name, project):
 def _extract_dqdv(cell_data, extract_func, last_cycle):
     """Simple wrapper around the cellpy.utils.ica.dqdv function."""
 
-    from cellpy.utils.ica import dqdv_np
+    from cellpy.ica import IcaOptions, transform_half_cycle
+
+    # dqdv_np's defaults, spelled out (it is deprecated; see cellpy#566). The
+    # caller hands us one explicit half-cycle at a time, so there is no
+    # direction to infer here.
+    options = IcaOptions(pre_smoothing=True)
 
     list_of_cycles = cell_data.get_cycle_numbers()
     if last_cycle is not None:
@@ -378,9 +383,9 @@ def _extract_dqdv(cell_data, extract_func, last_cycle):
     for cycle in list_of_cycles:
         try:
             c, v = extract_func(cycle, return_dataframe=False)
-            v, dq = dqdv_np(v, c)
-            v = v.tolist()
-            dq = dq.tolist()
+            result = transform_half_cycle(v, c, options)
+            v = result.x.tolist()
+            dq = result.y.tolist()
         except NullData as e:
             v = list()
             dq = list()

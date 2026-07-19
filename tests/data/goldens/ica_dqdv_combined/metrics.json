@@ -1,0 +1,19 @@
+{
+  "columns": [
+    "cycle",
+    "direction",
+    "dq",
+    "voltage"
+  ],
+  "description": "dqdv(cell) long frame over every cycle",
+  "n_columns": 4,
+  "n_rows": 8889,
+  "source": "testdata/data/20160805_test001_45_cc_01.res",
+  "suite": "ica_dqdv_combined",
+  "sums": {
+    "cycle": 71309.0,
+    "direction": -623.0,
+    "dq": -853881.918437,
+    "voltage": 5120.24992
+  }
+}

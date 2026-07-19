@@ -35,6 +35,7 @@ if str(REPO_ROOT / "tests") not in sys.path:
 from golden_support import sort_summary_columns  # noqa: E402
 from loader_golden_support import LOADER_GOLDEN_SPECS, load_loader_snapshot  # noqa: E402
 from curve_golden_support import CURVE_GOLDEN_CASES, capture_curve_case  # noqa: E402
+from ica_golden_support import ICA_GOLDEN_CASES, capture_ica_case  # noqa: E402
 
 _SUITES: dict[str, Callable[[Path], None]] = {}
 
@@ -217,6 +218,28 @@ def _register_curve_golden_suites() -> None:
 
 
 _register_curve_golden_suites()
+
+
+def _register_ica_golden_suites() -> None:
+    for case in ICA_GOLDEN_CASES:
+
+        def _make_regen(selected_case=case):
+            @register_golden_suite(selected_case.suite)
+            def _regen_ica(out_dir: Path, _case=selected_case) -> None:
+                frame, metrics = capture_ica_case(_case)
+                write_parquet_frame(frame, out_dir / "ica.parquet")
+                write_json_doc(metrics, out_dir / "metrics.json")
+                print(
+                    f"[{_case.suite}] wrote ica.parquet ({metrics['n_rows']} rows, "
+                    f"{metrics['n_columns']} cols) and metrics.json"
+                )
+
+            return _regen_ica
+
+        _make_regen()
+
+
+_register_ica_golden_suites()
 
 
 def _regenerate_suite(name: str, out_root: Path) -> None:
