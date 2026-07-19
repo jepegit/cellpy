@@ -147,6 +147,15 @@ def _seed_known_deprecations() -> None:
         removal="2.1",
     )
 
+    # Plotting redesign (#567). The old implementation behind this name was
+    # unconditionally broken (its first statement unpacked a None); the name
+    # now delegates to summary_plot and goes away in 2.1.
+    _register(
+        "plotutils.summary_plot_legacy",
+        "cellpy.utils.plotutils.summary_plot (same figures, same options)",
+        removal="2.1",
+    )
+
 
 if __name__ == "__main__":
     _seed_known_deprecations()

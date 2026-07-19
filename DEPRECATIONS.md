@@ -17,4 +17,5 @@ uv run python -m cellpy._deprecation
 | `ica.dqdv_np` | `cellpy.ica.transform_half_cycle with IcaOptions` | 2.0 | 2.1 |
 | `legacy header attribute access (headers_normal / _summary / _step_table)` | `c.schema.raw / c.schema.steps / c.schema.summary` | 2.0 | 2.1 |
 | `make_new_cell` | `CellpyCell.vacant` | 2.0 | 2.1 |
+| `plotutils.summary_plot_legacy` | `cellpy.utils.plotutils.summary_plot (same figures, same options)` | 2.0 | 2.1 |
 | `the 'dq' column of the ica output frame` | `the 'dqdv' column of the same frame` | 2.0 | 2.1 |
