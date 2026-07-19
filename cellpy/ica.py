@@ -84,6 +84,12 @@ _CCOLS = CurveCols()
 #: *last* +1. Which physical direction that is depends on ``cycle_mode``: an
 #: anode cell is discharged first, everything else is charged first. The old
 #: output frame exposed the raw code and left the reader to work this out.
+#:
+#: The spelled-out labels are **cell-centric** (decision #591, 2026-07-20):
+#: "charge" is the *cell* charging, agreeing with ``get_ccap``/``get_dcap``
+#: and the summary's charge/discharge columns. The electrode-centric reading
+#: (lithiating the anode as "charging the electrode") can be derived by
+#: swapping the labels when ``cycle_mode == "anode"``.
 _DIRECTION_BY_CYCLE_MODE = {
     "anode": {-1: "discharge", 1: "charge"},
     "cathode": {-1: "charge", 1: "discharge"},

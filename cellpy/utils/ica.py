@@ -27,7 +27,6 @@ from cellpy.ica import (  # noqa: F401
     IcaCols,
     IcaOptions,
     ICA_COLS,
-    _dqdv_combined_frame,
     dqdv,
     dqdv_cycle,
     dqdv_cycles,
