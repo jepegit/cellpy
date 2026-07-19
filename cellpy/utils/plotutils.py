@@ -27,6 +27,8 @@ from cellpy.parameters.internal_settings import (
     get_headers_step_table,
     get_headers_summary,
 )
+from cellpy.exceptions import UnitsError
+from cellpy.units import units_label, with_cellpy_unit
 from cellpy.utils import helpers
 
 # get_cap curve frames use native CurveCols names (#540): potential/cycle_num
@@ -604,14 +606,14 @@ def create_colormarkerlist(
     return _color_list, _symbol_list
 
 
-def _get_capacity_unit(c, mode="gravimetric", seperator="/"):
-    specific_selector = {
-        "gravimetric": f"{c.cellpy_units.charge}{seperator}{c.cellpy_units.specific_gravimetric}",
-        "areal": f"{c.cellpy_units.charge}{seperator}{c.cellpy_units.specific_areal}",
-        "volumetric": f"{c.cellpy_units.charge}{seperator}{c.cellpy_units.specific_volumetric}",
-        "absolute": f"{c.cellpy_units.charge}",
-    }
-    return specific_selector.get(mode, "-")
+def _get_capacity_unit(c, mode="gravimetric"):
+    # Callers derive the mode from a y-spec suffix (``y.split("_")[-1]``), so
+    # it is routinely something that is not a mode at all; keep returning the
+    # "-" placeholder for those rather than letting units_label raise.
+    try:
+        return units_label("charge", mode, units=c.cellpy_units)
+    except UnitsError:
+        return "-"
 
 
 # Per-row y-axis labels for predefined ``y`` sets that route a different
@@ -824,22 +826,22 @@ class SummaryPlotInfo:
         x_axis_labels = {
             hdr.cycle_index: "Cycle Number",
             hdr.data_point: "Point",
-            hdr.test_time: f"Test Time ({c.cellpy_units.time})",
+            hdr.test_time: with_cellpy_unit("Test Time", "time", units=c.cellpy_units),
             hdr.datetime: "Date",
             hdr.normalized_cycle_index: "Equivalent Full Cycle",  # hdr.normalized_cycle_index: "Normalized Cycle Number",
         }
 
-        _cap_gravimetric_label = (
-            f"Capacity ({c.cellpy_units.charge}/{c.cellpy_units.specific_gravimetric})"
+        _units = c.cellpy_units
+        _cap_gravimetric_label = with_cellpy_unit(
+            "Capacity", "charge", "gravimetric", units=_units
         )
-        _cap_areal_label = (
-            f"Capacity ({c.cellpy_units.charge}/{c.cellpy_units.specific_areal})"
-        )
-        _cap_absolute_label = f"Capacity ({c.cellpy_units.charge})"
-        _cap_label = f"Capacity ({c.data.raw_units.charge})"
+        _cap_areal_label = with_cellpy_unit("Capacity", "charge", "areal", units=_units)
+        _cap_absolute_label = with_cellpy_unit("Capacity", "charge", units=_units)
+        # the raw frame's own units, not the session's
+        _cap_label = with_cellpy_unit("Capacity", "charge", units=c.data.raw_units)
 
         y_axis_label = {
-            "voltages": f"Voltage ({c.cellpy_units.voltage})",
+            "voltages": with_cellpy_unit("Voltage", "voltage", units=_units),
             "capacities_gravimetric": _cap_gravimetric_label,
             "capacities_areal": _cap_areal_label,
             "capacities_absolute": _cap_absolute_label,
@@ -5973,7 +5975,7 @@ def _cycles_plotter_matplotlib(
     # cbar.ax.yaxis.set_ticks_position("left")
 
     ax.set_xlabel(f"Capacity ({config.capacity_unit})")
-    ax.set_ylabel(f"Voltage ({c.cellpy_units.voltage})")
+    ax.set_ylabel(with_cellpy_unit("Voltage", "voltage", units=c.cellpy_units))
 
     ax.set_title(config.fig_title, loc="left", wrap=True)
 
@@ -6032,7 +6034,7 @@ def _cycles_plotter_plotly(
             title=config.fig_title,
             labels={
                 "capacity": f"Capacity ({config.capacity_unit})",
-                _CCOLS.potential: f"Voltage ({c.cellpy_units.voltage})",
+                _CCOLS.potential: with_cellpy_unit("Voltage", "voltage", units=c.cellpy_units),
             },
             color_discrete_sequence=cmap,
         )
@@ -6048,7 +6050,7 @@ def _cycles_plotter_plotly(
             color=_CCOLS.cycle_num,
             labels={
                 "capacity": f"Capacity ({config.capacity_unit})",
-                _CCOLS.potential: f"Voltage ({c.cellpy_units.voltage})",
+                _CCOLS.potential: with_cellpy_unit("Voltage", "voltage", units=c.cellpy_units),
             },
             color_continuous_scale=colormap,
             range_color=range_color,
