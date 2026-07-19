@@ -1164,7 +1164,7 @@ class SummaryPlotDataPreparer:
                 - max_val_normalized_col: max value for normalized columns
                 - formation_cycle_selector: boolean selector for formation cycles
         """
-        x = config.x if config.x is not None else c.headers_summary.cycle_index
+        x = config.x if config.x is not None else c.schema.summary.cycle_num
         y = config.y
 
         number_of_rows = 1
@@ -1606,7 +1606,7 @@ class PlotlyPlotBuilder:
         if title is None:
             title = f"Summary <b>{c.cell_name}</b>"
 
-        x = config.x if config.x is not None else c.headers_summary.cycle_index
+        x = config.x if config.x is not None else c.schema.summary.cycle_num
         y = config.y
         number_of_rows = prepared_data_info["number_of_rows"]
         x_label = prepared_data_info["x_label"]
@@ -2414,7 +2414,7 @@ class SeabornPlotBuilder:
         if title is None:
             title = f"Summary {c.cell_name}"
 
-        x = config.x if config.x is not None else c.headers_summary.cycle_index
+        x = config.x if config.x is not None else c.schema.summary.cycle_num
         y = config.y
         number_of_rows = prepared_data_info["number_of_rows"]
         x_label = prepared_data_info["x_label"]
@@ -3363,7 +3363,7 @@ def summary_plot_legacy(
             title = f"Summary {c.cell_name}"
 
     if x is None:
-        x = c.headers_summary.cycle_index
+        x = c.schema.summary.cycle_num
     xlim_formation = kwargs.pop("xlim_formation", (0.6, formation_cycles + 0.4))
 
     eff_lim = ce_range

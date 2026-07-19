@@ -425,7 +425,7 @@ class Batch:
     def _check_cell_cycles(self, cell_id):
         try:
             c = self.experiment.data[cell_id]
-            return c.data.steps[self.headers_step_table.cycle].max()
+            return c.data.steps[self.schema.steps.cycle_num].max()
         except Exception as e:
             logging.debug(f"Exception ignored: {e}")
             return None

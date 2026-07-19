@@ -41,6 +41,7 @@ from cellpy.exceptions import (
     NoDataFound,
 )
 from cellpy.parameters import prms
+from cellpy.parameters.cell_schema import CellSchema
 from cellpy.parameters.internal_settings import (
     get_cellpy_units,
     headers_normal,
@@ -276,6 +277,7 @@ class CellpyCell:
             self.core = OldCellpyCellCore(initialize=False, debug=debug)
 
         self._cell_name = None
+        self._schema = None  # lazily wrapped core schema (#558)
         self._initial_cells = None
         self.group = None
         self.last_uploaded_from = None
@@ -353,6 +355,30 @@ class CellpyCell:
         self.core._data = ds.Data()
 
     # the batch utility might be using session name
+    @property
+    def schema(self):
+        """The column names of this cell's frames (the public header API).
+
+        Use this instead of ``headers_normal`` / ``headers_step_table`` /
+        ``headers_summary``, which are a deprecation shim as of 2.0 (removed
+        in 2.1)::
+
+            c.data.raw[c.schema.raw.potential]
+            c.data.steps[c.schema.steps.cycle_num]
+            c.data.summary[c.schema.summary.charge_capacity]
+
+        The frames are named as they are on ``c.data``: ``raw``, ``steps``,
+        ``summary``. You always spell the column the native way; the value
+        tracks the runtime, so on the legacy runtime
+        (``native_schema=False``) ``schema.raw.potential`` returns
+        ``"voltage"`` — the name that actually indexes that frame. Whatever
+        this returns is a valid column key for the matching frame. See
+        :mod:`cellpy.parameters.cell_schema`.
+        """
+        if self._schema is None:
+            self._schema = CellSchema(self.core.schema, native=self.native_schema)
+        return self._schema
+
     # the cycle and ica collector are using session name
     # improvement suggestion: use data.cell_name instead
     @property
@@ -1841,8 +1867,8 @@ class CellpyCell:
             # on last_cycle when recalc=False)
             if t1.has_steps and t2.has_steps:
                 if recalc:
-                    t2.steps[self.headers_step_table.cycle] = (
-                        t2.steps[self.headers_step_table.cycle] + last_cycle
+                    t2.steps[self.schema.steps.cycle_num] = (
+                        t2.steps[self.schema.steps.cycle_num] + last_cycle
                     )
                 steps2 = externals.pandas.concat(
                     [t1.steps, t2.steps], ignore_index=True
@@ -1859,7 +1885,7 @@ class CellpyCell:
 
     # TODO: check if this can be moved to helpers
     def _validate_step_table(self, simple=False):
-        step_index_header = self.headers_normal.step_index_txt
+        step_index_header = self.schema.raw.step_num
         logging.debug(f"-validating step table ({step_index_header=!r})")
         d = self.data.raw
         s = self.data.steps
@@ -1867,9 +1893,8 @@ class CellpyCell:
         if not self.data.has_steps:
             return False
 
-        no_cycles_raw = externals.numpy.amax(d[self.headers_normal.cycle_index_txt])
-        headers_step_table = self.headers_step_table
-        no_cycles_step_table = externals.numpy.amax(s[headers_step_table.cycle])
+        no_cycles_raw = externals.numpy.amax(d[self.schema.raw.cycle_num])
+        no_cycles_step_table = externals.numpy.amax(s[self.schema.steps.cycle_num])
 
         if simple:
             logging.debug("  (simple)")
@@ -1889,15 +1914,15 @@ class CellpyCell:
                     no_steps_raw = len(
                         externals.numpy.unique(
                             d.loc[
-                                d[self.headers_normal.cycle_index_txt] == cycle_number,
-                                self.headers_normal.step_index_txt,
+                                d[self.schema.raw.cycle_num] == cycle_number,
+                                self.schema.raw.step_num,
                             ]
                         )
                     )
                     no_steps_step_table = len(
                         s.loc[
-                            s[headers_step_table.cycle] == cycle_number,
-                            headers_step_table.step,
+                            s[self.schema.steps.cycle_num] == cycle_number,
+                            self.schema.steps.step_num,
                         ]
                     )
                     if no_steps_raw != no_steps_step_table:
@@ -2013,7 +2038,7 @@ class CellpyCell:
             st = self.data.steps
         else:
             st = steptable
-        shdr = self.headers_step_table
+        shdr = self.schema.steps
 
         # Retrieving cycle numbers (if cycle_number is None, it selects all cycles)
         if cycle_number is None:
@@ -2035,15 +2060,21 @@ class CellpyCell:
                     "possible when returning externals.pandas.DataFrame. "
                     "Do it manually instead."
                 )
-            out = st[st[shdr.type].isin(steptypes) & st[shdr.cycle].isin(cycle_numbers)]
+            out = st[
+                st[shdr.step_type].isin(steptypes)
+                & st[shdr.cycle_num].isin(cycle_numbers)
+            ]
             return out
 
         out = dict()
-        step_hdr = shdr.ustep if usteps else shdr.step
+        # ustep is legacy-only (no native column) -> resolved via the D6 shim
+        step_hdr = self.headers_step_table.ustep if usteps else shdr.step_num
         for cycle in cycle_numbers:
             steplist = []
             for s in steptypes:
-                mask_type_and_cycle = (st[shdr.type] == s) & (st[shdr.cycle] == cycle)
+                mask_type_and_cycle = (st[shdr.step_type] == s) & (
+                    st[shdr.cycle_num] == cycle
+                )
                 if not any(mask_type_and_cycle):
                     logging.debug(f"Cycle {cycle} | StepType {s}: Not present!")
                 else:
@@ -2240,10 +2271,10 @@ class CellpyCell:
 
     def _select_usteps(self, cycle: int, steps: Union[list, np.ndarray]):
         # TODO: @jepe - insert sub_step here
-        s_hdr = self.headers_step_table.step
+        s_hdr = self.schema.steps.step_num
         us_hdr = self.headers_step_table.ustep
-        c_txt = self.headers_normal.cycle_index_txt
-        s_txt = self.headers_normal.step_index_txt
+        c_txt = self.schema.raw.cycle_num
+        s_txt = self.schema.raw.step_num
         steps = self.data.steps.loc[self.data.steps[us_hdr].isin(steps), s_hdr].unique()
         v = self.data.raw[
             (self.data.raw[c_txt] == cycle) & (self.data.raw[s_txt].isin(steps))
@@ -2257,8 +2288,8 @@ class CellpyCell:
 
     def _select_step(self, cycle, step):
         # TODO: @jepe - insert sub_step here
-        c_txt = self.headers_normal.cycle_index_txt
-        s_txt = self.headers_normal.step_index_txt
+        c_txt = self.schema.raw.cycle_num
+        s_txt = self.schema.raw.step_num
         v = self.data.raw[
             (self.data.raw[c_txt] == cycle) & (self.data.raw[s_txt] == step)
         ]
@@ -2488,7 +2519,7 @@ class CellpyCell:
         Returns:
             pandas.Series or None if empty
         """
-        header = self.headers_normal.voltage_txt
+        header = self.schema.raw.potential
         return self._sget(cycle, step, header)
 
     def sget_current(self, cycle, step):
@@ -2505,7 +2536,7 @@ class CellpyCell:
         Returns:
             pandas.Series or None if empty
         """
-        header = self.headers_normal.current_txt
+        header = self.schema.raw.current
         return self._sget(cycle, step, header)
 
     def get_raw(
@@ -2536,9 +2567,9 @@ class CellpyCell:
             pandas.DataFrame (or list of numpy arrays if as_frame=False)
         """
         y_header = header  # Consider including some lookup handling here
-        cycle_index_header = self.headers_normal.cycle_index_txt
-        time_header = self.headers_normal.test_time_txt
-        step_index_header = self.headers_normal.step_index_txt
+        cycle_index_header = self.schema.raw.cycle_num
+        time_header = self.schema.raw.test_time
+        step_index_header = self.schema.raw.step_num
 
         if not as_frame:
             with_time = False
@@ -2592,7 +2623,7 @@ class CellpyCell:
             pandas.DataFrame (or list of pandas.Series if cycle=None and as_frame=False)
         """
 
-        y_header = self.headers_normal.voltage_txt
+        y_header = self.schema.raw.potential
         return self.get_raw(
             y_header,
             cycle=cycle,
@@ -2618,7 +2649,7 @@ class CellpyCell:
             ``pandas.DataFrame`` (or list of ``pandas.Series`` if cycle=None and as_frame=False)
         """
 
-        y_header = self.headers_normal.current_txt
+        y_header = self.schema.raw.current
         return self.get_raw(
             y_header,
             cycle=cycle,
@@ -2674,7 +2705,7 @@ class CellpyCell:
             ``pandas.DataFrame`` (or list of ``pandas.Series`` if cycle=None and as_frame=False)
         """
 
-        y_header = self.headers_normal.test_time_txt
+        y_header = self.schema.raw.test_time
 
         if in_minutes:
             units = "minutes"
@@ -2710,14 +2741,14 @@ class CellpyCell:
             ``pandas.Series`` or None if empty
         """
 
-        header = self.headers_normal.step_time_txt
+        header = self.schema.raw.step_time
         return self._sget(cycle, step, header)
 
     def _sget(self, cycle, step, header):
         logging.debug(f"searching for {header}")
 
-        cycle_index_header = self.headers_normal.cycle_index_txt
-        step_index_header = self.headers_normal.step_index_txt
+        cycle_index_header = self.schema.raw.cycle_num
+        step_index_header = self.schema.raw.step_num
 
         test = self.data.raw
 
@@ -2745,7 +2776,7 @@ class CellpyCell:
             ``pandas.Series``
         """
 
-        header = self.headers_normal.test_time_txt
+        header = self.schema.raw.test_time
         return self._sget(cycle, step, header)
 
     def sget_step_numbers(self, cycle, step):
@@ -2764,7 +2795,7 @@ class CellpyCell:
             ``pandas.Series``
         """
 
-        header = self.headers_normal.step_index_txt
+        header = self.schema.raw.step_num
         return self._sget(cycle, step, header)
 
     def _using_usteps(self):
@@ -2918,11 +2949,11 @@ class CellpyCell:
         if steptable is None:
             d = self.data.raw
             number_of_cycles = externals.numpy.amax(
-                d[self.headers_normal.cycle_index_txt]
+                d[self.schema.raw.cycle_num]
             )
         else:
             number_of_cycles = externals.numpy.amax(
-                steptable[self.headers_step_table.cycle]
+                steptable[self.schema.steps.cycle_num]
             )
         return number_of_cycles
 
@@ -2945,16 +2976,16 @@ class CellpyCell:
             steptable = self.data.steps
         rates = steptable[
             [
-                self.headers_step_table.cycle,
-                self.headers_step_table.type,
-                self.headers_step_table.rate_avr,
+                self.schema.steps.cycle_num,
+                self.schema.steps.step_type,
+                self.schema.steps.c_rate,
             ]
         ].dropna()
 
         if agg:
             rates = (
                 rates.groupby(
-                    [self.headers_step_table.cycle, self.headers_step_table.type]
+                    [self.schema.steps.cycle_num, self.schema.steps.step_type]
                 )
                 .agg(agg)
                 .reset_index()
@@ -2963,7 +2994,7 @@ class CellpyCell:
         if direction is not None:
             if not isinstance(direction, (list, tuple)):
                 direction = [direction]
-            rates = rates.loc[rates[self.headers_step_table.type].isin(direction), :]
+            rates = rates.loc[rates[self.schema.steps.step_type].isin(direction), :]
 
         return rates
 
@@ -3003,11 +3034,11 @@ class CellpyCell:
 
         if steptable is None:
             d = self.data.raw
-            cycles = d[self.headers_normal.cycle_index_txt].dropna().unique()
+            cycles = d[self.schema.raw.cycle_num].dropna().unique()
             steptable = self.data.steps
         else:
             logging.debug("steptable is given as input parameter")
-            cycles = steptable[self.headers_step_table.cycle].dropna().unique()
+            cycles = steptable[self.schema.steps.cycle_num].dropna().unique()
 
         if rate is None:
             return cycles
@@ -3023,7 +3054,7 @@ class CellpyCell:
         if rate_on is None:
             rate_on = ["charge", "discharge"]
         rates = self.get_rates(steptable=steptable, agg=rate_agg, direction=rate_on)
-        rate_column = self.headers_step_table.rate_avr
+        rate_column = self.schema.steps.c_rate
         cycles_mask = (rates[rate_column] < (rate + rate_std)) & (
             rates[rate_column] > (rate - rate_std)
         )
@@ -3032,7 +3063,7 @@ class CellpyCell:
             cycles_mask = ~cycles_mask
 
         filtered_rates = rates[cycles_mask]
-        filtered_cycles = filtered_rates[self.headers_step_table["cycle"]].unique()
+        filtered_cycles = filtered_rates[self.schema.steps.cycle_num].unique()
 
         return filtered_cycles
 
@@ -3042,11 +3073,11 @@ class CellpyCell:
 
     def has_data_point_as_index(self):
         """Check if the raw data has data_point as index."""
-        return self.data.raw.index.name == self.headers_normal.data_point_txt
+        return self.data.raw.index.name == self.schema.raw.datapoint_num
 
     def has_data_point_as_column(self):
         """Check if the raw data has data_point as column."""
-        return self.headers_normal.data_point_txt in self.data.raw.columns
+        return self.schema.raw.datapoint_num in self.data.raw.columns
 
     def has_no_full_duplicates(self):
         """Check if the raw data has no full duplicates."""
@@ -3055,7 +3086,7 @@ class CellpyCell:
     def has_no_partial_duplicates(self, subset="data_point"):
         """Check if the raw data has no partial duplicates."""
         if subset == "data_point":
-            subset = self.headers_normal.data_point_txt
+            subset = self.schema.raw.datapoint_num
         return not self.data.raw.duplicated(subset=subset).any()
 
     def total_time_at_voltage_level(
@@ -3094,8 +3125,8 @@ class CellpyCell:
             )
 
         date_time_hdr = self.headers_normal.datetime_txt
-        cycle_index_hdr = self.headers_normal.cycle_index_txt
-        voltage_hdr = self.headers_normal.voltage_txt
+        cycle_index_hdr = self.schema.raw.cycle_num
+        voltage_hdr = self.schema.raw.potential
         date_time_format = prms._date_time_format
 
         if cycles is not None:
@@ -3506,8 +3537,8 @@ class CellpyCell:
         # datapoints for each cycle in the dataset (only used in the old
         # summary method and for the new summary method if use_cellpy_stat_file is True)
 
-        c_txt = self.headers_normal.cycle_index_txt
-        d_txt = self.headers_normal.data_point_txt
+        c_txt = self.schema.raw.cycle_num
+        d_txt = self.schema.raw.datapoint_num
         steps = []
         unique_steps = raw[c_txt].unique()
         max_step = max(raw[c_txt])
@@ -3811,14 +3842,14 @@ class CellpyCell:
                 logging.debug("sorting columns")
                 new_first_col_list = [
                     self.headers_normal.datetime_txt,
-                    self.headers_normal.test_time_txt,
-                    self.headers_normal.data_point_txt,
-                    self.headers_normal.cycle_index_txt,
+                    self.schema.raw.test_time,
+                    self.schema.raw.datapoint_num,
+                    self.schema.raw.cycle_num,
                 ]
                 data.summary = self.set_col_first(data.summary, new_first_col_list)
 
         if cycle_index_as_index:
-            index_col = self.headers_summary.cycle_index
+            index_col = self.schema.summary.cycle_num
             try:
                 data.summary.set_index(index_col, inplace=True)
             except KeyError:
@@ -3871,8 +3902,8 @@ class CellpyCell:
                 f"(available: {sorted(raw.columns)})"
             )
 
-        hdrn_cycle = self.headers_normal.cycle_index_txt
-        hdrs_cycle = self.headers_summary.cycle_index
+        hdrn_cycle = self.schema.raw.cycle_num
+        hdrs_cycle = self.schema.summary.cycle_num
         target = new_name or column
 
         per_cycle = raw.groupby(hdrn_cycle)[column].agg(method)
@@ -3932,7 +3963,7 @@ class CellpyCell:
         """
         from cellpy.filters import filter_summary as _fs
 
-        h = self.headers_summary
+        h = self.schema.summary
         if rate_columns is None:
             rate_columns = (h.charge_c_rate, h.discharge_c_rate)
         return _fs(
@@ -3961,8 +3992,8 @@ class CellpyCell:
 
         try:
             nc = summary.loc[
-                summary[self.headers_normal.cycle_index_txt].isin(cycles),
-                self.headers_summary.discharge_capacity,
+                summary[self.schema.raw.cycle_num].isin(cycles),
+                self.schema.summary.discharge_capacity,
             ].mean()
             print("All I can say for now is that the average discharge capacity")
             print(f"for the cycles {cycles} is {nc:0.2f}")
