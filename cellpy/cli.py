@@ -23,6 +23,7 @@ from cellpy.parameters.internal_settings import OTHERPATHS
 from cellpy.internals.connections import OtherPath
 from cellpy.utils.template_registry import REGISTERED_TEMPLATES
 import cellpy.config as config
+from cellpy import cli_api
 
 DIFFICULT_MISSING_MODULES = {}
 
@@ -1266,158 +1267,51 @@ def _run_from_db(
     batch_col,
     project,
 ):
-    click.echo(
-        f"running from db \nkey={name}, batch_col={batch_col}, project={project}"
-    )
-
-    kwargs = dict()
-    kwargs["name"] = name
-
-    if debug:
-        kwargs["default_log_level"] = "DEBUG"
-    if not minimal:
-        kwargs["export_raw"] = False
-        kwargs["export_cycles"] = False
-        kwargs["export_ica"] = False
-
-    if batch_col is not None:
-        kwargs["batch_col"] = batch_col
-    if project is None:
-        kwargs["project"] = "various"
-    else:
-        kwargs["project"] = project
-
-    click.echo("Warming up ...")
-
-    from cellpy.utils import batch
-
-    click.echo("  - starting batch processing")
-    b = batch.process_batch(
-        force_raw_file=raw,
-        force_cellpy=cellpyfile,
+    cli_api.run_from_db(
+        name,
+        debug=debug,
+        silent=silent,
+        raw=raw,
+        cellpyfile=cellpyfile,
+        minimal=minimal,
         nom_cap=nom_cap,
-        backend="matplotlib",
-        **kwargs,
+        batch_col=batch_col,
+        project=project,
+        echo=click.echo,
     )
-
-    if b is not None and not silent:
-        print(b)
-    click.echo("---")
 
 
 def _run_journal(file_name, debug, silent, raw, cellpyfile, minimal, nom_cap):
-    click.echo(f"running journal {file_name}")
-    # click.echo(f" --debug [{debug}]")
-    # click.echo(f" --silent [{silent}]")
-    # click.echo(f" --raw [{raw}]")
-    # click.echo(f" --cellpyfile [{cellpyfile}]")
-    # click.echo(f" --minimal [{minimal}]")
-    # click.echo(f" --nom_cap [{nom_cap}] {type(nom_cap)}")
-
-    kwargs = dict()
-    if debug:
-        kwargs["default_log_level"] = "DEBUG"
-    if not minimal:
-        kwargs["export_raw"] = False
-        kwargs["export_cycles"] = False
-        kwargs["export_ica"] = False
-
-    from cellpy import prms
-    from cellpy.utils import batch
-
-    batchfiledir = pathlib.Path(config.paths.batchfiledir)
-    file = pathlib.Path(file_name)
-    if not file.is_file():
-        click.echo(f"file_name={file_name} not found - looking into batchfiledir")
-        if not batchfiledir.is_dir():
-            click.echo("batchfiledir not found - aborting")
-            return
-        file = batchfiledir / file.name
-
-    if not file.is_file():
-        click.echo(f"{file} not found - aborting")
-        return
-
-    b = batch.process_batch(
-        file,
-        force_raw_file=raw,
-        force_cellpy=cellpyfile,
+    cli_api.run_journal(
+        file_name,
+        debug=debug,
+        silent=silent,
+        raw=raw,
+        cellpyfile=cellpyfile,
+        minimal=minimal,
         nom_cap=nom_cap,
-        backend="matplotlib",
-        **kwargs,
+        echo=click.echo,
     )
-    if b is not None and not silent:
-        print(b)
-    click.echo("---")
 
 
 def _run_list(batchfiledir):
-    from cellpy import prms
-
-    if batchfiledir == "NONE" or batchfiledir is None:
-        batchfiledir = pathlib.Path(config.paths.batchfiledir)
-    else:
-        batchfiledir = pathlib.Path(batchfiledir).resolve()
-
-    if batchfiledir.is_dir():
-        click.echo(f"Content of '{batchfiledir}':\n")
-        i = 0
-        for i, f in enumerate(batchfiledir.glob("cellpy*.json")):
-            click.echo(f"{f.name}")
-        if i:
-            print(f"\nnumber of batch-files located: {i}")
-        else:
-            print("No batch-files found in this directory.")
-    else:
-        click.echo(f"{batchfiledir} not found.")
+    cli_api.list_journals(batchfiledir, echo=click.echo)
 
 
 def _run_journals(folder_name, debug, silent, raw, cellpyfile, minimal):
-    click.echo(f"running journals in {folder_name}")
-    # click.echo(f" --debug [{debug}]")
-    # click.echo(f" --silent [{silent}]")
-    # click.echo(f" --raw [{raw}]")
-    # click.echo(f" --cellpyfile [{cellpyfile}]")
-    # click.echo(f" --minimal [{minimal}]")
-
-    kwargs = dict()
-    if debug:
-        kwargs["default_log_level"] = "DEBUG"
-    if not minimal:
-        kwargs["export_raw"] = False
-        kwargs["export_cycles"] = False
-        kwargs["export_ica"] = False
-
-    from cellpy.utils import batch
-
-    folder_name = pathlib.Path(folder_name).resolve()
-
-    if not folder_name.is_dir():
-        click.echo(f"{folder_name} not found - aborting")
-        return
-
-    batch.iterate_batches(
-        folder_name, force_raw_file=raw, force_cellpy=cellpyfile, silent=True, **kwargs
+    cli_api.run_journals(
+        folder_name,
+        debug=debug,
+        silent=silent,
+        raw=raw,
+        cellpyfile=cellpyfile,
+        minimal=minimal,
+        echo=click.echo,
     )
-    click.echo("---")
 
 
 def _run_project(our_new_project, **kwargs):
-    try:
-        import papermill as pm  # type: ignore
-    except ImportError:
-        click.echo(
-            "[cellpy]: You need to install papermill for automatically execute the notebooks."
-        )
-        click.echo("[cellpy]: You can install it using pip like this:")
-        click.echo(" >> pip install papermill")
-        return
-    our_new_project = pathlib.Path(our_new_project)
-    click.echo(f"[cellpy]: trying to run notebooks in {our_new_project}")
-    notebooks = sorted(list(our_new_project.glob("*.ipynb")))
-    for notebook in notebooks:
-        click.echo(f"[cellpy - papermill] running {notebook.name}")
-        pm.execute_notebook(notebook, notebook, parameters=kwargs)
+    cli_api.run_project(our_new_project, echo=click.echo, **kwargs)
 
 
 def _run(name, debug, silent):
@@ -1428,40 +1322,7 @@ def _run(name, debug, silent):
 
 
 def _run_db(debug, silent):
-    import platform
-
-    from cellpy import prms
-
-    if not silent:
-        click.echo(f"running database editor")
-    if debug:
-        click.echo("running in debug-mode, but nothing to tell")
-
-    db_path = Path(config.paths.db_path) / config.paths.db_filename
-
-    if platform.system() == "Windows":
-        try:
-            os.system(f'start excel "{str(db_path)}"')
-        except Exception as e:
-            click.echo("Something went wrong trying to open")
-            click.echo(db_path)
-            print()
-            print(e)
-
-    elif platform.system() == "Linux":
-        click.echo("RUNNING LINUX")
-        # not tested
-        subprocess.check_call(["open", "-a", "Microsoft Excel", db_path])
-
-    elif platform.system() == "Darwin":
-        click.echo(f" - running on a mac")
-        subprocess.check_call(["open", "-a", "Microsoft Excel", db_path])
-
-    else:
-        print("RUNNING SOMETHING ELSE")
-        print(platform.system())
-        # not tested
-        subprocess.check_call(["open", "-a", "Microsoft Excel", db_path])
+    cli_api.open_db_editor(debug=debug, silent=silent, echo=click.echo)
 
 
 # ----------------------- pull ---------------------------------------
@@ -2041,22 +1902,7 @@ cli.add_command(serve)
 @click.argument("new_h5", required=False, type=click.Path(dir_okay=False))
 def convert(old_h5, new_h5):
     """Upgrade a legacy cellpy-file to the current v8 HDF5 layout."""
-    from cellpy.readers.cellpy_file import load as cellpy_file_load
-    from cellpy.readers.cellpy_file import save as cellpy_file_save
-
-    old_path = pathlib.Path(old_h5)
-    if new_h5 is None:
-        new_path = old_path.with_name(f"{old_path.stem}_v8{old_path.suffix}")
-    else:
-        new_path = pathlib.Path(new_h5)
-
-    click.echo(f"[cellpy] (convert) loading {old_path}")
-    result = cellpy_file_load(old_path, accept_old=True)
-    click.echo(
-        f"[cellpy] (convert) saving v{result.file_version} -> v8 as {new_path}"
-    )
-    cellpy_file_save(result.data, new_path)
-    click.echo(f"[cellpy] (convert) done: {new_path}")
+    cli_api.convert(old_h5, new_h5, echo=click.echo)
 
 
 cli.add_command(convert)
