@@ -381,6 +381,7 @@ def _state_splitter(
     cycle_numbers = raw[cycle_index_hdr].unique()
     good_cycles = []
     bad_cycles = []
+    last_error: Exception | None = None
 
     for i in cycle_numbers:
         try:
@@ -395,18 +396,13 @@ def _state_splitter(
             ]
 
             if not charge.empty:
-                # TODO: fix this warning
-                # FutureWarning: A value is trying to be set on a copy of a DataFrame or Series through
-                # chained assignment using an inplace method.
-                # The behavior will change in pandas 3.0. This inplace method will never work because the
-                # intermediate object on which we are setting values always behaves as a copy.
-                #  For example, when doing 'df[col].method(value, inplace=True)',
-                #  try using 'df.method({col: value}, inplace=True)' or
-                #  df[col] = df[col].method(value) instead,
-                #  to perform the operation inplace on the original object.
-                raw[temp_col_name_charge].update(
-                    n_charge * charge[base_col_name],
-                    inplace=True,
+                # Positional assignment, not Series.update(inplace=True): the
+                # latter has no `inplace` parameter in pandas 3 (it raised
+                # TypeError, which the except below swallowed, leaving this
+                # column at its initialised 0.0 — issue #580). Assigning
+                # through raw.loc writes to the frame itself.
+                raw.loc[charge.index, temp_col_name_charge] = (
+                    n_charge * charge[base_col_name]
                 )
                 if propagate:
                     charge_last_index, charge_last_val = charge.iloc[-1]
@@ -417,18 +413,9 @@ def _state_splitter(
                     ] = charge_last_val
 
             if not discharge.empty:
-                # TODO: fix this warning
-                # FutureWarning: A value is trying to be set on a copy of a DataFrame or Series through
-                # chained assignment using an inplace method.
-                # The behavior will change in pandas 3.0. This inplace method will never work because the
-                # intermediate object on which we are setting values always behaves as a copy.
-                #  For example, when doing 'df[col].method(value, inplace=True)',
-                #  try using 'df.method({col: value}, inplace=True)' or
-                #  df[col] = df[col].method(value) instead,
-                #  to perform the operation inplace on the original object.
-                raw[temp_col_name_discharge].update(
-                    n_discharge * discharge[base_col_name],
-                    inplace=True,
+                # See the charge branch above (issue #580).
+                raw.loc[discharge.index, temp_col_name_discharge] = (
+                    n_discharge * discharge[base_col_name]
                 )
                 if propagate:
                     (discharge_last_index, discharge_last_val) = discharge.iloc[-1]
@@ -439,10 +426,26 @@ def _state_splitter(
                     ] = discharge_last_val
             good_cycles.append(i)
 
-        except Exception:
+        except Exception as exc:
+            # Tolerate a genuinely malformed cycle, but never discard the
+            # reason: swallowing the exception here is what let #580 (a hard
+            # TypeError on every cycle) look like a data quirk for a whole
+            # release.
             bad_cycles.append(i)
+            logging.debug("state splitting failed for cycle %s: %r", i, exc)
+            last_error = exc
+
     if bad_cycles:
         logging.critical(f"The data contains bad cycles: {bad_cycles}")
+    if bad_cycles and not good_cycles:
+        # Every single cycle failed. That is not bad data, that is broken code
+        # or a mis-declared configuration — say so instead of returning a
+        # column of zeros that looks like a real measurement.
+        raise ValueError(
+            f"state splitting failed for every cycle ({len(bad_cycles)} of them) "
+            f"while splitting {base_col_name!r}; the resulting column would be "
+            f"all zeros. Last error: {last_error!r}"
+        )
 
     raw[new_col_name_charge] = raw[temp_col_name_charge]
     raw = raw.drop([temp_col_name_charge], axis=1)
