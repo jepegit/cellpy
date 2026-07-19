@@ -1,0 +1,7677 @@
+{
+  "figures": {
+    "cycle_info_plot[matplotlib]": {
+      "backend": null,
+      "empty": true
+    },
+    "cycle_info_plot[plotly]": {
+      "backend": null,
+      "empty": true
+    },
+    "cycles_plot[matplotlib]": {
+      "backend": "matplotlib",
+      "n_panels": 3,
+      "panels": [
+        {
+          "lines": [
+            {
+              "label": "Cycle 1",
+              "x": {
+                "first": 0.000315,
+                "last": null,
+                "n": 2347
+              },
+              "y": {
+                "first": 2.839894,
+                "last": null,
+                "n": 2347
+              }
+            },
+            {
+              "label": "Cycle 2",
+              "x": {
+                "first": 0.001349,
+                "last": null,
+                "n": 402
+              },
+              "y": {
+                "first": 0.860937,
+                "last": null,
+                "n": 402
+              }
+            },
+            {
+              "label": "Cycle 3",
+              "x": {
+                "first": 0.002021,
+                "last": null,
+                "n": 402
+              },
+              "y": {
+                "first": 0.84431,
+                "last": null,
+                "n": 402
+              }
+            },
+            {
+              "label": "Cycle 4",
+              "x": {
+                "first": 0.0,
+                "last": null,
+                "n": 402
+              },
+              "y": {
+                "first": 0.833225,
+                "last": null,
+                "n": 402
+              }
+            },
+            {
+              "label": "Cycle 5",
+              "x": {
+                "first": 0.0,
+                "last": null,
+                "n": 402
+              },
+              "y": {
+                "first": 0.792888,
+                "last": null,
+                "n": 402
+              }
+            },
+            {
+              "label": "Cycle 6",
+              "x": {
+                "first": 0.0,
+                "last": null,
+                "n": 402
+              },
+              "y": {
+                "first": 0.787654,
+                "last": null,
+                "n": 402
+              }
+            },
+            {
+              "label": "Cycle 7",
+              "x": {
+                "first": 0.0,
+                "last": null,
+                "n": 402
+              },
+              "y": {
+                "first": 0.787038,
+                "last": null,
+                "n": 402
+              }
+            },
+            {
+              "label": "Cycle 8",
+              "x": {
+                "first": 0.0,
+                "last": null,
+                "n": 402
+              },
+              "y": {
+                "first": 0.783035,
+                "last": null,
+                "n": 402
+              }
+            },
+            {
+              "label": "Cycle 9",
+              "x": {
+                "first": 0.0,
+                "last": null,
+                "n": 402
+              },
+              "y": {
+                "first": 0.784574,
+                "last": null,
+                "n": 402
+              }
+            },
+            {
+              "label": "Cycle 10",
+              "x": {
+                "first": 0.0,
+                "last": null,
+                "n": 402
+              },
+              "y": {
+                "first": 0.781495,
+                "last": null,
+                "n": 402
+              }
+            },
+            {
+              "label": "Cycle 11",
+              "x": {
+                "first": 0.001266,
+                "last": null,
+                "n": 402
+              },
+              "y": {
+                "first": 0.778108,
+                "last": null,
+                "n": 402
+              }
+            },
+            {
+              "label": "Cycle 12",
+              "x": {
+                "first": 0.0,
+                "last": null,
+                "n": 402
+              },
+              "y": {
+                "first": 0.776569,
+                "last": null,
+                "n": 402
+              }
+            },
+            {
+              "label": "Cycle 13",
+              "x": {
+                "first": 0.0,
+                "last": null,
+                "n": 402
+              },
+              "y": {
+                "first": 0.774721,
+                "last": null,
+                "n": 402
+              }
+            },
+            {
+              "label": "Cycle 14",
+              "x": {
+                "first": 0.00118,
+                "last": null,
+                "n": 402
+              },
+              "y": {
+                "first": 0.773182,
+                "last": null,
+                "n": 402
+              }
+            },
+            {
+              "label": "Cycle 15",
+              "x": {
+                "first": 0.001095,
+                "last": null,
+                "n": 402
+              },
+              "y": {
+                "first": 0.770718,
+                "last": null,
+                "n": 402
+              }
+            },
+            {
+              "label": "Cycle 16",
+              "x": {
+                "first": 0.0,
+                "last": null,
+                "n": 402
+              },
+              "y": {
+                "first": 0.766408,
+                "last": null,
+                "n": 402
+              }
+            },
+            {
+              "label": "Cycle 17",
+              "x": {
+                "first": 0.0,
+                "last": null,
+                "n": 402
+              },
+              "y": {
+                "first": 0.761789,
+                "last": null,
+                "n": 402
+              }
+            },
+            {
+              "label": "Cycle 18",
+              "x": {
+                "first": 0.0,
+                "last": null,
+                "n": 201
+              },
+              "y": {
+                "first": 0.75717,
+                "last": null,
+                "n": 201
+              }
+            }
+          ],
+          "n_collections": 0,
+          "n_lines": 18,
+          "title": "",
+          "xlabel": "Capacity (mAh/g)",
+          "ylabel": "Voltage (V)"
+        },
+        {
+          "lines": [],
+          "n_collections": 2,
+          "n_lines": 0,
+          "title": "",
+          "xlabel": "",
+          "ylabel": "Form. Cycle"
+        },
+        {
+          "lines": [],
+          "n_collections": 2,
+          "n_lines": 0,
+          "title": "",
+          "xlabel": "",
+          "ylabel": "Cycle"
+        }
+      ]
+    },
+    "cycles_plot[plotly]": {
+      "backend": null,
+      "empty": true
+    },
+    "raw_plot[matplotlib]": {
+      "backend": "matplotlib",
+      "n_panels": 2,
+      "panels": [
+        {
+          "lines": [
+            {
+              "label": "Voltage (V)",
+              "x": {
+                "first": 0.083336,
+                "last": 238.632567,
+                "n": 10261
+              },
+              "y": {
+                "first": 3.097617,
+                "last": 0.294069,
+                "n": 10261
+              }
+            }
+          ],
+          "n_collections": 0,
+          "n_lines": 1,
+          "title": "",
+          "xlabel": "Time (hours)",
+          "ylabel": "Voltage (V)"
+        },
+        {
+          "lines": [
+            {
+              "label": "Current (A)",
+              "x": {
+                "first": 0.083336,
+                "last": 238.632567,
+                "n": 10261
+              },
+              "y": {
+                "first": 0.0,
+                "last": -0.000304,
+                "n": 10261
+              }
+            }
+          ],
+          "n_collections": 0,
+          "n_lines": 1,
+          "title": "",
+          "xlabel": "",
+          "ylabel": "Current (A)"
+        }
+      ]
+    },
+    "raw_plot[plotly]": {
+      "axis_titles": {
+        "xaxis": null,
+        "xaxis2": null,
+        "yaxis": null,
+        "yaxis2": null
+      },
+      "backend": "plotly",
+      "n_axes": 4,
+      "n_traces": 2,
+      "traces": [
+        {
+          "mode": null,
+          "name": "Voltage (V)",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": null,
+          "name": "Current (A)",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x2",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y2"
+        }
+      ]
+    },
+    "summary_plot[capacities][matplotlib]": {
+      "backend": "matplotlib",
+      "n_panels": 2,
+      "panels": [
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 1.0,
+                "last": 3.0,
+                "n": 3
+              },
+              "y": {
+                "first": 0.001625,
+                "last": 0.001732,
+                "n": 3
+              }
+            },
+            {
+              "label": "_child2",
+              "x": {
+                "first": 1.0,
+                "last": 3.0,
+                "n": 3
+              },
+              "y": {
+                "first": 0.001755,
+                "last": 0.001586,
+                "n": 3
+              }
+            },
+            {
+              "label": "charge_capacity",
+              "x": {
+                "first": null,
+                "last": null,
+                "n": 0
+              },
+              "y": {
+                "first": null,
+                "last": null,
+                "n": 0
+              }
+            },
+            {
+              "label": "discharge_capacity",
+              "x": {
+                "first": null,
+                "last": null,
+                "n": 0
+              },
+              "y": {
+                "first": null,
+                "last": null,
+                "n": 0
+              }
+            }
+          ],
+          "n_collections": 2,
+          "n_lines": 4,
+          "title": "",
+          "xlabel": "Cycle Number",
+          "ylabel": "Capacity (Ah)"
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 4.0,
+                "last": 18.0,
+                "n": 15
+              },
+              "y": {
+                "first": 0.001576,
+                "last": 0.0,
+                "n": 15
+              }
+            },
+            {
+              "label": "_child2",
+              "x": {
+                "first": 4.0,
+                "last": 18.0,
+                "n": 15
+              },
+              "y": {
+                "first": 0.001517,
+                "last": 0.000239,
+                "n": 15
+              }
+            }
+          ],
+          "n_collections": 2,
+          "n_lines": 2,
+          "title": "",
+          "xlabel": "Cycle Number",
+          "ylabel": ""
+        }
+      ]
+    },
+    "summary_plot[capacities][plotly]": {
+      "axis_titles": {
+        "xaxis": "Cycle Number",
+        "xaxis2": "Cycle Number",
+        "yaxis": "Capacity (Ah)",
+        "yaxis2": null
+      },
+      "backend": "plotly",
+      "n_axes": 4,
+      "n_traces": 4,
+      "traces": [
+        {
+          "mode": "lines+markers",
+          "name": "Charge Capacity",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Charge Capacity",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x2",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y2"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Discharge Capacity",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Discharge Capacity",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x2",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y2"
+        }
+      ]
+    },
+    "summary_plot[capacities_absolute][matplotlib]": {
+      "backend": "matplotlib",
+      "n_panels": 2,
+      "panels": [
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 1.0,
+                "last": 3.0,
+                "n": 3
+              },
+              "y": {
+                "first": 1.755094,
+                "last": 1.585721,
+                "n": 3
+              }
+            },
+            {
+              "label": "_child2",
+              "x": {
+                "first": 1.0,
+                "last": 3.0,
+                "n": 3
+              },
+              "y": {
+                "first": 1.625406,
+                "last": 1.731508,
+                "n": 3
+              }
+            },
+            {
+              "label": "discharge_capacity_absolute",
+              "x": {
+                "first": null,
+                "last": null,
+                "n": 0
+              },
+              "y": {
+                "first": null,
+                "last": null,
+                "n": 0
+              }
+            },
+            {
+              "label": "charge_capacity_absolute",
+              "x": {
+                "first": null,
+                "last": null,
+                "n": 0
+              },
+              "y": {
+                "first": null,
+                "last": null,
+                "n": 0
+              }
+            }
+          ],
+          "n_collections": 2,
+          "n_lines": 4,
+          "title": "",
+          "xlabel": "Cycle Number",
+          "ylabel": "Capacity (mAh)"
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 4.0,
+                "last": 18.0,
+                "n": 15
+              },
+              "y": {
+                "first": 1.517318,
+                "last": 0.239313,
+                "n": 15
+              }
+            },
+            {
+              "label": "_child2",
+              "x": {
+                "first": 4.0,
+                "last": 18.0,
+                "n": 15
+              },
+              "y": {
+                "first": 1.575978,
+                "last": 0.0,
+                "n": 15
+              }
+            }
+          ],
+          "n_collections": 2,
+          "n_lines": 2,
+          "title": "",
+          "xlabel": "Cycle Number",
+          "ylabel": ""
+        }
+      ]
+    },
+    "summary_plot[capacities_absolute][plotly]": {
+      "axis_titles": {
+        "xaxis": "Cycle Number",
+        "xaxis2": "Cycle Number",
+        "yaxis": "Capacity (mAh)",
+        "yaxis2": null
+      },
+      "backend": "plotly",
+      "n_axes": 4,
+      "n_traces": 4,
+      "traces": [
+        {
+          "mode": "lines+markers",
+          "name": "Discharge Capacity Absolute",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Discharge Capacity Absolute",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x2",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y2"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Charge Capacity Absolute",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Charge Capacity Absolute",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x2",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y2"
+        }
+      ]
+    },
+    "summary_plot[capacities_absolute_coulombic_efficiency][matplotlib]": {
+      "backend": "matplotlib",
+      "n_panels": 4,
+      "panels": [
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 1.0,
+                "last": 3.0,
+                "n": 3
+              },
+              "y": {
+                "first": 92.610791,
+                "last": 109.19373,
+                "n": 3
+              }
+            },
+            {
+              "label": "coulombic_efficiency",
+              "x": {
+                "first": null,
+                "last": null,
+                "n": 0
+              },
+              "y": {
+                "first": null,
+                "last": null,
+                "n": 0
+              }
+            },
+            {
+              "label": "discharge_capacity_absolute",
+              "x": {
+                "first": null,
+                "last": null,
+                "n": 0
+              },
+              "y": {
+                "first": null,
+                "last": null,
+                "n": 0
+              }
+            },
+            {
+              "label": "charge_capacity_absolute",
+              "x": {
+                "first": null,
+                "last": null,
+                "n": 0
+              },
+              "y": {
+                "first": null,
+                "last": null,
+                "n": 0
+              }
+            }
+          ],
+          "n_collections": 1,
+          "n_lines": 4,
+          "title": "",
+          "xlabel": "",
+          "ylabel": "Efficiency (%)"
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 4.0,
+                "last": 18.0,
+                "n": 15
+              },
+              "y": {
+                "first": 103.86601,
+                "last": 0.0,
+                "n": 15
+              }
+            }
+          ],
+          "n_collections": 1,
+          "n_lines": 1,
+          "title": "",
+          "xlabel": "",
+          "ylabel": ""
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 1.0,
+                "last": 3.0,
+                "n": 3
+              },
+              "y": {
+                "first": 1.755094,
+                "last": 1.585721,
+                "n": 3
+              }
+            },
+            {
+              "label": "_child2",
+              "x": {
+                "first": 1.0,
+                "last": 3.0,
+                "n": 3
+              },
+              "y": {
+                "first": 1.625406,
+                "last": 1.731508,
+                "n": 3
+              }
+            }
+          ],
+          "n_collections": 2,
+          "n_lines": 2,
+          "title": "",
+          "xlabel": "Cycle Number",
+          "ylabel": "Capacity (mAh)"
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 4.0,
+                "last": 18.0,
+                "n": 15
+              },
+              "y": {
+                "first": 1.517318,
+                "last": 0.239313,
+                "n": 15
+              }
+            },
+            {
+              "label": "_child2",
+              "x": {
+                "first": 4.0,
+                "last": 18.0,
+                "n": 15
+              },
+              "y": {
+                "first": 1.575978,
+                "last": 0.0,
+                "n": 15
+              }
+            }
+          ],
+          "n_collections": 2,
+          "n_lines": 2,
+          "title": "",
+          "xlabel": "Cycle Number",
+          "ylabel": ""
+        }
+      ]
+    },
+    "summary_plot[capacities_absolute_coulombic_efficiency][plotly]": {
+      "axis_titles": {
+        "xaxis": "Cycle Number",
+        "xaxis2": "Cycle Number",
+        "xaxis3": null,
+        "xaxis4": null,
+        "yaxis": "Capacity (mAh)",
+        "yaxis2": null,
+        "yaxis3": "Coulombic Efficiency",
+        "yaxis4": null
+      },
+      "backend": "plotly",
+      "n_axes": 8,
+      "n_traces": 6,
+      "traces": [
+        {
+          "mode": "lines+markers",
+          "name": "Coulombic Efficiency",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x3",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y3"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Coulombic Efficiency",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x4",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y4"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Discharge Capacity Absolute",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Discharge Capacity Absolute",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x2",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y2"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Charge Capacity Absolute",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Charge Capacity Absolute",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x2",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y2"
+        }
+      ]
+    },
+    "summary_plot[capacities_absolute_with_rate][matplotlib]": {
+      "backend": "matplotlib",
+      "n_panels": 4,
+      "panels": [
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 1.0,
+                "last": 3.0,
+                "n": 3
+              },
+              "y": {
+                "first": 153.61986,
+                "last": 153.59407,
+                "n": 3
+              }
+            },
+            {
+              "label": "_child2",
+              "x": {
+                "first": 1.0,
+                "last": 3.0,
+                "n": 3
+              },
+              "y": {
+                "first": 152.21136,
+                "last": 152.32096,
+                "n": 3
+              }
+            },
+            {
+              "label": "charge_c_rate",
+              "x": {
+                "first": null,
+                "last": null,
+                "n": 0
+              },
+              "y": {
+                "first": null,
+                "last": null,
+                "n": 0
+              }
+            },
+            {
+              "label": "discharge_c_rate",
+              "x": {
+                "first": null,
+                "last": null,
+                "n": 0
+              },
+              "y": {
+                "first": null,
+                "last": null,
+                "n": 0
+              }
+            },
+            {
+              "label": "discharge_capacity_absolute",
+              "x": {
+                "first": null,
+                "last": null,
+                "n": 0
+              },
+              "y": {
+                "first": null,
+                "last": null,
+                "n": 0
+              }
+            },
+            {
+              "label": "charge_capacity_absolute",
+              "x": {
+                "first": null,
+                "last": null,
+                "n": 0
+              },
+              "y": {
+                "first": null,
+                "last": null,
+                "n": 0
+              }
+            }
+          ],
+          "n_collections": 2,
+          "n_lines": 6,
+          "title": "",
+          "xlabel": "",
+          "ylabel": "C-rate\n(1/h)"
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 4.0,
+                "last": 17.0,
+                "n": 14
+              },
+              "y": {
+                "first": 305.52629,
+                "last": 305.51966,
+                "n": 14
+              }
+            },
+            {
+              "label": "_child2",
+              "x": {
+                "first": 4.0,
+                "last": 18.0,
+                "n": 15
+              },
+              "y": {
+                "first": 304.43801,
+                "last": 304.4204,
+                "n": 15
+              }
+            }
+          ],
+          "n_collections": 2,
+          "n_lines": 2,
+          "title": "",
+          "xlabel": "",
+          "ylabel": ""
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 1.0,
+                "last": 3.0,
+                "n": 3
+              },
+              "y": {
+                "first": 1.755094,
+                "last": 1.585721,
+                "n": 3
+              }
+            },
+            {
+              "label": "_child2",
+              "x": {
+                "first": 1.0,
+                "last": 3.0,
+                "n": 3
+              },
+              "y": {
+                "first": 1.625406,
+                "last": 1.731508,
+                "n": 3
+              }
+            }
+          ],
+          "n_collections": 2,
+          "n_lines": 2,
+          "title": "",
+          "xlabel": "Cycle Number",
+          "ylabel": "Capacity (mAh)"
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 4.0,
+                "last": 18.0,
+                "n": 15
+              },
+              "y": {
+                "first": 1.517318,
+                "last": 0.239313,
+                "n": 15
+              }
+            },
+            {
+              "label": "_child2",
+              "x": {
+                "first": 4.0,
+                "last": 18.0,
+                "n": 15
+              },
+              "y": {
+                "first": 1.575978,
+                "last": 0.0,
+                "n": 15
+              }
+            }
+          ],
+          "n_collections": 2,
+          "n_lines": 2,
+          "title": "",
+          "xlabel": "Cycle Number",
+          "ylabel": ""
+        }
+      ]
+    },
+    "summary_plot[capacities_absolute_with_rate][plotly]": {
+      "axis_titles": {
+        "xaxis": "Cycle Number",
+        "xaxis2": "Cycle Number",
+        "xaxis3": null,
+        "xaxis4": null,
+        "yaxis": "Capacity (mAh)",
+        "yaxis2": null,
+        "yaxis3": "C-rate (1/h)",
+        "yaxis4": null
+      },
+      "backend": "plotly",
+      "n_axes": 8,
+      "n_traces": 8,
+      "traces": [
+        {
+          "mode": "lines+markers",
+          "name": "Charge C Rate",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x3",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y3"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Charge C Rate",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x4",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y4"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Discharge C Rate",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x3",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y3"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Discharge C Rate",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x4",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y4"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Discharge Capacity Absolute",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Discharge Capacity Absolute",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x2",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y2"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Charge Capacity Absolute",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Charge Capacity Absolute",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x2",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y2"
+        }
+      ]
+    },
+    "summary_plot[capacities_areal][matplotlib]": {
+      "backend": "matplotlib",
+      "n_panels": 2,
+      "panels": [
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 1.0,
+                "last": 3.0,
+                "n": 3
+              },
+              "y": {
+                "first": 1.755094,
+                "last": 1.585721,
+                "n": 3
+              }
+            },
+            {
+              "label": "_child2",
+              "x": {
+                "first": 1.0,
+                "last": 3.0,
+                "n": 3
+              },
+              "y": {
+                "first": 1.625406,
+                "last": 1.731508,
+                "n": 3
+              }
+            },
+            {
+              "label": "discharge_capacity_areal",
+              "x": {
+                "first": null,
+                "last": null,
+                "n": 0
+              },
+              "y": {
+                "first": null,
+                "last": null,
+                "n": 0
+              }
+            },
+            {
+              "label": "charge_capacity_areal",
+              "x": {
+                "first": null,
+                "last": null,
+                "n": 0
+              },
+              "y": {
+                "first": null,
+                "last": null,
+                "n": 0
+              }
+            }
+          ],
+          "n_collections": 2,
+          "n_lines": 4,
+          "title": "",
+          "xlabel": "Cycle Number",
+          "ylabel": "Capacity (mAh/cm**2)"
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 4.0,
+                "last": 18.0,
+                "n": 15
+              },
+              "y": {
+                "first": 1.517318,
+                "last": 0.239313,
+                "n": 15
+              }
+            },
+            {
+              "label": "_child2",
+              "x": {
+                "first": 4.0,
+                "last": 18.0,
+                "n": 15
+              },
+              "y": {
+                "first": 1.575978,
+                "last": 0.0,
+                "n": 15
+              }
+            }
+          ],
+          "n_collections": 2,
+          "n_lines": 2,
+          "title": "",
+          "xlabel": "Cycle Number",
+          "ylabel": ""
+        }
+      ]
+    },
+    "summary_plot[capacities_areal][plotly]": {
+      "axis_titles": {
+        "xaxis": "Cycle Number",
+        "xaxis2": "Cycle Number",
+        "yaxis": "Capacity (mAh/cm**2)",
+        "yaxis2": null
+      },
+      "backend": "plotly",
+      "n_axes": 4,
+      "n_traces": 4,
+      "traces": [
+        {
+          "mode": "lines+markers",
+          "name": "Discharge Capacity Areal",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Discharge Capacity Areal",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x2",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y2"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Charge Capacity Areal",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Charge Capacity Areal",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x2",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y2"
+        }
+      ]
+    },
+    "summary_plot[capacities_areal_coulombic_efficiency][matplotlib]": {
+      "backend": "matplotlib",
+      "n_panels": 4,
+      "panels": [
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 1.0,
+                "last": 3.0,
+                "n": 3
+              },
+              "y": {
+                "first": 92.610791,
+                "last": 109.19373,
+                "n": 3
+              }
+            },
+            {
+              "label": "coulombic_efficiency",
+              "x": {
+                "first": null,
+                "last": null,
+                "n": 0
+              },
+              "y": {
+                "first": null,
+                "last": null,
+                "n": 0
+              }
+            },
+            {
+              "label": "discharge_capacity_areal",
+              "x": {
+                "first": null,
+                "last": null,
+                "n": 0
+              },
+              "y": {
+                "first": null,
+                "last": null,
+                "n": 0
+              }
+            },
+            {
+              "label": "charge_capacity_areal",
+              "x": {
+                "first": null,
+                "last": null,
+                "n": 0
+              },
+              "y": {
+                "first": null,
+                "last": null,
+                "n": 0
+              }
+            }
+          ],
+          "n_collections": 1,
+          "n_lines": 4,
+          "title": "",
+          "xlabel": "",
+          "ylabel": "Efficiency (%)"
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 4.0,
+                "last": 18.0,
+                "n": 15
+              },
+              "y": {
+                "first": 103.86601,
+                "last": 0.0,
+                "n": 15
+              }
+            }
+          ],
+          "n_collections": 1,
+          "n_lines": 1,
+          "title": "",
+          "xlabel": "",
+          "ylabel": ""
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 1.0,
+                "last": 3.0,
+                "n": 3
+              },
+              "y": {
+                "first": 1.755094,
+                "last": 1.585721,
+                "n": 3
+              }
+            },
+            {
+              "label": "_child2",
+              "x": {
+                "first": 1.0,
+                "last": 3.0,
+                "n": 3
+              },
+              "y": {
+                "first": 1.625406,
+                "last": 1.731508,
+                "n": 3
+              }
+            }
+          ],
+          "n_collections": 2,
+          "n_lines": 2,
+          "title": "",
+          "xlabel": "Cycle Number",
+          "ylabel": "Capacity (mAh/cm**2)"
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 4.0,
+                "last": 18.0,
+                "n": 15
+              },
+              "y": {
+                "first": 1.517318,
+                "last": 0.239313,
+                "n": 15
+              }
+            },
+            {
+              "label": "_child2",
+              "x": {
+                "first": 4.0,
+                "last": 18.0,
+                "n": 15
+              },
+              "y": {
+                "first": 1.575978,
+                "last": 0.0,
+                "n": 15
+              }
+            }
+          ],
+          "n_collections": 2,
+          "n_lines": 2,
+          "title": "",
+          "xlabel": "Cycle Number",
+          "ylabel": ""
+        }
+      ]
+    },
+    "summary_plot[capacities_areal_coulombic_efficiency][plotly]": {
+      "axis_titles": {
+        "xaxis": "Cycle Number",
+        "xaxis2": "Cycle Number",
+        "xaxis3": null,
+        "xaxis4": null,
+        "yaxis": "Capacity (mAh/cm**2)",
+        "yaxis2": null,
+        "yaxis3": "Coulombic Efficiency",
+        "yaxis4": null
+      },
+      "backend": "plotly",
+      "n_axes": 8,
+      "n_traces": 6,
+      "traces": [
+        {
+          "mode": "lines+markers",
+          "name": "Coulombic Efficiency",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x3",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y3"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Coulombic Efficiency",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x4",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y4"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Discharge Capacity Areal",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Discharge Capacity Areal",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x2",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y2"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Charge Capacity Areal",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Charge Capacity Areal",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x2",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y2"
+        }
+      ]
+    },
+    "summary_plot[capacities_areal_split_constant_voltage][matplotlib]": {
+      "backend": "matplotlib",
+      "n_panels": 6,
+      "panels": [
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 1.0,
+                "last": 3.0,
+                "n": 3
+              },
+              "y": {
+                "first": 1.625406,
+                "last": 1.731508,
+                "n": 3
+              }
+            },
+            {
+              "label": "_child2",
+              "x": {
+                "first": 1.0,
+                "last": 3.0,
+                "n": 3
+              },
+              "y": {
+                "first": 1.755094,
+                "last": 1.585721,
+                "n": 3
+              }
+            },
+            {
+              "label": "charge_capacity_areal",
+              "x": {
+                "first": null,
+                "last": null,
+                "n": 0
+              },
+              "y": {
+                "first": null,
+                "last": null,
+                "n": 0
+              }
+            },
+            {
+              "label": "discharge_capacity_areal",
+              "x": {
+                "first": null,
+                "last": null,
+                "n": 0
+              },
+              "y": {
+                "first": null,
+                "last": null,
+                "n": 0
+              }
+            },
+            {
+              "label": "charge_capacity_areal_non_cv",
+              "x": {
+                "first": null,
+                "last": null,
+                "n": 0
+              },
+              "y": {
+                "first": null,
+                "last": null,
+                "n": 0
+              }
+            },
+            {
+              "label": "discharge_capacity_areal_non_cv",
+              "x": {
+                "first": null,
+                "last": null,
+                "n": 0
+              },
+              "y": {
+                "first": null,
+                "last": null,
+                "n": 0
+              }
+            },
+            {
+              "label": "charge_capacity_areal_cv",
+              "x": {
+                "first": null,
+                "last": null,
+                "n": 0
+              },
+              "y": {
+                "first": null,
+                "last": null,
+                "n": 0
+              }
+            },
+            {
+              "label": "discharge_capacity_areal_cv",
+              "x": {
+                "first": null,
+                "last": null,
+                "n": 0
+              },
+              "y": {
+                "first": null,
+                "last": null,
+                "n": 0
+              }
+            }
+          ],
+          "n_collections": 2,
+          "n_lines": 8,
+          "title": "",
+          "xlabel": "",
+          "ylabel": "Capacity (mAh/cm**2)"
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 4.0,
+                "last": 18.0,
+                "n": 15
+              },
+              "y": {
+                "first": 1.575978,
+                "last": 0.0,
+                "n": 15
+              }
+            },
+            {
+              "label": "_child2",
+              "x": {
+                "first": 4.0,
+                "last": 18.0,
+                "n": 15
+              },
+              "y": {
+                "first": 1.517318,
+                "last": 0.239313,
+                "n": 15
+              }
+            }
+          ],
+          "n_collections": 2,
+          "n_lines": 2,
+          "title": "",
+          "xlabel": "",
+          "ylabel": ""
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 1.0,
+                "last": 3.0,
+                "n": 3
+              },
+              "y": {
+                "first": 1.625406,
+                "last": 1.731508,
+                "n": 3
+              }
+            },
+            {
+              "label": "_child2",
+              "x": {
+                "first": 1.0,
+                "last": 3.0,
+                "n": 3
+              },
+              "y": {
+                "first": 1.755094,
+                "last": 1.585721,
+                "n": 3
+              }
+            }
+          ],
+          "n_collections": 2,
+          "n_lines": 2,
+          "title": "",
+          "xlabel": "",
+          "ylabel": "Capacity (mAh/cm**2)"
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 4.0,
+                "last": 18.0,
+                "n": 15
+              },
+              "y": {
+                "first": 1.575978,
+                "last": 0.0,
+                "n": 15
+              }
+            },
+            {
+              "label": "_child2",
+              "x": {
+                "first": 4.0,
+                "last": 18.0,
+                "n": 15
+              },
+              "y": {
+                "first": 1.517318,
+                "last": 0.239313,
+                "n": 15
+              }
+            }
+          ],
+          "n_collections": 2,
+          "n_lines": 2,
+          "title": "",
+          "xlabel": "",
+          "ylabel": ""
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 1.0,
+                "last": 3.0,
+                "n": 3
+              },
+              "y": {
+                "first": 1.625406,
+                "last": 1.731508,
+                "n": 3
+              }
+            },
+            {
+              "label": "_child2",
+              "x": {
+                "first": 1.0,
+                "last": 3.0,
+                "n": 3
+              },
+              "y": {
+                "first": 1.755094,
+                "last": 1.585721,
+                "n": 3
+              }
+            }
+          ],
+          "n_collections": 2,
+          "n_lines": 2,
+          "title": "",
+          "xlabel": "Cycle Number",
+          "ylabel": "Capacity (mAh/cm**2)"
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 4.0,
+                "last": 18.0,
+                "n": 15
+              },
+              "y": {
+                "first": 1.575978,
+                "last": 0.0,
+                "n": 15
+              }
+            },
+            {
+              "label": "_child2",
+              "x": {
+                "first": 4.0,
+                "last": 18.0,
+                "n": 15
+              },
+              "y": {
+                "first": 1.517318,
+                "last": 0.239313,
+                "n": 15
+              }
+            }
+          ],
+          "n_collections": 2,
+          "n_lines": 2,
+          "title": "",
+          "xlabel": "Cycle Number",
+          "ylabel": ""
+        }
+      ]
+    },
+    "summary_plot[capacities_areal_split_constant_voltage][plotly]": {
+      "axis_titles": {
+        "xaxis": "Cycle Number",
+        "xaxis2": "Cycle Number",
+        "xaxis3": null,
+        "xaxis4": null,
+        "xaxis5": null,
+        "xaxis6": null,
+        "yaxis": "Capacity (mAh/cm**2)",
+        "yaxis2": null,
+        "yaxis3": "Capacity (mAh/cm**2)",
+        "yaxis4": null,
+        "yaxis5": "Capacity (mAh/cm**2)",
+        "yaxis6": null
+      },
+      "backend": "plotly",
+      "n_axes": 12,
+      "n_traces": 12,
+      "traces": [
+        {
+          "mode": "lines+markers",
+          "name": "Charge Capacity Areal",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x5",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y5"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Charge Capacity Areal",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x6",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y6"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Discharge Capacity Areal",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x5",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y5"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Discharge Capacity Areal",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x6",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y6"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Charge Capacity Areal (without CV)",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x3",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y3"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Charge Capacity Areal (without CV)",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x4",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y4"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Discharge Capacity Areal (without CV)",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x3",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y3"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Discharge Capacity Areal (without CV)",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x4",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y4"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Charge Capacity Areal (CV)",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Charge Capacity Areal (CV)",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x2",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y2"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Discharge Capacity Areal (CV)",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Discharge Capacity Areal (CV)",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x2",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y2"
+        }
+      ]
+    },
+    "summary_plot[capacities_areal_with_rate][matplotlib]": {
+      "backend": "matplotlib",
+      "n_panels": 4,
+      "panels": [
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 1.0,
+                "last": 3.0,
+                "n": 3
+              },
+              "y": {
+                "first": 153.61986,
+                "last": 153.59407,
+                "n": 3
+              }
+            },
+            {
+              "label": "_child2",
+              "x": {
+                "first": 1.0,
+                "last": 3.0,
+                "n": 3
+              },
+              "y": {
+                "first": 152.21136,
+                "last": 152.32096,
+                "n": 3
+              }
+            },
+            {
+              "label": "charge_c_rate",
+              "x": {
+                "first": null,
+                "last": null,
+                "n": 0
+              },
+              "y": {
+                "first": null,
+                "last": null,
+                "n": 0
+              }
+            },
+            {
+              "label": "discharge_c_rate",
+              "x": {
+                "first": null,
+                "last": null,
+                "n": 0
+              },
+              "y": {
+                "first": null,
+                "last": null,
+                "n": 0
+              }
+            },
+            {
+              "label": "discharge_capacity_areal",
+              "x": {
+                "first": null,
+                "last": null,
+                "n": 0
+              },
+              "y": {
+                "first": null,
+                "last": null,
+                "n": 0
+              }
+            },
+            {
+              "label": "charge_capacity_areal",
+              "x": {
+                "first": null,
+                "last": null,
+                "n": 0
+              },
+              "y": {
+                "first": null,
+                "last": null,
+                "n": 0
+              }
+            }
+          ],
+          "n_collections": 2,
+          "n_lines": 6,
+          "title": "",
+          "xlabel": "",
+          "ylabel": "C-rate\n(1/h)"
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 4.0,
+                "last": 17.0,
+                "n": 14
+              },
+              "y": {
+                "first": 305.52629,
+                "last": 305.51966,
+                "n": 14
+              }
+            },
+            {
+              "label": "_child2",
+              "x": {
+                "first": 4.0,
+                "last": 18.0,
+                "n": 15
+              },
+              "y": {
+                "first": 304.43801,
+                "last": 304.4204,
+                "n": 15
+              }
+            }
+          ],
+          "n_collections": 2,
+          "n_lines": 2,
+          "title": "",
+          "xlabel": "",
+          "ylabel": ""
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 1.0,
+                "last": 3.0,
+                "n": 3
+              },
+              "y": {
+                "first": 1.755094,
+                "last": 1.585721,
+                "n": 3
+              }
+            },
+            {
+              "label": "_child2",
+              "x": {
+                "first": 1.0,
+                "last": 3.0,
+                "n": 3
+              },
+              "y": {
+                "first": 1.625406,
+                "last": 1.731508,
+                "n": 3
+              }
+            }
+          ],
+          "n_collections": 2,
+          "n_lines": 2,
+          "title": "",
+          "xlabel": "Cycle Number",
+          "ylabel": "Capacity (mAh/cm**2)"
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 4.0,
+                "last": 18.0,
+                "n": 15
+              },
+              "y": {
+                "first": 1.517318,
+                "last": 0.239313,
+                "n": 15
+              }
+            },
+            {
+              "label": "_child2",
+              "x": {
+                "first": 4.0,
+                "last": 18.0,
+                "n": 15
+              },
+              "y": {
+                "first": 1.575978,
+                "last": 0.0,
+                "n": 15
+              }
+            }
+          ],
+          "n_collections": 2,
+          "n_lines": 2,
+          "title": "",
+          "xlabel": "Cycle Number",
+          "ylabel": ""
+        }
+      ]
+    },
+    "summary_plot[capacities_areal_with_rate][plotly]": {
+      "axis_titles": {
+        "xaxis": "Cycle Number",
+        "xaxis2": "Cycle Number",
+        "xaxis3": null,
+        "xaxis4": null,
+        "yaxis": "Capacity (mAh/cm**2)",
+        "yaxis2": null,
+        "yaxis3": "C-rate (1/h)",
+        "yaxis4": null
+      },
+      "backend": "plotly",
+      "n_axes": 8,
+      "n_traces": 8,
+      "traces": [
+        {
+          "mode": "lines+markers",
+          "name": "Charge C Rate",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x3",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y3"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Charge C Rate",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x4",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y4"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Discharge C Rate",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x3",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y3"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Discharge C Rate",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x4",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y4"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Discharge Capacity Areal",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Discharge Capacity Areal",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x2",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y2"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Charge Capacity Areal",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Charge Capacity Areal",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x2",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y2"
+        }
+      ]
+    },
+    "summary_plot[capacities_gravimetric][matplotlib]": {
+      "backend": "matplotlib",
+      "n_panels": 2,
+      "panels": [
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 1.0,
+                "last": 3.0,
+                "n": 3
+              },
+              "y": {
+                "first": 1755.093529,
+                "last": 1585.720948,
+                "n": 3
+              }
+            },
+            {
+              "label": "_child2",
+              "x": {
+                "first": 1.0,
+                "last": 3.0,
+                "n": 3
+              },
+              "y": {
+                "first": 1625.405999,
+                "last": 1731.507851,
+                "n": 3
+              }
+            },
+            {
+              "label": "discharge_capacity_gravimetric",
+              "x": {
+                "first": null,
+                "last": null,
+                "n": 0
+              },
+              "y": {
+                "first": null,
+                "last": null,
+                "n": 0
+              }
+            },
+            {
+              "label": "charge_capacity_gravimetric",
+              "x": {
+                "first": null,
+                "last": null,
+                "n": 0
+              },
+              "y": {
+                "first": null,
+                "last": null,
+                "n": 0
+              }
+            }
+          ],
+          "n_collections": 2,
+          "n_lines": 4,
+          "title": "",
+          "xlabel": "Cycle Number",
+          "ylabel": "Capacity (mAh/g)"
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 4.0,
+                "last": 18.0,
+                "n": 15
+              },
+              "y": {
+                "first": 1517.317964,
+                "last": 239.313156,
+                "n": 15
+              }
+            },
+            {
+              "label": "_child2",
+              "x": {
+                "first": 4.0,
+                "last": 18.0,
+                "n": 15
+              },
+              "y": {
+                "first": 1575.977622,
+                "last": 0.0,
+                "n": 15
+              }
+            }
+          ],
+          "n_collections": 2,
+          "n_lines": 2,
+          "title": "",
+          "xlabel": "Cycle Number",
+          "ylabel": ""
+        }
+      ]
+    },
+    "summary_plot[capacities_gravimetric][plotly]": {
+      "axis_titles": {
+        "xaxis": "Cycle Number",
+        "xaxis2": "Cycle Number",
+        "yaxis": "Capacity (mAh/g)",
+        "yaxis2": null
+      },
+      "backend": "plotly",
+      "n_axes": 4,
+      "n_traces": 4,
+      "traces": [
+        {
+          "mode": "lines+markers",
+          "name": "Discharge Capacity Grav.",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Discharge Capacity Grav.",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x2",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y2"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Charge Capacity Grav.",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Charge Capacity Grav.",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x2",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y2"
+        }
+      ]
+    },
+    "summary_plot[capacities_gravimetric_coulombic_efficiency][matplotlib]": {
+      "backend": "matplotlib",
+      "n_panels": 4,
+      "panels": [
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 1.0,
+                "last": 3.0,
+                "n": 3
+              },
+              "y": {
+                "first": 92.610791,
+                "last": 109.19373,
+                "n": 3
+              }
+            },
+            {
+              "label": "coulombic_efficiency",
+              "x": {
+                "first": null,
+                "last": null,
+                "n": 0
+              },
+              "y": {
+                "first": null,
+                "last": null,
+                "n": 0
+              }
+            },
+            {
+              "label": "discharge_capacity_gravimetric",
+              "x": {
+                "first": null,
+                "last": null,
+                "n": 0
+              },
+              "y": {
+                "first": null,
+                "last": null,
+                "n": 0
+              }
+            },
+            {
+              "label": "charge_capacity_gravimetric",
+              "x": {
+                "first": null,
+                "last": null,
+                "n": 0
+              },
+              "y": {
+                "first": null,
+                "last": null,
+                "n": 0
+              }
+            }
+          ],
+          "n_collections": 1,
+          "n_lines": 4,
+          "title": "",
+          "xlabel": "",
+          "ylabel": "Efficiency (%)"
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 4.0,
+                "last": 18.0,
+                "n": 15
+              },
+              "y": {
+                "first": 103.86601,
+                "last": 0.0,
+                "n": 15
+              }
+            }
+          ],
+          "n_collections": 1,
+          "n_lines": 1,
+          "title": "",
+          "xlabel": "",
+          "ylabel": ""
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 1.0,
+                "last": 3.0,
+                "n": 3
+              },
+              "y": {
+                "first": 1755.093529,
+                "last": 1585.720948,
+                "n": 3
+              }
+            },
+            {
+              "label": "_child2",
+              "x": {
+                "first": 1.0,
+                "last": 3.0,
+                "n": 3
+              },
+              "y": {
+                "first": 1625.405999,
+                "last": 1731.507851,
+                "n": 3
+              }
+            }
+          ],
+          "n_collections": 2,
+          "n_lines": 2,
+          "title": "",
+          "xlabel": "Cycle Number",
+          "ylabel": "Capacity (mAh/g)"
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 4.0,
+                "last": 18.0,
+                "n": 15
+              },
+              "y": {
+                "first": 1517.317964,
+                "last": 239.313156,
+                "n": 15
+              }
+            },
+            {
+              "label": "_child2",
+              "x": {
+                "first": 4.0,
+                "last": 18.0,
+                "n": 15
+              },
+              "y": {
+                "first": 1575.977622,
+                "last": 0.0,
+                "n": 15
+              }
+            }
+          ],
+          "n_collections": 2,
+          "n_lines": 2,
+          "title": "",
+          "xlabel": "Cycle Number",
+          "ylabel": ""
+        }
+      ]
+    },
+    "summary_plot[capacities_gravimetric_coulombic_efficiency][plotly]": {
+      "axis_titles": {
+        "xaxis": "Cycle Number",
+        "xaxis2": "Cycle Number",
+        "xaxis3": null,
+        "xaxis4": null,
+        "yaxis": "Capacity (mAh/g)",
+        "yaxis2": null,
+        "yaxis3": "Coulombic Efficiency",
+        "yaxis4": null
+      },
+      "backend": "plotly",
+      "n_axes": 8,
+      "n_traces": 6,
+      "traces": [
+        {
+          "mode": "lines+markers",
+          "name": "Coulombic Efficiency",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x3",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y3"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Coulombic Efficiency",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x4",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y4"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Discharge Capacity Grav.",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Discharge Capacity Grav.",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x2",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y2"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Charge Capacity Grav.",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Charge Capacity Grav.",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x2",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y2"
+        }
+      ]
+    },
+    "summary_plot[capacities_gravimetric_split_constant_voltage][matplotlib]": {
+      "backend": "matplotlib",
+      "n_panels": 6,
+      "panels": [
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 1.0,
+                "last": 3.0,
+                "n": 3
+              },
+              "y": {
+                "first": 1625.405999,
+                "last": 1731.507851,
+                "n": 3
+              }
+            },
+            {
+              "label": "_child2",
+              "x": {
+                "first": 1.0,
+                "last": 3.0,
+                "n": 3
+              },
+              "y": {
+                "first": 1755.093529,
+                "last": 1585.720948,
+                "n": 3
+              }
+            },
+            {
+              "label": "charge_capacity_gravimetric",
+              "x": {
+                "first": null,
+                "last": null,
+                "n": 0
+              },
+              "y": {
+                "first": null,
+                "last": null,
+                "n": 0
+              }
+            },
+            {
+              "label": "discharge_capacity_gravimetric",
+              "x": {
+                "first": null,
+                "last": null,
+                "n": 0
+              },
+              "y": {
+                "first": null,
+                "last": null,
+                "n": 0
+              }
+            },
+            {
+              "label": "charge_capacity_gravimetric_non_cv",
+              "x": {
+                "first": null,
+                "last": null,
+                "n": 0
+              },
+              "y": {
+                "first": null,
+                "last": null,
+                "n": 0
+              }
+            },
+            {
+              "label": "discharge_capacity_gravimetric_non_cv",
+              "x": {
+                "first": null,
+                "last": null,
+                "n": 0
+              },
+              "y": {
+                "first": null,
+                "last": null,
+                "n": 0
+              }
+            },
+            {
+              "label": "charge_capacity_gravimetric_cv",
+              "x": {
+                "first": null,
+                "last": null,
+                "n": 0
+              },
+              "y": {
+                "first": null,
+                "last": null,
+                "n": 0
+              }
+            },
+            {
+              "label": "discharge_capacity_gravimetric_cv",
+              "x": {
+                "first": null,
+                "last": null,
+                "n": 0
+              },
+              "y": {
+                "first": null,
+                "last": null,
+                "n": 0
+              }
+            }
+          ],
+          "n_collections": 2,
+          "n_lines": 8,
+          "title": "",
+          "xlabel": "",
+          "ylabel": "Capacity (mAh/g)"
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 4.0,
+                "last": 18.0,
+                "n": 15
+              },
+              "y": {
+                "first": 1575.977622,
+                "last": 0.0,
+                "n": 15
+              }
+            },
+            {
+              "label": "_child2",
+              "x": {
+                "first": 4.0,
+                "last": 18.0,
+                "n": 15
+              },
+              "y": {
+                "first": 1517.317964,
+                "last": 239.313156,
+                "n": 15
+              }
+            }
+          ],
+          "n_collections": 2,
+          "n_lines": 2,
+          "title": "",
+          "xlabel": "",
+          "ylabel": ""
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 1.0,
+                "last": 3.0,
+                "n": 3
+              },
+              "y": {
+                "first": 1625.405999,
+                "last": 1731.507851,
+                "n": 3
+              }
+            },
+            {
+              "label": "_child2",
+              "x": {
+                "first": 1.0,
+                "last": 3.0,
+                "n": 3
+              },
+              "y": {
+                "first": 1755.093529,
+                "last": 1585.720948,
+                "n": 3
+              }
+            }
+          ],
+          "n_collections": 2,
+          "n_lines": 2,
+          "title": "",
+          "xlabel": "",
+          "ylabel": "Capacity (mAh/g)"
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 4.0,
+                "last": 18.0,
+                "n": 15
+              },
+              "y": {
+                "first": 1575.977622,
+                "last": 0.0,
+                "n": 15
+              }
+            },
+            {
+              "label": "_child2",
+              "x": {
+                "first": 4.0,
+                "last": 18.0,
+                "n": 15
+              },
+              "y": {
+                "first": 1517.317964,
+                "last": 239.313156,
+                "n": 15
+              }
+            }
+          ],
+          "n_collections": 2,
+          "n_lines": 2,
+          "title": "",
+          "xlabel": "",
+          "ylabel": ""
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 1.0,
+                "last": 3.0,
+                "n": 3
+              },
+              "y": {
+                "first": 1625.405999,
+                "last": 1731.507851,
+                "n": 3
+              }
+            },
+            {
+              "label": "_child2",
+              "x": {
+                "first": 1.0,
+                "last": 3.0,
+                "n": 3
+              },
+              "y": {
+                "first": 1755.093529,
+                "last": 1585.720948,
+                "n": 3
+              }
+            }
+          ],
+          "n_collections": 2,
+          "n_lines": 2,
+          "title": "",
+          "xlabel": "Cycle Number",
+          "ylabel": "Capacity (mAh/g)"
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 4.0,
+                "last": 18.0,
+                "n": 15
+              },
+              "y": {
+                "first": 1575.977622,
+                "last": 0.0,
+                "n": 15
+              }
+            },
+            {
+              "label": "_child2",
+              "x": {
+                "first": 4.0,
+                "last": 18.0,
+                "n": 15
+              },
+              "y": {
+                "first": 1517.317964,
+                "last": 239.313156,
+                "n": 15
+              }
+            }
+          ],
+          "n_collections": 2,
+          "n_lines": 2,
+          "title": "",
+          "xlabel": "Cycle Number",
+          "ylabel": ""
+        }
+      ]
+    },
+    "summary_plot[capacities_gravimetric_split_constant_voltage][plotly]": {
+      "axis_titles": {
+        "xaxis": "Cycle Number",
+        "xaxis2": "Cycle Number",
+        "xaxis3": null,
+        "xaxis4": null,
+        "xaxis5": null,
+        "xaxis6": null,
+        "yaxis": "Capacity (mAh/g)",
+        "yaxis2": null,
+        "yaxis3": "Capacity (mAh/g)",
+        "yaxis4": null,
+        "yaxis5": "Capacity (mAh/g)",
+        "yaxis6": null
+      },
+      "backend": "plotly",
+      "n_axes": 12,
+      "n_traces": 12,
+      "traces": [
+        {
+          "mode": "lines+markers",
+          "name": "Charge Capacity Grav.",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x5",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y5"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Charge Capacity Grav.",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x6",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y6"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Discharge Capacity Grav.",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x5",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y5"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Discharge Capacity Grav.",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x6",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y6"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Charge Capacity Grav. (without CV)",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x3",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y3"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Charge Capacity Grav. (without CV)",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x4",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y4"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Discharge Capacity Grav. (without CV)",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x3",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y3"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Discharge Capacity Grav. (without CV)",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x4",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y4"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Charge Capacity Grav. (CV)",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Charge Capacity Grav. (CV)",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x2",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y2"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Discharge Capacity Grav. (CV)",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Discharge Capacity Grav. (CV)",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x2",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y2"
+        }
+      ]
+    },
+    "summary_plot[capacities_gravimetric_with_rate][matplotlib]": {
+      "backend": "matplotlib",
+      "n_panels": 4,
+      "panels": [
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 1.0,
+                "last": 3.0,
+                "n": 3
+              },
+              "y": {
+                "first": 153.61986,
+                "last": 153.59407,
+                "n": 3
+              }
+            },
+            {
+              "label": "_child2",
+              "x": {
+                "first": 1.0,
+                "last": 3.0,
+                "n": 3
+              },
+              "y": {
+                "first": 152.21136,
+                "last": 152.32096,
+                "n": 3
+              }
+            },
+            {
+              "label": "charge_c_rate",
+              "x": {
+                "first": null,
+                "last": null,
+                "n": 0
+              },
+              "y": {
+                "first": null,
+                "last": null,
+                "n": 0
+              }
+            },
+            {
+              "label": "discharge_c_rate",
+              "x": {
+                "first": null,
+                "last": null,
+                "n": 0
+              },
+              "y": {
+                "first": null,
+                "last": null,
+                "n": 0
+              }
+            },
+            {
+              "label": "discharge_capacity_gravimetric",
+              "x": {
+                "first": null,
+                "last": null,
+                "n": 0
+              },
+              "y": {
+                "first": null,
+                "last": null,
+                "n": 0
+              }
+            },
+            {
+              "label": "charge_capacity_gravimetric",
+              "x": {
+                "first": null,
+                "last": null,
+                "n": 0
+              },
+              "y": {
+                "first": null,
+                "last": null,
+                "n": 0
+              }
+            }
+          ],
+          "n_collections": 2,
+          "n_lines": 6,
+          "title": "",
+          "xlabel": "",
+          "ylabel": "C-rate\n(1/h)"
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 4.0,
+                "last": 17.0,
+                "n": 14
+              },
+              "y": {
+                "first": 305.52629,
+                "last": 305.51966,
+                "n": 14
+              }
+            },
+            {
+              "label": "_child2",
+              "x": {
+                "first": 4.0,
+                "last": 18.0,
+                "n": 15
+              },
+              "y": {
+                "first": 304.43801,
+                "last": 304.4204,
+                "n": 15
+              }
+            }
+          ],
+          "n_collections": 2,
+          "n_lines": 2,
+          "title": "",
+          "xlabel": "",
+          "ylabel": ""
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 1.0,
+                "last": 3.0,
+                "n": 3
+              },
+              "y": {
+                "first": 1755.093529,
+                "last": 1585.720948,
+                "n": 3
+              }
+            },
+            {
+              "label": "_child2",
+              "x": {
+                "first": 1.0,
+                "last": 3.0,
+                "n": 3
+              },
+              "y": {
+                "first": 1625.405999,
+                "last": 1731.507851,
+                "n": 3
+              }
+            }
+          ],
+          "n_collections": 2,
+          "n_lines": 2,
+          "title": "",
+          "xlabel": "Cycle Number",
+          "ylabel": "Capacity (mAh/g)"
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 4.0,
+                "last": 18.0,
+                "n": 15
+              },
+              "y": {
+                "first": 1517.317964,
+                "last": 239.313156,
+                "n": 15
+              }
+            },
+            {
+              "label": "_child2",
+              "x": {
+                "first": 4.0,
+                "last": 18.0,
+                "n": 15
+              },
+              "y": {
+                "first": 1575.977622,
+                "last": 0.0,
+                "n": 15
+              }
+            }
+          ],
+          "n_collections": 2,
+          "n_lines": 2,
+          "title": "",
+          "xlabel": "Cycle Number",
+          "ylabel": ""
+        }
+      ]
+    },
+    "summary_plot[capacities_gravimetric_with_rate][plotly]": {
+      "axis_titles": {
+        "xaxis": "Cycle Number",
+        "xaxis2": "Cycle Number",
+        "xaxis3": null,
+        "xaxis4": null,
+        "yaxis": "Capacity (mAh/g)",
+        "yaxis2": null,
+        "yaxis3": "C-rate (1/h)",
+        "yaxis4": null
+      },
+      "backend": "plotly",
+      "n_axes": 8,
+      "n_traces": 8,
+      "traces": [
+        {
+          "mode": "lines+markers",
+          "name": "Charge C Rate",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x3",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y3"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Charge C Rate",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x4",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y4"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Discharge C Rate",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x3",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y3"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Discharge C Rate",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x4",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y4"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Discharge Capacity Grav.",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Discharge Capacity Grav.",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x2",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y2"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Charge Capacity Grav.",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Charge Capacity Grav.",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x2",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y2"
+        }
+      ]
+    },
+    "summary_plot[formation_10][plotly]": {
+      "axis_titles": {
+        "xaxis": "Cycle Number",
+        "xaxis2": "Cycle Number",
+        "xaxis3": null,
+        "xaxis4": null,
+        "yaxis": "Capacity (mAh/g)",
+        "yaxis2": null,
+        "yaxis3": "Coulombic Efficiency",
+        "yaxis4": null
+      },
+      "backend": "plotly",
+      "n_axes": 8,
+      "n_traces": 6,
+      "traces": [
+        {
+          "mode": "lines+markers",
+          "name": "Coulombic Efficiency",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x3",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y3"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Coulombic Efficiency",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x4",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y4"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Discharge Capacity Grav.",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Discharge Capacity Grav.",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x2",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y2"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Charge Capacity Grav.",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Charge Capacity Grav.",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x2",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y2"
+        }
+      ]
+    },
+    "summary_plot[fullcell_standard_absolute][matplotlib]": {
+      "backend": "matplotlib",
+      "n_panels": 8,
+      "panels": [
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 1.0,
+                "last": 3.0,
+                "n": 3
+              },
+              "y": {
+                "first": 92.610791,
+                "last": 109.19373,
+                "n": 3
+              }
+            },
+            {
+              "label": "coulombic_efficiency",
+              "x": {
+                "first": null,
+                "last": null,
+                "n": 0
+              },
+              "y": {
+                "first": null,
+                "last": null,
+                "n": 0
+              }
+            },
+            {
+              "label": "discharge_capacity_absolute",
+              "x": {
+                "first": null,
+                "last": null,
+                "n": 0
+              },
+              "y": {
+                "first": null,
+                "last": null,
+                "n": 0
+              }
+            },
+            {
+              "label": "discharge_capacity_retention_absolute",
+              "x": {
+                "first": null,
+                "last": null,
+                "n": 0
+              },
+              "y": {
+                "first": null,
+                "last": null,
+                "n": 0
+              }
+            },
+            {
+              "label": "charge_capacity_absolute_cv",
+              "x": {
+                "first": null,
+                "last": null,
+                "n": 0
+              },
+              "y": {
+                "first": null,
+                "last": null,
+                "n": 0
+              }
+            }
+          ],
+          "n_collections": 1,
+          "n_lines": 5,
+          "title": "",
+          "xlabel": "",
+          "ylabel": "Coulombic\nEfficiency (%)"
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 4.0,
+                "last": 18.0,
+                "n": 15
+              },
+              "y": {
+                "first": 103.86601,
+                "last": 0.0,
+                "n": 15
+              }
+            }
+          ],
+          "n_collections": 1,
+          "n_lines": 1,
+          "title": "",
+          "xlabel": "",
+          "ylabel": ""
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 1.0,
+                "last": 3.0,
+                "n": 3
+              },
+              "y": {
+                "first": 1.755094,
+                "last": 1.585721,
+                "n": 3
+              }
+            }
+          ],
+          "n_collections": 1,
+          "n_lines": 1,
+          "title": "",
+          "xlabel": "",
+          "ylabel": "Capacity\n(mAh)"
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 4.0,
+                "last": 18.0,
+                "n": 15
+              },
+              "y": {
+                "first": 1.517318,
+                "last": 0.239313,
+                "n": 15
+              }
+            }
+          ],
+          "n_collections": 1,
+          "n_lines": 1,
+          "title": "",
+          "xlabel": "",
+          "ylabel": ""
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 1.0,
+                "last": 3.0,
+                "n": 3
+              },
+              "y": {
+                "first": 1.0,
+                "last": 0.903497,
+                "n": 3
+              }
+            }
+          ],
+          "n_collections": 1,
+          "n_lines": 1,
+          "title": "",
+          "xlabel": "",
+          "ylabel": "Capacity\nRetention\n(mAh)"
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 4.0,
+                "last": 18.0,
+                "n": 15
+              },
+              "y": {
+                "first": 0.864523,
+                "last": 0.136354,
+                "n": 15
+              }
+            }
+          ],
+          "n_collections": 1,
+          "n_lines": 1,
+          "title": "",
+          "xlabel": "",
+          "ylabel": ""
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 1.0,
+                "last": 3.0,
+                "n": 3
+              },
+              "y": {
+                "first": 1.625406,
+                "last": 1.731508,
+                "n": 3
+              }
+            }
+          ],
+          "n_collections": 1,
+          "n_lines": 1,
+          "title": "",
+          "xlabel": "Cycle Number",
+          "ylabel": "CV Capacity\n(mAh)"
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 4.0,
+                "last": 18.0,
+                "n": 15
+              },
+              "y": {
+                "first": 1.575978,
+                "last": 0.0,
+                "n": 15
+              }
+            }
+          ],
+          "n_collections": 1,
+          "n_lines": 1,
+          "title": "",
+          "xlabel": "Cycle Number",
+          "ylabel": ""
+        }
+      ]
+    },
+    "summary_plot[fullcell_standard_absolute][plotly]": {
+      "axis_titles": {
+        "xaxis": "",
+        "xaxis2": "Cycle Number",
+        "xaxis3": null,
+        "xaxis4": null,
+        "xaxis5": null,
+        "xaxis6": null,
+        "xaxis7": null,
+        "xaxis8": null,
+        "yaxis": "CV Capacity<br>(mAh)",
+        "yaxis2": null,
+        "yaxis3": "Capacity<br>Retention (mAh)",
+        "yaxis4": null,
+        "yaxis5": "Capacity<br>(mAh)",
+        "yaxis6": null,
+        "yaxis7": "Coulombic<br>Efficiency (%)",
+        "yaxis8": null
+      },
+      "backend": "plotly",
+      "n_axes": 16,
+      "n_traces": 8,
+      "traces": [
+        {
+          "mode": "lines+markers",
+          "name": "Coulombic Efficiency",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x7",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y7"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Coulombic Efficiency",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x8",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y8"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Discharge Capacity Absolute",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x5",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y5"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Discharge Capacity Absolute",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x6",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y6"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Discharge Capacity Retention Absolute",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x3",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y3"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Discharge Capacity Retention Absolute",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x4",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y4"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Charge Capacity Absolute (CV)",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Charge Capacity Absolute (CV)",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x2",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y2"
+        }
+      ]
+    },
+    "summary_plot[fullcell_standard_areal][matplotlib]": {
+      "backend": "matplotlib",
+      "n_panels": 8,
+      "panels": [
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 1.0,
+                "last": 3.0,
+                "n": 3
+              },
+              "y": {
+                "first": 92.610791,
+                "last": 109.19373,
+                "n": 3
+              }
+            },
+            {
+              "label": "coulombic_efficiency",
+              "x": {
+                "first": null,
+                "last": null,
+                "n": 0
+              },
+              "y": {
+                "first": null,
+                "last": null,
+                "n": 0
+              }
+            },
+            {
+              "label": "discharge_capacity_areal",
+              "x": {
+                "first": null,
+                "last": null,
+                "n": 0
+              },
+              "y": {
+                "first": null,
+                "last": null,
+                "n": 0
+              }
+            },
+            {
+              "label": "discharge_capacity_retention_areal",
+              "x": {
+                "first": null,
+                "last": null,
+                "n": 0
+              },
+              "y": {
+                "first": null,
+                "last": null,
+                "n": 0
+              }
+            },
+            {
+              "label": "charge_capacity_areal_cv",
+              "x": {
+                "first": null,
+                "last": null,
+                "n": 0
+              },
+              "y": {
+                "first": null,
+                "last": null,
+                "n": 0
+              }
+            }
+          ],
+          "n_collections": 1,
+          "n_lines": 5,
+          "title": "",
+          "xlabel": "",
+          "ylabel": "Coulombic\nEfficiency (%)"
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 4.0,
+                "last": 18.0,
+                "n": 15
+              },
+              "y": {
+                "first": 103.86601,
+                "last": 0.0,
+                "n": 15
+              }
+            }
+          ],
+          "n_collections": 1,
+          "n_lines": 1,
+          "title": "",
+          "xlabel": "",
+          "ylabel": ""
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 1.0,
+                "last": 3.0,
+                "n": 3
+              },
+              "y": {
+                "first": 1.755094,
+                "last": 1.585721,
+                "n": 3
+              }
+            }
+          ],
+          "n_collections": 1,
+          "n_lines": 1,
+          "title": "",
+          "xlabel": "",
+          "ylabel": "Capacity\n(mAh/cm**2)"
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 4.0,
+                "last": 18.0,
+                "n": 15
+              },
+              "y": {
+                "first": 1.517318,
+                "last": 0.239313,
+                "n": 15
+              }
+            }
+          ],
+          "n_collections": 1,
+          "n_lines": 1,
+          "title": "",
+          "xlabel": "",
+          "ylabel": ""
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 1.0,
+                "last": 3.0,
+                "n": 3
+              },
+              "y": {
+                "first": 1.0,
+                "last": 0.903497,
+                "n": 3
+              }
+            }
+          ],
+          "n_collections": 1,
+          "n_lines": 1,
+          "title": "",
+          "xlabel": "",
+          "ylabel": "Capacity\nRetention\n(mAh/cm**2)"
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 4.0,
+                "last": 18.0,
+                "n": 15
+              },
+              "y": {
+                "first": 0.864523,
+                "last": 0.136354,
+                "n": 15
+              }
+            }
+          ],
+          "n_collections": 1,
+          "n_lines": 1,
+          "title": "",
+          "xlabel": "",
+          "ylabel": ""
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 1.0,
+                "last": 3.0,
+                "n": 3
+              },
+              "y": {
+                "first": 1.625406,
+                "last": 1.731508,
+                "n": 3
+              }
+            }
+          ],
+          "n_collections": 1,
+          "n_lines": 1,
+          "title": "",
+          "xlabel": "Cycle Number",
+          "ylabel": "CV Capacity\n(mAh/cm**2)"
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 4.0,
+                "last": 18.0,
+                "n": 15
+              },
+              "y": {
+                "first": 1.575978,
+                "last": 0.0,
+                "n": 15
+              }
+            }
+          ],
+          "n_collections": 1,
+          "n_lines": 1,
+          "title": "",
+          "xlabel": "Cycle Number",
+          "ylabel": ""
+        }
+      ]
+    },
+    "summary_plot[fullcell_standard_areal][plotly]": {
+      "axis_titles": {
+        "xaxis": "",
+        "xaxis2": "Cycle Number",
+        "xaxis3": null,
+        "xaxis4": null,
+        "xaxis5": null,
+        "xaxis6": null,
+        "xaxis7": null,
+        "xaxis8": null,
+        "yaxis": "CV Capacity<br>(mAh/cm**2)",
+        "yaxis2": null,
+        "yaxis3": "Capacity<br>Retention (mAh/cm**2)",
+        "yaxis4": null,
+        "yaxis5": "Capacity<br>(mAh/cm**2)",
+        "yaxis6": null,
+        "yaxis7": "Coulombic<br>Efficiency (%)",
+        "yaxis8": null
+      },
+      "backend": "plotly",
+      "n_axes": 16,
+      "n_traces": 8,
+      "traces": [
+        {
+          "mode": "lines+markers",
+          "name": "Coulombic Efficiency",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x7",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y7"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Coulombic Efficiency",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x8",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y8"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Discharge Capacity Areal",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x5",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y5"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Discharge Capacity Areal",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x6",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y6"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Discharge Capacity Retention Areal",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x3",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y3"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Discharge Capacity Retention Areal",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x4",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y4"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Charge Capacity Areal (CV)",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Charge Capacity Areal (CV)",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x2",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y2"
+        }
+      ]
+    },
+    "summary_plot[fullcell_standard_cumloss_absolute][matplotlib]": {
+      "backend": "matplotlib",
+      "n_panels": 8,
+      "panels": [
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 1.0,
+                "last": 3.0,
+                "n": 3
+              },
+              "y": {
+                "first": 92.610791,
+                "last": 109.19373,
+                "n": 3
+              }
+            },
+            {
+              "label": "coulombic_efficiency",
+              "x": {
+                "first": null,
+                "last": null,
+                "n": 0
+              },
+              "y": {
+                "first": null,
+                "last": null,
+                "n": 0
+              }
+            },
+            {
+              "label": "discharge_capacity_absolute",
+              "x": {
+                "first": null,
+                "last": null,
+                "n": 0
+              },
+              "y": {
+                "first": null,
+                "last": null,
+                "n": 0
+              }
+            },
+            {
+              "label": "test_cumulated_discharge_capacity_loss_absolute",
+              "x": {
+                "first": null,
+                "last": null,
+                "n": 0
+              },
+              "y": {
+                "first": null,
+                "last": null,
+                "n": 0
+              }
+            },
+            {
+              "label": "charge_capacity_absolute_cv",
+              "x": {
+                "first": null,
+                "last": null,
+                "n": 0
+              },
+              "y": {
+                "first": null,
+                "last": null,
+                "n": 0
+              }
+            }
+          ],
+          "n_collections": 1,
+          "n_lines": 5,
+          "title": "",
+          "xlabel": "",
+          "ylabel": "Coulombic\nEfficiency (%)"
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 4.0,
+                "last": 18.0,
+                "n": 15
+              },
+              "y": {
+                "first": 103.86601,
+                "last": 0.0,
+                "n": 15
+              }
+            }
+          ],
+          "n_collections": 1,
+          "n_lines": 1,
+          "title": "",
+          "xlabel": "",
+          "ylabel": ""
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 1.0,
+                "last": 3.0,
+                "n": 3
+              },
+              "y": {
+                "first": 1.755094,
+                "last": 1.585721,
+                "n": 3
+              }
+            }
+          ],
+          "n_collections": 1,
+          "n_lines": 1,
+          "title": "",
+          "xlabel": "",
+          "ylabel": "Capacity\n(mAh)"
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 4.0,
+                "last": 18.0,
+                "n": 15
+              },
+              "y": {
+                "first": 1.517318,
+                "last": 0.239313,
+                "n": 15
+              }
+            }
+          ],
+          "n_collections": 1,
+          "n_lines": 1,
+          "title": "",
+          "xlabel": "",
+          "ylabel": ""
+        },
+        {
+          "lines": [],
+          "n_collections": 0,
+          "n_lines": 0,
+          "title": "",
+          "xlabel": "",
+          "ylabel": "Capacity\nRetention\n(mAh)"
+        },
+        {
+          "lines": [],
+          "n_collections": 0,
+          "n_lines": 0,
+          "title": "",
+          "xlabel": "",
+          "ylabel": ""
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 1.0,
+                "last": 3.0,
+                "n": 3
+              },
+              "y": {
+                "first": 1.625406,
+                "last": 1.731508,
+                "n": 3
+              }
+            }
+          ],
+          "n_collections": 1,
+          "n_lines": 1,
+          "title": "",
+          "xlabel": "Cycle Number",
+          "ylabel": "CV Capacity\n(mAh)"
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 4.0,
+                "last": 18.0,
+                "n": 15
+              },
+              "y": {
+                "first": 1.575978,
+                "last": 0.0,
+                "n": 15
+              }
+            }
+          ],
+          "n_collections": 1,
+          "n_lines": 1,
+          "title": "",
+          "xlabel": "Cycle Number",
+          "ylabel": ""
+        }
+      ]
+    },
+    "summary_plot[fullcell_standard_cumloss_absolute][plotly]": {
+      "axis_titles": {
+        "xaxis": "",
+        "xaxis2": "Cycle Number",
+        "xaxis3": null,
+        "xaxis4": null,
+        "xaxis5": null,
+        "xaxis6": null,
+        "xaxis7": null,
+        "xaxis8": null,
+        "yaxis": "CV Capacity<br>(mAh)",
+        "yaxis2": null,
+        "yaxis3": "Capacity<br>Retention (mAh)",
+        "yaxis4": null,
+        "yaxis5": "Capacity<br>(mAh)",
+        "yaxis6": null,
+        "yaxis7": "Coulombic<br>Efficiency (%)",
+        "yaxis8": null
+      },
+      "backend": "plotly",
+      "n_axes": 16,
+      "n_traces": 8,
+      "traces": [
+        {
+          "mode": "lines+markers",
+          "name": "Coulombic Efficiency",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x7",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y7"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Coulombic Efficiency",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x8",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y8"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Discharge Capacity Absolute",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x5",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y5"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Discharge Capacity Absolute",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x6",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y6"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Test Cumulated Discharge Capacity Loss Absolute",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x3",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y3"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Test Cumulated Discharge Capacity Loss Absolute",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x4",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y4"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Charge Capacity Absolute (CV)",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Charge Capacity Absolute (CV)",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x2",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y2"
+        }
+      ]
+    },
+    "summary_plot[fullcell_standard_cumloss_areal][matplotlib]": {
+      "backend": "matplotlib",
+      "n_panels": 8,
+      "panels": [
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 1.0,
+                "last": 3.0,
+                "n": 3
+              },
+              "y": {
+                "first": 92.610791,
+                "last": 109.19373,
+                "n": 3
+              }
+            },
+            {
+              "label": "coulombic_efficiency",
+              "x": {
+                "first": null,
+                "last": null,
+                "n": 0
+              },
+              "y": {
+                "first": null,
+                "last": null,
+                "n": 0
+              }
+            },
+            {
+              "label": "discharge_capacity_areal",
+              "x": {
+                "first": null,
+                "last": null,
+                "n": 0
+              },
+              "y": {
+                "first": null,
+                "last": null,
+                "n": 0
+              }
+            },
+            {
+              "label": "test_cumulated_discharge_capacity_loss_areal",
+              "x": {
+                "first": null,
+                "last": null,
+                "n": 0
+              },
+              "y": {
+                "first": null,
+                "last": null,
+                "n": 0
+              }
+            },
+            {
+              "label": "charge_capacity_areal_cv",
+              "x": {
+                "first": null,
+                "last": null,
+                "n": 0
+              },
+              "y": {
+                "first": null,
+                "last": null,
+                "n": 0
+              }
+            }
+          ],
+          "n_collections": 1,
+          "n_lines": 5,
+          "title": "",
+          "xlabel": "",
+          "ylabel": "Coulombic\nEfficiency (%)"
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 4.0,
+                "last": 18.0,
+                "n": 15
+              },
+              "y": {
+                "first": 103.86601,
+                "last": 0.0,
+                "n": 15
+              }
+            }
+          ],
+          "n_collections": 1,
+          "n_lines": 1,
+          "title": "",
+          "xlabel": "",
+          "ylabel": ""
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 1.0,
+                "last": 3.0,
+                "n": 3
+              },
+              "y": {
+                "first": 1.755094,
+                "last": 1.585721,
+                "n": 3
+              }
+            }
+          ],
+          "n_collections": 1,
+          "n_lines": 1,
+          "title": "",
+          "xlabel": "",
+          "ylabel": "Capacity\n(mAh/cm**2)"
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 4.0,
+                "last": 18.0,
+                "n": 15
+              },
+              "y": {
+                "first": 1.517318,
+                "last": 0.239313,
+                "n": 15
+              }
+            }
+          ],
+          "n_collections": 1,
+          "n_lines": 1,
+          "title": "",
+          "xlabel": "",
+          "ylabel": ""
+        },
+        {
+          "lines": [],
+          "n_collections": 0,
+          "n_lines": 0,
+          "title": "",
+          "xlabel": "",
+          "ylabel": "Capacity\nRetention\n(mAh/cm**2)"
+        },
+        {
+          "lines": [],
+          "n_collections": 0,
+          "n_lines": 0,
+          "title": "",
+          "xlabel": "",
+          "ylabel": ""
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 1.0,
+                "last": 3.0,
+                "n": 3
+              },
+              "y": {
+                "first": 1.625406,
+                "last": 1.731508,
+                "n": 3
+              }
+            }
+          ],
+          "n_collections": 1,
+          "n_lines": 1,
+          "title": "",
+          "xlabel": "Cycle Number",
+          "ylabel": "CV Capacity\n(mAh/cm**2)"
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 4.0,
+                "last": 18.0,
+                "n": 15
+              },
+              "y": {
+                "first": 1.575978,
+                "last": 0.0,
+                "n": 15
+              }
+            }
+          ],
+          "n_collections": 1,
+          "n_lines": 1,
+          "title": "",
+          "xlabel": "Cycle Number",
+          "ylabel": ""
+        }
+      ]
+    },
+    "summary_plot[fullcell_standard_cumloss_areal][plotly]": {
+      "axis_titles": {
+        "xaxis": "",
+        "xaxis2": "Cycle Number",
+        "xaxis3": null,
+        "xaxis4": null,
+        "xaxis5": null,
+        "xaxis6": null,
+        "xaxis7": null,
+        "xaxis8": null,
+        "yaxis": "CV Capacity<br>(mAh/cm**2)",
+        "yaxis2": null,
+        "yaxis3": "Capacity<br>Retention (mAh/cm**2)",
+        "yaxis4": null,
+        "yaxis5": "Capacity<br>(mAh/cm**2)",
+        "yaxis6": null,
+        "yaxis7": "Coulombic<br>Efficiency (%)",
+        "yaxis8": null
+      },
+      "backend": "plotly",
+      "n_axes": 16,
+      "n_traces": 8,
+      "traces": [
+        {
+          "mode": "lines+markers",
+          "name": "Coulombic Efficiency",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x7",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y7"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Coulombic Efficiency",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x8",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y8"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Discharge Capacity Areal",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x5",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y5"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Discharge Capacity Areal",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x6",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y6"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Test Cumulated Discharge Capacity Loss Areal",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x3",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y3"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Test Cumulated Discharge Capacity Loss Areal",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x4",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y4"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Charge Capacity Areal (CV)",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Charge Capacity Areal (CV)",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x2",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y2"
+        }
+      ]
+    },
+    "summary_plot[fullcell_standard_cumloss_gravimetric][matplotlib]": {
+      "backend": "matplotlib",
+      "n_panels": 8,
+      "panels": [
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 1.0,
+                "last": 3.0,
+                "n": 3
+              },
+              "y": {
+                "first": 92.610791,
+                "last": 109.19373,
+                "n": 3
+              }
+            },
+            {
+              "label": "coulombic_efficiency",
+              "x": {
+                "first": null,
+                "last": null,
+                "n": 0
+              },
+              "y": {
+                "first": null,
+                "last": null,
+                "n": 0
+              }
+            },
+            {
+              "label": "discharge_capacity_gravimetric",
+              "x": {
+                "first": null,
+                "last": null,
+                "n": 0
+              },
+              "y": {
+                "first": null,
+                "last": null,
+                "n": 0
+              }
+            },
+            {
+              "label": "test_cumulated_discharge_capacity_loss_gravimetric",
+              "x": {
+                "first": null,
+                "last": null,
+                "n": 0
+              },
+              "y": {
+                "first": null,
+                "last": null,
+                "n": 0
+              }
+            },
+            {
+              "label": "charge_capacity_gravimetric_cv",
+              "x": {
+                "first": null,
+                "last": null,
+                "n": 0
+              },
+              "y": {
+                "first": null,
+                "last": null,
+                "n": 0
+              }
+            }
+          ],
+          "n_collections": 1,
+          "n_lines": 5,
+          "title": "",
+          "xlabel": "",
+          "ylabel": "Coulombic\nEfficiency (%)"
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 4.0,
+                "last": 18.0,
+                "n": 15
+              },
+              "y": {
+                "first": 103.86601,
+                "last": 0.0,
+                "n": 15
+              }
+            }
+          ],
+          "n_collections": 1,
+          "n_lines": 1,
+          "title": "",
+          "xlabel": "",
+          "ylabel": ""
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 1.0,
+                "last": 3.0,
+                "n": 3
+              },
+              "y": {
+                "first": 1755.093529,
+                "last": 1585.720948,
+                "n": 3
+              }
+            }
+          ],
+          "n_collections": 1,
+          "n_lines": 1,
+          "title": "",
+          "xlabel": "",
+          "ylabel": "Capacity\n(mAh/g)"
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 4.0,
+                "last": 18.0,
+                "n": 15
+              },
+              "y": {
+                "first": 1517.317964,
+                "last": 239.313156,
+                "n": 15
+              }
+            }
+          ],
+          "n_collections": 1,
+          "n_lines": 1,
+          "title": "",
+          "xlabel": "",
+          "ylabel": ""
+        },
+        {
+          "lines": [],
+          "n_collections": 0,
+          "n_lines": 0,
+          "title": "",
+          "xlabel": "",
+          "ylabel": "Capacity\nRetention\n(mAh/g)"
+        },
+        {
+          "lines": [],
+          "n_collections": 0,
+          "n_lines": 0,
+          "title": "",
+          "xlabel": "",
+          "ylabel": ""
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 1.0,
+                "last": 3.0,
+                "n": 3
+              },
+              "y": {
+                "first": 1625.405999,
+                "last": 1731.507851,
+                "n": 3
+              }
+            }
+          ],
+          "n_collections": 1,
+          "n_lines": 1,
+          "title": "",
+          "xlabel": "Cycle Number",
+          "ylabel": "CV Capacity\n(mAh/g)"
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 4.0,
+                "last": 18.0,
+                "n": 15
+              },
+              "y": {
+                "first": 1575.977622,
+                "last": 0.0,
+                "n": 15
+              }
+            }
+          ],
+          "n_collections": 1,
+          "n_lines": 1,
+          "title": "",
+          "xlabel": "Cycle Number",
+          "ylabel": ""
+        }
+      ]
+    },
+    "summary_plot[fullcell_standard_cumloss_gravimetric][plotly]": {
+      "axis_titles": {
+        "xaxis": "",
+        "xaxis2": "Cycle Number",
+        "xaxis3": null,
+        "xaxis4": null,
+        "xaxis5": null,
+        "xaxis6": null,
+        "xaxis7": null,
+        "xaxis8": null,
+        "yaxis": "CV Capacity<br>(mAh/g)",
+        "yaxis2": null,
+        "yaxis3": "Capacity<br>Retention (mAh/g)",
+        "yaxis4": null,
+        "yaxis5": "Capacity<br>(mAh/g)",
+        "yaxis6": null,
+        "yaxis7": "Coulombic<br>Efficiency (%)",
+        "yaxis8": null
+      },
+      "backend": "plotly",
+      "n_axes": 16,
+      "n_traces": 8,
+      "traces": [
+        {
+          "mode": "lines+markers",
+          "name": "Coulombic Efficiency",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x7",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y7"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Coulombic Efficiency",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x8",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y8"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Discharge Capacity Grav.",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x5",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y5"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Discharge Capacity Grav.",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x6",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y6"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Test Cumulated Discharge Capacity Loss Grav.",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x3",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y3"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Test Cumulated Discharge Capacity Loss Grav.",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x4",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y4"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Charge Capacity Grav. (CV)",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Charge Capacity Grav. (CV)",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x2",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y2"
+        }
+      ]
+    },
+    "summary_plot[fullcell_standard_dev][matplotlib]": {
+      "backend": "matplotlib",
+      "n_panels": 8,
+      "panels": [
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 1.0,
+                "last": 3.0,
+                "n": 3
+              },
+              "y": {
+                "first": 92.610791,
+                "last": 109.19373,
+                "n": 3
+              }
+            },
+            {
+              "label": "coulombic_efficiency",
+              "x": {
+                "first": null,
+                "last": null,
+                "n": 0
+              },
+              "y": {
+                "first": null,
+                "last": null,
+                "n": 0
+              }
+            },
+            {
+              "label": "discharge_capacity_gravimetric",
+              "x": {
+                "first": null,
+                "last": null,
+                "n": 0
+              },
+              "y": {
+                "first": null,
+                "last": null,
+                "n": 0
+              }
+            },
+            {
+              "label": "discharge_capacity_retention_gravimetric",
+              "x": {
+                "first": null,
+                "last": null,
+                "n": 0
+              },
+              "y": {
+                "first": null,
+                "last": null,
+                "n": 0
+              }
+            },
+            {
+              "label": "charge_capacity_gravimetric_cv",
+              "x": {
+                "first": null,
+                "last": null,
+                "n": 0
+              },
+              "y": {
+                "first": null,
+                "last": null,
+                "n": 0
+              }
+            }
+          ],
+          "n_collections": 1,
+          "n_lines": 5,
+          "title": "",
+          "xlabel": "",
+          "ylabel": "Coulombic\nEfficiency (%)"
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 4.0,
+                "last": 18.0,
+                "n": 15
+              },
+              "y": {
+                "first": 103.86601,
+                "last": 0.0,
+                "n": 15
+              }
+            }
+          ],
+          "n_collections": 1,
+          "n_lines": 1,
+          "title": "",
+          "xlabel": "",
+          "ylabel": ""
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 1.0,
+                "last": 3.0,
+                "n": 3
+              },
+              "y": {
+                "first": 1755.093529,
+                "last": 1585.720948,
+                "n": 3
+              }
+            }
+          ],
+          "n_collections": 1,
+          "n_lines": 1,
+          "title": "",
+          "xlabel": "",
+          "ylabel": "Capacity\n(-)"
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 4.0,
+                "last": 18.0,
+                "n": 15
+              },
+              "y": {
+                "first": 1517.317964,
+                "last": 239.313156,
+                "n": 15
+              }
+            }
+          ],
+          "n_collections": 1,
+          "n_lines": 1,
+          "title": "",
+          "xlabel": "",
+          "ylabel": ""
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 1.0,
+                "last": 3.0,
+                "n": 3
+              },
+              "y": {
+                "first": 1.0,
+                "last": 0.903497,
+                "n": 3
+              }
+            }
+          ],
+          "n_collections": 1,
+          "n_lines": 1,
+          "title": "",
+          "xlabel": "",
+          "ylabel": "Capacity\nRetention\n(-)"
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 4.0,
+                "last": 18.0,
+                "n": 15
+              },
+              "y": {
+                "first": 0.864523,
+                "last": 0.136354,
+                "n": 15
+              }
+            }
+          ],
+          "n_collections": 1,
+          "n_lines": 1,
+          "title": "",
+          "xlabel": "",
+          "ylabel": ""
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 1.0,
+                "last": 3.0,
+                "n": 3
+              },
+              "y": {
+                "first": 1625.405999,
+                "last": 1731.507851,
+                "n": 3
+              }
+            }
+          ],
+          "n_collections": 1,
+          "n_lines": 1,
+          "title": "",
+          "xlabel": "Cycle Number",
+          "ylabel": "CV Capacity\n(-)"
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 4.0,
+                "last": 18.0,
+                "n": 15
+              },
+              "y": {
+                "first": 1575.977622,
+                "last": 0.0,
+                "n": 15
+              }
+            }
+          ],
+          "n_collections": 1,
+          "n_lines": 1,
+          "title": "",
+          "xlabel": "Cycle Number",
+          "ylabel": ""
+        }
+      ]
+    },
+    "summary_plot[fullcell_standard_dev][plotly]": {
+      "axis_titles": {
+        "xaxis": "",
+        "xaxis2": "Cycle Number",
+        "xaxis3": null,
+        "xaxis4": null,
+        "xaxis5": null,
+        "xaxis6": null,
+        "xaxis7": null,
+        "xaxis8": null,
+        "yaxis": "CV Capacity<br>(-)",
+        "yaxis2": null,
+        "yaxis3": "Capacity<br>Retention (-)",
+        "yaxis4": null,
+        "yaxis5": "Capacity<br>(-)",
+        "yaxis6": null,
+        "yaxis7": "Coulombic<br>Efficiency (%)",
+        "yaxis8": null
+      },
+      "backend": "plotly",
+      "n_axes": 16,
+      "n_traces": 8,
+      "traces": [
+        {
+          "mode": "lines+markers",
+          "name": "Coulombic Efficiency",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x7",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y7"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Coulombic Efficiency",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x8",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y8"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Discharge Capacity Grav.",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x5",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y5"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Discharge Capacity Grav.",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x6",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y6"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Discharge Capacity Retention Grav.",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x3",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y3"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Discharge Capacity Retention Grav.",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x4",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y4"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Charge Capacity Grav. (CV)",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Charge Capacity Grav. (CV)",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x2",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y2"
+        }
+      ]
+    },
+    "summary_plot[fullcell_standard_gravimetric][matplotlib]": {
+      "backend": "matplotlib",
+      "n_panels": 8,
+      "panels": [
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 1.0,
+                "last": 3.0,
+                "n": 3
+              },
+              "y": {
+                "first": 92.610791,
+                "last": 109.19373,
+                "n": 3
+              }
+            },
+            {
+              "label": "coulombic_efficiency",
+              "x": {
+                "first": null,
+                "last": null,
+                "n": 0
+              },
+              "y": {
+                "first": null,
+                "last": null,
+                "n": 0
+              }
+            },
+            {
+              "label": "discharge_capacity_gravimetric",
+              "x": {
+                "first": null,
+                "last": null,
+                "n": 0
+              },
+              "y": {
+                "first": null,
+                "last": null,
+                "n": 0
+              }
+            },
+            {
+              "label": "discharge_capacity_retention_gravimetric",
+              "x": {
+                "first": null,
+                "last": null,
+                "n": 0
+              },
+              "y": {
+                "first": null,
+                "last": null,
+                "n": 0
+              }
+            },
+            {
+              "label": "charge_capacity_gravimetric_cv",
+              "x": {
+                "first": null,
+                "last": null,
+                "n": 0
+              },
+              "y": {
+                "first": null,
+                "last": null,
+                "n": 0
+              }
+            }
+          ],
+          "n_collections": 1,
+          "n_lines": 5,
+          "title": "",
+          "xlabel": "",
+          "ylabel": "Coulombic\nEfficiency (%)"
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 4.0,
+                "last": 18.0,
+                "n": 15
+              },
+              "y": {
+                "first": 103.86601,
+                "last": 0.0,
+                "n": 15
+              }
+            }
+          ],
+          "n_collections": 1,
+          "n_lines": 1,
+          "title": "",
+          "xlabel": "",
+          "ylabel": ""
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 1.0,
+                "last": 3.0,
+                "n": 3
+              },
+              "y": {
+                "first": 1755.093529,
+                "last": 1585.720948,
+                "n": 3
+              }
+            }
+          ],
+          "n_collections": 1,
+          "n_lines": 1,
+          "title": "",
+          "xlabel": "",
+          "ylabel": "Capacity\n(mAh/g)"
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 4.0,
+                "last": 18.0,
+                "n": 15
+              },
+              "y": {
+                "first": 1517.317964,
+                "last": 239.313156,
+                "n": 15
+              }
+            }
+          ],
+          "n_collections": 1,
+          "n_lines": 1,
+          "title": "",
+          "xlabel": "",
+          "ylabel": ""
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 1.0,
+                "last": 3.0,
+                "n": 3
+              },
+              "y": {
+                "first": 1.0,
+                "last": 0.903497,
+                "n": 3
+              }
+            }
+          ],
+          "n_collections": 1,
+          "n_lines": 1,
+          "title": "",
+          "xlabel": "",
+          "ylabel": "Capacity\nRetention\n(mAh/g)"
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 4.0,
+                "last": 18.0,
+                "n": 15
+              },
+              "y": {
+                "first": 0.864523,
+                "last": 0.136354,
+                "n": 15
+              }
+            }
+          ],
+          "n_collections": 1,
+          "n_lines": 1,
+          "title": "",
+          "xlabel": "",
+          "ylabel": ""
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 1.0,
+                "last": 3.0,
+                "n": 3
+              },
+              "y": {
+                "first": 1625.405999,
+                "last": 1731.507851,
+                "n": 3
+              }
+            }
+          ],
+          "n_collections": 1,
+          "n_lines": 1,
+          "title": "",
+          "xlabel": "Cycle Number",
+          "ylabel": "CV Capacity\n(mAh/g)"
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 4.0,
+                "last": 18.0,
+                "n": 15
+              },
+              "y": {
+                "first": 1575.977622,
+                "last": 0.0,
+                "n": 15
+              }
+            }
+          ],
+          "n_collections": 1,
+          "n_lines": 1,
+          "title": "",
+          "xlabel": "Cycle Number",
+          "ylabel": ""
+        }
+      ]
+    },
+    "summary_plot[fullcell_standard_gravimetric][plotly]": {
+      "axis_titles": {
+        "xaxis": "",
+        "xaxis2": "Cycle Number",
+        "xaxis3": null,
+        "xaxis4": null,
+        "xaxis5": null,
+        "xaxis6": null,
+        "xaxis7": null,
+        "xaxis8": null,
+        "yaxis": "CV Capacity<br>(mAh/g)",
+        "yaxis2": null,
+        "yaxis3": "Capacity<br>Retention (mAh/g)",
+        "yaxis4": null,
+        "yaxis5": "Capacity<br>(mAh/g)",
+        "yaxis6": null,
+        "yaxis7": "Coulombic<br>Efficiency (%)",
+        "yaxis8": null
+      },
+      "backend": "plotly",
+      "n_axes": 16,
+      "n_traces": 8,
+      "traces": [
+        {
+          "mode": "lines+markers",
+          "name": "Coulombic Efficiency",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x7",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y7"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Coulombic Efficiency",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x8",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y8"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Discharge Capacity Grav.",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x5",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y5"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Discharge Capacity Grav.",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x6",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y6"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Discharge Capacity Retention Grav.",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x3",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y3"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Discharge Capacity Retention Grav.",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x4",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y4"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Charge Capacity Grav. (CV)",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Charge Capacity Grav. (CV)",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x2",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y2"
+        }
+      ]
+    },
+    "summary_plot[no_formation][plotly]": {
+      "axis_titles": {
+        "xaxis": "Cycle Number",
+        "xaxis2": null,
+        "yaxis": "Capacity (mAh/g)",
+        "yaxis2": "Coulombic Efficiency"
+      },
+      "backend": "plotly",
+      "n_axes": 4,
+      "n_traces": 3,
+      "traces": [
+        {
+          "mode": "lines+markers",
+          "name": "Coulombic Efficiency",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x2",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y2"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Discharge Capacity Grav.",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Charge Capacity Grav.",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        }
+      ]
+    },
+    "summary_plot[no_legend][plotly]": {
+      "axis_titles": {
+        "xaxis": "Cycle Number",
+        "xaxis2": "Cycle Number",
+        "xaxis3": null,
+        "xaxis4": null,
+        "yaxis": "Capacity (mAh/g)",
+        "yaxis2": null,
+        "yaxis3": "Coulombic Efficiency",
+        "yaxis4": null
+      },
+      "backend": "plotly",
+      "n_axes": 8,
+      "n_traces": 6,
+      "traces": [
+        {
+          "mode": "lines+markers",
+          "name": "coulombic_efficiency",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x3",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y3"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "coulombic_efficiency",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x4",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y4"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "discharge_capacity_gravimetric",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "discharge_capacity_gravimetric",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x2",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y2"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "charge_capacity_gravimetric",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "charge_capacity_gravimetric",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x2",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y2"
+        }
+      ]
+    },
+    "summary_plot[no_markers][plotly]": {
+      "axis_titles": {
+        "xaxis": "Cycle Number",
+        "xaxis2": "Cycle Number",
+        "xaxis3": null,
+        "xaxis4": null,
+        "yaxis": "Capacity (mAh/g)",
+        "yaxis2": null,
+        "yaxis3": "Coulombic Efficiency",
+        "yaxis4": null
+      },
+      "backend": "plotly",
+      "n_axes": 8,
+      "n_traces": 6,
+      "traces": [
+        {
+          "mode": "lines",
+          "name": "Coulombic Efficiency",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x3",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y3"
+        },
+        {
+          "mode": "lines",
+          "name": "Coulombic Efficiency",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x4",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y4"
+        },
+        {
+          "mode": "lines",
+          "name": "Discharge Capacity Grav.",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "Discharge Capacity Grav.",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x2",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y2"
+        },
+        {
+          "mode": "lines",
+          "name": "Charge Capacity Grav.",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "Charge Capacity Grav.",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x2",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y2"
+        }
+      ]
+    },
+    "summary_plot[shared_y][plotly]": {
+      "axis_titles": {
+        "xaxis": "Cycle Number",
+        "xaxis2": "Cycle Number",
+        "xaxis3": null,
+        "xaxis4": null,
+        "yaxis": "Capacity (mAh/g)",
+        "yaxis2": null,
+        "yaxis3": "Coulombic Efficiency",
+        "yaxis4": null
+      },
+      "backend": "plotly",
+      "n_axes": 8,
+      "n_traces": 6,
+      "traces": [
+        {
+          "mode": "lines+markers",
+          "name": "Coulombic Efficiency",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x3",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y3"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Coulombic Efficiency",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x4",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y4"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Discharge Capacity Grav.",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Discharge Capacity Grav.",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x2",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y2"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Charge Capacity Grav.",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Charge Capacity Grav.",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x2",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y2"
+        }
+      ]
+    },
+    "summary_plot[titled][plotly]": {
+      "axis_titles": {
+        "xaxis": "Cycle Number",
+        "xaxis2": "Cycle Number",
+        "xaxis3": null,
+        "xaxis4": null,
+        "yaxis": "Capacity (mAh/g)",
+        "yaxis2": null,
+        "yaxis3": "Coulombic Efficiency",
+        "yaxis4": null
+      },
+      "backend": "plotly",
+      "n_axes": 8,
+      "n_traces": 6,
+      "traces": [
+        {
+          "mode": "lines+markers",
+          "name": "Coulombic Efficiency",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x3",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y3"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Coulombic Efficiency",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x4",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y4"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Discharge Capacity Grav.",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Discharge Capacity Grav.",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x2",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y2"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Charge Capacity Grav.",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Charge Capacity Grav.",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x2",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y2"
+        }
+      ]
+    },
+    "summary_plot[voltages][matplotlib]": {
+      "backend": "matplotlib",
+      "n_panels": 2,
+      "panels": [
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 1.0,
+                "last": 3.0,
+                "n": 3
+              },
+              "y": {
+                "first": 0.049894,
+                "last": 0.049894,
+                "n": 3
+              }
+            },
+            {
+              "label": "_child2",
+              "x": {
+                "first": 1.0,
+                "last": 3.0,
+                "n": 3
+              },
+              "y": {
+                "first": 1.000113,
+                "last": 1.000113,
+                "n": 3
+              }
+            },
+            {
+              "label": "potential_end_discharge",
+              "x": {
+                "first": null,
+                "last": null,
+                "n": 0
+              },
+              "y": {
+                "first": null,
+                "last": null,
+                "n": 0
+              }
+            },
+            {
+              "label": "potential_end_charge",
+              "x": {
+                "first": null,
+                "last": null,
+                "n": 0
+              },
+              "y": {
+                "first": null,
+                "last": null,
+                "n": 0
+              }
+            }
+          ],
+          "n_collections": 2,
+          "n_lines": 4,
+          "title": "",
+          "xlabel": "Cycle Number",
+          "ylabel": "Voltage (V)"
+        },
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 4.0,
+                "last": 18.0,
+                "n": 15
+              },
+              "y": {
+                "first": 0.049894,
+                "last": 0.294069,
+                "n": 15
+              }
+            },
+            {
+              "label": "_child2",
+              "x": {
+                "first": 4.0,
+                "last": 17.0,
+                "n": 14
+              },
+              "y": {
+                "first": 1.000113,
+                "last": 1.000113,
+                "n": 14
+              }
+            }
+          ],
+          "n_collections": 2,
+          "n_lines": 2,
+          "title": "",
+          "xlabel": "Cycle Number",
+          "ylabel": ""
+        }
+      ]
+    },
+    "summary_plot[voltages][plotly]": {
+      "axis_titles": {
+        "xaxis": "Cycle Number",
+        "xaxis2": "Cycle Number",
+        "yaxis": "Voltage (V)",
+        "yaxis2": null
+      },
+      "backend": "plotly",
+      "n_axes": 4,
+      "n_traces": 4,
+      "traces": [
+        {
+          "mode": "lines+markers",
+          "name": "Potential End Discharge",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Potential End Discharge",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x2",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y2"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Potential End Charge",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Potential End Charge",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x2",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y2"
+        }
+      ]
+    },
+    "summary_plot[x_cycle_index_legacy_spelling][plotly]": {
+      "axis_titles": {
+        "xaxis": "Cycle Number",
+        "xaxis2": "Cycle Number",
+        "xaxis3": null,
+        "xaxis4": null,
+        "yaxis": "Capacity (mAh/g)",
+        "yaxis2": null,
+        "yaxis3": "Coulombic Efficiency",
+        "yaxis4": null
+      },
+      "backend": "plotly",
+      "n_axes": 8,
+      "n_traces": 6,
+      "traces": [
+        {
+          "mode": "lines+markers",
+          "name": "Coulombic Efficiency",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x3",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y3"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Coulombic Efficiency",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x4",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y4"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Discharge Capacity Grav.",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Discharge Capacity Grav.",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x2",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y2"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Charge Capacity Grav.",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "Charge Capacity Grav.",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x2",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y2"
+        }
+      ]
+    }
+  }
+}

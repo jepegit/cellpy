@@ -65,7 +65,9 @@ jobs:
         run: uv sync
 
       - name: Run tests
-        run: uv run pytest -m essential --ignore=tests/test_plotutils_summary_plot.py
+        env:
+          MPLBACKEND: Agg
+        run: uv run pytest -m essential
 
   publish:
     needs: test

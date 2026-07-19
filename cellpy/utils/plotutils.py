@@ -20,6 +20,9 @@ import pandas as pd
 import numpy as np
 
 from cellpycore.config import CurveCols
+from cellpycore.legacy import mapping
+
+from cellpy._deprecation import warn_once
 
 from cellpy.parameters.internal_settings import (
     get_headers_journal,
@@ -461,9 +464,13 @@ def _plotly_label_dict(text, x, y):
     return d
 
 
-_hdr_summary = get_headers_summary()
-_hdr_raw = get_headers_normal()
-_hdr_steps = get_headers_step_table()
+#: ``normalized_cycle_index`` is spelled the same in both dialects (asserted in
+#: tests/test_plotutils_headers.py), so comparing against it needs no schema.
+#: The other three module-level header singletons that used to live here were
+#: removed in #567: they answered with *legacy* names regardless of the cell,
+#: which silently broke every raw-frame lookup after the native-headers flip.
+#: Use ``_LiveHeaders(cell, frame)`` instead.
+_NORMALIZED_CYCLE_INDEX = "normalized_cycle_index"
 _hdr_journal = get_headers_journal()
 
 
@@ -614,6 +621,125 @@ def _get_capacity_unit(c, mode="gravimetric"):
         return units_label("charge", mode, units=c.cellpy_units)
     except UnitsError:
         return "-"
+
+
+def _resolve_summary_column(c, name):
+    """Accept the legacy spelling of a summary column and return the live one.
+
+    The native-headers flip renamed summary columns, so ``summary_plot(c,
+    x="cycle_index")`` — the spelling in this module's own docstrings and in
+    every 1.x script — stopped indexing the frame and raised ``KeyError`` deep
+    inside a ``melt``. The default path was unaffected (it reads the name off
+    the schema), which is why nothing caught it.
+
+    Resolution is checked against the *frame*, so this works on both runtimes:
+    on the legacy runtime the frame still carries ``cycle_index`` and the name
+    is returned untouched.
+    """
+    if not isinstance(name, str):
+        return name
+
+    summary = getattr(getattr(c, "data", None), "summary", None)
+    columns = set(summary.columns) if summary is not None else set()
+
+    if not columns or name in columns:
+        return name
+
+    native = mapping.legacy_to_native_summary().get(name)
+    if native is None or native not in columns:
+        # Not a legacy spelling we know: leave it alone and let the caller
+        # raise its own error, which will name the column the user asked for.
+        return name
+
+    warn_once(
+        f"legacy summary column name {name!r} in a plot argument",
+        f"the native name {native!r} (see c.schema.summary)",
+        removal="2.1",
+    )
+    return native
+
+
+def _resolve_summary_columns(c, names):
+    """``_resolve_summary_column`` over a list, preserving order and Nones."""
+    if not names:
+        return names
+    return [_resolve_summary_column(c, name) for name in names]
+
+
+#: cellpy-core mapping key per frame, for ``_LiveHeaders``.
+_MAPPING_FRAME = {"raw": "raw", "steps": "step", "summary": "cycle"}
+
+
+class _LiveHeaders:
+    """Column names for *this cell's* frames, keyed by the 1.x attribute names.
+
+    Replaces the module-level ``_hdr_raw = get_headers_normal()`` /
+    ``_hdr_steps`` / ``_hdr_summary`` singletons. Those were built once at
+    import time and always answered with the **legacy** names, so after the
+    native-headers flip every lookup through them produced a key the frame no
+    longer had. That is why ``raw_plot`` and ``cycle_info_plot`` raised
+    ``KeyError: 'voltage'`` on any cellpy 2 cell — a module-level binding that
+    could not see the runtime, which is the same trap that bit the schema
+    migration in #558.
+
+    Resolution goes through the cell's own schema, so this is correct on both
+    runtimes: on the legacy runtime ``schema.raw.potential`` still answers
+    ``"voltage"``.
+
+    Both spellings the old singletons supported are kept, because call sites
+    use both: ``hdr["voltage_txt"]`` and ``hdr.voltage_txt``.
+    """
+
+    __slots__ = ("_schema", "_frame", "_attrs")
+
+    def __init__(self, c, frame: str):
+        self._frame = frame
+        self._schema = getattr(c.schema, frame)
+        self._attrs = mapping.LEGACY_ATTR_TO_SCHEMA[_MAPPING_FRAME[frame]]
+
+    def _resolve(self, legacy_attr: str) -> str:
+        native = self._attrs.get(legacy_attr)
+        if native is None:
+            # Either unknown, or a legacy-only column with no native
+            # counterpart. Fall back to the schema's own attribute so native
+            # spellings work too, and let it raise if that fails as well.
+            try:
+                return getattr(self._schema, legacy_attr)
+            except AttributeError:
+                raise KeyError(
+                    f"no {self._frame} column named {legacy_attr!r} on this cell"
+                ) from None
+        return getattr(self._schema, native)
+
+    def base(self, legacy_attr: str) -> str:
+        """The native *stem* of a step-table statistic family.
+
+        Step-table columns are ``<stem>_<statistic>`` (``potential_delta``,
+        ``current_min``). The schema exposes the composed columns, not the
+        stem, so this reads the stem straight off the mapping — and falls back
+        to the legacy spelling on the legacy runtime, where the stem is what
+        the frame already uses.
+        """
+        native = self._attrs.get(legacy_attr)
+        if native is None:
+            return legacy_attr
+        # On the legacy runtime the schema resolves the native name back to the
+        # legacy one; when it cannot (a stem is not a column) keep the native
+        # stem, which is what a native frame is built from.
+        try:
+            return getattr(self._schema, native)
+        except AttributeError:
+            return native
+
+    def stat(self, legacy_attr: str, statistic: str) -> str:
+        """``stat("voltage", "delta")`` -> ``"potential_delta"`` (native)."""
+        return f"{self.base(legacy_attr)}_{statistic}"
+
+    def __getitem__(self, legacy_attr: str) -> str:
+        return self._resolve(legacy_attr)
+
+    def __getattr__(self, legacy_attr: str) -> str:
+        return self._resolve(legacy_attr)
 
 
 # Per-row y-axis labels for predefined ``y`` sets that route a different
@@ -1799,7 +1925,7 @@ class PlotlyPlotBuilder:
         max_cycle_formation = data.loc[formation_cycle_selector, x].max()
         min_cycle_rest = data.loc[~formation_cycle_selector, x].min()
 
-        if x == _hdr_summary.normalized_cycle_index:
+        if x == _NORMALIZED_CYCLE_INDEX:
             dd = 0.1
         else:
             dd = 0.4
@@ -3657,7 +3783,7 @@ def summary_plot_legacy(
             ]
             max_cycle_formation = s.loc[formation_cycle_selector, x].max()
             min_cycle_rest = s.loc[~formation_cycle_selector, x].min()
-            if x == _hdr_summary.normalized_cycle_index:
+            if x == _NORMALIZED_CYCLE_INDEX:
                 dd = 0.1
             else:
                 dd = 0.4
@@ -4880,6 +5006,11 @@ def summary_plot(
         **kwargs,
     )
 
+    # Column names the caller spelled out are resolved against the frame, so
+    # 1.x spellings ("cycle_index") keep working after the native-headers flip.
+    config.x = _resolve_summary_column(c, config.x)
+    config.hover_columns = _resolve_summary_columns(c, config.hover_columns)
+
     # Check if interactive mode is requested and plotly is available
     if config.interactive:
         if not plotly_available:
@@ -4973,7 +5104,11 @@ def partition_summary_cv_steps(
     """
     import pandas as pd
 
-    summary = c.data.summary
+    # A copy, because `set_index(..., inplace=True)` below would otherwise move
+    # the x column out of the *cell's own* summary frame and leave it there:
+    # one CV-split plot and `c.data.summary` has permanently lost `cycle_num`,
+    # breaking every later plot and any user code reading that column (#567).
+    summary = c.data.summary.copy()
 
     summary_no_cv = c.make_summary(
         selector_type="non-cv", create_copy=True
@@ -5055,6 +5190,8 @@ def raw_plot(
     _set_individual_y_labels = False
     _special_height = None
 
+    # Per-cell, not the module-level legacy singleton (#567).
+    hdr_raw = _LiveHeaders(cell, "raw")
     raw = cell.data.raw.copy()
     if y is not None:
         if y_label is None:
@@ -5065,9 +5202,9 @@ def raw_plot(
     elif plot_type is not None:
         # special pre-defined plot types
         if plot_type == "voltage-current":
-            y1 = _hdr_raw["voltage_txt"]
+            y1 = hdr_raw["voltage_txt"]
             y1_label = f"Voltage ({cell.data.raw_units.voltage})"
-            y2 = _hdr_raw["current_txt"]
+            y2 = hdr_raw["current_txt"]
             y2_label = f"Current ({cell.data.raw_units.current})"
             y = [y1, y2]
             y_label = [y1_label, y2_label]
@@ -5075,11 +5212,11 @@ def raw_plot(
         elif plot_type == "capacity":
             _y = [
                 (
-                    _hdr_raw["charge_capacity_txt"],
+                    hdr_raw["charge_capacity_txt"],
                     f"Charge capacity ({cell.data.raw_units.charge})",
                 ),
                 (
-                    _hdr_raw["discharge_capacity_txt"],
+                    hdr_raw["discharge_capacity_txt"],
                     f"Discharge capacity ({cell.data.raw_units.charge})",
                 ),
             ]
@@ -5088,15 +5225,15 @@ def raw_plot(
         elif plot_type == "raw":
             _y = [
                 (
-                    _hdr_raw["cycle_index_txt"],
+                    hdr_raw["cycle_index_txt"],
                     f"Cycle index (#)",
                 ),
                 (
-                    _hdr_raw["step_index_txt"],
+                    hdr_raw["step_index_txt"],
                     f"Step index (#)",
                 ),
-                (_hdr_raw["voltage_txt"], f"Voltage ({cell.data.raw_units.voltage})"),
-                (_hdr_raw["current_txt"], f"Current ({cell.data.raw_units.current})"),
+                (hdr_raw["voltage_txt"], f"Voltage ({cell.data.raw_units.voltage})"),
+                (hdr_raw["current_txt"], f"Current ({cell.data.raw_units.current})"),
             ]
             y, y_label = zip(*_y)
             _special_height = 600
@@ -5104,36 +5241,36 @@ def raw_plot(
         elif plot_type == "capacity-current":
             _y = [
                 (
-                    _hdr_raw["charge_capacity_txt"],
+                    hdr_raw["charge_capacity_txt"],
                     f"Charge capacity ({cell.data.raw_units.charge})",
                 ),
                 (
-                    _hdr_raw["discharge_capacity_txt"],
+                    hdr_raw["discharge_capacity_txt"],
                     f"Discharge capacity ({cell.data.raw_units.charge})",
                 ),
-                (_hdr_raw["current_txt"], f"Current ({cell.data.raw_units.current})"),
+                (hdr_raw["current_txt"], f"Current ({cell.data.raw_units.current})"),
             ]
             y, y_label = zip(*_y)
             _special_height = 500
 
         elif plot_type == "full":
             _y = [
-                (_hdr_raw["voltage_txt"], f"Voltage ({cell.data.raw_units.voltage})"),
-                (_hdr_raw["current_txt"], f"Current ({cell.data.raw_units.current})"),
+                (hdr_raw["voltage_txt"], f"Voltage ({cell.data.raw_units.voltage})"),
+                (hdr_raw["current_txt"], f"Current ({cell.data.raw_units.current})"),
                 (
-                    _hdr_raw["charge_capacity_txt"],
+                    hdr_raw["charge_capacity_txt"],
                     f"Charge capacity ({cell.data.raw_units.charge})",
                 ),
                 (
-                    _hdr_raw["discharge_capacity_txt"],
+                    hdr_raw["discharge_capacity_txt"],
                     f"Discharge capacity ({cell.data.raw_units.charge})",
                 ),
                 (
-                    _hdr_raw["cycle_index_txt"],
+                    hdr_raw["cycle_index_txt"],
                     f"Cycle index (#)",
                 ),
                 (
-                    _hdr_raw["step_index_txt"],
+                    hdr_raw["step_index_txt"],
                     f"Step index (#)",
                 ),
             ]
@@ -5145,7 +5282,7 @@ def raw_plot(
             return None
     else:
         # default to voltage if y is not given
-        y = [_hdr_raw["voltage_txt"]]
+        y = [hdr_raw["voltage_txt"]]
         y_label = [f"Voltage ({cell.data.raw_units.voltage})"]
 
     if x is None:
@@ -5154,17 +5291,17 @@ def raw_plot(
     if x in ["test_time_hrs", "test_time_hours"]:
         raw_time_unit = cell.raw_units.time
         conv_factor = Q(raw_time_unit).to("hours").magnitude
-        raw[x] = raw[_hdr_raw["test_time_txt"]] * conv_factor
+        raw[x] = raw[hdr_raw["test_time_txt"]] * conv_factor
         x_label = x_label or "Time (hours)"
     elif x == "test_time_days":
         raw_time_unit = cell.raw_units.time
         conv_factor = Q(raw_time_unit).to("days").magnitude
-        raw[x] = raw[_hdr_raw["test_time_txt"]] * conv_factor
+        raw[x] = raw[hdr_raw["test_time_txt"]] * conv_factor
         x_label = x_label or "Time (days)"
     elif x == "test_time_years":
         raw_time_unit = cell.raw_units.time
         conv_factor = Q(raw_time_unit).to("years").magnitude
-        raw[x] = raw[_hdr_raw["test_time_txt"]] * conv_factor
+        raw[x] = raw[hdr_raw["test_time_txt"]] * conv_factor
         x_label = x_label or "Time (years)"
 
     if title is None:
@@ -5369,23 +5506,24 @@ def _cycle_info_plot_plotly(
     if kwargs.get("xlim"):
         logging.info("xlim is not supported for plotly yet")
 
-    raw_hdr = get_headers_normal()
-    step_hdr = get_headers_step_table()
+    # Per-cell, not the module-level legacy singletons (#567).
+    raw_hdr = _LiveHeaders(cell, "raw")
+    step_hdr = _LiveHeaders(cell, "steps")
 
     data = cell.data.raw.copy()
     table = cell.data.steps.copy()
 
     if cycle is None:
-        cycle = list(data[_hdr_raw.cycle_index_txt].unique())
+        cycle = list(data[raw_hdr.cycle_index_txt].unique())
 
     if not isinstance(cycle, (list, tuple)):
         cycle = [cycle]
 
     delta = "_delta"
-    v_delta = step_hdr.voltage + delta
-    i_delta = step_hdr.current + delta
-    c_delta = step_hdr.charge + delta
-    dc_delta = step_hdr.discharge + delta
+    v_delta = step_hdr.stat("voltage", "delta")
+    i_delta = step_hdr.stat("current", "delta")
+    c_delta = step_hdr.stat("charge", "delta")
+    dc_delta = step_hdr.stat("discharge", "delta")
     cycle_ = step_hdr.cycle
     step_ = step_hdr.step
     type_ = step_hdr.type
@@ -5497,19 +5635,34 @@ def _plot_step(ax, x, y, color):
     ax.plot(x, y, color=color, linewidth=3)
 
 
-def _get_info(table, cycle, step):
-    m_table = (table[_hdr_steps.cycle] == cycle) & (table[_hdr_steps.step] == step)
-    p1, p2 = table.loc[m_table, ["point_min", "point_max"]].values[0]
-    c1, c2 = table.loc[m_table, ["current_min", "current_max"]].abs().values[0]
+def _get_info(table, cycle, step, step_hdr):
+    """``step_hdr`` is passed in: this helper never sees the cell, and the
+    module-level singleton it used to read answered with legacy names (#567)."""
+    m_table = (table[step_hdr.cycle] == cycle) & (table[step_hdr.step] == step)
+    # Step-table statistic columns, composed from the live stems rather than
+    # hard-coded legacy spellings ("voltage_delta" is "potential_delta" on a
+    # native frame).
+    p1, p2 = table.loc[
+        m_table, [step_hdr.stat("point", "min"), step_hdr.stat("point", "max")]
+    ].values[0]
+    c1, c2 = (
+        table.loc[
+            m_table,
+            [step_hdr.stat("current", "min"), step_hdr.stat("current", "max")],
+        ]
+        .abs()
+        .values[0]
+    )
     d_voltage, d_current = table.loc[
-        m_table, ["voltage_delta", "current_delta"]
+        m_table, [step_hdr.stat("voltage", "delta"), step_hdr.stat("current", "delta")]
     ].values[0]
     d_discharge, d_charge = table.loc[
-        m_table, ["discharge_delta", "charge_delta"]
+        m_table,
+        [step_hdr.stat("discharge", "delta"), step_hdr.stat("charge", "delta")],
     ].values[0]
     current_max = (c1 + c2) / 2
-    rate = table.loc[m_table, _hdr_steps.rate_avr].values[0]
-    step_type = table.loc[m_table, _hdr_steps.type].values[0]
+    rate = table.loc[m_table, step_hdr.rate_avr].values[0]
+    step_type = table.loc[m_table, step_hdr.type].values[0]
     return [step_type, rate, current_max, d_voltage, d_current, d_discharge, d_charge]
 
 
@@ -5537,13 +5690,17 @@ def _cycle_info_plot_matplotlib(
     data = cell.data.raw
     table = cell.data.steps
 
+    # Per-cell, not the module-level legacy singletons (#567).
+    raw_hdr = _LiveHeaders(cell, "raw")
+    step_hdr = _LiveHeaders(cell, "steps")
+
     span_colors = ["#4682B4", "#FFA07A"]
 
     voltage_color = "#008B8B"
     current_color = "#CD5C5C"
 
-    m_cycle_data = data[_hdr_raw.cycle_index_txt] == cycle
-    all_steps = data[m_cycle_data][_hdr_raw.step_index_txt].unique()
+    m_cycle_data = data[raw_hdr.cycle_index_txt] == cycle
+    all_steps = data[m_cycle_data][raw_hdr.step_index_txt].unique()
 
     color = itertools.cycle(span_colors)
 
@@ -5564,12 +5721,12 @@ def _cycle_info_plot_matplotlib(
     annotations_4 = []  # info
 
     for i, s in enumerate(all_steps):
-        m = m_cycle_data & (data[_hdr_raw.step_index_txt] == s)
-        c = data.loc[m, _hdr_raw.current_txt] * i_scaler
-        v = data.loc[m, _hdr_raw.voltage_txt] * v_scaler
-        t = data.loc[m, _hdr_raw.test_time_txt] * t_scaler
+        m = m_cycle_data & (data[raw_hdr.step_index_txt] == s)
+        c = data.loc[m, raw_hdr.current_txt] * i_scaler
+        v = data.loc[m, raw_hdr.voltage_txt] * v_scaler
+        t = data.loc[m, raw_hdr.test_time_txt] * t_scaler
         step_type, rate, current_max, dv, dc, d_discharge, d_charge = _get_info(
-            table, cycle, s
+            table, cycle, s, step_hdr
         )
         if len(t) > 1:
             fcolor = next(color)
