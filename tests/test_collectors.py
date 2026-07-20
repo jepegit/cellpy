@@ -62,3 +62,44 @@ def test_batch_ica_collector_runs(populated_batch):
     """ICA (dQ/dV) collector collects + plots."""
     collector = BatchICACollector(populated_batch)
     _assert_ran(collector)
+
+
+def test_batch_ica_collector_uses_the_specced_frame(populated_batch):
+    """ica_collector migrated off the 1.x frame (#591 resolved #566's leftover).
+
+    The collected frame is now the specced ICA frame: direction spelled out
+    "charge"/"discharge" (cell-centric, decision #591) plus the dqdv column.
+    """
+    collector = BatchICACollector(populated_batch)
+    cols = set(collector.data.columns)
+    assert {"cycle", "direction", "voltage", "capacity", "dqdv"} <= cols, cols
+    directions = set(collector.data["direction"].unique())
+    assert directions <= {"charge", "discharge"}, directions
+
+
+def test_batch_ica_collector_film_mode(populated_batch):
+    """Film mode filters by direction, which now means matching the string."""
+    collector = BatchICACollector(populated_batch, plot_type="film")
+    _assert_ran(collector)
+
+
+def test_select_direction_handles_both_encodings():
+    """The plotters see specced string frames and raw ±1 get_cap frames."""
+    import pandas as pd
+
+    from cellpy.utils.collectors import _select_direction
+
+    specced = pd.DataFrame(
+        {"direction": ["charge", "discharge", "charge"], "v": [1, 2, 3]}
+    )
+    picked = _select_direction(specced, "charge")
+    assert list(picked["v"]) == [1, 3]
+
+    legacy = pd.DataFrame({"direction": [-1, 1, -1], "v": [1, 2, 3]})
+    picked = _select_direction(legacy, "charge")
+    assert list(picked["v"]) == [1, 3]  # historical -1 -> "charge" mapping kept
+    picked = _select_direction(legacy, "discharge")
+    assert list(picked["v"]) == [2]
+
+    without = pd.DataFrame({"v": [1, 2]})
+    assert len(_select_direction(without, "charge")) == 2

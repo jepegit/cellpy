@@ -1631,7 +1631,8 @@ def ica_collector(
         number_of_points: number of points to interpolate to
         max_cycle: drop all cycles above this value
         abort_on_missing: if True, abort if a cell is empty
-        label_direction: how the voltage curves are given (back-and-forth, forth, forth-and-forth)
+        label_direction: no-op since 2.0 (kept for signature compatibility; the
+            specced ICA frame always carries a direction column)
         label_mapper: function (or dict) that changes the cell names.
         only_selected (bool): only process selected cells.
         **kwargs: passed on to ica.dqdv
@@ -1657,22 +1658,16 @@ def ica_collector(
                 inverse=inverse,
             )
             cycles = list(set(filtered_cycles).intersection(set(cycles)))
-        # Deliberately still on the 1.x frame (private entry point, so no
-        # user-facing DeprecationWarning fires from inside a collector).
-        #
-        # The blocker is a convention clash, not effort: `ica_plotter` selects
-        # `direction < 0` and calls it "charge", while `get_cap` gives -1 to
-        # the *first* half-cycle, which for cellpy's default cycle_mode="anode"
-        # is the cell **discharge**. Both readings are defensible - one is
-        # electrode-centric, the other cell-centric - so moving this to the
-        # specced frame's spelled-out "charge"/"discharge" would flip the
-        # labels on every batch ICA plot depending on which one we pick.
-        # That needs a maintainer decision, not a refactor. See cellpy#566.
-        curves = ica._dqdv_combined_frame(
+        # The specced ICA frame (#566): cycle, direction, voltage, capacity,
+        # dqdv (+ the deprecated `dq` duplicate until 2.1). `direction` is
+        # spelled "charge"/"discharge" and is **cell-centric** — decision
+        # #591: it agrees with get_ccap/get_dcap and the summary columns, so
+        # for an anode cell the first half-cycle is "discharge". Film-plot
+        # labels flipped accordingly (release-noted on #572).
+        curves = ica.dqdv(
             c,
-            cycle=cycles,
+            cycles=cycles,
             voltage_resolution=voltage_resolution,
-            label_direction=label_direction,
             number_of_points=number_of_points,
             **kwargs,
         )
@@ -1893,6 +1888,37 @@ def spread_plot(curves, plotly_arguments=None, y_label_mapper=None, **kwargs):
     return fig
 
 
+def _select_direction(curves, direction, direction_col="direction"):
+    """Select one direction from a collected curve frame.
+
+    Handles both direction encodings that reach the plotters:
+
+    - The specced ICA frame (#566) spells direction out ("charge" /
+      "discharge"), **cell-centric** per decision #591.
+    - Frames straight from ``get_cap(categorical_column=True)`` still carry
+      the raw ±1 half-cycle code. For those the historical mapping is kept
+      (-1 selected as "charge") so non-ICA film plots are unchanged; the code
+      is positional, and relabelling it needs the cell's cycle_mode, which a
+      collected frame no longer knows.
+    """
+    if direction_col not in curves.columns:
+        logging.debug(
+            "no %r column in the collected frame - direction filter skipped",
+            direction_col,
+        )
+        return curves
+
+    column = curves[direction_col]
+    if pd.api.types.is_numeric_dtype(column):
+        if direction == "charge":
+            return curves.loc[column < 0]
+        if direction == "discharge":
+            return curves.loc[column > 0]
+        return curves
+
+    return curves.loc[column == direction]
+
+
 def sequence_plotter(
     collected_curves: pd.DataFrame,
     x: str = _CCOLS.capacity,
@@ -2050,11 +2076,7 @@ def sequence_plotter(
         logging.debug(f"filtered_curves:\n{curves}")
 
         if method == "film":
-            # selecting direction
-            if direction == "charge":
-                curves = curves.query(f"{direction_col} < 0")
-            elif direction == "discharge":
-                curves = curves.query(f"{direction_col} > 0")
+            curves = _select_direction(curves, direction, direction_col)
             # scaling (assuming 'y' is the "value" axis):
             if histscale == "abs-log":
                 curves[y] = curves[y].apply(np.abs).apply(np.log)
@@ -2874,7 +2896,7 @@ def ica_plotter(
     return _cycles_plotter(
         collected_curves,
         x="voltage",
-        y="dq",
+        y="dqdv",
         z="cycle",
         g="cell",
         x_label="Voltage",
