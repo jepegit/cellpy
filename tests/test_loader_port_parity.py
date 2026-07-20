@@ -43,11 +43,6 @@ PARITY_CASES = (
 #: shows the shape for Maccor's capacity split). Remove an entry when its hook
 #: lands; the parity assertions then cover those columns automatically.
 UNPORTED_POST_PROCESSORS = {
-    "split_capacity": (
-        "cumulative_charge_capacity",
-        "cumulative_discharge_capacity",
-    ),
-    "split_current": ("current",),
     "set_cycle_number_not_zero": ("cycle_num",),
 }
 

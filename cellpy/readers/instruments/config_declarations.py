@@ -31,11 +31,13 @@ from typing import Any
 from cellpycore.legacy import mapping
 from cellpycore.units import CellpyUnits
 
+from cellpy.exceptions import LoaderError
 from cellpy.parameters.internal_settings import get_headers_normal
 from cellpy.readers.instruments.declarations import (
     LoaderDeclarations,
     ResetGranularity,
 )
+from cellpy.readers.instruments.hooks import state_splitter
 
 #: Native columns whose reset granularity a vendor could plausibly differ on.
 #: Defaulted to the harmonized-raw target (cycle-cumulative per direction);
@@ -146,6 +148,137 @@ def _config_name(config: Any) -> str:
     return getattr(config, "__name__", None) or getattr(config, "name", "<configuration>")
 
 
+#: Names the capacity-splitting hook synthesises. They are vendor-side names —
+#: hooks run before renaming — so they must not collide with a real vendor
+#: column; the leading underscore is not a convention any tester uses.
+_SPLIT_CHARGE = "_split_charge_capacity"
+_SPLIT_DISCHARGE = "_split_discharge_capacity"
+
+
+def _state_splitting(
+    config: Any,
+    post_processors: dict,
+    column_map: dict[str, str],
+) -> tuple[tuple, tuple[str, ...]]:
+    """Derive the state-splitting hooks, reshaping ``column_map`` in place.
+
+    ``split_capacity`` is the one post-processor that changes the *shape* of the
+    mapping rather than the values in it: one vendor column ("Amp-hr") becomes
+    two native columns. So the vendor column stops being mapped directly, the
+    hook synthesises two columns under vendor-side names, and those get mapped
+    instead.
+
+    ``split_current`` rewrites its column in place, so the mapping is untouched.
+
+    Returns:
+        ``(post_hooks, dropped)`` — the hooks to run, and vendor columns now
+        consumed by them (so they do not trip the unrecognised-column warning).
+    """
+    states = getattr(config, "states", None) or {}
+    wants_capacity = bool(post_processors.get("split_capacity"))
+    wants_current = bool(post_processors.get("split_current"))
+    if not (wants_capacity or wants_current):
+        return (), ()
+
+    if not states:
+        raise LoaderError(
+            f"{_config_name(config)} enables state splitting but declares no "
+            f"`states`; the splitter cannot know which flag means charge."
+        )
+
+    schema_raw = mapping.LEGACY_ATTR_TO_SCHEMA["raw"]
+    renaming = getattr(config, "normal_headers_renaming_dict", {}) or {}
+    state_column = states["column_name"]
+    cycle_column = renaming.get("cycle_index_txt")
+    datapoint_column = renaming.get("data_point_txt")
+    if not cycle_column or not datapoint_column:
+        raise LoaderError(
+            f"{_config_name(config)} enables state splitting but does not map "
+            f"cycle_index_txt and data_point_txt; splitting is per cycle and "
+            f"ordered by datapoint, so both are required."
+        )
+
+    common = dict(
+        state_column=state_column,
+        cycle_column=cycle_column,
+        datapoint_column=datapoint_column,
+        charge_keys=states.get("charge_keys", ()),
+        discharge_keys=states.get("discharge_keys", ()),
+    )
+
+    hooks: list = []
+    dropped: list[str] = [state_column]
+
+    if wants_capacity:
+        base = renaming.get("charge_capacity_txt")
+        if not base:
+            raise LoaderError(
+                f"{_config_name(config)} enables split_capacity but maps no "
+                f"charge_capacity_txt; there is nothing to split."
+            )
+        hooks.append(
+            state_splitter(
+                base_column=base,
+                charge_output=_SPLIT_CHARGE,
+                discharge_output=_SPLIT_DISCHARGE,
+                n_charge=1.0,
+                n_discharge=1.0,
+                propagate=True,
+                **common,
+            )
+        )
+        # The shared vendor column stops being mapped; its two halves take over.
+        column_map.pop(base, None)
+        dropped.append(base)
+
+        charge_target = schema_raw["charge_capacity_txt"]
+        discharge_target = schema_raw["discharge_capacity_txt"]
+
+        # Any *other* vendor column claiming those targets loses. This mirrors
+        # 1.x rather than inventing a rule: `split_capacity` is not in
+        # ORDERED_POST_PROCESSING_STEPS, so it runs after `rename_headers` and
+        # overwrites whatever the rename produced. `maccor_txt_one` is the live
+        # case — it declares a `Discharge_Capacity(Ah)` column under a "not
+        # observed yet" comment, which the split would have overwritten had the
+        # file carried it. Without this, the declarations fail validation for
+        # mapping two vendor columns onto one native column.
+        for vendor, target in list(column_map.items()):
+            if target in (charge_target, discharge_target):
+                logging.debug(
+                    "split_capacity supersedes the direct mapping %r -> %r "
+                    "(the legacy post-processor overwrote it too)",
+                    vendor,
+                    target,
+                )
+                column_map.pop(vendor)
+                dropped.append(vendor)
+
+        column_map[_SPLIT_CHARGE] = charge_target
+        column_map[_SPLIT_DISCHARGE] = discharge_target
+
+    if wants_current:
+        base = renaming.get("current_txt")
+        if not base:
+            raise LoaderError(
+                f"{_config_name(config)} enables split_current but maps no "
+                f"current_txt; there is nothing to split."
+            )
+        # One output column: charge positive, discharge negated, rest zero.
+        hooks.append(
+            state_splitter(
+                base_column=base,
+                charge_output=base,
+                discharge_output=base,
+                n_charge=1.0,
+                n_discharge=-1.0,
+                propagate=False,
+                **common,
+            )
+        )
+
+    return tuple(hooks), tuple(dropped)
+
+
 def _units_from_configuration(config: ModuleType) -> CellpyUnits:
     raw_units: dict[str, Any] | None = getattr(config, "raw_units", None)
     if not raw_units:
@@ -200,6 +333,10 @@ def declarations_from_configuration(
             sorted(unknown),
         )
 
+    post_processors = getattr(config, "post_processors", None) or {}
+    hooks, dropped = _state_splitting(config, post_processors, column_map)
+    hooks += tuple(post_hooks)
+
     targets = set(column_map.values())
     granularity: dict[str, ResetGranularity] = {
         column: ResetGranularity.PER_CYCLE
@@ -213,7 +350,6 @@ def declarations_from_configuration(
     # exactly what ``ResetGranularity.PER_STEP`` means. Reading it here is the
     # difference between deriving the granularity and guessing it — and a wrong
     # guess rescales capacities silently.
-    post_processors = getattr(config, "post_processors", None) or {}
     if post_processors.get("cumulate_capacity_within_cycle"):
         granularity.update(
             {
@@ -244,5 +380,6 @@ def declarations_from_configuration(
         reset_granularity=granularity,
         duration_columns=durations,
         passthrough=passthrough,
-        post_hooks=post_hooks,
+        post_hooks=hooks,
+        dropped=dropped,
     )
