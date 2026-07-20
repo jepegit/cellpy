@@ -456,6 +456,9 @@ class AutoLoader(BaseLoader):
 
     def __init__(self, *args, **kwargs):
         self.auto_register_config = True
+        #: Whether `parse()` has run. Guards `declarations()`, whose answer is
+        #: only correct once the file's own units have been read (see there).
+        self._parsed = False
         self.pre_init()
 
         if not hasattr(self, "supported_models"):
@@ -556,6 +559,71 @@ class AutoLoader(BaseLoader):
                     raise NotImplementedError(
                         f"{processor_name} is not currently supported - aborting!"
                     )
+
+    def parse(self, source: Union[str, pathlib.Path], **kwargs) -> pd.DataFrame:
+        """Vendor stage: read the file into a frame with **vendor** column names.
+
+        The first half of the two-stage design (#559): everything after this is
+        declared rather than coded, and handled by ``harmonize()``. This is the
+        same work ``loader()`` does before it starts building a ``Data`` — the
+        pre-processors, the formatter parameters, and ``query_file`` — exposed
+        on its own so the two stages can be driven, tested and compared
+        separately. It does not change how ``loader()`` behaves.
+
+        Args:
+            source: path to the vendor file.
+            **kwargs: loader knobs, as ``loader()`` takes them.
+
+        Returns:
+            The parsed vendor frame, before any renaming.
+        """
+        self.refuse_copying = kwargs.pop("refuse_copying", False)
+        self.name = source
+        if not self.is_db:
+            self.copy_to_temporary()
+        if self.pre_processors:
+            self._pre_process()
+        self.parse_loader_parameters(**kwargs)
+        frame = self.query_file(self.temp_file_path)
+        self._parsed = True
+        return frame
+
+    def declarations(self):
+        """The :class:`LoaderDeclarations` for the file most recently parsed.
+
+        **Call this after :meth:`parse`, not before** — and it raises if you do
+        not, which is the point. Declarations are *not* a static property of the
+        loader class for every instrument: neware writes its units into the
+        column names (``Current(A)``), and which units those are is read from
+        the file, so the configuration's defaults (``mA``) are corrected during
+        parsing. Reading declarations first would hand back vendor column names
+        no file contains, and those columns would be silently unmapped rather
+        than raising — the failure mode this whole arc keeps running into.
+
+        Deriving from ``config_params`` after the parse is what makes the
+        declarations per-file without any loader having to opt in.
+
+        Returns:
+            A validated ``LoaderDeclarations`` derived from this loader's
+            configuration.
+
+        Raises:
+            LoaderError: if called before ``parse()``, or if the configuration
+                does not carry a renaming dict to derive from.
+        """
+        from cellpy.exceptions import LoaderError
+        from cellpy.readers.instruments.config_declarations import (
+            declarations_from_configuration,
+        )
+
+        if not getattr(self, "_parsed", False):
+            raise LoaderError(
+                f"{type(self).__name__}.declarations() was called before "
+                f"parse(); for instruments whose column names carry units read "
+                f"from the file, the declarations are only correct once the "
+                f"file has been parsed."
+            )
+        return declarations_from_configuration(self.config_params)
 
     def loader(self, name: Union[str, pathlib.Path], **kwargs: str) -> core.Data:
         """returns a Data object with loaded data.
