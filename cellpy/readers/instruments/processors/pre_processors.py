@@ -41,8 +41,16 @@ def remove_empty_lines(
         raise IOError(f"Could not find the file ({filename})")
     out_file_name = filename.parent / (str(uuid.uuid4()) + ".txt")
 
-    with open(filename, "r+") as file:
-        with open(out_file_name, "w") as out_file:
+    # Encoding is stated, not left to the platform default. Without it this
+    # read used cp1252 on Windows and UTF-8 on Linux, so a Maccor file carrying
+    # a stray non-UTF-8 byte — 0xFF in maccor_002.txt's Description line, which
+    # is real vendor output — loaded on Windows and raised a bare
+    # UnicodeDecodeError on Linux. `errors="replace"` keeps such a file
+    # loadable: this pre-processor only strips blank lines, so it has no reason
+    # to be the thing that rejects a file over one undecodable byte in a
+    # header comment.
+    with open(filename, "r", encoding="utf-8", errors="replace") as file:
+        with open(out_file_name, "w", encoding="utf-8") as out_file:
             for line in file.readlines():
                 if line.strip():
                     out_file.write(f"{line.strip()}\n")
