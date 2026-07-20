@@ -1,9 +1,15 @@
-"""State-splitting post hook (#560).
+"""Vendor post hooks: state splitting and cycle numbering (#560).
 
-Expectations here are **hand-computed from the legacy `_state_splitter`**, not
+Expectations here are **hand-computed from the legacy post-processors**, not
 read back from the implementation. A splitter that is subtly wrong does not
 raise; it produces a plausible capacity curve, which is the failure mode this
 whole arc exists to prevent.
+
+Several tests pin quirks rather than sensible behaviour — a rest between two
+charge rows reading 0, cycles starting at 2 not being rebased. They are
+deliberate: the port's contract is *no change to users' numbers*, so the
+quirks come across intact and improving them is a separate, release-noted
+decision.
 """
 
 from __future__ import annotations
@@ -12,7 +18,10 @@ import polars as pl
 import pytest
 
 from cellpy.exceptions import LoaderError
-from cellpy.readers.instruments.hooks import state_splitter
+from cellpy.readers.instruments.hooks import (
+    cycle_number_not_zero,
+    state_splitter,
+)
 
 STATES = dict(charge_keys=("C",), discharge_keys=("D",))
 
@@ -175,3 +184,61 @@ def test_the_hook_does_not_mutate_the_input_frame():
     _split_capacity(frame)
 
     assert frame.columns == before
+
+
+# -- cycle numbering (#560) ----------------------------------------------------
+
+
+def _cycles(values):
+    return pl.DataFrame({"Cyc": values})
+
+
+@pytest.mark.essential
+def test_zero_based_cycles_are_shifted_to_start_at_one():
+    out = cycle_number_not_zero(cycle_column="Cyc")(_cycles([0, 0, 1, 2]))
+
+    assert out["Cyc"].to_list() == [1, 1, 2, 3]
+
+
+@pytest.mark.essential
+def test_one_based_cycles_are_left_alone():
+    out = cycle_number_not_zero(cycle_column="Cyc")(_cycles([1, 2, 3]))
+
+    assert out["Cyc"].to_list() == [1, 2, 3]
+
+
+@pytest.mark.essential
+def test_cycles_starting_above_one_are_not_rebased():
+    """The quirk: legacy shifts only when the minimum is exactly 0.
+
+    A file whose cycles start at 2 keeps starting at 2 — it is not pulled down
+    to 1. Reproduced rather than tidied, because tidying it would renumber
+    someone's cycles.
+    """
+    out = cycle_number_not_zero(cycle_column="Cyc")(_cycles([2, 3, 4]))
+
+    assert out["Cyc"].to_list() == [2, 3, 4]
+
+
+@pytest.mark.essential
+def test_a_non_numeric_cycle_column_raises_rather_than_doing_nothing():
+    """Silence here would be an off-by-one with nothing to show for it."""
+    frame = pl.DataFrame({"Cyc": ["0", "1"]})
+
+    with pytest.raises(LoaderError, match="not numeric"):
+        cycle_number_not_zero(cycle_column="Cyc")(frame)
+
+
+@pytest.mark.essential
+def test_a_missing_cycle_column_names_itself():
+    with pytest.raises(LoaderError, match="Cyc"):
+        cycle_number_not_zero(cycle_column="Cyc")(pl.DataFrame({"Other": [1]}))
+
+
+@pytest.mark.essential
+def test_an_empty_frame_is_returned_unchanged():
+    frame = pl.DataFrame({"Cyc": []}, schema={"Cyc": pl.Int64})
+
+    out = cycle_number_not_zero(cycle_column="Cyc")(frame)
+
+    assert out.height == 0

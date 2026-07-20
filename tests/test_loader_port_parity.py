@@ -42,9 +42,7 @@ PARITY_CASES = (
 #: ``harmonize()`` equivalent yet. Each needs a vendor post hook (the #559 pilot
 #: shows the shape for Maccor's capacity split). Remove an entry when its hook
 #: lands; the parity assertions then cover those columns automatically.
-UNPORTED_POST_PROCESSORS = {
-    "set_cycle_number_not_zero": ("cycle_num",),
-}
+UNPORTED_POST_PROCESSORS: dict[str, tuple[str, ...]] = {}
 
 #: ``date_time`` survives as a passthrough string while the native schema has no
 #: column for it; the legacy path parses it to datetime. Tracked on the metadata

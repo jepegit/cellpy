@@ -29,6 +29,51 @@ import polars as pl
 from cellpy.exceptions import LoaderError
 
 
+def cycle_number_not_zero(
+    *, cycle_column: str
+) -> Callable[[pl.DataFrame], pl.DataFrame]:
+    """Shift zero-based vendor cycle numbering to start at 1.
+
+    A port of the legacy ``set_cycle_number_not_zero``, quirk included: the
+    shift is applied **only when the minimum cycle number is 0**, so a file
+    already starting at 1 is untouched, and a file starting at 2 is *not*
+    rebased to 1.
+
+    **Decision (2026-07-20, #560): 2.0 keeps 1-based cycle numbering.** Whether
+    cycles start at 0 or 1 is a user-visible contract — it reaches summary
+    indices, plot axes and ``get_cap(cycle=N)`` — so the port reproduces 1.x
+    rather than adopting the vendor's numbering. Unlike the frame schemas this
+    one *can* be shimmed, so revisiting it in 2.1 stays open.
+
+    Args:
+        cycle_column: the **vendor** cycle column (hooks run before renaming).
+    """
+
+    def hook(frame: pl.DataFrame) -> pl.DataFrame:
+        if cycle_column not in frame.columns:
+            raise LoaderError(
+                f"cycle-number normalization needs vendor column "
+                f"{cycle_column!r}; the parsed frame has {sorted(frame.columns)}"
+            )
+        if not frame[cycle_column].dtype.is_numeric():
+            # Silence here would be the bug: a string column compares unequal
+            # to 0, so the shift would simply never happen and every cycle
+            # index would be off by one with nothing to show for it.
+            raise LoaderError(
+                f"cycle column {cycle_column!r} is {frame[cycle_column].dtype}, "
+                f"not numeric; cycle-number normalization cannot tell whether "
+                f"it starts at zero"
+            )
+        if frame.height == 0:
+            return frame
+        if frame[cycle_column].min() != 0:
+            return frame
+        return frame.with_columns((pl.col(cycle_column) + 1).alias(cycle_column))
+
+    hook.__name__ = f"cycle_number_not_zero[{cycle_column}]"
+    return hook
+
+
 def state_splitter(
     *,
     base_column: str,

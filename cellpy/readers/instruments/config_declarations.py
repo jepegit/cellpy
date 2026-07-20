@@ -37,7 +37,7 @@ from cellpy.readers.instruments.declarations import (
     LoaderDeclarations,
     ResetGranularity,
 )
-from cellpy.readers.instruments.hooks import state_splitter
+from cellpy.readers.instruments.hooks import cycle_number_not_zero, state_splitter
 
 #: Native columns whose reset granularity a vendor could plausibly differ on.
 #: Defaulted to the harmonized-raw target (cycle-cumulative per direction);
@@ -174,11 +174,25 @@ def _state_splitting(
         ``(post_hooks, dropped)`` — the hooks to run, and vendor columns now
         consumed by them (so they do not trip the unrecognised-column warning).
     """
+    renaming_all = getattr(config, "normal_headers_renaming_dict", {}) or {}
     states = getattr(config, "states", None) or {}
     wants_capacity = bool(post_processors.get("split_capacity"))
     wants_current = bool(post_processors.get("split_current"))
+    wants_cycle_shift = bool(post_processors.get("set_cycle_number_not_zero"))
+
+    # Independent of state splitting: it needs only the cycle column.
+    cycle_hooks: tuple = ()
+    if wants_cycle_shift:
+        cycle_vendor = renaming_all.get("cycle_index_txt")
+        if not cycle_vendor:
+            raise LoaderError(
+                f"{_config_name(config)} enables set_cycle_number_not_zero but "
+                f"maps no cycle_index_txt; there is no column to shift."
+            )
+        cycle_hooks = (cycle_number_not_zero(cycle_column=cycle_vendor),)
+
     if not (wants_capacity or wants_current):
-        return (), ()
+        return cycle_hooks, ()
 
     if not states:
         raise LoaderError(
@@ -276,7 +290,11 @@ def _state_splitting(
             )
         )
 
-    return tuple(hooks), tuple(dropped)
+    # Cycle shift last, mirroring 1.x: the unordered post-processor pass runs in
+    # configuration-declaration order, and every splitting configuration lists
+    # set_cycle_number_not_zero after the splits. A uniform +1 cannot change the
+    # per-cycle grouping either way, but matching the order costs nothing.
+    return tuple(hooks) + cycle_hooks, tuple(dropped)
 
 
 def _units_from_configuration(config: ModuleType) -> CellpyUnits:
