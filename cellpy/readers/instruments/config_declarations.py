@@ -47,6 +47,19 @@ _CUMULATIVE_DEFAULTS = (
     "cumulative_discharge_energy",
 )
 
+#: Capacity columns the legacy ``cumulate_capacity_within_cycle`` post-processor
+#: acts on. It touches only the capacities, never the energies.
+_CUMULATED_CAPACITIES = (
+    "cumulative_charge_capacity",
+    "cumulative_discharge_capacity",
+)
+
+#: Legacy post-processor → the native column it parses from a duration string.
+_DURATION_POST_PROCESSORS = {
+    "convert_step_time_to_timedelta": "step_time",
+    "convert_test_time_to_timedelta": "test_time",
+}
+
 #: Legacy attributes that must not reach the raw frame at all.
 #:
 #: The vendor's own test identifier is *provenance*, not a measurement: it
@@ -122,6 +135,17 @@ def derive_column_maps(
     return column_map, passthrough, unknown
 
 
+def _config_name(config: Any) -> str:
+    """A name for messages, for either shape of configuration.
+
+    Derivation accepts both a ``configurations.*`` **module** (what the shipped
+    configurations are) and a live :class:`ModelParameters` **instance** (what a
+    loader carries as ``config_params``, including the ones assembled at runtime
+    from a YAML file). The two spell their name differently.
+    """
+    return getattr(config, "__name__", None) or getattr(config, "name", "<configuration>")
+
+
 def _units_from_configuration(config: ModuleType) -> CellpyUnits:
     raw_units: dict[str, Any] | None = getattr(config, "raw_units", None)
     if not raw_units:
@@ -135,7 +159,7 @@ def _units_from_configuration(config: ModuleType) -> CellpyUnits:
 
 
 def declarations_from_configuration(
-    config: ModuleType,
+    config: ModuleType | Any,
     *,
     reset_granularity: dict[str, ResetGranularity] | None = None,
     post_hooks: tuple = (),
@@ -144,7 +168,10 @@ def declarations_from_configuration(
     """Build validated declarations from an existing configuration module.
 
     Args:
-        config: a ``cellpy.readers.instruments.configurations.*`` module.
+        config: a ``cellpy.readers.instruments.configurations.*`` module, or a
+            live ``ModelParameters`` instance (a loader's ``config_params``).
+            Both expose the same attribute names, which is what lets the port
+            derive declarations from a loader that is already running.
         reset_granularity: overrides for columns whose vendor granularity is
             not the harmonized-raw default. **Read the vendor's data before
             setting one** — a wrong value here silently rescales capacities.
@@ -161,30 +188,61 @@ def declarations_from_configuration(
     renaming = getattr(config, "normal_headers_renaming_dict", None)
     if not renaming:
         raise ValueError(
-            f"{config.__name__} has no normal_headers_renaming_dict; nothing to derive"
+            f"{_config_name(config)} has no normal_headers_renaming_dict; "
+            f"nothing to derive"
         )
 
     column_map, passthrough, unknown = derive_column_maps(renaming)
     if unknown:
         logging.debug(
             "%s declares legacy attributes with no native or legacy column: %s",
-            config.__name__,
+            _config_name(config),
             sorted(unknown),
         )
 
+    targets = set(column_map.values())
     granularity: dict[str, ResetGranularity] = {
         column: ResetGranularity.PER_CYCLE
         for column in _CUMULATIVE_DEFAULTS
-        if column in set(column_map.values())
+        if column in targets
     }
+
+    # A configuration that runs ``cumulate_capacity_within_cycle`` is *stating*
+    # that its vendor capacities reset every step: the post-processor offsets
+    # each step by the running total of the cycle's completed steps, which is
+    # exactly what ``ResetGranularity.PER_STEP`` means. Reading it here is the
+    # difference between deriving the granularity and guessing it — and a wrong
+    # guess rescales capacities silently.
+    post_processors = getattr(config, "post_processors", None) or {}
+    if post_processors.get("cumulate_capacity_within_cycle"):
+        granularity.update(
+            {
+                column: ResetGranularity.PER_STEP
+                for column in _CUMULATED_CAPACITIES
+                if column in targets
+            }
+        )
+
     if reset_granularity:
         granularity.update(reset_granularity)
+
+    # Same trick as the granularity above: a configuration that runs
+    # ``convert_*_to_timedelta`` is saying its vendor writes that column as an
+    # elapsed-time string. The legacy post-processor tolerates both spellings,
+    # so declaring it when the vendor already writes seconds costs nothing —
+    # ``harmonize()`` only converts string columns.
+    durations = tuple(
+        column
+        for processor, column in _DURATION_POST_PROCESSORS.items()
+        if post_processors.get(processor) and column in targets
+    )
 
     return LoaderDeclarations(
         column_map=column_map,
         raw_units=_units_from_configuration(config),
         timezone=timezone,
         reset_granularity=granularity,
+        duration_columns=durations,
         passthrough=passthrough,
         post_hooks=post_hooks,
     )

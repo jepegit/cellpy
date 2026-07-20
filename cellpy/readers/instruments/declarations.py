@@ -94,6 +94,15 @@ class LoaderDeclarations:
     #: listing one here only suppresses the unrecognised-column warning
     #: (#560 decision, 2026-07-20: unknown vendor columns are warn + drop).
     dropped: tuple[str, ...] = ()
+    #: Native columns whose vendor form is an elapsed-time **string**
+    #: (``"00:01:00"``, ``"0d 00:01:00.00"``) rather than a number of seconds.
+    #: Parsed to float seconds by ``harmonize()``.
+    #:
+    #: This is not a nicety: the schema dtype for these columns is Float64, so
+    #: without it the cast turns every value into null — the whole column, with
+    #: no error. Neware and Maccor both ship such columns, which is why it is a
+    #: framework feature rather than a per-loader post hook.
+    duration_columns: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         self._validate()
@@ -159,6 +168,17 @@ class LoaderDeclarations:
                 f"passthrough keeps {shadowing} under a name the native schema "
                 f"already owns; map those in column_map instead so they are "
                 f"cast and validated like any other native column."
+            )
+
+        bad_durations = sorted(
+            column
+            for column in self.duration_columns
+            if column not in set(self.column_map.values())
+        )
+        if bad_durations:
+            raise LoaderError(
+                f"duration_columns declares {bad_durations}, which column_map "
+                f"never produces; the declaration would have no effect."
             )
 
         bad_aux = sorted(
