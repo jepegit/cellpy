@@ -392,6 +392,11 @@ def test_declarations_derive_from_a_live_model_parameters_instance():
         normal_headers_renaming_dict=dict(module.normal_headers_renaming_dict),
         raw_units=dict(module.raw_units),
         post_processors=dict(module.post_processors),
+        # Required: this configuration spells its vendor columns with
+        # `{{ unit }}` placeholders, and unit_labels is what resolves them.
+        # Omitting it silently produced different vendor names on the two
+        # shapes — which is what this test exists to catch.
+        unit_labels=dict(module.unit_labels),
     )
 
     from_module = declarations_from_configuration(module)

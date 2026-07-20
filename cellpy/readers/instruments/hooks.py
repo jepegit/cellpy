@@ -22,11 +22,75 @@ doing it inside a port is how a refactor silently changes someone's data.
 
 from __future__ import annotations
 
+import logging
+import math
 from typing import Callable, Sequence
 
 import polars as pl
 
 from cellpy.exceptions import LoaderError
+
+
+def drop_last_row_if_worse(
+    *, columns: Sequence[str]
+) -> Callable[[pl.DataFrame], pl.DataFrame]:
+    """Drop the final row when it is more incomplete than the one before it.
+
+    A port of the legacy ``remove_last_if_bad``, which exists because some
+    testers write a partial final row when a run is interrupted. The rule is
+    comparative, not absolute: the last row goes only if it has **strictly
+    more** missing values than the second-to-last, so a file whose rows are
+    uniformly sparse keeps all of them.
+
+    Args:
+        columns: the vendor columns to count missing values over. This matters:
+            the legacy post-processor ran after ``rename_headers`` **and**
+            ``select_columns_to_keep``, so it counted over the columns cellpy
+            keeps, not over every column the vendor wrote. Hooks run before
+            renaming, so the caller passes the declared vendor columns to get
+            the same denominator. Counting over all vendor columns instead
+            would let undeclared junk columns decide whether a row survives.
+
+    Note:
+        This is the only shipped post-processor that changes the **row count**,
+        which is why it is worth being careful about: a row dropped here shifts
+        nothing else, but a row dropped *wrongly* silently loses a measurement.
+    """
+
+    def _missing(row: tuple) -> int:
+        return sum(
+            1
+            for value in row
+            if value is None or (isinstance(value, float) and math.isnan(value))
+        )
+
+    def hook(frame: pl.DataFrame) -> pl.DataFrame:
+        if frame.height < 2:
+            # Legacy indexes iloc[-2]; with fewer than two rows there is
+            # nothing to compare against.
+            return frame
+
+        present = [column for column in columns if column in frame.columns]
+        if not present:
+            raise LoaderError(
+                f"drop-last-if-worse was given no column it could check; it "
+                f"expected some of {sorted(columns)} but the frame has "
+                f"{sorted(frame.columns)}"
+            )
+
+        tail = frame.select(present).tail(2)
+        if _missing(tail.row(1)) > _missing(tail.row(0)):
+            logging.debug(
+                "dropping the final row: %d missing values against %d in the "
+                "row before it",
+                _missing(tail.row(1)),
+                _missing(tail.row(0)),
+            )
+            return frame.head(frame.height - 1)
+        return frame
+
+    hook.__name__ = "drop_last_row_if_worse"
+    return hook
 
 
 def cycle_number_not_zero(

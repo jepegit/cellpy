@@ -1,4 +1,4 @@
-"""Vendor post hooks: state splitting and cycle numbering (#560).
+"""Vendor post hooks: state splitting, cycle numbering, bad final rows (#560).
 
 Expectations here are **hand-computed from the legacy post-processors**, not
 read back from the implementation. A splitter that is subtly wrong does not
@@ -20,6 +20,7 @@ import pytest
 from cellpy.exceptions import LoaderError
 from cellpy.readers.instruments.hooks import (
     cycle_number_not_zero,
+    drop_last_row_if_worse,
     state_splitter,
 )
 
@@ -242,3 +243,91 @@ def test_an_empty_frame_is_returned_unchanged():
     out = cycle_number_not_zero(cycle_column="Cyc")(frame)
 
     assert out.height == 0
+
+
+# -- dropping a bad final row (#560) -------------------------------------------
+
+
+def _tail_frame(rows):
+    """Two-or-more rows of (a, b, junk); None means missing."""
+    return pl.DataFrame(
+        {
+            "a": [r[0] for r in rows],
+            "b": [r[1] for r in rows],
+            "junk": [r[2] for r in rows],
+        },
+        schema={"a": pl.Float64, "b": pl.Float64, "junk": pl.Float64},
+    )
+
+
+@pytest.mark.essential
+def test_a_more_incomplete_final_row_is_dropped():
+    frame = _tail_frame([(1.0, 1.0, 1.0), (2.0, 2.0, 2.0), (3.0, None, 3.0)])
+
+    out = drop_last_row_if_worse(columns=("a", "b"))(frame)
+
+    assert out.height == 2
+
+
+@pytest.mark.essential
+def test_an_equally_incomplete_final_row_is_kept():
+    """The rule is *strictly more*, so uniformly sparse files keep every row."""
+    frame = _tail_frame([(1.0, None, 1.0), (2.0, None, 2.0), (3.0, None, 3.0)])
+
+    out = drop_last_row_if_worse(columns=("a", "b"))(frame)
+
+    assert out.height == 3
+
+
+@pytest.mark.essential
+def test_a_complete_final_row_is_kept():
+    frame = _tail_frame([(1.0, None, 1.0), (2.0, 2.0, 2.0)])
+
+    out = drop_last_row_if_worse(columns=("a", "b"))(frame)
+
+    assert out.height == 2
+
+
+@pytest.mark.essential
+def test_nan_counts_as_missing_like_pandas_isna():
+    """Legacy used ``isna()``, which is true for NaN as well as None."""
+    frame = _tail_frame([(1.0, 1.0, 1.0), (2.0, float("nan"), 2.0)])
+
+    out = drop_last_row_if_worse(columns=("a", "b"))(frame)
+
+    assert out.height == 1
+
+
+@pytest.mark.essential
+def test_undeclared_columns_do_not_decide_whether_a_row_survives():
+    """The denominator matters.
+
+    Legacy ran after ``select_columns_to_keep``, so it counted over the columns
+    cellpy keeps. Here the declared columns are complete in both rows and only
+    the undeclared ``junk`` column degrades — the row must survive. Counting
+    over every vendor column instead would drop a perfectly good measurement
+    because of a column nobody asked for.
+    """
+    frame = _tail_frame([(1.0, 1.0, 1.0), (2.0, 2.0, None)])
+
+    out = drop_last_row_if_worse(columns=("a", "b"))(frame)
+
+    assert out.height == 2
+
+
+@pytest.mark.essential
+def test_a_single_row_frame_is_left_alone():
+    """Legacy indexes iloc[-2]; there is nothing to compare against."""
+    frame = _tail_frame([(1.0, None, None)])
+
+    out = drop_last_row_if_worse(columns=("a", "b"))(frame)
+
+    assert out.height == 1
+
+
+@pytest.mark.essential
+def test_no_checkable_column_raises_rather_than_silently_keeping_everything():
+    frame = _tail_frame([(1.0, 1.0, 1.0), (2.0, 2.0, 2.0)])
+
+    with pytest.raises(LoaderError, match="no column it could check"):
+        drop_last_row_if_worse(columns=("nope",))(frame)

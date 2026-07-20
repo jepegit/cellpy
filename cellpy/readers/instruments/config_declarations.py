@@ -37,7 +37,11 @@ from cellpy.readers.instruments.declarations import (
     LoaderDeclarations,
     ResetGranularity,
 )
-from cellpy.readers.instruments.hooks import cycle_number_not_zero, state_splitter
+from cellpy.readers.instruments.hooks import (
+    cycle_number_not_zero,
+    drop_last_row_if_worse,
+    state_splitter,
+)
 
 #: Native columns whose reset granularity a vendor could plausibly differ on.
 #: Defaulted to the harmonized-raw target (cycle-cumulative per direction);
@@ -137,6 +141,65 @@ def derive_column_maps(
     return column_map, passthrough, unknown
 
 
+def substitute_unit_templates(renaming: dict[str, str], config: Any) -> dict[str, str]:
+    """Resolve ``{{ unit }}`` placeholders in vendor column names.
+
+    Neware spells its columns with the unit baked in — ``Current({{ current }})``
+    becomes ``Current(A)``. The legacy ``update_headers_with_units``
+    post-processor did this by **mutating** ``config_params`` in place at load
+    time, which makes the substitution a side effect of having loaded something.
+
+    That side effect does not reach the configuration *module*: a
+    ``ModelParameters`` instance carries its own copy. So deriving declarations
+    from a module yielded seven neware vendor names still spelled
+    ``Current({{ current }})`` — names no file contains, so those columns were
+    silently unmapped, while deriving from a post-load ``config_params`` worked.
+    Same configuration, different answer depending on what had run first.
+
+    Doing it here makes the derivation self-contained and order-independent.
+
+    Args:
+        renaming: ``legacy_attr -> vendor column``; not mutated.
+        config: the configuration, for ``unit_labels`` / ``raw_units``.
+
+    Returns:
+        A new dict with placeholders resolved.
+
+    Raises:
+        LoaderError: if a placeholder names a unit the configuration does not
+            define. Legacy substituted the string ``"None"``, producing a column
+            name that matches nothing — a silent unmapped column rather than an
+            error.
+    """
+    labels = getattr(config, "unit_labels", None) or getattr(config, "raw_units", None)
+    labels = labels or {}
+
+    resolved: dict[str, str] = {}
+    for legacy_attr, vendor in renaming.items():
+        if not isinstance(vendor, str) or "{{" not in vendor:
+            resolved[legacy_attr] = vendor
+            continue
+
+        name = vendor
+        # Legacy only substituted keys that appear in headers_normal; this
+        # substitutes every entry. That can only ever fix a name, never break
+        # one — an unsubstituted template matched no vendor column anyway.
+        for fragment in vendor.split("{{")[1:]:
+            placeholder = fragment.split("}}")[0]
+            unit = labels.get(placeholder.strip())
+            if unit is None:
+                raise LoaderError(
+                    f"{_config_name(config)} spells {legacy_attr!r} as "
+                    f"{vendor!r}, but defines no unit named "
+                    f"{placeholder.strip()!r}; the column name would be "
+                    f"unmatchable. Known units: {sorted(labels)}."
+                )
+            name = name.replace(f"{{{{{placeholder}}}}}", f"{unit}")
+        resolved[legacy_attr] = name
+
+    return resolved
+
+
 def _config_name(config: Any) -> str:
     """A name for messages, for either shape of configuration.
 
@@ -159,6 +222,7 @@ def _state_splitting(
     config: Any,
     post_processors: dict,
     column_map: dict[str, str],
+    renaming: dict[str, str],
 ) -> tuple[tuple, tuple[str, ...]]:
     """Derive the state-splitting hooks, reshaping ``column_map`` in place.
 
@@ -174,7 +238,6 @@ def _state_splitting(
         ``(post_hooks, dropped)`` — the hooks to run, and vendor columns now
         consumed by them (so they do not trip the unrecognised-column warning).
     """
-    renaming_all = getattr(config, "normal_headers_renaming_dict", {}) or {}
     states = getattr(config, "states", None) or {}
     wants_capacity = bool(post_processors.get("split_capacity"))
     wants_current = bool(post_processors.get("split_current"))
@@ -183,7 +246,7 @@ def _state_splitting(
     # Independent of state splitting: it needs only the cycle column.
     cycle_hooks: tuple = ()
     if wants_cycle_shift:
-        cycle_vendor = renaming_all.get("cycle_index_txt")
+        cycle_vendor = renaming.get("cycle_index_txt")
         if not cycle_vendor:
             raise LoaderError(
                 f"{_config_name(config)} enables set_cycle_number_not_zero but "
@@ -201,7 +264,6 @@ def _state_splitting(
         )
 
     schema_raw = mapping.LEGACY_ATTR_TO_SCHEMA["raw"]
-    renaming = getattr(config, "normal_headers_renaming_dict", {}) or {}
     state_column = states["column_name"]
     cycle_column = renaming.get("cycle_index_txt")
     datapoint_column = renaming.get("data_point_txt")
@@ -343,6 +405,12 @@ def declarations_from_configuration(
             f"nothing to derive"
         )
 
+    # Before anything reads the renaming: resolve `{{ unit }}` placeholders, so
+    # the derivation gives the same answer from a module as from a post-load
+    # config_params. Everything downstream — the column map, the splitting
+    # hooks' vendor column names — depends on these being real names.
+    renaming = substitute_unit_templates(renaming, config)
+
     column_map, passthrough, unknown = derive_column_maps(renaming)
     if unknown:
         logging.debug(
@@ -352,7 +420,22 @@ def declarations_from_configuration(
         )
 
     post_processors = getattr(config, "post_processors", None) or {}
-    hooks, dropped = _state_splitting(config, post_processors, column_map)
+    hooks, dropped = _state_splitting(
+        config, post_processors, column_map, renaming
+    )
+
+    # Last, and only now: `remove_last_if_bad` counts missing values over the
+    # columns cellpy *keeps*, which is only known once the column map is final
+    # (state splitting can add and remove entries). It also has to run after the
+    # splitters, as it did in 1.x, so a row the splitters filled is judged on
+    # its filled state.
+    if post_processors.get("remove_last_if_bad"):
+        hooks += (
+            drop_last_row_if_worse(
+                columns=tuple(column_map) + tuple(passthrough),
+            ),
+        )
+
     hooks += tuple(post_hooks)
 
     targets = set(column_map.values())

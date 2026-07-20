@@ -36,6 +36,10 @@ from cellpy.readers.instruments.harmonize import harmonize
 PARITY_CASES = (
     ("maccor_txt", "testdata/data/maccor_001.txt", {"model": "one", "sep": "\t"}),
     ("neware_txt", "testdata/data/neware_uio.csv", {"model": "one"}),
+    # Model two brings `remove_last_if_bad` into range — the only shipped
+    # post-processor that changes the *row count*. maccor_002.txt was already in
+    # testdata but no test loaded it.
+    ("maccor_txt", "testdata/data/maccor_002.txt", {"model": "two"}),
 )
 
 #: Legacy post-processor → native columns it changes, for the ones that have no
@@ -77,8 +81,15 @@ def _numeric(series: pl.Series) -> pl.Series | None:
     """A comparable numeric view, so a change of *representation* is not read as
     a change of *value*.
 
-    The legacy frame spells elapsed times as timedelta and timestamps as
-    datetime; the native schema spells them float seconds and int64 epoch ns.
+    The legacy frame spells elapsed times as timedelta, timestamps as datetime,
+    and — for columns it never converted — numbers as **strings**: maccor model
+    two leaves ``cumulative_charge_energy`` as ``'0.00000000'``. The native
+    schema spells all of those numerically.
+
+    A numeric-looking string column is coerced so the *values* can be compared.
+    A string column that does not fully coerce returns ``None``, so the caller
+    falls back to strict equality and reports the difference rather than
+    papering over it.
     """
     dtype = series.dtype
     if dtype.is_numeric():
@@ -89,6 +100,10 @@ def _numeric(series: pl.Series) -> pl.Series | None:
         if dtype.time_zone is not None:
             series = series.dt.convert_time_zone("UTC")
         return series.dt.epoch("ns").cast(pl.Float64) / 1e9
+    if dtype == pl.String:
+        coerced = series.cast(pl.Float64, strict=False)
+        if coerced.null_count() == series.null_count():
+            return coerced
     return None
 
 
@@ -146,7 +161,12 @@ def test_harmonized_values_match_the_legacy_frame(
         )
         left_n, right_n = _numeric(left), _numeric(right)
         if left_n is None or right_n is None:
-            assert (left == right).all(), f"{instrument}: {column} differs"
+            if left.dtype != right.dtype:
+                mismatched.append(
+                    f"{column} (not comparable: {right.dtype} -> {left.dtype})"
+                )
+            elif not (left == right).all():
+                mismatched.append(f"{column} (values differ)")
             checked.append(column)
             continue
         worst = (left_n - right_n).abs().max()
