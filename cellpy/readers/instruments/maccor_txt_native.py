@@ -40,6 +40,7 @@ from cellpy.readers.instruments.declarations import (
     ResetGranularity,
 )
 from cellpy.readers.instruments.harmonize import harmonize
+from cellpy.readers.instruments.hooks import state_splitter
 
 _SCHEMA = default_schema().raw
 
@@ -55,6 +56,7 @@ _DURATION = re.compile(
 _VENDOR_CAPACITY = "mAmp-hr"
 _VENDOR_STATE = "State"
 _VENDOR_CYCLE = "Cyc#"
+_VENDOR_DATAPOINT = "Rec#"
 
 # Names the split hook produces; declared in column_map like any other column.
 _CHARGE_CAPACITY = "_charge_capacity"
@@ -75,35 +77,27 @@ def _duration_to_seconds(value: str | None) -> float | None:
     )
 
 
-def split_capacity_by_state(frame: pl.DataFrame) -> pl.DataFrame:
-    """Split the single signed capacity column into charge and discharge.
-
-    Reproduces the legacy ``_state_splitter`` semantics: within a cycle, each
-    direction's column carries the vendor value on that direction's rows, holds
-    the last value for the rest of the cycle (the legacy "propagate"), and is
-    zero before the direction first appears.
-    """
-    if _VENDOR_CAPACITY not in frame.columns or _VENDOR_STATE not in frame.columns:
-        raise LoaderError(
-            f"expected {_VENDOR_CAPACITY!r} and {_VENDOR_STATE!r} columns in the "
-            f"Maccor file; got {frame.columns}"
-        )
-
-    def _directional(states: tuple[str, ...], alias: str) -> pl.Expr:
-        return (
-            pl.when(pl.col(_VENDOR_STATE).is_in(states))
-            .then(pl.col(_VENDOR_CAPACITY))
-            .otherwise(None)
-            .forward_fill()
-            .over(_VENDOR_CYCLE)
-            .fill_null(0.0)
-            .alias(alias)
-        )
-
-    return frame.with_columns(
-        _directional(_CHARGE_STATES, _CHARGE_CAPACITY),
-        _directional(_DISCHARGE_STATES, _DISCHARGE_CAPACITY),
-    )
+#: Split the single signed capacity column into charge and discharge.
+#:
+#: Uses the shared :func:`~cellpy.readers.instruments.hooks.state_splitter`.
+#: This module previously carried its own copy built on ``forward_fill()``,
+#: which was **not** the legacy behaviour it claimed to reproduce: a forward
+#: fill also fills rests *between* two same-direction rows, where
+#: ``_state_splitter`` leaves them at 0 and only propagates after the
+#: direction's last row in the cycle. The in-tree Maccor fixtures happen not to
+#: contain that pattern, so the difference never showed — see
+#: ``tests/test_hooks.py::test_propagate_is_not_a_forward_fill``.
+split_capacity_by_state = state_splitter(
+    base_column=_VENDOR_CAPACITY,
+    state_column=_VENDOR_STATE,
+    cycle_column=_VENDOR_CYCLE,
+    datapoint_column=_VENDOR_DATAPOINT,
+    charge_keys=_CHARGE_STATES,
+    discharge_keys=_DISCHARGE_STATES,
+    charge_output=_CHARGE_CAPACITY,
+    discharge_output=_DISCHARGE_CAPACITY,
+    propagate=True,
+)
 
 
 MACCOR_THREE = LoaderDeclarations(

@@ -305,3 +305,103 @@ def test_maccor_txt_one_watt_hr_is_energy():
     # cellpy-core#139), so it is a real mapping, not a passthrough.
     assert column_map["Watt-hr"] == "cumulative_charge_energy"
     assert "Watt-hr" not in passthrough
+
+
+# -- granularity and durations read from the post-processors (#560) ------------
+
+
+@pytest.mark.essential
+def test_cumulate_capacity_within_cycle_derives_per_step():
+    """A configuration running that post-processor is declaring PER_STEP.
+
+    The post-processor offsets each step by the running total of the cycle's
+    completed steps, which is precisely what PER_STEP normalization undoes.
+    Reading it beats defaulting: with the PER_CYCLE default, neware capacities
+    came out wrong by up to 8 mAh against the legacy frame.
+    """
+    from cellpy.readers.instruments.declarations import ResetGranularity
+
+    config = _config("neware_txt_one")
+    assert config.post_processors.get("cumulate_capacity_within_cycle"), (
+        "fixture assumption broken: neware_txt_one no longer cumulates"
+    )
+
+    declarations = declarations_from_configuration(config)
+
+    for column in ("cumulative_charge_capacity", "cumulative_discharge_capacity"):
+        assert declarations.reset_granularity[column] is ResetGranularity.PER_STEP
+
+
+@pytest.mark.essential
+def test_energies_keep_the_per_cycle_default_when_capacities_are_per_step():
+    """``cumulate_capacity_within_cycle`` touches capacities only."""
+    from cellpy.readers.instruments.declarations import ResetGranularity
+
+    declarations = declarations_from_configuration(_config("neware_txt_one"))
+
+    for column in ("cumulative_charge_energy", "cumulative_discharge_energy"):
+        assert declarations.reset_granularity[column] is ResetGranularity.PER_CYCLE
+
+
+@pytest.mark.essential
+def test_a_configuration_without_the_post_processor_stays_per_cycle():
+    from cellpy.readers.instruments.declarations import ResetGranularity
+
+    config = _config("maccor_txt_one")
+    assert not config.post_processors.get("cumulate_capacity_within_cycle")
+
+    declarations = declarations_from_configuration(config)
+
+    assert (
+        declarations.reset_granularity["cumulative_charge_capacity"]
+        is ResetGranularity.PER_CYCLE
+    )
+
+
+@pytest.mark.essential
+@pytest.mark.parametrize("name", ["neware_txt_one", "maccor_txt_one"])
+def test_timedelta_post_processors_derive_duration_columns(name):
+    """Both shipped families write elapsed times as strings."""
+    config = _config(name)
+    declarations = declarations_from_configuration(config)
+
+    for processor, column in (
+        ("convert_test_time_to_timedelta", "test_time"),
+        ("convert_step_time_to_timedelta", "step_time"),
+    ):
+        if config.post_processors.get(processor):
+            assert column in declarations.duration_columns, (
+                f"{name} runs {processor} but {column} was not declared as a "
+                f"duration column - harmonize would cast the strings to null"
+            )
+
+
+@pytest.mark.essential
+def test_declarations_derive_from_a_live_model_parameters_instance():
+    """The port derives from a running loader, not only from a module.
+
+    ``ModelParameters`` and the configuration modules expose the same attribute
+    names; only their *own* name is spelled differently. Locally-defined
+    instruments (YAML) exist only in the instance form.
+    """
+    from cellpy.readers.instruments.configurations import ModelParameters
+
+    module = _config("neware_txt_one")
+    instance = ModelParameters(
+        name="neware_txt_one",
+        normal_headers_renaming_dict=dict(module.normal_headers_renaming_dict),
+        raw_units=dict(module.raw_units),
+        post_processors=dict(module.post_processors),
+        # Required: this configuration spells its vendor columns with
+        # `{{ unit }}` placeholders, and unit_labels is what resolves them.
+        # Omitting it silently produced different vendor names on the two
+        # shapes — which is what this test exists to catch.
+        unit_labels=dict(module.unit_labels),
+    )
+
+    from_module = declarations_from_configuration(module)
+    from_instance = declarations_from_configuration(instance)
+
+    assert from_instance.column_map == from_module.column_map
+    assert from_instance.reset_granularity == from_module.reset_granularity
+    assert from_instance.duration_columns == from_module.duration_columns

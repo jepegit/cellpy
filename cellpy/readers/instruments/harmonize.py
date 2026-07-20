@@ -11,17 +11,22 @@ The order of operations matters and is fixed here:
 1. post hooks (vendor quirks, on vendor column names)
 2. rename vendor → native, dropping undeclared columns
 3. timestamps → ``epoch_time_utc`` int64 ns UTC
-4. cast to the schema dtypes
-5. **reset-granularity normalization** to cycle-cumulative
-6. identity and provenance stamping
-7. ``validate_raw_frame``
+4. elapsed-time strings → float seconds (``duration_columns``)
+5. cast to the schema dtypes
+6. **reset-granularity normalization** to cycle-cumulative
+7. identity and provenance stamping
+8. ``validate_raw_frame``
 
-Step 5 is the one to be careful about; see :func:`normalize_reset_granularity`.
+Step 6 is the one to be careful about; see :func:`normalize_reset_granularity`.
+Step 4 must precede step 5: the schema dtype for those columns is numeric, so
+casting a duration string first would null the column outright — see
+:func:`_cast_to_schema`, which now refuses to do that quietly.
 """
 
 from __future__ import annotations
 
 import logging
+import re
 from datetime import datetime, timezone as dt_timezone
 from typing import Any
 
@@ -172,15 +177,118 @@ def _convert_timestamps(
     )
 
 
+#: ``[[D d] HH:]MM:SS[.frac]`` — the elapsed-time spellings vendors use.
+_DURATION = re.compile(
+    r"^\s*(?:(?P<days>\d+)\s*d\s+)?"
+    r"(?:(?P<hours>\d+):)?"
+    r"(?P<minutes>\d+):(?P<seconds>\d+(?:\.\d+)?)\s*$"
+)
+
+
+def _duration_to_seconds(value: str | None) -> float | None:
+    match = _DURATION.match(str(value)) if value is not None else None
+    if match is None:
+        return None
+    return (
+        int(match["days"] or 0) * 86_400
+        + int(match["hours"] or 0) * 3_600
+        + int(match["minutes"]) * 60
+        + float(match["seconds"])
+    )
+
+
+def _convert_durations(
+    raw: pl.DataFrame, declarations: LoaderDeclarations
+) -> pl.DataFrame:
+    """Elapsed-time strings → float seconds.
+
+    Matches the legacy ``pd.to_timedelta(...).dt.total_seconds()`` semantics.
+    Only string columns are touched; a vendor that already writes seconds needs
+    no declaration and is left alone.
+    """
+    columns = [
+        column
+        for column in declarations.duration_columns
+        if column in raw.columns and raw[column].dtype == pl.String
+    ]
+    if not columns:
+        return raw
+
+    out = raw.with_columns(
+        pl.col(column)
+        .map_elements(_duration_to_seconds, return_dtype=pl.Float64)
+        .alias(column)
+        for column in columns
+    )
+    for column in columns:
+        failed = out[column].null_count() - raw[column].null_count()
+        if failed:
+            raise LoaderError(
+                f"{column!r} is declared as a duration column but {failed} of "
+                f"{raw.height} values could not be parsed as an elapsed time "
+                f"(examples: {raw[column].head(3).to_list()})"
+            )
+    return out
+
+
 def _cast_to_schema(raw: pl.DataFrame) -> pl.DataFrame:
-    """Cast every recognised column to its schema dtype."""
+    """Cast every recognised column to its schema dtype.
+
+    Casts are non-strict, because real vendor files carry the occasional junk
+    row and the legacy path tolerated it (``pd.to_numeric(errors="coerce")``);
+    making those fatal would refuse files 1.x loaded happily.
+
+    But a cast that empties a column **completely** is not a stray value, it is
+    the wrong dtype assumption, and that raises. Observed while porting #560:
+    neware writes ``Time`` as ``"00:01:00"``, and casting that to the schema's
+    Float64 nulled all 9065 rows without a word — the same silent-data-loss
+    shape as #580. Partial losses warn, so they are visible without being
+    fatal.
+    """
     dtype_map = default_schema().raw.dtype_map()
     casts = [
         pl.col(name).cast(dtype, strict=False).alias(name)
         for name, dtype in dtype_map.items()
         if name in raw.columns
     ]
-    return raw.with_columns(casts) if casts else raw
+    if not casts:
+        return raw
+
+    out = raw.with_columns(casts)
+
+    def _describe(name: str, lost: int) -> str:
+        return (
+            f"{name} ({lost}/{raw.height} values, {raw[name].dtype} -> "
+            f"{dtype_map[name]})"
+        )
+
+    emptied, damaged = [], []
+    for name in dtype_map:
+        if name not in raw.columns:
+            continue
+        lost = out[name].null_count() - raw[name].null_count()
+        if lost <= 0:
+            continue
+        had_data = raw[name].null_count() < raw.height
+        if had_data and out[name].null_count() == raw.height:
+            emptied.append(_describe(name, lost))
+        else:
+            damaged.append(_describe(name, lost))
+
+    if damaged:
+        logging.warning(
+            "casting to the schema dtypes produced nulls: %s; the affected "
+            "values could not be read as the native dtype",
+            ", ".join(sorted(damaged)),
+        )
+    if emptied:
+        raise LoaderError(
+            f"casting to the schema dtypes emptied column(s) entirely: "
+            f"{', '.join(sorted(emptied))}. The vendor column is not what the "
+            f"native column expects - declare a conversion (e.g. "
+            f"duration_columns) or fix the column_map target."
+        )
+    return out
 
 
 def _stamp_identity(raw: pl.DataFrame, *, test_id: int) -> pl.DataFrame:
@@ -268,6 +376,7 @@ def harmonize(
     raw = raw.select(list(present)).rename(present)
 
     raw = _convert_timestamps(raw, declarations)
+    raw = _convert_durations(raw, declarations)
     raw = _cast_to_schema(raw)
     raw = normalize_reset_granularity(raw, declarations)
     raw = _stamp_identity(raw, test_id=test_id)

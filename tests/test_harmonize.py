@@ -502,3 +502,106 @@ def test_a_column_cannot_be_both_declared_and_dropped():
 
     with pytest.raises(LoaderError, match="both declared and dropped"):
         _minimal_declarations(dropped=("V",))
+
+
+# -- duration strings and destructive casts (#560) -----------------------------
+
+
+@pytest.mark.essential
+@pytest.mark.parametrize(
+    "text, expected",
+    [
+        ("00:00:00", 0.0),
+        ("00:01:00", 60.0),
+        ("01:00:30", 3630.0),
+        ("00:00:01.50", 1.5),
+        ("  0d 00:01:00.00", 60.0),
+        ("2d 01:00:00", 176_400.0),
+    ],
+)
+def test_duration_strings_become_seconds(text, expected):
+    """The elapsed-time spellings the shipped vendors actually write."""
+    frame = _minimal_vendor_frame(T=[text, text])
+    declarations = _minimal_declarations(duration_columns=(SCHEMA.test_time,))
+
+    raw = harmonize(frame, declarations, test_id=1)
+
+    assert raw[SCHEMA.test_time].to_list() == [expected, expected]
+
+
+@pytest.mark.essential
+def test_a_duration_column_that_is_already_numeric_is_left_alone():
+    """Declaring it costs nothing when the vendor already writes seconds.
+
+    This is what lets the declaration be *derived* from the legacy
+    ``convert_*_to_timedelta`` flags without checking each vendor's spelling.
+    """
+    frame = _minimal_vendor_frame(T=[0.0, 90.0])
+    declarations = _minimal_declarations(duration_columns=(SCHEMA.test_time,))
+
+    raw = harmonize(frame, declarations, test_id=1)
+
+    assert raw[SCHEMA.test_time].to_list() == [0.0, 90.0]
+
+
+@pytest.mark.essential
+def test_an_unparseable_duration_raises_rather_than_nulling():
+    frame = _minimal_vendor_frame(T=["not a duration", "00:01:00"])
+    declarations = _minimal_declarations(duration_columns=(SCHEMA.test_time,))
+
+    with pytest.raises(LoaderError, match="could not be parsed as an elapsed time"):
+        harmonize(frame, declarations, test_id=1)
+
+
+@pytest.mark.essential
+def test_duration_columns_must_be_produced_by_column_map():
+    with pytest.raises(LoaderError, match="duration_columns declares"):
+        _minimal_declarations(duration_columns=(SCHEMA.step_time,))
+
+
+@pytest.mark.essential
+def test_a_cast_that_empties_a_column_raises():
+    """The guard that would have caught the neware duration bug.
+
+    A string column cast to the schema's Float64 becomes all-null. Non-strict
+    casting is deliberate — one stray value should not kill a load — but losing
+    values that *were* there is a wrong-dtype bug, and silence is how #580
+    shipped.
+    """
+    frame = _minimal_vendor_frame(T=["00:01:00", "00:02:00"])
+    # ...the same frame, but without declaring the column as a duration.
+    declarations = _minimal_declarations()
+
+    with pytest.raises(LoaderError, match="emptied column"):
+        harmonize(frame, declarations, test_id=1)
+
+
+@pytest.mark.essential
+def test_the_destructive_cast_message_names_the_column_and_the_dtypes():
+    frame = _minimal_vendor_frame(T=["00:01:00", "00:02:00"])
+
+    with pytest.raises(LoaderError) as excinfo:
+        harmonize(frame, _minimal_declarations(), test_id=1)
+
+    message = str(excinfo.value)
+    assert SCHEMA.test_time in message
+    assert "String" in message
+    assert "duration_columns" in message, "the message should name the fix"
+
+
+@pytest.mark.essential
+def test_a_genuinely_stray_value_still_becomes_null_and_warns(caplog):
+    """Non-strict casting is kept for the case it was meant for.
+
+    Real vendor files carry junk rows and the legacy path coerced them to NaN.
+    Refusing the file would be a regression against 1.x, so a partial loss
+    warns instead of raising - the loud case is losing the whole column.
+    """
+    frame = _minimal_vendor_frame(V=[3.0, 3.1], QC=[0.0, 0.1])
+    frame = frame.with_columns(pl.Series("I", ["0.1", "bad"]))
+
+    with caplog.at_level(logging.WARNING):
+        raw = harmonize(frame, _minimal_declarations(), test_id=1)
+
+    assert raw[SCHEMA.current].to_list() == [0.1, None]
+    assert SCHEMA.current in caplog.text, "the partial loss was silent"
