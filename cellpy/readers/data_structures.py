@@ -907,16 +907,56 @@ class InstrumentFactory:
         if not module_name:
             raise ValueError(key)
 
-        spec = importlib.util.spec_from_file_location(module_name, module_path)
-        loader_module = importlib.util.module_from_spec(spec)
-        sys.modules[module_name] = loader_module  # noqa
-        spec.loader.exec_module(loader_module)
+        loader_module = self._import_loader_module(module_name, module_path)
         cls = getattr(loader_module, instrument_class)
 
         # TODO: get stored kwargs from self.__kwargs and merge them with the supplied kwargs
         #  (supplied should have preference)
 
         return cls(**kwargs)
+
+    @staticmethod
+    def _import_loader_module(module_name: str, module_path):
+        """Import a loader module, preferring the package path for in-tree ones.
+
+        In-tree loaders live inside ``cellpy.readers.instruments``. Loading them
+        by file path (``spec_from_file_location``) creates a *second* module
+        object - e.g. a bare ``custom`` distinct from
+        ``cellpy.readers.instruments.custom`` - so one source file yields two
+        ``DataLoader`` classes. That breaks ``isinstance``/``issubclass`` against
+        the package-path class, duplicates any class-level state, and makes
+        monkeypatching the package-path class silently miss the instantiated one.
+        Importing by dotted name instead lets Python's module cache hand back the
+        one canonical module (and class).
+
+        User-supplied / local loader files legitimately live outside the package
+        and are still loaded from their path, unchanged.
+        """
+        package = "cellpy.readers.instruments"
+        instruments_dir = pathlib.Path(
+            importlib.import_module(package).__file__
+        ).resolve().parent
+
+        in_tree = False
+        if module_path is not None:
+            try:
+                in_tree = (
+                    pathlib.Path(module_path).resolve().parent == instruments_dir
+                )
+            except OSError:
+                in_tree = False
+
+        if in_tree:
+            # Derive the dotted name from the file itself so a stale registered
+            # module_name cannot point us at the wrong (or a missing) module.
+            dotted = f"{package}.{pathlib.Path(module_path).stem}"
+            return importlib.import_module(dotted)
+
+        spec = importlib.util.spec_from_file_location(module_name, module_path)
+        loader_module = importlib.util.module_from_spec(spec)
+        sys.modules[module_name] = loader_module  # noqa
+        spec.loader.exec_module(loader_module)
+        return loader_module
 
     def query(self, key: str, variable: str) -> Any:
         """performs a get_params lookup for the instrument loader.
