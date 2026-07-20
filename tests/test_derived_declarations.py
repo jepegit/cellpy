@@ -265,10 +265,32 @@ def test_derivation_rejects_an_invalid_configuration():
 def test_ambiguous_vendor_column_is_detected_and_resolved_deterministically():
     """One vendor column claimed by two legacy attributes loses one of them.
 
-    `maccor_txt_one` maps `Watt-hr` to both `power_txt` and
-    `charge_energy_txt`. Only one target can win; the derivation keeps the
-    first declaration (matching what the legacy path is observed to produce)
-    and logs the collision instead of picking silently.
+    The derivation keeps the first declaration and logs the collision instead
+    of picking silently. Synthetic fixture: the real case this was written
+    against (`maccor_txt_one` mapping `Watt-hr` to both `power_txt` and
+    `charge_energy_txt`) was resolved by decision #560 (2026-07-20) — the
+    power mapping was a config slip — so the repo no longer carries a live
+    ambiguity to point at.
+    """
+    renaming = {
+        "power_txt": "Watt-hr",
+        "charge_energy_txt": "Watt-hr",
+        "voltage_txt": "Volts",
+    }
+    column_map, passthrough, _ = derive_column_maps(renaming)
+    targets = {**column_map, **passthrough}
+    # power_txt is declared first, so power wins (first-wins, logged).
+    assert targets["Watt-hr"] == "power"
+
+
+@pytest.mark.essential
+def test_maccor_txt_one_watt_hr_is_energy():
+    """Decision #560 (2026-07-20): a Watt-hr column is dimensionally energy.
+
+    maccor_txt_one used to map it to power_txt *and* charge_energy_txt, and
+    first-wins fed it to power. The power mapping is gone; the vendor column
+    now lands on charge_energy, and there is no double-claim left in the
+    configuration.
     """
     renaming = _config("maccor_txt_one").normal_headers_renaming_dict
     claimed_twice = [
@@ -276,9 +298,10 @@ def test_ambiguous_vendor_column_is_detected_and_resolved_deterministically():
         for vendor in set(renaming.values())
         if list(renaming.values()).count(vendor) > 1
     ]
-    assert "Watt-hr" in claimed_twice, "fixture assumption changed"
+    assert not claimed_twice, f"double-claimed vendor columns: {claimed_twice}"
 
     column_map, passthrough, _ = derive_column_maps(renaming)
-    targets = {**column_map, **passthrough}
-    # power_txt is declared before charge_energy_txt, so power wins.
-    assert targets["Watt-hr"] == "power"
+    # Lands on the *native* energy column (cellpycore 0.2.3 gained them via
+    # cellpy-core#139), so it is a real mapping, not a passthrough.
+    assert column_map["Watt-hr"] == "cumulative_charge_energy"
+    assert "Watt-hr" not in passthrough
