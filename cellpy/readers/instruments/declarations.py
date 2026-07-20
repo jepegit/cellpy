@@ -88,6 +88,12 @@ class LoaderDeclarations:
     aux_map: Mapping[str, str] = field(default_factory=dict)
     passthrough: Mapping[str, str] = field(default_factory=dict)
     post_hooks: tuple[Callable, ...] = ()
+    #: Vendor columns the loader knows about and deliberately discards
+    #: (state flags already consumed by a post hook, trailing-separator
+    #: artifacts, ...). harmonize() drops every undeclared column either way;
+    #: listing one here only suppresses the unrecognised-column warning
+    #: (#560 decision, 2026-07-20: unknown vendor columns are warn + drop).
+    dropped: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         self._validate()
@@ -95,6 +101,17 @@ class LoaderDeclarations:
     # -- validation ------------------------------------------------------------
     def _validate(self) -> None:
         native_names = set(default_schema().raw.ordered_names())
+
+        declared_vendor = (
+            set(self.column_map) | set(self.aux_map) | set(self.passthrough)
+        )
+        both = sorted(set(self.dropped) & declared_vendor)
+        if both:
+            raise LoaderError(
+                f"columns listed as both declared and dropped: {both} - a "
+                "column is either mapped somewhere or deliberately discarded, "
+                "not both"
+            )
 
         unknown = sorted(set(self.column_map.values()) - native_names)
         if unknown:

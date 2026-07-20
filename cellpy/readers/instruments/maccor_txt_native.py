@@ -126,6 +126,11 @@ MACCOR_THREE = LoaderDeclarations(
         _SCHEMA.cumulative_discharge_capacity: ResetGranularity.PER_CYCLE,
     },
     post_hooks=(split_capacity_by_state,),
+    # Known-and-discarded: State/mAmp-hr are consumed by the split hook, ES is
+    # a Maccor status flag, "Unnamed: 12" is a trailing-tab artifact.
+    # TODO(#560 tier port): mWatt-hr is an energy and should become a
+    # passthrough column instead of a discard (cellpy-core#139).
+    dropped=("State", "ES", "mAmp-hr", "mWatt-hr", "Unnamed: 12"),
 )
 
 

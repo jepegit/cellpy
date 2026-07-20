@@ -422,3 +422,83 @@ def test_a_wrong_granularity_declaration_would_be_caught():
         "a deliberately wrong reset_granularity produced identical capacities; "
         "the property test would not catch a real mis-declaration"
     )
+
+
+# --- unknown vendor columns: warn + drop (#560 decision, 2026-07-20) ----------
+
+
+def _minimal_declarations(**overrides):
+    from cellpycore.config import default_schema
+    from cellpycore.units import CellpyUnits
+
+    from cellpy.readers.instruments.declarations import LoaderDeclarations
+
+    schema = default_schema().raw
+    settings = dict(
+        column_map={
+            "Rec": schema.datapoint_num,
+            "Cyc": schema.cycle_num,
+            "Step": schema.step_num,
+            "T": schema.test_time,
+            "Epoch": schema.epoch_time_utc,
+            "I": schema.current,
+            "V": schema.potential,
+            "QC": schema.cumulative_charge_capacity,
+            "QD": schema.cumulative_discharge_capacity,
+        },
+        raw_units=CellpyUnits(),
+    )
+    settings.update(overrides)
+    return LoaderDeclarations(**settings)
+
+
+def _minimal_vendor_frame(**extra_columns):
+    import polars as pl
+
+    base = {
+        "Rec": [1, 2],
+        "Cyc": [1, 1],
+        "Step": [1, 1],
+        "T": [0.0, 1.0],
+        "Epoch": [1.6e9, 1.6e9 + 1],
+        "I": [0.1, 0.1],
+        "V": [3.0, 3.1],
+        "QC": [0.0, 0.1],
+        "QD": [0.0, 0.0],
+    }
+    base.update(extra_columns)
+    return pl.DataFrame(base)
+
+
+@pytest.mark.essential
+def test_unknown_vendor_column_warns_and_is_dropped(caplog):
+    from cellpy.readers.instruments.harmonize import harmonize
+
+    frame = _minimal_vendor_frame(Junk=[9, 9])
+    with caplog.at_level(logging.WARNING):
+        raw = harmonize(frame, _minimal_declarations(), test_id=1)
+
+    assert "Junk" in caplog.text, "no warning named the unrecognised column"
+    assert "Junk" not in raw.columns, "the unrecognised column leaked through"
+
+
+@pytest.mark.essential
+def test_declared_discards_are_dropped_silently(caplog):
+    """Columns in `dropped` are known — a warning would just be noise."""
+    from cellpy.readers.instruments.harmonize import harmonize
+
+    frame = _minimal_vendor_frame(StateFlag=["C", "D"])
+    declarations = _minimal_declarations(dropped=("StateFlag",))
+    with caplog.at_level(logging.WARNING):
+        raw = harmonize(frame, declarations, test_id=1)
+
+    assert "StateFlag" not in caplog.text
+    assert "StateFlag" not in raw.columns
+
+
+@pytest.mark.essential
+def test_a_column_cannot_be_both_declared_and_dropped():
+    from cellpy.exceptions import LoaderError
+
+    with pytest.raises(LoaderError, match="both declared and dropped"):
+        _minimal_declarations(dropped=("V",))
