@@ -52,6 +52,10 @@ PARITY_CASES = (
     # pec_csv is not configuration-driven; its parse()/declarations() are
     # hand-written (canonical rename in parse, static column map). Plan §2.6a.
     ("pec_csv", "testdata/data/pec.csv", {}),
+    # arbin_res reads an Access .res database (ODBC on Windows, mdbtools on
+    # posix). CI has mdbtools, so this runs there; environments without a
+    # backend skip gracefully (see _skip_if_unloadable), like the golden.
+    ("arbin_res", "testdata/data/20160805_test001_45_cc_01.res", {}),
 )
 
 #: Legacy post-processor → native columns it changes, for the ones that have no
@@ -94,8 +98,8 @@ def _parse_with_a_loader(instrument, source, kwargs):
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         vendor = loader.parse(source, **parse)
-    # config_params only exists on configuration-driven loaders; pec_csv has
-    # none, and only the post-processor excusal (_excused) reads it.
+    # config_params only exists on configuration-driven loaders; arbin_res and
+    # pec_csv have none, and only the post-processor excusal reads it.
     return vendor, loader.declarations(), getattr(loader, "config_params", None)
 
 
@@ -139,9 +143,30 @@ def _excused(config_params) -> set[str]:
     return excused
 
 
+def _skip_if_unloadable(instrument, source, kwargs):
+    """Skip when the loader's backend is unavailable, as the golden does.
+
+    Only ``arbin_res`` needs it: its Access-database backend (ODBC/mdbtools) is
+    not present everywhere. A missing backend is an environment fact, not a
+    parity failure, so it skips rather than fails — matching
+    ``LoaderGoldenSpec.skip_reason``.
+    """
+    import cellpy
+
+    try:
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            cellpy.get(
+                source, instrument=instrument, mass=1.0, testing=True, **kwargs
+            )
+    except Exception as exc:  # noqa: BLE001 — an unavailable backend, not a bug
+        pytest.skip(f"{instrument} loader unavailable here: {exc}")
+
+
 def _harmonized_and_legacy(instrument, source, kwargs):
     import cellpy
 
+    _skip_if_unloadable(instrument, source, kwargs)
     vendor, declarations, config_params = _parse_with_a_loader(
         instrument, source, kwargs
     )
