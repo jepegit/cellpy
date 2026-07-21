@@ -59,6 +59,10 @@ PARITY_CASES = (
     # arbin_sql_h5: the one arbin_sql variant with an in-repo fixture. Its
     # internal-resistance forward fill is a declared post hook (plan §2.6c).
     ("arbin_sql_h5", "testdata/data/20200624_test001_cc_01.h5", {}),
+    # biologics_mpr: parse() runs the legacy mpr derivations (cycle from
+    # half_cycle, signed-capacity split, datetime from log start), so the vendor
+    # frame already carries cellpy names; declarations() maps them to native.
+    ("biologics_mpr", "testdata/data/biol.mpr", {}),
 )
 
 #: Legacy post-processor → native columns it changes, for the ones that have no
