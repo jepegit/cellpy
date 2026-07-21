@@ -158,3 +158,28 @@ def test_query_instrument(parameter, loader, expected):
         instrument_factory.register_builder(instrument_id, instrument)
 
     assert instrument_factory.query(loader, parameter) == expected
+
+
+@pytest.mark.parametrize("instrument", ["custom", "local_instrument"])
+def test_factory_loader_is_package_path_class(parameters, instrument):
+    """A registry-created loader must be the *same class object* as the one
+    imported by package path.
+
+    Loading in-tree loaders by file path used to create a duplicate module
+    (e.g. a bare ``custom`` alongside ``cellpy.readers.instruments.custom``),
+    so ``isinstance`` checks failed, class-level state existed twice, and
+    monkeypatching the package-path class silently missed the instantiated one.
+    """
+    import importlib
+
+    module = importlib.import_module(f"cellpy.readers.instruments.{instrument}")
+
+    factory = core.generate_default_factory()
+    loader = factory.create(
+        instrument,
+        instrument_file=parameters.custom_instrument_definitions_file,
+    )
+
+    assert type(loader).__module__ == f"cellpy.readers.instruments.{instrument}"
+    assert type(loader) is module.DataLoader
+    assert isinstance(loader, module.DataLoader)
