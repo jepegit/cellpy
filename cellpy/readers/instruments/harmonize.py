@@ -152,11 +152,18 @@ def _convert_timestamps(
         series = raw[column]
         if series.dtype.time_zone is None:
             if declarations.timezone is None:
-                # The shared D3 rule: naive means local. Say so, because it is
-                # an assumption about someone else's data.
+                # Decision (2026-07-21, #560): a naive timestamp is read as
+                # **UTC**, not the host's local zone. This matches
+                # ``cellpycore.timestamps`` (the canonical-timestamp authority)
+                # and keeps the result reproducible wherever analysis runs —
+                # interpreting naive time as the *analysis* host's zone would
+                # give the same file different absolute times on a lab laptop
+                # and a CI runner. Still a warning, because it is an assumption
+                # about someone else's data; silence a loader that knows better
+                # by declaring ``timezone``.
                 logging.warning(
-                    "naive timestamps interpreted as local time; declare a "
-                    "timezone in the loader declarations to be explicit"
+                    "naive timestamps interpreted as UTC; declare a timezone in "
+                    "the loader declarations if the cycler's local zone is known"
                 )
                 series = series.dt.replace_time_zone("UTC")
             else:
