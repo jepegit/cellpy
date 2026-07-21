@@ -67,6 +67,14 @@ class ReaderConfig(BaseModel):
     auto_dirs: bool = True
     max_raw_files_to_merge: int = 20
     jupyter_executable: str = "jupyter"
+    # Phase B / #560 flag day: opt-in to producing the native raw from the
+    # two-stage harmonize(parse()) pipeline rather than the legacy
+    # loader()+to_native rename. Default OFF: the flip currently drops aux
+    # columns not in aux_map and renumbers data_point, and applies to loaders
+    # whose two-stage path is unverified, so it is not yet safe as the default.
+    # Turn on per session once a loader is hardened. Single-file loads only;
+    # multi-file merges and parse failures keep the legacy path regardless.
+    use_harmonized_raw: bool = False
 
 
 class DbConfig(BaseModel):
