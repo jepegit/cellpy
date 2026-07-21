@@ -15,7 +15,7 @@ from typing import List, Union
 
 import pandas as pd
 
-from cellpy.exceptions import WrongFileVersion
+from cellpy.exceptions import LoaderError, WrongFileVersion
 import cellpy.internals.connections
 import cellpy.readers.data_structures as core
 from cellpy.parameters.internal_settings import headers_normal, merge_raw_units
@@ -53,10 +53,16 @@ def find_delimiter_and_start(
 ):
     """Function to automatically detect the delimiter and what line the first data appears on.
 
-    This function is fairly stupid. It splits the data into two parts, the (possible) header part
-    (using the number of lines defined in ``checking_length_header``) and the rest of the data.
-    Then it counts the appearances of the different possible delimiters in the rest of
-    the data part, and then selects a delimiter if it has unique counts for all the lines.
+    This function is fairly stupid. It reads a window of up to
+    ``checking_length_whole`` non-empty lines and treats up to
+    ``checking_length_header`` of the leading ones as a possible header. It
+    counts the appearances of the different possible delimiters in the data
+    rows past that header and selects a delimiter if its per-row count is both
+    uniform and positive.
+
+    The header window is clamped to the actual number of lines read, so a short
+    file - down to a header line and a single data row - is inspected correctly
+    rather than running off the end of the sample.
 
     The first line is defined as where the delimiter is used same number of times (probably a header line).
 
@@ -71,6 +77,10 @@ def find_delimiter_and_start(
         separator: the delimiter.
         first_index: the index of the first line with data.
         encoding: the encoding (None if not found or checked).
+
+    Raises:
+        LoaderError: if the file has no inspectable content, no candidate
+            delimiter fits the data rows, or the header row cannot be located.
     """
 
     if separators is None:
@@ -91,7 +101,6 @@ def find_delimiter_and_start(
             r = results.best()
             encoding = r.encoding
 
-    empty_lines = 0
     with open(file_name, "r") as fin:
         lines = []
         for j in range(checking_length_whole):
@@ -100,18 +109,24 @@ def find_delimiter_and_start(
                 break
             if len(line.strip()):
                 lines.append(line)
-            else:
-                empty_lines += 1
 
-    checking_length_whole -= empty_lines
-    if checking_length_header - empty_lines < 1:
-        checking_length_header = checking_length_whole // 2
+    if not lines:
+        raise LoaderError(
+            f"could not detect a delimiter in {file_name}: "
+            "the file has no non-empty lines to inspect"
+        )
+
     separator, number_of_hits = _find_separator(
-        checking_length_whole - checking_length_header, lines, separators
+        lines, separators, checking_length_header
     )
 
     if separator is None:
-        raise IOError(f"could not decide delimiter in {file_name}")
+        candidates = ", ".join(repr(s) for s in separators)
+        raise LoaderError(
+            f"could not detect a delimiter in {file_name}: none of the "
+            f"candidate delimiters ({candidates}) appears a consistent, "
+            "positive number of times across the data rows"
+        )
 
     if separator == "\t":
         logging.debug("seperator = TAB")
@@ -123,6 +138,12 @@ def find_delimiter_and_start(
     first_index = _find_first_line_whit_delimiter(
         checking_length_header, lines, number_of_hits, separator
     )
+    if first_index is None:
+        raise LoaderError(
+            f"detected delimiter {separator!r} in {file_name} but could not "
+            f"locate the header row within the first {checking_length_header} "
+            "lines"
+        )
     logging.debug(f"First line with delimiter: {first_index}")
     return separator, first_index, encoding
 
@@ -130,40 +151,51 @@ def find_delimiter_and_start(
 def _find_first_line_whit_delimiter(
     checking_length_header, lines, number_of_hits, separator
 ):
+    """Return the index of the first line that carries the data-row delimiter count.
+
+    Only the first ``checking_length_header`` lines are searched (the header is
+    assumed to live there). Returns ``None`` if no line matches, so the caller
+    can raise a delimiter error that names the file.
+    """
     first_part = lines[:checking_length_header]
-    if number_of_hits is None:
-        # remark! if number of hits (i.e. how many separators pr line) is not given, we set it to the amount of
-        # separators we find in the third last line.
-        number_of_hits = lines[-3].count(separator)
-    return [
-        line_number
-        for line_number, line in enumerate(first_part)
-        if line.count(separator) == number_of_hits
-    ][0]
+    for line_number, line in enumerate(first_part):
+        if line.count(separator) == number_of_hits:
+            return line_number
+    return None
 
 
-def _find_separator(checking_length, lines, separators):
+def _find_separator(lines, separators, checking_length_header):
+    """Pick the delimiter from the data rows that follow a possible header.
+
+    The header may be up to ``checking_length_header`` lines, but a short file
+    cannot hold that many header lines - so the header window is clamped to the
+    number of lines actually read, always leaving at least one data row to
+    inspect. The delimiter is the highest-priority candidate whose per-row
+    count is both uniform and positive across those data rows.
+
+    Returns ``(None, None)`` when no candidate qualifies.
+    """
     logging.debug("searching for separators")
-    separator = None
-    number_of_hits = None
-    last_part = lines[
-        checking_length:-1
-    ]  # don't include last line since it might be corrupted
-    check_sep = dict()
+    n = len(lines)
 
-    for i, v in enumerate(separators):
-        check_sep[i] = [line.count(v) for line in last_part]
+    # reserve up to checking_length_header leading lines as a possible header,
+    # but never so many that no data row is left to inspect.
+    header_window = min(checking_length_header, n - 1) if n > 1 else 0
+    data_lines = lines[header_window:]
 
-    unique_sep_counts = {i: set(v) for i, v in check_sep.items()}
+    # the final line can be truncated mid-write, so drop it - but only when a
+    # data row can still be spared (a header + single data row must keep it).
+    if len(data_lines) > 1:
+        data_lines = data_lines[:-1]
 
-    for index, value in unique_sep_counts.items():
-        value_as_list = list(value)
-        number_of_hits = value_as_list[0]
-        if len(value_as_list) == 1 and number_of_hits > 0:
-            separator = separators[index]
-            break
+    for candidate in separators:
+        counts = {line.count(candidate) for line in data_lines}
+        if len(counts) == 1:
+            number_of_hits = counts.pop()
+            if number_of_hits > 0:
+                return candidate, number_of_hits
 
-    return separator, number_of_hits
+    return None, None
 
 
 def query_csv(
