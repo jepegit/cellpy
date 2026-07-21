@@ -851,7 +851,7 @@ class TxtLoader(AutoLoader, ABC):
 
         if unit_labels := kwargs.get("unit_labels", None):
             logging.critical(f"overriding unit_labels: {unit_labels}")
-            self.config_params.raw_limits.update(unit_labels)
+            self.config_params.unit_labels.update(unit_labels)
 
         if raw_limits := kwargs.get("raw_limits", None):
             logging.critical(f"overriding raw_limits: {raw_limits}")
