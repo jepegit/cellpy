@@ -888,6 +888,10 @@ class DataLoader(BaseLoader):
             column_map=column_map,
             raw_units=CellpyUnits(**raw_units),
             passthrough=passthrough,
+            # Arbin stores DateTime as an Excel serial (days since 1899-12-30);
+            # harmonize() derives epoch_time_utc from it. This replaces the
+            # xldate conversion the legacy _post_process ran on the same column.
+            datetime_kind="excel_serial",
         )
 
     def loader(

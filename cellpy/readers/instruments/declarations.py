@@ -26,6 +26,9 @@ from cellpy.exceptions import LoaderError
 #: ``aux_<quantity>_<name>`` — the harmonized-raw auxiliary naming scheme.
 _AUX_PATTERN = re.compile(r"^aux_(temperature|potential|pressure|resistance)_\w+$")
 
+#: The forms a ``date_time`` passthrough can take; see ``datetime_kind``.
+DATETIME_KINDS = frozenset({"datetime", "string", "epoch_seconds", "excel_serial"})
+
 
 class ResetGranularity(StrEnum):
     """How often a vendor's cumulative column resets to zero.
@@ -105,6 +108,18 @@ class LoaderDeclarations:
     #: no error. Neware and Maccor both ship such columns, which is why it is a
     #: framework feature rather than a per-loader post hook.
     duration_columns: tuple[str, ...] = ()
+    #: How the ``date_time`` passthrough encodes its absolute timestamp, so
+    #: ``harmonize()`` can parse it and derive the required ``epoch_time_utc``
+    #: (int64 ns UTC). ``None`` means the loader carries no absolute timestamp.
+    #: One of :data:`DATETIME_KINDS`:
+    #:
+    #: - ``"datetime"``  — already a polars ``Datetime`` (pec).
+    #: - ``"string"``    — a wall-clock string; parsed with ``pandas.to_datetime``
+    #:   to match the legacy ``convert_date_time_to_datetime`` exactly (maccor's
+    #:   US ``MM/DD/YYYY`` and neware's ISO both go through the same parser).
+    #: - ``"epoch_seconds"`` — float seconds since the Unix epoch.
+    #: - ``"excel_serial"``  — Excel serial days (arbin ``.res``).
+    datetime_kind: str | None = None
 
     def __post_init__(self) -> None:
         self._validate()
@@ -181,6 +196,12 @@ class LoaderDeclarations:
             raise LoaderError(
                 f"duration_columns declares {bad_durations}, which column_map "
                 f"never produces; the declaration would have no effect."
+            )
+
+        if self.datetime_kind is not None and self.datetime_kind not in DATETIME_KINDS:
+            raise LoaderError(
+                f"datetime_kind {self.datetime_kind!r} is not one of "
+                f"{sorted(DATETIME_KINDS)}."
             )
 
         bad_aux = sorted(

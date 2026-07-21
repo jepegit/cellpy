@@ -362,6 +362,9 @@ class DataLoader(BaseLoader):
             column_map=column_map,
             raw_units=CellpyUnits(**raw_units),
             passthrough=passthrough,
+            # parse() already converts the vendor date_time to a datetime, so
+            # harmonize() only has to derive epoch_time_utc from it.
+            datetime_kind="datetime",
         )
 
     def _rename_to_canonical(self, df, pec_columns):

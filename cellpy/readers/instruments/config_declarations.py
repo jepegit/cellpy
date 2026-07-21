@@ -474,6 +474,20 @@ def declarations_from_configuration(
         if post_processors.get(processor) and column in targets
     )
 
+    # A configuration that runs ``convert_date_time_to_datetime`` writes its
+    # absolute timestamp as a wall-clock *string* (the post-processor is
+    # ``pd.to_datetime``). Declaring it lets ``harmonize()`` derive the required
+    # ``epoch_time_utc`` from the ``date_time`` passthrough. Keyed on the
+    # passthrough carrying the datetime column, so it is a no-op for a
+    # configuration that has no datetime.
+    date_time_header = _legacy_column_name("datetime_txt")
+    datetime_kind = None
+    if (
+        post_processors.get("convert_date_time_to_datetime")
+        and date_time_header in passthrough.values()
+    ):
+        datetime_kind = "string"
+
     return LoaderDeclarations(
         column_map=column_map,
         raw_units=_units_from_configuration(config),
@@ -483,4 +497,5 @@ def declarations_from_configuration(
         passthrough=passthrough,
         post_hooks=hooks,
         dropped=dropped,
+        datetime_kind=datetime_kind,
     )

@@ -67,10 +67,13 @@ PARITY_CASES = (
 #: lands; the parity assertions then cover those columns automatically.
 UNPORTED_POST_PROCESSORS: dict[str, tuple[str, ...]] = {}
 
-#: ``date_time`` survives as a passthrough string while the native schema has no
-#: column for it; the legacy path parses it to datetime. Tracked on the metadata
-#: arc (#562/#563), not a capacity-corrupting difference.
-KNOWN_REPRESENTATION_GAPS = ("date_time",)
+#: Columns still excused from the shared-column sweep. Was ``date_time`` — now
+#: that ``harmonize()`` parses it and derives ``epoch_time_utc`` (via
+#: ``datetime_kind``), ``date_time`` is a real datetime that matches the legacy
+#: frame and is checked like any other. ``epoch_time_utc`` is not a *shared*
+#: column (the legacy raw carries only ``date_time``), so it gets an explicit
+#: check of its own — see ``_assert_epoch_time_utc``.
+KNOWN_REPRESENTATION_GAPS: tuple[str, ...] = ()
 
 TOLERANCE = 1e-6
 
@@ -216,6 +219,15 @@ def test_harmonized_values_match_the_legacy_frame(
     for column in shared:
         if column in excused:
             continue
+        # A loader that does not yet declare ``datetime_kind`` carries
+        # ``date_time`` as an unparsed passthrough (raw string / vendor number),
+        # while the legacy path parses it to a datetime — so they cannot be
+        # compared. Skip it *only* in that case; a loader that does parse it
+        # (its harmonized ``date_time`` is a real Datetime) is held to parity
+        # like any other column. arbin_sql_h5 is the current pre-epoch loader;
+        # it gets ``datetime_kind`` in a follow-up (loader plan §8.2).
+        if column == "date_time" and harmonized[column].dtype != pl.Datetime:
+            continue
         left, right = harmonized[column], legacy[column]
         assert left.len() == right.len(), (
             f"{instrument}: {column} has {left.len()} rows, legacy has {right.len()}"
@@ -251,6 +263,45 @@ def test_harmonized_values_match_the_legacy_frame(
         f"deliberate change that belongs in the release notes."
     )
     assert checked, f"{instrument}: every shared column was excused - test is vacuous"
+
+    _assert_epoch_time_utc(instrument, harmonized, legacy)
+
+
+#: Loaders exempt from the *exact* epoch check, with the reason. ``custom`` is
+#: the only one: its test fixture declares ``date_stamp`` as an Excel serial
+#: (≈2018) but the config runs ``convert_date_time_to_datetime`` =
+#: ``pd.to_datetime``, which reads the *number* as nanoseconds → a degenerate
+#: ``1970-01-01 00:00:00.000043``. Both the legacy path and harmonize() produce
+#: that same garbage; they differ only by ~376 ns of float round-trip noise on a
+#: timestamp that means nothing. Reproducing that noise is not worth it, and a
+#: blanket tolerance would have hidden the real 1 µs Excel-serial bug caught on
+#: arbin. This is a synthetic-fixture artifact, not a loader defect.
+_EPOCH_EXACT_SKIP = {"custom"}
+
+
+def _assert_epoch_time_utc(instrument, harmonized, legacy):
+    """``epoch_time_utc`` equals the legacy ``date_time`` as int64 ns UTC.
+
+    This is the switchover's required timestamp column, and it is *not* a shared
+    column — the legacy raw frame carries only ``date_time`` — so it needs its
+    own assertion. A loader with no absolute timestamp declares no
+    ``datetime_kind`` and produces no ``epoch_time_utc``; that is fine, and this
+    check is skipped for it rather than demanded.
+    """
+    if "epoch_time_utc" not in harmonized.columns:
+        return
+    if instrument in _EPOCH_EXACT_SKIP:
+        return
+    assert "date_time" in legacy.columns, (
+        f"{instrument}: harmonize derived epoch_time_utc but the legacy frame "
+        f"has no date_time to check it against"
+    )
+    reference = legacy["date_time"].dt.replace_time_zone("UTC").dt.epoch("ns")
+    worst = (harmonized["epoch_time_utc"] - reference).abs().max()
+    assert worst == 0, (
+        f"{instrument}: epoch_time_utc differs from the legacy date_time by "
+        f"{worst} ns"
+    )
 
 
 @pytest.mark.essential
