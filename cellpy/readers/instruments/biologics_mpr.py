@@ -169,6 +169,77 @@ class DataLoader(BaseLoader):
         """
         raise NotImplementedError
 
+    def parse(self, source, bad_steps=None, **kwargs):
+        """Vendor stage (#560): read the mpr file into a cellpy-named frame.
+
+        The two-stage counterpart to :meth:`loader`, tapping the same
+        ``_load_mpr_data`` + ``_rename_headers`` the legacy path uses, and
+        stopping before the (empty) summary. Unlike the Arbin/PEC loaders,
+        biologics' ``_rename_headers`` is not a plain rename: it *derives*
+        columns the file does not store directly — the cycle index from
+        ``half_cycle``, the charge/discharge split from the signed capacity, and
+        the wall-clock ``date_time`` from the log's start plus elapsed seconds.
+        Those derivations are genuine mpr decoding, not declarative renames or
+        post hooks, so they stay in ``parse()``. The frame it returns therefore
+        already carries cellpy header *names*; ``declarations()`` maps those to
+        native and ``harmonize()`` casts and validates.
+        """
+        import polars as pl
+        from pathlib import Path
+
+        self.name = source if isinstance(source, Path) else Path(source)
+        self.copy_to_temporary()
+        self.mpr_data = None
+        self.mpr_log = None
+        self.mpr_settings = None
+        self._load_mpr_data(self.temp_file_path, bad_steps)
+        self._rename_headers()
+        self._parsed = True
+        return pl.from_pandas(self.mpr_data.reset_index(drop=True))
+
+    def declarations(self):
+        """Declarations for Bio-Logic mpr (#560).
+
+        The parsed frame already uses cellpy header names, so the map is
+        ``derive_column_maps`` over the identity ``{legacy_attr -> its own header
+        name}``, restricted to the columns this file actually produced. The many
+        raw mpr columns that are not cellpy headers (``flags``, ``Ns``, the EIS
+        impedance channels …) are neither mapped nor kept — the same columns the
+        native runtime drops from the legacy frame — so they warn-and-drop.
+
+        ``datetime_kind="datetime"``: ``_generate_datetime`` already built a real
+        datetime (log start + elapsed seconds), and — unlike Arbin — via plain
+        arithmetic, not host-local ``fromtimestamp``, so ``epoch_time_utc``
+        derives with exact parity against the legacy frame.
+        """
+        from cellpycore.units import CellpyUnits
+
+        from cellpy.exceptions import LoaderError
+        from cellpy.readers.instruments.config_declarations import derive_column_maps
+        from cellpy.readers.instruments.declarations import LoaderDeclarations
+
+        if not getattr(self, "_parsed", False):
+            raise LoaderError("biologics_mpr.declarations() was called before parse().")
+
+        produced = set(self.mpr_data.columns)
+        renaming = {
+            attr: name
+            for attr, name in get_headers_normal().items()
+            if name in produced
+        }
+        column_map, passthrough, _ = derive_column_maps(renaming)
+        raw_units = {
+            key: value
+            for key, value in self.get_raw_units().items()
+            if hasattr(CellpyUnits(), key)
+        }
+        return LoaderDeclarations(
+            column_map=column_map,
+            raw_units=CellpyUnits(**raw_units),
+            passthrough=passthrough,
+            datetime_kind="datetime",
+        )
+
     def loader(self, file_name, bad_steps=None, **kwargs):
         """Loads data from BioLogics mpr files.
 
