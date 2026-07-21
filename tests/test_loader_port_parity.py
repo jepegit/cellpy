@@ -75,6 +75,19 @@ UNPORTED_POST_PROCESSORS: dict[str, tuple[str, ...]] = {}
 #: check of its own — see ``_assert_epoch_time_utc``.
 KNOWN_REPRESENTATION_GAPS: tuple[str, ...] = ()
 
+#: Loaders whose legacy path decodes the timestamp in the analysis host's
+#: **local** zone. Arbin stores the instant as integer 100 ns ticks since the
+#: Unix epoch and the legacy ``from_arbin_to_datetime`` decodes it with
+#: ``datetime.fromtimestamp`` — host-local. The native path derives
+#: ``epoch_time_utc`` as absolute UTC (what the column *means*), so the two agree
+#: only on a UTC host and differ by exactly the host offset otherwise (7200 s on
+#: a CEST laptop). The host-local legacy value is therefore not a valid oracle
+#: for an absolute-UTC column: ``date_time`` is excused from the value sweep and
+#: the UTC epoch-exact check is skipped for these. The derivation is instead
+#: pinned host-independently against the vendor ticks in
+#: ``tests/test_arbin_sql_h5_two_stage.py``.
+_LEGACY_DATETIME_IS_HOST_LOCAL = {"arbin_sql_h5", "arbin_sql", "arbin_sql_7"}
+
 TOLERANCE = 1e-6
 
 
@@ -224,9 +237,13 @@ def test_harmonized_values_match_the_legacy_frame(
         # while the legacy path parses it to a datetime — so they cannot be
         # compared. Skip it *only* in that case; a loader that does parse it
         # (its harmonized ``date_time`` is a real Datetime) is held to parity
-        # like any other column. arbin_sql_h5 is the current pre-epoch loader;
-        # it gets ``datetime_kind`` in a follow-up (loader plan §8.2).
-        if column == "date_time" and harmonized[column].dtype != pl.Datetime:
+        # like any other column — unless its legacy path is host-local (Arbin),
+        # where the two legitimately differ by the host offset and the legacy
+        # value is not a valid oracle (see ``_LEGACY_DATETIME_IS_HOST_LOCAL``).
+        if column == "date_time" and (
+            harmonized[column].dtype != pl.Datetime
+            or instrument in _LEGACY_DATETIME_IS_HOST_LOCAL
+        ):
             continue
         left, right = harmonized[column], legacy[column]
         assert left.len() == right.len(), (
@@ -291,6 +308,11 @@ def _assert_epoch_time_utc(instrument, harmonized, legacy):
     if "epoch_time_utc" not in harmonized.columns:
         return
     if instrument in _EPOCH_EXACT_SKIP:
+        return
+    if instrument in _LEGACY_DATETIME_IS_HOST_LOCAL:
+        # Legacy date_time is host-local here; comparing an absolute-UTC column
+        # to it would fail by the host offset off-UTC. Pinned against the vendor
+        # ticks instead (test_arbin_sql_h5_two_stage.py).
         return
     assert "date_time" in legacy.columns, (
         f"{instrument}: harmonize derived epoch_time_utc but the legacy frame "

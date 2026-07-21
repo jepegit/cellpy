@@ -148,6 +148,42 @@ class DataLoader(BaseLoader):
         raw_limits["ir_change"] = 0.00001
         return raw_limits
 
+    def parse(self, source, **kwargs):
+        """Vendor stage (#560): read the xlsx export into an Arbin-named frame.
+
+        Taps the same ``_parse_xlsx_data`` read as :meth:`loader`, stopping
+        before the rename. ``_parse_xlsx_data`` passes ``parse_dates=[Date_Time]``
+        to pandas, so the vendor ``Date_Time`` is already a real datetime — hence
+        ``declarations`` sets ``datetime_kind="datetime"``. No in-repo xlsx
+        fixture exists, so the port is exercised at the declaration level.
+        """
+        import polars as pl
+        from pathlib import Path
+
+        self.name = source if isinstance(source, Path) else Path(source)
+        self.copy_to_temporary()
+        data_df = self._parse_xlsx_data()
+        self._parsed = True
+        return pl.from_pandas(data_df.reset_index(drop=True))
+
+    def declarations(self):
+        """Declarations for the Arbin SQL Server xlsx export (#560).
+
+        ``datetime_kind="datetime"``: ``_parse_xlsx_data`` already parsed
+        ``Date_Time`` into a datetime, so ``harmonize()`` passes it through.
+        """
+        from cellpy.readers.instruments.config_declarations import (
+            declarations_from_renaming,
+        )
+
+        return declarations_from_renaming(
+            self.get_raw_units(),
+            normal_headers_renaming_dict,
+            "datetime",
+            getattr(self, "_parsed", False),
+            "arbin_sql_xlsx",
+        )
+
     # TODO: rename this (for all instruments) to e.g. load
     # TODO: implement more options (bad_cycles, ...)
     def loader(self, name, **kwargs):

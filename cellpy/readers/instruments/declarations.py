@@ -27,7 +27,9 @@ from cellpy.exceptions import LoaderError
 _AUX_PATTERN = re.compile(r"^aux_(temperature|potential|pressure|resistance)_\w+$")
 
 #: The forms a ``date_time`` passthrough can take; see ``datetime_kind``.
-DATETIME_KINDS = frozenset({"datetime", "string", "epoch_seconds", "excel_serial"})
+DATETIME_KINDS = frozenset(
+    {"datetime", "string", "epoch_seconds", "excel_serial", "arbin_epoch"}
+)
 
 
 class ResetGranularity(StrEnum):
@@ -119,6 +121,8 @@ class LoaderDeclarations:
     #:   US ``MM/DD/YYYY`` and neware's ISO both go through the same parser).
     #: - ``"epoch_seconds"`` — float seconds since the Unix epoch.
     #: - ``"excel_serial"``  — Excel serial days (arbin ``.res``).
+    #: - ``"arbin_epoch"``   — integer 100 ns ticks since the Unix epoch, the
+    #:   form the Arbin SQL Server / h5 exports use (``epoch seconds x 1e7``).
     datetime_kind: str | None = None
 
     def __post_init__(self) -> None:
