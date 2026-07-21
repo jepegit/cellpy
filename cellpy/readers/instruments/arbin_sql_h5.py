@@ -110,6 +110,60 @@ class DataLoader(BaseLoader):
         raw_limits["ir_change"] = 0.00001
         return raw_limits
 
+    def parse(self, source, **kwargs):
+        """Vendor stage (#560): read the h5 export into a frame with Arbin names.
+
+        The two-stage counterpart to :meth:`loader`, tapping the same
+        ``_parse_h5_data`` read so the two cannot drift. It stops before
+        ``_post_process`` — the rename, the datetime conversion and the
+        internal-resistance fill — all of which are now declared and handled by
+        ``harmonize()`` and the declared post hooks.
+
+        ``drop_duplicates`` is kept here because it is vendor cleanup (the export
+        repeats rows), so the vendor frame is what a de-duplicated read yields.
+        """
+        import polars as pl
+
+        self.name = source if isinstance(source, Path) else Path(source)
+        self.copy_to_temporary()
+        data_df = self._parse_h5_data()["data_df"].drop_duplicates()
+        self._parsed = True
+        return pl.from_pandas(data_df.reset_index(drop=True))
+
+    def declarations(self):
+        """Declarations for the Arbin SQL h5 export (#560).
+
+        Derived from the module ``normal_headers_renaming_dict`` — the same
+        ``{cellpy attr → Arbin column}`` shape the other Arbin loaders carry —
+        so ``derive_column_maps`` gives Arbin → native with the provenance rule
+        (``Test_ID`` dropped) for free. The one non-declarative step, the
+        internal-resistance forward fill, is a declared post hook.
+        """
+        from cellpycore.units import CellpyUnits
+
+        from cellpy.exceptions import LoaderError
+        from cellpy.readers.instruments.config_declarations import derive_column_maps
+        from cellpy.readers.instruments.declarations import LoaderDeclarations
+        from cellpy.readers.instruments.hooks import forward_fill
+
+        if not getattr(self, "_parsed", False):
+            raise LoaderError(
+                "arbin_sql_h5.declarations() was called before parse()."
+            )
+
+        column_map, passthrough, _ = derive_column_maps(dict(normal_headers_renaming_dict))
+        raw_units = {
+            key: value
+            for key, value in self.get_raw_units().items()
+            if hasattr(CellpyUnits(), key)
+        }
+        return LoaderDeclarations(
+            column_map=column_map,
+            raw_units=CellpyUnits(**raw_units),
+            passthrough=passthrough,
+            post_hooks=(forward_fill(columns=("Internal_Resistance",)),),
+        )
+
     # TODO: rename this (for all instruments) to e.g. load
     # TODO: implement more options (bad_cycles, ...)
     def loader(self, name, **kwargs):
