@@ -31,6 +31,37 @@ import polars as pl
 from cellpy.exceptions import LoaderError
 
 
+def forward_fill(
+    *, columns: Sequence[str]
+) -> Callable[[pl.DataFrame], pl.DataFrame]:
+    """Carry the last value forward over the nulls that follow it.
+
+    For measurements a tester records only when they change — internal
+    resistance is the live case: the Arbin SQL export leaves it null on every
+    row between measurements, and the reader fills it forward so each row
+    carries the resistance in effect at that point.
+
+    Leading nulls (rows before the first measurement) stay null: a forward fill
+    has nothing to carry into them. That matches the legacy path exactly. The
+    legacy ``arbin_sql_h5`` loader also runs a "backward fill" step, but that
+    step is a copy-paste slip that calls ``ffill`` a second time (a no-op), so
+    reproducing only the forward fill is faithful, not a simplification.
+
+    Args:
+        columns: the vendor columns to fill. Absent columns are skipped, so a
+            declaration can name a column a given file happens not to carry.
+    """
+
+    def hook(frame: pl.DataFrame) -> pl.DataFrame:
+        present = [column for column in columns if column in frame.columns]
+        if not present:
+            return frame
+        return frame.with_columns(pl.col(column).forward_fill() for column in present)
+
+    hook.__name__ = f"forward_fill{list(columns)}"
+    return hook
+
+
 def drop_last_row_if_worse(
     *, columns: Sequence[str]
 ) -> Callable[[pl.DataFrame], pl.DataFrame]:

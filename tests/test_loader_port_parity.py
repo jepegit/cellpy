@@ -56,6 +56,9 @@ PARITY_CASES = (
     # posix). CI has mdbtools, so this runs there; environments without a
     # backend skip gracefully (see _skip_if_unloadable), like the golden.
     ("arbin_res", "testdata/data/20160805_test001_45_cc_01.res", {}),
+    # arbin_sql_h5: the one arbin_sql variant with an in-repo fixture. Its
+    # internal-resistance forward fill is a declared post hook (plan §2.6c).
+    ("arbin_sql_h5", "testdata/data/20200624_test001_cc_01.h5", {}),
 )
 
 #: Legacy post-processor → native columns it changes, for the ones that have no
@@ -174,8 +177,18 @@ def _harmonized_and_legacy(instrument, source, kwargs):
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
+        # auto_summary=False keeps the reference at the *loader* stage, which is
+        # what parse()+harmonize() produce. Most loaders are unaffected, but
+        # arbin_sql_h5's make_summary prunes duplicate raw rows as a documented
+        # side effect (47 -> 34, issue #385, value-identical), and comparing a
+        # loader-stage frame against a post-summary one is not a like-for-like.
         cell = cellpy.get(
-            source, instrument=instrument, mass=1.0, testing=True, **kwargs
+            source,
+            instrument=instrument,
+            mass=1.0,
+            testing=True,
+            auto_summary=False,
+            **kwargs,
         )
     legacy = pl.from_pandas(cell.data.raw.reset_index(drop=True))
     return harmonized, legacy, config_params
