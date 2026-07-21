@@ -21,6 +21,7 @@ from cellpy.exceptions import LoaderError
 from cellpy.readers.instruments.hooks import (
     cycle_number_not_zero,
     drop_last_row_if_worse,
+    forward_fill,
     state_splitter,
 )
 
@@ -331,3 +332,34 @@ def test_no_checkable_column_raises_rather_than_silently_keeping_everything():
 
     with pytest.raises(LoaderError, match="no column it could check"):
         drop_last_row_if_worse(columns=("nope",))(frame)
+
+
+# -- forward fill (#560) -------------------------------------------------------
+
+
+@pytest.mark.essential
+def test_forward_fill_carries_values_over_nulls():
+    frame = pl.DataFrame({"ir": [None, 1.0, None, None, 2.0, None]})
+
+    out = forward_fill(columns=("ir",))(frame)
+
+    assert out["ir"].to_list() == [None, 1.0, 1.0, 1.0, 2.0, 2.0]
+
+
+@pytest.mark.essential
+def test_forward_fill_leaves_leading_nulls_null():
+    """A forward fill has nothing to carry into rows before the first value."""
+    frame = pl.DataFrame({"ir": [None, None, 3.0]})
+
+    out = forward_fill(columns=("ir",))(frame)
+
+    assert out["ir"].to_list() == [None, None, 3.0]
+
+
+@pytest.mark.essential
+def test_forward_fill_skips_absent_columns():
+    frame = pl.DataFrame({"other": [1.0, 2.0]})
+
+    out = forward_fill(columns=("ir",))(frame)
+
+    assert out.columns == ["other"]
