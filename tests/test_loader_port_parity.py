@@ -49,6 +49,9 @@ PARITY_CASES = (
         "testdata/data/custom_data_001.csv",
         {"instrument_file": "testdata/data/custom_instrument_001.yml"},
     ),
+    # pec_csv is not configuration-driven; its parse()/declarations() are
+    # hand-written (canonical rename in parse, static column map). Plan §2.6a.
+    ("pec_csv", "testdata/data/pec.csv", {}),
 )
 
 #: Legacy post-processor → native columns it changes, for the ones that have no
@@ -91,7 +94,9 @@ def _parse_with_a_loader(instrument, source, kwargs):
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         vendor = loader.parse(source, **parse)
-    return vendor, loader.declarations(), loader.config_params
+    # config_params only exists on configuration-driven loaders; pec_csv has
+    # none, and only the post-processor excusal (_excused) reads it.
+    return vendor, loader.declarations(), getattr(loader, "config_params", None)
 
 
 def _numeric(series: pl.Series) -> pl.Series | None:
@@ -187,8 +192,18 @@ def test_harmonized_values_match_the_legacy_frame(
                 mismatched.append(f"{column} (values differ)")
             checked.append(column)
             continue
+        # Compare the null masks first: a difference in *which* rows are
+        # populated is a real disagreement that the numeric diff would hide,
+        # because subtraction yields null wherever either side is null. A
+        # column that is all-null on both sides (pec carries several — sparse
+        # per-measurement columns) then agrees, rather than reading as a
+        # spurious ``max abs diff None``.
+        if not (left_n.is_null() == right_n.is_null()).all():
+            mismatched.append(f"{column} (different null positions)")
+            checked.append(column)
+            continue
         worst = (left_n - right_n).abs().max()
-        if worst is None or worst > TOLERANCE:
+        if worst is not None and worst > TOLERANCE:
             mismatched.append(f"{column} (max abs diff {worst})")
         checked.append(column)
 
