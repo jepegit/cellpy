@@ -605,3 +605,41 @@ def test_a_genuinely_stray_value_still_becomes_null_and_warns(caplog):
 
     assert raw[SCHEMA.current].to_list() == [0.1, None]
     assert SCHEMA.current in caplog.text, "the partial loss was silent"
+
+
+# -- naive timestamps are read as UTC (#560 decision, 2026-07-21) ---------------
+
+
+@pytest.mark.essential
+def test_a_naive_datetime_epoch_column_is_read_as_utc():
+    """Decision (#560): a naive vendor timestamp is UTC, not the host's zone.
+
+    Stamping UTC onto the wall-clock value (rather than shifting from some
+    assumed local zone) is what keeps the result reproducible wherever analysis
+    runs. Pinned so the decision cannot drift back to "local time".
+    """
+    import datetime as dt
+
+    frame = _minimal_vendor_frame()
+    # A naive datetime at 1970-01-01 00:00:01 UTC → 1_000_000_000 ns.
+    naive = [dt.datetime(1970, 1, 1, 0, 0, 1), dt.datetime(1970, 1, 1, 0, 0, 2)]
+    frame = frame.with_columns(pl.Series("Epoch", naive))
+
+    raw = harmonize(frame, _minimal_declarations(), test_id=1)
+
+    assert raw[SCHEMA.epoch_time_utc].to_list() == [1_000_000_000, 2_000_000_000]
+
+
+@pytest.mark.essential
+def test_a_declared_timezone_shifts_naive_timestamps_to_utc():
+    """A loader that knows the cycler's zone declares it, and it is honoured."""
+    import datetime as dt
+
+    frame = _minimal_vendor_frame()
+    naive = [dt.datetime(1970, 1, 1, 1, 0, 0), dt.datetime(1970, 1, 1, 2, 0, 0)]
+    frame = frame.with_columns(pl.Series("Epoch", naive))
+
+    # UTC+1: 01:00 local is 00:00 UTC → 0 ns; 02:00 local → 1h = 3.6e12 ns.
+    raw = harmonize(frame, _minimal_declarations(timezone="Etc/GMT-1"), test_id=1)
+
+    assert raw[SCHEMA.epoch_time_utc].to_list() == [0, 3_600_000_000_000]

@@ -56,8 +56,10 @@ class LoaderDeclarations:
             columns not mentioned here are dropped; native names must exist.
         raw_units: the units the *file* is in, as a validated ``CellpyUnits``.
         timezone: IANA zone for naive vendor timestamps. ``None`` means "treat
-            naive timestamps as local time", the shared D3 rule — recorded on
-            ``TestMeta.time_zone`` so the assumption is visible later.
+            naive timestamps as **UTC**" (decision 2026-07-21, #560, aligning
+            with ``cellpycore.timestamps``) — recorded on ``TestMeta.time_zone``
+            so the assumption is visible later. Set it when the cycler's local
+            zone is known, so absolute times are correct rather than assumed.
         reset_granularity: native cumulative column → its granularity in the
             vendor file. Columns not listed are assumed already cycle-
             cumulative, which is the common case and the target convention.
