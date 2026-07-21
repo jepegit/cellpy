@@ -132,3 +132,29 @@ def test_the_two_stages_agree_with_the_legacy_frame():
             f"{column} differs by {difference} between the two-stage path and "
             f"the legacy path"
         )
+
+
+@pytest.mark.essential
+def test_unit_labels_override_lands_in_unit_labels_not_raw_limits():
+    """A ``unit_labels=`` override must reach ``config_params.unit_labels``.
+
+    Regression for a copy-paste slip where the ``unit_labels`` branch of
+    ``parse_loader_parameters`` updated ``raw_limits`` instead. The symptom was
+    that vendor column-name templates (neware spells its columns
+    ``Current({{ current }})``) could not be overridden this way, while the
+    unit-label strings silently polluted ``raw_limits``.
+    """
+    loader = _loader("neware_txt", model="one")
+    raw_limits_before = dict(loader.config_params.raw_limits)
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        # sep is given so the branch runs without touching the auto-formatter.
+        loader.parse_loader_parameters(sep="\t", unit_labels={"current": "A"})
+
+    assert loader.config_params.unit_labels["current"] == "A", (
+        "unit_labels override did not reach config_params.unit_labels"
+    )
+    assert dict(loader.config_params.raw_limits) == raw_limits_before, (
+        "unit_labels override leaked into config_params.raw_limits"
+    )
