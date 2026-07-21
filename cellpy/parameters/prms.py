@@ -146,6 +146,12 @@ class ReaderClass(CellPyConfig):
     )
     max_raw_files_to_merge: int = 20  # guard against accidentally passing too many files
     jupyter_executable: str = "jupyter"
+    # Phase B / #560 flag day: opt-in to producing the native raw from the
+    # two-stage harmonize(parse()) pipeline instead of the legacy
+    # loader()+to_native rename. Default OFF — see cellpy.config.models for why
+    # it is not yet safe as the default. Single-file loads only; multi-file
+    # merges and parse failures keep the legacy path regardless.
+    use_harmonized_raw: bool = False
 
 
 @dataclass
