@@ -169,6 +169,48 @@ class DataLoader(BaseLoader):
         raw_limits["ir_change"] = 0.00001
         return raw_limits
 
+    def parse(self, source, **kwargs):
+        """Vendor stage (#560): read the nda/ndax file into a fastnda-named frame.
+
+        Taps the same ``_run_fastnda`` read as :meth:`loader` — including its
+        charge/discharge split of the signed capacity/energy/power columns, which
+        is vendor decoding rather than a declarative rename — and stops before
+        ``_post_process`` (the rename, the Unix-time datetime conversion). The
+        ``drop_duplicates`` is vendor cleanup, kept here as in the legacy path.
+
+        Needs the ``fastnda`` backend and an ``.nda*`` file, neither shipped as an
+        in-repo fixture, so the port is exercised at the declaration level. The
+        ``unix_time_s`` column is Unix epoch seconds (``datetime_kind`` =
+        ``"epoch_seconds"``), decoded as absolute UTC, which is what the legacy
+        ``unix_time_s_to_datetime(..., utc=True)`` also produces.
+        """
+        import polars as pl
+        from pathlib import Path
+
+        self.name = source if isinstance(source, Path) else Path(source)
+        self.copy_to_temporary()
+        raw_data = self._run_fastnda().drop_duplicates()
+        self._parsed = True
+        return pl.from_pandas(raw_data.reset_index(drop=True))
+
+    def declarations(self):
+        """Declarations for Neware nda/ndax via fastnda (#560).
+
+        ``datetime_kind="epoch_seconds"`` — the vendor ``unix_time_s`` is float
+        seconds since the Unix epoch.
+        """
+        from cellpy.readers.instruments.config_declarations import (
+            declarations_from_renaming,
+        )
+
+        return declarations_from_renaming(
+            self.get_raw_units(),
+            normal_headers_renaming_dict,
+            "epoch_seconds",
+            getattr(self, "_parsed", False),
+            "neware_nda",
+        )
+
     # TODO: rename this (for all instruments) to e.g. load
     # TODO: implement more options (bad_cycles, ...)
     def loader(self, name, **kwargs):
