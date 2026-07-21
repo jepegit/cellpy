@@ -43,7 +43,7 @@ import pandas as pd
 import sqlalchemy as sa
 
 from cellpy import prms
-from cellpy.exceptions import NullData
+from cellpy.exceptions import LoaderError, NullData
 from cellpy.parameters.internal_settings import HeaderDict, get_headers_normal
 from cellpy.readers.data_structures import (
     Data,
@@ -816,6 +816,79 @@ class DataLoader(BaseLoader):
             logging.critical(error_message)
             return False
         return True
+
+    def parse(self, source, **kwargs):
+        """Vendor stage (#560): read the .res into a frame with **Arbin** names.
+
+        The two-stage counterpart to :meth:`loader`, and the point where the
+        vendor part of arbin ends: reading the Access database (ODBC on Windows,
+        mdbtools on posix) and assembling the normal data table. Everything
+        after — the rename to native columns, the datetime conversion — is
+        declared and handled by ``harmonize()``.
+
+        This is exactly what ``loader()`` produces before ``_post_process``, so
+        the two share one read path and cannot drift. Scoped to a single test:
+        multi-test ``.res`` files are the switchover's concern, not the vendor
+        stage's (``loader()`` still splits and merges them).
+
+        Returns:
+            The normal table with Arbin column names — ``DateTime`` still an
+            Excel serial, capacities as the file stores them.
+        """
+        import polars as pl
+
+        self.name = source
+        self.copy_to_temporary()
+
+        use_mdbtools = _use_subprocess or _is_posix
+        if use_mdbtools:
+            data = self._loader_posix(
+                self.name,
+                self.temp_file_path,
+                self.temp_file_path.parent,
+                **kwargs,
+            )
+        else:
+            data = self._loader_win(self.name, self.temp_file_path, **kwargs)
+
+        self._parsed = True
+        return pl.from_pandas(data.raw.reset_index(drop=True))
+
+    def declarations(self):
+        """Declarations for arbin's normal table (#560).
+
+        Derived, not hand-written: ``get_headers_normal()`` is already a
+        ``{cellpy attr → Arbin column}`` map — the same shape the configuration
+        loaders carry as ``normal_headers_renaming_dict`` — so inverting it and
+        composing with cellpy-core's legacy→native map (via
+        ``derive_column_maps``) gives Arbin → native and the provenance rule for
+        free (``Test_ID`` is not mapped onto the framework ``test_id``).
+        """
+        from cellpycore.units import CellpyUnits
+
+        from cellpy.readers.instruments.config_declarations import derive_column_maps
+        from cellpy.readers.instruments.declarations import LoaderDeclarations
+
+        if not getattr(self, "_parsed", False):
+            raise LoaderError(
+                "arbin_res.declarations() was called before parse()."
+            )
+
+        # cellpy attr -> Arbin column is what get_headers_normal() returns;
+        # derive_column_maps wants attr -> vendor, which is the same thing.
+        renaming = dict(self.arbin_headers_normal)
+        column_map, passthrough, _ = derive_column_maps(renaming)
+
+        raw_units = {
+            key: value
+            for key, value in self.get_raw_units().items()
+            if hasattr(CellpyUnits(), key)
+        }
+        return LoaderDeclarations(
+            column_map=column_map,
+            raw_units=CellpyUnits(**raw_units),
+            passthrough=passthrough,
+        )
 
     def loader(
         self,
