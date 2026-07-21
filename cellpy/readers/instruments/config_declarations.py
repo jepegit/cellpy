@@ -141,6 +141,51 @@ def derive_column_maps(
     return column_map, passthrough, unknown
 
 
+def declarations_from_renaming(
+    raw_units: dict[str, str],
+    renaming: dict[str, str],
+    datetime_kind: str | None,
+    parsed: bool,
+    loader_name: str,
+    *,
+    post_hooks: tuple = (),
+) -> LoaderDeclarations:
+    """Build hand-written loaders' declarations from their module renaming dict.
+
+    Shared by the Arbin SQL variants (``arbin_sql``, ``arbin_sql_csv``,
+    ``arbin_sql_xlsx``, ``arbin_sql_7``), which each carry a
+    ``{legacy_attr -> vendor}`` dict just like a configuration but resolve it in
+    code rather than through a ``configurations/*`` module.
+
+    The dict is first **restricted to real cellpy headers**, reproducing what the
+    legacy ``_post_process`` does when it renames by iterating
+    ``arbin_headers_normal``: the Arbin dicts also carry non-header aliases (e.g.
+    ``acr_txt``, which is *not* a header) that collide with a real header on the
+    same vendor column — ``acr_txt`` and ``internal_resistance_txt`` both name
+    ``Internal_Resistance(Ohm)``. Deriving from the unfiltered dict would let the
+    first-declared non-header alias win and mis-route the column; the legacy path
+    never sees the alias at all, so neither should the derivation.
+    """
+    if not parsed:
+        raise LoaderError(f"{loader_name}.declarations() was called before parse().")
+
+    header_keys = set(get_headers_normal().keys())
+    filtered = {key: value for key, value in renaming.items() if key in header_keys}
+    column_map, passthrough, _ = derive_column_maps(filtered)
+    units = {
+        key: value
+        for key, value in raw_units.items()
+        if hasattr(CellpyUnits(), key)
+    }
+    return LoaderDeclarations(
+        column_map=column_map,
+        raw_units=CellpyUnits(**units),
+        passthrough=passthrough,
+        post_hooks=tuple(post_hooks),
+        datetime_kind=datetime_kind,
+    )
+
+
 def substitute_unit_templates(renaming: dict[str, str], config: Any) -> dict[str, str]:
     """Resolve ``{{ unit }}`` placeholders in vendor column names.
 

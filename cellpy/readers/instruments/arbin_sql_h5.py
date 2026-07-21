@@ -162,6 +162,7 @@ class DataLoader(BaseLoader):
             raw_units=CellpyUnits(**raw_units),
             passthrough=passthrough,
             post_hooks=(forward_fill(columns=("Internal_Resistance",)),),
+            datetime_kind="arbin_epoch",
         )
 
     # TODO: rename this (for all instruments) to e.g. load

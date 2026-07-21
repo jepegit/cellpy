@@ -76,6 +76,27 @@ def test_declarations_before_parse_raises():
 
 
 @pytest.mark.essential
+def test_epoch_time_utc_is_the_vendor_ticks_as_absolute_utc():
+    """``epoch_time_utc`` = Arbin's integer Date_Time ticks x 100, exactly.
+
+    Arbin stores the wall-clock instant as an integer of 100 ns ticks since the
+    Unix epoch (``epoch seconds x 1e7``). The native column is that instant as
+    absolute int64 ns UTC, so ``ticks x 100`` is the whole derivation — checked
+    against the vendor frame rather than the legacy ``date_time``, which the
+    legacy path decodes host-local (``datetime.fromtimestamp``) and so differs by
+    the host offset off-UTC. This assertion is host-independent and exact.
+    """
+    from cellpy.readers.instruments.harmonize import harmonize
+
+    loader, vendor = _parsed()
+    raw = harmonize(vendor, loader.declarations(), strict=False)
+
+    ticks = vendor["Date_Time"].cast(pl.Int64) * 100
+    difference = (raw["epoch_time_utc"] - ticks).abs().max()
+    assert difference == 0, f"epoch_time_utc is not the vendor ticks: off by {difference}"
+
+
+@pytest.mark.essential
 def test_two_stage_capacities_match_the_legacy_loader_stage_frame():
     import cellpy
     from cellpy.readers.instruments.harmonize import harmonize

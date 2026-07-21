@@ -234,6 +234,47 @@ class DataLoader(BaseLoader):
         raw_limits["ir_change"] = 0.00001
         return raw_limits
 
+    def parse(self, source, **kwargs):
+        """Vendor stage (#560): query the SQL Server into an Arbin-named frame.
+
+        The two-stage counterpart to :meth:`loader`, tapping the same
+        ``_query_sql`` read. It stops before ``_post_process`` — the rename, the
+        Arbin-integer datetime decode and the dtype coercion are declared and
+        handled by ``harmonize()``. No in-repo fixture exists (this needs a live
+        SQL Server), so the port is exercised at the declaration level; the
+        column map and ``datetime_kind`` mirror the parity-verified
+        ``arbin_sql_h5``, which shares the vendor's integer-tick timestamp.
+        """
+        import polars as pl
+
+        self.name = source
+        self.is_db = True
+        data_df, _ = self._query_sql(self.name)
+        self._parsed = True
+        return pl.from_pandas(data_df.reset_index(drop=True))
+
+    def declarations(self):
+        """Declarations for Arbin SQL Server (#560).
+
+        Derived from the module ``normal_headers_renaming_dict`` restricted to
+        real cellpy headers — the same set the legacy ``_post_process`` renames
+        by iterating ``arbin_headers_normal`` — so ``derive_column_maps`` gives
+        Arbin → native with ``Test_ID`` dropped as provenance. ``datetime_kind``
+        is ``"arbin_epoch"``: the vendor ``Date_Time`` is integer 100 ns ticks
+        since the Unix epoch.
+        """
+        from cellpy.readers.instruments.config_declarations import (
+            declarations_from_renaming,
+        )
+
+        return declarations_from_renaming(
+            self.get_raw_units(),
+            normal_headers_renaming_dict,
+            "arbin_epoch",
+            getattr(self, "_parsed", False),
+            "arbin_sql",
+        )
+
     # TODO: rename this (for all instruments) to e.g. load
     # TODO: implement more options (bad_cycles, ...)
     def loader(self, name, **kwargs):

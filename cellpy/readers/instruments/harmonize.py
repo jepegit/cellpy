@@ -163,6 +163,19 @@ def _parse_datetime_column(series: pl.Series, kind: str) -> pl.Series:
             pl.Datetime("ns")
         )
 
+    if kind == "arbin_epoch":
+        # Arbin's SQL/h5 exports store the wall-clock instant as an integer of
+        # 100 ns ticks since the Unix epoch — the legacy ``from_arbin_to_datetime``
+        # splits the last 7 digits off as the fractional second (value = epoch
+        # seconds x 1e7). One tick is therefore exactly 100 ns, so ``value * 100``
+        # is epoch nanoseconds with no float rounding at all — unlike a
+        # ``/ 1e7`` in float64, where 1.6e16-scale integers already exceed the
+        # 2**53 exact range and would lose resolution near 2026. The legacy
+        # decoder went via ``datetime.fromtimestamp`` (host-local); here the
+        # value is treated as the absolute UTC instant Unix time already is,
+        # which is what ``epoch_time_utc`` means.
+        return (series.cast(pl.Int64) * 100).cast(pl.Datetime("ns"))
+
     if kind == "excel_serial":
         # Serial days (may be fractional) from the Excel epoch. Done exactly as
         # the legacy ``xldate_as_datetime``: ``datetime(1899,12,30) +

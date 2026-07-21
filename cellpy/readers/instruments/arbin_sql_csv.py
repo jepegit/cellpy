@@ -141,6 +141,43 @@ class DataLoader(BaseLoader):
         raw_limits["ir_change"] = 0.00001
         return raw_limits
 
+    def parse(self, source, **kwargs):
+        """Vendor stage (#560): read the CSV export into an Arbin-named frame.
+
+        Taps the same ``_query_csv`` read as :meth:`loader`, stopping before the
+        rename. The vendor ``Date_Time`` here is a wall-clock **string** (the
+        legacy path never converts the column, only parses the first value for
+        ``start_datetime``), so ``declarations`` sets ``datetime_kind="string"``.
+        No in-repo CSV fixture exists, so the port is exercised at the
+        declaration level.
+        """
+        import polars as pl
+        from pathlib import Path
+
+        self.name = source if isinstance(source, Path) else Path(source)
+        self.copy_to_temporary()
+        data_df = self._query_csv(self.temp_file_path)
+        self._parsed = True
+        return pl.from_pandas(data_df.reset_index(drop=True))
+
+    def declarations(self):
+        """Declarations for the Arbin SQL Server CSV export (#560).
+
+        ``datetime_kind="string"``: the CSV ``Date_Time`` is a wall-clock string,
+        read as UTC by ``harmonize()`` (the naive-timestamp rule, #560).
+        """
+        from cellpy.readers.instruments.config_declarations import (
+            declarations_from_renaming,
+        )
+
+        return declarations_from_renaming(
+            self.get_raw_units(),
+            normal_headers_renaming_dict,
+            "string",
+            getattr(self, "_parsed", False),
+            "arbin_sql_csv",
+        )
+
     # TODO: rename this (for all instruments) to e.g. load
     # TODO: implement more options (bad_cycles, ...)
     def loader(self, name, **kwargs):
