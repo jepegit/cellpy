@@ -14,8 +14,10 @@ from cellpy.parameters.internal_settings import (
     base_columns_int,
     get_headers_normal,
 )
+from cellpy.exceptions import LoaderError
 from cellpy.readers.data_structures import Data
 from cellpy.readers.instruments.base import BaseLoader
+from cellpy.readers.instruments.hooks import cycle_number_not_zero
 
 
 def inspect_pec_csv_metadata(file_name):
@@ -254,6 +256,164 @@ class DataLoader(BaseLoader):
         raw_limits["stable_charge_soft"] = 5.0
         raw_limits["ir_change"] = 0.00001
         return raw_limits
+
+    #: Canonical, vendor-neutral names ``parse()`` renames matched columns to.
+    #: Keyed the same as ``_HEADER_ALIASES`` so the two stay in step. These are
+    #: the "vendor" side ``declarations()`` maps to native — see there.
+    _CANONICAL = {semantic: semantic for semantic in _COLUMN_KEY_TO_CELLPY_HEADER}
+
+    def parse(self, source, **kwargs):
+        """Vendor stage (#560): read PEC csv into a canonical, unit-normalised frame.
+
+        The two-stage counterpart to :meth:`loader`. Unlike the
+        configuration-driven loaders, PEC identifies columns by *alias set* and
+        carries a **different unit per column** in the header
+        (``Voltage (V)`` vs ``(mV)``). ``harmonize()`` has no per-column unit
+        scaling, so that scaling happens here: every matched column is renamed
+        to its canonical name and converted to the canonical unit, leaving a
+        frame ``harmonize()`` can treat like any other (decision, plan §2.6a).
+
+        Returns:
+            A polars frame whose recognised columns carry canonical names in
+            canonical units, plus the file's other columns under sanitised
+            names (passthroughs).
+        """
+        import polars as pl
+
+        self.name = source
+        self.copy_to_temporary()
+        self.number_of_header_lines = self._find_header_length()
+
+        df = pd.read_csv(
+            self.temp_file_path,
+            skiprows=self.number_of_header_lines,
+            encoding="utf-8-sig",
+        )
+        df = df.loc[:, ~df.columns.str.contains("^Unnamed")]
+
+        pec_columns = self._find_pec_columns(df.columns)
+        self._rename_to_canonical(df, pec_columns)
+        self._sanitize_non_canonical_columns(df)
+        self._convert_units_canonical(df, pec_columns)
+        self._add_missing_canonical_columns(df)
+
+        if "cycle" in df.columns:
+            cycle_shift = cycle_number_not_zero(cycle_column="cycle")
+            df = cycle_shift(pl.from_pandas(df)).to_pandas()
+
+        self._parsed_columns = list(df.columns)
+        self._parsed = True
+        return pl.from_pandas(df)
+
+    def declarations(self):
+        """The declarations for the file most recently parsed (#560).
+
+        Static where it can be, discovered where it must be. The canonical →
+        native mapping is derived exactly as the configuration loaders' is — by
+        composing ``_COLUMN_KEY_TO_CELLPY_HEADER`` (canonical → legacy attr)
+        with cellpy-core's legacy → native map — so PEC gets the same treatment
+        of provenance (``test`` is dropped, not mapped onto the framework's
+        ``test_id``) and the same energy handling for free. The **passthrough**
+        set is per file: whatever non-canonical columns the export carried are
+        preserved under their sanitised names, matching what ``loader()`` keeps.
+        """
+        from cellpycore.units import CellpyUnits
+
+        from cellpy.readers.instruments.config_declarations import derive_column_maps
+        from cellpy.readers.instruments.declarations import LoaderDeclarations
+
+        if not getattr(self, "_parsed", False):
+            raise LoaderError(
+                "pec_csv.declarations() was called before parse(); the "
+                "passthrough columns are discovered while parsing."
+            )
+
+        # legacy attr -> canonical name, the shape derive_column_maps wants.
+        # _CANONICAL maps each semantic to itself, so the canonical name is the
+        # semantic key of _COLUMN_KEY_TO_CELLPY_HEADER.
+        renaming = {
+            attr: semantic
+            for semantic, attr in self._COLUMN_KEY_TO_CELLPY_HEADER.items()
+        }
+        renaming.update(
+            {
+                "data_point_txt": "data_point",
+                "sub_step_index_txt": "sub_step_index",
+                "sub_step_time_txt": "sub_step_time",
+            }
+        )
+        column_map, passthrough, _ = derive_column_maps(renaming)
+
+        # Non-canonical columns the file carried: keep them, as loader() does.
+        known = set(column_map) | set(passthrough)
+        for column in getattr(self, "_parsed_columns", []):
+            if column not in known:
+                passthrough[column] = column
+
+        # get_raw_units() carries convenience keys (capacity, time) that
+        # CellpyUnits does not model; keep only the fields it accepts.
+        raw_units = {
+            key: value
+            for key, value in self.get_raw_units().items()
+            if hasattr(CellpyUnits(), key)
+        }
+
+        return LoaderDeclarations(
+            column_map=column_map,
+            raw_units=CellpyUnits(**raw_units),
+            passthrough=passthrough,
+        )
+
+    def _rename_to_canonical(self, df, pec_columns):
+        renaming = {
+            column: self._CANONICAL[semantic]
+            for semantic, column in pec_columns.items()
+            if semantic in self._CANONICAL
+        }
+        if renaming:
+            df.rename(columns=renaming, inplace=True)
+
+    def _sanitize_non_canonical_columns(self, df):
+        canonical = set(self._CANONICAL.values())
+        renaming = {}
+        for column in df.columns:
+            if column in canonical:
+                continue
+            sanitized = self._sanitize_column_name(column)
+            if sanitized and sanitized != column:
+                renaming[column] = sanitized
+        if renaming:
+            df.rename(columns=renaming, inplace=True)
+
+    def _convert_units_canonical(self, df, pec_columns):
+        if "date_time" in df.columns:
+            df["date_time"] = pd.to_datetime(df["date_time"], errors="coerce")
+        if "position_start_time" in df.columns:
+            df["position_start_time"] = pd.to_datetime(
+                df["position_start_time"], errors="coerce"
+            )
+
+        for semantic, original_header in pec_columns.items():
+            canonical = self._CANONICAL.get(semantic)
+            if canonical is None or canonical not in df.columns:
+                continue
+            if semantic in {"test_time", "step_time"}:
+                df[canonical] = self._convert_time_column(df[canonical], original_header)
+                continue
+            if semantic == "date_time":
+                continue
+            df[canonical] = pd.to_numeric(df[canonical], errors="coerce")
+            factor = self._get_unit_factor(semantic, original_header)
+            if factor != 1.0:
+                df[canonical] = df[canonical] * factor
+
+    def _add_missing_canonical_columns(self, df):
+        if "data_point" not in df.columns:
+            df.insert(0, "data_point", range(1, len(df) + 1))
+        if "sub_step_index" not in df.columns:
+            df["sub_step_index"] = 0
+        if "sub_step_time" not in df.columns:
+            df["sub_step_time"] = 0.0
 
     def loader(self, file_name, bad_steps=None, **kwargs):
         if bad_steps is not None:
