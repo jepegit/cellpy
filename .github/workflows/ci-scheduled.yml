@@ -17,6 +17,10 @@ jobs:
   conda-pytest:
     name: conda pytest (${{ matrix.os }})
     runs-on: ${{ matrix.runner }}
+    # Agg keeps matplotlib headless; summary_plot tests also select Agg themselves.
+    # Do not --ignore that file — the exclusion hid real regressions (#594 / #593).
+    env:
+      MPLBACKEND: Agg
     defaults:
       run:
         shell: bash -l {0}
@@ -26,15 +30,14 @@ jobs:
         include:
           - os: linux
             runner: ubuntu-latest
-            pytest-args: --ignore=tests/test_plotutils_summary_plot.py
+            pytest-args: ""
           - os: macos-14
             runner: macos-14
             pytest-args: >-
-              --ignore=tests/test_plotutils_summary_plot.py
               -m "not slowtest and not smoketest and not unimportant and not unfinished and not onlylocal and not skip_on_macos"
           - os: windows
             runner: windows-latest
-            pytest-args: --ignore=tests/test_plotutils_summary_plot.py
+            pytest-args: ""
     steps:
       - uses: actions/checkout@v6
 
@@ -123,16 +126,20 @@ jobs:
   pip-install:
     name: pip install (${{ matrix.os }})
     runs-on: ${{ matrix.runner }}
+    # Agg keeps matplotlib headless (#594). Plotly/seaborn cases skipif when the
+    # batch extra is not installed (plain `pip install -e .` here).
+    env:
+      MPLBACKEND: Agg
     strategy:
       fail-fast: false
       matrix:
         include:
           - os: linux
             runner: ubuntu-latest
-            pytest-args: --ignore=tests/test_plotutils_summary_plot.py
+            pytest-args: ""
           - os: macos-14
             runner: macos-14
-            pytest-args: --ignore=tests/test_plotutils_summary_plot.py
+            pytest-args: ""
           - os: windows
             runner: windows-latest
             pytest-args: tests/test_maccor.py

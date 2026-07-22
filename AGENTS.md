@@ -289,9 +289,10 @@ resolves from PyPI). No manual install is normally needed.
 - **Run everything through `uv run`** (e.g. `uv run cellpy ...`, `uv run pytest`,
   `uv run python ...`) so the `.venv` interpreter and deps are used. Standard
   commands are in `CONTRIBUTING.md`, `.github/workflows/ci.yml`, and `pyproject.toml`.
-- **Tests:** `uv run pytest -m essential` is the fast CI merge gate (~70 tests).
-  CI ignores `tests/test_plotutils_summary_plot.py` in the essential run. Full suite
-  is `uv run pytest` (default `addopts` deselects slow/local/unfinished markers).
+- **Tests:** `uv run pytest -m essential` is the fast CI merge gate. Plotting tests
+  run under `MPLBACKEND=Agg` (no file `--ignore` in Tier 1 / scheduled / release).
+  Full suite is `uv run pytest` (default `addopts` deselects slow/local/unfinished
+  markers).
 - **Lint/format:** `uv run flake8 cellpy` and `uv run black --check cellpy` (line
   length 120). These are not wired into the Tier-1 CI gate, and the repo currently
   has pre-existing `black` reformat suggestions and some `flake8 F821` findings —
