@@ -21,8 +21,9 @@ Done). What remains is the **Phase C** work named in PR #621.
 - **cellpycore pin** is already `==0.2.3` (energy mapping from cellpy-core#139).
   No re-pin required for this issue unless a new core release appears mid-work.
 - **Tier-3 decisions** live primarily on #561; do not re-litigate park/port
-  here. Only harden what #560’s default-on gate actually needs (`batmo_bdf`
-  misconvert was called out in #621).
+  here. Exception locked for this issue: **`batmo_bdf` is hardened in C1**
+  (it misconverts under the flip — #621) so default-on is safe for in-tree
+  loaders that still load.
 - **Multi-file merges** still go through legacy `_append` + `to_native`
   (`_maybe_use_harmonized_raw` skips `len(file_names) != 1`). Treat the native
   merge path as out of scope unless Open questions say otherwise.
@@ -92,11 +93,11 @@ Address the four regressions #621 measured with the flag forced on:
      already provided values (e.g. Arbin starting at `10000`).
    - Add an oracle check on `datapoint_num` vs legacy `data_point`.
 
-3. **`batmo_bdf` (and any other “inherits parse, never hardened” loader)**
-   - Either: real `declarations()` + fixture/synthetic parity so
-     `test_time` (etc.) matches legacy, **or** keep it off the flip allow-list
-     until #561’s port lands — but then default-on must **not** silently
-     misconvert it (restrict flip to verified instruments, or fail closed).
+3. **`batmo_bdf` (decision: harden in C1)**
+   - Give it a real two-stage path: correct `declarations()` (and `parse()`
+     override if the inherited TxtLoader parse mis-handles BDF), plus
+     fixture or synthetic parity so `test_time` and other shared columns match
+     legacy. Do **not** ship default-on with an allow-list that skips batmo.
 
 4. **`arbin_sql_h5` dedup / row-count**
    - Characterize: 47 vs 34 rows with identical summary. Decide keep-more
@@ -176,19 +177,17 @@ New / extended tests:
 - Check 7 reset-granularity property once default path is real.
 - Mutation-style: disabling aux_map / datapoint map must fail the new oracle.
 
+## Decisions (locked)
+
+4. **`batmo_bdf`:** harden in C1 (real declarations/parity) — not an allow-list skip.
+5. **Delivery:** stacked PRs under #560 (C1 → C2 → C3), no GitHub sub-issues.
+
 ## Open questions
 
 1. **Default-on in this issue?** Recommended: **yes** — C1→C2 closes #560;
-   C3 (try-harmonize-first / dual-path cleanup) can be the same PR series or a
-   fast follow if C2 is already large.
+   C3 (try-harmonize-first / dual-path cleanup) stays in the same stacked series.
 2. **Multi-file merges?** Recommended: **follow-up issue** after #560; keep
    skip + legacy `_append` for now.
 3. **`arbin_sql_h5` 47 vs 34 rows?** Recommended: **keep the extra rows**
    (treat as bugfix), assert summaries still match, document in #572 —
    unless you prefer exact legacy row-count.
-4. **`batmo_bdf` before default-on?** Recommended: **restrict the flip** to
-   loaders with a green parity case / explicit allow-list until batmo is
-   hardened, *or* harden batmo in C1 if you want “all in-tree loaders” under
-   the default. Prefer allow-list + typed fallback over silent misconvert.
-5. **Split into GitHub sub-issues?** Optional; this plan already phases C1/C2/C3
-   as stacked PRs under #560. Say if you want separate issues instead.
