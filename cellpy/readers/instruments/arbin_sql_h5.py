@@ -212,7 +212,6 @@ class DataLoader(BaseLoader):
         set_index = True
         rename_headers = True
         forward_fill_ir = True
-        backward_fill_ir = True
         fix_datetime = True
         set_dtypes = True
         fix_duplicated_rows = True
@@ -263,15 +262,19 @@ class DataLoader(BaseLoader):
                 )  # TODO: check if this is standard
 
         if forward_fill_ir:
+            # Internal resistance is recorded only when it changes; the export
+            # leaves it null on every row in between, so we carry the last
+            # measurement forward. This is forward-fill ONLY: leading rows before
+            # the first measurement have nothing to carry into them and stay
+            # null on purpose (we don't fabricate a resistance we never measured).
+            #
+            # A former `backward_fill_ir` branch here was dead code: a copy-paste
+            # slip made it call `.ffill()` a second time (a no-op) instead of the
+            # intended `.bfill()`, so a backward fill never actually happened. It
+            # was removed rather than "fixed" to keep IR forward-fill-only. The
+            # two-stage port (#560) reproduces exactly this via hooks.forward_fill.
             logging.debug("forward filling ir")
             hdr_ir = self.cellpy_headers_normal.internal_resistance_txt
-            # data.raw[hdr_ir] = data.raw[hdr_ir].fillna(method="ffill")
-            data.raw[hdr_ir] = data.raw[hdr_ir].ffill()
-
-        if backward_fill_ir:
-            logging.debug("forward filling ir")
-            hdr_ir = self.cellpy_headers_normal.internal_resistance_txt
-            # data.raw[hdr_ir] = data.raw[hdr_ir].fillna(method="bfill")
             data.raw[hdr_ir] = data.raw[hdr_ir].ffill()
 
         if recalc_capacity:
