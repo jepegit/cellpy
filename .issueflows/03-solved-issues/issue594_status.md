@@ -1,6 +1,6 @@
 # Issue #594 — status
 
-- [ ] Done
+- [x] Done
 
 ## What's done
 
@@ -13,9 +13,11 @@
   → **47 passed** (with `--extra batch`).
 - Local: `uv run pytest -m essential` → **535 passed** (ignored host
   `test_arbin_variants_two_stage` pyodbc collection error).
+- Merged via PR #631 on `master` (2026-07-22).
+- `HISTORY.md` Unreleased bullet added; issue group archived to
+  `03-solved-issues`.
 
 ## Remaining work
 
-- Post-merge: dispatch `CI (scheduled)` once and triage any platform failures
-  with targeted `skipif` (not a blanket file ignore).
-- `/iflow-close`
+- None for #594 code/docs. Optional: dispatch `CI (scheduled)` once and triage
+  any platform failures with targeted `skipif` (not a blanket file ignore).
