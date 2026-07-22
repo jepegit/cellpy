@@ -11,7 +11,7 @@ issue-flow-version: 0.4.2a4
 
 Follow this skill to run **the right next step** in the issue-flow lifecycle: it detects state and routes to `/iflow-init`, `/iflow-plan`, `/iflow-start`, or `/iflow-close`, forwarding trailing args verbatim.
 
-Do **not** use this skill for `/iflow-pick`, `/iflow-pause`, `/iflow-cleanup`, `/iflow-yolo`, or `/iflow-fix`. Those are explicit-only commands. (`/iflow-pick` is the front door *before* `/iflow-init`, for when no issue has been chosen yet. `/iflow-fix` runs an interactive iterative-fixes session, driven by `/iflow-fix` + `/iflow-close`.)
+Do **not** use this skill for `/iflow-pick`, `/iflow-pause`, `/iflow-cleanup`, `/iflow-yolo`, `/iflow-fix`, `/iflow-review`, or other off-path helpers. Those are explicit-only commands. (`/iflow-pick` is the front door *before* `/iflow-init`, for when no issue has been chosen yet. `/iflow-fix` runs an interactive iterative-fixes session, driven by `/iflow-fix` + `/iflow-close`.)
 
 
 **Invoke:** type `iflow` in chat, or `/iflow` from the slash menu.
@@ -92,7 +92,7 @@ When `.issueflows/04-designs-and-guides/multi-repo-workspaces.md` exists, read i
 
 ## Constraints
 
-- Never auto-dispatch to `/iflow-pick`, `/iflow-pause`, `/iflow-cleanup`, `/iflow-yolo`, `/iflow-fix`, `/iflow-epic`, or `/iflow-cycle`.
+- Never auto-dispatch to `/iflow-pick`, `/iflow-pause`, `/iflow-cleanup`, `/iflow-yolo`, `/iflow-fix`, `/iflow-review`, `/iflow-epic`, or `/iflow-cycle`.
 - If the focus issue cannot be resolved (multiple groups, branch ambiguous), stop and ask.
 - Do not modify files beyond what the downstream command would normally modify. `/iflow` itself writes nothing — all file changes come from the dispatched command.
 - Dispatch to at most one command per `/iflow` invocation.

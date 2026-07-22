@@ -17,7 +17,8 @@ Use only when every queued issue is genuinely yolo-fit (small, low-risk, well-sp
 ## Input — queue spec
 
 - **explicit numbers** — e.g. `12 15 18`.
-- **`label:<L>`** — every open issue carrying label `<L>`.
+- **`yolo`** — alias for **`label:yolo`**: every open issue carrying the configured yolo trigger label (default `"yolo"`). Case-insensitive. This is the one-token path for “auto-process all yolo issues.”
+- **`label:<L>`** — every open issue carrying label `<L>` (use for labels other than the yolo trigger).
 - **`epic <N> [stage <k>]`** — the current stage of epic `<N>` (or stage `<k>`).
 - **`resume`** — pick up an interrupted cycle from its state file (see **Resuming** below).
 - **`onfail:stop`** (default) / **`onfail:skip`** — failure policy (see step 7).
@@ -67,7 +68,9 @@ When `.issueflows/04-designs-and-guides/multi-repo-workspaces.md` exists, read i
 
 ## Instructions
 
-1. **Resolve the queue.** Run `issue-flow agent queue <spec> --json` (numbers, `--label`, or `--epic`). Use its `queue` (ordered), `blocked`, and `skipped_closed` output as the source of truth — do not re-derive the order by hand. If it reports a dependency `cycle`, **stop** and show it; nothing runs. If the CLI is unavailable, fall back to reading the issues and ordering by `Depends on #N` lines yourself, but prefer the CLI.
+0. **Expand aliases.** If the queue spec is exactly `yolo` (case-insensitive), treat it as `label:yolo` (the baked config value; if `.issueflows/config.toml` has a different `yolo_label` than this skill's bake, prefer the live config). Keep the original token in `cycle_status.md` for humans (`queue: yolo` → resolved `label:yolo`).
+
+1. **Resolve the queue.** Run `issue-flow agent queue --label yolo --json` when the alias applied, else `issue-flow agent queue <spec> --json` (numbers, `--label`, or `--epic`). Use its `queue` (ordered), `blocked`, and `skipped_closed` output as the source of truth — do not re-derive the order by hand. If it reports a dependency `cycle`, **stop** and show it; nothing runs. If the CLI is unavailable, fall back to reading the issues and ordering by `Depends on #N` lines yourself, but prefer the CLI. An empty queue → report “nothing to queue” and stop (no confirm needed).
 
 2. **Cap check.** If the ordered queue is longer than **10** and the input did not pass `max:<n>` raising the limit, **stop** and ask the user to confirm a larger run explicitly. Long unattended runs compound risk.
 
@@ -120,6 +123,19 @@ By default the cycle is **sequential** — one issue fully lands before the next
 - **Shared files via the coordinator only.** Parallel workers must **not** each edit `HISTORY.md`; each leaves its changelog bullet in its issue status file / PR body, and the coordinator appends them in **merge order** during the serial merge step.
 
 When in doubt, prefer the sequential run — parallel dispatch trades safety for speed and every one of the rules above must hold.
+
+## All yolo issues + merge conflicts
+
+`/iflow-cycle yolo` (or `label:yolo`) is the supported way to
+**auto-process every open yolo-labelled issue**. No separate batch skill.
+
+**Conflict stance (sequential default):** each issue's yolo close merges its PR
+and returns to a **clean default branch** before the next issue starts, so
+shared files (`HISTORY.md`, etc.) stay single-writer. Stop-on-fail
+leaves the tree clean on default. For experimental concurrent work, see
+**Parallel dispatch** above and `.issueflows/04-designs-and-guides/parallel-cycle.md`
+(merges stay serialized there too). Labelling first is optional via
+`/iflow-review yolo` — then run `/iflow-cycle yolo`.
 
 ## Constraints
 
