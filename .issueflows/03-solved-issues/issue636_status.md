@@ -1,6 +1,6 @@
 # Issue #636 — Status
 
-- [ ] Done
+- [x] Done
 
 ## What's done
 
@@ -11,7 +11,8 @@
 - Exported new API from `cellpy.plotting`; `tests/figure_spec_support.SUMMARY_FAMILIES` derives from `families()`.
 - Essential registry unit tests in `tests/test_plotting_registry.py`.
 - Verified: `tests/test_plotting_registry.py` + `tests/test_figure_specs.py` + `tests/test_plotutils_headers.py` green; `pytest -m essential` green (533 passed; ignored `test_arbin_variants_two_stage.py` collection ImportError for missing `libodbc` — pre-existing env gap).
+- HISTORY.md Unreleased bullet added; issue group archived to `03-solved-issues/`.
 
 ## Remaining work
 
-- `/iflow-close` (PR already open as draft #640).
+- None — ready for merge via PR #640.
