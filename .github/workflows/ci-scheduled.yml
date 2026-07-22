@@ -1,4 +1,5 @@
 # Full matrix (Tier 3): weekly schedule + manual dispatch.
+# (noop touch so PR #632 CI runs — docs/HISTORY-only diffs are paths-ignored)
 # Failures here do not block merges; investigate and fix on the next cycle.
 
 name: CI (scheduled)
