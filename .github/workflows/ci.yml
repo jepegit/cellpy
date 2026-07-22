@@ -1,4 +1,5 @@
 # Merge gate (Tier 1): PRs and pushes to master only.
+# (noop touch so docs/HISTORY PR #633 registers required CI checks)
 # ``essential`` is the fast signal; ``full`` runs the whole linux suite and is
 # the intended required check (issue #530 — four non-essential test failures
 # once landed on master through the essential-only gate).
