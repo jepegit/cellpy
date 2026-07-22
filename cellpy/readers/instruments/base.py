@@ -617,6 +617,9 @@ class AutoLoader(BaseLoader):
             self._pre_process()
         self.parse_loader_parameters(**kwargs)
         frame = self.query_file(self.temp_file_path)
+        # Cache for loader() so a follow-up legacy shell build does not
+        # re-query the same file (#560 Phase C — avoid double vendor read).
+        self._parsed_frame = frame
         self._parsed = True
         return frame
 
@@ -672,12 +675,18 @@ class AutoLoader(BaseLoader):
         """
         pre_processor_hook = kwargs.pop("pre_processor_hook", None)
 
-        if self.pre_processors:
-            self._pre_process()
+        cached = getattr(self, "_parsed_frame", None)
+        if cached is not None:
+            # parse() already ran query_file (+ pre-processors); reuse it.
+            data_df = cached
+            self._parsed_frame = None
+        else:
+            if self.pre_processors:
+                self._pre_process()
 
-        self.parse_loader_parameters(**kwargs)
+            self.parse_loader_parameters(**kwargs)
 
-        data_df = self.query_file(self.temp_file_path)
+            data_df = self.query_file(self.temp_file_path)
 
         if pre_processor_hook is not None:
             logging.debug("running pre-processing-hook")

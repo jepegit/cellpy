@@ -593,16 +593,17 @@ def test_load_step_specs(cellpy_data_instance, parameters):
 
 def test_load_arbin_res_aux_single(cellpy_data_instance, parameters):
     cellpy_data_instance.from_raw(parameters.res_file_path4)
-    assert "aux_0_u_C" in cellpy_data_instance.data.raw.columns
-    assert "aux_d_0_dt_u_dC_dt" in cellpy_data_instance.data.raw.columns
-    assert cellpy_data_instance.data.raw.size == 195345
+    # Native aux scheme (#560): wide-aux vendor names map via aux_map.
+    assert "aux_temperature_0" in cellpy_data_instance.data.raw.columns
+    assert "aux_temperature_d0_dt" in cellpy_data_instance.data.raw.columns
+    assert cellpy_data_instance.data.raw.shape == (7235, 22)
 
 
 def test_load_arbin_res_aux_multiple(cellpy_data_instance, parameters):
     cellpy_data_instance.from_raw(parameters.res_file_path3)
-    assert "aux_0_u_V" in cellpy_data_instance.data.raw.columns
-    assert "aux_11_u_V" in cellpy_data_instance.data.raw.columns
-    assert cellpy_data_instance.data.raw.size == 134976
+    assert "aux_potential_0" in cellpy_data_instance.data.raw.columns
+    assert "aux_potential_11" in cellpy_data_instance.data.raw.columns
+    assert cellpy_data_instance.data.raw.shape == (3552, 40)
 
 
 @pytest.mark.essential
