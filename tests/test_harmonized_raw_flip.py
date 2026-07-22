@@ -2,13 +2,13 @@
 
 ``prms.Reader.use_harmonized_raw`` routes single-file raw loading through the
 two-stage ``harmonize(parse())`` pipeline instead of the legacy
-``loader()+to_native`` rename. It ships **off** — the flip still drops aux
-columns and renumbers ``data_point`` on some loaders, so it is not yet a safe
-default (see the loader plan) — but the mechanism is wired and reversible, and
-this module keeps it covered so it does not rot before it is hardened.
+``loader()+to_native`` rename. It ships **off** until Phase C hardening is
+done; the mechanism is wired and reversible, and this module keeps it covered
+so it does not rot before it is the default.
 
-biologics_mpr is used because its flip is clean end-to-end (no aux columns, no
-data_point renumbering divergence); the fixture is in-repo.
+biologics_mpr covers the clean end-to-end path (epoch_time_utc / mask).
+``arbin_res`` with the wide-aux fixture covers the #621 regressions
+(aux survival + datapoint preservation).
 """
 
 from __future__ import annotations
@@ -59,3 +59,26 @@ def test_flip_on_produces_the_harmonized_native_raw(harmonized_raw_on):
         warnings.simplefilter("ignore")
         c.make_summary()
     assert len(c.data.summary) >= 1
+
+
+AUX_SOURCE = "testdata/data/aux_one_x_dx.res"
+
+
+@pytest.mark.essential
+def test_flip_on_keeps_arbin_aux_and_datapoints(harmonized_raw_on):
+    """Phase C / #621: aux columns survive and datapoint_num is the vendor index."""
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        try:
+            c = cellpy.get(
+                AUX_SOURCE, instrument="arbin_res", mass=1.0, testing=True
+            )
+        except Exception as exc:  # noqa: BLE001 — missing Access/mdbtools
+            pytest.skip(f"arbin_res unavailable here: {exc}")
+    assert "aux_temperature_0" in c.data.raw.columns, (
+        f"aux column missing; got {[c for c in c.data.raw.columns if 'aux' in c]}"
+    )
+    assert "datapoint_num" in c.data.raw.columns
+    # Vendor Data_Point is 1..n for this fixture — not a synthesised 0..n-1.
+    assert int(c.data.raw["datapoint_num"].iloc[0]) == 1
+    assert int(c.data.raw["datapoint_num"].iloc[-1]) == len(c.data.raw)

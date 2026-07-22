@@ -3,11 +3,11 @@ import cellpy.config as config
 
 import pandas as pd
 
-from cellpy import prms
 from cellpy import exceptions
 from cellpy.parameters.internal_settings import (
     base_columns_float,
     base_columns_int,
+    get_headers_normal,
     headers_normal,
 )
 from cellpy.readers.instruments.base import TxtLoader
@@ -35,6 +35,106 @@ class DataLoader(TxtLoader):
 
     default_model = config.instruments.Batmo.default_model  # Required
     supported_models = SUPPORTED_MODELS  # Required
+
+    def parse(self, source, **kwargs):
+        """Vendor stage (#560 Phase C): BDF decode into a cellpy-named frame.
+
+        BatMo's inherited ``TxtLoader.parse()`` only reads the CSV. The real
+        decoding — hours→seconds, signed current from ``Step Type``, continuous
+        step indices, step_time, synthetic ``data_point`` / ``date_time`` —
+        lives in :meth:`_post_rename_headers` and used to run only on the
+        legacy ``loader()`` path. Under ``harmonize(parse())`` that left
+        ``test_time`` in hours (#621). Mirror the biologics pattern: ``parse()``
+        performs the decode, ``declarations()`` maps the resulting cellpy
+        headers to native.
+        """
+        import polars as pl
+
+        from cellpy.readers.data_structures import Data
+        from cellpy.readers.instruments.processors import post_processors
+
+        vendor = super().parse(source, **kwargs)
+        if not isinstance(vendor, pd.DataFrame):
+            vendor = vendor.to_pandas()
+
+        data = Data()
+        data.raw = vendor
+        # rename_headers is what turns "Test Time / h" into test_time, etc.
+        data = post_processors.rename_headers(data, self.config_params)
+        data = self._post_rename_headers(data)
+        self._parsed_raw = data.raw
+        self._parsed = True
+        return pl.from_pandas(data.raw.reset_index(drop=True))
+
+    def declarations(self):
+        """Declarations for BatMo BDF (#560 Phase C).
+
+        The parsed frame already uses cellpy header names (see :meth:`parse`),
+        so the map is ``derive_column_maps`` over the identity
+        ``{legacy_attr -> its own header name}`` restricted to columns this
+        file produced. ``datetime_kind="datetime"`` because
+        :meth:`_post_rename_headers` builds a real datetime from test_time.
+        ``cumulate_capacity_within_cycle`` in the configuration marks
+        capacities as ``PER_STEP``.
+        """
+        from cellpycore.units import CellpyUnits
+
+        from cellpy.exceptions import LoaderError
+        from cellpy.readers.instruments.config_declarations import derive_column_maps
+        from cellpy.readers.instruments.declarations import (
+            LoaderDeclarations,
+            ResetGranularity,
+        )
+
+        if not getattr(self, "_parsed", False):
+            raise LoaderError("batmo_bdf.declarations() was called before parse().")
+
+        produced = set(self._parsed_raw.columns)
+        renaming = {
+            attr: name
+            for attr, name in get_headers_normal().items()
+            if name in produced
+        }
+        column_map, passthrough, _ = derive_column_maps(renaming)
+
+        # Hours→seconds and the other decode steps already ran in parse(); the
+        # configuration's cumulate flag still states PER_STEP granularity.
+        raw_units = {
+            key: value
+            for key, value in self.get_raw_units().items()
+            if hasattr(CellpyUnits(), key)
+        }
+        granularity = {
+            column: ResetGranularity.PER_STEP
+            for column in (
+                "cumulative_charge_capacity",
+                "cumulative_discharge_capacity",
+            )
+            if column in column_map.values()
+        }
+        # Protocol / step-type columns are decode inputs, not measurements.
+        dropped = tuple(
+            column
+            for column in ("Protocol Name / 1", "Step Type / 1")
+            if column in produced
+        )
+        # Anything still on the frame under a vendor name (state column is
+        # kept through rename as raw text sometimes) — silence if unmapped.
+        claimed = set(column_map) | set(passthrough)
+        dropped = dropped + tuple(
+            column
+            for column in produced
+            if column not in claimed and column not in dropped
+        )
+
+        return LoaderDeclarations(
+            column_map=column_map,
+            raw_units=CellpyUnits(**raw_units),
+            passthrough=passthrough,
+            reset_granularity=granularity,
+            dropped=dropped,
+            datetime_kind="datetime",
+        )
 
     def _post_rename_headers(self, data):
         """Normalize BatMo columns after they have been renamed to cellpy names."""
