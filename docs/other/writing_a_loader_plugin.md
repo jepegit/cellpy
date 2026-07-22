@@ -87,3 +87,23 @@ The contract and registry are in place as of cellpy 2.0. The built-in loaders
 still route through the older module-scanning factory and move over to this
 registry as they are ported; the entry-point path above is the supported way to
 add a loader from outside cellpy.
+
+## Harmonize / declaration notes (2.0)
+
+These matter if your loader goes through `harmonize(parse())` (the default
+single-file raw path when `Reader.use_harmonized_raw` is true):
+
+- **Empty-column cast:** if casting a declared column to its schema dtype would
+  null **every** row, `harmonize()` **raises** instead of returning an all-null
+  column. Partial loss still warns and coerces to null (legacy
+  `pd.to_numeric(errors="coerce")` shape). Point declarations at the right
+  vendor column / dtype, or convert first.
+- **`LoaderDeclarations.duration_columns`:** use for vendors that write elapsed
+  times as strings (`"00:01:00"`, `"0d 00:01:00.00"`). Shipped configurations
+  derive this from their `convert_*_to_timedelta` flags; out-of-tree loaders
+  should set it explicitly when needed.
+- **Deliberate drops:** undeclared vendor columns are dropped with a one-shot
+  warning. Silence intentional discards via `LoaderDeclarations.dropped`.
+
+End-user migration notes live in
+[`migration_v1_to_v2.md`](../getting_started/migration_v1_to_v2.md).

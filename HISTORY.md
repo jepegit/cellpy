@@ -14,6 +14,38 @@
   `test_plotutils_summary_plot` `--ignore` from `ci-scheduled.yml` and set
   `MPLBACKEND=Agg` on `conda-pytest` / `pip-install` (#594).
 
+* Docs: expand the 1.x→2.x migration guide (support matrix, config/`c.schema`,
+  ICA, plotting, alpha caveats, loader notes) and point at `DEPRECATIONS.md`
+  (#572).
+
+* **Maccor txt / 2.0.0a5:** zero capacities from a swallowed pandas-3
+  `Series.update` failure (#580, fixed #581). Cellpy files saved from Maccor
+  raw on 2.0.0a5 may have zeros baked in — re-load from raw after upgrading.
+  Only `maccor_txt` (`split_capacity: True`) was affected.
+
+* ICA redesign (#566): `ica.dqdv()` returns the long frame
+  `cycle, direction, voltage, capacity, dqdv` (`dq` duplicate deprecated);
+  new `ica.dvdq()`; failed half-cycles warn + `frame.attrs["failures"]`;
+  old entry points shimmed to 2.1. Direction is **cell-centric** (#591).
+
+* CLI: `cellpy convert` defaults to **v9**; `--to {v9,v8}` added; help is
+  rich-formatted (Typer cutover #569). `click` is no longer a direct dependency.
+
+* Plotting on 2.0.0a5: `raw_plot` / `cycle_info_plot` `KeyError: 'voltage'`,
+  `summary_plot(x="cycle_index")`, and in-memory summary corruption from
+  CV-split `y=` sets are fixed (#593 / #567 Phase 0). Re-load in-memory cells
+  that hit the CV-split bug; disk files were unaffected.
+
+* Dependency budget (#570): drop required `python-box` / `ruamel.yaml` /
+  `python-dotenv`; move PyTables to `cellpy[legacy-files]` (conda still ships
+  pytables). Missing extra raises `OptionalDependencyError` with the install
+  hint.
+
+* Loaders: unknown undeclared vendor columns warn once (#599); Maccor
+  model-one `Watt-hr` maps to energy (`cumulative_charge_energy`), not power
+  (#599). `harmonize()` raises if a schema cast empties a column; new
+  `LoaderDeclarations.duration_columns` for string durations (loader authors).
+
 ## [2.0.0a6] - 2026-07-22
 
 * **Breaking:** `CellpyCell.get_cap` now returns native `cellpycore` curve
