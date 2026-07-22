@@ -93,9 +93,17 @@ When `.issueflows/04-designs-and-guides/multi-repo-workspaces.md` exists, read i
 
 7. **Push** — Push to the remote the project uses (typically `origin`).
 
-8. **Pull request** — Open (or update) a PR against the default branch. Body should explain the change, how to test, and link the GitHub issue (`Closes #n` / `Refs #n`).
+8. **Pull request** — Against the default branch; always pass `--repo <owner/repo>`.
+   - **List before create.** Run `gh pr list --repo <owner/repo> --head <branch> --state open --json number,url,title,isDraft`. If an open PR already exists for this head, **update** it (title/body as needed) instead of opening a second one. Otherwise `gh pr create`. Body should explain the change, how to test, and link the GitHub issue (`Closes #n` / `Refs #n`).
+   - **Checks snapshot.** After the PR exists, run `gh pr checks <number> --repo <owner/repo>` and report pass / fail / pending. "CI is green" means this command exits 0 (or JSON buckets are all `pass` / `skipping`). Without `yolo`, prefer this one-shot list; offer `gh pr checks <number> --repo <owner/repo> --watch --fail-fast` only when the user wants to wait in-session, and still honour the **15-minute** wall-clock cap (agent-enforced — `gh` has no max-duration flag).
 
-8a. **Merge the PR (`yolo` token only)** — Merge immediately with `gh pr merge <number> --squash` (never `--delete-branch`; branch deletion stays in `/iflow-cleanup`). If GitHub refuses (branch protection, pending checks), fall back to `gh pr merge <number> --squash --auto` and report the merge as queued. If even `--auto` fails, stop the hands-off behaviour, report the error, and leave the PR open. Without the `yolo` token, skip this step — merging stays a user decision (step 10).
+8a. **Merge the PR (`yolo` token only)** — Never `--delete-branch`; branch deletion stays in `/iflow-cleanup`. Without the `yolo` token, skip this step — merging stays a user decision (step 10). With `yolo`:
+   1. Try `gh pr merge <number> --squash` immediately (repos with no required checks stay fast).
+   2. If GitHub refuses for pending/required checks: run `gh pr checks <number> --repo <owner/repo> --watch --fail-fast` under a hard wall-clock budget of **15 minutes** (baked from `[issueflow].checks_watch_minutes` / `ISSUEFLOW_CHECKS_WATCH_MINUTES`, default 15; agent stops the watch when the cap hits).
+   3. Watch succeeds (exit 0) within the cap → retry `gh pr merge <number> --squash`.
+   4. Watch fails (red / `--fail-fast`) → stop hands-off behaviour, leave the PR open, report failing check links.
+   5. Cap elapses while still pending, or checks never register / watch unavailable → last resort `gh pr merge <number> --squash --auto`, report the merge as queued, continue. If even `--auto` fails, stop hands-off, report the error, leave the PR open.
+   6. `draft` still skips merge entirely.
 
 9. **Switch back when safe** — If the input included `stay`, `stay on branch`, `don't switch`, or `dont switch to main`, stay on the issue branch and report that opt-out. Otherwise, after the PR is open or updated:
    - **CLI fast path (preferred).** If the `issue-flow` CLI is on `PATH`, run `issue-flow agent switchback --json`. It performs this whole step deterministically: refuses while the working tree is dirty (listing the paths), else switches to the detected default branch and runs `git pull --ff-only`. On exit 1, report its `notes` to the user and stop — do not force anything.
@@ -103,7 +111,7 @@ When `.issueflows/04-designs-and-guides/multi-repo-workspaces.md` exists, read i
    - Never delete the issue branch here. With the `yolo` token this step runs **after** the merge from step 8a so the pull brings the squash commit into the local default branch (a queued auto-merge arrives later; note that).
    - **Planned release tag (`yolo` + tag-derived strategy only):** if step 2 planned a tag, create it now — after the pull, standing on the squash commit — with `git tag <planned>` then `git push origin <planned>` (covered by the yolo consolidated confirm). If the merge was only queued via `--auto`, leave the tag to `/iflow-cleanup` and say so.
 
-10. **After review** — With the `yolo` token the PR was already merged in step 8a; skip to the `/iflow-cleanup` reminder. Otherwise address feedback, push updates, and merge when approved and CI is green. If step 9 switched back to the default branch, switch to the PR branch again before making review fixes. Tell the user to run **`/iflow-cleanup`** once the PR is merged so the standard post-merge cleanup runs (`git fetch --prune`, `git branch -d` on merged local branches under a single consolidated confirm — and, for tag-derived projects, the offer to create the release tag planned in step 2).
+10. **After review** — With the `yolo` token the PR was already merged in step 8a; skip to the `/iflow-cleanup` reminder. Otherwise address feedback, push updates, and merge when approved and `gh pr checks <number> --repo <owner/repo>` is green (exit 0). If step 9 switched back to the default branch, switch to the PR branch again before making review fixes. Tell the user to run **`/iflow-cleanup`** once the PR is merged so the standard post-merge cleanup runs (`git fetch --prune`, `git branch -d` on merged local branches under a single consolidated confirm — and, for tag-derived projects, the offer to create the release tag planned in step 2).
 
 11. **Output** — Summarize commit, push result, PR URL, whether the working copy switched back to the default branch or stayed on the issue branch, the merge result when `yolo` applied (merged, or queued via `--auto`), and next step (`/iflow-cleanup` after merge, or "blocked on …" if stuck).
 

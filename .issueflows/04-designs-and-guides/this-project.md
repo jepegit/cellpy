@@ -42,6 +42,27 @@ See also [testing-and-coverage.md](testing-and-coverage.md) and [ci-tiers.md](ci
 - v2 epic: [cellpy-v2-epic.md](cellpy-v2-epic.md).
 - cellpy-core integration: `../cellpy-core/.issueflows/04-designs-and-guides/`.
 
+## Release & version bump
+
+**Strategy: git-tag derived** via `uv-dynamic-versioning` (see
+[build-and-versioning.md](build-and-versioning.md) and
+[release-procedure.md](release-procedure.md)).
+
+- Do **not** edit a version into `pyproject.toml`.
+- Latest tag → next pre-release on the same channel by default
+  (e.g. `v2.0.0a5` + `bump` → plan `v2.0.0a6`).
+- Create the tag **after** the PR is squash-merged onto `master`:
+
+```bash
+git switch master && git pull --ff-only
+git tag v2.0.0a6
+git push origin v2.0.0a6
+# or: gh release create v2.0.0a6 --generate-notes
+```
+
+- `/iflow-close bump` only **plans** the tag (records it in the status file);
+  `/iflow-cleanup` (or a yolo close after merge) creates it on `master`.
+
 ## Non-goals / known limitations
 
 - TODO: Scope boundaries, known caveats, or things this project intentionally does not do.
