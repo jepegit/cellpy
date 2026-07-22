@@ -179,15 +179,15 @@ New / extended tests:
 
 ## Decisions (locked)
 
+1. **Default-on in this issue:** yes — C1→C2 closes #560; C3 stays in the
+   same stacked series.
+2. **Multi-file merges:** follow-up issue after #560; keep skip + legacy
+   `_append` for now.
+3. **`arbin_sql_h5` 47 vs 34 rows:** keep the extra rows (intentional fix);
+   assert summaries still match; document in #572.
 4. **`batmo_bdf`:** harden in C1 (real declarations/parity) — not an allow-list skip.
 5. **Delivery:** stacked PRs under #560 (C1 → C2 → C3), no GitHub sub-issues.
 
 ## Open questions
 
-1. **Default-on in this issue?** Recommended: **yes** — C1→C2 closes #560;
-   C3 (try-harmonize-first / dual-path cleanup) stays in the same stacked series.
-2. **Multi-file merges?** Recommended: **follow-up issue** after #560; keep
-   skip + legacy `_append` for now.
-3. **`arbin_sql_h5` 47 vs 34 rows?** Recommended: **keep the extra rows**
-   (treat as bugfix), assert summaries still match, document in #572 —
-   unless you prefer exact legacy row-count.
+- None — plan accepted 2026-07-22.
