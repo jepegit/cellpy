@@ -1295,7 +1295,9 @@ class CellpyCell:
             and getattr(config.reader, "use_harmonized_raw", True)
             and len(self.file_names) == 1
         ):
-            prefetched_harmonized_raw = self._try_harmonized_raw_frame()
+            # Forward loader knobs (bad_steps, data_points, …) so parse and the
+            # cached Data shell see the same filters as loader() would.
+            prefetched_harmonized_raw = self._try_harmonized_raw_frame(**kwargs)
 
         data = None
         for file_name in self.file_names:
@@ -1414,7 +1416,7 @@ class CellpyCell:
         self.last_uploaded_at = datetime.datetime.now()
         return self
 
-    def _try_harmonized_raw_frame(self):
+    def _try_harmonized_raw_frame(self, **parse_kwargs):
         """Phase C (#560): try ``harmonize(parse())`` for single-file raw.
 
         Returns a native pandas raw frame on success, or ``None`` to signal
@@ -1425,6 +1427,9 @@ class CellpyCell:
         Intended to run **before** ``loader()`` so instruments that cache their
         parse result can reuse it when building the Data shell (one vendor read).
         The caller stamps ``test_id`` after the loader assigns ``active_test_id``.
+
+        ``parse_kwargs`` are forwarded to ``loader.parse`` (e.g. ``bad_steps``,
+        ``data_points``) so the harmonized frame matches the filtered load.
         """
         if not getattr(config.reader, "use_harmonized_raw", True):
             return None
@@ -1440,7 +1445,7 @@ class CellpyCell:
 
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
-                vendor = loader.parse(source)
+                vendor = loader.parse(source, **parse_kwargs)
                 declarations = loader.declarations()
                 native = harmonize(vendor, declarations, strict=False)
         except Exception as exc:  # noqa: BLE001 — any failure -> legacy fallback
@@ -1452,13 +1457,13 @@ class CellpyCell:
 
         return native.to_pandas()
 
-    def _maybe_use_harmonized_raw(self):
+    def _maybe_use_harmonized_raw(self, **parse_kwargs):
         """Backward-compatible alias for :meth:`_try_harmonized_raw_frame`.
 
         Kept so older call sites / tests that monkeypatch this name still work.
         Prefer ``_try_harmonized_raw_frame`` for new code.
         """
-        frame = self._try_harmonized_raw_frame()
+        frame = self._try_harmonized_raw_frame(**parse_kwargs)
         if frame is not None:
             from cellpy.readers.cellpy_file.translate import _TEST_ID
 

@@ -19,7 +19,7 @@ def test_get_data_from_arbin_sql_h5(parameters):
     assert len(c.data.raw) == 47
     c.make_summary()
     assert len(c.data.summary) == 1
-    # The core-backed summary prunes duplicate raw rows as a side effect
-    # (issue #385: verified value-identical to the removed legacy engine,
-    # which kept all 47 rows).
-    assert len(c.data.raw) == 34
+    # #560 Phase C: keep all loader-stage rows through summary. The older
+    # core-backed path pruned duplicates as a side effect (47 → 34); the
+    # harmonized default path does not.
+    assert len(c.data.raw) == 47
