@@ -91,6 +91,7 @@ class DataLoader(BaseLoader):
         self.mpr_log = None
         self.mpr_settings = None
         self.cellpy_headers = get_headers_normal()
+        self._parsed = False
 
     @staticmethod
     def get_raw_units():
