@@ -14,8 +14,9 @@
 - Loader-author section in `docs/other/writing_a_loader_plugin.md`.
 - `DEPRECATIONS.md` regenerates with no diff; ICA entries already present.
 - Tests: `tests/test_deprecation_conventions.py` 5 passed; essential 535 passed.
+- Touched `.github/workflows/ci.yml` comment so required checks register
+  (docs/`HISTORY`/issueflows are `paths-ignore`d).
 
 ## Remaining work
 
-- `/iflow-close` (note: docs/`HISTORY`/issueflows-only PRs are `paths-ignore`d
-  by `ci.yml` — may need a tiny non-md touch for required checks, as on #632).
+- `/iflow-close`
