@@ -60,8 +60,10 @@ uv run pytest tests/test_otherpaths_sftp.py -m onlylocal
 Uses `docker/sftp-test/compose.yml` (`atmoz/sftp` on `127.0.0.1:2223`). The
 session fixture starts/stops compose when the Docker daemon is up; otherwise
 the tests skip.
-- CI additionally `--ignore=tests/test_plotutils_summary_plot.py`; that file runs fine locally once
-  the `[all]` extras (plotly/seaborn/kaleido) are installed.
+- Plotting tests (`tests/test_plotutils_summary_plot.py`) run under `MPLBACKEND=Agg`
+  in Tier 1 (`ci.yml`), release, and the scheduled Tier-3 matrix (`ci-scheduled.yml`).
+  Cases that need plotly/seaborn `skipif` when those extras are missing; install
+  `[batch]` / `[all]` locally to exercise them.
 
 ## Coverage
 
