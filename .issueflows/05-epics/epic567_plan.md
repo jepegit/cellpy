@@ -80,6 +80,7 @@ skeleton.
 - Depends on: none
 - yolo: yes — mechanical translation of an existing table, oracle-guarded, no
   figure-path rewrite yet.
+- Published: #636
 
 ### Issue: Generic plotly panel/formation layout backend
 
@@ -94,8 +95,9 @@ skeleton.
   Acceptance: formation figures with 1–4 rows match the oracle structurally;
   no per-row-count method remains in the hot path once the switch is on;
   `tests/test_figure_specs.py` green for plotly summary cases.
-- Depends on: stage 1 issue 1
+- Depends on: #636
 - yolo: no — layout-engine design with visual blast radius.
+- Published: #637
 
 ### Issue: Port summary prepare path and flip `summary_plot` to prepare→spec→render
 
@@ -110,8 +112,9 @@ skeleton.
   `SummaryPlotDataPreparer` / `PlotlyPlotBuilder` live code either becomes the
   prepare/backend implementation or is deleted in this PR — no third parallel
   summary path left.
-- Depends on: stage 1 issue 2
+- Depends on: #637
 - yolo: no — flag-day for the main plot entry; needs careful parity.
+- Published: #638
 
 ### Issue: Matplotlib backend; retire SeabornPlotBuilder; unify `backend=`
 
@@ -124,8 +127,9 @@ skeleton.
   where the snapshot already compares them; no `SeabornPlotBuilder` class
   remains; calling `interactive=True/False` warns once and maps to the right
   backend.
-- Depends on: stage 1 issue 3
+- Depends on: #638
 - yolo: no — static-output engine change; seaborn-loyalist surface.
+- Published: #639
 
 ## Stage 2 — Other plot families on the same skeleton
 
@@ -141,7 +145,7 @@ figure oracle. No collectors/batch work yet.
   `warn_once` aliases in `DEPRECATIONS.md`. Acceptance: `cycles_plot` oracle
   cases green both backends; deprecated range kwargs warn and behave
   identically; no private layout fork left inside `cycles_plot`.
-- Depends on: stage 1 issue 4
+- Depends on: #639
 - yolo: no — dual kwargs + curves adapter choices.
 
 ### Issue: Port `raw_plot` and `cycle_info_plot`
