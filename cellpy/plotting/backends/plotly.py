@@ -36,7 +36,7 @@ PLOTLY_BLANK_LABEL = {
     "yref": "paper",
 }
 
-FORMATIONATION_HEADER = '<span style="color:red">Formation</span>'
+DEFAULT_FORMATIONION_LABEL = '<span style="color:red">Formation</span>'
 MAX_FORMATIONATION_ROWS = 4
 
 
@@ -105,7 +105,7 @@ def configure_formation_layout(
     x_axis_range_formation: Sequence[float],
     x_axis_range_rest: Sequence[float],
     show_y_labels_on_right_pane: bool = False,
-    formation_header: str = FORMATION_HEADER,
+    formation_header: str = DEFAULT_FORMATIONION_LABEL,
     row_y_ranges: Optional[Sequence[Optional[Sequence[float]]]] = None,
     top_row_label: Optional[str] = None,
 ) -> None:

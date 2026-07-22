@@ -38,7 +38,7 @@ from cellpy.utils import helpers
 # plotutils / collectors / batch_plotters (#567). Re-exported here so the
 # `from cellpy.utils.plotutils import load_figure` spelling keeps working.
 from cellpy.plotting.backends.plotly import (
-    FORMATION_HEADER,
+    DEFAULT_FORMATIONION_LABEL,
     auto_range as _plotly_auto_range,
     configure_formation_layout,
     configure_fullcell_standard_domains,
@@ -1696,7 +1696,7 @@ class PlotlyPlotBuilder:
             x_axis_range_formation=x_axis_range_formation,
             x_axis_range_rest=x_axis_range_rest,
             show_y_labels_on_right_pane=show_y_labels_on_right_pane,
-            formation_header=FORMATION_HEADER,
+            formation_header=DEFAULT_FORMATIONION_LABEL,
             row_y_ranges=row_y_ranges,
             top_row_label=top_row_label,
         )
