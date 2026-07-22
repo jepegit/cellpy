@@ -1,7 +1,7 @@
 # Epic #567: Stage 3.10 — plotting redesign
 
 Anchor: https://github.com/jepegit/cellpy/issues/567
-Status: draft
+Status: confirmed
 
 ## Goal
 
