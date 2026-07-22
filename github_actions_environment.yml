@@ -5,13 +5,13 @@ channels:
 dependencies:
     - python
     - PyGithub
+    - cellpycore ==0.2.3
     - charset-normalizer
     - cookiecutter
     - coverage
     - cryptography
     - dateparser
     - defusedxml
-    - fabric
     - hdf5
     - jinja2-time
     - lmfit
@@ -33,6 +33,9 @@ dependencies:
     - pytest-benchmark
     - pytest-timeout
     - python-isal
+    - pyyaml
+    - paramiko >= 5.0.0
+    - universal-pathlib >= 0.3.10
     - requests
     - rich
     - scipy
@@ -44,7 +47,5 @@ dependencies:
     - xlrd
     - xmltodict
     - pip:
-        # PyPI-only (no conda-forge package).
-        - cellpycore==0.2.1
         # Optional external fastnda; cellpy defaults to cellpy.libs.local_fastnda.
         - fastnda

@@ -3,12 +3,12 @@ channels:
     - conda-forge
 dependencies:
     - python >= 3.13
+    - cellpycore ==0.2.3
     - charset-normalizer
     - cookiecutter
     - cryptography
     - dateparser
     - defusedxml
-    - fabric
     - hdf5
     - ipykernel
     - ipython
@@ -30,6 +30,9 @@ dependencies:
     - pyodbc
     - pytables
     - python-isal
+    - pyyaml
+    - paramiko >= 5.0.0
+    - universal-pathlib >= 0.3.10
     - requests
     - rich
     - scipy
@@ -41,8 +44,6 @@ dependencies:
     - xlrd
     - xmltodict
     - pip:
-        # PyPI-only (no conda-forge package).
-        - cellpycore==0.2.1
         # Optional external fastnda; cellpy defaults to cellpy.libs.local_fastnda.
         - fastnda
         # Old plotly kaleido 0.1.x (python-kaleido on conda-forge is 1.x).

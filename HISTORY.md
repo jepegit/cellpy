@@ -6,6 +6,10 @@
   (native-projected adapters); `ext_nda_reader` parked; `local_instrument`
   confirmed as warn-only escape hatch (#561).
 
+* Sync conda env files with `pyproject.toml`: pin `cellpycore ==0.2.3` from
+  conda-forge (was PyPI 0.2.1), add `pyyaml` / `paramiko` / `universal-pathlib`,
+  drop obsolete `fabric` (#628).
+
 ## [2.0.0a6] - 2026-07-22
 
 * **Breaking:** `CellpyCell.get_cap` now returns native `cellpycore` curve
