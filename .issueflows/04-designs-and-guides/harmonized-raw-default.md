@@ -9,6 +9,13 @@ regressions that blocked default-on, then flips the default.
 (`use_harmonized_raw=True`). Set `False` for the emergency `loader()+to_native`
 fallback. Multi-file merges still use legacy `_append` + `to_native` (follow-up).
 
+**Load ordering (no double vendor read).** `from_raw` runs
+`harmonize(parse())` **before** the legacy loader for single-file + flip-on.
+Loaders that share a parse cache (`AutoLoader._parsed_frame`,
+`arbin_res._parsed_data`, biologics `mpr_data`) reuse that read when building
+the Data shell (summary/meta/FID). Without the cache, default-on was ~2× slower
+on the single-cell Arbin benchmark (CI gate fail at +100%).
+
 **Hardening that unlocked the default**
 
 - Arbin wide-aux columns declared via `aux_map` (`aux_0_u_C` → `aux_temperature_0`).
@@ -22,5 +29,8 @@ fallback. Multi-file merges still use legacy `_append` + `to_native` (follow-up)
   instead so default-on is safe for in-tree loaders.
 - Delete `to_native` entirely — rejected; still needed for cellpy-file / merge
   boundaries and the emergency off-switch.
+- Skip the legacy loader entirely once harmonize succeeds — deferred; still need
+  its Data shell (summary/meta/FID). Parse-first + cache is enough for the
+  double-read.
 
 **Refs.** jepegit/cellpy#560; PR #623; loader plan in `architecture-plan/`.

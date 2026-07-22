@@ -851,6 +851,9 @@ class DataLoader(BaseLoader):
         else:
             data = self._loader_win(self.name, self.temp_file_path, **kwargs)
 
+        # Keep the Data shell so loader() can finish post_process/merge without
+        # opening the Access file a second time (#560 Phase C).
+        self._parsed_data = data
         frame = pl.from_pandas(data.raw.reset_index(drop=True))
         # Remember the vendor columns so declarations() can build aux_map /
         # dropped without re-reading the Access file.
@@ -962,40 +965,46 @@ class DataLoader(BaseLoader):
         else:
             merge = True
 
-        try:
-            not_too_big = self._check_size()
-            if not not_too_big:
-                return None
-        except Exception as e:
-            self.logger.debug(f"could not get file size: {e}")
-
-        use_mdbtools = False
-        if _use_subprocess:
-            use_mdbtools = True
-        if _is_posix:
-            use_mdbtools = True
-
-        if use_mdbtools:
-            new_data = self._loader_posix(
-                self.name,
-                self.temp_file_path,
-                self.temp_file_path.parent,
-                *args,
-                bad_steps=bad_steps,
-                dataset_number=dataset_number,
-                data_points=data_points,
-                **kwargs,
-            )
+        cached = getattr(self, "_parsed_data", None)
+        if cached is not None:
+            # parse() already ran the Access/mdbtools read.
+            new_data = cached
+            self._parsed_data = None
         else:
-            new_data = self._loader_win(
-                self.name,
-                self.temp_file_path,
-                *args,
-                bad_steps=bad_steps,
-                dataset_number=dataset_number,
-                data_points=data_points,
-                **kwargs,
-            )
+            try:
+                not_too_big = self._check_size()
+                if not not_too_big:
+                    return None
+            except Exception as e:
+                self.logger.debug(f"could not get file size: {e}")
+
+            use_mdbtools = False
+            if _use_subprocess:
+                use_mdbtools = True
+            if _is_posix:
+                use_mdbtools = True
+
+            if use_mdbtools:
+                new_data = self._loader_posix(
+                    self.name,
+                    self.temp_file_path,
+                    self.temp_file_path.parent,
+                    *args,
+                    bad_steps=bad_steps,
+                    dataset_number=dataset_number,
+                    data_points=data_points,
+                    **kwargs,
+                )
+            else:
+                new_data = self._loader_win(
+                    self.name,
+                    self.temp_file_path,
+                    *args,
+                    bad_steps=bad_steps,
+                    dataset_number=dataset_number,
+                    data_points=data_points,
+                    **kwargs,
+                )
 
         new_data = self._post_process(new_data)
         if merge:

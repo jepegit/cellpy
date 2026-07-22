@@ -284,18 +284,24 @@ class DataLoader(BaseLoader):
 
         # --------- read raw-data (normal-data) -------------------------
         self.logger.debug("reading raw-data")
-        self.mpr_data = None
-        self.mpr_log = None
-        self.mpr_settings = None
+        if getattr(self, "_parsed", False) and self.mpr_data is not None:
+            # parse() already loaded + renamed; reuse for the Data shell
+            # (#560 Phase C — avoid a second mpr decode).
+            length_of_test = self.mpr_data.shape[0]
+            logging.debug(f"length of test (from parse cache): {length_of_test}")
+        else:
+            self.mpr_data = None
+            self.mpr_log = None
+            self.mpr_settings = None
 
-        # print(" loading mpr-data ".center(80, "-"))
-        self._load_mpr_data(temp_filename, bad_steps)
+            # print(" loading mpr-data ".center(80, "-"))
+            self._load_mpr_data(temp_filename, bad_steps)
 
-        length_of_test = self.mpr_data.shape[0]
-        logging.debug(f"length of test: {length_of_test}")
+            length_of_test = self.mpr_data.shape[0]
+            logging.debug(f"length of test: {length_of_test}")
 
-        self.logger.debug("renaming columns")
-        self._rename_headers()
+            self.logger.debug("renaming columns")
+            self._rename_headers()
         # ---------  stats-data (summary-data) -------------------------
         summary_df = self._create_summary_data()
 

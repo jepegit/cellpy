@@ -83,3 +83,35 @@ def test_default_keeps_arbin_aux_and_datapoints():
     assert "datapoint_num" in c.data.raw.columns
     assert int(c.data.raw["datapoint_num"].iloc[0]) == 1
     assert int(c.data.raw["datapoint_num"].iloc[-1]) == len(c.data.raw)
+
+
+@pytest.mark.essential
+def test_default_path_reads_vendor_file_once(monkeypatch):
+    """Phase C: parse-first + loader cache → one Access/mdbtools read, not two."""
+    from cellpy.readers.instruments import arbin_res as arbin_mod
+
+    calls = {"posix": 0, "win": 0}
+    real_posix = arbin_mod.DataLoader._loader_posix
+    real_win = arbin_mod.DataLoader._loader_win
+
+    def counting_posix(self, *args, **kwargs):
+        calls["posix"] += 1
+        return real_posix(self, *args, **kwargs)
+
+    def counting_win(self, *args, **kwargs):
+        calls["win"] += 1
+        return real_win(self, *args, **kwargs)
+
+    monkeypatch.setattr(arbin_mod.DataLoader, "_loader_posix", counting_posix)
+    monkeypatch.setattr(arbin_mod.DataLoader, "_loader_win", counting_win)
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        try:
+            cellpy.get(AUX_SOURCE, instrument="arbin_res", mass=1.0, testing=True)
+        except Exception as exc:  # noqa: BLE001 — missing Access/mdbtools
+            pytest.skip(f"arbin_res unavailable here: {exc}")
+
+    assert calls["posix"] + calls["win"] == 1, (
+        f"expected one vendor read, got posix={calls['posix']} win={calls['win']}"
+    )

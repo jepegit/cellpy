@@ -1284,6 +1284,19 @@ class CellpyCell:
 
         logging.debug("start iterating through file(s)")
         recalc = kwargs.pop("recalc", True)
+
+        # #560 Phase C: for single-file + flip-on, run harmonize(parse()) *before*
+        # the legacy loader so the vendor file is read once. Loaders that cache
+        # their parse result (AutoLoader, arbin_res, biologics_mpr, …) reuse it
+        # when building the Data shell below.
+        prefetched_harmonized_raw = None
+        if (
+            self.native_schema
+            and getattr(config.reader, "use_harmonized_raw", True)
+            and len(self.file_names) == 1
+        ):
+            prefetched_harmonized_raw = self._try_harmonized_raw_frame()
+
         data = None
         for file_name in self.file_names:
             logging.debug("loading raw file:")
@@ -1367,11 +1380,13 @@ class CellpyCell:
             # (multi-file merge stays on the legacy _append path — follow-up).
             from cellpy.readers.cellpy_file import translate as cellpy_file_translate
 
-            harmonized_raw = self._try_harmonized_raw_frame()
+            harmonized_raw = prefetched_harmonized_raw
             if harmonized_raw is not None:
                 # Raw is already native — only rename steps/summary so we do
                 # not pay for a redundant raw_to_native pass (#560 Phase C).
-                data = self.data
+                # Stamp the grouping key now that the loader set active_test_id.
+                harmonized_raw = harmonized_raw.copy()
+                harmonized_raw[cellpy_file_translate._TEST_ID] = data.active_test_id
                 if getattr(data, "steps", None) is not None and len(data.steps.columns):
                     steps = cellpy_file_translate.steps_to_native(data.steps)
                     if cellpy_file_translate._TEST_ID not in steps.columns:
@@ -1406,6 +1421,10 @@ class CellpyCell:
         the caller should keep the ``loader()+to_native`` path. Skips when the
         flip is off, the load is multi-file, or parse/declarations/harmonize
         fail. Emergency off-switch: ``prms.Reader.use_harmonized_raw = False``.
+
+        Intended to run **before** ``loader()`` so instruments that cache their
+        parse result can reuse it when building the Data shell (one vendor read).
+        The caller stamps ``test_id`` after the loader assigns ``active_test_id``.
         """
         if not getattr(config.reader, "use_harmonized_raw", True):
             return None
@@ -1431,14 +1450,7 @@ class CellpyCell:
             )
             return None
 
-        native_pd = native.to_pandas()
-        # The grouping-key authority is the pipeline's, not harmonize's identity
-        # stamp: keep the active_test_id the loader assigned (0 for a single,
-        # unmerged test; a tester id when provenance carried one).
-        from cellpy.readers.cellpy_file.translate import _TEST_ID
-
-        native_pd[_TEST_ID] = self.data.active_test_id
-        return native_pd
+        return native.to_pandas()
 
     def _maybe_use_harmonized_raw(self):
         """Backward-compatible alias for :meth:`_try_harmonized_raw_frame`.
@@ -1448,6 +1460,10 @@ class CellpyCell:
         """
         frame = self._try_harmonized_raw_frame()
         if frame is not None:
+            from cellpy.readers.cellpy_file.translate import _TEST_ID
+
+            frame = frame.copy()
+            frame[_TEST_ID] = self.data.active_test_id
             self.data.raw = frame
 
     def _validate_cell(self, level=0):
