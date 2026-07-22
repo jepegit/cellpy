@@ -24,6 +24,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable
 
+from cellpy.plotting.registry import families as _plot_families
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SNAPSHOT_PATH = REPO_ROOT / "tests" / "data" / "figure_specs.json"
 
@@ -141,30 +143,9 @@ def describe_figure(figure) -> dict[str, Any]:
 
 # --- the figure menu ---------------------------------------------------------
 
-#: Every predefined y-set `summary_plot` accepts, read off `_create_col_info`.
-#: A family missing from this list is a family with no regression net.
-SUMMARY_FAMILIES = (
-    "voltages",
-    "capacities",
-    "capacities_gravimetric",
-    "capacities_areal",
-    "capacities_absolute",
-    "capacities_gravimetric_split_constant_voltage",
-    "capacities_areal_split_constant_voltage",
-    "capacities_gravimetric_coulombic_efficiency",
-    "capacities_areal_coulombic_efficiency",
-    "capacities_absolute_coulombic_efficiency",
-    "capacities_gravimetric_with_rate",
-    "capacities_areal_with_rate",
-    "capacities_absolute_with_rate",
-    "fullcell_standard_gravimetric",
-    "fullcell_standard_areal",
-    "fullcell_standard_absolute",
-    "fullcell_standard_cumloss_gravimetric",
-    "fullcell_standard_cumloss_areal",
-    "fullcell_standard_cumloss_absolute",
-    "fullcell_standard_dev",
-)
+#: Every predefined y-set `summary_plot` accepts — sourced from the PlotFamily
+#: registry (#636) so the oracle menu cannot drift from the runtime menu.
+SUMMARY_FAMILIES = tuple(name for name, _description in _plot_families())
 
 
 @dataclass(frozen=True)

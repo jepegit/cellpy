@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+* Add FigureSpec dataclasses and a PlotFamily registry (#636).
+
 * Tier-3 loader close-out: `biologics_mpr` / `batmo_bdf` pass `check_loader`
   (native-projected adapters); `ext_nda_reader` parked; `local_instrument`
   confirmed as warn-only escape hatch (#561).
