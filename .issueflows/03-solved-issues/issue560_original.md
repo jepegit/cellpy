@@ -43,23 +43,21 @@ Loader `harmonize()` framework + pilot.
 ## Comments (curated summary)
 
 - **Additional tasks**:
-  - Fix the `maccor_txt_one` `Watt-hr` collision before switchover: drop the mistaken `power_txt: "Watt-hr"` mapping so derivation can yield native `cumulative_charge_energy` (see comment thread).
-  - Implement per-loader `parse()` for remaining loaders (`arbin_res`, `neware_txt`, `pec_csv`, `custom`, then tier-2); only the `maccor_txt_native` pilot exists today.
-  - Port still-missing post-processors needed for switchover parity: `split_capacity`, `split_current`, `set_cycle_number_not_zero`, `remove_last_if_bad`, `update_headers_with_units` (loader plan §2.7).
-  - Decide fate of undeclared vendor columns before `harmonize()` becomes the load path (declare / passthrough / deliberate drop + release notes).
-  - Land **cellpy-core#139** (energy legacy→native mapping), release + re-pin, then do the ingestion switch.
-  - Settle `date_time` parsing / `epoch_time_utc` production before flag day (metadata arc; overlaps #562/#563).
-  - Add conformance kit check 7 (reset granularity) once several loaders are ported (deferred from #210).
+  - Fix `maccor_txt_one` `Watt-hr` mapping: drop the erroneous `power_txt: "Watt-hr"` so derivation yields native `cumulative_charge_energy` (before switchover).
+  - Decide undeclared vendor columns that `harmonize()` drops (declare, passthrough, or deliberate drop + release notes).
+  - Port remaining per-loader `parse()` implementations (tier-1: `arbin_res`, `neware_txt`, `pec_csv`, `custom`; then tier-2).
+  - Land conformance kit check 7 (reset granularity) once several ported loaders exist.
+  - Port or decide remaining post-processors: `split_capacity`, `split_current`, `set_cycle_number_not_zero`, `remove_last_if_bad`, `update_headers_with_units`.
+  - Settle `date_time` / `epoch_time_utc` before flag-day (metadata arc #562/#563).
 - **Clarifications / constraints**:
-  - Part 1 already landed in #583; there is **no `LegacyLoaderAdapter` class** to delete. The transitional mechanism is ingestion-time `to_native()` (around `cellreader.py:1368`); retiring it means routing `load()` through `harmonize(parse(...))` for every loader in one shared-path PR with full golden parity + benchmarks.
-  - `arbin_res` needs ODBC — CI can only check against the committed fixture (loader plan risk table).
-  - Value-parity oracle lives on branch `issue-560-value-parity-oracle` (`tests/test_loader_port_parity.py`); as of 2026-07-20, `neware_txt` has exact parity on 14 comparable columns; `maccor_txt` is green except columns owned by unported post-processors.
-  - Ingestion-path rule from the oracle work: a step that can destroy data must not do it quietly (duration-cast / #580 shape).
-  - `set_cycle_number_not_zero` needs an explicit 0- vs 1-based cycles product decision, not only a hook.
-  - Oracle-found bugs (`PER_STEP` granularity; duration→null casts) are flag-day regressions caught before shipping — not user-facing on current legacy ingestion.
+  - There is no `LegacyLoaderAdapter` class; the transitional mechanism is shared `to_native()` in `cellreader` — switchover is all loaders at once via `harmonize(parse(...))`.
+  - Prefer cellpy-core#139 energy-column mapping released and re-pinned before switchover.
+  - Ingestion-path rule: a step that can destroy data must not do so quietly (same shape as #580).
+  - Value-parity oracle (`tests/test_loader_port_parity.py`) is the switchover gate; name-only declaration checks are insufficient.
+  - Oracle-found bugs were pre-flag-day only (`harmonize` limited to the maccor pilot); not user-facing on 2.0.0a5 load path.
 - **Superseded / retracted**:
-  - Issue body wording "Delete `LegacyLoaderAdapter`" — superseded by the Part-1 status: retire `to_native()` instead.
-  - Earlier claim that neware capacities on 2.0.0a5 were already wrong due to bug (1) — explicitly retracted; legacy ingestion still cumulates correctly.
+  - Earlier claim that neware capacities on 2.0.0a5 were affected by the PER_STEP bug — retracted in the edited comment.
+  - Literal "delete `LegacyLoaderAdapter`" acceptance — superseded by retiring the shared `to_native()` ingestion path.
 
 _Note: this section is an interpretive summary of the comment thread, not a verbatim dump. Source comments: 3, last comment by @jepegit on 2026-07-20._
 

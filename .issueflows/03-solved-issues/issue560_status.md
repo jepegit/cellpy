@@ -13,9 +13,17 @@
 - **C3** Try-harmonize-first for single-file raw; conformance check 7 in
   `check_loader`.
 - Design note: `.issueflows/04-designs-and-guides/harmonized-raw-default.md`.
-- `HISTORY.md` promoted to `[2.0.0a6] - 2026-07-22`.
-- Essential suite: 525 passed (ignore pre-existing `test_arbin_variants_two_stage`
-  `pyodbc` collection error on this host).
+- `HISTORY.md` promoted to `[2.0.0a6] - 2026-07-22` (already contains the #560 bullet).
+- Essential suite: 528 passed (ignore pre-existing `test_arbin_variants_two_stage`
+  `pyodbc` collection error on this host; also ignore
+  `test_plotutils_summary_plot` per CI essential gate).
+
+## Close-out (2026-07-22)
+
+- Reopened from `03-solved-issues` for GitHub close-out on
+  `cursor/560-loader-port-afce`.
+- Verified essential gate green; no further code changes required.
+- Issue tracking returned to `03-solved-issues`.
 
 ## Planned release tag
 
