@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [2.0.0a6] - 2026-07-22
+
 * **Breaking:** `CellpyCell.get_cap` now returns native `cellpycore` curve
   columns (#540, native-headers flip Stage 1): `voltage` → `potential` and
   `cycle` → `cycle_num` (`capacity` / `direction` unchanged). All in-repo
@@ -175,6 +177,12 @@
   kwarg is gone (1.x users keep it on the `v1.x` branch). The arbin_sql_h5 test
   now runs on the core path (verified value-identical; core prunes 13 duplicate
   raw rows, 47→34).
+
+* Stage 3.3: single-file raw loads default to `harmonize(parse())`
+  (`Reader.use_harmonized_raw=True`); Arbin wide-aux columns keep values under
+  `aux_<quantity>_<name>`; vendor `datapoint_num` is preserved; `batmo_bdf`
+  decode runs in `parse()`; `arbin_sql_h5` keeps all loader-stage rows. (#560)
+
 
 ## 1.1.0.post1 - 2026-07-15
 

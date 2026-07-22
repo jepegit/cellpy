@@ -138,6 +138,43 @@ def check_determinism(loader_cls: type, fixture: Path, **kwargs: Any) -> None:
         assert a.raw.equals(b.raw), "load() is not deterministic (raw frames differ)"
 
 
+def check_reset_granularity(result: LoaderResult) -> None:
+    """Check 7 — reset-granularity sanity on a harmonized raw frame.
+
+    A wrong ``reset_granularity`` declaration does not raise; it silently
+    rescales capacities (loader plan §5). The full value-parity property test
+    lives in ``tests/test_harmonize.py``; this kit check is the cheap structural
+    gate every conforming loader must pass: when cumulative capacity columns
+    are present, the last value of each cycle is finite and the per-cycle
+    series has one row per distinct ``cycle_num``.
+    """
+    import math
+
+    import polars as pl
+    from cellpycore.config import default_schema
+
+    schema = default_schema().raw
+    raw = result.raw
+    charge = schema.cumulative_charge_capacity
+    discharge = schema.cumulative_discharge_capacity
+    cycle = schema.cycle_num
+    present = [column for column in (charge, discharge) if column in raw.columns]
+    if not present or cycle not in raw.columns:
+        return
+
+    per_cycle = raw.group_by(cycle, maintain_order=True).agg(
+        *[pl.col(column).last().alias(column) for column in present]
+    )
+    assert per_cycle.height == raw[cycle].n_unique(), (
+        "reset-granularity check: per-cycle aggregation lost or duplicated cycles"
+    )
+    for column in present:
+        values = per_cycle[column].to_list()
+        assert all(v is not None and not (isinstance(v, float) and math.isnan(v)) for v in values), (
+            f"reset-granularity check: {column} has non-finite per-cycle lasts"
+        )
+
+
 def check_loader(loader_cls: type, fixture: Path, **kwargs: Any) -> None:
     """Run the whole conformance suite for one loader against one fixture.
 
@@ -161,10 +198,6 @@ def check_loader(loader_cls: type, fixture: Path, **kwargs: Any) -> None:
         check_raw_frame(result)
         check_units(result)
         check_meta_is_a_draft(result)
+        check_reset_granularity(result)
 
     check_determinism(loader_cls, fixture, **kwargs)
-
-
-# The reset-granularity property check (architecture plan §5.5 check 7 — the
-# one that catches silent capacity corruption) needs the harmonize() framework
-# to normalize against, so it lands with #559 and is added here then.

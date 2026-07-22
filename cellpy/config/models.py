@@ -74,7 +74,7 @@ class ReaderConfig(BaseModel):
     # whose two-stage path is unverified, so it is not yet safe as the default.
     # Turn on per session once a loader is hardened. Single-file loads only;
     # multi-file merges and parse failures keep the legacy path regardless.
-    use_harmonized_raw: bool = False
+    use_harmonized_raw: bool = True
 
 
 class DbConfig(BaseModel):
