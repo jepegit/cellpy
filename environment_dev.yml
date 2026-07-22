@@ -5,12 +5,12 @@ dependencies:
     - python=3.13
     - PyGithub
     - black
+    - cellpycore ==0.2.3
     - cookiecutter
     - coverage
     - cryptography
     - dateparser
     - defusedxml
-    - fabric
     - graphviz
     - hdf5
     - ipykernel
@@ -41,6 +41,9 @@ dependencies:
     - pytest-benchmark
     - pytest-timeout
     - python-isal
+    - pyyaml
+    - paramiko >= 5.0.0
+    - universal-pathlib >= 0.3.10
     - requests
     - rich
     - scipy
@@ -58,8 +61,6 @@ dependencies:
     - xmltodict
     - charset-normalizer
     - pip:
-        # PyPI-only (no conda-forge package).
-        - cellpycore==0.2.1
         # Optional external fastnda; cellpy defaults to cellpy.libs.local_fastnda.
         - fastnda
         # Old plotly kaleido 0.1.x (python-kaleido on conda-forge is 1.x).
