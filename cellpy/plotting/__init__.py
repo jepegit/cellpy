@@ -6,17 +6,18 @@ Four generations of plotting code grew up in three modules
 by paths that shared no layout logic. This package is where the shared parts
 live; the plan is `architecture-plan/cellpy2-plotting-redesign-plan.md`.
 
-**Phase 1 (this)** consolidates the plumbing that was verifiably duplicated:
-
 | module | owns |
 |---|---|
 | [`figures`][cellpy.plotting.figures] | loading and saving figures |
 | [`labels`][cellpy.plotting.labels] | legend and marker post-processing |
 | [`theme`][cellpy.plotting.theme] | plotly templates and colour/marker cycles |
+| [`spec`][cellpy.plotting.spec] | ``FigureSpec`` / ``PanelSpec`` / ``AxisSpec`` |
+| [`registry`][cellpy.plotting.registry] | named ``PlotFamily`` records for ``summary_plot`` |
 
 The old locations re-export from here, so nothing that imported them breaks.
-The drawing code itself — ``summary_plot`` and friends — has not moved yet;
-that is Phase 2.
+The drawing code itself — ``summary_plot`` and friends — still lives in
+``plotutils``; Stage 1 of epic #567 moves selection behind the registry and
+lands the spec types for later prepare→spec→render work.
 """
 
 from __future__ import annotations
@@ -29,9 +30,23 @@ from cellpy.plotting.figures import (
     save_matplotlib_figure,
 )
 from cellpy.plotting.labels import legend_replacer, remove_markers
+from cellpy.plotting.registry import (
+    PlotFamily,
+    _register_family,
+    families,
+    get as get_family,
+)
+from cellpy.plotting.spec import AxisSpec, FigureSpec, PanelSpec
 from cellpy.plotting.theme import make_plotly_template
 
 __all__ = [
+    "AxisSpec",
+    "FigureSpec",
+    "PanelSpec",
+    "PlotFamily",
+    "_register_family",
+    "families",
+    "get_family",
     "legend_replacer",
     "load_figure",
     "load_matplotlib_figure",

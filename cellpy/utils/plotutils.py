@@ -46,6 +46,7 @@ from cellpy.plotting.figures import (  # noqa: F401
 )
 from cellpy.plotting.labels import legend_replacer as _plotly_legend_replacer
 from cellpy.plotting.labels import remove_markers as _plotly_remove_markers
+from cellpy.plotting import registry as plot_registry
 from cellpy.plotting.theme import make_plotly_template as _make_plotly_template
 
 # get_cap curve frames use native CurveCols names (#540): potential/cycle_num
@@ -961,8 +962,10 @@ class SummaryPlotInfo:
     def _create_col_info(self, c: Any) -> tuple[tuple, dict, dict, dict]:
         """Create column information for summary plots.
 
-        This function is called by summary_plot together with create_label_dict. The two functions need to be updated together.
-        Not optimal. So feel free to refactor it.
+        Thin adapter over :mod:`cellpy.plotting.registry` (#636). Column-set
+        selection for named ``y`` values lives in ``PlotFamily`` records; this
+        method only materialises them against ``c.headers_summary``. Keep in
+        sync with :meth:`_create_label_dict`.
 
         Args:
             c: cellpy object
@@ -973,26 +976,6 @@ class SummaryPlotInfo:
         """
 
         hdr = c.headers_summary
-        _cap_cols = [hdr.charge_capacity_raw, hdr.discharge_capacity_raw]
-        _capacities_gravimetric = [col + "_gravimetric" for col in _cap_cols]
-        _capacities_gravimetric_split = (
-            _capacities_gravimetric
-            + [col + "_cv" for col in _capacities_gravimetric]
-            + [col + "_non_cv" for col in _capacities_gravimetric]
-        )
-        _capacities_areal = [col + "_areal" for col in _cap_cols]
-        _capacities_areal_split = (
-            _capacities_areal
-            + [col + "_cv" for col in _capacities_areal]
-            + [col + "_non_cv" for col in _capacities_areal]
-        )
-        _capacities_absolute = [col + "_absolute" for col in _cap_cols]
-        _capacities_absolute_split = (
-            _capacities_absolute
-            + [col + "_cv" for col in _capacities_absolute]
-            + [col + "_non_cv" for col in _capacities_absolute]
-        )
-
         x_columns = (
             [
                 hdr.cycle_index,
@@ -1002,137 +985,17 @@ class SummaryPlotInfo:
                 hdr.normalized_cycle_index,
             ],
         )
-        y_cols = dict(
-            voltages=[hdr.end_voltage_charge, hdr.end_voltage_discharge],
-            capacities_gravimetric=_capacities_gravimetric,
-            capacities_areal=_capacities_areal,
-            capacities_absolute=_capacities_absolute,
-            capacities=_cap_cols,
-            capacities_gravimetric_split_constant_voltage=_capacities_gravimetric_split,
-            capacities_areal_split_constant_voltage=_capacities_areal_split,
-            capacities_gravimetric_coulombic_efficiency=_capacities_gravimetric
-            + [hdr.coulombic_efficiency],
-            capacities_areal_coulombic_efficiency=_capacities_areal
-            + [hdr.coulombic_efficiency],
-            capacities_absolute_coulombic_efficiency=_capacities_absolute
-            + [hdr.coulombic_efficiency],
-            capacities_gravimetric_with_rate=_capacities_gravimetric
-            + [hdr.charge_c_rate, hdr.discharge_c_rate],
-            capacities_areal_with_rate=_capacities_areal
-            + [hdr.charge_c_rate, hdr.discharge_c_rate],
-            capacities_absolute_with_rate=_capacities_absolute
-            + [hdr.charge_c_rate, hdr.discharge_c_rate],
-            fullcell_standard_cumloss_gravimetric=[
-                hdr.charge_capacity + "_gravimetric" + "_cv",
-                hdr.cumulated_discharge_capacity_loss + "_gravimetric",
-                hdr.discharge_capacity + "_gravimetric",
-                hdr.coulombic_efficiency,
-            ],
-            fullcell_standard_cumloss_areal=[
-                hdr.charge_capacity + "_areal" + "_cv",
-                hdr.cumulated_discharge_capacity_loss + "_areal",
-                hdr.discharge_capacity + "_areal",
-                hdr.coulombic_efficiency,
-            ],
-            fullcell_standard_cumloss_absolute=[
-                hdr.charge_capacity + "_absolute" + "_cv",
-                hdr.cumulated_discharge_capacity_loss + "_absolute",
-                hdr.discharge_capacity + "_absolute",
-                hdr.coulombic_efficiency,
-            ],
-            fullcell_standard_gravimetric=[
-                hdr.charge_capacity + "_gravimetric" + "_cv",
-                hdr.discharge_capacity + "_gravimetric",
-                "mod_01_" + hdr.discharge_capacity + "_gravimetric",
-                hdr.coulombic_efficiency,
-            ],
-            fullcell_standard_areal=[
-                hdr.charge_capacity + "_areal" + "_cv",
-                hdr.discharge_capacity + "_areal",
-                "mod_01_" + hdr.discharge_capacity + "_areal",
-                hdr.coulombic_efficiency,
-            ],
-            fullcell_standard_absolute=[
-                hdr.charge_capacity + "_absolute" + "_cv",
-                hdr.discharge_capacity + "_absolute",
-                "mod_01_" + hdr.discharge_capacity + "_absolute",
-                hdr.coulombic_efficiency,
-            ],
-            fullcell_standard_dev=[
-                hdr.charge_capacity + "_gravimetric" + "_cv",
-                hdr.discharge_capacity + "_gravimetric",
-                hdr.coulombic_efficiency,
-                "mod_01_" + hdr.discharge_capacity + "_gravimetric",
-            ],
-        )
-
-        _normalize_col = self.normalize_col
-
-        x_transformations = dict()
-
-        # transformation info on the form: column_name: {(row_number, new_column_name): transformation_function}
-        y_transformations: dict[str, dict[tuple[int, str], dict[str, Callable]]] = dict(
-            fullcell_standard_cumloss_gravimetric={
-                hdr.cumulated_discharge_capacity_loss + "_gravimetric": {
-                    (
-                        2,
-                        hdr.cumulated_discharge_capacity_loss + "_gravimetric",
-                    ): _normalize_col
-                },
-            },
-            fullcell_standard_cumloss_areal={
-                hdr.cumulated_discharge_capacity_loss + "_areal": {
-                    (
-                        2,
-                        hdr.cumulated_discharge_capacity_loss + "_areal",
-                    ): _normalize_col
-                },
-            },
-            fullcell_standard_cumloss_absolute={
-                hdr.cumulated_discharge_capacity_loss + "_absolute": {
-                    (
-                        2,
-                        hdr.cumulated_discharge_capacity_loss + "_absolute",
-                    ): _normalize_col
-                },
-            },
-            fullcell_standard_gravimetric={
-                "mod_01_" + hdr.discharge_capacity + "_gravimetric": {
-                    (
-                        2,
-                        hdr.discharge_capacity + "_retention" + "_gravimetric",
-                    ): _normalize_col
-                },
-            },
-            fullcell_standard_areal={
-                "mod_01_" + hdr.discharge_capacity + "_areal": {
-                    (
-                        2,
-                        hdr.discharge_capacity + "_retention" + "_areal",
-                    ): _normalize_col
-                },
-            },
-            fullcell_standard_absolute={
-                "mod_01_" + hdr.discharge_capacity + "_absolute": {
-                    (
-                        2,
-                        hdr.discharge_capacity + "_retention" + "_absolute",
-                    ): _normalize_col
-                },
-            },
-            fullcell_standard_dev={
-                "mod_01_" + hdr.discharge_capacity + "_gravimetric": {
-                    (
-                        2,
-                        hdr.discharge_capacity + "_retention" + "_gravimetric",
-                    ): _normalize_col
-                },
-            },
-        )
+        y_cols: dict[str, list[str]] = {}
+        y_transformations: dict[str, dict] = {}
+        for family in plot_registry.iter_families():
+            y_cols[family.name] = family.columns(hdr)
+            transforms = family.transforms(hdr, self.normalize_col)
+            if transforms:
+                y_transformations[family.name] = transforms
 
         self.x_cols = x_columns
         self.y_cols = y_cols
-        self.x_trans = x_transformations
+        self.x_trans = dict()
         self.y_trans = y_transformations
 
 
@@ -1174,6 +1037,7 @@ class SummaryPlotDataPreparer:
         """
         x = config.x if config.x is not None else c.schema.summary.cycle_num
         y = config.y
+        plot_registry.get(y)
 
         number_of_rows = 1
         max_val_normalized_col = 0.0
@@ -1241,7 +1105,7 @@ class SummaryPlotDataPreparer:
 
         # The figure has 4 rows: coulombic efficiency, capacity, capacity retention, and CV capacity
         number_of_rows = 4
-        column_set = y_cols.get(y, y)
+        column_set = y_cols[y]
 
         summary = self._preprocess_summary(c, c.data.summary, config)
         if summary.index.name == x:
@@ -1322,7 +1186,7 @@ class SummaryPlotDataPreparer:
 
     def _prepare_standard_data(self, c, x, y, y_cols, config) -> tuple:
         """Prepare data for standard plots."""
-        column_set = y_cols.get(y, y)
+        column_set = y_cols[y]
         if isinstance(column_set, str):
             column_set = [column_set]
 
