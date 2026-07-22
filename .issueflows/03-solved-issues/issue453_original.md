@@ -36,3 +36,11 @@ to logging.
   in a test).
 - User-facing mutation patterns (`prms.Reader.cycle_mode = ...`) still work, warn once.
 
+## Comments (curated summary)
+
+- **Clarifications / constraints**:
+  - Maintainer closed the issue as complete: M1 (#494), M2 (#495), and M3 (#496) all merged to master and verified green; `import cellpy` no longer reads config files at import time; `prms.*` remains the external shim with the documented deprecation cadence.
+  - Follow-up UX work (TOML generation + `setup migrate`) stays in #454 — out of scope for closing #453.
+
+_Note: this section is an interpretive summary of the comment thread, not a verbatim dump. Source comments: 1, last comment by @jepegit on 2026-07-14._
+
