@@ -851,8 +851,15 @@ class DataLoader(BaseLoader):
         else:
             data = self._loader_win(self.name, self.temp_file_path, **kwargs)
 
+        # Keep the Data shell so loader() can finish post_process/merge without
+        # opening the Access file a second time (#560 Phase C).
+        self._parsed_data = data
+        frame = pl.from_pandas(data.raw.reset_index(drop=True))
+        # Remember the vendor columns so declarations() can build aux_map /
+        # dropped without re-reading the Access file.
+        self._parsed_vendor_columns = tuple(frame.columns)
         self._parsed = True
-        return pl.from_pandas(data.raw.reset_index(drop=True))
+        return frame
 
     def declarations(self):
         """Declarations for arbin's normal table (#560).
@@ -863,9 +870,16 @@ class DataLoader(BaseLoader):
         composing with cellpy-core's legacy→native map (via
         ``derive_column_maps``) gives Arbin → native and the provenance rule for
         free (``Test_ID`` is not mapped onto the framework ``test_id``).
+
+        Wide-aux columns (``aux_<nick>_u_<unit>``) are already on the vendor
+        frame after the Access read; they are declared via ``aux_map`` so
+        ``harmonize()`` keeps them under the native
+        ``aux_<quantity>_<name>`` scheme instead of warn-and-dropping them
+        (#560 Phase C / #621).
         """
         from cellpycore.units import CellpyUnits
 
+        from cellpy.readers.instruments._aux_map import aux_map_from_columns
         from cellpy.readers.instruments.config_declarations import derive_column_maps
         from cellpy.readers.instruments.declarations import LoaderDeclarations
 
@@ -879,6 +893,28 @@ class DataLoader(BaseLoader):
         renaming = dict(self.arbin_headers_normal)
         column_map, passthrough, _ = derive_column_maps(renaming)
 
+        vendor_columns = list(getattr(self, "_parsed_vendor_columns", ()))
+        claimed = set(column_map) | set(passthrough)
+        aux_map = aux_map_from_columns(vendor_columns, already_declared=claimed)
+        # Provenance / tester housekeeping that the legacy path also drops
+        # from the "keep" set when renaming — silence the unrecognised warning.
+        dropped = tuple(
+            column
+            for column in ("Test_ID",)
+            if column in vendor_columns and column not in claimed and column not in aux_map
+        )
+        # Anything still unrecognised after aux_map is a deliberate discard
+        # (PulseStage*, TC_Counter*, ACR, …) — list it so the flip does not
+        # spam warnings for every Arbin file with those columns.
+        still_open = [
+            column
+            for column in vendor_columns
+            if column not in claimed
+            and column not in aux_map
+            and column not in dropped
+        ]
+        dropped = dropped + tuple(still_open)
+
         raw_units = {
             key: value
             for key, value in self.get_raw_units().items()
@@ -888,6 +924,8 @@ class DataLoader(BaseLoader):
             column_map=column_map,
             raw_units=CellpyUnits(**raw_units),
             passthrough=passthrough,
+            aux_map=aux_map,
+            dropped=dropped,
             # Arbin stores DateTime as an Excel serial (days since 1899-12-30);
             # harmonize() derives epoch_time_utc from it. This replaces the
             # xldate conversion the legacy _post_process ran on the same column.
@@ -927,40 +965,46 @@ class DataLoader(BaseLoader):
         else:
             merge = True
 
-        try:
-            not_too_big = self._check_size()
-            if not not_too_big:
-                return None
-        except Exception as e:
-            self.logger.debug(f"could not get file size: {e}")
-
-        use_mdbtools = False
-        if _use_subprocess:
-            use_mdbtools = True
-        if _is_posix:
-            use_mdbtools = True
-
-        if use_mdbtools:
-            new_data = self._loader_posix(
-                self.name,
-                self.temp_file_path,
-                self.temp_file_path.parent,
-                *args,
-                bad_steps=bad_steps,
-                dataset_number=dataset_number,
-                data_points=data_points,
-                **kwargs,
-            )
+        cached = getattr(self, "_parsed_data", None)
+        if cached is not None:
+            # parse() already ran the Access/mdbtools read.
+            new_data = cached
+            self._parsed_data = None
         else:
-            new_data = self._loader_win(
-                self.name,
-                self.temp_file_path,
-                *args,
-                bad_steps=bad_steps,
-                dataset_number=dataset_number,
-                data_points=data_points,
-                **kwargs,
-            )
+            try:
+                not_too_big = self._check_size()
+                if not not_too_big:
+                    return None
+            except Exception as e:
+                self.logger.debug(f"could not get file size: {e}")
+
+            use_mdbtools = False
+            if _use_subprocess:
+                use_mdbtools = True
+            if _is_posix:
+                use_mdbtools = True
+
+            if use_mdbtools:
+                new_data = self._loader_posix(
+                    self.name,
+                    self.temp_file_path,
+                    self.temp_file_path.parent,
+                    *args,
+                    bad_steps=bad_steps,
+                    dataset_number=dataset_number,
+                    data_points=data_points,
+                    **kwargs,
+                )
+            else:
+                new_data = self._loader_win(
+                    self.name,
+                    self.temp_file_path,
+                    *args,
+                    bad_steps=bad_steps,
+                    dataset_number=dataset_number,
+                    data_points=data_points,
+                    **kwargs,
+                )
 
         new_data = self._post_process(new_data)
         if merge:

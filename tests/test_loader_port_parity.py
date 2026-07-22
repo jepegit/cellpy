@@ -56,13 +56,20 @@ PARITY_CASES = (
     # posix). CI has mdbtools, so this runs there; environments without a
     # backend skip gracefully (see _skip_if_unloadable), like the golden.
     ("arbin_res", "testdata/data/20160805_test001_45_cc_01.res", {}),
+    # Wide-aux fixture: the #621 flip regression was losing ``aux_0_u_C``.
+    ("arbin_res", "testdata/data/aux_one_x_dx.res", {}),
     # arbin_sql_h5: the one arbin_sql variant with an in-repo fixture. Its
     # internal-resistance forward fill is a declared post hook (plan §2.6c).
+    # Loader-stage keeps all 47 rows (summary may still prune to 34 — #560
+    # decision: keep the extras; summaries stay value-identical).
     ("arbin_sql_h5", "testdata/data/20200624_test001_cc_01.h5", {}),
     # biologics_mpr: parse() runs the legacy mpr derivations (cycle from
     # half_cycle, signed-capacity split, datetime from log start), so the vendor
     # frame already carries cellpy names; declarations() maps them to native.
     ("biologics_mpr", "testdata/data/biol.mpr", {}),
+    # batmo_bdf: hours→seconds and friends must run inside parse() or the
+    # flip misconverts test_time (#621 / #560 Phase C).
+    ("batmo_bdf", "testdata/data/batmo_bdf.csv", {}),
 )
 
 #: Legacy post-processor → native columns it changes, for the ones that have no
@@ -286,6 +293,8 @@ def test_harmonized_values_match_the_legacy_frame(
     assert checked, f"{instrument}: every shared column was excused - test is vacuous"
 
     _assert_epoch_time_utc(instrument, harmonized, legacy)
+    _assert_datapoint_preserved(instrument, harmonized, legacy)
+    _assert_aux_columns_survive(instrument, harmonized, legacy)
 
 
 #: Loaders exempt from the *exact* epoch check, with the reason. ``custom`` is
@@ -298,6 +307,74 @@ def test_harmonized_values_match_the_legacy_frame(
 #: blanket tolerance would have hidden the real 1 µs Excel-serial bug caught on
 #: arbin. This is a synthetic-fixture artifact, not a loader defect.
 _EPOCH_EXACT_SKIP = {"custom"}
+
+
+def _assert_datapoint_preserved(instrument, harmonized, legacy):
+    """Vendor ``data_point`` / ``datapoint_num`` is not re-minted as 0..n-1.
+
+    ``harmonize()`` synthesises ``datapoint_num`` only when the vendor frame
+    did not provide one. Replacing a real Arbin index (or BatMo's 1-based
+    sequence) with ``int_range`` was a Phase-B flip regression (#621).
+    """
+    if "datapoint_num" not in harmonized.columns:
+        return
+    legacy_col = (
+        "datapoint_num"
+        if "datapoint_num" in legacy.columns
+        else "data_point" if "data_point" in legacy.columns else None
+    )
+    if legacy_col is None:
+        return
+    left = harmonized["datapoint_num"].cast(pl.Int64)
+    right = legacy[legacy_col].cast(pl.Int64)
+    assert left.len() == right.len(), (
+        f"{instrument}: datapoint_num length {left.len()} != legacy "
+        f"{legacy_col} length {right.len()}"
+    )
+    if not (left == right).all():
+        raise AssertionError(
+            f"{instrument}: datapoint_num was renumbered (first "
+            f"harmonized={left[0]}, legacy={right[0]}; "
+            f"last harmonized={left[-1]}, legacy={right[-1]})"
+        )
+
+
+def _assert_aux_columns_survive(instrument, harmonized, legacy):
+    """Every legacy ``aux_*`` column survives on the harmonized frame.
+
+    Names may change (``aux_0_u_C`` → ``aux_temperature_0``); values must
+    match. Columns the loader deliberately drops stay absent on both sides
+    of the rename, so a missing harmonized counterpart is a real regression.
+    """
+    from cellpy.readers.instruments._aux_map import map_one_aux_column
+
+    legacy_aux = [c for c in legacy.columns if c.startswith("aux_")]
+    if not legacy_aux:
+        return
+    missing = []
+    mismatched = []
+    for column in legacy_aux:
+        target = map_one_aux_column(column) or column
+        if target not in harmonized.columns:
+            missing.append(f"{column} -> {target}")
+            continue
+        left_n, right_n = _numeric(harmonized[target]), _numeric(legacy[column])
+        if left_n is None or right_n is None:
+            if not (harmonized[target].cast(pl.Float64, strict=False).fill_null(0)
+                    .equals(legacy[column].cast(pl.Float64, strict=False).fill_null(0))):
+                # fall back to direct compare when non-numeric
+                if not (harmonized[target] == legacy[column]).all():
+                    mismatched.append(column)
+            continue
+        worst = (left_n - right_n).abs().max()
+        if worst is not None and worst > TOLERANCE:
+            mismatched.append(f"{column} (max abs diff {worst})")
+    assert not missing, (
+        f"{instrument}: legacy aux columns missing after harmonize: {missing}"
+    )
+    assert not mismatched, (
+        f"{instrument}: legacy aux values disagree after harmonize: {mismatched}"
+    )
 
 
 def _assert_epoch_time_utc(instrument, harmonized, legacy):
@@ -356,6 +433,31 @@ def test_no_column_is_silently_emptied(
         f"{instrument}: {emptied} came out entirely null while the legacy path "
         f"populated them"
     )
+
+
+@pytest.mark.essential
+def test_arbin_sql_h5_keeps_all_loader_stage_rows():
+    """#560 decision: keep the extra h5 rows (do not re-dedup at harmonize).
+
+    The legacy ``make_summary`` path used to collapse 47 loader-stage rows to
+    34 value-identical ones as a side effect. ``parse()`` already
+    ``drop_duplicates()``s the export; the remaining extras are genuine
+    distinct measurements and must survive both ``harmonize()`` and the
+    default load+summary path.
+    """
+    import cellpy
+
+    source = "testdata/data/20200624_test001_cc_01.h5"
+    instrument = "arbin_sql_h5"
+    harmonized, legacy, _ = _harmonized_and_legacy(instrument, source, {})
+    assert harmonized.height == legacy.height == 47
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        cell = cellpy.get(
+            source, instrument=instrument, mass=1.0, testing=True, auto_summary=True
+        )
+    assert len(cell.data.raw) == 47
+    assert len(cell.data.summary) >= 1
 
 
 @pytest.mark.essential

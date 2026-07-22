@@ -73,7 +73,7 @@ Settings for reading data.
 | `auto_dirs` | `bool` | `True` |
 | `max_raw_files_to_merge` | `int` | `20` |
 | `jupyter_executable` | `str` | `jupyter` |
-| `use_harmonized_raw` | `bool` | `False` |
+| `use_harmonized_raw` | `bool` | `True` |
 
 
 ## db

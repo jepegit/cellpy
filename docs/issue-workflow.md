@@ -26,9 +26,11 @@ It also seeds `.issueflows/00-tools/README.md` — the index of the project's **
 | `/iflow-yolo` | `iflow-yolo/SKILL.md` | All-in-one for small, low-risk issues: chains `init → plan → start → close` with up-front safeguards and a single confirmation. |
 | `/iflow-fix` | `iflow-fix/SKILL.md` | **Off-path.** Interactive iterative-fixes session: create one issue + long-lived branch, then loop over many small fixes (short plan each, recorded in `issue<N>_status.md`), ending with `/iflow-close`. |
 | `/iflow-status` | `iflow-status/SKILL.md` | **Off-path, read-only.** Snapshot of where every issue stands — local tracking state (focus / parked / solved) plus open GitHub issues cross-referenced against it. Changes nothing. |
+| `/iflow-doctor` | `iflow-doctor/SKILL.md` | **Off-path.** Audit `.issueflows/` for dirty conditions; optional safe repair (mkdir + sweep). |
+| `/iflow-review` | `iflow-review/SKILL.md` | **Off-path.** Review open GitHub issues and apply labels (extendable kinds; v1: yolo → configured `yolo_label`). Confirm before writes. |
 | `/iflow-archive` | `iflow-archive/SKILL.md` | **Off-path, destructive (gated).** Condense old solved issue groups into a dated `YYYY-MM-DD_archived_issues.md` summary (recording the pre-archive git ref for recovery), then delete the original files after one consolidated confirm. |
 | `/iflow-epic` | `iflow-epic/SKILL.md` | **Off-path.** Plan a larger change as a staged epic: `05-epics/epic<N>_plan.md` divides the work into stages of manageable issue specs (dependencies + per-issue yolo judgment). Drafting writes nothing on GitHub; `publish [stage <k>]` creates a confirmed stage's issues behind one consolidated confirm and maintains a task list on the anchor issue. |
-| `/iflow-cycle` | `iflow-cycle/SKILL.md` | **Off-path.** Process a queue of yolo-fit issues hands-off in a row under one up-front confirm — the batch equivalent of `/iflow-yolo`. Resolves the queue via `issue-flow agent queue`, runs each issue through the full yolo chain (PR auto-merged), and stops only when input is strictly necessary. |
+| `/iflow-cycle` | `iflow-cycle/SKILL.md` | **Off-path.** Process a queue of yolo-fit issues hands-off in a row under one up-front confirm — the batch equivalent of `/iflow-yolo`. Resolves the queue via `issue-flow agent queue`, runs each issue through the full yolo chain (PR auto-merged), and stops only when input is strictly necessary. **All yolo-labelled issues:** `/iflow-cycle yolo` (alias for `label:yolo`). |
 | `/iflow-graphify` | `iflow-graphify/SKILL.md` | **Off-path.** Rebuild the [graphify](https://iflow-graphify.net) knowledge graph (`graphify-out/graph.html`, `GRAPH_REPORT.md`, `graph.json`). Wraps `issue-flow graphify` / `graphify`. Optional: only meaningful when `graphifyy` is installed. |
 
 
@@ -52,6 +54,10 @@ It also seeds `.issueflows/00-tools/README.md` — the index of the project's **
 | `iflow-yolo` | `iflow yolo`, `iflow-yolo`, `/iflow-yolo` | Chain `init → plan → start → close`. |
 | `iflow-fix` | `iflow fix`, `iflow-fix`, `/iflow-fix` | Interactive iterative-fixes session. Off-path. |
 | `iflow-status` | `iflow status`, `iflow-status`, `/iflow-status` | Read-only issue overview. Off-path. |
+| `iflow-doctor` | `iflow doctor`, `iflow-doctor`, `/iflow-doctor` | Audit/repair dirty `.issueflows/`. Off-path. |
+| `iflow-review` | `iflow review`, `iflow-review`, `/iflow-review` | Review open issues and apply labels (v1: yolo). Off-path. |
+| `iflow-epic` | `iflow epic`, `iflow-epic`, `/iflow-epic` | Staged epic plan + publish. Off-path. |
+| `iflow-cycle` | `iflow cycle`, `iflow-cycle`, `/iflow-cycle` | Batch yolo queue (`yolo` / `label:<L>` / numbers / epic). Off-path. |
 | `iflow-archive` | `iflow archive`, `iflow-archive`, `/iflow-archive` | Condense solved archive. Off-path; destructive. |
 | `iflow-version-bump` | `@iflow-version-bump` (often used from `/iflow-close`) | Strategy-aware version bump: static `[project]` versions via `uv version --bump <level>` (any uv level: `major`/`minor`/`patch`/`stable`/`alpha`/`beta`/`rc`/`post`/`dev`); git-tag-derived versions via a planned post-merge tag. The project's own "Release & version bump" section in `this-project.md` wins; a bare `bump` stays on the current pre-release channel. |
 | `iflow-history-update` | `@iflow-history-update` (used from `/iflow-close`) | Append an entry to `## [Unreleased]` in `HISTORY.md`, or promote it to a new `## [x.y.z] - YYYY-MM-DD` release section when a version bump happened. |
@@ -112,7 +118,7 @@ All workflows that touch git also run a short **branch-status preflight**: `git 
 
 **Focus-issue resolution:** prefer the leading digits of the current branch when it matches `^<N>-.+`; else the single group in `.issueflows/01-current-issues/`; else ask.
 
-**Not auto-dispatched:** `/iflow-pause`, `/iflow-cleanup`, `/iflow-yolo`, `/iflow-fix`, `/iflow-status`, and `/iflow-archive`. `/iflow` will mention them in its output when relevant (e.g. "after the PR merges, run `/iflow-cleanup`") but never picks them for you.
+**Not auto-dispatched:** `/iflow-pause`, `/iflow-cleanup`, `/iflow-yolo`, `/iflow-fix`, `/iflow-status`, `/iflow-doctor`, `/iflow-review`, `/iflow-epic`, `/iflow-cycle`, and `/iflow-archive`. `/iflow` will mention them in its output when relevant (e.g. "after the PR merges, run `/iflow-cleanup`") but never picks them for you.
 
 **Result:** One of the four linear commands runs, with its own normal checkpoints intact.
 
@@ -213,9 +219,9 @@ The bump runs **after** tests and **before** issue-folder moves and **before** c
 4. **Issue folders** — update status markdown; use `- [x] Done` only when fully resolved. Move completed issue files from `.issueflows/01-current-issues/` to `.issueflows/03-solved-issues/`, or partly done work to `.issueflows/02-partly-solved-issues/`.
 5. **Commit** — focused staging and a clear message (include `pyproject.toml` / `uv.lock` if the bump changed them, and `HISTORY.md` when step 3 updated it). Sync with the default branch using `git pull --ff-only`.
 6. **Push** — to your usual remote (e.g. `origin`).
-7. **Pull request** — open against the default branch; link the GitHub issue (`Closes #n` / `Refs #n`).
+7. **Pull request** — `gh pr list --head <branch>` first (reuse an open PR); else create. Afterward, snapshot CI with `gh pr checks`. Link the GitHub issue (`Closes #n` / `Refs #n`).
 8. **Switch back when safe** — unless `stay` / `don't switch` was passed, run `git status --porcelain`; if clean, `git switch <default>` and `git pull --ff-only`; if dirty, stay put and report why switching is unsafe.
-9. **After review** — if switched back, return to the PR branch before review fixes; once the PR merges, run `/iflow-cleanup` for the post-merge tidy-up.
+9. **After review** — if switched back, return to the PR branch before review fixes; merge when approved and `gh pr checks` is green; once the PR merges, run `/iflow-cleanup` for the post-merge tidy-up. With `yolo`, close may `gh pr checks --watch` (budget: `checks_watch_minutes`, default 15) before merge, falling back to `--auto` only when the cap elapses.
 
 **Result:** Commit, push, PR link, and either a clean switch back to the default branch or a clear reason for staying on the issue branch. No branches are deleted from `/iflow-close` itself.
 
@@ -320,7 +326,113 @@ The bump runs **after** tests and **before** issue-folder moves and **before** c
 
 ---
 
-## 11. `/iflow-archive` — condense the solved-issues archive (destructive, gated)
+## 11. `/iflow-review` — review open issues and apply labels
+
+**When:** You want help deciding which open GitHub issues should carry workflow labels (v1: the configured `yolo` label).
+
+**What you pass:** Nothing (list kinds and ask), or `yolo` to run the yolo review.
+
+**What the assistant does:**
+
+1. **Kind** — if omitted, list supported review kinds and ask.
+2. **Config / label** — resolve `yolo_label` (and note `label_flows`); create the label under confirm if missing.
+3. **Candidates** — list all open issues (`issue-flow agent label-candidates`), including already-labelled ones for re-score.
+4. **Judge** — yolo-fitness (same criteria as `/iflow-epic`); propose **add** / **keep** / **skip** (never auto-remove).
+5. **Confirm + apply** — one consolidated confirm, then `issue-flow agent label-apply` (or `gh issue edit --add-label`).
+
+**Example:**
+
+```text
+iflow review yolo
+# → table of open issues with add / keep / skip
+# → confirm → labels applied
+iflow cycle yolo
+# → batch-process every open issue that now carries the yolo label
+```
+
+**Off-path:** `/iflow` never auto-dispatches to `/iflow-review`. No issue creation; no label removals in v1.
+
+**Result:** Selected open issues carry the target label so `/iflow-pick` can route them (when `label_flows` is on), or `/iflow-cycle yolo` can batch them.
+
+---
+
+## 12. `/iflow-epic` — plan a large change as staged issues
+
+**When:** The work is too big for one PR. You want a staged plan anchored to a GitHub issue, then publish one stage at a time as real issues.
+
+**What you pass:** `/iflow-epic <N>` to draft (or revise) `.issueflows/05-epics/epic<N>_plan.md`. Later: `/iflow-epic <N> publish [stage <k>]` to create that stage's issues on GitHub.
+
+**What the assistant does (draft):**
+
+1. Reads the anchor issue and any design docs under `04-designs-and-guides/`.
+2. Drafts stages of manageable issue specs (title, scope, acceptance, dependencies, **yolo: yes|no** judgment).
+3. Writes `Status: draft` and iterates with you until you confirm → `Status: confirmed`.
+4. **Does not** create GitHub issues while drafting.
+
+**What the assistant does (publish):**
+
+1. Requires `Status: confirmed`. Selects the named stage (or the earliest unpublished stage).
+2. Dry-run lists titles + labels, then **one consolidated confirm**.
+3. Creates issues in dependency order (`gh issue create`), records `Published: #<M>` in the plan, updates the anchor issue's task list.
+4. Re-runs are idempotent (already-published specs are skipped).
+
+**Example:**
+
+```text
+iflow epic 144
+# → drafts .issueflows/05-epics/epic144_plan.md  (Status: draft)
+# → you confirm → Status: confirmed
+iflow epic 144 publish stage 1
+# → creates stage-1 issues (yolo labels per judgment), task list on #144
+issue-flow agent epic-status 144 --json
+# → current stage + next_candidates for /iflow-pick / /iflow-cycle
+```
+
+**Off-path:** `/iflow` never auto-dispatches to `/iflow-epic`. Epics decompose into the normal single-issue lifecycle; they do not replace it.
+
+**Result:** A durable epic plan file; published stages become ordinary issues you pick/yolo/cycle as usual.
+
+---
+
+## 13. `/iflow-cycle` — batch-process a queue of yolo-fit issues
+
+**When:** You have several small, well-specified issues and want them landed hands-off under **one** up-front confirm — the batch form of `/iflow-yolo`.
+
+**What you pass:** a queue spec, for example:
+
+- `yolo` — alias for `label:yolo` (all open issues with the configured yolo trigger label)
+- `label:<L>` — every open issue with that label
+- explicit numbers — e.g. `12 15 18`
+- `epic <N> [stage <k>]` — current (or named) stage of an epic
+- optional: `onfail:stop|skip`, `max:<n>`, `resume`, `parallel:<n>` (experimental)
+
+**What the assistant does:**
+
+1. Expands aliases, then resolves the queue with `issue-flow agent queue … --json`.
+2. Cap check (default max 10 without `max:<n>`).
+3. **One consolidated confirm** (ordered queue, skipped/blocked, auto-merge).
+4. Writes `cycle_status.md`, then for each issue runs the full yolo chain from a clean default branch (merge → pull → next).
+5. Stops only on strictly necessary input; `onfail:stop` (default) leaves the tree clean on default.
+
+**Example — all yolo-labelled issues:**
+
+```text
+iflow cycle yolo
+# → agent queue --label yolo
+# → confirm the ordered list
+# → each issue: init → plan → start → close yolo (PR merged)
+# → back on default, clean, between issues
+```
+
+**Conflict stance:** sequential cycles merge each PR and return to a clean default before the next issue, so shared files like `HISTORY.md` stay single-writer. See `04-designs-and-guides/parallel-cycle.md` for experimental `parallel:<n>` (merges still serialized).
+
+**Off-path:** `/iflow` never auto-dispatches to `/iflow-cycle`.
+
+**Result:** A batch report of merged/failed/not-reached issues; run `/iflow-cleanup` once afterward to prune merged local branches.
+
+---
+
+## 14. `/iflow-archive` — condense the solved-issues archive (destructive, gated)
 
 **When:** `.issueflows/03-solved-issues/` has grown large and most of its `issue<N>_*` groups are no longer worth keeping as individual files.
 
@@ -374,6 +486,10 @@ Detours:
   /iflow-yolo   — chain init → plan → start → close for tiny fixes (safeguarded)
   /iflow-fix    — interactive session: one branch, many small fixes, then /iflow-close
   /iflow-status — read-only overview of all issues (focus / parked / solved + GitHub)
+  /iflow-doctor — audit/repair dirty .issueflows/ folders
+  /iflow-review — review open issues and apply labels (v1: yolo)
+  /iflow-epic   — stage a large change; publish stages as real issues
+  /iflow-cycle yolo — auto-process all open issues with the configured yolo label
   /iflow-archive — condense old solved issues into a dated summary file (gated deletion)
 ```
 

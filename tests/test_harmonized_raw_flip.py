@@ -1,14 +1,12 @@
-"""The opt-in harmonized-raw flip (Phase B / #560).
+"""The harmonized-raw flip (Phase B/C / #560).
 
-``prms.Reader.use_harmonized_raw`` routes single-file raw loading through the
-two-stage ``harmonize(parse())`` pipeline instead of the legacy
-``loader()+to_native`` rename. It ships **off** — the flip still drops aux
-columns and renumbers ``data_point`` on some loaders, so it is not yet a safe
-default (see the loader plan) — but the mechanism is wired and reversible, and
-this module keeps it covered so it does not rot before it is hardened.
+``prms.Reader.use_harmonized_raw`` (default **on** as of Phase C) routes
+single-file raw loading through the two-stage ``harmonize(parse())`` pipeline.
+Set it to ``False`` for the emergency ``loader()+to_native`` fallback.
 
-biologics_mpr is used because its flip is clean end-to-end (no aux columns, no
-data_point renumbering divergence); the fixture is in-repo.
+biologics_mpr covers the clean end-to-end path (epoch_time_utc / mask).
+``arbin_res`` with the wide-aux fixture covers the #621 regressions
+(aux survival + datapoint preservation).
 """
 
 from __future__ import annotations
@@ -21,18 +19,19 @@ import cellpy
 import cellpy.config as config
 
 SOURCE = "testdata/data/biol.mpr"
+AUX_SOURCE = "testdata/data/aux_one_x_dx.res"
 
 
-def _get():
+def _get(source=SOURCE, instrument="biologics_mpr"):
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        return cellpy.get(SOURCE, instrument="biologics_mpr", mass=1.0, testing=True)
+        return cellpy.get(source, instrument=instrument, mass=1.0, testing=True)
 
 
 @pytest.fixture
-def harmonized_raw_on():
-    previous = getattr(config.reader, "use_harmonized_raw", False)
-    config.reader.use_harmonized_raw = True
+def harmonized_raw_off():
+    previous = getattr(config.reader, "use_harmonized_raw", True)
+    config.reader.use_harmonized_raw = False
     try:
         yield
     finally:
@@ -40,22 +39,79 @@ def harmonized_raw_on():
 
 
 @pytest.mark.essential
-def test_default_is_off_so_raw_has_no_epoch_time_utc():
-    """The legacy loader()+to_native path carries date_time, not epoch_time_utc."""
-    assert getattr(config.reader, "use_harmonized_raw", False) is False
-    c = _get()
-    assert "epoch_time_utc" not in c.data.raw.columns
-
-
-@pytest.mark.essential
-def test_flip_on_produces_the_harmonized_native_raw(harmonized_raw_on):
-    """With the flip on, raw comes from harmonize(parse()) and carries the
-    native epoch_time_utc/mask columns the rename path omits."""
+def test_default_is_on_so_raw_has_epoch_time_utc():
+    """Phase C: the default path is harmonize(parse()), which stamps epoch_time_utc."""
+    assert getattr(config.reader, "use_harmonized_raw", True) is True
     c = _get()
     assert "epoch_time_utc" in c.data.raw.columns
     assert "mask" in c.data.raw.columns
-    # and it is still a usable cell: the summary builds.
+
+
+@pytest.mark.essential
+def test_flip_off_falls_back_to_loader_to_native(harmonized_raw_off):
+    """Emergency off-switch restores the rename path (date_time, no epoch)."""
+    c = _get()
+    assert "epoch_time_utc" not in c.data.raw.columns
+    assert "date_time" in c.data.raw.columns or "datetime" in [
+        c.lower() for c in c.data.raw.columns
+    ]
+
+
+@pytest.mark.essential
+def test_default_path_still_builds_a_summary():
+    c = _get()
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         c.make_summary()
     assert len(c.data.summary) >= 1
+
+
+@pytest.mark.essential
+def test_default_keeps_arbin_aux_and_datapoints():
+    """Phase C / #621: aux columns survive and datapoint_num is the vendor index."""
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        try:
+            c = cellpy.get(
+                AUX_SOURCE, instrument="arbin_res", mass=1.0, testing=True
+            )
+        except Exception as exc:  # noqa: BLE001 — missing Access/mdbtools
+            pytest.skip(f"arbin_res unavailable here: {exc}")
+    assert "aux_temperature_0" in c.data.raw.columns, (
+        f"aux column missing; got {[c for c in c.data.raw.columns if 'aux' in c]}"
+    )
+    assert "datapoint_num" in c.data.raw.columns
+    assert int(c.data.raw["datapoint_num"].iloc[0]) == 1
+    assert int(c.data.raw["datapoint_num"].iloc[-1]) == len(c.data.raw)
+
+
+@pytest.mark.essential
+def test_default_path_reads_vendor_file_once(monkeypatch):
+    """Phase C: parse-first + loader cache → one Access/mdbtools read, not two."""
+    from cellpy.readers.instruments import arbin_res as arbin_mod
+
+    calls = {"posix": 0, "win": 0}
+    real_posix = arbin_mod.DataLoader._loader_posix
+    real_win = arbin_mod.DataLoader._loader_win
+
+    def counting_posix(self, *args, **kwargs):
+        calls["posix"] += 1
+        return real_posix(self, *args, **kwargs)
+
+    def counting_win(self, *args, **kwargs):
+        calls["win"] += 1
+        return real_win(self, *args, **kwargs)
+
+    monkeypatch.setattr(arbin_mod.DataLoader, "_loader_posix", counting_posix)
+    monkeypatch.setattr(arbin_mod.DataLoader, "_loader_win", counting_win)
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        try:
+            cellpy.get(AUX_SOURCE, instrument="arbin_res", mass=1.0, testing=True)
+        except Exception as exc:  # noqa: BLE001 — missing Access/mdbtools
+            pytest.skip(f"arbin_res unavailable here: {exc}")
+
+    assert calls["posix"] + calls["win"] == 1, (
+        f"expected one vendor read, got posix={calls['posix']} win={calls['win']}"
+    )
