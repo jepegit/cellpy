@@ -10,6 +10,10 @@
   conda-forge (was PyPI 0.2.1), add `pyyaml` / `paramiko` / `universal-pathlib`,
   drop obsolete `fabric` (#628).
 
+* Include plotting tests in the nightly Tier-3 matrix: drop the stale
+  `test_plotutils_summary_plot` `--ignore` from `ci-scheduled.yml` and set
+  `MPLBACKEND=Agg` on `conda-pytest` / `pip-install` (#594).
+
 ## [2.0.0a6] - 2026-07-22
 
 * **Breaking:** `CellpyCell.get_cap` now returns native `cellpycore` curve
