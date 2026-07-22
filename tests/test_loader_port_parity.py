@@ -436,12 +436,14 @@ def test_no_column_is_silently_emptied(
 
 
 @pytest.mark.essential
-def test_arbin_sql_h5_keeps_loader_stage_rows_when_summary_prunes():
-    """#560 decision: keep the extra h5 rows; summary may still prune.
+def test_arbin_sql_h5_keeps_all_loader_stage_rows():
+    """#560 decision: keep the extra h5 rows (do not re-dedup at harmonize).
 
-    ``make_summary`` historically collapsed 47 loader-stage rows to 34
-    value-identical ones. The two-stage path must not re-introduce that
-    prune at parse/harmonize time — only summary may do it.
+    The legacy ``make_summary`` path used to collapse 47 loader-stage rows to
+    34 value-identical ones as a side effect. ``parse()`` already
+    ``drop_duplicates()``s the export; the remaining extras are genuine
+    distinct measurements and must survive both ``harmonize()`` and the
+    default load+summary path.
     """
     import cellpy
 
@@ -454,7 +456,7 @@ def test_arbin_sql_h5_keeps_loader_stage_rows_when_summary_prunes():
         cell = cellpy.get(
             source, instrument=instrument, mass=1.0, testing=True, auto_summary=True
         )
-    assert len(cell.data.raw) == 34
+    assert len(cell.data.raw) == 47
     assert len(cell.data.summary) >= 1
 
 

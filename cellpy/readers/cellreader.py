@@ -1361,44 +1361,59 @@ class CellpyCell:
 
         self.data = data
         if self.native_schema:
-            # #511 opt-in: translate once at the I/O boundary; everything
-            # downstream stays in native column names.
+            # #511 / #560: prefer two-stage harmonize(parse()) for single-file
+            # raw; fall back to loader()+to_native when that path is off or
+            # unavailable. Steps/summary still go through to_native either way
+            # (multi-file merge stays on the legacy _append path — follow-up).
             from cellpy.readers.cellpy_file import translate as cellpy_file_translate
 
-            cellpy_file_translate.to_native(self.data)
-            # Phase B / #560 flag day: prefer the two-stage
-            # harmonize(parse()) native raw over the loader()+to_native rename
-            # just applied. It is the declarative pipeline the parity oracle
-            # checks, and it fills native columns the rename cannot
-            # (epoch_time_utc, mask). The to_native'd frame above stays as the
-            # fallback (kept when harmonize is unavailable), so the legacy path
-            # remains the safety net.
-            self._maybe_use_harmonized_raw()
+            harmonized_raw = self._try_harmonized_raw_frame()
+            if harmonized_raw is not None:
+                # Raw is already native — only rename steps/summary so we do
+                # not pay for a redundant raw_to_native pass (#560 Phase C).
+                data = self.data
+                if getattr(data, "steps", None) is not None and len(data.steps.columns):
+                    steps = cellpy_file_translate.steps_to_native(data.steps)
+                    if cellpy_file_translate._TEST_ID not in steps.columns:
+                        steps = steps.assign(**{cellpy_file_translate._TEST_ID: 0})
+                    data.steps = steps
+                if (
+                    getattr(data, "summary", None) is not None
+                    and len(data.summary.columns)
+                ):
+                    summary = cellpy_file_translate.summary_to_native(data.summary)
+                    if cellpy_file_translate._TEST_ID not in summary.columns:
+                        summary = summary.assign(
+                            **{cellpy_file_translate._TEST_ID: 0}
+                        )
+                    data.summary = summary
+                data.raw = harmonized_raw
+                logging.debug(
+                    f"using harmonized native raw "
+                    f"({len(harmonized_raw.columns)} columns)"
+                )
+            else:
+                cellpy_file_translate.to_native(self.data)
         self._invent_a_cell_name(self.file_names)  # TODO (v1.0.0): fix me
         self.last_uploaded_from = "raw"
         self.last_uploaded_at = datetime.datetime.now()
         return self
 
-    def _maybe_use_harmonized_raw(self):
-        """Phase B (#560): replace the just-translated raw with the two-stage
-        ``harmonize(parse())`` native frame, when that path is available.
+    def _try_harmonized_raw_frame(self):
+        """Phase C (#560): try ``harmonize(parse())`` for single-file raw.
 
-        Kept deliberately conservative — it only acts on a **single-file** load
-        with a loader whose ``parse()``/``declarations()`` succeed, and any
-        failure falls back to the ``to_native``'d legacy frame left in place by
-        the caller. Multi-file merges still run through the legacy ``_append``
-        path (its native port is a follow-up), so they are skipped here.
-
-        Turn the whole flip off with ``prms.Reader.use_harmonized_raw = False``.
+        Returns a native pandas raw frame on success, or ``None`` to signal
+        the caller should keep the ``loader()+to_native`` path. Skips when the
+        flip is off, the load is multi-file, or parse/declarations/harmonize
+        fail. Emergency off-switch: ``prms.Reader.use_harmonized_raw = False``.
         """
         if not getattr(config.reader, "use_harmonized_raw", True):
-            return
+            return None
         if not self.file_names or len(self.file_names) != 1:
-            # multi-file loads are merged by the legacy _append; leave as-is.
-            return
+            return None
         loader = self.loader_class
         if loader is None or not hasattr(loader, "parse"):
-            return
+            return None
 
         source = self.file_names[0]
         try:
@@ -1414,7 +1429,7 @@ class CellpyCell:
                 f"harmonized raw unavailable for {source} ({exc}); "
                 f"keeping the legacy loader()+to_native frame"
             )
-            return
+            return None
 
         native_pd = native.to_pandas()
         # The grouping-key authority is the pipeline's, not harmonize's identity
@@ -1423,10 +1438,17 @@ class CellpyCell:
         from cellpy.readers.cellpy_file.translate import _TEST_ID
 
         native_pd[_TEST_ID] = self.data.active_test_id
-        self.data.raw = native_pd
-        logging.debug(
-            f"using harmonized native raw ({len(native_pd.columns)} columns)"
-        )
+        return native_pd
+
+    def _maybe_use_harmonized_raw(self):
+        """Backward-compatible alias for :meth:`_try_harmonized_raw_frame`.
+
+        Kept so older call sites / tests that monkeypatch this name still work.
+        Prefer ``_try_harmonized_raw_frame`` for new code.
+        """
+        frame = self._try_harmonized_raw_frame()
+        if frame is not None:
+            self.data.raw = frame
 
     def _validate_cell(self, level=0):
         logging.debug("validating test")

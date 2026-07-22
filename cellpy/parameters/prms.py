@@ -151,7 +151,7 @@ class ReaderClass(CellPyConfig):
     # loader()+to_native rename. Default OFF — see cellpy.config.models for why
     # it is not yet safe as the default. Single-file loads only; multi-file
     # merges and parse failures keep the legacy path regardless.
-    use_harmonized_raw: bool = False
+    use_harmonized_raw: bool = True
 
 
 @dataclass
