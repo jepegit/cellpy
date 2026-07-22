@@ -1,6 +1,6 @@
 # Issue #572 — status
 
-- [ ] Done
+- [x] Done
 
 ## What's done
 
@@ -16,7 +16,8 @@
 - Tests: `tests/test_deprecation_conventions.py` 5 passed; essential 535 passed.
 - Touched `.github/workflows/ci.yml` comment so required checks register
   (docs/`HISTORY`/issueflows are `paths-ignore`d).
+- Close-out: archived to `03-solved-issues` (2026-07-22).
 
 ## Remaining work
 
-- `/iflow-close`
+- None. Merge PR #633 when CI is green; then `/iflow-cleanup`.
