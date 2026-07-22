@@ -104,6 +104,7 @@ EXPECTED_PRMS_INVENTORY: list[tuple[str, str, object]] = [
     ("Reader", "sorted_data", True),
     ("Reader", "time_interpolation_step", 10.0),
     ("Reader", "use_cellpy_stat_file", False),
+    ("Reader", "use_harmonized_raw", False),
     ("Reader", "voltage_interpolation_step", 0.01),
     ("Materials", "cell_class", "Li-Ion"),
     ("Materials", "default_mass", 1.0),

@@ -56,6 +56,13 @@ PARITY_CASES = (
     # posix). CI has mdbtools, so this runs there; environments without a
     # backend skip gracefully (see _skip_if_unloadable), like the golden.
     ("arbin_res", "testdata/data/20160805_test001_45_cc_01.res", {}),
+    # arbin_sql_h5: the one arbin_sql variant with an in-repo fixture. Its
+    # internal-resistance forward fill is a declared post hook (plan §2.6c).
+    ("arbin_sql_h5", "testdata/data/20200624_test001_cc_01.h5", {}),
+    # biologics_mpr: parse() runs the legacy mpr derivations (cycle from
+    # half_cycle, signed-capacity split, datetime from log start), so the vendor
+    # frame already carries cellpy names; declarations() maps them to native.
+    ("biologics_mpr", "testdata/data/biol.mpr", {}),
 )
 
 #: Legacy post-processor → native columns it changes, for the ones that have no
@@ -64,10 +71,26 @@ PARITY_CASES = (
 #: lands; the parity assertions then cover those columns automatically.
 UNPORTED_POST_PROCESSORS: dict[str, tuple[str, ...]] = {}
 
-#: ``date_time`` survives as a passthrough string while the native schema has no
-#: column for it; the legacy path parses it to datetime. Tracked on the metadata
-#: arc (#562/#563), not a capacity-corrupting difference.
-KNOWN_REPRESENTATION_GAPS = ("date_time",)
+#: Columns still excused from the shared-column sweep. Was ``date_time`` — now
+#: that ``harmonize()`` parses it and derives ``epoch_time_utc`` (via
+#: ``datetime_kind``), ``date_time`` is a real datetime that matches the legacy
+#: frame and is checked like any other. ``epoch_time_utc`` is not a *shared*
+#: column (the legacy raw carries only ``date_time``), so it gets an explicit
+#: check of its own — see ``_assert_epoch_time_utc``.
+KNOWN_REPRESENTATION_GAPS: tuple[str, ...] = ()
+
+#: Loaders whose legacy path decodes the timestamp in the analysis host's
+#: **local** zone. Arbin stores the instant as integer 100 ns ticks since the
+#: Unix epoch and the legacy ``from_arbin_to_datetime`` decodes it with
+#: ``datetime.fromtimestamp`` — host-local. The native path derives
+#: ``epoch_time_utc`` as absolute UTC (what the column *means*), so the two agree
+#: only on a UTC host and differ by exactly the host offset otherwise (7200 s on
+#: a CEST laptop). The host-local legacy value is therefore not a valid oracle
+#: for an absolute-UTC column: ``date_time`` is excused from the value sweep and
+#: the UTC epoch-exact check is skipped for these. The derivation is instead
+#: pinned host-independently against the vendor ticks in
+#: ``tests/test_arbin_sql_h5_two_stage.py``.
+_LEGACY_DATETIME_IS_HOST_LOCAL = {"arbin_sql_h5", "arbin_sql", "arbin_sql_7"}
 
 TOLERANCE = 1e-6
 
@@ -174,8 +197,18 @@ def _harmonized_and_legacy(instrument, source, kwargs):
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
+        # auto_summary=False keeps the reference at the *loader* stage, which is
+        # what parse()+harmonize() produce. Most loaders are unaffected, but
+        # arbin_sql_h5's make_summary prunes duplicate raw rows as a documented
+        # side effect (47 -> 34, issue #385, value-identical), and comparing a
+        # loader-stage frame against a post-summary one is not a like-for-like.
         cell = cellpy.get(
-            source, instrument=instrument, mass=1.0, testing=True, **kwargs
+            source,
+            instrument=instrument,
+            mass=1.0,
+            testing=True,
+            auto_summary=False,
+            **kwargs,
         )
     legacy = pl.from_pandas(cell.data.raw.reset_index(drop=True))
     return harmonized, legacy, config_params
@@ -202,6 +235,19 @@ def test_harmonized_values_match_the_legacy_frame(
     checked, mismatched = [], []
     for column in shared:
         if column in excused:
+            continue
+        # A loader that does not yet declare ``datetime_kind`` carries
+        # ``date_time`` as an unparsed passthrough (raw string / vendor number),
+        # while the legacy path parses it to a datetime — so they cannot be
+        # compared. Skip it *only* in that case; a loader that does parse it
+        # (its harmonized ``date_time`` is a real Datetime) is held to parity
+        # like any other column — unless its legacy path is host-local (Arbin),
+        # where the two legitimately differ by the host offset and the legacy
+        # value is not a valid oracle (see ``_LEGACY_DATETIME_IS_HOST_LOCAL``).
+        if column == "date_time" and (
+            harmonized[column].dtype != pl.Datetime
+            or instrument in _LEGACY_DATETIME_IS_HOST_LOCAL
+        ):
             continue
         left, right = harmonized[column], legacy[column]
         assert left.len() == right.len(), (
@@ -238,6 +284,50 @@ def test_harmonized_values_match_the_legacy_frame(
         f"deliberate change that belongs in the release notes."
     )
     assert checked, f"{instrument}: every shared column was excused - test is vacuous"
+
+    _assert_epoch_time_utc(instrument, harmonized, legacy)
+
+
+#: Loaders exempt from the *exact* epoch check, with the reason. ``custom`` is
+#: the only one: its test fixture declares ``date_stamp`` as an Excel serial
+#: (≈2018) but the config runs ``convert_date_time_to_datetime`` =
+#: ``pd.to_datetime``, which reads the *number* as nanoseconds → a degenerate
+#: ``1970-01-01 00:00:00.000043``. Both the legacy path and harmonize() produce
+#: that same garbage; they differ only by ~376 ns of float round-trip noise on a
+#: timestamp that means nothing. Reproducing that noise is not worth it, and a
+#: blanket tolerance would have hidden the real 1 µs Excel-serial bug caught on
+#: arbin. This is a synthetic-fixture artifact, not a loader defect.
+_EPOCH_EXACT_SKIP = {"custom"}
+
+
+def _assert_epoch_time_utc(instrument, harmonized, legacy):
+    """``epoch_time_utc`` equals the legacy ``date_time`` as int64 ns UTC.
+
+    This is the switchover's required timestamp column, and it is *not* a shared
+    column — the legacy raw frame carries only ``date_time`` — so it needs its
+    own assertion. A loader with no absolute timestamp declares no
+    ``datetime_kind`` and produces no ``epoch_time_utc``; that is fine, and this
+    check is skipped for it rather than demanded.
+    """
+    if "epoch_time_utc" not in harmonized.columns:
+        return
+    if instrument in _EPOCH_EXACT_SKIP:
+        return
+    if instrument in _LEGACY_DATETIME_IS_HOST_LOCAL:
+        # Legacy date_time is host-local here; comparing an absolute-UTC column
+        # to it would fail by the host offset off-UTC. Pinned against the vendor
+        # ticks instead (test_arbin_sql_h5_two_stage.py).
+        return
+    assert "date_time" in legacy.columns, (
+        f"{instrument}: harmonize derived epoch_time_utc but the legacy frame "
+        f"has no date_time to check it against"
+    )
+    reference = legacy["date_time"].dt.replace_time_zone("UTC").dt.epoch("ns")
+    worst = (harmonized["epoch_time_utc"] - reference).abs().max()
+    assert worst == 0, (
+        f"{instrument}: epoch_time_utc differs from the legacy date_time by "
+        f"{worst} ns"
+    )
 
 
 @pytest.mark.essential

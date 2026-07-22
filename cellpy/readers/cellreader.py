@@ -1366,10 +1366,67 @@ class CellpyCell:
             from cellpy.readers.cellpy_file import translate as cellpy_file_translate
 
             cellpy_file_translate.to_native(self.data)
+            # Phase B / #560 flag day: prefer the two-stage
+            # harmonize(parse()) native raw over the loader()+to_native rename
+            # just applied. It is the declarative pipeline the parity oracle
+            # checks, and it fills native columns the rename cannot
+            # (epoch_time_utc, mask). The to_native'd frame above stays as the
+            # fallback (kept when harmonize is unavailable), so the legacy path
+            # remains the safety net.
+            self._maybe_use_harmonized_raw()
         self._invent_a_cell_name(self.file_names)  # TODO (v1.0.0): fix me
         self.last_uploaded_from = "raw"
         self.last_uploaded_at = datetime.datetime.now()
         return self
+
+    def _maybe_use_harmonized_raw(self):
+        """Phase B (#560): replace the just-translated raw with the two-stage
+        ``harmonize(parse())`` native frame, when that path is available.
+
+        Kept deliberately conservative — it only acts on a **single-file** load
+        with a loader whose ``parse()``/``declarations()`` succeed, and any
+        failure falls back to the ``to_native``'d legacy frame left in place by
+        the caller. Multi-file merges still run through the legacy ``_append``
+        path (its native port is a follow-up), so they are skipped here.
+
+        Turn the whole flip off with ``prms.Reader.use_harmonized_raw = False``.
+        """
+        if not getattr(config.reader, "use_harmonized_raw", True):
+            return
+        if not self.file_names or len(self.file_names) != 1:
+            # multi-file loads are merged by the legacy _append; leave as-is.
+            return
+        loader = self.loader_class
+        if loader is None or not hasattr(loader, "parse"):
+            return
+
+        source = self.file_names[0]
+        try:
+            from cellpy.readers.instruments.harmonize import harmonize
+
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                vendor = loader.parse(source)
+                declarations = loader.declarations()
+                native = harmonize(vendor, declarations, strict=False)
+        except Exception as exc:  # noqa: BLE001 — any failure -> legacy fallback
+            logging.info(
+                f"harmonized raw unavailable for {source} ({exc}); "
+                f"keeping the legacy loader()+to_native frame"
+            )
+            return
+
+        native_pd = native.to_pandas()
+        # The grouping-key authority is the pipeline's, not harmonize's identity
+        # stamp: keep the active_test_id the loader assigned (0 for a single,
+        # unmerged test; a tester id when provenance carried one).
+        from cellpy.readers.cellpy_file.translate import _TEST_ID
+
+        native_pd[_TEST_ID] = self.data.active_test_id
+        self.data.raw = native_pd
+        logging.debug(
+            f"using harmonized native raw ({len(native_pd.columns)} columns)"
+        )
 
     def _validate_cell(self, level=0):
         logging.debug("validating test")

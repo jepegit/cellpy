@@ -605,3 +605,138 @@ def test_a_genuinely_stray_value_still_becomes_null_and_warns(caplog):
 
     assert raw[SCHEMA.current].to_list() == [0.1, None]
     assert SCHEMA.current in caplog.text, "the partial loss was silent"
+
+
+# -- naive timestamps are read as UTC (#560 decision, 2026-07-21) ---------------
+
+
+@pytest.mark.essential
+def test_a_naive_datetime_epoch_column_is_read_as_utc():
+    """Decision (#560): a naive vendor timestamp is UTC, not the host's zone.
+
+    Stamping UTC onto the wall-clock value (rather than shifting from some
+    assumed local zone) is what keeps the result reproducible wherever analysis
+    runs. Pinned so the decision cannot drift back to "local time".
+    """
+    import datetime as dt
+
+    frame = _minimal_vendor_frame()
+    # A naive datetime at 1970-01-01 00:00:01 UTC → 1_000_000_000 ns.
+    naive = [dt.datetime(1970, 1, 1, 0, 0, 1), dt.datetime(1970, 1, 1, 0, 0, 2)]
+    frame = frame.with_columns(pl.Series("Epoch", naive))
+
+    raw = harmonize(frame, _minimal_declarations(), test_id=1)
+
+    assert raw[SCHEMA.epoch_time_utc].to_list() == [1_000_000_000, 2_000_000_000]
+
+
+@pytest.mark.essential
+def test_a_declared_timezone_shifts_naive_timestamps_to_utc():
+    """A loader that knows the cycler's zone declares it, and it is honoured."""
+    import datetime as dt
+
+    frame = _minimal_vendor_frame()
+    naive = [dt.datetime(1970, 1, 1, 1, 0, 0), dt.datetime(1970, 1, 1, 2, 0, 0)]
+    frame = frame.with_columns(pl.Series("Epoch", naive))
+
+    # UTC+1: 01:00 local is 00:00 UTC → 0 ns; 02:00 local → 1h = 3.6e12 ns.
+    raw = harmonize(frame, _minimal_declarations(timezone="Etc/GMT-1"), test_id=1)
+
+    assert raw[SCHEMA.epoch_time_utc].to_list() == [0, 3_600_000_000_000]
+
+
+# -- epoch_time_utc derivation from date_time (#560, switchover Phase A) --------
+
+
+def _vendor_frame_with_date_time(values, dtype=None):
+    """A minimal vendor frame carrying a date_time column of a given form."""
+    import polars as pl
+
+    base = _minimal_vendor_frame()
+    series = pl.Series("date_time", values, dtype=dtype) if dtype else pl.Series("date_time", values)
+    return base.with_columns(series)
+
+
+def _declarations_with_date_time(kind):
+    from cellpycore.units import CellpyUnits
+
+    from cellpy.readers.instruments.declarations import LoaderDeclarations
+
+    schema = default_schema().raw
+    return LoaderDeclarations(
+        column_map={
+            "Rec": schema.datapoint_num,
+            "Cyc": schema.cycle_num,
+            "Step": schema.step_num,
+            "T": schema.test_time,
+            "Epoch": schema.epoch_time_utc,
+            "I": schema.current,
+            "V": schema.potential,
+            "QC": schema.cumulative_charge_capacity,
+            "QD": schema.cumulative_discharge_capacity,
+        },
+        raw_units=CellpyUnits(),
+        passthrough={"date_time": "date_time"},
+        datetime_kind=kind,
+    )
+
+
+@pytest.mark.essential
+def test_epoch_time_utc_derived_from_an_iso_string():
+    frame = _vendor_frame_with_date_time(
+        ["2022-05-18 16:27:52", "2022-05-18 16:28:52"]
+    )
+    # Overwrite the numeric Epoch with nulls so the derivation is the only source.
+    frame = frame.with_columns(pl.Series("Epoch", [None, None], dtype=pl.Float64))
+
+    raw = harmonize(frame, _declarations_with_date_time("string"), test_id=1)
+
+    assert raw[SCHEMA.epoch_time_utc].to_list() == [1652891272_000_000_000, 1652891332_000_000_000]
+    # date_time is now a real datetime, not the raw string.
+    assert raw["date_time"].dtype == pl.Datetime
+
+
+@pytest.mark.essential
+def test_epoch_time_utc_from_a_us_format_string_is_month_first():
+    """``12/11/2020`` is December (US), matching legacy pd.to_datetime."""
+    frame = _vendor_frame_with_date_time(["12/11/2020 00:00:00", "12/11/2020 00:00:01"])
+    frame = frame.with_columns(pl.Series("Epoch", [None, None], dtype=pl.Float64))
+
+    raw = harmonize(frame, _declarations_with_date_time("string"), test_id=1)
+
+    import datetime as dt
+
+    got = dt.datetime.utcfromtimestamp(raw[SCHEMA.epoch_time_utc][0] / 1e9)
+    assert (got.month, got.day) == (12, 11)
+
+
+@pytest.mark.essential
+def test_epoch_time_utc_from_an_excel_serial_matches_the_xldate_conversion():
+    """Excel serial 42587.68... → the same instant the legacy xldate produced."""
+    import datetime as dt
+
+    serial = 42587.6815162037
+    frame = _vendor_frame_with_date_time([serial, serial], dtype=pl.Float64)
+    frame = frame.with_columns(pl.Series("Epoch", [None, None], dtype=pl.Float64))
+
+    raw = harmonize(frame, _declarations_with_date_time("excel_serial"), test_id=1)
+
+    expected = dt.datetime(1899, 12, 30) + dt.timedelta(days=serial)
+    expected_ns = int(expected.replace(tzinfo=dt.timezone.utc).timestamp() * 1e9)
+    assert abs(raw[SCHEMA.epoch_time_utc][0] - expected_ns) == 0
+
+
+@pytest.mark.essential
+def test_a_bad_datetime_kind_is_rejected_at_construction():
+    with pytest.raises(LoaderError, match="datetime_kind"):
+        _declarations_with_date_time("clock")
+
+
+@pytest.mark.essential
+def test_no_datetime_kind_means_no_epoch_derivation():
+    """A loader without an absolute timestamp derives nothing and does not error."""
+    frame = _minimal_vendor_frame()
+    # Epoch column carries real epoch-seconds, converted the ordinary way.
+    raw = harmonize(frame, _minimal_declarations(), test_id=1)
+
+    assert raw[SCHEMA.epoch_time_utc].dtype == pl.Int64

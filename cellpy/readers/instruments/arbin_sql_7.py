@@ -235,6 +235,42 @@ class DataLoader(BaseLoader):
         raw_limits["ir_change"] = 0.00001
         return raw_limits
 
+    def parse(self, source, **kwargs):
+        """Vendor stage (#560): query MITS 7.0 SQL Server into an Arbin frame.
+
+        Taps the same ``_query_sql`` read as :meth:`loader`. Note this loader is
+        still under development upstream — ``_query_sql`` pivots the raw table to
+        integer ``Data_Type`` column names it never renames to ``Voltage`` etc.,
+        so the vendor frame is incomplete regardless of stage. The two-stage
+        entry points are added for switchover uniformity (no in-repo fixture);
+        the ``Date_Time`` tick format matches the parity-verified
+        ``arbin_sql_h5``, so ``datetime_kind="arbin_epoch"``.
+        """
+        import polars as pl
+
+        self.name = source
+        data_df, _ = self._query_sql()
+        self._parsed = True
+        return pl.from_pandas(data_df.reset_index(drop=True))
+
+    def declarations(self):
+        """Declarations for Arbin MITS 7.0 SQL Server (#560).
+
+        ``datetime_kind="arbin_epoch"`` — the vendor ``Date_Time`` is integer
+        100 ns ticks since the Unix epoch, as in the other Arbin variants.
+        """
+        from cellpy.readers.instruments.config_declarations import (
+            declarations_from_renaming,
+        )
+
+        return declarations_from_renaming(
+            self.get_raw_units(),
+            normal_headers_renaming_dict,
+            "arbin_epoch",
+            getattr(self, "_parsed", False),
+            "arbin_sql_7",
+        )
+
     def loader(self, name, **kwargs):
         """returns a Data object with loaded data.
 

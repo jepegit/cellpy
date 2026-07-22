@@ -27,7 +27,7 @@ from __future__ import annotations
 
 import logging
 import re
-from datetime import datetime, timezone as dt_timezone
+from datetime import datetime, timedelta, timezone as dt_timezone
 from typing import Any
 
 import polars as pl
@@ -135,6 +135,101 @@ def normalize_reset_granularity(
     return out
 
 
+#: Excel serials count days from 1899-12-30 (the Lotus-1900 epoch Excel uses).
+_EXCEL_EPOCH = datetime(1899, 12, 30, tzinfo=dt_timezone.utc)
+
+
+def _parse_datetime_column(series: pl.Series, kind: str) -> pl.Series:
+    """A vendor ``date_time`` column, in whatever form, → a polars ``Datetime``.
+
+    Parsing is per *kind* because the forms are genuinely different and
+    ``harmonize()`` cannot sniff them safely: ``"12/11/2020"`` is December to
+    Maccor (US) but a serial-looking string elsewhere, and Arbin's ``42587.68``
+    is Excel *days*, not epoch seconds. The loader states which it is.
+    """
+    if kind == "datetime":
+        return series
+
+    if kind == "string":
+        # pandas.to_datetime, to match the legacy convert_date_time_to_datetime
+        # exactly (same US-first interpretation of MM/DD/YYYY, same inference).
+        import pandas as pd
+
+        parsed = pd.to_datetime(series.to_pandas(), errors="coerce")
+        return pl.from_pandas(parsed).cast(pl.Datetime("us"))
+
+    if kind == "epoch_seconds":
+        return (series.cast(pl.Float64) * _NS_PER_SECOND).cast(pl.Int64).cast(
+            pl.Datetime("ns")
+        )
+
+    if kind == "arbin_epoch":
+        # Arbin's SQL/h5 exports store the wall-clock instant as an integer of
+        # 100 ns ticks since the Unix epoch — the legacy ``from_arbin_to_datetime``
+        # splits the last 7 digits off as the fractional second (value = epoch
+        # seconds x 1e7). One tick is therefore exactly 100 ns, so ``value * 100``
+        # is epoch nanoseconds with no float rounding at all — unlike a
+        # ``/ 1e7`` in float64, where 1.6e16-scale integers already exceed the
+        # 2**53 exact range and would lose resolution near 2026. The legacy
+        # decoder went via ``datetime.fromtimestamp`` (host-local); here the
+        # value is treated as the absolute UTC instant Unix time already is,
+        # which is what ``epoch_time_utc`` means.
+        return (series.cast(pl.Int64) * 100).cast(pl.Datetime("ns"))
+
+    if kind == "excel_serial":
+        # Serial days (may be fractional) from the Excel epoch. Done exactly as
+        # the legacy ``xldate_as_datetime``: ``datetime(1899,12,30) +
+        # timedelta(days=serial)``. Reproduced element-wise rather than
+        # vectorised because ``timedelta``'s own microsecond rounding does not
+        # match a ``round(serial * ...)`` in float — the two disagree by 1 µs on
+        # about half the rows, which is a real parity miss on ``epoch_time_utc``.
+        base = datetime(1899, 12, 30)
+
+        def _from_serial(value: float | None):
+            if value is None:
+                return None
+            return base + timedelta(days=float(value))
+
+        return series.cast(pl.Float64).map_elements(
+            _from_serial, return_dtype=pl.Datetime("us")
+        )
+
+    raise LoaderError(f"unknown datetime_kind {kind!r}")
+
+
+def _derive_epoch_time_utc(
+    raw: pl.DataFrame, declarations: LoaderDeclarations
+) -> pl.DataFrame:
+    """Parse the ``date_time`` passthrough and derive ``epoch_time_utc``.
+
+    ``epoch_time_utc`` is a **required** native column, but no vendor writes it;
+    it is derived from the absolute wall-clock timestamp the file *does* carry.
+    A loader declares that column's form with ``datetime_kind``; here it becomes
+    a proper polars ``Datetime`` (so the ``date_time`` passthrough kept for the
+    one-release window is a real datetime, not a raw string), and a copy is
+    placed in ``epoch_time_utc`` for :func:`_convert_timestamps` to turn into
+    int64 ns UTC — so the naive-timezone rule lives in one place, not two.
+    """
+    schema = default_schema().raw
+    kind = declarations.datetime_kind
+    if kind is None:
+        return raw
+
+    # The passthrough keeps the legacy header name for the datetime column.
+    from cellpy.parameters.internal_settings import get_headers_normal
+
+    date_time = get_headers_normal().datetime_txt
+    if date_time not in raw.columns:
+        # Declared but this file did not carry it; nothing to derive from.
+        return raw
+
+    parsed = _parse_datetime_column(raw[date_time], kind)
+    return raw.with_columns(
+        parsed.alias(date_time),
+        parsed.alias(schema.epoch_time_utc),
+    )
+
+
 def _convert_timestamps(
     raw: pl.DataFrame, declarations: LoaderDeclarations
 ) -> pl.DataFrame:
@@ -152,11 +247,18 @@ def _convert_timestamps(
         series = raw[column]
         if series.dtype.time_zone is None:
             if declarations.timezone is None:
-                # The shared D3 rule: naive means local. Say so, because it is
-                # an assumption about someone else's data.
+                # Decision (2026-07-21, #560): a naive timestamp is read as
+                # **UTC**, not the host's local zone. This matches
+                # ``cellpycore.timestamps`` (the canonical-timestamp authority)
+                # and keeps the result reproducible wherever analysis runs —
+                # interpreting naive time as the *analysis* host's zone would
+                # give the same file different absolute times on a lab laptop
+                # and a CI runner. Still a warning, because it is an assumption
+                # about someone else's data; silence a loader that knows better
+                # by declaring ``timezone``.
                 logging.warning(
-                    "naive timestamps interpreted as local time; declare a "
-                    "timezone in the loader declarations to be explicit"
+                    "naive timestamps interpreted as UTC; declare a timezone in "
+                    "the loader declarations if the cycler's local zone is known"
                 )
                 series = series.dt.replace_time_zone("UTC")
             else:
@@ -375,6 +477,7 @@ def harmonize(
     present = {vendor: native for vendor, native in mapping.items() if vendor in raw.columns}
     raw = raw.select(list(present)).rename(present)
 
+    raw = _derive_epoch_time_utc(raw, declarations)
     raw = _convert_timestamps(raw, declarations)
     raw = _convert_durations(raw, declarations)
     raw = _cast_to_schema(raw)

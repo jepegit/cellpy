@@ -26,6 +26,11 @@ from cellpy.exceptions import LoaderError
 #: ``aux_<quantity>_<name>`` — the harmonized-raw auxiliary naming scheme.
 _AUX_PATTERN = re.compile(r"^aux_(temperature|potential|pressure|resistance)_\w+$")
 
+#: The forms a ``date_time`` passthrough can take; see ``datetime_kind``.
+DATETIME_KINDS = frozenset(
+    {"datetime", "string", "epoch_seconds", "excel_serial", "arbin_epoch"}
+)
+
 
 class ResetGranularity(StrEnum):
     """How often a vendor's cumulative column resets to zero.
@@ -56,8 +61,10 @@ class LoaderDeclarations:
             columns not mentioned here are dropped; native names must exist.
         raw_units: the units the *file* is in, as a validated ``CellpyUnits``.
         timezone: IANA zone for naive vendor timestamps. ``None`` means "treat
-            naive timestamps as local time", the shared D3 rule — recorded on
-            ``TestMeta.time_zone`` so the assumption is visible later.
+            naive timestamps as **UTC**" (decision 2026-07-21, #560, aligning
+            with ``cellpycore.timestamps``) — recorded on ``TestMeta.time_zone``
+            so the assumption is visible later. Set it when the cycler's local
+            zone is known, so absolute times are correct rather than assumed.
         reset_granularity: native cumulative column → its granularity in the
             vendor file. Columns not listed are assumed already cycle-
             cumulative, which is the common case and the target convention.
@@ -103,6 +110,20 @@ class LoaderDeclarations:
     #: no error. Neware and Maccor both ship such columns, which is why it is a
     #: framework feature rather than a per-loader post hook.
     duration_columns: tuple[str, ...] = ()
+    #: How the ``date_time`` passthrough encodes its absolute timestamp, so
+    #: ``harmonize()`` can parse it and derive the required ``epoch_time_utc``
+    #: (int64 ns UTC). ``None`` means the loader carries no absolute timestamp.
+    #: One of :data:`DATETIME_KINDS`:
+    #:
+    #: - ``"datetime"``  — already a polars ``Datetime`` (pec).
+    #: - ``"string"``    — a wall-clock string; parsed with ``pandas.to_datetime``
+    #:   to match the legacy ``convert_date_time_to_datetime`` exactly (maccor's
+    #:   US ``MM/DD/YYYY`` and neware's ISO both go through the same parser).
+    #: - ``"epoch_seconds"`` — float seconds since the Unix epoch.
+    #: - ``"excel_serial"``  — Excel serial days (arbin ``.res``).
+    #: - ``"arbin_epoch"``   — integer 100 ns ticks since the Unix epoch, the
+    #:   form the Arbin SQL Server / h5 exports use (``epoch seconds x 1e7``).
+    datetime_kind: str | None = None
 
     def __post_init__(self) -> None:
         self._validate()
@@ -179,6 +200,12 @@ class LoaderDeclarations:
             raise LoaderError(
                 f"duration_columns declares {bad_durations}, which column_map "
                 f"never produces; the declaration would have no effect."
+            )
+
+        if self.datetime_kind is not None and self.datetime_kind not in DATETIME_KINDS:
+            raise LoaderError(
+                f"datetime_kind {self.datetime_kind!r} is not one of "
+                f"{sorted(DATETIME_KINDS)}."
             )
 
         bad_aux = sorted(
