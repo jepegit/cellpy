@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+* Tier-3 loader close-out: `biologics_mpr` / `batmo_bdf` pass `check_loader`
+  (native-projected adapters); `ext_nda_reader` parked; `local_instrument`
+  confirmed as warn-only escape hatch (#561).
+
 ## [2.0.0a6] - 2026-07-22
 
 * **Breaking:** `CellpyCell.get_cap` now returns native `cellpycore` curve
