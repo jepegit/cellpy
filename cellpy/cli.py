@@ -1,19 +1,14 @@
-import base64
 import getpass
 import logging
 import os
 import pathlib
 import platform
-from pprint import pprint
-import re
 import subprocess
 import sys
 import time
 from typing import Annotated, Optional, Union
-import urllib
 from pathlib import Path
 
-import rich
 import typer
 
 import cellpy._version
@@ -24,6 +19,7 @@ from cellpy.internals.connections import OtherPath
 from cellpy.utils.template_registry import REGISTERED_TEMPLATES
 import cellpy.config as config
 from cellpy import cli_api
+from cellpy.cli_api import _create_dir
 
 DIFFICULT_MISSING_MODULES = {}
 
@@ -253,7 +249,7 @@ def setup(
 
     if dry_run:
         typer.echo("Create custom init filename and get user_dir and destination")
-        typer.echo(f"Got the following parameters:")
+        typer.echo("Got the following parameters:")
         typer.echo(f" - init_filename: {init_filename}")
         typer.echo(f" - user_dir: {user_dir}")
         typer.echo(f" - dst_file: {dst_file}")
@@ -561,43 +557,6 @@ def _ask_about_name(q, n):
     return new_name
 
 
-def _create_dir(path, confirm=True, parents=True, exist_ok=True):
-    if isinstance(path, OtherPath):
-        if path.is_external:
-            return path
-    o = path.resolve()
-    if not o.is_dir():
-        o_parent = o.parent
-        create_dir = True
-        if confirm:
-            if not o_parent.is_dir():
-                create_dir = input(
-                    f"\n[cellpy] (setup) {o_parent} does not exist. Create it [y]/n ?"
-                )
-                if not create_dir:
-                    create_dir = True
-                elif create_dir in ["y", "Y"]:
-                    create_dir = True
-                else:
-                    create_dir = False
-
-        if create_dir:
-            try:
-                o.mkdir(parents=parents, exist_ok=exist_ok)
-                typer.echo(f"[cellpy] (setup) Created {o}")
-            except FileExistsError:
-                typer.echo(f"[cellpy] (setup) {o} already exists.")
-            except FileNotFoundError:
-                typer.echo(f"[cellpy] (setup) {o} not available.")
-            except Exception as e:
-                typer.echo(f"[cellpy] (setup) WARNING! Could not create {o}.")
-                logging.debug(e)
-                typer.echo(f"[cellpy] (setup) ...continuing anyway.")
-        else:
-            typer.echo(f"[cellpy] (setup) Could not create {o}")
-    return o
-
-
 def _check_import_cellpy():
     try:
         import cellpy
@@ -621,10 +580,10 @@ def _check_import_pyodbc():
 
     use_subprocess = config.instruments.Arbin.use_subprocess
     detect_subprocess_need = config.instruments.Arbin.detect_subprocess_need
-    typer.echo(f" This is needed for loading Arbin .res files")
-    typer.echo(f" parsing prms")
+    typer.echo(" This is needed for loading Arbin .res files")
+    typer.echo(" parsing prms")
     typer.echo(
-        f" (from your configuration file if it exists, otherwise using defaults)"
+        " (from your configuration file if it exists, otherwise using defaults)"
     )
     typer.echo(f" - ODBC: {ODBC}")
     typer.echo(f" - SEARCH_FOR_ODBC_DRIVERS: {SEARCH_FOR_ODBC_DRIVERS}")
@@ -637,11 +596,11 @@ def _check_import_pyodbc():
     is_macos = False
     if os.name == "posix":
         is_posix = True
-        typer.echo(f" - running on posix")
+        typer.echo(" - running on posix")
     current_platform = platform.system()
     if current_platform == "Darwin":
         is_macos = True
-        typer.echo(f" - running on a mac")
+        typer.echo(" - running on a mac")
 
     python_version, os_version = platform.architecture()
     typer.echo(f" - python version: {python_version}")
@@ -654,7 +613,7 @@ def _check_import_pyodbc():
             sub_process_path = str(config.instruments.Arbin.sub_process_path)
         typer.echo(f" stated path to sub-process: {sub_process_path}")
         if not os.path.isfile(sub_process_path):
-            typer.echo(f" - OBS! missing")
+            typer.echo(" - OBS! missing")
 
     if is_posix:
         typer.echo(" checking existence of mdb-export")
@@ -669,7 +628,7 @@ def _check_import_pyodbc():
                 command, stdout=PIPE, stderr=PIPE, universal_newlines=True, shell=True
             )
             if result.returncode == 0:
-                typer.echo(f" - found it!")
+                typer.echo(" - found it!")
                 return True
 
             typer.echo(f" - could not find {sub_process_path}")
@@ -859,7 +818,7 @@ def _check(dry_run=False, full_check=True):
         failed = 0
         typer.echo(f"[cellpy] * - Checking {check_type}")
         if check_func():
-            typer.echo(f"[cellpy] -> succeeded!")
+            typer.echo("[cellpy] -> succeeded!")
         else:
             typer.echo("f[cellpy] -> failed!!!!")
             failed = 1
@@ -893,7 +852,7 @@ def _check(dry_run=False, full_check=True):
 
     if failed_checks > 0:
         typer.echo(
-            f"[cellpy] Some of the checks failed! This could potentially be a problem."
+            "[cellpy] Some of the checks failed! This could potentially be a problem."
         )
         typer.echo(f"[cellpy] Failed {failed_checks} out of {number_of_checks} checks.")
     else:
@@ -942,9 +901,9 @@ def _write_config_file(user_dir, dst_file, init_filename, dry_run):
             _txt += "[cellpy] (setup) Well, guess you have to talk to the developers."
             typer.echo(_txt)
     else:
-        typer.echo(f"[cellpy] (setup) Configuration file written!")
+        typer.echo("[cellpy] (setup) Configuration file written!")
         typer.echo(
-            f"[cellpy] (setup) OK! Now you can edit it. For example by "
+            "[cellpy] (setup) OK! Now you can edit it. For example by "
             f"issuing \n\n         [your-favourite-editor] {init_filename}\n"
         )
 
@@ -972,9 +931,9 @@ def _write_env_file(user_dir, dst_file, dry_run):
         _txt += "[cellpy] (setup) Well, guess you have to talk to the developers."
         typer.echo(_txt)
     else:
-        typer.echo(f"[cellpy] (setup) Environment file written!")
+        typer.echo("[cellpy] (setup) Environment file written!")
         typer.echo(
-            f"[cellpy] (setup) OK! Now you can edit it. For example by "
+            "[cellpy] (setup) OK! Now you can edit it. For example by "
             f"issuing \n\n         [your-favourite-editor] {dst_file}\n"
         )
 
@@ -1062,7 +1021,7 @@ def edit(
     try:
         subprocess.call(args)
     except:
-        typer.echo(f"[cellpy] (edit) Failed!")
+        typer.echo("[cellpy] (edit) Failed!")
         typer.echo(
             "[cellpy] (edit) Try 'cellpy edit -e notepad.exe' if you are on Windows"
         )
@@ -1377,8 +1336,8 @@ def pull(
             _pull_examples(directory, password)
         else:
             typer.echo(
-                f"[cellpy] (pull) Nothing selected for pulling. "
-                f"Please select an option (--tests,--examples, -clone, ...) "
+                "[cellpy] (pull) Nothing selected for pulling. "
+                "Please select an option (--tests,--examples, -clone, ...) "
             )
 
 
@@ -1669,8 +1628,6 @@ def _new(
         None
     """
 
-    from cellpy.parameters import prms
-
     try:
         import cookiecutter.exceptions
         import cookiecutter.main
@@ -1682,7 +1639,7 @@ def _new(
         typer.echo("\npython -m pip install cookiecutter\n")
 
     if list_:
-        typer.echo(f"\n[cellpy] batch templates")
+        typer.echo("\n[cellpy] batch templates")
 
         default_template = _get_default_template()
         local_templates = _read_local_templates()
@@ -1897,8 +1854,6 @@ def serve(
     ] = None,
 ):
     """Start a Jupyter server."""
-
-    from cellpy.parameters import prms
 
     if directory is None:
         directory = config.paths.notebookdir
