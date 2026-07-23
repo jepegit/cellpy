@@ -409,10 +409,10 @@ class SummaryPlotDataPreparer:
         if summary.index.name == x:
             summary = summary.reset_index(drop=False)
 
-        # Get CV-only summary
-        summary_only_cv = c.make_summary(
-            selector_type="only-cv", create_copy=True
-        ).data.summary
+        # CV-delta capacities (full − non_cv via exclude_step_types); #654
+        from cellpy.utils.helpers import _cv_partition_summary_frames
+
+        _, _, summary_only_cv = _cv_partition_summary_frames(c)
         if summary_only_cv.index.name == x:
             summary_only_cv = summary_only_cv.reset_index(drop=False)
 
