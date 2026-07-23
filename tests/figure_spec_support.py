@@ -173,7 +173,7 @@ def _summary_cases() -> list[FigureCase]:
             FigureCase(
                 name=f"summary_plot[{family}][plotly]",
                 function="summary_plot",
-                kwargs={"y": family, "interactive": True},
+                kwargs={"y": family, "backend": "plotly"},
                 needs_plotly=True,
             )
         )
@@ -181,7 +181,7 @@ def _summary_cases() -> list[FigureCase]:
             FigureCase(
                 name=f"summary_plot[{family}][matplotlib]",
                 function="summary_plot",
-                kwargs={"y": family, "interactive": False},
+                kwargs={"y": family, "backend": "matplotlib"},
                 needs_seaborn=True,
             )
         )
@@ -207,7 +207,7 @@ def _summary_option_cases() -> list[FigureCase]:
             FigureCase(
                 name=f"summary_plot[{label}][plotly]",
                 function="summary_plot",
-                kwargs={"y": family, "interactive": True, **kwargs},
+                kwargs={"y": family, "backend": "plotly", **kwargs},
                 needs_plotly=True,
             )
         )
