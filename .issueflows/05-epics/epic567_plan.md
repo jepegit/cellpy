@@ -198,6 +198,7 @@ Closes the epic acceptance criteria: one drawing home, batch facade unchanged,
   stays safe without the `batch` extra for non-plot imports.
 - Depends on: stage 2 issue 2
 - yolo: no — large behavioural surface; collection API must not break.
+- Published: #657
 
 ### Issue: Wire `Batch.plot()` to plotting and delete `batch_plotters.py`
 
@@ -214,6 +215,7 @@ Closes the epic acceptance criteria: one drawing home, batch facade unchanged,
   docs mention the backend triage.
 - Depends on: stage 3 issue 1
 - yolo: no — deletes a 1.5k-line module; user-facing batch entry.
+- Published: #658
 
 ## Later (unstaged)
 
