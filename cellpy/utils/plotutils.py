@@ -46,6 +46,7 @@ from cellpy.plotting.figures import (  # noqa: F401
 from cellpy.plotting.labels import legend_replacer as _plotly_legend_replacer
 from cellpy.plotting.labels import remove_markers as _plotly_remove_markers
 from cellpy.plotting import registry as plot_registry
+from cellpy.plotting.headers import LiveHeaders as _LiveHeaders
 from cellpy.plotting.theme import make_plotly_template as _make_plotly_template
 
 plotly_available = importlib.util.find_spec("plotly") is not None
@@ -544,80 +545,8 @@ def _resolve_summary_columns(c, names):
     return [_resolve_summary_column(c, name) for name in names]
 
 
-#: cellpy-core mapping key per frame, for ``_LiveHeaders``.
+#: Prefer ``cellpy.plotting.headers.LiveHeaders`` (#647).
 _MAPPING_FRAME = {"raw": "raw", "steps": "step", "summary": "cycle"}
-
-
-class _LiveHeaders:
-    """Column names for *this cell's* frames, keyed by the 1.x attribute names.
-
-    Replaces the module-level ``_hdr_raw = get_headers_normal()`` /
-    ``_hdr_steps`` / ``_hdr_summary`` singletons. Those were built once at
-    import time and always answered with the **legacy** names, so after the
-    native-headers flip every lookup through them produced a key the frame no
-    longer had. That is why ``raw_plot`` and ``cycle_info_plot`` raised
-    ``KeyError: 'voltage'`` on any cellpy 2 cell — a module-level binding that
-    could not see the runtime, which is the same trap that bit the schema
-    migration in #558.
-
-    Resolution goes through the cell's own schema, so this is correct on both
-    runtimes: on the legacy runtime ``schema.raw.potential`` still answers
-    ``"voltage"``.
-
-    Both spellings the old singletons supported are kept, because call sites
-    use both: ``hdr["voltage_txt"]`` and ``hdr.voltage_txt``.
-    """
-
-    __slots__ = ("_schema", "_frame", "_attrs")
-
-    def __init__(self, c, frame: str):
-        self._frame = frame
-        self._schema = getattr(c.schema, frame)
-        self._attrs = mapping.LEGACY_ATTR_TO_SCHEMA[_MAPPING_FRAME[frame]]
-
-    def _resolve(self, legacy_attr: str) -> str:
-        native = self._attrs.get(legacy_attr)
-        if native is None:
-            # Either unknown, or a legacy-only column with no native
-            # counterpart. Fall back to the schema's own attribute so native
-            # spellings work too, and let it raise if that fails as well.
-            try:
-                return getattr(self._schema, legacy_attr)
-            except AttributeError:
-                raise KeyError(
-                    f"no {self._frame} column named {legacy_attr!r} on this cell"
-                ) from None
-        return getattr(self._schema, native)
-
-    def base(self, legacy_attr: str) -> str:
-        """The native *stem* of a step-table statistic family.
-
-        Step-table columns are ``<stem>_<statistic>`` (``potential_delta``,
-        ``current_min``). The schema exposes the composed columns, not the
-        stem, so this reads the stem straight off the mapping — and falls back
-        to the legacy spelling on the legacy runtime, where the stem is what
-        the frame already uses.
-        """
-        native = self._attrs.get(legacy_attr)
-        if native is None:
-            return legacy_attr
-        # On the legacy runtime the schema resolves the native name back to the
-        # legacy one; when it cannot (a stem is not a column) keep the native
-        # stem, which is what a native frame is built from.
-        try:
-            return getattr(self._schema, native)
-        except AttributeError:
-            return native
-
-    def stat(self, legacy_attr: str, statistic: str) -> str:
-        """``stat("voltage", "delta")`` -> ``"potential_delta"`` (native)."""
-        return f"{self.base(legacy_attr)}_{statistic}"
-
-    def __getitem__(self, legacy_attr: str) -> str:
-        return self._resolve(legacy_attr)
-
-    def __getattr__(self, legacy_attr: str) -> str:
-        return self._resolve(legacy_attr)
 
 
 # Per-row y-axis labels for predefined ``y`` sets that route a different
@@ -1449,12 +1378,15 @@ def raw_plot(
     x=None,
     x_label=None,
     title=None,
-    interactive=True,
+    backend: Optional[str] = None,
+    interactive: Optional[bool] = None,
     plot_type="voltage-current",
     double_y=True,
     **kwargs,
 ):
     """Plot raw data.
+
+    Draws through prepare → spec → render (#647).
 
     Args:
         cell: cellpy object
@@ -1463,7 +1395,9 @@ def raw_plot(
         x (str): x-axis column
         x_label (str): label for x-axis
         title (str): title of the plot
-        interactive (bool): use interactive plotting
+        backend (str, optional): ``"plotly"`` (default) or ``"matplotlib"``.
+        interactive (bool, optional): Deprecated alias for backend selection
+            (``True``→plotly, ``False``→matplotlib; removal 2.1).
         plot_type (str): type of plot (defaults to "voltage-current") (overrides given y if y is not None),
           currently only "voltage-current", "raw", "capacity", "capacity-current", and "full" is supported.
         double_y (bool): use double y-axis (only for matplotlib and when plot_type with 2 rows is used)
@@ -1473,242 +1407,45 @@ def raw_plot(
         ``matplotlib`` figure or ``plotly`` figure
 
     """
-    from cellpy.readers.data_structures import Q
-
-    _set_individual_y_labels = False
-    _special_height = None
-
-    # Per-cell, not the module-level legacy singleton (#567).
-    hdr_raw = _LiveHeaders(cell, "raw")
-    raw = cell.data.raw.copy()
-    if y is not None:
-        if y_label is None:
-            y_label = y
-        y = [y]
-        y_label = [y_label]
-
-    elif plot_type is not None:
-        # special pre-defined plot types
-        if plot_type == "voltage-current":
-            y1 = hdr_raw["voltage_txt"]
-            y1_label = f"Voltage ({cell.data.raw_units.voltage})"
-            y2 = hdr_raw["current_txt"]
-            y2_label = f"Current ({cell.data.raw_units.current})"
-            y = [y1, y2]
-            y_label = [y1_label, y2_label]
-
-        elif plot_type == "capacity":
-            _y = [
-                (
-                    hdr_raw["charge_capacity_txt"],
-                    f"Charge capacity ({cell.data.raw_units.charge})",
-                ),
-                (
-                    hdr_raw["discharge_capacity_txt"],
-                    f"Discharge capacity ({cell.data.raw_units.charge})",
-                ),
-            ]
-            y, y_label = zip(*_y)
-
-        elif plot_type == "raw":
-            _y = [
-                (
-                    hdr_raw["cycle_index_txt"],
-                    f"Cycle index (#)",
-                ),
-                (
-                    hdr_raw["step_index_txt"],
-                    f"Step index (#)",
-                ),
-                (hdr_raw["voltage_txt"], f"Voltage ({cell.data.raw_units.voltage})"),
-                (hdr_raw["current_txt"], f"Current ({cell.data.raw_units.current})"),
-            ]
-            y, y_label = zip(*_y)
-            _special_height = 600
-
-        elif plot_type == "capacity-current":
-            _y = [
-                (
-                    hdr_raw["charge_capacity_txt"],
-                    f"Charge capacity ({cell.data.raw_units.charge})",
-                ),
-                (
-                    hdr_raw["discharge_capacity_txt"],
-                    f"Discharge capacity ({cell.data.raw_units.charge})",
-                ),
-                (hdr_raw["current_txt"], f"Current ({cell.data.raw_units.current})"),
-            ]
-            y, y_label = zip(*_y)
-            _special_height = 500
-
-        elif plot_type == "full":
-            _y = [
-                (hdr_raw["voltage_txt"], f"Voltage ({cell.data.raw_units.voltage})"),
-                (hdr_raw["current_txt"], f"Current ({cell.data.raw_units.current})"),
-                (
-                    hdr_raw["charge_capacity_txt"],
-                    f"Charge capacity ({cell.data.raw_units.charge})",
-                ),
-                (
-                    hdr_raw["discharge_capacity_txt"],
-                    f"Discharge capacity ({cell.data.raw_units.charge})",
-                ),
-                (
-                    hdr_raw["cycle_index_txt"],
-                    f"Cycle index (#)",
-                ),
-                (
-                    hdr_raw["step_index_txt"],
-                    f"Step index (#)",
-                ),
-            ]
-            y, y_label = zip(*_y)
-            _special_height = 800
-
-        else:
-            warnings.warn(f"Plot type {plot_type} not supported")
-            return None
-    else:
-        # default to voltage if y is not given
-        y = [hdr_raw["voltage_txt"]]
-        y_label = [f"Voltage ({cell.data.raw_units.voltage})"]
-
-    if x is None:
-        x = "test_time_hrs"
-
-    if x in ["test_time_hrs", "test_time_hours"]:
-        raw_time_unit = cell.raw_units.time
-        conv_factor = Q(raw_time_unit).to("hours").magnitude
-        raw[x] = raw[hdr_raw["test_time_txt"]] * conv_factor
-        x_label = x_label or "Time (hours)"
-    elif x == "test_time_days":
-        raw_time_unit = cell.raw_units.time
-        conv_factor = Q(raw_time_unit).to("days").magnitude
-        raw[x] = raw[hdr_raw["test_time_txt"]] * conv_factor
-        x_label = x_label or "Time (days)"
-    elif x == "test_time_years":
-        raw_time_unit = cell.raw_units.time
-        conv_factor = Q(raw_time_unit).to("years").magnitude
-        raw[x] = raw[hdr_raw["test_time_txt"]] * conv_factor
-        x_label = x_label or "Time (years)"
-
-    if title is None:
-        title = f"{cell.cell_name}"
-
-    number_of_rows = len(y)
-
-    if plotly_available and interactive:
-        title = f"<b>{title}</b>"
-        if number_of_rows == 1:
-            # single plot
-            import plotly.express as px
-
-            if x_label or y_label:
-                labels = {}
-                if x_label:
-                    labels[x] = x_label
-                if y_label:
-                    labels[y[0]] = y_label[0]
-            else:
-                labels = None
-            fig = px.line(raw, x=x, y=y[0], title=title, labels=labels, **kwargs)
-
-        else:
-            from plotly.subplots import make_subplots
-            import plotly.graph_objects as go
-
-            width = kwargs.pop("width", 1000)
-            height = kwargs.pop("height", None)
-            if height is None:
-                if _special_height is not None:
-                    height = _special_height
-                else:
-                    height = number_of_rows * 300
-
-            vertical_spacing = kwargs.pop("vertical_spacing", 0.02)
-
-            fig = make_subplots(
-                rows=number_of_rows,
-                cols=1,
-                shared_xaxes=True,
-                vertical_spacing=vertical_spacing,
-                x_title=x_label,
-                # hoversubplots="axis",  # only available in plotly 5.21
-            )
-            x_values = raw[x]
-
-            rows = range(1, number_of_rows + 1)
-            for i in range(number_of_rows):
-                fig.add_trace(
-                    go.Scatter(x=x_values, y=raw[y[i]], name=y_label[i]),
-                    row=rows[i],
-                    col=1,
-                    **kwargs,
-                )
-
-            fig.update_layout(height=height, width=width, title_text=title)
-            if _set_individual_y_labels:
-                for i in range(number_of_rows):
-                    fig.update_yaxes(title_text=y_label[i], row=rows[i], col=1)
-
-        return fig
-
-    # default to a simple matplotlib figure
-    xlim = kwargs.get("xlim")
-    figsize = kwargs.pop("figsize", (10, 2 * number_of_rows))
-    if seaborn_available:
-        import seaborn as sns
-
-        if double_y:
-            sns.set_style(kwargs.pop("style", "dark"))
-        else:
-            sns.set_style(kwargs.pop("style", "darkgrid"))
-
-    if len(y) == 1:
-        y = y[0]
-        y_label = y_label[0]
-        fig, ax = plt.subplots(figsize=figsize)
-        ax.plot(raw[x], raw[y])
-        ax.set_xlabel(x_label)
-        ax.set_ylabel(y_label)
-        ax.set_title(title)
-        ax.set_xlim(xlim)
-        plt.close(fig)
-        return fig
-
-    elif len(y) == 2 and double_y:
-        fig, ax_v = plt.subplots(figsize=figsize)
-
-        color = "tab:red"
-        ax_v.set_xlabel(x_label)
-        ax_v.set_ylabel(y_label[0], color=color)
-        ax_v.plot(raw[x], raw[y[0]], label=y_label[0], color=color)
-        ax_v.tick_params(axis="y", labelcolor=color)
-
-        ax_c = ax_v.twinx()
-
-        color = "tab:blue"
-        ax_c.set_ylabel(y_label[1], color=color)
-        ax_c.plot(raw[x], raw[y[1]], label=y_label[1], color=color)
-        ax_c.tick_params(axis="y", labelcolor=color)
-        ax_v.set_xlim(xlim)
-    else:
-        fig, axes = plt.subplots(
-            nrows=number_of_rows, ncols=1, figsize=figsize, sharex=True
+    resolved_backend = backend
+    if interactive is not None:
+        warn_once(
+            "raw_plot(interactive=...)",
+            'backend="plotly"|"matplotlib"',
+            removal="2.1",
         )
+        if resolved_backend is None:
+            resolved_backend = "plotly" if interactive else "matplotlib"
+    if resolved_backend is None:
+        resolved_backend = "plotly"
 
-        for i in range(number_of_rows):
-            axes[i].plot(raw[x], raw[y[i]])
-            axes[i].set_ylabel(y_label[i])
+    if resolved_backend == "plotly" and not plotly_available:
+        warnings.warn("Can not perform interactive plotting. Plotly is not available.")
+        resolved_backend = "matplotlib"
 
-        axes[0].set_title(title)
-        axes[0].set_xlim(xlim)
-        axes[-1].set_xlabel(x_label)
+    from cellpy.plotting.backends import get_backend
+    from cellpy.plotting.context import from_source
+    from cellpy.plotting.prepare.raw import RawPrepareConfig, prepare as prepare_raw
 
-        fig.align_ylabels()
-
-    fig.tight_layout()
-    plt.close(fig)
+    prep_config = RawPrepareConfig(
+        y=y,
+        y_label=y_label,
+        x=x,
+        x_label=x_label,
+        title=title,
+        plot_type=plot_type,
+        double_y=double_y,
+        backend=resolved_backend,
+        additional_kwargs=dict(kwargs),
+    )
+    ctx = from_source(cell)
+    family = plot_registry.get("raw")
+    frame, spec = prepare_raw(ctx, family, prep_config)
+    if spec.extras.get("unsupported_plot_type"):
+        return None
+    fig = get_backend(resolved_backend).render(frame, spec)
+    if resolved_backend == "matplotlib" and fig is not None:
+        plt.close(fig)
     return fig
 
 
@@ -1716,7 +1453,8 @@ def cycle_info_plot(
     cell,
     cycle=None,
     get_axes=False,
-    interactive=True,
+    backend: Optional[str] = None,
+    interactive: Optional[bool] = None,
     t_unit="hours",
     v_unit="V",
     i_unit="mA",
@@ -1724,336 +1462,71 @@ def cycle_info_plot(
 ):
     """Show raw data together with step and cycle information.
 
+    Draws through prepare → spec → render (#647).
+
     Args:
         cell: cellpy object
         cycle (int or list or tuple): cycle(s) to select (must be int for matplotlib)
         get_axes (bool): return axes (for matplotlib) or figure (for plotly)
-        interactive (bool): use interactive plotting (if available)
+        backend (str, optional): ``"plotly"`` (default) or ``"matplotlib"``.
+        interactive (bool, optional): Deprecated alias for backend selection
+            (``True``→plotly, ``False``→matplotlib; removal 2.1).
         t_unit (str): unit for x-axis (default: "hours")
         v_unit (str): unit for y-axis (default: "V")
         i_unit (str): unit for current (default: "mA")
         **kwargs: parameters specific to plotting backend.
 
     Returns:
-        ``matplotlib.axes`` or None
+        ``matplotlib.axes`` or None (or a figure when ``get_axes`` / backend semantics require it)
     """
-    t_scaler = cell.unit_scaler_from_raw(t_unit, "time")
-    v_scaler = cell.unit_scaler_from_raw(v_unit, "voltage")
-    i_scaler = cell.unit_scaler_from_raw(i_unit, "current")
-
-    if plotly_available and interactive:
-        fig = _cycle_info_plot_plotly(
-            cell,
-            cycle,
-            get_axes,
-            t_scaler,
-            t_unit,
-            v_scaler,
-            v_unit,
-            i_scaler,
-            i_unit,
-            **kwargs,
+    resolved_backend = backend
+    if interactive is not None:
+        warn_once(
+            "cycle_info_plot(interactive=...)",
+            'backend="plotly"|"matplotlib"',
+            removal="2.1",
         )
+        if resolved_backend is None:
+            resolved_backend = "plotly" if interactive else "matplotlib"
+    if resolved_backend is None:
+        resolved_backend = "plotly"
+
+    if resolved_backend == "plotly" and not plotly_available:
+        warnings.warn("Can not perform interactive plotting. Plotly is not available.")
+        resolved_backend = "matplotlib"
+
+    from cellpy.plotting.backends import get_backend
+    from cellpy.plotting.context import from_source
+    from cellpy.plotting.prepare.steps import (
+        CycleInfoPrepareConfig,
+        prepare as prepare_cycle_info,
+    )
+
+    prep_config = CycleInfoPrepareConfig(
+        cycle=cycle,
+        get_axes=get_axes,
+        t_unit=t_unit,
+        v_unit=v_unit,
+        i_unit=i_unit,
+        backend=resolved_backend,
+        additional_kwargs=dict(kwargs),
+    )
+    ctx = from_source(cell)
+    family = plot_registry.get("cycle_info")
+    frame, spec = prepare_cycle_info(ctx, family, prep_config)
+    fig = get_backend(resolved_backend).render(frame, spec)
+
+    if resolved_backend == "plotly":
         if get_axes:
             return fig
-        return fig
+        fig.show()
+        return None
 
-    axes = _cycle_info_plot_matplotlib(
-        cell,
-        cycle,
-        get_axes,
-        t_scaler,
-        t_unit,
-        v_scaler,
-        v_unit,
-        i_scaler,
-        i_unit,
-        **kwargs,
-    )
-
-    if get_axes:
-        return axes
-
-
-def _cycle_info_plot_plotly(
-    cell,
-    cycle,
-    get_axes,
-    t_scaler,
-    t_unit,
-    v_scaler,
-    v_unit,
-    i_scaler,
-    i_unit,
-    **kwargs,
-):
-    import plotly.express as px
-    import plotly.graph_objects as go
-    import numpy as np
-
-    if kwargs.get("xlim"):
-        logging.info("xlim is not supported for plotly yet")
-
-    # Per-cell, not the module-level legacy singletons (#567).
-    raw_hdr = _LiveHeaders(cell, "raw")
-    step_hdr = _LiveHeaders(cell, "steps")
-
-    data = cell.data.raw.copy()
-    table = cell.data.steps.copy()
-
-    if cycle is None:
-        cycle = list(data[raw_hdr.cycle_index_txt].unique())
-
-    if not isinstance(cycle, (list, tuple)):
-        cycle = [cycle]
-
-    delta = "_delta"
-    v_delta = step_hdr.stat("voltage", "delta")
-    i_delta = step_hdr.stat("current", "delta")
-    c_delta = step_hdr.stat("charge", "delta")
-    dc_delta = step_hdr.stat("discharge", "delta")
-    cycle_ = step_hdr.cycle
-    step_ = step_hdr.step
-    type_ = step_hdr.type
-
-    time_hdr = raw_hdr.test_time_txt
-    cycle_hdr = raw_hdr.cycle_index_txt
-    step_number_hdr = raw_hdr.step_index_txt
-    current_hdr = raw_hdr.current_txt
-    voltage_hdr = raw_hdr.voltage_txt
-
-    data = data[
-        [
-            time_hdr,
-            cycle_hdr,
-            step_number_hdr,
-            current_hdr,
-            voltage_hdr,
-        ]
-    ]
-
-    table = table[
-        [
-            cycle_,
-            step_,
-            type_,
-            v_delta,
-            i_delta,
-            c_delta,
-            dc_delta,
-        ]
-    ]
-    m_cycle_data = data[cycle_hdr].isin(cycle)
-    data = data.loc[m_cycle_data, :]
-
-    data[time_hdr] = data[time_hdr] * t_scaler
-    data[voltage_hdr] = data[voltage_hdr] * v_scaler
-    data[current_hdr] = data[current_hdr] * i_scaler
-    data = data.merge(
-        table,
-        left_on=(cycle_hdr, step_number_hdr),
-        right_on=(cycle_, step_),
-    ).sort_values(by=[time_hdr])
-
-    fig = go.Figure()
-
-    grouped_data = data.groupby(cycle_hdr)
-    for cycle_number, group in grouped_data:
-        x = group[time_hdr]
-        y = group[voltage_hdr]
-        s = group[step_number_hdr]
-        i = group[current_hdr]
-
-        st = group[type_]
-        dV = group[v_delta]
-        dI = group[i_delta]
-        dC = group[c_delta]
-        dDC = group[dc_delta]
-
-        fig.add_trace(
-            go.Scatter(
-                x=x,
-                y=y,
-                mode="lines",
-                name=f"cycle {cycle_number}",
-                customdata=np.stack((i, s, st, dV, dI, dC, dDC), axis=-1),
-                hovertemplate="<br>".join(
-                    [
-                        "<b>Time: %{x:.2f}" + f" {t_unit}" + "</b>",
-                        "  <b>Voltage:</b> %{y:.4f}" + f" {v_unit}",
-                        "  <b>Current:</b> %{customdata[0]:.4f}" + f" {i_unit}",
-                        "<b>Step: %{customdata[1]} (%{customdata[2]})</b>",
-                        "  <b>ΔV:</b> %{customdata[3]:.2f}",
-                        "  <b>ΔI:</b> %{customdata[4]:.2f}",
-                        "  <b>ΔCh:</b> %{customdata[5]:.2f}",
-                        "  <b>ΔDCh:</b> %{customdata[6]:.2f}",
-                    ]
-                ),
-            ),
-        )
-
-    cell_name = kwargs.get("title", cell.cell_name)
-    height = kwargs.get("height", 600)
-    width = kwargs.get("width", 1000)
-    title_start = f"<b>{cell_name}</b> Cycle"
-    if len(cycle) > 2:
-        if cycle[-1] - cycle[0] == len(cycle) - 1:
-            title = f"{title_start}s {cycle[0]} - {cycle[-1]}"
-        else:
-            title = f"{title_start}s {cycle}"
-    elif len(cycle) == 2:
-        title = f"{title_start}s {cycle[0]} and {cycle[1]}"
-    else:
-        title = f"{title_start} {cycle[0]}"
-
-    fig.update_layout(
-        title=title,
-        xaxis_title=f"Time ({t_unit})",
-        yaxis_title=f"Voltage ({v_unit})",
-        width=width,
-        height=height,
-    )
-
+    # matplotlib: historical default returns None unless get_axes=True.
     if get_axes:
         return fig
-    fig.show()
+    return None
 
-
-def _plot_step(ax, x, y, color):
-    ax.plot(x, y, color=color, linewidth=3)
-
-
-def _get_info(table, cycle, step, step_hdr):
-    """``step_hdr`` is passed in: this helper never sees the cell, and the
-    module-level singleton it used to read answered with legacy names (#567)."""
-    m_table = (table[step_hdr.cycle] == cycle) & (table[step_hdr.step] == step)
-    # Step-table statistic columns, composed from the live stems rather than
-    # hard-coded legacy spellings ("voltage_delta" is "potential_delta" on a
-    # native frame).
-    p1, p2 = table.loc[
-        m_table, [step_hdr.stat("point", "min"), step_hdr.stat("point", "max")]
-    ].values[0]
-    c1, c2 = (
-        table.loc[
-            m_table,
-            [step_hdr.stat("current", "min"), step_hdr.stat("current", "max")],
-        ]
-        .abs()
-        .values[0]
-    )
-    d_voltage, d_current = table.loc[
-        m_table, [step_hdr.stat("voltage", "delta"), step_hdr.stat("current", "delta")]
-    ].values[0]
-    d_discharge, d_charge = table.loc[
-        m_table,
-        [step_hdr.stat("discharge", "delta"), step_hdr.stat("charge", "delta")],
-    ].values[0]
-    current_max = (c1 + c2) / 2
-    rate = table.loc[m_table, step_hdr.rate_avr].values[0]
-    step_type = table.loc[m_table, step_hdr.type].values[0]
-    return [step_type, rate, current_max, d_voltage, d_current, d_discharge, d_charge]
-
-
-def _cycle_info_plot_matplotlib(
-    cell,
-    cycle,
-    get_axes,
-    t_scaler,
-    t_unit,
-    v_scaler,
-    v_unit,
-    i_scaler,
-    i_unit,
-    **kwargs,
-):
-    # obs! hard-coded col-names. Please fix me.
-    if cycle is None:
-        warnings.warn("Only one cycle at a time is supported for matplotlib")
-        cycle = 1
-
-    if isinstance(cycle, (list, tuple)):
-        warnings.warn("Only one cycle at a time is supported for matplotlib")
-        cycle = cycle[0]
-
-    data = cell.data.raw
-    table = cell.data.steps
-
-    # Per-cell, not the module-level legacy singletons (#567).
-    raw_hdr = _LiveHeaders(cell, "raw")
-    step_hdr = _LiveHeaders(cell, "steps")
-
-    span_colors = ["#4682B4", "#FFA07A"]
-
-    voltage_color = "#008B8B"
-    current_color = "#CD5C5C"
-
-    m_cycle_data = data[raw_hdr.cycle_index_txt] == cycle
-    all_steps = data[m_cycle_data][raw_hdr.step_index_txt].unique()
-
-    color = itertools.cycle(span_colors)
-
-    fig = plt.figure(figsize=(20, 8))
-    fig.suptitle(f"Cycle: {cycle}")
-
-    ax3 = plt.subplot2grid((8, 3), (0, 0), colspan=3, rowspan=1, fig=fig)  # steps
-    ax4 = plt.subplot2grid((8, 3), (1, 0), colspan=3, rowspan=2, fig=fig)  # info
-    ax1 = plt.subplot2grid((8, 3), (3, 0), colspan=3, rowspan=5, fig=fig)  # data
-
-    ax2 = ax1.twinx()
-    ax1.set_xlabel(f"time ({t_unit})")
-    ax1.set_ylabel(f"voltage ({v_unit})", color=voltage_color)
-    ax2.set_ylabel(f"current ({i_unit})", color=current_color)
-
-    annotations_1 = []  # step number (IR)
-    annotations_2 = []  # step number
-    annotations_4 = []  # info
-
-    for i, s in enumerate(all_steps):
-        m = m_cycle_data & (data[raw_hdr.step_index_txt] == s)
-        c = data.loc[m, raw_hdr.current_txt] * i_scaler
-        v = data.loc[m, raw_hdr.voltage_txt] * v_scaler
-        t = data.loc[m, raw_hdr.test_time_txt] * t_scaler
-        step_type, rate, current_max, dv, dc, d_discharge, d_charge = _get_info(
-            table, cycle, s, step_hdr
-        )
-        if len(t) > 1:
-            fcolor = next(color)
-
-            info_txt = f"{step_type}\ni = |{i_scaler * current_max:0.2f}| {i_unit}\n"
-            info_txt += f"delta V = {dv:0.2f} %\ndelta i = {dc:0.2f} %\n"
-            info_txt += f"delta C = {d_charge:0.2} %\ndelta DC = {d_discharge:0.2} %\n"
-
-            for ax in [ax2, ax3, ax4]:
-                ax.axvspan(t.iloc[0], t.iloc[-1], facecolor=fcolor, alpha=0.2)
-            _plot_step(ax1, t, v, voltage_color)
-            _plot_step(ax2, t, c, current_color)
-            annotations_1.append([f"{s}", t.mean()])
-            annotations_4.append([info_txt, t.mean()])
-        else:
-            info_txt = f"{s}({step_type})"
-            annotations_2.append([info_txt, t.mean()])
-    ax3.set_ylim(0, 1)
-    for s in annotations_1:
-        ax3.annotate(f"{s[0]}", (s[1], 0.2), ha="center")
-
-    for s in annotations_2:
-        ax3.annotate(f"{s[0]}", (s[1], 0.6), ha="center")
-
-    for s in annotations_4:
-        ax4.annotate(f"{s[0]}", (s[1], 0.0), ha="center")
-
-    for ax in [ax3, ax4]:
-        ax.axes.get_yaxis().set_visible(False)
-        ax.axes.get_xaxis().set_visible(False)
-
-    if x := kwargs.get("xlim"):
-        ax1.set_xlim(x)
-        ax2.set_xlim(x)
-        ax3.set_xlim(x)
-        ax4.set_xlim(x)
-
-    if get_axes:
-        return ax1, ax2, ax2, ax4
 
 
 @notebook_docstring_printer

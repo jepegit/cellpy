@@ -19,9 +19,9 @@ moves selection into `cellpy.plotting.registry`.
   backend consumption is #639.
 - **Oracle menu** (`tests/figure_spec_support.SUMMARY_FAMILIES`) derives from
   `families(entry_point="summary_plot")` so the snapshot menu cannot drift
-  from the runtime menu. Non-summary families (e.g. `"cycles"` for
-  `cycles_plot`, #646) register with `extras={"entry_point": "cycles_plot"}`
-  and are excluded from the summary oracle.
+  from the runtime menu. Non-summary families register with
+  `extras={"entry_point": "..."}` and are excluded from the summary oracle:
+  `"cycles"` (`cycles_plot`, #646), `"raw"` / `"cycle_info"` (#647).
 
 ## Alternatives considered
 

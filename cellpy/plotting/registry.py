@@ -294,6 +294,21 @@ def _register_builtin_families() -> None:
             supports_formation=True,
             extras={"entry_point": "cycles_plot", "kind": "cycles"},
         ),
+        # Stage 2 (#647): raw time-series and cycle-info overlays.
+        PlotFamily(
+            name="raw",
+            description="Raw time-series traces",
+            column_builder=lambda hdr: ["voltage", "current"],
+            supports_formation=False,
+            extras={"entry_point": "raw_plot", "kind": "raw"},
+        ),
+        PlotFamily(
+            name="cycle_info",
+            description="Raw traces with step/cycle annotations",
+            column_builder=lambda hdr: ["test_time", "voltage", "current"],
+            supports_formation=False,
+            extras={"entry_point": "cycle_info_plot", "kind": "cycle_info"},
+        ),
     ]
     for family in builtins:
         _register_family(family)

@@ -1,6 +1,6 @@
-"""Legend and marker post-processing for plotly traces — one implementation (#567).
+"""Legend, marker, and axis-label helpers for plotting (#567 / #647).
 
-These two helpers existed in **three** places, under two naming conventions:
+Legend/marker helpers existed in **three** places, under two naming conventions:
 
 | | plotutils | collectors | batch_plotters |
 |---|---|---|---|
@@ -12,15 +12,59 @@ differed). The legend helpers were identical in plotutils and collectors, while
 the batch_plotters copy carried an extra ``inverted_mode`` that swaps group and
 sub-group. That copy is therefore the superset, and it is the one kept — with
 ``inverted_mode=False`` as the default, which reproduces the other two exactly.
+
+Axis labels for ``raw_plot`` / ``cycle_info_plot`` go through
+:func:`quantity_label` / :func:`units_quantity_label` so those paths do not
+hand-compose ``f"{name} ({unit})"`` strings (#647).
 """
 
 from __future__ import annotations
 
 import logging
+from typing import TYPE_CHECKING, Optional
 
 from cellpy.parameters.internal_settings import get_headers_journal
 
+if TYPE_CHECKING:
+    from cellpycore.units.spec import CellpyUnits
+
 hdr_journal = get_headers_journal()
+
+
+def quantity_label(name: str, unit: str) -> str:
+    """Compose an axis label ``name (unit)``.
+
+    Args:
+        name: human-readable quantity name, e.g. ``"Voltage"``.
+        unit: unit string already resolved for the plotted series.
+
+    Returns:
+        e.g. ``"Voltage (V)"``, ``"Time (hours)"``.
+    """
+    return f"{name} ({unit})"
+
+
+def units_quantity_label(
+    name: str,
+    physical_property: str,
+    mode: Optional[str] = None,
+    *,
+    units: Optional["CellpyUnits"] = None,
+) -> str:
+    """Axis label via :func:`cellpy.units.units_label`.
+
+    Args:
+        name: human-readable quantity name.
+        physical_property: as :func:`~cellpy.units.units_label`.
+        mode: as :func:`~cellpy.units.units_label`.
+        units: unit spec for the series (e.g. ``cell.data.raw_units``).
+
+    Returns:
+        e.g. ``"Voltage (V)"``, ``"Charge capacity (Ah)"``.
+    """
+    from cellpy.units import with_cellpy_unit
+
+    return with_cellpy_unit(name, physical_property, mode, units=units)
 
 
 def remove_markers(trace):
