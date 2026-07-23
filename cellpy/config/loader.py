@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any
 
 import platformdirs
-from dotenv import dotenv_values
+from dotenv import dotenv_values, load_dotenv
 
 from cellpy.config.models import CellpyConfig
 from cellpy.config.sources import ProvenanceRegistry, SourceLayer
@@ -94,10 +94,32 @@ def _strip_none_values(payload: dict[str, Any]) -> dict[str, Any]:
     return cleaned
 
 
+def _resolve_env_file_path(env_file: Path | None) -> Path | None:
+    """Return an existing env file path, with home-dir fallback by basename.
+
+    Mirrors ``prmreader._load_env_file``: if ``paths.env_file`` is a relative
+    name like ``.env_cellpy`` and is missing from the cwd, look in ``Path.home()``.
+    """
+
+    if env_file is None:
+        return None
+    path = Path(env_file)
+    if path.is_file():
+        return path
+    home_candidate = Path.home() / path.name
+    if home_candidate.is_file():
+        return home_candidate
+    return None
+
+
 def _collect_env_overrides(env_file: Path | None) -> dict[str, Any]:
     raw: dict[str, str | None] = {}
-    if env_file and env_file.is_file():
-        raw.update({k: v for k, v in dotenv_values(env_file).items() if v is not None})
+    resolved = _resolve_env_file_path(env_file)
+    if resolved is not None:
+        # Push into os.environ for legacy OtherPath / fabric consumers (#662).
+        # load_dotenv does not override variables already set in the process.
+        load_dotenv(resolved)
+        raw.update({k: v for k, v in dotenv_values(resolved).items() if v is not None})
     for key, value in os.environ.items():
         if key.startswith("CELLPY_"):
             raw[key] = value
