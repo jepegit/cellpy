@@ -490,3 +490,36 @@ def test_prms_env_reaches_otherpath_connection_info(clean_dir, parameters, monke
     connect_kwargs, host = remote.connection_info(testing=True)
     assert host == f"{parameters.env_cellpy_user}@{parameters.env_cellpy_host}"
     assert connect_kwargs["password"] == parameters.env_cellpy_password
+
+
+@pytest.mark.essential
+def test_lazy_config_env_file_reaches_otherpath(clean_dir, parameters, monkeypatch):
+    """Config reload alone must populate os.environ for OtherPath (#662).
+
+    After import-time initialize() was removed (#453), load_config put secrets
+    into config.secrets via dotenv_values but left os.environ empty — OtherPath
+    still reads CELLPY_* from the process environment.
+    """
+    from cellpy.config.loader import LoadOptions
+    from cellpy.config.session import reload, reset_session
+
+    for key in ("CELLPY_USER", "CELLPY_HOST", "CELLPY_PASSWORD", "CELLPY_KEY_FILENAME"):
+        monkeypatch.delenv(key, raising=False)
+
+    env_path = Path(clean_dir) / ".env_cellpy"
+    env_path.write_text(
+        f"CELLPY_PASSWORD={parameters.env_cellpy_password}\n",
+        encoding="utf-8",
+    )
+
+    reset_session()
+    reload(options=LoadOptions(skip_files=True, env_file=env_path))
+
+    assert os.getenv("CELLPY_PASSWORD") == parameters.env_cellpy_password
+
+    remote = OtherPath(
+        f"ssh://{parameters.env_cellpy_user}@{parameters.env_cellpy_host}/tmp/file.res"
+    )
+    connect_kwargs, host = remote.connection_info(testing=True)
+    assert host == f"{parameters.env_cellpy_user}@{parameters.env_cellpy_host}"
+    assert connect_kwargs["password"] == parameters.env_cellpy_password

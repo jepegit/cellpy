@@ -4,6 +4,8 @@ Note! Only v1 related changes are collected here.
 
 ## [Unreleased]
 
+* Fix: lazy config load pushes `.env_cellpy` into `os.environ` so OtherPath SSH auth works again after #453. (#662)
+
 ## 1.1.0.post1 - 2026-07-15
 
 * Sync conda env files (`environment.yml`, `environment_dev.yml`,
