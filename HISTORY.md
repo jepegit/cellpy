@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+* Generic plotly panel/formation layout backend (#637).
+
 * Add FigureSpec dataclasses and a PlotFamily registry (#636).
 
 * Tier-3 loader close-out: `biologics_mpr` / `batmo_bdf` pass `check_loader`
