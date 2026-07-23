@@ -296,8 +296,13 @@ class PlotlyBackend:
 
     def render(self, frame: Any, spec: FigureSpec) -> Any:
         extras = dict(spec.extras or {})
-        if extras.get("kind") == "cycles":
+        kind = extras.get("kind")
+        if kind == "cycles":
             return self._render_cycles(frame, spec)
+        if kind == "raw":
+            return self._render_raw(frame, spec)
+        if kind == "cycle_info":
+            return self._render_cycle_info(frame, spec)
 
         import plotly.express as px
 
@@ -710,4 +715,138 @@ class PlotlyBackend:
             fig.update_yaxes(**plotly_yaxes_kwargs)
         plotly_layout_kwargs = kwargs.pop("plotly_layout_kwargs", {})
         fig.update_layout(height=height, width=width, **plotly_layout_kwargs)
+        return fig
+
+    def _render_raw(self, frame: Any, spec: FigureSpec) -> Any:
+        """Render raw time-series figures (#647)."""
+        import plotly.express as px
+        import plotly.graph_objects as go
+        from plotly.subplots import make_subplots
+
+        extras = dict(spec.extras or {})
+        if extras.get("unsupported_plot_type"):
+            return None
+
+        kwargs = dict(extras.get("additional_kwargs") or {})
+        x = extras["x"]
+        x_label = extras.get("x_label") or (spec.x_axis.label or x)
+        y = list(extras["y"])
+        y_label = list(extras["y_label"])
+        title = spec.title or ""
+        if not title.startswith("<b>"):
+            title = f"<b>{title}</b>"
+        special_height = extras.get("special_height")
+        number_of_rows = len(y)
+
+        if number_of_rows == 1:
+            labels = {}
+            if x_label:
+                labels[x] = x_label
+            if y_label:
+                labels[y[0]] = y_label[0]
+            return px.line(
+                frame,
+                x=x,
+                y=y[0],
+                title=title,
+                labels=labels or None,
+                **kwargs,
+            )
+
+        width = kwargs.pop("width", 1000)
+        height = kwargs.pop("height", None)
+        if height is None:
+            height = special_height if special_height is not None else number_of_rows * 300
+        vertical_spacing = kwargs.pop("vertical_spacing", 0.02)
+        fig = make_subplots(
+            rows=number_of_rows,
+            cols=1,
+            shared_xaxes=True,
+            vertical_spacing=vertical_spacing,
+            x_title=x_label,
+        )
+        x_values = frame[x]
+        for i in range(number_of_rows):
+            fig.add_trace(
+                go.Scatter(x=x_values, y=frame[y[i]], name=y_label[i]),
+                row=i + 1,
+                col=1,
+                **kwargs,
+            )
+        fig.update_layout(height=height, width=width, title_text=title)
+        return fig
+
+    def _render_cycle_info(self, frame: Any, spec: FigureSpec) -> Any:
+        """Render cycle-info overlay figures (#647)."""
+        import numpy as np
+        import plotly.graph_objects as go
+
+        extras = dict(spec.extras or {})
+        kwargs = dict(extras.get("additional_kwargs") or {})
+        cycle_hdr = extras["cycle_hdr"]
+        time_hdr = extras["time_hdr"]
+        voltage_hdr = extras["voltage_hdr"]
+        step_number_hdr = extras["step_number_hdr"]
+        current_hdr = extras["current_hdr"]
+        type_ = extras["type_hdr"]
+        v_delta = extras["v_delta"]
+        i_delta = extras["i_delta"]
+        c_delta = extras["c_delta"]
+        dc_delta = extras["dc_delta"]
+        t_unit = extras["t_unit"]
+        v_unit = extras["v_unit"]
+        i_unit = extras["i_unit"]
+
+        if kwargs.get("xlim"):
+            logging.info("xlim is not supported for plotly yet")
+
+        fig = go.Figure()
+        for cycle_number, group in frame.groupby(cycle_hdr):
+            fig.add_trace(
+                go.Scatter(
+                    x=group[time_hdr],
+                    y=group[voltage_hdr],
+                    mode="lines",
+                    name=f"cycle {cycle_number}",
+                    customdata=np.stack(
+                        (
+                            group[current_hdr],
+                            group[step_number_hdr],
+                            group[type_],
+                            group[v_delta],
+                            group[i_delta],
+                            group[c_delta],
+                            group[dc_delta],
+                        ),
+                        axis=-1,
+                    ),
+                    hovertemplate="<br>".join(
+                        [
+                            "<b>Time: %{x:.2f}" + f" {t_unit}" + "</b>",
+                            "  <b>Voltage:</b> %{y:.4f}" + f" {v_unit}",
+                            "  <b>Current:</b> %{customdata[0]:.4f}" + f" {i_unit}",
+                            "<b>Step: %{customdata[1]} (%{customdata[2]})</b>",
+                            "  <b>ΔV:</b> %{customdata[3]:.2f}",
+                            "  <b>ΔI:</b> %{customdata[4]:.2f}",
+                            "  <b>ΔCh:</b> %{customdata[5]:.2f}",
+                            "  <b>ΔDCh:</b> %{customdata[6]:.2f}",
+                        ]
+                    ),
+                ),
+            )
+
+        height = kwargs.get("height", 600)
+        width = kwargs.get("width", 1000)
+        y_title = (
+            spec.panels[0].y_axis.label
+            if spec.panels
+            else f"Voltage ({v_unit})"
+        )
+        fig.update_layout(
+            title=spec.title,
+            xaxis_title=spec.x_axis.label or f"Time ({t_unit})",
+            yaxis_title=y_title,
+            width=width,
+            height=height,
+        )
         return fig

@@ -222,24 +222,24 @@ def _other_family_cases() -> list[FigureCase]:
         FigureCase(
             name="raw_plot[plotly]",
             function="raw_plot",
-            kwargs={"interactive": True},
+            kwargs={"backend": "plotly"},
             needs_plotly=True,
         ),
         FigureCase(
             name="raw_plot[matplotlib]",
             function="raw_plot",
-            kwargs={"interactive": False},
+            kwargs={"backend": "matplotlib"},
         ),
         FigureCase(
             name="cycle_info_plot[plotly]",
             function="cycle_info_plot",
-            kwargs={"cycle": 3, "interactive": True},
+            kwargs={"cycle": 3, "backend": "plotly"},
             needs_plotly=True,
         ),
         FigureCase(
             name="cycle_info_plot[matplotlib]",
             function="cycle_info_plot",
-            kwargs={"cycle": 3, "interactive": False},
+            kwargs={"cycle": 3, "backend": "matplotlib"},
         ),
         FigureCase(
             name="cycles_plot[plotly]",

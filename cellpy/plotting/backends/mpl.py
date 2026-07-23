@@ -63,8 +63,13 @@ class MatplotlibBackend:
     def render(self, frame: Any, spec: FigureSpec) -> Any:
         """Render a tidy frame according to *spec* (matplotlib Figure)."""
         extras = dict(spec.extras or {})
-        if extras.get("kind") == "cycles":
+        kind = extras.get("kind")
+        if kind == "cycles":
             return self._render_cycles(frame, spec)
+        if kind == "raw":
+            return self._render_raw(frame, spec)
+        if kind == "cycle_info":
+            return self._render_cycle_info(frame, spec)
 
         config = extras.get("config")
         c = extras.get("cell")
@@ -1057,4 +1062,184 @@ class MatplotlibBackend:
             ax.set_ylim(y_range)
         return fig
 
+    def _render_raw(self, frame: Any, spec: FigureSpec) -> Any:
+        """Render raw time-series figures (#647)."""
+        import matplotlib.pyplot as plt
+
+        extras = dict(spec.extras or {})
+        if extras.get("unsupported_plot_type"):
+            return None
+
+        kwargs = dict(extras.get("additional_kwargs") or {})
+        x = extras["x"]
+        x_label = extras.get("x_label") or (spec.x_axis.label or x)
+        y = list(extras["y"])
+        y_label = list(extras["y_label"])
+        title = spec.title
+        double_y = bool(extras.get("double_y", True))
+        number_of_rows = len(y)
+        xlim = kwargs.get("xlim")
+        figsize = kwargs.pop("figsize", (10, 2 * number_of_rows))
+
+        if _seaborn_available():
+            import seaborn as sns
+
+            if double_y:
+                sns.set_style(kwargs.pop("style", "dark"))
+            else:
+                sns.set_style(kwargs.pop("style", "darkgrid"))
+
+        if len(y) == 1:
+            fig, ax = plt.subplots(figsize=figsize)
+            ax.plot(frame[x], frame[y[0]])
+            ax.set_xlabel(x_label)
+            ax.set_ylabel(y_label[0])
+            ax.set_title(title)
+            ax.set_xlim(xlim)
+            return fig
+
+        if len(y) == 2 and double_y:
+            fig, ax_v = plt.subplots(figsize=figsize)
+            color = "tab:red"
+            ax_v.set_xlabel(x_label)
+            ax_v.set_ylabel(y_label[0], color=color)
+            ax_v.plot(frame[x], frame[y[0]], label=y_label[0], color=color)
+            ax_v.tick_params(axis="y", labelcolor=color)
+            ax_c = ax_v.twinx()
+            color = "tab:blue"
+            ax_c.set_ylabel(y_label[1], color=color)
+            ax_c.plot(frame[x], frame[y[1]], label=y_label[1], color=color)
+            ax_c.tick_params(axis="y", labelcolor=color)
+            ax_v.set_xlim(xlim)
+            fig.tight_layout()
+            return fig
+
+        fig, axes = plt.subplots(
+            nrows=number_of_rows, ncols=1, figsize=figsize, sharex=True
+        )
+        for i in range(number_of_rows):
+            axes[i].plot(frame[x], frame[y[i]])
+            axes[i].set_ylabel(y_label[i])
+        axes[0].set_title(title)
+        axes[0].set_xlim(xlim)
+        axes[-1].set_xlabel(x_label)
+        fig.align_ylabels()
+        fig.tight_layout()
+        return fig
+
+    def _render_cycle_info(self, frame: Any, spec: FigureSpec) -> Any:
+        """Render cycle-info overlay figures (#647)."""
+        import itertools
+
+        import matplotlib.pyplot as plt
+
+        from cellpy.plotting.labels import quantity_label
+
+        extras = dict(spec.extras or {})
+        kwargs = dict(extras.get("additional_kwargs") or {})
+        cycle = extras["cycle"]
+        get_axes = bool(extras.get("get_axes", False))
+        t_unit = extras["t_unit"]
+        v_unit = extras["v_unit"]
+        i_unit = extras["i_unit"]
+        i_scaler = extras["i_scaler"]
+        time_hdr = extras["time_hdr"]
+        step_number_hdr = extras["step_number_hdr"]
+        current_hdr = extras["current_hdr"]
+        voltage_hdr = extras["voltage_hdr"]
+        table = extras["steps"]
+        step_hdr = extras["step_hdr"]
+
+        span_colors = ["#4682B4", "#FFA07A"]
+        voltage_color = "#008B8B"
+        current_color = "#CD5C5C"
+        all_steps = frame[step_number_hdr].unique()
+        color = itertools.cycle(span_colors)
+
+        fig = plt.figure(figsize=(20, 8))
+        fig.suptitle(spec.title or f"Cycle: {cycle}")
+        ax3 = plt.subplot2grid((8, 3), (0, 0), colspan=3, rowspan=1, fig=fig)
+        ax4 = plt.subplot2grid((8, 3), (1, 0), colspan=3, rowspan=2, fig=fig)
+        ax1 = plt.subplot2grid((8, 3), (3, 0), colspan=3, rowspan=5, fig=fig)
+        ax2 = ax1.twinx()
+        ax1.set_xlabel(spec.x_axis.label or quantity_label("time", t_unit))
+        ax1.set_ylabel(
+            (spec.panels[0].y_axis.label if spec.panels else quantity_label("voltage", v_unit)),
+            color=voltage_color,
+        )
+        ax2.set_ylabel(quantity_label("current", i_unit), color=current_color)
+
+        annotations_1 = []
+        annotations_2 = []
+        annotations_4 = []
+
+        for s in all_steps:
+            m = frame[step_number_hdr] == s
+            c_vals = frame.loc[m, current_hdr]
+            v_vals = frame.loc[m, voltage_hdr]
+            t_vals = frame.loc[m, time_hdr]
+            step_type, rate, current_max, dv, dc, d_discharge, d_charge = _get_step_info(
+                table, cycle, s, step_hdr
+            )
+            if len(t_vals) > 1:
+                fcolor = next(color)
+                info_txt = f"{step_type}\ni = |{i_scaler * current_max:0.2f}| {i_unit}\n"
+                info_txt += f"delta V = {dv:0.2f} %\ndelta i = {dc:0.2f} %\n"
+                info_txt += f"delta C = {d_charge:0.2} %\ndelta DC = {d_discharge:0.2} %\n"
+                for ax in [ax2, ax3, ax4]:
+                    ax.axvspan(
+                        t_vals.iloc[0], t_vals.iloc[-1], facecolor=fcolor, alpha=0.2
+                    )
+                ax1.plot(t_vals, v_vals, color=voltage_color, linewidth=3)
+                ax2.plot(t_vals, c_vals, color=current_color, linewidth=3)
+                annotations_1.append([f"{s}", t_vals.mean()])
+                annotations_4.append([info_txt, t_vals.mean()])
+            else:
+                info_txt = f"{s}({step_type})"
+                annotations_2.append([info_txt, t_vals.mean()])
+
+        ax3.set_ylim(0, 1)
+        for s in annotations_1:
+            ax3.annotate(f"{s[0]}", (s[1], 0.2), ha="center")
+        for s in annotations_2:
+            ax3.annotate(f"{s[0]}", (s[1], 0.6), ha="center")
+        for s in annotations_4:
+            ax4.annotate(f"{s[0]}", (s[1], 0.0), ha="center")
+        for ax in [ax3, ax4]:
+            ax.axes.get_yaxis().set_visible(False)
+            ax.axes.get_xaxis().set_visible(False)
+
+        if x := kwargs.get("xlim"):
+            ax1.set_xlim(x)
+            ax2.set_xlim(x)
+            ax3.set_xlim(x)
+            ax4.set_xlim(x)
+
+        if get_axes:
+            return ax1, ax2, ax2, ax4
+        return fig
+
+
+def _get_step_info(table, cycle, step, step_hdr):
+    """Step-table annotation values for cycle-info matplotlib render (#647)."""
+    m_table = (table[step_hdr.cycle] == cycle) & (table[step_hdr.step] == step)
+    c1, c2 = (
+        table.loc[
+            m_table,
+            [step_hdr.stat("current", "min"), step_hdr.stat("current", "max")],
+        ]
+        .abs()
+        .values[0]
+    )
+    d_voltage, d_current = table.loc[
+        m_table, [step_hdr.stat("voltage", "delta"), step_hdr.stat("current", "delta")]
+    ].values[0]
+    d_discharge, d_charge = table.loc[
+        m_table,
+        [step_hdr.stat("discharge", "delta"), step_hdr.stat("charge", "delta")],
+    ].values[0]
+    current_max = (c1 + c2) / 2
+    rate = table.loc[m_table, step_hdr.rate_avr].values[0]
+    step_type = table.loc[m_table, step_hdr.type].values[0]
+    return [step_type, rate, current_max, d_voltage, d_current, d_discharge, d_charge]
 

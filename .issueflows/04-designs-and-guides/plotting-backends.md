@@ -4,7 +4,8 @@
 
 Epic #567 Stage 1 needs one layout engine and prepare→spec→render for
 `summary_plot`, with two public backends (`plotly` | `matplotlib`). Stage 2
-(#646) adds a second render branch for `cycles_plot`.
+adds further render branches for `cycles_plot` (#646) and `raw_plot` /
+`cycle_info_plot` (#647).
 
 ## Decision
 
@@ -16,14 +17,17 @@ Epic #567 Stage 1 needs one layout engine and prepare→spec→render for
 - **Static path:** `MatplotlibBackend.render(frame, spec)` (#639). Seaborn is
   used only for palette/style/faceting helpers (`relplot`); it is **not** a
   public backend name. `SeabornPlotBuilder` is deleted.
-- **Public switch:** `summary_plot(..., backend="plotly"|"matplotlib")` and
-  `cycles_plot(..., backend=...)`. `interactive=` is a `warn_once` alias
-  (removal 2.1) on both.
-- **Family dispatch (#646):** when `spec.extras.get("kind") == "cycles"`,
-  both backends take the voltage–capacity render path (ported from the old
-  private `_cycles_plotter_*` helpers). Otherwise they keep the summary path.
+- **Public switch:** `summary_plot(..., backend="plotly"|"matplotlib")`,
+  `cycles_plot(..., backend=...)`, `raw_plot(..., backend=...)`,
+  `cycle_info_plot(..., backend=...)`. `interactive=` is a `warn_once` alias
+  (removal 2.1) on all of them.
+- **Family dispatch:** `spec.extras.get("kind")` selects the render branch:
+  - `"cycles"` — voltage–capacity (#646)
+  - `"raw"` — raw time-series (#647)
+  - `"cycle_info"` — raw + step annotations (#647; matplotlib single-cycle)
+  - otherwise — summary path
 
 ## Links
 
-- Issues #646, #639, #638, #637, #636; epic #567
+- Issues #647, #646, #639, #638, #637, #636; epic #567
 - Plan of record: `architecture-plan/cellpy2-plotting-redesign-plan.md` §3.1

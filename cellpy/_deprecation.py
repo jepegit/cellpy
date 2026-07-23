@@ -177,6 +177,17 @@ def _seed_known_deprecations() -> None:
         "cycles_plot(y_range=...)",
         removal="2.1",
     )
+    # Stage 2 (#647): raw_plot / cycle_info_plot backend=.
+    _register(
+        "raw_plot(interactive=...)",
+        'backend="plotly"|"matplotlib"',
+        removal="2.1",
+    )
+    _register(
+        "cycle_info_plot(interactive=...)",
+        'backend="plotly"|"matplotlib"',
+        removal="2.1",
+    )
 
 
 if __name__ == "__main__":

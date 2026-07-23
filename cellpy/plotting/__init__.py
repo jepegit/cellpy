@@ -38,7 +38,12 @@ from cellpy.plotting.figures import (
     make_matplotlib_manager,
     save_matplotlib_figure,
 )
-from cellpy.plotting.labels import legend_replacer, remove_markers
+from cellpy.plotting.labels import (
+    legend_replacer,
+    quantity_label,
+    remove_markers,
+    units_quantity_label,
+)
 from cellpy.plotting.prepare import prepare_summary
 from cellpy.plotting.registry import (
     PlotFamily,
@@ -70,6 +75,8 @@ __all__ = [
     "make_matplotlib_manager",
     "make_plotly_template",
     "prepare_summary",
+    "quantity_label",
     "remove_markers",
     "save_matplotlib_figure",
+    "units_quantity_label",
 ]
