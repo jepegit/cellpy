@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+* Port cycles_plot to prepare→spec→render (#646).
+
 * Matplotlib backend; retire SeabornPlotBuilder; unify backend= (#639).
 
 * Port summary prepare path and flip summary_plot to prepare→spec→render (#638).

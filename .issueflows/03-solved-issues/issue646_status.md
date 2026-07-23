@@ -1,6 +1,6 @@
 # Issue #646 — Status
 
-- [ ] Done
+- [x] Done
 
 ## What's done
 
@@ -12,7 +12,8 @@
 - Tests: `tests/test_cycles_prepare.py`; oracle harness on `backend=`; design notes updated; `DEPRECATIONS.md` regenerated.
 - `MPLBACKEND=Agg uv run pytest tests/test_cycles_prepare.py tests/test_plotting_registry.py tests/test_figure_specs.py tests/test_mpl_backend.py` — 72 passed.
 - `MPLBACKEND=Agg uv run pytest -m essential --ignore=tests/test_arbin_variants_two_stage.py` — 562 passed, 1 skipped.
+- `HISTORY.md` Unreleased bullet added; issue group archived to `03-solved-issues/`.
 
 ## Remaining work
 
-- `/iflow-close` (HISTORY, archive, PR finalize).
+- None (merge + `/iflow-cleanup` after PR lands).
