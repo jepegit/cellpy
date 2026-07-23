@@ -917,6 +917,79 @@ def add_cv_step_columns(columns: list) -> list:
     return new_columns
 
 
+def _cv_partition_summary_frames(c):
+    """Build full / non-CV / CV-delta summary frames for CV partitioning.
+
+    Non-CV uses ``make_summary(exclude_step_types=["cv_"])`` (#509). With-CV is
+    the numeric difference ``full - non_cv`` on overlapping columns (meaningful
+    for additive capacity metrics; not a true CV-only efficiency/voltage summary).
+
+    Args:
+        c: cellpy ``CellpyCell`` with a summary (and preferably a step table).
+
+    Returns:
+        tuple: ``(summary_full, summary_no_cv, summary_cv)`` — copies. Cycle
+        layout matches ``c.data.summary`` (column vs index) when possible.
+    """
+    # Fresh make_summary so derived columns (e.g. *_absolute) match what the
+    # engine emits today — stored ``c.data.summary`` can be a narrower snapshot.
+    summary = c.make_summary(create_copy=True).data.summary.copy()
+    summary_no_cv = c.make_summary(
+        exclude_step_types=["cv_"], create_copy=True
+    ).data.summary.copy()
+
+    steps = getattr(c.data, "steps", None)
+    if steps is not None and not getattr(steps, "empty", True):
+        # Prefer schema / native ``step_type``; module-level hdr may still say ``type``.
+        type_candidates = []
+        schema = getattr(c, "schema", None)
+        step_schema = getattr(schema, "steps", None) if schema is not None else None
+        step_type_name = getattr(step_schema, "step_type", None)
+        if step_type_name:
+            type_candidates.append(step_type_name)
+        type_candidates.extend(["step_type", hdr_steps.type, "type"])
+        type_col = next((n for n in type_candidates if n in steps.columns), None)
+        if type_col is not None:
+            has_cv = (
+                steps[type_col]
+                .astype(str)
+                .str.startswith("cv_", na=False)
+                .any()
+            )
+            if not has_cv:
+                logging.warning(
+                    "CV partition requested but step table has no cv_* types; "
+                    "with-CV series will be ~0 and without-CV ≈ full summary."
+                )
+
+    had_cycle_as_column = False
+    cycle_col = _summary_cycle_column(summary)
+    if cycle_col is not None:
+        summary = summary.set_index(cycle_col, drop=True)
+        had_cycle_as_column = True
+
+    cycle_col_no_cv = _summary_cycle_column(summary_no_cv)
+    if cycle_col_no_cv is not None:
+        summary_no_cv = summary_no_cv.set_index(cycle_col_no_cv, drop=True)
+
+    summary, summary_no_cv = summary.align(summary_no_cv, join="outer", axis=0)
+
+    common = summary.columns.intersection(summary_no_cv.columns)
+    summary_cv = pd.DataFrame(index=summary.index)
+    for col in common:
+        if pd.api.types.is_numeric_dtype(summary[col]):
+            summary_cv[col] = (summary[col] - summary_no_cv[col]).clip(lower=0)
+        else:
+            summary_cv[col] = np.nan
+
+    if had_cycle_as_column and cycle_col is not None:
+        summary = summary.reset_index()
+        summary_no_cv = summary_no_cv.reset_index()
+        summary_cv = summary_cv.reset_index()
+
+    return summary, summary_no_cv, summary_cv
+
+
 def _partition_summary_based_on_cv_steps(
     c,
     column_set: Optional[list] = None,
@@ -932,19 +1005,10 @@ def _partition_summary_based_on_cv_steps(
     Returns:
         ``pandas.DataFrame``
     """
-    import pandas as pd
-
     if not x:
         x = hdr_summary.cycle_index
 
-    summary = c.data.summary.copy()
-
-    summary_no_cv = c.make_summary(
-        selector_type="non-cv", create_copy=True
-    ).data.summary
-    summary_only_cv = c.make_summary(
-        selector_type="only-cv", create_copy=True
-    ).data.summary
+    summary, summary_no_cv, summary_only_cv = _cv_partition_summary_frames(c)
     if x != summary.index.name:
         summary.set_index(x, inplace=True, drop=True)
         summary_no_cv.set_index(x, inplace=True, drop=True)
@@ -957,7 +1021,7 @@ def _partition_summary_based_on_cv_steps(
         column_set = [col for col in column_set if col in summary.columns]
 
     # in case the column set already contains cv cols:
-    column_set = [col for col in column_set if not "_cv" in col]
+    column_set = [col for col in column_set if "_cv" not in col]
 
     summary = summary[column_set]
 

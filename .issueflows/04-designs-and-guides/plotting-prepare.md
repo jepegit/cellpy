@@ -46,7 +46,14 @@ backend.render as the only summary path. Stage 2 extends the same contract to
   `ica_plot` / `dva_plot` stay in `plotutils` and orchestrate context →
   registry → prepare → `get_backend(backend).render`.
 
+## CV-split summaries (#654)
+
+`selector_type` on `make_summary` is a deprecated no-op. CV partition helpers
+(`helpers._cv_partition_summary_frames`, used by `partition_summary_cv_steps` /
+fullcell prepare) use `exclude_step_types=["cv_"]` for without-CV and
+`full − non_cv` for with-CV capacity deltas.
+
 ## Links
 
-- Issues #648, #647, #646, #639, #638; epic #567
+- Issues #648, #647, #646, #639, #638, #654; epic #567
 - Related: `plotting-registry.md`, `plotting-backends.md`

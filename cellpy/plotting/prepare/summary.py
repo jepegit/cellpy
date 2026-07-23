@@ -405,14 +405,15 @@ class SummaryPlotDataPreparer:
         number_of_rows = 4
         column_set = y_cols[y]
 
-        summary = self._preprocess_summary(c, c.data.summary, config)
+        # Fresh full + CV-delta (full − non_cv via exclude_step_types); #654.
+        # Use the helper's full frame so derived columns (e.g. *_absolute) exist
+        # on both sides of the merge and ``*_cv`` suffixes land correctly.
+        from cellpy.utils.helpers import _cv_partition_summary_frames
+
+        summary_full, _, summary_only_cv = _cv_partition_summary_frames(c)
+        summary = self._preprocess_summary(c, summary_full, config)
         if summary.index.name == x:
             summary = summary.reset_index(drop=False)
-
-        # Get CV-only summary
-        summary_only_cv = c.make_summary(
-            selector_type="only-cv", create_copy=True
-        ).data.summary
         if summary_only_cv.index.name == x:
             summary_only_cv = summary_only_cv.reset_index(drop=False)
 

@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+* Fix summary CV-split plots: use exclude_step_types and full−non_cv instead of dead selector_type (#654).
+
 * Wire Batch.plot to plotting and delete batch_plotters.py (#658).
 
 * Add ica_plot / dva_plot families on the new pipeline (#648).

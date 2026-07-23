@@ -1316,18 +1316,11 @@ def partition_summary_cv_steps(
     """
     import pandas as pd
 
-    # A copy, because `set_index(..., inplace=True)` below would otherwise move
-    # the x column out of the *cell's own* summary frame and leave it there:
-    # one CV-split plot and `c.data.summary` has permanently lost `cycle_num`,
-    # breaking every later plot and any user code reading that column (#567).
-    summary = c.data.summary.copy()
-
-    summary_no_cv = c.make_summary(
-        selector_type="non-cv", create_copy=True
-    ).data.summary
-    summary_only_cv = c.make_summary(
-        selector_type="only-cv", create_copy=True
-    ).data.summary
+    # Copies — `set_index(..., inplace=True)` must not touch `c.data.summary`
+    # (#567). Frames come from helpers (exclude_step_types + full−non_cv; #654).
+    summary, summary_no_cv, summary_only_cv = helpers._cv_partition_summary_frames(
+        c
+    )
     if x != summary.index.name:
         summary.set_index(x, inplace=True)
         summary_no_cv.set_index(x, inplace=True)
