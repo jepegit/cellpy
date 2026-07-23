@@ -26,12 +26,13 @@ Branch policy for releases lives in [`cellpy-v2-branching.md`](cellpy-v2-branchi
 
 | Tag pattern | Branch | PyPI channel |
 |-------------|--------|--------------|
-| `v1.x.y` (stable 1.x) | **`master`** | stable (default `pip install cellpy`) |
-| `v1.x.yaN` / `bN` / `rcN` (1.x pre) | **`master`** | pre-release (`pip install cellpy --pre`) |
+| `v1.x.y` / `v1.x.y.postN` (stable 1.x) | **`v1.x`** (preferred); **`master`** still accepted for older tags | stable (default `pip install cellpy`) |
+| `v1.x.yaN` / `bN` / `rcN` (1.x pre) | **`v1.x`** or **`master`** | pre-release (`pip install cellpy --pre`) |
 | `v2.0.0aN` / `bN` / `rcN` | **`v2`** | pre-release (v2 integration testing only) |
 | `v2.0.0` and later `v2.x.y` | **`master`** (after v2 merge) | stable |
 
-The workflow **fails** if e.g. `v1.0.5` points at a commit that is not on `origin/master`.
+The workflow **fails** if e.g. `v1.1.0.post2` points at a commit that is on neither
+`origin/v1.x` nor `origin/master`.
 
 ## Bootstrap: first automated PyPI release
 
@@ -52,8 +53,11 @@ Install the alpha with `pip install cellpy --pre` (or `pip install cellpy==1.0.4
 
 ## Cutting a 1.x release (happy path)
 
+Maintenance releases ship from the **`v1.x`** branch (post-2.0 split). Older 1.x tags
+that still live on `master` remain valid for the workflow check.
+
 ```bash
-git switch master && git pull --ff-only
+git switch v1.x && git pull --ff-only
 
 # 1. Ensure dependency pin is release-ready
 #    Pin exact cellpycore for the release if needed (see checklist below).
@@ -61,13 +65,11 @@ UV_NO_SOURCES=1 uv lock
 UV_NO_SOURCES=1 uv sync
 uv run pytest -m essential
 
-# 2. Clean tree — everything for this release is merged on master
+# 2. Clean tree — everything for this release is merged on v1.x
 git status   # must be clean
 
 # 3. Create the GitHub release (tag = version)
-#    First automated publish: use v1.0.4a1 (alpha) before v1.0.4 stable — see Bootstrap above.
-gh release create v1.0.4a1 --target master --generate-notes   # alpha
-# gh release create v1.0.4 --target master --generate-notes  # stable, after alpha is green
+gh release create v1.1.0.post2 --target v1.x --generate-notes
 
 # 4. Watch CI
 gh run watch --workflow release.yml
@@ -86,7 +88,8 @@ inspect `dist/` metadata.
 
 ## Pre-release checklist
 
-- [ ] All changes for this release are merged to **`master`** (or **`v2`** for v2.0 alphas only).
+- [ ] All changes for this release are merged to **`v1.x`** (1.x line), **`master`**
+      (legacy 1.x / 2.x stable), or **`v2`** (v2.0 alphas only).
 - [ ] **`cellpycore` pin** in `[project.dependencies]` reflects the intended core revision.
       Use `UV_NO_SOURCES=1 uv lock` so the lock resolves from PyPI, not the editable path.
 - [ ] **`uv run pytest -m essential`** (or full suite) green locally with `UV_NO_SOURCES=1`.

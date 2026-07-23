@@ -7,7 +7,8 @@ How to develop **v2** without disrupting **1.x** work on `master`. Companion to
 
 | Branch | Role | PR target | Releases |
 |--------|------|-----------|----------|
-| **`master`** | Stable **1.x** line | `master` | Tags `v1.x.y` |
+| **`v1.x`** | Stable **1.x** maintenance line | `v1.x` | Tags `v1.x.y` / `v1.x.y.postN` |
+| **`master`** | **2.x** development (was 1.x before the split) | `master` | Tags `v2.x.y` after v2 merge |
 | **`v2`** | Long-lived **v2.0** integration (epic #402) | `v2` | None until v2.0; then merge → `master` and tag `v2.0.0` |
 | **`<N>-<slug>`** | Short-lived issue branches | Parent line (see below) | — |
 
@@ -147,19 +148,18 @@ Full procedure: [`release-procedure.md`](release-procedure.md). Summary:
 
 | Line | GitHub release from | Tag examples | PyPI |
 |------|---------------------|--------------|------|
-| **1.x (now)** | **`master`** | `v1.0.4a1` → `v1.0.4` | alpha first, then stable |
+| **1.x maintenance** | **`v1.x`** (preferred; `master` still accepted) | `v1.1.0.post2`, `v1.1.1` | stable |
 | **v2 integration** | **`v2`** (optional) | `v2.0.0a1` | pre-release only (`--pre`) |
 | **2.x (after v2.0 merge)** | **`master`** | `v2.0.0`, `v2.1.0` | stable |
 
 **Workflow:** `release: published` → validate tag/branch → test (`UV_NO_SOURCES=1`) →
 `uv build` → PyPI trusted publish (`.github/workflows/release.yml`).
 
-**Two-way parity + releases:** stable fixes should land on **`master` first** (or backport
-immediately) so the next **`v1.x.y` GitHub release** on `master` ships them to PyPI. Do not
-accumulate 1.x-safe fixes only on `v2`.
+**1.x maintenance:** ship bugfixes on **`v1.x`** and cut GitHub releases with
+`--target v1.x`. Do not accumulate 1.x-only fixes on `v2` / current `master` (2.x work).
 
 **Versioning:** tag name = version (`uv-dynamic-versioning`); no separate bump in
-`pyproject.toml`. Pin exact `cellpycore==…` in the release commit on `master` when cutting
+`pyproject.toml`. Pin exact `cellpycore==…` in the release commit on `v1.x` when cutting
 1.x tags.
 
 ## Local development

@@ -4,7 +4,11 @@ Note! Only v1 related changes are collected here.
 
 ## [Unreleased]
 
+## 1.1.0.post2 - 2026-07-23
+
 * Fix: lazy config load pushes `.env_cellpy` into `os.environ` so OtherPath SSH auth works again after #453. (#662)
+* Docs: warn that cellpy 1.x is maintained until July 2027 (#513).
+* Release: allow `v1.*` tags from the `v1.x` maintenance branch (as well as `master`).
 
 ## 1.1.0.post1 - 2026-07-15
 
