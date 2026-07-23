@@ -13,6 +13,7 @@ import json
 import sys
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 
 @dataclass(frozen=True)
@@ -28,7 +29,7 @@ def _means_by_name(payload: dict) -> dict[str, float]:
     for bench in payload.get("benchmarks", []):
         name = bench.get("name")
         stats = bench.get("stats") or {}
-        mean = stats.get("mean")
+        mean: Any | None = stats.get("mean")
         if name and mean is not None:
             out[name] = float(mean)
     return out
