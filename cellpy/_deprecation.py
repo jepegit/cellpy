@@ -155,6 +155,12 @@ def _seed_known_deprecations() -> None:
         "cellpy.utils.plotutils.summary_plot (same figures, same options)",
         removal="2.1",
     )
+    # Stage 1 (#639): interactive= is a warn_once alias for backend=.
+    _register(
+        "summary_plot(interactive=...)",
+        'backend="plotly"|"matplotlib"',
+        removal="2.1",
+    )
 
 
 if __name__ == "__main__":

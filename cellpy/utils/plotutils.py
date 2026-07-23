@@ -1203,8 +1203,8 @@ def summary_plot(
 
     Returns:
         if ``return_data`` is True, returns a tuple with the figure and the data used for plotting.
-        Otherwise, it returns only the figure. If ``interactive`` is True, the figure is a ``plotly`` figure,
-        else it is a ``matplotlib`` figure.
+        Otherwise, it returns only the figure. With ``backend="plotly"`` the figure is a
+        plotly figure; with ``backend="matplotlib"`` it is a matplotlib figure.
 
     Examples:
         Default plot (capacity and Coulombic efficiency vs cycle number)::
@@ -1217,7 +1217,7 @@ def summary_plot(
 
             >>> fig = summary_plot(c, y="capacities_gravimetric", show_formation=False)
 
-        Use the non-interactive (matplotlib/seaborn) backend, e.g. for an
+        Use the matplotlib backend (seaborn styling), e.g. for an
         SVG export from a script::
 
             >>> fig = summary_plot(c, y="capacities_gravimetric", backend="matplotlib")

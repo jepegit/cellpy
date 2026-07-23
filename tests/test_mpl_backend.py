@@ -35,6 +35,11 @@ def test_seaborn_plot_builder_is_gone():
 
 @pytest.mark.essential
 def test_interactive_alias_warns_and_maps(cell):
+    from cellpy import _deprecation
+
+    # warn_once is once-per-call-site across the whole process; reset so this
+    # test is order-independent in the essential suite.
+    _deprecation._WARNED_SITES.clear()
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always", DeprecationWarning)
         fig = summary_plot(
