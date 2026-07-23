@@ -1,10 +1,11 @@
-"""Named summary-plot families — the declarative replacement for the old
+"""Named plot families — the declarative replacement for the old
 ``SummaryPlotInfo._create_col_info`` column table (#636 / epic #567).
 
-Column names are header-bound (they depend on ``c.headers_summary``), so each
-family carries a small resolver rather than a frozen list of strings. Drawing
-still goes through today's builders; only selection / listing / extension live
-here.
+Column names for summary families are header-bound (they depend on
+``c.headers_summary``), so each family carries a small resolver rather than a
+frozen list of strings. Non-summary families (e.g. ``cycles`` for
+``cycles_plot``, #646) register with ``extras["entry_point"]`` so
+``families(entry_point=...)`` / the summary oracle stay scoped.
 """
 
 from __future__ import annotations
@@ -63,14 +64,33 @@ def get(name: str) -> PlotFamily:
         ) from exc
 
 
-def families() -> list[tuple[str, str]]:
-    """Return ``(name, description)`` for every registered family, in registration order."""
-    return [(family.name, family.description) for family in _FAMILIES.values()]
+def _entry_point(family: PlotFamily) -> str:
+    """Public entry that owns this family (default: ``summary_plot``)."""
+    return (family.extras or {}).get("entry_point", "summary_plot")
 
 
-def iter_families() -> list[PlotFamily]:
-    """Return registered families in registration order."""
-    return list(_FAMILIES.values())
+def families(*, entry_point: Optional[str] = None) -> list[tuple[str, str]]:
+    """Return ``(name, description)`` for registered families, in registration order.
+
+    Pass ``entry_point="summary_plot"`` (or ``"cycles_plot"``, …) to restrict the
+    list to one public plot entry. ``None`` returns every registered family.
+    """
+    out: list[tuple[str, str]] = []
+    for family in _FAMILIES.values():
+        if entry_point is not None and _entry_point(family) != entry_point:
+            continue
+        out.append((family.name, family.description))
+    return out
+
+
+def iter_families(*, entry_point: Optional[str] = None) -> list[PlotFamily]:
+    """Return registered families in registration order.
+
+    See :func:`families` for the optional ``entry_point`` filter (#646).
+    """
+    if entry_point is None:
+        return list(_FAMILIES.values())
+    return [f for f in _FAMILIES.values() if _entry_point(f) == entry_point]
 
 
 def _register_family(family: PlotFamily) -> None:
@@ -265,6 +285,14 @@ def _register_builtin_families() -> None:
             ],
             mode="gravimetric",
             transforms_builder=lambda hdr, norm: _retention_transforms(hdr, norm, "gravimetric"),
+        ),
+        # Stage 2 (#646): voltage–capacity curves. Not a summary_plot(y=...) name.
+        PlotFamily(
+            name="cycles",
+            description="Voltage vs capacity by cycle",
+            column_builder=lambda hdr: ["capacity", "potential", "cycle_num"],
+            supports_formation=True,
+            extras={"entry_point": "cycles_plot", "kind": "cycles"},
         ),
     ]
     for family in builtins:

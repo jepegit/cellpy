@@ -19,7 +19,6 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 
-from cellpycore.config import CurveCols
 from cellpycore.legacy import mapping
 
 from cellpy._deprecation import warn_once
@@ -48,10 +47,6 @@ from cellpy.plotting.labels import legend_replacer as _plotly_legend_replacer
 from cellpy.plotting.labels import remove_markers as _plotly_remove_markers
 from cellpy.plotting import registry as plot_registry
 from cellpy.plotting.theme import make_plotly_template as _make_plotly_template
-
-# get_cap curve frames use native CurveCols names (#540): potential/cycle_num
-# replace the legacy voltage/cycle (used by cycles_plot below).
-_CCOLS = CurveCols()
 
 plotly_available = importlib.util.find_spec("plotly") is not None
 seaborn_available = importlib.util.find_spec("seaborn") is not None
@@ -988,7 +983,7 @@ class SummaryPlotInfo:
         )
         y_cols: dict[str, list[str]] = {}
         y_transformations: dict[str, dict] = {}
-        for family in plot_registry.iter_families():
+        for family in plot_registry.iter_families(entry_point="summary_plot"):
             y_cols[family.name] = family.columns(hdr)
             transforms = family.transforms(hdr, self.normalize_col)
             if transforms:
@@ -2061,57 +2056,6 @@ def _cycle_info_plot_matplotlib(
         return ax1, ax2, ax2, ax4
 
 
-@dataclasses.dataclass
-class CyclesPlotterConfig:
-    """Configuration dataclass for cycles_plot parameters.
-
-    Encapsulates all parameters for cycles_plot to improve maintainability
-    and enable easier refactoring. Note that 'c' (cellpy object) and 'df'
-    (dataframe) are passed separately as they are data objects, not configuration.
-    """
-
-    # Data objects (computed during function execution)
-    form_cycles: Optional[pd.DataFrame] = None
-    rest_cycles: Optional[pd.DataFrame] = None
-
-    # Plot metadata
-    fig_title: Optional[str] = None
-    capacity_unit: Optional[str] = None
-
-    # Plotly-specific
-    plotly_template: Optional[str] = None
-    force_colorbar: bool = False
-    force_nonbar: bool = False
-
-    # Matplotlib-specific
-    figsize: tuple = (6, 4)
-    cbar_aspect: int = 30
-
-    # Common styling
-    colormap: str = "Blues_r"
-    formation_colormap: str = "autumn"
-    cut_colorbar: bool = True
-    width: int = 600
-    height: int = 400
-    marker_size: int = 5
-    formation_line_color: str = "rgba(152, 0, 0, .8)"
-    xlim: Optional[list[float]] = None
-    ylim: Optional[list[float]] = None
-
-    # Cycle information
-    n_rest_cycles: Optional[int] = None
-    n_form_cycles: Optional[int] = None
-    show_formation: bool = True
-
-    # Seaborn-specific (for matplotlib backend)
-    seaborn_style_dict: Optional[dict] = None
-    seaborn_context: str = "notebook"
-    seaborn_facecolor: str = "#EAEAF2"
-    seaborn_edgecolor: str = "black"
-    seaborn_style: str = "dark"
-    seaborn_palette: str = "deep"
-
-
 @notebook_docstring_printer
 def cycles_plot(
     c,
@@ -2133,7 +2077,8 @@ def cycles_plot(
     y_range=None,
     xlim=None,
     ylim=None,
-    interactive=True,
+    backend: Optional[str] = None,
+    interactive: Optional[bool] = None,
     return_figure=None,
     width=800,
     height=600,
@@ -2154,6 +2099,8 @@ def cycles_plot(
     cycles are plotted with different colors, and the formation cycles are highlighted with a different colormap.
     It is not intended to provide you with high quality plots, but rather to give you a quick overview of the data.
 
+    Draws through prepare → spec → render (#646).
+
     Args:
         c: cellpy object containing the data to plot.
         cycles (list, optional): List of cycle numbers to plot. If None, all cycles are plotted.
@@ -2170,12 +2117,17 @@ def cycles_plot(
         cut_colorbar (bool, optional): Whether to cut the colorbar. Default is True.
         title (str, optional): Title of the plot. If None, the cell name is used.
         figsize (tuple, optional): Size of the figure for matplotlib. Default is (6, 4).
-        xlim (list, optional): Limits for the x-axis.
-        ylim (list, optional): Limits for the y-axis.
-        interactive (bool, optional): Whether to use interactive plotting (Plotly). Default is True.
-        return_figure (bool, optional): Whether to return the figure object. Default is opposite of interactive.
-        width (int, optional): Width of the figure for Plotly. Default is 600.
-        height (int, optional): Height of the figure for Plotly. Default is 400.
+        x_range (list, optional): Limits for the x-axis.
+        y_range (list, optional): Limits for the y-axis.
+        xlim (list, optional): Deprecated alias for ``x_range`` (removal 2.1).
+        ylim (list, optional): Deprecated alias for ``y_range`` (removal 2.1).
+        backend (str, optional): ``"plotly"`` (default) or ``"matplotlib"``.
+        interactive (bool, optional): Deprecated alias for backend selection
+            (``True``→plotly, ``False``→matplotlib; removal 2.1).
+        return_figure (bool, optional): Whether to return the figure object.
+            Default is ``True`` for matplotlib and ``False`` for plotly (``fig.show()``).
+        width (int, optional): Width of the figure for Plotly. Default is 800.
+        height (int, optional): Height of the figure for Plotly. Default is 600.
         marker_size (int, optional): Size of the markers for Plotly. Default is 5.
         formation_line_color (str, optional): Color for the formation cycle lines in Plotly. Default is 'rgba(152, 0, 0, .8)'.
         force_colorbar (bool, optional): Whether to force the colorbar to be shown. Default is False.
@@ -2201,353 +2153,102 @@ def cycles_plot(
         Else:
             None: The plot is shown in the default browser.
     """
+    # Resolve backend= vs deprecated interactive= (#646 / same as #639).
+    resolved_backend = backend
+    if interactive is not None:
+        warn_once(
+            "cycles_plot(interactive=...)",
+            'backend="plotly"|"matplotlib"',
+            removal="2.1",
+        )
+        if resolved_backend is None:
+            resolved_backend = "plotly" if interactive else "matplotlib"
+    if resolved_backend is None:
+        resolved_backend = "plotly"
 
-    if interactive and not plotly_available:
+    if resolved_backend == "plotly" and not plotly_available:
         warnings.warn("Can not perform interactive plotting. Plotly is not available.")
-        interactive = False
+        resolved_backend = "matplotlib"
 
     if return_figure is None:
-        return_figure = not interactive
+        return_figure = resolved_backend != "plotly"
 
-    if cycles is None:
-        cycles = c.get_cycle_numbers()
+    # Canonical range spelling: x_range/y_range; xlim/ylim are warn_once aliases.
+    if xlim is not None:
+        warn_once(
+            "cycles_plot(xlim=...)",
+            "cycles_plot(x_range=...)",
+            removal="2.1",
+        )
+        if x_range is None:
+            x_range = xlim
+    if ylim is not None:
+        warn_once(
+            "cycles_plot(ylim=...)",
+            "cycles_plot(y_range=...)",
+            removal="2.1",
+        )
+        if y_range is None:
+            y_range = ylim
 
-    if title is None:
-        _bold = "<b>" if interactive else "'"
-        _end_bold = "</b>" if interactive else "'"
-        _newline = "<br>" if interactive else "\n"
-        _small = '<span style="font-size: 14px;">' if interactive else ""
-        _end_small = "</span>" if interactive else ""
-        top_title_line = f"Capacity plots for {_bold}{c.cell_name}{_end_bold}"
-        second_title_line = f"{_small} - {mode} mode"
-        if interpolated:
-            second_title_line = f"{second_title_line}, interpolated ({number_of_points} points){_end_small}"
-        else:
-            second_title_line = f"{second_title_line}{_end_small}"
-
-        title = _newline.join([top_title_line, second_title_line])
-
-    kw_arguments = dict(
-        method=method,
-        interpolated=interpolated,
-        label_cycle_number=True,
-        categorical_column=True,
-        number_of_points=number_of_points,
-        insert_nan=True,
-        mode=mode,
-        cycle_mode=cycle_mode,
-        inter_cycle_shift=inter_cycle_shift,
-    )
-    df = c.get_cap(cycles=cycles, **kw_arguments)
-    # Temporary fix to ensure that the cycles are plotted in the correct order:
-    df = df.sort_values(by=[_CCOLS.cycle_num, "direction"])
-
-    selector = df[_CCOLS.cycle_num] <= formation_cycles
-    form_cycles = df.loc[selector, :]
-    rest_cycles = df.loc[~selector, :]
-
-    n_form_cycles = len(form_cycles[_CCOLS.cycle_num].unique())
-    n_rest_cycles = len(rest_cycles[_CCOLS.cycle_num].unique())
-
-    capacity_unit = _get_capacity_unit(c, mode=mode)
-
-    # Preparing for more homogeneous parameters:
-    if x_range is not None:
-        xlim = x_range
-    if y_range is not None:
-        ylim = y_range
-
-    # Extracting seaborn-specific parameters from kwargs (for matplotlib backend):
     seaborn_context = kwargs.pop("seaborn_context", "notebook")
     seaborn_facecolor = kwargs.pop("seaborn_facecolor", "#EAEAF2")
     seaborn_edgecolor = kwargs.pop("seaborn_edgecolor", "black")
     seaborn_style_dict = kwargs.pop("seaborn_style_dict", None)
 
-    config = CyclesPlotterConfig(
-        form_cycles=form_cycles,
-        rest_cycles=rest_cycles,
-        fig_title=title,
-        capacity_unit=capacity_unit,
-        plotly_template=plotly_template,
+    from cellpy.plotting.backends import get_backend
+    from cellpy.plotting.context import from_source
+    from cellpy.plotting.prepare.curves import CyclesPrepareConfig, prepare as prepare_curves
+
+    prep_config = CyclesPrepareConfig(
+        cycles=cycles,
+        inter_cycle_shift=inter_cycle_shift,
+        cycle_mode=cycle_mode,
+        formation_cycles=formation_cycles,
+        show_formation=show_formation,
+        mode=mode,
+        method=method,
+        interpolated=interpolated,
+        number_of_points=number_of_points,
         colormap=colormap,
         formation_colormap=formation_colormap,
         cut_colorbar=cut_colorbar,
-        cbar_aspect=30,
+        title=title,
         figsize=figsize,
-        force_colorbar=force_colorbar,
-        force_nonbar=force_nonbar,
-        n_rest_cycles=n_rest_cycles,
-        n_form_cycles=n_form_cycles,
-        show_formation=show_formation,
+        x_range=x_range,
+        y_range=y_range,
         width=width,
         height=height,
         marker_size=marker_size,
         formation_line_color=formation_line_color,
-        xlim=xlim,
-        ylim=ylim,
-        seaborn_style=seaborn_style,
+        force_colorbar=force_colorbar,
+        force_nonbar=force_nonbar,
+        plotly_template=plotly_template,
         seaborn_palette=seaborn_palette,
+        seaborn_style=seaborn_style,
         seaborn_context=seaborn_context,
         seaborn_facecolor=seaborn_facecolor,
         seaborn_edgecolor=seaborn_edgecolor,
         seaborn_style_dict=seaborn_style_dict,
+        backend=resolved_backend,
+        additional_kwargs=dict(kwargs),
     )
 
-    if interactive:
-        fig = _cycles_plotter_plotly(c, df, config, **kwargs)
-        if return_data:
-            return fig, df
-        elif return_figure:
-            return fig
-        else:
-            fig.show()
+    ctx = from_source(c)
+    family = plot_registry.get("cycles")
+    frame, spec = prepare_curves(ctx, family, prep_config)
+    fig = get_backend(resolved_backend).render(frame, spec)
 
-    else:
-        fig = _cycles_plotter_matplotlib(c, df, config, **kwargs)
-        if return_figure or return_data:
-            plt.close(fig)
-        if return_data:
-            return fig, df
-        elif return_figure:
-            return fig
+    if resolved_backend == "matplotlib" and (return_figure or return_data):
+        plt.close(fig)
 
-
-def _cycles_plotter_matplotlib(
-    c,
-    df,
-    config: CyclesPlotterConfig,
-    **kwargs,
-):
-    import numpy as np
-    import matplotlib
-    from matplotlib.colors import Normalize, ListedColormap
-
-    if seaborn_available:
-        import seaborn as sns
-
-        seaborn_style_dict = config.seaborn_style_dict or {
-            "axes.facecolor": config.seaborn_facecolor,
-            "axes.edgecolor": config.seaborn_edgecolor,
-        }
-        sns.set_style(config.seaborn_style, seaborn_style_dict)
-        sns.set_palette(config.seaborn_palette)
-        sns.set_context(config.seaborn_context)
-
-    fig, ax = plt.subplots(1, 1, figsize=config.figsize)
-    fig_width, fig_height = config.figsize
-
-    if not config.form_cycles.empty and config.show_formation:
-        if fig_width < 6:
-            logging.critical(
-                "Warning: try setting the figsize to (6, 4) or larger for better visualization"
-            )
-        if fig_width > 8:
-            logging.critical(
-                "Warning: try setting the figsize to (8, 4) or smaller for better visualization"
-            )
-        min_cycle, max_cycle = (
-            config.form_cycles[_CCOLS.cycle_num].min(),
-            config.form_cycles[_CCOLS.cycle_num].max(),
-        )
-        norm_formation = Normalize(vmin=min_cycle, vmax=max_cycle)
-        cycle_sequence = np.arange(min_cycle, max_cycle + 1, 1)
-
-        shrink = min(1.0, (1 / 8) * config.n_form_cycles)
-
-        c_m_formation = ListedColormap(
-            plt.get_cmap(config.formation_colormap, 2 * len(cycle_sequence))(
-                cycle_sequence
-            )
-        )
-        s_m_formation = matplotlib.cm.ScalarMappable(
-            cmap=c_m_formation, norm=norm_formation
-        )
-        for name, group in config.form_cycles.groupby(_CCOLS.cycle_num):
-            ax.plot(
-                group["capacity"],
-                group[_CCOLS.potential],
-                lw=2,  # alpha=0.7,
-                color=s_m_formation.to_rgba(name),
-                label=f"Cycle {name}",
-            )
-        cbar_formation = fig.colorbar(
-            s_m_formation,
-            ax=ax,  # label="Formation Cycle",
-            ticks=np.arange(
-                config.form_cycles[_CCOLS.cycle_num].min(),
-                config.form_cycles[_CCOLS.cycle_num].max() + 1,
-                1,
-            ),
-            shrink=shrink,
-            aspect=config.cbar_aspect * shrink,
-            location="right",
-            anchor=(0.0, 0.0),
-        )
-        cbar_formation.set_label(
-            "Form. Cycle",
-            rotation=270,
-            labelpad=12,
-        )
-
-    norm = Normalize(
-        vmin=config.rest_cycles[_CCOLS.cycle_num].min(), vmax=config.rest_cycles[_CCOLS.cycle_num].max()
-    )
-    if config.cut_colorbar:
-        cycle_sequence = np.arange(
-            config.rest_cycles[_CCOLS.cycle_num].min(), config.rest_cycles[_CCOLS.cycle_num].max() + 1, 1
-        )
-        n = int(np.round(1.2 * config.rest_cycles[_CCOLS.cycle_num].max()))
-        c_m = ListedColormap(plt.get_cmap(config.colormap, n)(cycle_sequence))
-    else:
-        c_m = plt.get_cmap(config.colormap)
-
-    s_m = matplotlib.cm.ScalarMappable(cmap=c_m, norm=norm)
-    for name, group in config.rest_cycles.groupby(_CCOLS.cycle_num):
-        ax.plot(
-            group["capacity"],
-            group[_CCOLS.potential],
-            lw=1,
-            color=s_m.to_rgba(name),
-            label=f"Cycle {name}",
-        )
-    cbar = fig.colorbar(
-        s_m,
-        ax=ax,
-        label="Cycle",
-        aspect=config.cbar_aspect,
-        location="right",
-    )
-    cbar.set_label(
-        "Cycle",
-        rotation=270,
-        labelpad=12,
-    )
-    # cbar.ax.yaxis.set_ticks_position("left")
-
-    ax.set_xlabel(f"Capacity ({config.capacity_unit})")
-    ax.set_ylabel(with_cellpy_unit("Voltage", "voltage", units=c.cellpy_units))
-
-    ax.set_title(config.fig_title, loc="left", wrap=True)
-
-    fig.tight_layout()
-
-    if config.xlim:
-        ax.set_xlim(config.xlim)
-    if config.ylim:
-        ax.set_ylim(config.ylim)
-
-    return fig
-
-
-def _cycles_plotter_plotly(
-    c,
-    df,
-    config: CyclesPlotterConfig,
-    **kwargs,
-):
-    import plotly.express as px
-    import plotly.graph_objects as go
-
-    set_plotly_template(config.plotly_template)
-
-    color_scales = px.colors.named_colorscales()
-    plotly_max_individual_traces_for_lines = kwargs.pop("plotly_max_individual_traces_for_lines", 8)
-    if config.colormap not in color_scales:
-        colormap = "Blues_r"
-    else:
-        colormap = config.colormap
-
-    if config.cut_colorbar:
-        range_color = [df[_CCOLS.cycle_num].min(), 1.2 * df[_CCOLS.cycle_num].max()]
-    else:
-        range_color = [df[_CCOLS.cycle_num].min(), df[_CCOLS.cycle_num].max()]
-    if (
-        config.n_rest_cycles is not None
-        and config.n_rest_cycles < plotly_max_individual_traces_for_lines
-        and not config.force_colorbar
-    ) or config.force_nonbar:
-        logging.info("using px.line for non-formation cycles")
-        show_formation_legend = True
-        cmap = px.colors.sample_colorscale(
-            colorscale=colormap,
-            samplepoints=config.n_rest_cycles,
-            low=0.0,
-            high=0.8,
-            colortype="rgb",
-        )
-
-        fig = px.line(
-            config.rest_cycles,
-            x="capacity",
-            y=_CCOLS.potential,
-            color=_CCOLS.cycle_num,
-            title=config.fig_title,
-            labels={
-                "capacity": f"Capacity ({config.capacity_unit})",
-                _CCOLS.potential: with_cellpy_unit("Voltage", "voltage", units=c.cellpy_units),
-            },
-            color_discrete_sequence=cmap,
-        )
-
-    else:
-        logging.info("using px.scatter for non-formation cycles")
-        show_formation_legend = False
-        fig = px.scatter(
-            config.rest_cycles,
-            x="capacity",
-            y=_CCOLS.potential,
-            title=config.fig_title,
-            color=_CCOLS.cycle_num,
-            labels={
-                "capacity": f"Capacity ({config.capacity_unit})",
-                _CCOLS.potential: with_cellpy_unit("Voltage", "voltage", units=c.cellpy_units),
-            },
-            color_continuous_scale=colormap,
-            range_color=range_color,
-        )
-
-        fig.update_traces(mode="lines+markers", line_color="white", line_width=1)
-
-    if not config.form_cycles.empty and config.show_formation:
-        for name, group in config.form_cycles.groupby(_CCOLS.cycle_num):
-            logging.info(f"using go.Scatter for formation cycle(s) {name}")
-            trace = go.Scatter(
-                x=group["capacity"],
-                y=group[_CCOLS.potential],
-                name=f"{name} (f.c.)",
-                hovertemplate=f"Formation Cycle {name}<br>Capacity: %{{x}}<br>Voltage: %{{y}}",
-                mode="lines",
-                marker=dict(color=config.formation_line_color),
-                showlegend=show_formation_legend,
-                legendrank=1,
-                legendgroup="formation",
-            )
-
-            fig.add_trace(trace)
-
-    fig.update_traces(marker=dict(size=config.marker_size))
-
-    if config.xlim:
-        fig.update_xaxes(range=config.xlim)
-    if config.ylim:
-        fig.update_yaxes(range=config.ylim)
-
-    plotly_xaxes_kwargs = kwargs.pop("plotly_xaxes_kwargs", {})
-    plotly_yaxes_kwargs = kwargs.pop("plotly_yaxes_kwargs", {})
-    if plotly_xaxes_kwargs:
-        fig.update_xaxes(**plotly_xaxes_kwargs)
-    if plotly_yaxes_kwargs:
-        fig.update_yaxes(**plotly_yaxes_kwargs)
-
-    plotly_layout_kwargs = kwargs.pop("plotly_layout_kwargs", {})
-
-    fig.update_layout(
-        height=config.height,
-        width=config.width,
-        **plotly_layout_kwargs,
-    )
-
-    return fig
+    if return_data:
+        return fig, frame
+    if return_figure:
+        return fig
+    if resolved_backend == "plotly":
+        fig.show()
+    return None
 
 
 def _cell_and_output_path():

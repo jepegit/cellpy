@@ -39,9 +39,14 @@ EXPECTED_SUMMARY_FAMILIES = (
 
 @pytest.mark.essential
 def test_builtin_families_match_oracle_menu():
-    names = tuple(name for name, _ in families())
+    names = tuple(name for name, _ in families(entry_point="summary_plot"))
     assert names == EXPECTED_SUMMARY_FAMILIES
     assert SUMMARY_FAMILIES == EXPECTED_SUMMARY_FAMILIES
+    # Stage 2 (#646): cycles is registered but is not a summary_plot(y=) name.
+    assert ("cycles", "Voltage vs capacity by cycle") in families(
+        entry_point="cycles_plot"
+    )
+    assert "cycles" not in SUMMARY_FAMILIES
 
 
 @pytest.mark.essential

@@ -161,6 +161,22 @@ def _seed_known_deprecations() -> None:
         'backend="plotly"|"matplotlib"',
         removal="2.1",
     )
+    # Stage 2 (#646): cycles_plot backend= + range spelling.
+    _register(
+        "cycles_plot(interactive=...)",
+        'backend="plotly"|"matplotlib"',
+        removal="2.1",
+    )
+    _register(
+        "cycles_plot(xlim=...)",
+        "cycles_plot(x_range=...)",
+        removal="2.1",
+    )
+    _register(
+        "cycles_plot(ylim=...)",
+        "cycles_plot(y_range=...)",
+        removal="2.1",
+    )
 
 
 if __name__ == "__main__":

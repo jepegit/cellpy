@@ -63,6 +63,9 @@ class MatplotlibBackend:
     def render(self, frame: Any, spec: FigureSpec) -> Any:
         """Render a tidy frame according to *spec* (matplotlib Figure)."""
         extras = dict(spec.extras or {})
+        if extras.get("kind") == "cycles":
+            return self._render_cycles(frame, spec)
+
         config = extras.get("config")
         c = extras.get("cell")
         if config is None or c is None:
@@ -913,5 +916,145 @@ class MatplotlibBackend:
                 name = name.replace("Non (CV)", "(without CV)")
                 le.set_text(name)
             sns_fig.legend.set_title(None)
+
+    def _render_cycles(self, frame: Any, spec: FigureSpec) -> Any:
+        """Render voltage–capacity cycles figures (#646).
+
+        Mechanical port of ``plotutils._cycles_plotter_matplotlib``.
+        """
+        from cellpycore.config import CurveCols
+
+        import matplotlib
+        import matplotlib.pyplot as plt
+        from matplotlib.colors import ListedColormap, Normalize
+
+        from cellpy.units import with_cellpy_unit
+
+        ccols = CurveCols()
+        extras = dict(spec.extras or {})
+        c = extras.get("cell")
+        if c is None:
+            raise ValueError(
+                "FigureSpec.extras['cell'] is required for cycles MatplotlibBackend.render"
+            )
+
+        form_cycles = extras.get("form_cycles")
+        rest_cycles = extras.get("rest_cycles")
+        if form_cycles is None or rest_cycles is None:
+            raise ValueError(
+                "FigureSpec.extras must include 'form_cycles' and 'rest_cycles'"
+            )
+
+        if _seaborn_available():
+            import seaborn as sns
+
+            seaborn_style_dict = extras.get("seaborn_style_dict") or {
+                "axes.facecolor": extras.get("seaborn_facecolor", "#EAEAF2"),
+                "axes.edgecolor": extras.get("seaborn_edgecolor", "black"),
+            }
+            sns.set_style(extras.get("seaborn_style", "dark"), seaborn_style_dict)
+            sns.set_palette(extras.get("seaborn_palette", "deep"))
+            sns.set_context(extras.get("seaborn_context", "notebook"))
+
+        figsize = extras.get("figsize") or (6, 4)
+        fig, ax = plt.subplots(1, 1, figsize=figsize)
+        fig_width, _fig_height = figsize
+        show_formation = bool(extras.get("show_formation", True))
+        n_form_cycles = extras.get("n_form_cycles") or 0
+        cbar_aspect = extras.get("cbar_aspect", 30)
+        formation_colormap = extras.get("formation_colormap") or "autumn"
+        colormap = extras.get("colormap") or "Blues_r"
+        cut_colorbar = bool(extras.get("cut_colorbar", True))
+        capacity_unit = extras.get("capacity_unit") or "-"
+        capacity_label = extras.get("capacity_label") or f"Capacity ({capacity_unit})"
+        voltage_label = extras.get("voltage_label") or with_cellpy_unit(
+            "Voltage", "voltage", units=c.cellpy_units
+        )
+        x_range = extras.get("x_range")
+        y_range = extras.get("y_range")
+
+        if not form_cycles.empty and show_formation:
+            if fig_width < 6:
+                logging.critical(
+                    "Warning: try setting the figsize to (6, 4) or larger for better visualization"
+                )
+            if fig_width > 8:
+                logging.critical(
+                    "Warning: try setting the figsize to (8, 4) or smaller for better visualization"
+                )
+            min_cycle = form_cycles[ccols.cycle_num].min()
+            max_cycle = form_cycles[ccols.cycle_num].max()
+            norm_formation = Normalize(vmin=min_cycle, vmax=max_cycle)
+            cycle_sequence = np.arange(min_cycle, max_cycle + 1, 1)
+            shrink = min(1.0, (1 / 8) * n_form_cycles)
+            c_m_formation = ListedColormap(
+                plt.get_cmap(formation_colormap, 2 * len(cycle_sequence))(
+                    cycle_sequence
+                )
+            )
+            s_m_formation = matplotlib.cm.ScalarMappable(
+                cmap=c_m_formation, norm=norm_formation
+            )
+            for name, group in form_cycles.groupby(ccols.cycle_num):
+                ax.plot(
+                    group["capacity"],
+                    group[ccols.potential],
+                    lw=2,
+                    color=s_m_formation.to_rgba(name),
+                    label=f"Cycle {name}",
+                )
+            cbar_formation = fig.colorbar(
+                s_m_formation,
+                ax=ax,
+                ticks=np.arange(min_cycle, max_cycle + 1, 1),
+                shrink=shrink,
+                aspect=cbar_aspect * shrink,
+                location="right",
+                anchor=(0.0, 0.0),
+            )
+            cbar_formation.set_label("Form. Cycle", rotation=270, labelpad=12)
+
+        norm = Normalize(
+            vmin=rest_cycles[ccols.cycle_num].min(),
+            vmax=rest_cycles[ccols.cycle_num].max(),
+        )
+        if cut_colorbar:
+            cycle_sequence = np.arange(
+                rest_cycles[ccols.cycle_num].min(),
+                rest_cycles[ccols.cycle_num].max() + 1,
+                1,
+            )
+            n = int(np.round(1.2 * rest_cycles[ccols.cycle_num].max()))
+            c_m = ListedColormap(plt.get_cmap(colormap, n)(cycle_sequence))
+        else:
+            c_m = plt.get_cmap(colormap)
+
+        s_m = matplotlib.cm.ScalarMappable(cmap=c_m, norm=norm)
+        for name, group in rest_cycles.groupby(ccols.cycle_num):
+            ax.plot(
+                group["capacity"],
+                group[ccols.potential],
+                lw=1,
+                color=s_m.to_rgba(name),
+                label=f"Cycle {name}",
+            )
+        cbar = fig.colorbar(
+            s_m,
+            ax=ax,
+            label="Cycle",
+            aspect=cbar_aspect,
+            location="right",
+        )
+        cbar.set_label("Cycle", rotation=270, labelpad=12)
+
+        ax.set_xlabel(capacity_label)
+        ax.set_ylabel(voltage_label)
+        ax.set_title(spec.title, loc="left", wrap=True)
+        fig.tight_layout()
+        if x_range:
+            ax.set_xlim(x_range)
+        if y_range:
+            ax.set_ylim(y_range)
+        return fig
 
 
