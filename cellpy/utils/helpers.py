@@ -931,7 +931,9 @@ def _cv_partition_summary_frames(c):
         tuple: ``(summary_full, summary_no_cv, summary_cv)`` — copies. Cycle
         layout matches ``c.data.summary`` (column vs index) when possible.
     """
-    summary = c.data.summary.copy()
+    # Fresh make_summary so derived columns (e.g. *_absolute) match what the
+    # engine emits today — stored ``c.data.summary`` can be a narrower snapshot.
+    summary = c.make_summary(create_copy=True).data.summary.copy()
     summary_no_cv = c.make_summary(
         exclude_step_types=["cv_"], create_copy=True
     ).data.summary.copy()
