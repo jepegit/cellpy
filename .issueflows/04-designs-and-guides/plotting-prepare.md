@@ -1,11 +1,12 @@
-# Plotting prepare (summary + curves + raw + cycle_info)
+# Plotting prepare (summary + curves + raw + cycle_info + ica/dva)
 
 ## Context
 
 `SummaryPlotDataPreparer` lived in `cellpy/utils/plotutils.py` and fed both
 plotly and seaborn builders. Epic #567 Stage 1 needs prepare → `FigureSpec` →
 backend.render as the only summary path. Stage 2 extends the same contract to
-`cycles_plot` (#646), then `raw_plot` / `cycle_info_plot` (#647).
+`cycles_plot` (#646), `raw_plot` / `cycle_info_plot` (#647), then `ica_plot` /
+`dva_plot` (#648).
 
 ## Decision
 
@@ -30,15 +31,21 @@ backend.render as the only summary path. Stage 2 extends the same contract to
   `spec.extras["kind"] == "cycle_info"`. Plotly path emits a merged scaled
   frame; matplotlib keeps the single-cycle asymmetry and stashes the step
   table on `extras["steps"]`.
+- **ICA/DVA prepare** lives in `cellpy/plotting/prepare/ica.py` (#648).
+  Calls `cellpy.ica.dqdv` / `dvdq` only (never `Converter` / `to_wide`).
+  `kind` is `"ica"` or `"dva"`; drops deprecated `dq` column from the plotting
+  frame. When `direction="both"`, both halves stay on one figure; backends draw
+  one series per `(cycle, direction)` with cycle-keyed colour and shared line
+  style (plotly hover carries `direction`).
 - **`LiveHeaders`** lives in `cellpy/plotting/headers.py` (re-exported as
   `plotutils._LiveHeaders`).
 - **`CellContext`** in `cellpy/plotting/context.py` is the thin cell adapter;
   BatchContext waits for collectors rebase.
-- Public `summary_plot` / `cycles_plot` / `raw_plot` / `cycle_info_plot` stay
-  in `plotutils` and orchestrate context → registry → prepare →
-  `get_backend(backend).render`.
+- Public `summary_plot` / `cycles_plot` / `raw_plot` / `cycle_info_plot` /
+  `ica_plot` / `dva_plot` stay in `plotutils` and orchestrate context →
+  registry → prepare → `get_backend(backend).render`.
 
 ## Links
 
-- Issues #647, #646, #639, #638; epic #567
+- Issues #648, #647, #646, #639, #638; epic #567
 - Related: `plotting-registry.md`, `plotting-backends.md`

@@ -303,6 +303,8 @@ class PlotlyBackend:
             return self._render_raw(frame, spec)
         if kind == "cycle_info":
             return self._render_cycle_info(frame, spec)
+        if kind in ("ica", "dva"):
+            return self._render_ica_dva(frame, spec)
 
         import plotly.express as px
 
@@ -849,4 +851,100 @@ class PlotlyBackend:
             width=width,
             height=height,
         )
+        return fig
+
+    def _render_ica_dva(self, frame: Any, spec: FigureSpec) -> Any:
+        """Render ICA (dQ/dV) or DVA (dV/dQ) figures (#648).
+
+        One trace per ``(cycle, direction)`` so half-cycles are not connected;
+        color is keyed by cycle. Hover includes direction. Line style is shared
+        across charge and discharge. Cycle legend vs colorbar via
+        :mod:`cellpy.plotting.cycle_legend`.
+        """
+        import plotly.express as px
+        import plotly.graph_objects as go
+
+        from cellpy.ica import ICA_COLS
+        from cellpy.plotting.cycle_legend import (
+            add_plotly_cycle_colorbar,
+            pop_cycle_legend_options,
+            resolve_cycle_legend_mode,
+        )
+        from cellpy.utils.plotutils import set_plotly_template
+
+        extras = dict(spec.extras or {})
+        kwargs = dict(extras.get("additional_kwargs") or {})
+        set_plotly_template(extras.get("plotly_template"))
+        legend_opts = pop_cycle_legend_options(extras, kwargs)
+
+        x_col = extras.get("x") or ICA_COLS.voltage
+        y_col = extras.get("y") or ICA_COLS.dqdv
+        x_label = extras.get("x_label") or (spec.x_axis.label or x_col)
+        y_label = extras.get("y_label") or y_col
+        colormap = extras.get("colormap") or "viridis"
+        color_scales = px.colors.named_colorscales()
+        if colormap not in color_scales:
+            colormap = "viridis"
+
+        marker_size = extras.get("marker_size", 5)
+        width = extras.get("width", 800)
+        height = extras.get("height", 600)
+        x_range = extras.get("x_range")
+        y_range = extras.get("y_range")
+
+        cycles = sorted(frame[ICA_COLS.cycle].unique())
+        n_cycles = len(cycles)
+        mode = resolve_cycle_legend_mode(n_cycles, **legend_opts)
+        use_legend = mode == "legend"
+
+        sample_n = max(n_cycles, 1)
+        samplepoints = [
+            0.0 if sample_n == 1 else i / (sample_n - 1) for i in range(sample_n)
+        ]
+        colors = px.colors.sample_colorscale(colormap, samplepoints=samplepoints)
+        cycle_to_color = {cycle: colors[i] for i, cycle in enumerate(cycles)}
+
+        fig = go.Figure()
+        shown_cycles: set[Any] = set()
+        group_cols = [ICA_COLS.cycle, ICA_COLS.direction]
+        for (cycle, direction), group in frame.groupby(group_cols, sort=True):
+            color = cycle_to_color[cycle]
+            show_legend = use_legend and cycle not in shown_cycles
+            if show_legend:
+                shown_cycles.add(cycle)
+            fig.add_trace(
+                go.Scatter(
+                    x=group[x_col],
+                    y=group[y_col],
+                    mode="lines",
+                    name=str(cycle),
+                    legendgroup=str(cycle),
+                    showlegend=show_legend,
+                    line=dict(color=color, width=1.5),
+                    customdata=group[[ICA_COLS.cycle, ICA_COLS.direction]],
+                    hovertemplate=(
+                        f"{x_label}: %{{x}}<br>"
+                        f"{y_label}: %{{y}}<br>"
+                        "cycle: %{customdata[0]}<br>"
+                        "direction: %{customdata[1]}<extra></extra>"
+                    ),
+                )
+            )
+
+        if not use_legend and cycles:
+            add_plotly_cycle_colorbar(fig, cycles=list(cycles), colormap=colormap)
+
+        layout_kwargs: dict[str, Any] = {
+            "title": spec.title,
+            "width": width,
+            "height": height,
+        }
+        if use_legend:
+            layout_kwargs["legend_title_text"] = "cycle"
+        else:
+            layout_kwargs["showlegend"] = False
+        fig.update_layout(**layout_kwargs)
+        fig.update_xaxes(title_text=x_label, range=x_range)
+        fig.update_yaxes(title_text=y_label, range=y_range)
+        _ = marker_size
         return fig

@@ -309,6 +309,21 @@ def _register_builtin_families() -> None:
             supports_formation=False,
             extras={"entry_point": "cycle_info_plot", "kind": "cycle_info"},
         ),
+        # Stage 2 (#648): ICA / DVA from cellpy.ica long frames.
+        PlotFamily(
+            name="ica",
+            description="Incremental capacity (dQ/dV vs voltage)",
+            column_builder=lambda hdr: ["voltage", "dqdv", "cycle", "direction"],
+            supports_formation=False,
+            extras={"entry_point": "ica_plot", "kind": "ica"},
+        ),
+        PlotFamily(
+            name="dva",
+            description="Differential voltage (dV/dQ vs capacity)",
+            column_builder=lambda hdr: ["capacity", "dvdq", "cycle", "direction"],
+            supports_formation=False,
+            extras={"entry_point": "dva_plot", "kind": "dva"},
+        ),
     ]
     for family in builtins:
         _register_family(family)

@@ -145,7 +145,8 @@ def describe_figure(figure) -> dict[str, Any]:
 
 #: Every predefined y-set `summary_plot` accepts — sourced from the PlotFamily
 #: registry (#636) so the oracle menu cannot drift from the runtime menu.
-#: Non-summary families (e.g. ``cycles`` for ``cycles_plot``, #646) are excluded.
+#: Non-summary families (e.g. ``cycles`` for ``cycles_plot``, #646;
+#: ``raw`` / ``cycle_info``, #647; ``ica`` / ``dva``, #648) are excluded.
 SUMMARY_FAMILIES = tuple(
     name for name, _description in _plot_families(entry_point="summary_plot")
 )
@@ -250,6 +251,28 @@ def _other_family_cases() -> list[FigureCase]:
         FigureCase(
             name="cycles_plot[matplotlib]",
             function="cycles_plot",
+            kwargs={"backend": "matplotlib"},
+        ),
+        FigureCase(
+            name="ica_plot[plotly]",
+            function="ica_plot",
+            kwargs={"backend": "plotly"},
+            needs_plotly=True,
+        ),
+        FigureCase(
+            name="ica_plot[matplotlib]",
+            function="ica_plot",
+            kwargs={"backend": "matplotlib"},
+        ),
+        FigureCase(
+            name="dva_plot[plotly]",
+            function="dva_plot",
+            kwargs={"backend": "plotly"},
+            needs_plotly=True,
+        ),
+        FigureCase(
+            name="dva_plot[matplotlib]",
+            function="dva_plot",
             kwargs={"backend": "matplotlib"},
         ),
     ]

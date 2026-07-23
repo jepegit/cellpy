@@ -1724,6 +1724,245 @@ def cycles_plot(
     return None
 
 
+def _resolve_plot_backend(
+    *,
+    backend: Optional[str],
+    interactive: Optional[bool],
+    deprecation_site: str,
+) -> str:
+    """Resolve ``backend=`` vs deprecated ``interactive=`` for plot entry points."""
+    resolved = backend
+    if interactive is not None:
+        warn_once(
+            deprecation_site,
+            'backend="plotly"|"matplotlib"',
+            removal="2.1",
+        )
+        if resolved is None:
+            resolved = "plotly" if interactive else "matplotlib"
+    if resolved is None:
+        resolved = "plotly"
+    if resolved == "plotly" and not plotly_available:
+        warnings.warn("Can not perform interactive plotting. Plotly is not available.")
+        resolved = "matplotlib"
+    return resolved
+
+
+def ica_plot(
+    cell,
+    cycles=None,
+    direction="both",
+    options=None,
+    *,
+    backend: Optional[str] = None,
+    interactive: Optional[bool] = None,
+    title=None,
+    colormap="viridis",
+    width=800,
+    height=600,
+    figsize=(6, 4),
+    x_range=None,
+    y_range=None,
+    plotly_template=None,
+    return_data=False,
+    **kwargs,
+):
+    """Plot incremental capacity (dQ/dV vs voltage).
+
+    Draws through prepare → spec → render (#648). Data come from
+    [`cellpy.ica.dqdv`][cellpy.ica.dqdv]; both half-cycles are overlaid when
+    ``direction="both"`` (plotly hover shows charge/discharge).
+
+    Args:
+        cell: cellpy object.
+        cycles: Cycle number or list (``None`` = all).
+        direction: ``"charge"``, ``"discharge"``, or ``"both"``.
+        options: Optional [`IcaOptions`][cellpy.ica.IcaOptions].
+        backend: ``"plotly"`` (default) or ``"matplotlib"``.
+        interactive: Deprecated alias for backend selection (removal 2.1).
+        title: Figure title.
+        colormap: Cycle colour map.
+        width, height: Plotly figure size.
+        figsize: Matplotlib figure size.
+        x_range, y_range: Optional axis ranges.
+        plotly_template: Optional plotly template name.
+        return_data: If True, return ``(figure, frame)``.
+        **kwargs: Extra knobs (``strict``, ``cycle_mode``, ``number_of_points``,
+            and individual ``IcaOptions`` field overrides).
+
+    Returns:
+        Plotly or matplotlib figure (or ``(figure, frame)`` when ``return_data``).
+    """
+    from cellpy.plotting.backends import get_backend
+    from cellpy.plotting.context import from_source
+    from cellpy.plotting.prepare.ica import IcaPrepareConfig, prepare as prepare_ica
+
+    resolved_backend = _resolve_plot_backend(
+        backend=backend,
+        interactive=interactive,
+        deprecation_site="ica_plot(interactive=...)",
+    )
+
+    option_keys = {
+        "voltage_resolution",
+        "capacity_resolution",
+        "pre_smoothing",
+        "diff_smoothing",
+        "post_smoothing",
+        "savgol_window_divisor",
+        "savgol_order",
+        "voltage_fwhm",
+        "capacity_fwhm",
+        "gaussian",
+        "normalize",
+        "normalizing_factor",
+        "normalizing_roof",
+        "increment_method",
+    }
+    option_overrides = {k: kwargs.pop(k) for k in list(kwargs) if k in option_keys}
+    strict = kwargs.pop("strict", False)
+    cycle_mode = kwargs.pop("cycle_mode", None)
+    number_of_points = kwargs.pop("number_of_points", None)
+
+    prep_config = IcaPrepareConfig(
+        derivative="dqdv",
+        cycles=cycles,
+        direction=direction,
+        options=options,
+        strict=strict,
+        cycle_mode=cycle_mode,
+        number_of_points=number_of_points,
+        title=title,
+        colormap=colormap,
+        width=width,
+        height=height,
+        figsize=figsize,
+        x_range=x_range,
+        y_range=y_range,
+        plotly_template=plotly_template,
+        backend=resolved_backend,
+        option_overrides=option_overrides,
+        additional_kwargs=dict(kwargs),
+    )
+    ctx = from_source(cell)
+    family = plot_registry.get("ica")
+    frame, spec = prepare_ica(ctx, family, prep_config)
+    fig = get_backend(resolved_backend).render(frame, spec)
+    if resolved_backend == "matplotlib" and fig is not None:
+        plt.close(fig)
+    if return_data:
+        return fig, frame
+    return fig
+
+
+def dva_plot(
+    cell,
+    cycles=None,
+    direction="both",
+    options=None,
+    *,
+    backend: Optional[str] = None,
+    interactive: Optional[bool] = None,
+    title=None,
+    colormap="viridis",
+    width=800,
+    height=600,
+    figsize=(6, 4),
+    x_range=None,
+    y_range=None,
+    plotly_template=None,
+    return_data=False,
+    **kwargs,
+):
+    """Plot differential voltage analysis (dV/dQ vs capacity).
+
+    Draws through prepare → spec → render (#648). Data come from
+    [`cellpy.ica.dvdq`][cellpy.ica.dvdq]; both half-cycles are overlaid when
+    ``direction="both"`` (plotly hover shows charge/discharge).
+
+    Args:
+        cell: cellpy object.
+        cycles: Cycle number or list (``None`` = all).
+        direction: ``"charge"``, ``"discharge"``, or ``"both"``.
+        options: Optional [`IcaOptions`][cellpy.ica.IcaOptions] (defaults to
+            DVA-oriented options inside ``dvdq``).
+        backend: ``"plotly"`` (default) or ``"matplotlib"``.
+        interactive: Deprecated alias for backend selection (removal 2.1).
+        title: Figure title.
+        colormap: Cycle colour map.
+        width, height: Plotly figure size.
+        figsize: Matplotlib figure size.
+        x_range, y_range: Optional axis ranges.
+        plotly_template: Optional plotly template name.
+        return_data: If True, return ``(figure, frame)``.
+        **kwargs: Extra knobs (``strict``, ``cycle_mode``, ``number_of_points``,
+            and individual ``IcaOptions`` field overrides).
+
+    Returns:
+        Plotly or matplotlib figure (or ``(figure, frame)`` when ``return_data``).
+    """
+    from cellpy.plotting.backends import get_backend
+    from cellpy.plotting.context import from_source
+    from cellpy.plotting.prepare.ica import IcaPrepareConfig, prepare as prepare_ica
+
+    resolved_backend = _resolve_plot_backend(
+        backend=backend,
+        interactive=interactive,
+        deprecation_site="dva_plot(interactive=...)",
+    )
+
+    option_keys = {
+        "voltage_resolution",
+        "capacity_resolution",
+        "pre_smoothing",
+        "diff_smoothing",
+        "post_smoothing",
+        "savgol_window_divisor",
+        "savgol_order",
+        "voltage_fwhm",
+        "capacity_fwhm",
+        "gaussian",
+        "normalize",
+        "normalizing_factor",
+        "normalizing_roof",
+        "increment_method",
+    }
+    option_overrides = {k: kwargs.pop(k) for k in list(kwargs) if k in option_keys}
+    strict = kwargs.pop("strict", False)
+    cycle_mode = kwargs.pop("cycle_mode", None)
+    number_of_points = kwargs.pop("number_of_points", None)
+
+    prep_config = IcaPrepareConfig(
+        derivative="dvdq",
+        cycles=cycles,
+        direction=direction,
+        options=options,
+        strict=strict,
+        cycle_mode=cycle_mode,
+        number_of_points=number_of_points,
+        title=title,
+        colormap=colormap,
+        width=width,
+        height=height,
+        figsize=figsize,
+        x_range=x_range,
+        y_range=y_range,
+        plotly_template=plotly_template,
+        backend=resolved_backend,
+        option_overrides=option_overrides,
+        additional_kwargs=dict(kwargs),
+    )
+    ctx = from_source(cell)
+    family = plot_registry.get("dva")
+    frame, spec = prepare_ica(ctx, family, prep_config)
+    fig = get_backend(resolved_backend).render(frame, spec)
+    if resolved_backend == "matplotlib" and fig is not None:
+        plt.close(fig)
+    if return_data:
+        return fig, frame
+    return fig
+
+
 def _cell_and_output_path():
     import pathlib
     import cellpy

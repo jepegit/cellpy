@@ -11,6 +11,7 @@ live; the plan is `architecture-plan/cellpy2-plotting-redesign-plan.md`.
 | [`figures`][cellpy.plotting.figures] | loading and saving figures |
 | [`labels`][cellpy.plotting.labels] | legend and marker post-processing |
 | [`theme`][cellpy.plotting.theme] | plotly templates and colour/marker cycles |
+| [`cycle_legend`][cellpy.plotting.cycle_legend] | shared legend-vs-colorbar policy for cycle colouring |
 | [`spec`][cellpy.plotting.spec] | ``FigureSpec`` / ``PanelSpec`` / ``AxisSpec`` |
 | [`registry`][cellpy.plotting.registry] | named ``PlotFamily`` records for ``summary_plot`` |
 | [`backends`][cellpy.plotting.backends] | render protocol + plotly formation layout (#637) |
@@ -31,6 +32,10 @@ from cellpy.plotting.backends import (
     get_backend,
 )
 from cellpy.plotting.context import CellContext, from_source
+from cellpy.plotting.cycle_legend import (
+    DEFAULT_LEGEND_CYCLE_LIMIT,
+    resolve_cycle_legend_mode,
+)
 from cellpy.plotting.figures import (
     load_figure,
     load_matplotlib_figure,
@@ -58,6 +63,7 @@ __all__ = [
     "AxisSpec",
     "Backend",
     "CellContext",
+    "DEFAULT_LEGEND_CYCLE_LIMIT",
     "FigureSpec",
     "MatplotlibBackend",
     "PanelSpec",
@@ -77,6 +83,7 @@ __all__ = [
     "prepare_summary",
     "quantity_label",
     "remove_markers",
+    "resolve_cycle_legend_mode",
     "save_matplotlib_figure",
     "units_quantity_label",
 ]

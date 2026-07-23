@@ -21,7 +21,8 @@ moves selection into `cellpy.plotting.registry`.
   `families(entry_point="summary_plot")` so the snapshot menu cannot drift
   from the runtime menu. Non-summary families register with
   `extras={"entry_point": "..."}` and are excluded from the summary oracle:
-  `"cycles"` (`cycles_plot`, #646), `"raw"` / `"cycle_info"` (#647).
+  `"cycles"` (`cycles_plot`, #646), `"raw"` / `"cycle_info"` (#647),
+  `"ica"` / `"dva"` (#648).
 
 ## Alternatives considered
 

@@ -188,6 +188,17 @@ def _seed_known_deprecations() -> None:
         'backend="plotly"|"matplotlib"',
         removal="2.1",
     )
+    # Stage 2 (#648): ica_plot / dva_plot backend=.
+    _register(
+        "ica_plot(interactive=...)",
+        'backend="plotly"|"matplotlib"',
+        removal="2.1",
+    )
+    _register(
+        "dva_plot(interactive=...)",
+        'backend="plotly"|"matplotlib"',
+        removal="2.1",
+    )
 
 
 if __name__ == "__main__":

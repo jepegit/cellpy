@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+* Add ica_plot / dva_plot families on the new pipeline (#648).
+
 * Port raw_plot and cycle_info_plot to prepare→spec→render (#647).
 
 * Port cycles_plot to prepare→spec→render (#646).
