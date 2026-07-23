@@ -21,12 +21,16 @@ output is byte-identical to before, while a script that calls
 
 from __future__ import annotations
 
+import logging
 import pathlib
 import platform
 import subprocess
 from typing import Any, Callable, Optional, Union
 
+import typer
+
 import cellpy.config as config
+from cellpy.internals.otherpath import OtherPath
 
 PathLike = Union[str, pathlib.Path]
 Echo = Callable[[str], None]
@@ -376,3 +380,40 @@ def open_db_editor(
 
     # not tested on any of these
     subprocess.check_call(["open", "-a", "Microsoft Excel", db_path])
+
+
+def _create_dir(path, confirm=True, parents=True, exist_ok=True):
+    if isinstance(path, OtherPath):
+        if path.is_external:
+            return path
+    o = path.resolve()
+    if not o.is_dir():
+        o_parent = o.parent
+        create_dir = True
+        if confirm:
+            if not o_parent.is_dir():
+                create_dir = input(
+                    f"\n[cellpy] (setup) {o_parent} does not exist. Create it [y]/n ?"
+                )
+                if not create_dir:
+                    create_dir = True
+                elif create_dir in ["y", "Y"]:
+                    create_dir = True
+                else:
+                    create_dir = False
+
+        if create_dir:
+            try:
+                o.mkdir(parents=parents, exist_ok=exist_ok)
+                typer.echo(f"[cellpy] (setup) Created {o}")
+            except FileExistsError:
+                typer.echo(f"[cellpy] (setup) {o} already exists.")
+            except FileNotFoundError:
+                typer.echo(f"[cellpy] (setup) {o} not available.")
+            except Exception as e:
+                typer.echo(f"[cellpy] (setup) WARNING! Could not create {o}.")
+                logging.debug(e)
+                typer.echo(f"[cellpy] (setup) ...continuing anyway.")
+        else:
+            typer.echo(f"[cellpy] (setup) Could not create {o}")
+    return o
