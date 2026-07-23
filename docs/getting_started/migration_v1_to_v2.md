@@ -101,6 +101,10 @@ If you index the `get_cap` result directly, rename. In-repo consumers
   again with a warning (#593).
 - `plotutils.summary_plot_legacy` is a deprecated alias of `summary_plot`
   (removal 2.1).
+- **`batch_plotters.py` was removed** (#658). `Batch.plot` draws through
+  `cellpy.plotting.batch_summary_plot`. Backends: **`plotly`** (primary) and
+  **`matplotlib`**. `backend="seaborn"` warns once and maps to `matplotlib`;
+  `backend="bokeh"` raises — use plotly or matplotlib instead.
 
 ### If a 2.0.0a5 script hit plotting bugs (#593 / #567 Phase 0)
 

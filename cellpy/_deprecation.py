@@ -199,6 +199,12 @@ def _seed_known_deprecations() -> None:
         'backend="plotly"|"matplotlib"',
         removal="2.1",
     )
+    # Stage 3 (#658): Batch.plot backend triage — seaborn alias, bokeh removed.
+    _register(
+        'Batch.plot(backend="seaborn")',
+        'backend="matplotlib"',
+        removal="2.1",
+    )
 
 
 if __name__ == "__main__":

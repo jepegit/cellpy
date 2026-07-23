@@ -34,8 +34,9 @@ from cellpy.units import units_label, with_cellpy_unit
 from cellpy.utils import helpers
 
 # Single copies of the plotting plumbing that used to be duplicated across
-# plotutils / collectors / batch_plotters (#567). Re-exported here so the
-# `from cellpy.utils.plotutils import load_figure` spelling keeps working.
+# plotutils / collectors / (retired) batch_plotters (#567 / #658). Re-exported
+# here so the `from cellpy.utils.plotutils import load_figure` spelling keeps
+# working.
 from cellpy.plotting.figures import (  # noqa: F401
     load_figure,
     load_matplotlib_figure,
@@ -207,12 +208,6 @@ def save_image_files(
         print(f"TODO: implement saving {filename_png}")
         print(f"TODO: implement saving {filename_svg}")
         print(f"TODO: implement saving {filename_json}")
-
-
-
-
-# from batch_plotters:
-
 
 
 

@@ -1,0 +1,121 @@
+{
+  "figures": {
+    "batch_cycle_life[plotly]": {
+      "axis_titles": {
+        "xaxis": "<b>Cycle Number</b>",
+        "xaxis2": null,
+        "xaxis3": null,
+        "yaxis": "<b>IR (charge)</b>",
+        "yaxis2": "<b>Gravimetric Charge Capacity</b>",
+        "yaxis3": "<b>Coulombic Efficiency</b>"
+      },
+      "backend": "plotly",
+      "n_axes": 6,
+      "n_traces": 6,
+      "traces": [
+        {
+          "mode": "lines+markers",
+          "name": "20160805_test001_46_cc",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x3",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y3"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "20160805_test001_47_cc",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x3",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y3"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "20160805_test001_46_cc",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x2",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y2"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "20160805_test001_47_cc",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x2",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y2"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "20160805_test001_46_cc",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines+markers",
+          "name": "20160805_test001_47_cc",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        }
+      ]
+    }
+  }
+}

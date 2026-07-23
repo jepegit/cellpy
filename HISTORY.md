@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+* Wire Batch.plot to plotting and delete batch_plotters.py (#658).
+
 * Add ica_plot / dva_plot families on the new pipeline (#648).
 
 * Port raw_plot and cycle_info_plot to prepare→spec→render (#647).

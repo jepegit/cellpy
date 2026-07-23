@@ -1,9 +1,9 @@
 """Plotly templates — one implementation (#567).
 
-``_make_plotly_template`` existed in both ``utils/plotutils.py`` and
-``utils/batch_tools/batch_plotters.py``. The bodies were identical; the only
-difference was that plotutils' copy checked whether plotly was installed first,
-which is the behaviour kept here.
+``_make_plotly_template`` existed in both ``utils/plotutils.py`` and the
+retired ``utils/batch_tools/batch_plotters.py``. The bodies were identical; the
+only difference was that plotutils' copy checked whether plotly was installed
+first, which is the behaviour kept here.
 
 Building a template *registers* it with plotly under ``name``, so the two
 copies were also silently competing for the same registry key: whichever

@@ -33,7 +33,6 @@ from cellpy.utils.batch_tools.batch_analyzers import (
 from cellpy.utils.batch_tools.batch_experiments import CyclingExperiment
 from cellpy.utils.batch_tools.batch_exporters import CSVExporter
 from cellpy.utils.batch_tools.batch_journals import LabJournal
-from cellpy.utils.batch_tools.batch_plotters import CyclingSummaryPlotter
 from cellpy.utils.batch_tools.dumpers import ram_dumper
 from cellpy.utils.batch_tools import batch_helpers
 
@@ -46,6 +45,34 @@ COLUMNS_SELECTED_FOR_VIEW = [
     headers_journal.loading,
     headers_journal.nom_cap,
 ]
+
+
+class _BatchPlotterHolder:
+    """Thin stand-in for the old ``CyclingSummaryPlotter`` facade (#658).
+
+    Keeps ``b.plotter.figure`` / ``.fig`` / ``.figures`` / ``.farms`` working
+    after ``batch_plotters.py`` was deleted.
+    """
+
+    def __init__(self):
+        self.farms: list = []
+
+    def set_figure(self, figure) -> None:
+        self.farms = [figure] if figure is not None else []
+
+    @property
+    def figure(self):
+        if self.farms:
+            return self.farms[0]
+        return None
+
+    @property
+    def fig(self):
+        return self.figure
+
+    @property
+    def figures(self):
+        return list(self.farms)
 
 
 class Batch:
@@ -168,8 +195,7 @@ class Batch:
         self.summary_collector = BaseSummaryAnalyzer()
         self.summary_collector.assign(self.experiment)
 
-        self.plotter = CyclingSummaryPlotter()
-        self.plotter.assign(self.experiment)
+        self.plotter = _BatchPlotterHolder()
         self._journal_name = self.journal_name
         self.headers_step_table = headers_step_table
 
@@ -215,8 +241,7 @@ class Batch:
         self.summary_collector = BaseSummaryAnalyzer()
         self.summary_collector.assign(self.experiment)
 
-        self.plotter = CyclingSummaryPlotter()
-        self.plotter.assign(self.experiment)
+        self.plotter = _BatchPlotterHolder()
         self._journal_name = self.experiment.journal.file_name
         self.headers_step_table = headers_step_table
         self.experiment.journal.pages = self.experiment.journal.create_empty_pages()
@@ -1365,14 +1390,18 @@ class Batch:
     def plot(self, backend=None, reload_data=False, **kwargs):
         """Plot the summaries (e.g. capacity vs. cycle number).
 
+        Delegates to ``cellpy.plotting.batch_summary_plot`` (#658). Supported
+        backends: ``plotly`` (primary) and ``matplotlib``. ``seaborn`` warns
+        once and maps to ``matplotlib``; ``bokeh`` raises.
+
         Args:
-            backend (str): plotting backend (plotly, bokeh, matplotlib, seaborn)
+            backend (str): plotting backend (``plotly`` or ``matplotlib``)
             reload_data (bool): reload the data before plotting
             **kwargs: sent to the plotter
 
         Keyword Args:
             color_map (str, any): color map to use (defaults to ``px.colors.qualitative.Set1``
-                for ``plotly`` and "Set1" for ``seaborn``)
+                for ``plotly``)
 
             ce_range (list): optional range for the coulombic efficiency plot
             min_cycle (int): minimum cycle number to plot
@@ -1405,56 +1434,27 @@ class Batch:
             my_canvas = b.plotter.figure
 
         """
+        from cellpy.plotting.batch_summary import (
+            batch_summary_plot,
+            resolve_batch_plot_backend,
+        )
 
         if reload_data or ("summary_engine" not in self.experiment.memory_dumped):
             logging.debug("running summary_collector")
             self.summary_collector.do(reset=True)
 
-        if backend is None:
-            backend = config.batch.backend
-            if backend in ["bokeh", "matplotlib"]:
-                logging.debug(
-                    f"over-riding default backend ('{backend}' will soon be deprecated)"
-                )
-                backend = "plotly"
+        backend_key = resolve_batch_plot_backend(backend)
+        config.batch.backend = backend_key
 
-        if backend in ["bokeh", "matplotlib", "plotly", "seaborn"]:
-            config.batch.backend = backend
-
-        if backend == "bokeh":
-            print("...Using old plotter - this will change soon")
-            self.plot_summaries(
-                output_filename=None,
-                backend="bokeh",
-                reload_data=False,
-                **kwargs,
-            )
-
-        elif backend == "matplotlib":
-            print("...Using old plotter - this will change soon")
-            self.plot_summaries(
-                output_filename=None,
-                backend="matplotlib",
-                reload_data=False,
-                **kwargs,
-            )
-            # 1: summary_plotting_engine
-            # 2:   _preparing_data_and_plotting_legacy
-            # 3:   _plotting_data_legacy
-            # 4:   plot_cycle_life_summary_[backend]
-
-        elif backend == "plotly":
-            self.plotter.do(**kwargs)
-
-        elif backend == "seaborn":
-            self.plotter.do(**kwargs)
-            # 1: summary_plotting_engine
-            # 2:   generate_summary_plots
-            # 3:   generate_summary_frame_for_plotting
-            # 4:   plot_cycle_life_summary_[backend]
-
-        else:
-            print(f"backend {backend} not supported yet")
+        # Avoid opening a browser window during automated runs unless asked.
+        show = kwargs.pop("show", kwargs.pop("plotly_show", True))
+        canvas = batch_summary_plot(
+            self.experiment,
+            backend=backend_key,
+            show=show,
+            **kwargs,
+        )
+        self.plotter.set_figure(canvas)
 
     def plot_summaries(
         self, output_filename=None, backend=None, reload_data=False, **kwargs
@@ -1467,35 +1467,11 @@ class Batch:
         """
 
         warnings.warn("Deprecated - use plot instead.", DeprecationWarning)
-        if reload_data or ("summary_engine" not in self.experiment.memory_dumped):
-            logging.debug("running summary_collector")
-            self.summary_collector.do(reset=True)
-
-        if backend is None:
-            backend = config.batch.backend
-
-        if backend in ["bokeh", "matplotlib"]:
-            config.batch.backend = backend
-
-        if backend == "bokeh":
-            try:
-                import bokeh.plotting  # pyright: ignore[reportMissingImports]
-
-                config.batch.backend = "bokeh"
-
-                if output_filename is not None:
-                    bokeh.plotting.output_file(output_filename)
-                else:
-                    if config.batch.notebook:
-                        bokeh.plotting.output_notebook()
-
-            except ModuleNotFoundError:
-                config.batch.backend = "matplotlib"
-                logging.warning(
-                    "could not find the bokeh module -> using matplotlib instead"
-                )
-
-        self.plotter.do(**kwargs)
+        if output_filename is not None:
+            logging.debug(
+                "plot_summaries(output_filename=...) is ignored; bokeh export was removed (#658)"
+            )
+        self.plot(backend=backend, reload_data=reload_data, **kwargs)
 
 
 def load_journal(journal_file, **kwargs):

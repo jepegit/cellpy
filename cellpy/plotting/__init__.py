@@ -1,7 +1,7 @@
 """The single home for cellpy's plotting machinery (#567).
 
 Four generations of plotting code grew up in three modules
-(``utils/plotutils.py``, ``utils/collectors.py``,
+(``utils/plotutils.py``, ``utils/collectors.py``, and the retired
 ``utils/batch_tools/batch_plotters.py``), and the same figure could be produced
 by paths that shared no layout logic. This package is where the shared parts
 live; the plan is `architecture-plan/cellpy2-plotting-redesign-plan.md`.
@@ -18,6 +18,7 @@ live; the plan is `architecture-plan/cellpy2-plotting-redesign-plan.md`.
 | [`prepare`][cellpy.plotting.prepare] | summary tidy-frame + ``FigureSpec`` (#638) |
 | [`context`][cellpy.plotting.context] | ``CellContext`` / ``FrameContext`` (#638 / #657) |
 | [`collected`][cellpy.plotting.collected] | multi-cell ``collected_plot`` (``layout=`` / ``kind=``) (#657) |
+| [`batch_summary`][cellpy.plotting.batch_summary] | ``Batch.plot`` cycle-life summary (#658) |
 
 The old locations re-export from here, so nothing that imported them breaks.
 Public ``summary_plot`` still lives in ``plotutils`` but runs
@@ -32,6 +33,7 @@ from cellpy.plotting.backends import (
     PlotlyBackend,
     get_backend,
 )
+from cellpy.plotting.batch_summary import batch_summary_plot
 from cellpy.plotting.collected import collected_plot
 from cellpy.plotting.context import CellContext, FrameContext, from_frame, from_source
 from cellpy.plotting.cycle_legend import (
@@ -73,6 +75,7 @@ __all__ = [
     "PlotFamily",
     "PlotlyBackend",
     "_register_family",
+    "batch_summary_plot",
     "collected_plot",
     "families",
     "from_frame",

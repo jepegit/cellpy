@@ -97,7 +97,6 @@ The `cellpy` source code is structured as follows:
     │   ├── 🐍 batch_exporters.py
     │   ├── 🐍 batch_helpers.py
     │   ├── 🐍 batch_journals.py
-    │   ├── 🐍 batch_plotters.py
     │   ├── 🐍 batch_reporters.py
     │   ├── 🐍 dumpers.py
     │   ├── 🐍 engines.py
