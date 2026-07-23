@@ -277,6 +277,2208 @@
       "backend": null,
       "empty": true
     },
+    "dva_plot[matplotlib]": {
+      "backend": "matplotlib",
+      "n_panels": 2,
+      "panels": [
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 2.2638,
+                "last": 1623.142201,
+                "n": 359
+              },
+              "y": {
+                "first": 0.003115,
+                "last": 0.005945,
+                "n": 359
+              }
+            },
+            {
+              "label": "_child1",
+              "x": {
+                "first": 1.179813,
+                "last": 1753.914031,
+                "n": 744
+              },
+              "y": {
+                "first": -0.169177,
+                "last": -0.000127,
+                "n": 744
+              }
+            },
+            {
+              "label": "_child2",
+              "x": {
+                "first": 2.29052,
+                "last": 1697.273182,
+                "n": 371
+              },
+              "y": {
+                "first": 0.003246,
+                "last": 0.006198,
+                "n": 371
+              }
+            },
+            {
+              "label": "_child3",
+              "x": {
+                "first": 2.021289,
+                "last": 1565.45517,
+                "n": 388
+              },
+              "y": {
+                "first": -0.022483,
+                "last": -0.000194,
+                "n": 388
+              }
+            },
+            {
+              "label": "_child4",
+              "x": {
+                "first": 2.297113,
+                "last": 1729.21116,
+                "n": 377
+              },
+              "y": {
+                "first": 0.003506,
+                "last": 0.006183,
+                "n": 377
+              }
+            },
+            {
+              "label": "_child5",
+              "x": {
+                "first": 2.040219,
+                "last": 1583.681518,
+                "n": 389
+              },
+              "y": {
+                "first": -0.022697,
+                "last": -0.00019,
+                "n": 389
+              }
+            },
+            {
+              "label": "_child6",
+              "x": {
+                "first": 3.614628,
+                "last": 1572.362994,
+                "n": 218
+              },
+              "y": {
+                "first": 0.003251,
+                "last": 0.006025,
+                "n": 218
+              }
+            },
+            {
+              "label": "_child7",
+              "x": {
+                "first": 3.214657,
+                "last": 1514.103298,
+                "n": 236
+              },
+              "y": {
+                "first": -0.02235,
+                "last": -0.00022,
+                "n": 236
+              }
+            },
+            {
+              "label": "_child8",
+              "x": {
+                "first": 3.605102,
+                "last": 1531.69924,
+                "n": 213
+              },
+              "y": {
+                "first": 0.00301,
+                "last": 0.005932,
+                "n": 213
+              }
+            },
+            {
+              "label": "_child9",
+              "x": {
+                "first": 3.298624,
+                "last": 1467.88751,
+                "n": 223
+              },
+              "y": {
+                "first": -0.01962,
+                "last": -0.000259,
+                "n": 223
+              }
+            },
+            {
+              "label": "_child10",
+              "x": {
+                "first": 3.59149,
+                "last": 1533.566086,
+                "n": 214
+              },
+              "y": {
+                "first": 0.003034,
+                "last": 0.005975,
+                "n": 214
+              }
+            },
+            {
+              "label": "_child11",
+              "x": {
+                "first": 3.297568,
+                "last": 1467.417869,
+                "n": 223
+              },
+              "y": {
+                "first": -0.019585,
+                "last": -0.000224,
+                "n": 223
+              }
+            },
+            {
+              "label": "_child12",
+              "x": {
+                "first": 3.604932,
+                "last": 1531.62592,
+                "n": 213
+              },
+              "y": {
+                "first": 0.002939,
+                "last": 0.0059,
+                "n": 213
+              }
+            },
+            {
+              "label": "_child13",
+              "x": {
+                "first": 3.312114,
+                "last": 1467.266303,
+                "n": 222
+              },
+              "y": {
+                "first": -0.019516,
+                "last": -0.000199,
+                "n": 222
+              }
+            },
+            {
+              "label": "_child14",
+              "x": {
+                "first": 3.580444,
+                "last": 1528.848381,
+                "n": 214
+              },
+              "y": {
+                "first": 0.003087,
+                "last": 0.005951,
+                "n": 214
+              }
+            },
+            {
+              "label": "_child15",
+              "x": {
+                "first": 3.314813,
+                "last": 1461.832266,
+                "n": 221
+              },
+              "y": {
+                "first": -0.019491,
+                "last": -0.000216,
+                "n": 221
+              }
+            },
+            {
+              "label": "_child16",
+              "x": {
+                "first": 3.612607,
+                "last": 1570.92893,
+                "n": 218
+              },
+              "y": {
+                "first": 0.00304,
+                "last": 0.005907,
+                "n": 218
+              }
+            },
+            {
+              "label": "_child17",
+              "x": {
+                "first": 3.353583,
+                "last": 1505.758716,
+                "n": 225
+              },
+              "y": {
+                "first": -0.019358,
+                "last": -0.000224,
+                "n": 225
+              }
+            },
+            {
+              "label": "_child18",
+              "x": {
+                "first": 3.590966,
+                "last": 1524.536311,
+                "n": 213
+              },
+              "y": {
+                "first": 0.002939,
+                "last": 0.005865,
+                "n": 213
+              }
+            },
+            {
+              "label": "_child19",
+              "x": {
+                "first": 3.310443,
+                "last": 1459.905143,
+                "n": 221
+              },
+              "y": {
+                "first": -0.019417,
+                "last": -0.000278,
+                "n": 221
+              }
+            },
+            {
+              "label": "_child20",
+              "x": {
+                "first": 3.588555,
+                "last": 1538.906905,
+                "n": 215
+              },
+              "y": {
+                "first": 0.003025,
+                "last": 0.005832,
+                "n": 215
+              }
+            },
+            {
+              "label": "_child21",
+              "x": {
+                "first": 3.344725,
+                "last": 1474.466769,
+                "n": 221
+              },
+              "y": {
+                "first": -0.019069,
+                "last": -0.000218,
+                "n": 221
+              }
+            },
+            {
+              "label": "_child22",
+              "x": {
+                "first": 3.581916,
+                "last": 1536.168764,
+                "n": 215
+              },
+              "y": {
+                "first": 0.003138,
+                "last": 0.005782,
+                "n": 215
+              }
+            },
+            {
+              "label": "_child23",
+              "x": {
+                "first": 3.338723,
+                "last": 1472.376847,
+                "n": 221
+              },
+              "y": {
+                "first": -0.019122,
+                "last": -0.000231,
+                "n": 221
+              }
+            },
+            {
+              "label": "_child24",
+              "x": {
+                "first": 3.573933,
+                "last": 1568.956624,
+                "n": 220
+              },
+              "y": {
+                "first": 0.003387,
+                "last": 0.005746,
+                "n": 220
+              }
+            },
+            {
+              "label": "_child25",
+              "x": {
+                "first": 3.364825,
+                "last": 1504.076732,
+                "n": 224
+              },
+              "y": {
+                "first": -0.018993,
+                "last": -0.000203,
+                "n": 224
+              }
+            },
+            {
+              "label": "_child26",
+              "x": {
+                "first": 3.591083,
+                "last": 1561.160159,
+                "n": 218
+              },
+              "y": {
+                "first": 0.003177,
+                "last": 0.005642,
+                "n": 218
+              }
+            },
+            {
+              "label": "_child27",
+              "x": {
+                "first": 3.370835,
+                "last": 1499.497541,
+                "n": 223
+              },
+              "y": {
+                "first": -0.01882,
+                "last": -0.000225,
+                "n": 223
+              }
+            },
+            {
+              "label": "_child28",
+              "x": {
+                "first": 3.566889,
+                "last": 1551.596759,
+                "n": 218
+              },
+              "y": {
+                "first": 0.003276,
+                "last": 0.005623,
+                "n": 218
+              }
+            },
+            {
+              "label": "_child29",
+              "x": {
+                "first": 3.376044,
+                "last": 1488.353748,
+                "n": 221
+              },
+              "y": {
+                "first": -0.018903,
+                "last": -0.000201,
+                "n": 221
+              }
+            },
+            {
+              "label": "_child30",
+              "x": {
+                "first": 3.573344,
+                "last": 1582.01468,
+                "n": 222
+              },
+              "y": {
+                "first": 0.003359,
+                "last": 0.005541,
+                "n": 222
+              }
+            },
+            {
+              "label": "_child31",
+              "x": {
+                "first": 3.4067,
+                "last": 1522.794742,
+                "n": 224
+              },
+              "y": {
+                "first": -0.018413,
+                "last": -0.000209,
+                "n": 224
+              }
+            },
+            {
+              "label": "_child32",
+              "x": {
+                "first": 3.549558,
+                "last": 1521.814974,
+                "n": 215
+              },
+              "y": {
+                "first": 0.003153,
+                "last": 0.005501,
+                "n": 215
+              }
+            },
+            {
+              "label": "_child33",
+              "x": {
+                "first": 3.375134,
+                "last": 1461.432685,
+                "n": 217
+              },
+              "y": {
+                "first": -0.018514,
+                "last": -0.000221,
+                "n": 217
+              }
+            },
+            {
+              "label": "_child34",
+              "x": {
+                "first": 1.259543,
+                "last": 238.053613,
+                "n": 95
+              },
+              "y": {
+                "first": -0.030115,
+                "last": -0.000243,
+                "n": 95
+              }
+            }
+          ],
+          "n_collections": 0,
+          "n_lines": 35,
+          "title": "Differential voltage (dV/dQ) for '20160805_test001_45_cc_01'",
+          "xlabel": "Capacity (mAh/g)",
+          "ylabel": "dV/dQ (V/(mAh/g))"
+        },
+        {
+          "lines": [],
+          "n_collections": 2,
+          "n_lines": 0,
+          "title": "",
+          "xlabel": "",
+          "ylabel": "cycle"
+        }
+      ]
+    },
+    "dva_plot[plotly]": {
+      "axis_titles": {
+        "xaxis": "Capacity (mAh/g)",
+        "yaxis": "dV/dQ (V/(mAh/g))"
+      },
+      "backend": "plotly",
+      "n_axes": 2,
+      "n_traces": 36,
+      "traces": [
+        {
+          "mode": "lines",
+          "name": "1",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "1",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "2",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "2",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "3",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "3",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "4",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "4",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "5",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "5",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "6",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "6",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "7",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "7",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "8",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "8",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "9",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "9",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "10",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "10",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "11",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "11",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "12",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "12",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "13",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "13",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "14",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "14",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "15",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "15",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "16",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "16",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "17",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "17",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "18",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "markers",
+          "name": null,
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 1
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 1
+          },
+          "yaxis": "y"
+        }
+      ]
+    },
+    "ica_plot[matplotlib]": {
+      "backend": "matplotlib",
+      "n_panels": 2,
+      "panels": [
+        {
+          "lines": [
+            {
+              "label": "_child0",
+              "x": {
+                "first": 0.111484,
+                "last": 0.998874,
+                "n": 359
+              },
+              "y": {
+                "first": 238.173447,
+                "last": 147.727126,
+                "n": 359
+              }
+            },
+            {
+              "label": "_child1",
+              "x": {
+                "first": 0.051769,
+                "last": 2.838019,
+                "n": 744
+              },
+              "y": {
+                "first": -15658.511436,
+                "last": -1.799207,
+                "n": 744
+              }
+            },
+            {
+              "label": "_child2",
+              "x": {
+                "first": 0.110522,
+                "last": 0.998913,
+                "n": 371
+              },
+              "y": {
+                "first": 217.114558,
+                "last": 139.789138,
+                "n": 371
+              }
+            },
+            {
+              "label": "_child3",
+              "x": {
+                "first": 0.050939,
+                "last": 0.859892,
+                "n": 388
+              },
+              "y": {
+                "first": -7105.643625,
+                "last": -32.121518,
+                "n": 388
+              }
+            },
+            {
+              "label": "_child4",
+              "x": {
+                "first": 0.10835,
+                "last": 0.998929,
+                "n": 377
+              },
+              "y": {
+                "first": 194.06173,
+                "last": 140.447356,
+                "n": 377
+              }
+            },
+            {
+              "label": "_child5",
+              "x": {
+                "first": 0.050915,
+                "last": 0.843288,
+                "n": 389
+              },
+              "y": {
+                "first": -5510.106683,
+                "last": -31.348722,
+                "n": 389
+              }
+            },
+            {
+              "label": "_child6",
+              "x": {
+                "first": 0.141778,
+                "last": 0.99814,
+                "n": 218
+              },
+              "y": {
+                "first": 225.785439,
+                "last": 148.471152,
+                "n": 218
+              }
+            },
+            {
+              "label": "_child7",
+              "x": {
+                "first": 0.051553,
+                "last": 0.831565,
+                "n": 236
+              },
+              "y": {
+                "first": -4732.243189,
+                "last": -35.32372,
+                "n": 236
+              }
+            },
+            {
+              "label": "_child8",
+              "x": {
+                "first": 0.15319,
+                "last": 0.998121,
+                "n": 213
+              },
+              "y": {
+                "first": 245.82527,
+                "last": 151.830864,
+                "n": 213
+              }
+            },
+            {
+              "label": "_child9",
+              "x": {
+                "first": 0.05156,
+                "last": 0.791222,
+                "n": 223
+              },
+              "y": {
+                "first": -3775.819522,
+                "last": -40.075071,
+                "n": 223
+              }
+            },
+            {
+              "label": "_child10",
+              "x": {
+                "first": 0.152259,
+                "last": 0.998128,
+                "n": 214
+              },
+              "y": {
+                "first": 243.900653,
+                "last": 150.232557,
+                "n": 214
+              }
+            },
+            {
+              "label": "_child11",
+              "x": {
+                "first": 0.051548,
+                "last": 0.785999,
+                "n": 223
+              },
+              "y": {
+                "first": -4570.705469,
+                "last": -40.127557,
+                "n": 223
+              }
+            },
+            {
+              "label": "_child12",
+              "x": {
+                "first": 0.153804,
+                "last": 0.998122,
+                "n": 213
+              },
+              "y": {
+                "first": 251.394035,
+                "last": 153.000395,
+                "n": 213
+              }
+            },
+            {
+              "label": "_child13",
+              "x": {
+                "first": 0.051554,
+                "last": 0.785377,
+                "n": 222
+              },
+              "y": {
+                "first": -4738.829127,
+                "last": -40.241962,
+                "n": 222
+              }
+            },
+            {
+              "label": "_child14",
+              "x": {
+                "first": 0.152259,
+                "last": 0.998128,
+                "n": 214
+              },
+              "y": {
+                "first": 239.93641,
+                "last": 151.615967,
+                "n": 214
+              }
+            },
+            {
+              "label": "_child15",
+              "x": {
+                "first": 0.051553,
+                "last": 0.781376,
+                "n": 221
+              },
+              "y": {
+                "first": -4899.865716,
+                "last": -40.228623,
+                "n": 221
+              }
+            },
+            {
+              "label": "_child16",
+              "x": {
+                "first": 0.142699,
+                "last": 0.998142,
+                "n": 218
+              },
+              "y": {
+                "first": 245.341863,
+                "last": 152.514479,
+                "n": 218
+              }
+            },
+            {
+              "label": "_child17",
+              "x": {
+                "first": 0.051526,
+                "last": 0.782942,
+                "n": 225
+              },
+              "y": {
+                "first": -5229.448419,
+                "last": -40.443388,
+                "n": 225
+              }
+            },
+            {
+              "label": "_child18",
+              "x": {
+                "first": 0.154419,
+                "last": 0.998124,
+                "n": 213
+              },
+              "y": {
+                "first": 254.68566,
+                "last": 154.215702,
+                "n": 213
+              }
+            },
+            {
+              "label": "_child19",
+              "x": {
+                "first": 0.051549,
+                "last": 0.77984,
+                "n": 221
+              },
+              "y": {
+                "first": -3913.631893,
+                "last": -40.300883,
+                "n": 221
+              }
+            },
+            {
+              "label": "_child20",
+              "x": {
+                "first": 0.149792,
+                "last": 0.998131,
+                "n": 215
+              },
+              "y": {
+                "first": 246.723846,
+                "last": 155.24848,
+                "n": 215
+              }
+            },
+            {
+              "label": "_child21",
+              "x": {
+                "first": 0.051541,
+                "last": 0.776461,
+                "n": 221
+              },
+              "y": {
+                "first": -5307.4525,
+                "last": -41.097919,
+                "n": 221
+              }
+            },
+            {
+              "label": "_child22",
+              "x": {
+                "first": 0.148564,
+                "last": 0.998129,
+                "n": 215
+              },
+              "y": {
+                "first": 236.212215,
+                "last": 157.419053,
+                "n": 215
+              }
+            },
+            {
+              "label": "_child23",
+              "x": {
+                "first": 0.051538,
+                "last": 0.774925,
+                "n": 221
+              },
+              "y": {
+                "first": -4911.156896,
+                "last": -40.854314,
+                "n": 221
+              }
+            },
+            {
+              "label": "_child24",
+              "x": {
+                "first": 0.138073,
+                "last": 0.99815,
+                "n": 220
+              },
+              "y": {
+                "first": 217.116025,
+                "last": 158.671256,
+                "n": 220
+              }
+            },
+            {
+              "label": "_child25",
+              "x": {
+                "first": 0.051512,
+                "last": 0.773103,
+                "n": 224
+              },
+              "y": {
+                "first": -5541.407055,
+                "last": -41.076373,
+                "n": 224
+              }
+            },
+            {
+              "label": "_child26",
+              "x": {
+                "first": 0.141163,
+                "last": 0.998139,
+                "n": 218
+              },
+              "y": {
+                "first": 234.064453,
+                "last": 162.509902,
+                "n": 218
+              }
+            },
+            {
+              "label": "_child27",
+              "x": {
+                "first": 0.051516,
+                "last": 0.77156,
+                "n": 223
+              },
+              "y": {
+                "first": -5202.306612,
+                "last": -41.411409,
+                "n": 223
+              }
+            },
+            {
+              "label": "_child28",
+              "x": {
+                "first": 0.14147,
+                "last": 0.99814,
+                "n": 218
+              },
+              "y": {
+                "first": 224.991287,
+                "last": 163.33468,
+                "n": 218
+              }
+            },
+            {
+              "label": "_child29",
+              "x": {
+                "first": 0.051525,
+                "last": 0.769088,
+                "n": 221
+              },
+              "y": {
+                "first": -5433.232398,
+                "last": -41.101974,
+                "n": 221
+              }
+            },
+            {
+              "label": "_child30",
+              "x": {
+                "first": 0.132218,
+                "last": 0.998154,
+                "n": 222
+              },
+              "y": {
+                "first": 221.381215,
+                "last": 166.455178,
+                "n": 222
+              }
+            },
+            {
+              "label": "_child31",
+              "x": {
+                "first": 0.051493,
+                "last": 0.764808,
+                "n": 224
+              },
+              "y": {
+                "first": -5524.437282,
+                "last": -42.204436,
+                "n": 224
+              }
+            },
+            {
+              "label": "_child32",
+              "x": {
+                "first": 0.147335,
+                "last": 0.998126,
+                "n": 215
+              },
+              "y": {
+                "first": 236.226145,
+                "last": 168.676828,
+                "n": 215
+              }
+            },
+            {
+              "label": "_child33",
+              "x": {
+                "first": 0.051534,
+                "last": 0.760149,
+                "n": 217
+              },
+              "y": {
+                "first": -5116.907717,
+                "last": -41.870817,
+                "n": 217
+              }
+            },
+            {
+              "label": "_child34",
+              "x": {
+                "first": 0.296506,
+                "last": 0.754733,
+                "n": 95
+              },
+              "y": {
+                "first": -4941.30151,
+                "last": -27.6495,
+                "n": 95
+              }
+            }
+          ],
+          "n_collections": 0,
+          "n_lines": 35,
+          "title": "Incremental capacity (dQ/dV) for '20160805_test001_45_cc_01'",
+          "xlabel": "Voltage (V)",
+          "ylabel": "dQ/dV (mAh/g/V)"
+        },
+        {
+          "lines": [],
+          "n_collections": 2,
+          "n_lines": 0,
+          "title": "",
+          "xlabel": "",
+          "ylabel": "cycle"
+        }
+      ]
+    },
+    "ica_plot[plotly]": {
+      "axis_titles": {
+        "xaxis": "Voltage (V)",
+        "yaxis": "dQ/dV (mAh/g/V)"
+      },
+      "backend": "plotly",
+      "n_axes": 2,
+      "n_traces": 36,
+      "traces": [
+        {
+          "mode": "lines",
+          "name": "1",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "1",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "2",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "2",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "3",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "3",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "4",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "4",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "5",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "5",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "6",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "6",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "7",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "7",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "8",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "8",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "9",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "9",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "10",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "10",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "11",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "11",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "12",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "12",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "13",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "13",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "14",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "14",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "15",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "15",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "16",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "16",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "17",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "17",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "18",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "markers",
+          "name": null,
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 1
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 1
+          },
+          "yaxis": "y"
+        }
+      ]
+    },
     "raw_plot[matplotlib]": {
       "backend": "matplotlib",
       "n_panels": 2,

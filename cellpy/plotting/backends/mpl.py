@@ -70,6 +70,8 @@ class MatplotlibBackend:
             return self._render_raw(frame, spec)
         if kind == "cycle_info":
             return self._render_cycle_info(frame, spec)
+        if kind in ("ica", "dva"):
+            return self._render_ica_dva(frame, spec)
 
         config = extras.get("config")
         c = extras.get("cell")
@@ -1217,6 +1219,81 @@ class MatplotlibBackend:
 
         if get_axes:
             return ax1, ax2, ax2, ax4
+        return fig
+
+    def _render_ica_dva(self, frame: Any, spec: FigureSpec) -> Any:
+        """Render ICA (dQ/dV) or DVA (dV/dQ) figures (#648).
+
+        One series per ``(cycle, direction)``; shared line style for charge and
+        discharge. Cycle legend vs colorbar via
+        :mod:`cellpy.plotting.cycle_legend`.
+        """
+        import matplotlib.pyplot as plt
+        from matplotlib.colors import Normalize
+
+        from cellpy.ica import ICA_COLS
+        from cellpy.plotting.cycle_legend import (
+            add_matplotlib_cycle_colorbar,
+            pop_cycle_legend_options,
+            resolve_cycle_legend_mode,
+        )
+
+        extras = dict(spec.extras or {})
+        kwargs = dict(extras.get("additional_kwargs") or {})
+        x_col = extras.get("x") or ICA_COLS.voltage
+        y_col = extras.get("y") or ICA_COLS.dqdv
+        x_label = extras.get("x_label") or (spec.x_axis.label or x_col)
+        y_label = extras.get("y_label") or y_col
+        colormap = extras.get("colormap") or "viridis"
+        figsize = extras.get("figsize") or (6, 4)
+        x_range = extras.get("x_range")
+        y_range = extras.get("y_range")
+        legend_opts = pop_cycle_legend_options(extras, kwargs)
+
+        fig, ax = plt.subplots(1, 1, figsize=figsize)
+        cycles = sorted(frame[ICA_COLS.cycle].unique())
+        n_cycles = len(cycles)
+        cmap = plt.get_cmap(colormap)
+        if n_cycles == 1:
+            norm = Normalize(vmin=cycles[0] - 0.5, vmax=cycles[0] + 0.5)
+            cycle_to_color = {cycles[0]: cmap(0.5)}
+        else:
+            norm = Normalize(vmin=min(cycles), vmax=max(cycles))
+            cycle_to_color = {cycle: cmap(norm(cycle)) for cycle in cycles}
+
+        mode = resolve_cycle_legend_mode(n_cycles, **legend_opts)
+        use_legend = mode == "legend"
+
+        shown_cycles: set[Any] = set()
+        for (cycle, _direction), group in frame.groupby(
+            [ICA_COLS.cycle, ICA_COLS.direction], sort=True
+        ):
+            label = None
+            if use_legend and cycle not in shown_cycles:
+                label = str(cycle)
+                shown_cycles.add(cycle)
+            ax.plot(
+                group[x_col],
+                group[y_col],
+                color=cycle_to_color[cycle],
+                label=label,
+                linewidth=1.5,
+            )
+
+        ax.set_xlabel(x_label)
+        ax.set_ylabel(y_label)
+        ax.set_title(spec.title)
+        if x_range is not None:
+            ax.set_xlim(x_range)
+        if y_range is not None:
+            ax.set_ylim(y_range)
+
+        if use_legend and shown_cycles:
+            ax.legend(title="cycle")
+        elif n_cycles:
+            add_matplotlib_cycle_colorbar(fig, ax, cmap=cmap, norm=norm)
+
+        fig.tight_layout()
         return fig
 
 
