@@ -50,12 +50,9 @@ def test_configure_formation_layout_rejects_too_many_rows():
 
 
 @pytest.mark.essential
-def test_per_row_count_methods_are_gone():
-    builder = plotutils.PlotlyPlotBuilder()
-    assert not hasattr(builder, "_configure_formation_1_row")
-    assert not hasattr(builder, "_configure_formation_2_rows")
-    assert not hasattr(builder, "_configure_formation_3_rows")
-    assert not hasattr(builder, "_configure_formation_4_rows")
+def test_plotly_plot_builder_is_gone():
+    assert not hasattr(plotutils, "PlotlyPlotBuilder")
+    assert not hasattr(plotutils, "SummaryPlotDataPreparer")
 
 
 @pytest.mark.essential

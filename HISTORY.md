@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+* Port summary prepare path and flip summary_plot to prepare→spec→render (#638).
+
 * Generic plotly panel/formation layout backend (#637).
 
 * Add FigureSpec dataclasses and a PlotFamily registry (#636).

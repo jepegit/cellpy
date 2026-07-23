@@ -1,15 +1,13 @@
-"""Plotly backend: generic formation/facet layout + render protocol (#637).
+"""Plotly backend: formation/facet layout + summary ``render`` (#637 / #638).
 
-The four ``PlotlyPlotBuilder._configure_formation_{1,2,3,4}_rows`` methods are
-collapsed into :func:`configure_formation_layout`. ``PlotlyPlotBuilder`` keeps
-ownership of ``px.line`` construction and the no-formation path; this module
-owns the formation axis grid.
+Formation axis grids live in :func:`configure_formation_layout`. Public
+``summary_plot`` draws through :class:`PlotlyBackend.render` from a tidy
+frame + :class:`~cellpy.plotting.spec.FigureSpec` (#638).
 """
 
 from __future__ import annotations
 
 import logging
-import os
 import warnings
 from copy import deepcopy
 from typing import Any, Optional, Sequence
@@ -19,10 +17,6 @@ import numpy as np
 from cellpy.plotting.spec import FigureSpec
 
 logger = logging.getLogger(__name__)
-
-#: Internal switch for the provisional ``PlotlyBackend.render`` path from
-#: ``summary_plot``. Default off — public prepare→spec→render lands in #638.
-SPEC_RENDER_ENV = "CELLPY_SUMMARY_PLOTLY_SPEC"
 
 PLOTLY_BLANK_LABEL = {
     "font": {},
@@ -38,12 +32,6 @@ PLOTLY_BLANK_LABEL = {
 
 DEFAULT_FORMATIONION_LABEL = '<span style="color:red">Formation</span>'
 MAX_FORMATIONATION_ROWS = 4
-
-
-def use_spec_render() -> bool:
-    """True when the provisional ``(frame, FigureSpec)`` render path is enabled."""
-    value = os.environ.get(SPEC_RENDER_ENV, "").strip().lower()
-    return value in {"1", "true", "yes", "on"}
 
 
 def _label_dict(text: str, x: float, y: float) -> dict[str, Any]:
@@ -293,48 +281,281 @@ def configure_fullcell_standard_domains(
 class PlotlyBackend:
     """Plotly implementation of the :class:`~cellpy.plotting.backends.base.Backend` protocol.
 
-    Full prepare→spec→render ownership arrives in #638. Until then this class
-    is available for the optional ``CELLPY_SUMMARY_PLOTLY_SPEC`` path and for
-    layout helpers used by ``PlotlyPlotBuilder``.
+    ``render(frame, spec)`` is the interactive path for public ``summary_plot``
+    (#638). Layout knobs are expected on ``spec.extras['render']`` as produced
+    by :mod:`cellpy.plotting.prepare.summary`.
     """
 
     name = "plotly"
+
+    def __init__(self) -> None:
+        self.y_header = "value"
+        self.color = "variable"
+        self.row = "row"
+        self.col_id = "cycle_type"
 
     def render(self, frame: Any, spec: FigureSpec) -> Any:
         import plotly.express as px
 
         extras = dict(spec.extras or {})
+        render = dict(extras.get("render") or {})
+        prepared = dict(extras.get("prepared_data_info") or {})
+
         x = extras.get("x")
-        y_header = extras.get("y_header", "value")
         if x is None:
             raise ValueError("FigureSpec.extras['x'] is required for PlotlyBackend.render")
 
-        plotly_kwargs = dict(extras.get("plotly_kwargs") or {})
-        labels = {
-            x: (spec.x_axis.label or x),
-            y_header: extras.get("y_label", y_header),
+        y_header = extras.get("y_header", self.y_header)
+        color = extras.get("color", self.color)
+        row = extras.get("row", self.row)
+        col_id = extras.get("col_id", self.col_id)
+        y = extras.get("y") or ""
+        y_label = extras.get("y_label", y_header)
+        x_label = prepared.get("x_label") or (spec.x_axis.label or x)
+        number_of_rows = extras.get("number_of_rows") or prepared.get(
+            "number_of_rows"
+        ) or len(spec.panels) or 1
+
+        additional_kwargs = dict(render.get("additional_kwargs") or {})
+        smart_link = additional_kwargs.pop("smart_link", True)
+        # Already consumed when building formation extras in prepare; drop so
+        # they are not forwarded into px.line.
+        additional_kwargs.pop("show_y_labels_on_right_pane", None)
+        additional_kwargs.pop("fullcell_standard_row_height_ratios", None)
+        additional_kwargs.pop("fullcell_standard_row_space", None)
+
+        plotly_update_traces = {}
+        for k in list(additional_kwargs.keys()):
+            if k.startswith("plotly_"):
+                plotly_update_traces[k.replace("plotly_", "")] = additional_kwargs.pop(k)
+
+        title = render.get("title")
+        if title is None:
+            title = spec.title
+        if title is None:
+            cell_name = extras.get("cell_name") or ""
+            title = f"Summary <b>{cell_name}</b>"
+
+        plotly_kwargs: dict[str, Any] = {
+            "color": color,
+            "height": render.get("height"),
+            "markers": render.get("markers", True),
+            "title": title,
+            "width": render.get("width", 900),
         }
-        if spec.title is not None:
-            plotly_kwargs.setdefault("title", spec.title)
 
-        fig = px.line(frame, x=x, y=y_header, labels=labels, **plotly_kwargs)
+        split = bool(render.get("split", True))
+        if split and row in frame.columns:
+            plotly_kwargs["facet_row"] = row
 
-        if extras.get("show_formation"):
+        hover_columns = render.get("hover_columns") or []
+        if hover_columns:
+            present = [h for h in hover_columns if h in frame.columns]
+            if present:
+                plotly_kwargs["hover_data"] = present
+
+        if plotly_kwargs.get("height") is None:
+            if y.startswith("fullcell_standard_"):
+                plotly_kwargs["height"] = 800
+            elif split and number_of_rows > 1:
+                plotly_kwargs["height"] = 800
+            else:
+                plotly_kwargs["height"] = 200 + 200 * number_of_rows
+
+        # Lazy import avoids a circular import with plotutils at module load.
+        from cellpy.utils.plotutils import set_plotly_template
+
+        set_plotly_template(render.get("plotly_template"))
+
+        show_formation = bool(render.get("show_formation"))
+        if show_formation and col_id in frame.columns:
+            plotly_kwargs["facet_col"] = col_id
+
+        fig = px.line(
+            frame,
+            x=x,
+            y=y_header,
+            **plotly_kwargs,
+            labels={x: x_label, y_header: y_label},
+            **additional_kwargs,
+        )
+
+        if plotly_update_traces:
+            fig.update_traces(**plotly_update_traces)
+
+        if not render.get("show_legend", True):
+            fig.update_layout(showlegend=False)
+
+        y_range = render.get("y_range")
+        if y_range is not None:
+            fig.update_layout(yaxis=dict(range=y_range))
+
+        if show_formation:
+            formation = dict(render.get("formation_layout") or {})
+            if not formation:
+                raise ValueError(
+                    "FigureSpec.extras['render']['formation_layout'] is required "
+                    "when show_formation is True"
+                )
             configure_formation_layout(
                 fig,
-                n_rows=extras.get("n_rows") or len(spec.panels) or 1,
-                x_axis_domain_formation=extras["x_axis_domain_formation"],
-                x_axis_domain_rest=extras["x_axis_domain_rest"],
-                x_axis_range_formation=extras["x_axis_range_formation"],
-                x_axis_range_rest=extras["x_axis_range_rest"],
-                show_y_labels_on_right_pane=extras.get(
+                n_rows=formation.get("n_rows") or number_of_rows,
+                x_axis_domain_formation=formation["x_axis_domain_formation"],
+                x_axis_domain_rest=formation["x_axis_domain_rest"],
+                x_axis_range_formation=formation["x_axis_range_formation"],
+                x_axis_range_rest=formation["x_axis_range_rest"],
+                show_y_labels_on_right_pane=formation.get(
                     "show_y_labels_on_right_pane", False
                 ),
-                row_y_ranges=extras.get("row_y_ranges"),
-                top_row_label=extras.get("top_row_label"),
+                formation_header=DEFAULT_FORMATIONION_LABEL,
+                row_y_ranges=formation.get("row_y_ranges"),
+                top_row_label=formation.get("top_row_label"),
             )
-            fullcell = extras.get("fullcell_standard_domains")
+            fullcell = formation.get("fullcell_standard_domains")
             if fullcell:
                 configure_fullcell_standard_domains(fig, **fullcell)
+        else:
+            self._configure_no_formation_axes(
+                fig, render.get("no_formation_layout") or {}
+            )
+
+        x_range = render.get("x_range")
+        if x_range is not None and not show_formation:
+            fig.update_layout(xaxis=dict(range=x_range))
+
+        if split:
+            if show_formation:
+                if not render.get("share_y") and not smart_link:
+                    fig.update_yaxes(matches=None)
+            elif not render.get("share_y"):
+                fig.update_yaxes(matches=None)
+
+        if render.get("rangeslider"):
+            if show_formation:
+                logging.critical(
+                    "Can not add rangeslider when showing formation cycles"
+                )
+            else:
+                fig.update_layout(xaxis_rangeslider_visible=True)
+
+        if render.get("auto_convert_legend_labels", True) and render.get(
+            "show_legend", True
+        ):
+            self._convert_legend_labels(fig)
 
         return fig
+
+    def _configure_no_formation_axes(self, fig: Any, layout: dict[str, Any]) -> None:
+        """Configure axes when not showing formation cycles."""
+        y = layout.get("y") or ""
+        top_label = layout.get("top_row_label")
+        if top_label is not None:
+            fig.update_layout(
+                yaxis=dict(domain=[0.0, 0.65]),
+                yaxis2={
+                    "title": dict(text=top_label),
+                    "domain": [0.7, 1.0],
+                },
+            )
+        if not y.startswith("fullcell_standard_"):
+            return
+
+        plotly_row_ratios = layout.get("plotly_row_ratios") or [0.3, 0.6, 0.9]
+        plotly_row_space = layout.get("plotly_row_space", 0.02)
+        max_val_normalized_col = layout.get("max_val_normalized_col") or 0.0
+        eff_lim = layout.get("ce_range")
+
+        range_1 = eff_lim or auto_range(fig, "y4", "y4")
+        range_2 = layout.get("y_range") or auto_range(fig, "y3", "y3")
+        range_3 = auto_range(fig, "y2", "y2")
+        if layout.get("fullcell_standard_normalization_type") is not False:
+            range_3 = [
+                0.0,
+                max(
+                    max_val_normalized_col,
+                    layout.get("fullcell_standard_normalization_scaler") or 1.0,
+                ),
+            ]
+        range_3 = layout.get("norm_range") or range_3
+        range_4 = layout.get("cv_share_range") or auto_range(fig, "y", "y")
+        fig.layout["annotations"] = 4 * [PLOTLY_BLANK_LABEL]
+
+        ce_domain_start, ce_domain_end = plotly_row_ratios[2], 1.0
+        capacity_domain_start, capacity_domain_end = (
+            plotly_row_ratios[1],
+            plotly_row_ratios[2] - plotly_row_space,
+        )
+        loss_domain_start, loss_domain_end = (
+            plotly_row_ratios[0],
+            plotly_row_ratios[1] - plotly_row_space,
+        )
+        cv_domain_start, cv_domain_end = (
+            0.0,
+            plotly_row_ratios[0] - plotly_row_space,
+        )
+
+        capacity_unit = layout.get("capacity_unit") or "-"
+        ce_label = "Coulombic<br>Efficiency (%)"
+        capacity_label = f"Capacity<br>({capacity_unit})"
+        if (
+            layout.get("fullcell_standard_normalization_type")
+            and layout.get("fullcell_standard_normalization_factor") is not None
+        ):
+            _norm_label = (
+                f"[{layout['fullcell_standard_normalization_scaler']:.1f}/"
+                f"{layout['fullcell_standard_normalization_factor']:.1f} "
+                f"{capacity_unit}]"
+            )
+            loss_label = f"Capacity<br>Retention (norm.)<br>{_norm_label}"
+        else:
+            loss_label = f"Capacity<br>Retention ({capacity_unit})"
+        cv_label = f"CV Capacity<br>({capacity_unit})"
+
+        fig.update_layout(
+            yaxis4={
+                "title": dict(text=ce_label),
+                "domain": [ce_domain_start, ce_domain_end],
+                "matches": None,
+                "range": range_1,
+            },
+            yaxis3={
+                "title": dict(text=capacity_label),
+                "domain": [capacity_domain_start, capacity_domain_end],
+                "matches": None,
+                "range": range_2,
+            },
+            yaxis2={
+                "title": dict(text=loss_label),
+                "domain": [loss_domain_start, loss_domain_end],
+                "matches": None,
+                "range": range_3,
+            },
+            yaxis={
+                "title": dict(text=cv_label),
+                "domain": [cv_domain_start, cv_domain_end],
+                "matches": None,
+                "range": range_4,
+            },
+        )
+
+    @staticmethod
+    def _convert_legend_labels(fig: Any) -> None:
+        """Convert legend labels to nicer format."""
+        for trace in fig.data:
+            name = trace.name
+            name = name.replace("_", " ").title()
+            name = name.replace("Gravimetric", "Grav.")
+            name = name.replace("Cv", "(CV)")
+            name = name.replace("Non (CV)", "(without CV)")
+            hover_template = trace.hovertemplate
+            if hover_template:
+                statements = []
+                for statement in hover_template.split("<br>"):
+                    if "=" in statement:
+                        variable, value = statement.split("=", 1)
+                        if value.startswith("%{y}"):
+                            variable = name
+                        statement = "=".join((variable, value))
+                    statements.append(statement)
+                hover_template = "<br>".join(statements)
+            trace.update(name=name, hovertemplate=hover_template)

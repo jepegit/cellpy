@@ -14,8 +14,9 @@ moves selection into `cellpy.plotting.registry`.
 - **Unknown `y` fails loudly** (`ValueError` listing known names). Undocumented
   raw-column fallthrough (`y_cols.get(y, y)`) is gone; extension is
   `_register_family` (provisional in 2.0).
-- **`FigureSpec` / `PanelSpec` / `AxisSpec`** land in `cellpy/plotting/spec.py`
-  but are not consumed by builders until Stage-1 prepare→spec→render (#637–#639).
+- **`FigureSpec` / `PanelSpec` / `AxisSpec`** live in `cellpy/plotting/spec.py`.
+  Prepare emits a real `FigureSpec` for `summary_plot` (#638); matplotlib
+  backend consumption is #639.
 - **Oracle menu** (`tests/figure_spec_support.SUMMARY_FAMILIES`) derives from
   `families()` so the snapshot menu cannot drift from the runtime menu.
 
