@@ -147,6 +147,7 @@ figure oracle. No collectors/batch work yet.
   identically; no private layout fork left inside `cycles_plot`.
 - Depends on: #639
 - yolo: no — dual kwargs + curves adapter choices.
+- Published: #646
 
 ### Issue: Port `raw_plot` and `cycle_info_plot`
 
@@ -158,9 +159,10 @@ figure oracle. No collectors/batch work yet.
   for both functions × both backends green; no hand-composed unit f-strings
   remain in these two code paths; header lookups use the public schema/header
   helpers (no new hard-coded legacy names).
-- Depends on: stage 2 issue 1
+- Depends on: #646
 - yolo: no — two families, header/unit sensitivity (Phase 0 already found bugs
   here).
+- Published: #647
 
 ### Issue: Add `ica_plot` / `dva_plot` families on the new pipeline
 
@@ -171,8 +173,9 @@ figure oracle. No collectors/batch work yet.
   re-exports). Add corresponding cases to the figure-spec snapshot. Acceptance:
   new oracle cases committed and green; plots honour cell-centric `direction`;
   no dependency on deleted `Converter` / wide-frame helpers.
-- Depends on: stage 2 issue 2
+- Depends on: #647
 - yolo: no — new public surface; needs snapshot design choices.
+- Published: #648
 
 ## Stage 3 — Collectors drawing half, Batch.plot, retire batch_plotters
 
