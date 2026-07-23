@@ -19,13 +19,17 @@ live; the plan is `architecture-plan/cellpy2-plotting-redesign-plan.md`.
 
 The old locations re-export from here, so nothing that imported them breaks.
 Public ``summary_plot`` still lives in ``plotutils`` but runs
-prepare → spec → ``PlotlyBackend.render`` for the interactive path (#638);
-``SeabornPlotBuilder`` remains until #639.
+prepare → spec → ``get_backend(...).render`` (#638 / #639).
 """
 
 from __future__ import annotations
 
-from cellpy.plotting.backends import Backend, PlotlyBackend
+from cellpy.plotting.backends import (
+    Backend,
+    MatplotlibBackend,
+    PlotlyBackend,
+    get_backend,
+)
 from cellpy.plotting.context import CellContext, from_source
 from cellpy.plotting.figures import (
     load_figure,
@@ -50,12 +54,14 @@ __all__ = [
     "Backend",
     "CellContext",
     "FigureSpec",
+    "MatplotlibBackend",
     "PanelSpec",
     "PlotFamily",
     "PlotlyBackend",
     "_register_family",
     "families",
     "from_source",
+    "get_backend",
     "get_family",
     "legend_replacer",
     "load_figure",

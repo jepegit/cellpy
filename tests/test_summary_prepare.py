@@ -48,7 +48,7 @@ def test_return_data_frame_shape(cell):
         cell,
         y="capacities_gravimetric",
         return_data=True,
-        interactive=False,
+        backend="matplotlib",
         show_formation=False,
     )
     assert fig is not None
@@ -65,7 +65,7 @@ def test_plotly_path_uses_backend(cell):
     fig = summary_plot(
         cell,
         y="capacities_gravimetric",
-        interactive=True,
+        backend="plotly",
         show_formation=True,
     )
     assert fig is not None

@@ -46,7 +46,7 @@ class TestSummaryPlotBasic:
     )
     def test_basic_plot_types(self, cell, y_param):
         """Test that all basic plot types can be created."""
-        fig = summary_plot(cell, y=y_param, interactive=False, show_formation=False)
+        fig = summary_plot(cell, y=y_param, backend="matplotlib", show_formation=False)
         assert fig is not None
         # For seaborn, should return matplotlib figure
         assert hasattr(fig, "get_axes") or hasattr(fig, "show")
@@ -60,7 +60,7 @@ class TestSummaryPlotBasic:
     )
     def test_cv_split_plot_types(self, cell, y_param):
         """Test CV split plot types."""
-        fig = summary_plot(cell, y=y_param, interactive=False, show_formation=False)
+        fig = summary_plot(cell, y=y_param, backend="matplotlib", show_formation=False)
         assert fig is not None
 
     @pytest.mark.parametrize(
@@ -73,7 +73,7 @@ class TestSummaryPlotBasic:
     )
     def test_fullcell_standard_plot_types(self, cell, y_param):
         """Test fullcell standard plot types."""
-        fig = summary_plot(cell, y=y_param, interactive=False, show_formation=False)
+        fig = summary_plot(cell, y=y_param, backend="matplotlib", show_formation=False)
         assert fig is not None
 
 
@@ -89,7 +89,7 @@ class TestSummaryPlotInteractive:
         fig = summary_plot(
             cell,
             y="capacities_gravimetric_coulombic_efficiency",
-            interactive=True,
+            backend="plotly",
             show_formation=False,
         )
         assert fig is not None
@@ -101,7 +101,7 @@ class TestSummaryPlotInteractive:
         fig = summary_plot(
             cell,
             y="capacities_gravimetric",
-            interactive=True,
+            backend="plotly",
             show_formation=True,
             formation_cycles=3,
         )
@@ -120,7 +120,7 @@ class TestSummaryPlotSeaborn:
         fig = summary_plot(
             cell,
             y="capacities_gravimetric",
-            interactive=False,
+            backend="matplotlib",
             show_formation=False,
         )
         assert fig is not None
@@ -132,7 +132,7 @@ class TestSummaryPlotSeaborn:
         fig = summary_plot(
             cell,
             y="capacities_gravimetric",
-            interactive=False,
+            backend="matplotlib",
             show_formation=True,
             formation_cycles=3,
         )
@@ -143,7 +143,7 @@ class TestSummaryPlotSeaborn:
         fig = summary_plot(
             cell,
             y="capacities_gravimetric",
-            interactive=False,
+            backend="matplotlib",
             show_formation=False,
         )
         assert fig is not None
@@ -154,7 +154,7 @@ class TestSummaryPlotSeaborn:
             cell,
             x="cycle_index",
             y="capacities_gravimetric",
-            interactive=False,
+            backend="matplotlib",
         )
         assert fig is not None
 
@@ -165,19 +165,19 @@ class TestSummaryPlotSeaborn:
             y="capacities_gravimetric",
             x_range=[1, 10],
             y_range=[0, 200],
-            interactive=False,
+            backend="matplotlib",
         )
         assert fig is not None
 
     def test_markers(self, cell):
         """Test marker parameter."""
         fig = summary_plot(
-            cell, y="capacities_gravimetric", markers=True, interactive=False
+            cell, y="capacities_gravimetric", markers=True, backend="matplotlib"
         )
         assert fig is not None
 
         fig_no_markers = summary_plot(
-            cell, y="capacities_gravimetric", markers=False, interactive=False
+            cell, y="capacities_gravimetric", markers=False, backend="matplotlib"
         )
         assert fig_no_markers is not None
 
@@ -187,7 +187,7 @@ class TestSummaryPlotSeaborn:
             cell,
             y="capacities_gravimetric",
             title="Test Plot",
-            interactive=False,
+            backend="matplotlib",
         )
         assert fig is not None
 
@@ -197,7 +197,7 @@ class TestSummaryPlotSeaborn:
             cell,
             y="capacities_gravimetric",
             return_data=True,
-            interactive=False,
+            backend="matplotlib",
         )
         assert isinstance(result, tuple)
         assert len(result) == 2
@@ -213,7 +213,7 @@ class TestSummaryPlotSeaborn:
             cell,
             y="capacities_gravimetric",
             return_data=True,
-            interactive=False,
+            backend="matplotlib",
         )
         # Should have variable and value columns after melting
         assert "variable" in data.columns or "value" in data.columns
@@ -225,7 +225,7 @@ class TestSummaryPlotSeaborn:
             y="fullcell_standard_gravimetric",
             fullcell_standard_normalization_type="divide",
             fullcell_standard_normalization_factor=1500.0,
-            interactive=False,
+            backend="matplotlib",
         )
         assert fig is not None
 
@@ -235,7 +235,7 @@ class TestSummaryPlotSeaborn:
             cell,
             y="fullcell_standard_gravimetric",
             reset_losses=True,
-            interactive=False,
+            backend="matplotlib",
         )
         assert fig is not None
 
@@ -255,7 +255,7 @@ class TestSummaryPlotEdgeCases:
         with pytest.raises(NoDataFound):
             print(f"This should raise NoDataFound: {len(cell.data.summary)=}")
         with pytest.raises(NoDataFound):
-            summary_plot(cell, y="capacities_gravimetric", interactive=False)
+            summary_plot(cell, y="capacities_gravimetric", backend="matplotlib")
 
     def test_single_cycle(self, cell):
         """Test with minimal data (if possible)."""
@@ -264,7 +264,7 @@ class TestSummaryPlotEdgeCases:
             cell,
             y="capacities_gravimetric",
             x_range=[1, 2],
-            interactive=False,
+            backend="matplotlib",
         )
         # Should still create a figure (might be empty)
         assert fig is not None
@@ -273,7 +273,7 @@ class TestSummaryPlotEdgeCases:
             cell,
             y="capacities_gravimetric",
             x_range=[100000, 100001],
-            interactive=False,
+            backend="matplotlib",
             show_formation=False,
         )
         # Should still create a figure (might be empty)
@@ -285,7 +285,7 @@ class TestSummaryPlotEdgeCases:
         # TODO: replace with NoDataFound
         # TODO: add test for other invalid parameters
         with pytest.raises(ValueError):
-            summary_plot(cell, y="invalid_plot_type", interactive=False)
+            summary_plot(cell, y="invalid_plot_type", backend="matplotlib")
 
 
 @pytest.mark.skipif(
@@ -301,7 +301,7 @@ class TestSummaryPlotGoldenReference:
             cell,
             y="capacities_gravimetric_coulombic_efficiency",
             return_data=True,
-            interactive=False,
+            backend="matplotlib",
             show_formation=False,
         )
 
@@ -319,7 +319,7 @@ class TestSummaryPlotGoldenReference:
             cell,
             y="capacities_gravimetric",
             return_data=True,
-            interactive=False,
+            backend="matplotlib",
         )
 
         # Check for expected columns after melting
@@ -332,7 +332,7 @@ class TestSummaryPlotGoldenReference:
         fig = summary_plot(
             cell,
             y="capacities_gravimetric",
-            interactive=True,
+            backend="plotly",
             show_formation=False,
         )
 
@@ -346,7 +346,7 @@ class TestSummaryPlotGoldenReference:
         fig = summary_plot(
             cell,
             y="capacities_gravimetric",
-            interactive=False,
+            backend="matplotlib",
             show_formation=False,
         )
 
@@ -380,7 +380,7 @@ class TestSummaryPlotFiltersAndRate:
         summary_plot(
             cell,
             y="capacities_gravimetric",
-            interactive=False,
+            backend="matplotlib",
             show_formation=False,
         )
         with pytest.raises(ValueError, match="No data found"):
@@ -388,7 +388,7 @@ class TestSummaryPlotFiltersAndRate:
                 cell,
                 y="capacities_gravimetric",
                 filters={"rate": (1e6, 1e7)},
-                interactive=False,
+                backend="matplotlib",
                 show_formation=False,
             )
 
@@ -399,7 +399,7 @@ class TestSummaryPlotFiltersAndRate:
             cell,
             y="capacities_gravimetric",
             return_data=True,
-            interactive=False,
+            backend="matplotlib",
             show_formation=False,
         )
         _, with_none = summary_plot(
@@ -407,7 +407,7 @@ class TestSummaryPlotFiltersAndRate:
             y="capacities_gravimetric",
             filters=None,
             return_data=True,
-            interactive=False,
+            backend="matplotlib",
             show_formation=False,
         )
         assert len(with_none) == len(baseline)
@@ -424,7 +424,7 @@ class TestSummaryPlotFiltersAndRate:
             cell,
             y="capacities_gravimetric_with_rate",
             return_data=True,
-            interactive=False,
+            backend="matplotlib",
             show_formation=False,
         )
         _, scaled = summary_plot(
@@ -432,7 +432,7 @@ class TestSummaryPlotFiltersAndRate:
             y="capacities_gravimetric_with_rate",
             nominal_capacity=old_nom * 2.0,
             return_data=True,
-            interactive=False,
+            backend="matplotlib",
             show_formation=False,
         )
 
@@ -453,7 +453,7 @@ class TestSummaryPlotFiltersAndRate:
             cell,
             y="capacities_gravimetric_with_rate",
             return_data=True,
-            interactive=False,
+            backend="matplotlib",
             show_formation=False,
         )
         variables = set(data["variable"].unique())
@@ -469,7 +469,7 @@ class TestSummaryPlotFiltersAndRate:
         fig = summary_plot(
             cell,
             y="capacities_gravimetric_with_rate",
-            interactive=False,
+            backend="matplotlib",
             show_formation=True,
             formation_cycles=3,
         )
@@ -498,7 +498,7 @@ class TestSummaryPlotHoverColumns:
             y="capacities_gravimetric",
             hover_columns=extras,
             return_data=True,
-            interactive=True,
+            backend="plotly",
             show_formation=False,
         )
 
@@ -522,7 +522,7 @@ class TestSummaryPlotHoverColumns:
                 y="capacities_gravimetric",
                 hover_columns=[hdr.test_time, "definitely_not_a_real_column"],
                 return_data=True,
-                interactive=True,
+                backend="plotly",
                 show_formation=False,
             )
 
@@ -542,7 +542,7 @@ class TestSummaryPlotHoverColumns:
                 cell,
                 y="fullcell_standard_gravimetric",
                 hover_columns=[hdr.test_time],
-                interactive=True,
+                backend="plotly",
                 show_formation=False,
             )
 
@@ -598,7 +598,7 @@ class TestSummaryPlotFormationCyclesNormalisation:
         fig = summary_plot(
             cell,
             y="capacities_gravimetric",
-            interactive=True,
+            backend="plotly",
             formation_cycles=formation_cycles_arg,
         )
         assert fig is not None
@@ -616,7 +616,7 @@ class TestSummaryPlotFormationCyclesNormalisation:
         fig = summary_plot(
             cell,
             y="capacities_gravimetric",
-            interactive=False,
+            backend="matplotlib",
             formation_cycles=formation_cycles_arg,
         )
         assert fig is not None
