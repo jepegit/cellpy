@@ -37,6 +37,12 @@ from cellpy.utils import helpers
 # Single copies of the plotting plumbing that used to be duplicated across
 # plotutils / collectors / batch_plotters (#567). Re-exported here so the
 # `from cellpy.utils.plotutils import load_figure` spelling keeps working.
+from cellpy.plotting.backends.plotly import (
+    DEFAULT_FORMATIONION_LABEL,
+    auto_range as _plotly_auto_range,
+    configure_formation_layout,
+    configure_fullcell_standard_domains,
+)
 from cellpy.plotting.figures import (  # noqa: F401
     load_figure,
     load_matplotlib_figure,
@@ -1610,36 +1616,7 @@ class PlotlyPlotBuilder:
 
     def _auto_range(self, fig: Any, axis_name_1: str, axis_name_2: str) -> list:
         """Calculate auto range for two y-axes (only works for plotly)."""
-        from copy import deepcopy
-
-        min_y = np.inf
-        max_y = -np.inf
-        full_axis_name_1 = axis_name_1.replace("y", "yaxis")
-        full_axis_name_2 = axis_name_2.replace("y", "yaxis")
-
-        _range_1 = getattr(fig.layout, f"{full_axis_name_1}_range", None)
-        _range_2 = getattr(fig.layout, f"{full_axis_name_2}_range", None)
-        if _range_1 is None:
-            _range_1 = [np.inf, -np.inf]
-        if _range_2 is None:
-            _range_2 = [np.inf, -np.inf]
-        _range = [min(_range_1[0], _range_2[0]), max(_range_1[1], _range_2[1])]
-
-        for i, t in enumerate(deepcopy(fig.data)):
-            if t.yaxis in [axis_name_1, axis_name_2]:
-                y = deepcopy(t.y)
-                try:
-                    y = np.array(y, dtype=float)
-                    min_y = np.ma.masked_invalid(y).min()
-                    max_y = np.ma.masked_invalid(y).max()
-                except Exception as e:
-                    warnings.warn(
-                        f"Could not calculate min and max for y-axis (data set {i}): {e}"
-                    )
-
-                _range = [min(_range[0], min_y), max(_range[1], max_y)]
-        _range = [0.95 * _range[0], 1.05 * _range[1]]
-        return _range
+        return _plotly_auto_range(fig, axis_name_1, axis_name_2)
 
     def _configure_formation_axes(
         self,
@@ -1658,8 +1635,11 @@ class PlotlyPlotBuilder:
         plotly_row_space,
         c,
     ):
-        """Configure axes when showing formation cycles."""
-        formation_header = '<span style="color:red">Formation</span>'
+        """Configure axes when showing formation cycles.
+
+        Thin adapter over :func:`cellpy.plotting.backends.plotly.configure_formation_layout`
+        (#637). Per-row-count methods are gone; the N-row grid lives in the backend.
+        """
         x_axis_domain_formation = [
             0.0,
             config.x_axis_domain_formation_fraction - config.column_separator / 2,
@@ -1685,339 +1665,43 @@ class PlotlyPlotBuilder:
             ]
 
         eff_lim = config.ce_range
+        top_row_label = _plotly_top_row_label(y) if number_of_rows == 2 else None
 
-        if number_of_rows == 1:
-            self._configure_formation_1_row(
-                fig,
-                x_axis_domain_formation,
-                x_axis_range_formation,
-                x_axis_range_rest,
-                x_axis_domain_rest,
-                formation_header,
-                show_y_labels_on_right_pane,
-            )
-        elif number_of_rows == 2:
-            self._configure_formation_2_rows(
-                fig,
-                x_axis_domain_formation,
-                x_axis_range_formation,
-                x_axis_range_rest,
-                x_axis_domain_rest,
-                formation_header,
-                show_y_labels_on_right_pane,
-                config.y_range,
-                eff_lim,
-                y,
-            )
-        elif number_of_rows == 3:
-            self._configure_formation_3_rows(
-                fig,
-                x_axis_domain_formation,
-                x_axis_range_formation,
-                x_axis_range_rest,
-                x_axis_domain_rest,
-                formation_header,
-                show_y_labels_on_right_pane,
-            )
-        elif number_of_rows == 4:
-            self._configure_formation_4_rows(
-                fig,
-                x_axis_domain_formation,
-                x_axis_range_formation,
-                x_axis_range_rest,
-                x_axis_domain_rest,
-                formation_header,
-                show_y_labels_on_right_pane,
-                y,
-                max_val_normalized_col,
-                config,
-                plotly_row_ratios,
-                plotly_row_space,
-                c,
-            )
-        else:
-            raise NotImplementedError("Not implemented for more than four rows")
+        # Pre-resolve per-row y ranges that the old per-N methods special-cased.
+        # ``None`` entries mean "auto-range that facet-row pair".
+        row_y_ranges: list[Optional[list]] = [None] * number_of_rows
+        if number_of_rows == 2:
+            row_y_ranges[0] = config.y_range
+            row_y_ranges[1] = eff_lim
+        elif number_of_rows == 4 and y.startswith("fullcell_standard_"):
+            # Row order matches the old 4-row method: 0=CV, 1=retention/norm,
+            # 2=capacity, 3=CE. ``None`` → auto-range inside the layout helper.
+            row_y_ranges[0] = config.cv_share_range
+            if config.fullcell_standard_normalization_type is not False:
+                row_y_ranges[1] = config.norm_range or [
+                    0.0,
+                    max(
+                        max_val_normalized_col,
+                        config.fullcell_standard_normalization_scaler,
+                    ),
+                ]
+            row_y_ranges[2] = config.y_range
+            row_y_ranges[3] = config.ce_range
 
-    def _configure_formation_1_row(
-        self,
-        fig,
-        x_axis_domain_formation,
-        x_axis_range_formation,
-        x_axis_range_rest,
-        x_axis_domain_rest,
-        formation_header,
-        show_y_labels_on_right_pane,
-    ):
-        """Configure 1-row plot with formation cycles."""
-        fig.update_layout(
-            xaxis_domain=x_axis_domain_formation,
-            scene_domain_x=x_axis_domain_formation,
-            xaxis=dict(range=x_axis_range_formation),
-            xaxis2=dict(
-                range=x_axis_range_rest,
-                domain=x_axis_domain_rest,
-                matches=None,
-            ),
-        )
-        # Clear all existing annotations (including automatic facet column headers)
-        # to prevent both vertical and horizontal formation headers from appearing
-        # For number_of_rows == 1, Plotly creates 3 annotations (2 facet columns + 1 row label)
-        # We need to replace all of them with only the 2 we want
-        # Use _plotly_label_dict to create proper annotation with all required properties
-        annotations = [
-            _plotly_label_dict(formation_header, 0.08, 1.02),
-            PLOTLY_BLANK_LABEL,
-        ]
-        fig.layout["annotations"] = annotations
-
-        fig.update_layout(
-            yaxis2=dict(matches="y", showticklabels=show_y_labels_on_right_pane),
+        configure_formation_layout(
+            fig,
+            n_rows=number_of_rows,
+            x_axis_domain_formation=x_axis_domain_formation,
+            x_axis_domain_rest=x_axis_domain_rest,
+            x_axis_range_formation=x_axis_range_formation,
+            x_axis_range_rest=x_axis_range_rest,
+            show_y_labels_on_right_pane=show_y_labels_on_right_pane,
+            formation_header=DEFAULT_FORMATIONION_LABEL,
+            row_y_ranges=row_y_ranges,
+            top_row_label=top_row_label,
         )
 
-    def _configure_formation_2_rows(
-        self,
-        fig,
-        x_axis_domain_formation,
-        x_axis_range_formation,
-        x_axis_range_rest,
-        x_axis_domain_rest,
-        formation_header,
-        show_y_labels_on_right_pane,
-        y_range,
-        eff_lim,
-        y,
-    ):
-        """Configure 2-row plot with formation cycles."""
-        fig.update_yaxes(matches="y")
-        fig.update_yaxes(autorange=False)
-        _top_label = _plotly_top_row_label(y)
-        if _top_label is not None:
-            fig.update_layout(
-                yaxis3={
-                    "title": dict(text=_top_label),
-                    "domain": [0.7, 1.0],
-                },
-                yaxis1=dict(domain=[0.0, 0.65]),
-                yaxis2=dict(domain=[0.0, 0.65]),
-                yaxis4=dict(domain=[0.70, 1.0]),
-            )
-
-        fig.update_layout(
-            xaxis_domain=x_axis_domain_formation,
-            scene_domain_x=x_axis_domain_formation,
-        )
-        range_1 = y_range or self._auto_range(fig, "y", "y2")
-        range_2 = eff_lim or self._auto_range(fig, "y3", "y4")
-        fig.update_layout(
-            xaxis2=dict(
-                range=x_axis_range_rest, domain=x_axis_domain_rest, matches=None
-            ),
-            xaxis3=dict(
-                range=x_axis_range_formation,
-                domain=x_axis_domain_formation,
-                matches="x",
-            ),
-            xaxis4=dict(
-                range=x_axis_range_rest, domain=x_axis_domain_rest, matches="x2"
-            ),
-            yaxis=dict(
-                matches="y2",
-                range=range_1,
-            ),
-            yaxis2=dict(
-                matches="y",
-                showticklabels=show_y_labels_on_right_pane,
-                range=range_1,
-            ),
-            yaxis3=dict(
-                matches="y4",
-                range=range_2,
-            ),
-            yaxis4=dict(
-                matches="y3",
-                showticklabels=show_y_labels_on_right_pane,
-                range=range_2,
-            ),
-        )
-        annotations = [_plotly_label_dict(formation_header, 0.08, 1.0)] + 3 * [
-            PLOTLY_BLANK_LABEL
-        ]
-        fig.layout["annotations"] = annotations
-
-    def _configure_formation_3_rows(
-        self,
-        fig,
-        x_axis_domain_formation,
-        x_axis_range_formation,
-        x_axis_range_rest,
-        x_axis_domain_rest,
-        formation_header,
-        show_y_labels_on_right_pane,
-    ):
-        """Configure 3-row plot with formation cycles."""
-        fig.update_yaxes(matches="y")
-        fig.update_yaxes(autorange=False)
-        fig.update_layout(
-            xaxis_domain=x_axis_domain_formation,
-            scene_domain_x=x_axis_domain_formation,
-        )
-
-        range_1 = self._auto_range(fig, "y", "y2")
-        range_2 = self._auto_range(fig, "y3", "y4")
-        range_3 = self._auto_range(fig, "y5", "y6")
-
-        fig.update_layout(
-            xaxis2=dict(
-                range=x_axis_range_rest, domain=x_axis_domain_rest, matches=None
-            ),
-            xaxis3=dict(
-                range=x_axis_range_formation,
-                domain=x_axis_domain_formation,
-                matches="x",
-            ),
-            xaxis4=dict(
-                range=x_axis_range_rest, domain=x_axis_domain_rest, matches="x2"
-            ),
-            xaxis5=dict(
-                range=x_axis_range_formation,
-                domain=x_axis_domain_formation,
-                matches="x",
-            ),
-            xaxis6=dict(
-                range=x_axis_range_rest, domain=x_axis_domain_rest, matches="x2"
-            ),
-            yaxis=dict(matches="y2", range=range_1),
-            yaxis2=dict(
-                matches="y",
-                showticklabels=show_y_labels_on_right_pane,
-                range=range_1,
-            ),
-            yaxis3=dict(matches="y4", range=range_2),
-            yaxis4=dict(
-                matches="y3",
-                showticklabels=show_y_labels_on_right_pane,
-                range=range_2,
-            ),
-            yaxis5=dict(matches="y6", range=range_3),
-            yaxis6=dict(
-                matches="y5",
-                showticklabels=show_y_labels_on_right_pane,
-                range=range_3,
-            ),
-        )
-        annotations = [_plotly_label_dict(formation_header, 0.08, 1.0)] + 5 * [
-            PLOTLY_BLANK_LABEL
-        ]
-        fig.layout["annotations"] = annotations
-
-    def _configure_formation_4_rows(
-        self,
-        fig,
-        x_axis_domain_formation,
-        x_axis_range_formation,
-        x_axis_range_rest,
-        x_axis_domain_rest,
-        formation_header,
-        show_y_labels_on_right_pane,
-        y,
-        max_val_normalized_col,
-        config,
-        plotly_row_ratios,
-        plotly_row_space,
-        c,
-    ):
-        """Configure 4-row plot with formation cycles."""
-        fig.update_yaxes(matches="y")
-        fig.update_yaxes(autorange=False)
-        fig.update_layout(
-            xaxis_domain=x_axis_domain_formation,
-            scene_domain_x=x_axis_domain_formation,
-        )
-
-        range_1 = self._auto_range(fig, "y", "y2")
-
-        if (
-            y.startswith("fullcell_standard_")
-            and config.fullcell_standard_normalization_type is not False
-        ):
-            range_2 = [
-                0.0,
-                max(
-                    max_val_normalized_col,
-                    config.fullcell_standard_normalization_scaler,
-                ),
-            ]
-            range_2 = config.norm_range or range_2
-        else:
-            range_2 = self._auto_range(fig, "y3", "y4")
-
-        range_3 = self._auto_range(fig, "y5", "y6")
-        range_4 = self._auto_range(fig, "y7", "y8")
-
-        if y.startswith("fullcell_standard_"):
-            range_4 = config.ce_range or range_4
-            range_3 = config.y_range or range_3
-            range_1 = config.cv_share_range or range_1
-
-        fig.update_layout(
-            xaxis2=dict(
-                range=x_axis_range_rest, domain=x_axis_domain_rest, matches=None
-            ),
-            xaxis3=dict(
-                range=x_axis_range_formation,
-                domain=x_axis_domain_formation,
-                matches="x",
-            ),
-            xaxis4=dict(
-                range=x_axis_range_rest, domain=x_axis_domain_rest, matches="x2"
-            ),
-            xaxis5=dict(
-                range=x_axis_range_formation,
-                domain=x_axis_domain_formation,
-                matches="x",
-            ),
-            xaxis6=dict(
-                range=x_axis_range_rest, domain=x_axis_domain_rest, matches="x2"
-            ),
-            xaxis7=dict(
-                range=x_axis_range_formation,
-                domain=x_axis_domain_formation,
-                matches="x",
-            ),
-            xaxis8=dict(
-                range=x_axis_range_rest, domain=x_axis_domain_rest, matches="x2"
-            ),
-            yaxis=dict(matches="y2", range=range_1),
-            yaxis2=dict(
-                matches="y",
-                showticklabels=show_y_labels_on_right_pane,
-                range=range_1,
-            ),
-            yaxis3=dict(matches="y4", range=range_2),
-            yaxis4=dict(
-                matches="y3",
-                showticklabels=show_y_labels_on_right_pane,
-                range=range_2,
-            ),
-            yaxis5=dict(matches="y6", range=range_3),
-            yaxis6=dict(
-                matches="y5",
-                showticklabels=show_y_labels_on_right_pane,
-                range=range_3,
-            ),
-            yaxis7=dict(matches="y8", range=range_4),
-            yaxis8=dict(
-                matches="y7",
-                showticklabels=show_y_labels_on_right_pane,
-                range=range_4,
-            ),
-        )
-        annotations = [_plotly_label_dict(formation_header, 0.08, 1.0)] + 7 * [
-            PLOTLY_BLANK_LABEL
-        ]
-        fig.layout["annotations"] = annotations
-
-        if y.startswith("fullcell_standard_"):
+        if number_of_rows == 4 and y.startswith("fullcell_standard_"):
             self._configure_fullcell_standard_domains(
                 fig,
                 config,
@@ -2037,75 +1721,20 @@ class PlotlyPlotBuilder:
         y,
     ):
         """Configure domain layout for fullcell_standard plots."""
-        ce_domain_start, ce_domain_end = plotly_row_ratios[2], 1.0
-        capacity_domain_start, capacity_domain_end = (
-            plotly_row_ratios[1],
-            plotly_row_ratios[2] - plotly_row_space,
-        )
-        loss_domain_start, loss_domain_end = (
-            plotly_row_ratios[0],
-            plotly_row_ratios[1] - plotly_row_space,
-        )
-        cv_domain_start, cv_domain_end = (
-            0.0,
-            plotly_row_ratios[0] - plotly_row_space,
-        )
-
-        # Format y-axis labels with HTML for proper alignment
         mode = y.split("_")[-1]
-        capacity_unit = _get_capacity_unit(c, mode=mode)
-
-        ce_label = "Coulombic<br>Efficiency (%)"
-        capacity_label = f"Capacity<br>({capacity_unit})"
-        if (
-            config.fullcell_standard_normalization_type
-            and config.fullcell_standard_normalization_factor is not None
-        ):
-            _norm_label = f"[{config.fullcell_standard_normalization_scaler:.1f}/{config.fullcell_standard_normalization_factor:.1f} {capacity_unit}]"
-            loss_label = f"Capacity<br>Retention (norm.)<br>{_norm_label}"
-        else:
-            loss_label = f"Capacity<br>Retention ({capacity_unit})"
-        cv_label = f"CV Capacity<br>({capacity_unit})"
-
-        fig.update_layout(
-            yaxis8={"domain": [ce_domain_start, ce_domain_end]},
-            yaxis7={
-                "title": dict(text=ce_label),
-                "domain": [ce_domain_start, ce_domain_end],
-            },
-            yaxis6={"domain": [capacity_domain_start, capacity_domain_end]},
-            yaxis5={
-                "title": dict(text=capacity_label),
-                "domain": [capacity_domain_start, capacity_domain_end],
-            },
-            yaxis4={"domain": [loss_domain_start, loss_domain_end]},
-            yaxis3={
-                "title": dict(text=loss_label),
-                "domain": [loss_domain_start, loss_domain_end],
-            },
-            yaxis2={"domain": [cv_domain_start, cv_domain_end]},
-            yaxis1={
-                "title": dict(text=cv_label),
-                "domain": [cv_domain_start, cv_domain_end],
-            },
+        configure_fullcell_standard_domains(
+            fig,
+            plotly_row_ratios=plotly_row_ratios,
+            plotly_row_space=plotly_row_space,
+            capacity_unit=_get_capacity_unit(c, mode=mode),
+            y=y,
+            show_formation=config.show_formation,
+            x_axis_domain_formation_fraction=config.x_axis_domain_formation_fraction,
+            link_capacity_scales=config.link_capacity_scales,
+            normalization_type=config.fullcell_standard_normalization_type,
+            normalization_factor=config.fullcell_standard_normalization_factor,
+            normalization_scaler=config.fullcell_standard_normalization_scaler,
         )
-        if config.show_formation:
-            fig.update_layout(
-                xaxis1={"title": dict(text="")},
-            )
-            if config.x_axis_domain_formation_fraction < 0.1:
-                fig.update_layout(
-                    xaxis1={"showticklabels": False},
-                )
-
-        if config.link_capacity_scales:
-            fig.update_layout(
-                yaxis={"matches": "y2"},
-                yaxis2={"matches": "y3"},
-                yaxis3={"matches": "y4"},
-                yaxis4={"matches": "y5"},
-                yaxis5={"matches": "y6"},
-            )
 
     def _configure_no_formation_axes(
         self,
