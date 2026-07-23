@@ -60,6 +60,8 @@
   (#599). `harmonize()` raises if a schema cast empties a column; new
   `LoaderDeclarations.duration_columns` for string durations (loader authors).
 
+* Re-base collectors' drawing half onto `cellpy.plotting` (#657).
+
 ## [2.0.0a6] - 2026-07-22
 
 * **Breaking:** `CellpyCell.get_cap` now returns native `cellpycore` curve

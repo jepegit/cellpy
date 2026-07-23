@@ -1,0 +1,766 @@
+{
+  "figures": {
+    "collected_cycles_per_cell[plotly]": {
+      "axis_titles": {
+        "xaxis": "Capacity (mAh/g)",
+        "xaxis2": "Capacity (mAh/g)",
+        "yaxis": "Voltage (V)",
+        "yaxis2": null
+      },
+      "backend": "plotly",
+      "n_axes": 4,
+      "n_traces": 35,
+      "traces": [
+        {
+          "mode": "lines",
+          "name": "1",
+          "type": "scattergl",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "1",
+          "type": "scattergl",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x2",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y2"
+        },
+        {
+          "mode": "lines",
+          "name": "2",
+          "type": "scattergl",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "2",
+          "type": "scattergl",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x2",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y2"
+        },
+        {
+          "mode": "lines",
+          "name": "3",
+          "type": "scattergl",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "3",
+          "type": "scattergl",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x2",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y2"
+        },
+        {
+          "mode": "lines",
+          "name": "4",
+          "type": "scattergl",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "4",
+          "type": "scattergl",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x2",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y2"
+        },
+        {
+          "mode": "lines",
+          "name": "5",
+          "type": "scattergl",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "5",
+          "type": "scattergl",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x2",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y2"
+        },
+        {
+          "mode": "lines",
+          "name": "6",
+          "type": "scattergl",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "6",
+          "type": "scattergl",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x2",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y2"
+        },
+        {
+          "mode": "lines",
+          "name": "7",
+          "type": "scattergl",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "7",
+          "type": "scattergl",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x2",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y2"
+        },
+        {
+          "mode": "lines",
+          "name": "8",
+          "type": "scattergl",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "8",
+          "type": "scattergl",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x2",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y2"
+        },
+        {
+          "mode": "lines",
+          "name": "9",
+          "type": "scattergl",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "9",
+          "type": "scattergl",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x2",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y2"
+        },
+        {
+          "mode": "lines",
+          "name": "10",
+          "type": "scattergl",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "10",
+          "type": "scattergl",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x2",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y2"
+        },
+        {
+          "mode": "lines",
+          "name": "11",
+          "type": "scattergl",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "11",
+          "type": "scattergl",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x2",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y2"
+        },
+        {
+          "mode": "lines",
+          "name": "12",
+          "type": "scattergl",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "12",
+          "type": "scattergl",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x2",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y2"
+        },
+        {
+          "mode": "lines",
+          "name": "13",
+          "type": "scattergl",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "13",
+          "type": "scattergl",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x2",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y2"
+        },
+        {
+          "mode": "lines",
+          "name": "14",
+          "type": "scattergl",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "14",
+          "type": "scattergl",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x2",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y2"
+        },
+        {
+          "mode": "lines",
+          "name": "15",
+          "type": "scattergl",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "15",
+          "type": "scattergl",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x2",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y2"
+        },
+        {
+          "mode": "lines",
+          "name": "16",
+          "type": "scattergl",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "16",
+          "type": "scattergl",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x2",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y2"
+        },
+        {
+          "mode": "lines",
+          "name": "17",
+          "type": "scattergl",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "17",
+          "type": "scattergl",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x2",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y2"
+        },
+        {
+          "mode": "lines",
+          "name": "18",
+          "type": "scattergl",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x2",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y2"
+        }
+      ]
+    },
+    "collected_ica_film[plotly]": {
+      "axis_titles": {
+        "xaxis": "Voltage (V)",
+        "xaxis2": "Voltage (V)",
+        "yaxis": "Cycle (n.)",
+        "yaxis2": null
+      },
+      "backend": "plotly",
+      "n_axes": 4,
+      "n_traces": 2,
+      "traces": [
+        {
+          "mode": null,
+          "name": "",
+          "type": "histogram2d",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": null,
+          "name": "",
+          "type": "histogram2d",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x2",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y2"
+        }
+      ]
+    },
+    "collected_summary[plotly]": {
+      "axis_titles": {
+        "xaxis": "Cycle (n.)",
+        "yaxis": "value"
+      },
+      "backend": "plotly",
+      "n_axes": 2,
+      "n_traces": 2,
+      "traces": [
+        {
+          "mode": "lines",
+          "name": "20160805_test001_46_cc",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "20160805_test001_47_cc",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        }
+      ]
+    },
+    "collected_summary_spread[plotly]": {
+      "axis_titles": {
+        "xaxis": "Cycle (n.)",
+        "yaxis": "charge_capacity_gravimetric"
+      },
+      "backend": "plotly",
+      "n_axes": 2,
+      "n_traces": 3,
+      "traces": [
+        {
+          "mode": "lines",
+          "name": "test001",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "Upper Bound test001",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        },
+        {
+          "mode": "lines",
+          "name": "Lower Bound test001",
+          "type": "scatter",
+          "x": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "xaxis": "x",
+          "y": {
+            "first": null,
+            "last": null,
+            "n": 2
+          },
+          "yaxis": "y"
+        }
+      ]
+    }
+  }
+}

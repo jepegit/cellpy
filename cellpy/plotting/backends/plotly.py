@@ -297,6 +297,10 @@ class PlotlyBackend:
     def render(self, frame: Any, spec: FigureSpec) -> Any:
         extras = dict(spec.extras or {})
         kind = extras.get("kind")
+        if kind == "collected":
+            from cellpy.plotting.collected import render_collected
+
+            return render_collected(frame, spec, backend_override="plotly")
         if kind == "cycles":
             return self._render_cycles(frame, spec)
         if kind == "raw":

@@ -39,8 +39,9 @@ backend.render as the only summary path. Stage 2 extends the same contract to
   style (plotly hover carries `direction`).
 - **`LiveHeaders`** lives in `cellpy/plotting/headers.py` (re-exported as
   `plotutils._LiveHeaders`).
-- **`CellContext`** in `cellpy/plotting/context.py` is the thin cell adapter;
-  BatchContext waits for collectors rebase.
+- **`CellContext`** in `cellpy/plotting/context.py` is the thin cell adapter.
+  Collected multi-cell frames use **`FrameContext`** / **`collected_plot`**
+  (`layout=` / `kind=`) — see `plotting-collected.md` (#657).
 - Public `summary_plot` / `cycles_plot` / `raw_plot` / `cycle_info_plot` /
   `ica_plot` / `dva_plot` stay in `plotutils` and orchestrate context →
   registry → prepare → `get_backend(backend).render`.

@@ -64,6 +64,11 @@ class MatplotlibBackend:
         """Render a tidy frame according to *spec* (matplotlib Figure)."""
         extras = dict(spec.extras or {})
         kind = extras.get("kind")
+        if kind == "collected":
+            # Collectors historically used seaborn for non-plotly layouts (#657).
+            from cellpy.plotting.collected import render_collected
+
+            return render_collected(frame, spec, backend_override="seaborn")
         if kind == "cycles":
             return self._render_cycles(frame, spec)
         if kind == "raw":
