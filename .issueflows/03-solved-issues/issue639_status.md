@@ -1,6 +1,6 @@
 # Issue #639 — Status
 
-- [ ] Done
+- [x] Done
 
 ## What's done
 
@@ -13,8 +13,9 @@
 - Deleted `SeabornPlotBuilder`.
 - Migrated oracle/summary tests to `backend=`; added `tests/test_mpl_backend.py`.
 - Design notes updated (`plotting-backends.md`, `plotting-prepare.md`).
-- Verified green: mpl/prepare/summary_plot/figure_specs + essential gate.
+- Verified green on close: mpl + figure-specs (61); essential (556).
+- HISTORY Unreleased bullet added; issue docs archived to `03-solved-issues`.
 
 ## Remaining work
 
-- `/iflow-close` — HISTORY, archive issue docs, push, mark Done.
+- None (post-merge: `/iflow-cleanup`).

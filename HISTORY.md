@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+* Matplotlib backend; retire SeabornPlotBuilder; unify backend= (#639).
+
 * Port summary prepare path and flip summary_plot to prepare→spec→render (#638).
 
 * Generic plotly panel/formation layout backend (#637).
