@@ -18,7 +18,10 @@ moves selection into `cellpy.plotting.registry`.
   Prepare emits a real `FigureSpec` for `summary_plot` (#638); matplotlib
   backend consumption is #639.
 - **Oracle menu** (`tests/figure_spec_support.SUMMARY_FAMILIES`) derives from
-  `families()` so the snapshot menu cannot drift from the runtime menu.
+  `families(entry_point="summary_plot")` so the snapshot menu cannot drift
+  from the runtime menu. Non-summary families (e.g. `"cycles"` for
+  `cycles_plot`, #646) register with `extras={"entry_point": "cycles_plot"}`
+  and are excluded from the summary oracle.
 
 ## Alternatives considered
 

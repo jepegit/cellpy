@@ -295,9 +295,12 @@ class PlotlyBackend:
         self.col_id = "cycle_type"
 
     def render(self, frame: Any, spec: FigureSpec) -> Any:
+        extras = dict(spec.extras or {})
+        if extras.get("kind") == "cycles":
+            return self._render_cycles(frame, spec)
+
         import plotly.express as px
 
-        extras = dict(spec.extras or {})
         render = dict(extras.get("render") or {})
         prepared = dict(extras.get("prepared_data_info") or {})
 
@@ -559,3 +562,152 @@ class PlotlyBackend:
                     statements.append(statement)
                 hover_template = "<br>".join(statements)
             trace.update(name=name, hovertemplate=hover_template)
+
+    def _render_cycles(self, frame: Any, spec: FigureSpec) -> Any:
+        """Render voltage–capacity cycles figures (#646).
+
+        Mechanical port of ``plotutils._cycles_plotter_plotly``.
+        """
+        from cellpycore.config import CurveCols
+
+        import plotly.express as px
+        import plotly.graph_objects as go
+
+        from cellpy.units import with_cellpy_unit
+        from cellpy.utils.plotutils import set_plotly_template
+
+        ccols = CurveCols()
+        extras = dict(spec.extras or {})
+        c = extras.get("cell")
+        if c is None:
+            raise ValueError(
+                "FigureSpec.extras['cell'] is required for cycles PlotlyBackend.render"
+            )
+
+        form_cycles = extras.get("form_cycles")
+        rest_cycles = extras.get("rest_cycles")
+        if form_cycles is None or rest_cycles is None:
+            raise ValueError(
+                "FigureSpec.extras must include 'form_cycles' and 'rest_cycles'"
+            )
+
+        set_plotly_template(extras.get("plotly_template"))
+        kwargs = dict(extras.get("additional_kwargs") or {})
+        plotly_max_individual_traces_for_lines = kwargs.pop(
+            "plotly_max_individual_traces_for_lines", 8
+        )
+
+        colormap = extras.get("colormap") or "Blues_r"
+        color_scales = px.colors.named_colorscales()
+        if colormap not in color_scales:
+            colormap = "Blues_r"
+
+        capacity_unit = extras.get("capacity_unit") or "-"
+        capacity_label = extras.get("capacity_label") or f"Capacity ({capacity_unit})"
+        voltage_label = extras.get("voltage_label") or with_cellpy_unit(
+            "Voltage", "voltage", units=c.cellpy_units
+        )
+        fig_title = spec.title
+        n_rest_cycles = extras.get("n_rest_cycles")
+        cut_colorbar = bool(extras.get("cut_colorbar", True))
+        force_colorbar = bool(extras.get("force_colorbar", False))
+        force_nonbar = bool(extras.get("force_nonbar", False))
+        show_formation = bool(extras.get("show_formation", True))
+        marker_size = extras.get("marker_size", 5)
+        formation_line_color = extras.get(
+            "formation_line_color", "rgba(152, 0, 0, .8)"
+        )
+        width = extras.get("width", 800)
+        height = extras.get("height", 600)
+        x_range = extras.get("x_range")
+        y_range = extras.get("y_range")
+
+        if cut_colorbar:
+            range_color = [
+                frame[ccols.cycle_num].min(),
+                1.2 * frame[ccols.cycle_num].max(),
+            ]
+        else:
+            range_color = [
+                frame[ccols.cycle_num].min(),
+                frame[ccols.cycle_num].max(),
+            ]
+
+        if (
+            n_rest_cycles is not None
+            and n_rest_cycles < plotly_max_individual_traces_for_lines
+            and not force_colorbar
+        ) or force_nonbar:
+            logger.info("using px.line for non-formation cycles")
+            show_formation_legend = True
+            cmap = px.colors.sample_colorscale(
+                colorscale=colormap,
+                samplepoints=n_rest_cycles,
+                low=0.0,
+                high=0.8,
+                colortype="rgb",
+            )
+            fig = px.line(
+                rest_cycles,
+                x="capacity",
+                y=ccols.potential,
+                color=ccols.cycle_num,
+                title=fig_title,
+                labels={
+                    "capacity": capacity_label,
+                    ccols.potential: voltage_label,
+                },
+                color_discrete_sequence=cmap,
+            )
+        else:
+            logger.info("using px.scatter for non-formation cycles")
+            show_formation_legend = False
+            fig = px.scatter(
+                rest_cycles,
+                x="capacity",
+                y=ccols.potential,
+                title=fig_title,
+                color=ccols.cycle_num,
+                labels={
+                    "capacity": capacity_label,
+                    ccols.potential: voltage_label,
+                },
+                color_continuous_scale=colormap,
+                range_color=range_color,
+            )
+            fig.update_traces(mode="lines+markers", line_color="white", line_width=1)
+
+        if not form_cycles.empty and show_formation:
+            for name, group in form_cycles.groupby(ccols.cycle_num):
+                logger.info("using go.Scatter for formation cycle(s) %s", name)
+                fig.add_trace(
+                    go.Scatter(
+                        x=group["capacity"],
+                        y=group[ccols.potential],
+                        name=f"{name} (f.c.)",
+                        hovertemplate=(
+                            f"Formation Cycle {name}<br>Capacity: %{{x}}<br>Voltage: %{{y}}"
+                        ),
+                        mode="lines",
+                        marker=dict(color=formation_line_color),
+                        showlegend=show_formation_legend,
+                        legendrank=1,
+                        legendgroup="formation",
+                    )
+                )
+
+        fig.update_traces(marker=dict(size=marker_size))
+        if x_range:
+            fig.update_xaxes(range=x_range)
+        if y_range:
+            fig.update_yaxes(range=y_range)
+
+        plotly_xaxes_kwargs = kwargs.pop("plotly_xaxes_kwargs", {})
+        plotly_yaxes_kwargs = kwargs.pop("plotly_yaxes_kwargs", {})
+        if plotly_xaxes_kwargs:
+            fig.update_xaxes(**plotly_xaxes_kwargs)
+        if plotly_yaxes_kwargs:
+            fig.update_yaxes(**plotly_yaxes_kwargs)
+        plotly_layout_kwargs = kwargs.pop("plotly_layout_kwargs", {})
+        fig.update_layout(height=height, width=width, **plotly_layout_kwargs)
+        return fig

@@ -145,7 +145,10 @@ def describe_figure(figure) -> dict[str, Any]:
 
 #: Every predefined y-set `summary_plot` accepts — sourced from the PlotFamily
 #: registry (#636) so the oracle menu cannot drift from the runtime menu.
-SUMMARY_FAMILIES = tuple(name for name, _description in _plot_families())
+#: Non-summary families (e.g. ``cycles`` for ``cycles_plot``, #646) are excluded.
+SUMMARY_FAMILIES = tuple(
+    name for name, _description in _plot_families(entry_point="summary_plot")
+)
 
 
 @dataclass(frozen=True)
@@ -241,13 +244,13 @@ def _other_family_cases() -> list[FigureCase]:
         FigureCase(
             name="cycles_plot[plotly]",
             function="cycles_plot",
-            kwargs={"interactive": True},
+            kwargs={"backend": "plotly"},
             needs_plotly=True,
         ),
         FigureCase(
             name="cycles_plot[matplotlib]",
             function="cycles_plot",
-            kwargs={"interactive": False},
+            kwargs={"backend": "matplotlib"},
         ),
     ]
 
