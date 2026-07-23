@@ -1,6 +1,6 @@
 # Issue #638 — Status
 
-- [ ] Done
+- [x] Done
 
 ## What's done
 
@@ -12,11 +12,11 @@
 - Flipped public `summary_plot` to context → registry → prepare → render; `SeabornPlotBuilder` kept on the same frame until #639.
 - Design notes: `plotting-prepare.md`; updated backends/registry docs.
 - Tests: `tests/test_summary_prepare.py`; layout test asserts builders gone.
-- Verified green:
-  - `tests/test_summary_prepare.py` + layout + registry
-  - `tests/test_plotutils_summary_plot.py` + `tests/test_figure_specs.py` (103)
+- Verified green on close:
+  - prepare + layout + figure-specs (67)
   - `pytest -m essential --ignore=tests/test_arbin_variants_two_stage.py` (551)
+- HISTORY Unreleased bullet added; issue docs archived to `03-solved-issues`.
 
 ## Remaining work
 
-- `/iflow-close` — HISTORY, archive issue docs, push, mark Done.
+- None (post-merge: `/iflow-cleanup`).
