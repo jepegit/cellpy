@@ -51,24 +51,19 @@ def test_figure_io_is_one_implementation():
 def test_legend_and_marker_helpers_are_one_implementation():
     """These existed in three places under two naming conventions."""
     from cellpy.utils import collectors, plotutils
-    from cellpy.utils.batch_tools import batch_plotters
 
     assert plotutils._plotly_legend_replacer is labels.legend_replacer
     assert collectors.legend_replacer is labels.legend_replacer
-    assert batch_plotters._plotly_legend_replacer is labels.legend_replacer
 
     assert plotutils._plotly_remove_markers is labels.remove_markers
     assert collectors.remove_markers is labels.remove_markers
-    assert batch_plotters._plotly_remove_markers is labels.remove_markers
 
 
 @pytest.mark.essential
 def test_template_builder_is_one_implementation():
     from cellpy.utils import plotutils
-    from cellpy.utils.batch_tools import batch_plotters
 
     assert plotutils._make_plotly_template is theme.make_plotly_template
-    assert batch_plotters._make_plotly_template is theme.make_plotly_template
 
 
 @pytest.mark.essential

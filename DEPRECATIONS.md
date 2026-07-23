@@ -8,6 +8,7 @@ uv run python -m cellpy._deprecation
 
 | Name | Replacement | Introduced | Removal |
 | --- | --- | --- | --- |
+| `Batch.plot(backend="seaborn")` | `backend="matplotlib"` | 2.0 | 2.1 |
 | `cycle_info_plot(interactive=...)` | `backend="plotly"|"matplotlib"` | 2.0 | 2.1 |
 | `cycles_plot(interactive=...)` | `backend="plotly"|"matplotlib"` | 2.0 | 2.1 |
 | `cycles_plot(xlim=...)` | `cycles_plot(x_range=...)` | 2.0 | 2.1 |

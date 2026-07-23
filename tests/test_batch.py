@@ -721,6 +721,79 @@ def test_batch_update(parameters, batch_instance):
     b.update(testing=True)
 
 
+@pytest.mark.essential
+def test_batch_plot_backend_triage():
+    """seaborn → matplotlib (warn); bokeh → ValueError (#658)."""
+    from cellpy.plotting.batch_summary import resolve_batch_plot_backend
+
+    assert resolve_batch_plot_backend("plotly") == "plotly"
+    assert resolve_batch_plot_backend("matplotlib") == "matplotlib"
+    with pytest.warns(DeprecationWarning, match="seaborn"):
+        assert resolve_batch_plot_backend("seaborn") == "matplotlib"
+    with pytest.raises(ValueError, match="bokeh"):
+        resolve_batch_plot_backend("bokeh")
+    with pytest.raises(ValueError, match="not supported"):
+        resolve_batch_plot_backend("not-a-backend")
+
+
+@pytest.mark.essential
+def test_batch_plot_delegates_without_batch_plotters(populated_batch):
+    """``Batch.plot`` builds a figure via ``cellpy.plotting`` (#658)."""
+    pytest.importorskip("plotly", reason="plotting extras (batch) not installed")
+    import cellpy.utils.batch_tools as batch_tools_pkg
+
+    assert not hasattr(batch_tools_pkg, "batch_plotters")
+    with pytest.raises(ModuleNotFoundError):
+        import cellpy.utils.batch_tools.batch_plotters  # noqa: F401
+
+    populated_batch.plot(backend="plotly", show=False)
+    assert populated_batch.plotter.figure is not None
+
+
+BATCH_SNAPSHOT_PATH = (
+    pathlib.Path(__file__).resolve().parent / "data" / "batch_figure_specs.json"
+)
+
+
+def _batch_figure_menu(populated_batch) -> dict:
+    from tests.figure_spec_support import describe_figure
+
+    populated_batch.plot(backend="plotly", show=False, ir=True, rate=False)
+    return {
+        "figures": {
+            "batch_cycle_life[plotly]": describe_figure(populated_batch.plotter.figure),
+        }
+    }
+
+
+def write_batch_figure_specs(populated_batch=None) -> pathlib.Path:
+    """Regenerate ``batch_figure_specs.json`` (dev helper / snapshot regen)."""
+    if populated_batch is None:
+        raise RuntimeError("pass a populated_batch when calling from tests")
+    specs = _batch_figure_menu(populated_batch)
+    BATCH_SNAPSHOT_PATH.parent.mkdir(parents=True, exist_ok=True)
+    BATCH_SNAPSHOT_PATH.write_text(
+        json.dumps(specs, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+    return BATCH_SNAPSHOT_PATH
+
+
+@pytest.mark.essential
+def test_batch_figure_structure_matches_snapshot(populated_batch):
+    """Batch.plot cycle-life layout is part of the plotting contract (#658)."""
+    pytest.importorskip("plotly", reason="plotting extras (batch) not installed")
+    if not BATCH_SNAPSHOT_PATH.is_file():
+        pytest.skip(f"missing snapshot {BATCH_SNAPSHOT_PATH}")
+    expected = json.loads(BATCH_SNAPSHOT_PATH.read_text(encoding="utf-8"))["figures"]
+    actual = _batch_figure_menu(populated_batch)["figures"]
+    assert set(actual) == set(expected)
+    for name, want in expected.items():
+        got = actual[name]
+        assert got["backend"] == want["backend"], name
+        assert got.get("n_traces") == want.get("n_traces"), name
+        assert got.get("n_axes") == want.get("n_axes"), name
+
+
 # def test_iterate_folder(batch_instance):
 # # Since the batch-files contains full paths I need to figure out how to make a custom json-file for the test.
 #     folder_name = prms.Paths.batchfiledir

@@ -1,17 +1,10 @@
 """Legend, marker, and axis-label helpers for plotting (#567 / #647).
 
-Legend/marker helpers existed in **three** places, under two naming conventions:
-
-| | plotutils | collectors | batch_plotters |
-|---|---|---|---|
-| legend | `_plotly_legend_replacer` | `legend_replacer` | `_plotly_legend_replacer` |
-| markers | `_plotly_remove_markers` | `remove_markers` | `_plotly_remove_markers` |
-
-The marker helpers were functionally identical in all three (only the docstring
-differed). The legend helpers were identical in plotutils and collectors, while
-the batch_plotters copy carried an extra ``inverted_mode`` that swaps group and
-sub-group. That copy is therefore the superset, and it is the one kept — with
-``inverted_mode=False`` as the default, which reproduces the other two exactly.
+Legend/marker helpers existed in **three** places, under two naming conventions
+(plotutils / collectors / the retired batch_plotters). The marker helpers were
+functionally identical; the batch_plotters legend copy carried an extra
+``inverted_mode`` that swaps group and sub-group. That copy is the one kept —
+with ``inverted_mode=False`` as the default.
 
 Axis labels for ``raw_plot`` / ``cycle_info_plot`` go through
 :func:`quantity_label` / :func:`units_quantity_label` so those paths do not
