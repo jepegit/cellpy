@@ -1,13 +1,13 @@
-"""Source adapters for prepare → spec → render (#638).
+"""Source adapters for prepare → spec → render (#638 / #657).
 
 The only code in ``cellpy.plotting`` that should reach into ``CellpyCell`` /
-``Batch`` objects. BatchContext arrives with the collectors rebase.
+``Batch`` objects — or wrap an already-collected tidy frame.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Optional
 
 
 @dataclass
@@ -40,12 +40,46 @@ class CellContext:
         return self.cell.make_summary(**kwargs)
 
 
+@dataclass
+class FrameContext:
+    """Already-collected tidy multi-cell frame for collected plotting (#657).
+
+    Collectors own collection; plotting only needs the frame plus light metadata
+    (units / journal / family kind).
+    """
+
+    frame: Any
+    family_kind: str = "cycles"
+    units: Any = None
+    journal: Any = None
+
+
+def from_frame(
+    frame: Any,
+    *,
+    family_kind: str = "cycles",
+    units: Any = None,
+    journal: Any = None,
+) -> FrameContext:
+    """Wrap a collected tidy frame as a :class:`FrameContext`."""
+    if isinstance(frame, FrameContext):
+        return frame
+    return FrameContext(
+        frame=frame, family_kind=family_kind, units=units, journal=journal
+    )
+
+
 def from_source(source: Any) -> CellContext:
     """Adapt *source* to a plotting context.
 
-    Currently only single-cell inputs are supported (#638). Batch / frame
-    adapters land with later epic stages.
+    Single-cell inputs become :class:`CellContext`. Collected frames should use
+    :func:`from_frame` / :func:`collected_plot` instead (#657).
     """
     if isinstance(source, CellContext):
         return source
+    if isinstance(source, FrameContext):
+        raise TypeError(
+            "FrameContext is not a CellContext; use cellpy.plotting.collected_plot "
+            "for collected multi-cell frames (#657)"
+        )
     return CellContext(cell=source)

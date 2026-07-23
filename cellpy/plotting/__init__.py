@@ -16,7 +16,8 @@ live; the plan is `architecture-plan/cellpy2-plotting-redesign-plan.md`.
 | [`registry`][cellpy.plotting.registry] | named ``PlotFamily`` records for ``summary_plot`` |
 | [`backends`][cellpy.plotting.backends] | render protocol + plotly formation layout (#637) |
 | [`prepare`][cellpy.plotting.prepare] | summary tidy-frame + ``FigureSpec`` (#638) |
-| [`context`][cellpy.plotting.context] | ``CellContext`` adapter (#638) |
+| [`context`][cellpy.plotting.context] | ``CellContext`` / ``FrameContext`` (#638 / #657) |
+| [`collected`][cellpy.plotting.collected] | multi-cell ``collected_plot`` (``layout=`` / ``kind=``) (#657) |
 
 The old locations re-export from here, so nothing that imported them breaks.
 Public ``summary_plot`` still lives in ``plotutils`` but runs
@@ -31,7 +32,8 @@ from cellpy.plotting.backends import (
     PlotlyBackend,
     get_backend,
 )
-from cellpy.plotting.context import CellContext, from_source
+from cellpy.plotting.collected import collected_plot
+from cellpy.plotting.context import CellContext, FrameContext, from_frame, from_source
 from cellpy.plotting.cycle_legend import (
     DEFAULT_LEGEND_CYCLE_LIMIT,
     resolve_cycle_legend_mode,
@@ -65,12 +67,15 @@ __all__ = [
     "CellContext",
     "DEFAULT_LEGEND_CYCLE_LIMIT",
     "FigureSpec",
+    "FrameContext",
     "MatplotlibBackend",
     "PanelSpec",
     "PlotFamily",
     "PlotlyBackend",
     "_register_family",
+    "collected_plot",
     "families",
+    "from_frame",
     "from_source",
     "get_backend",
     "get_family",
