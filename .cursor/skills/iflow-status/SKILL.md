@@ -67,7 +67,7 @@ When `.issueflows/04-designs-and-guides/multi-repo-workspaces.md` exists, read i
 2. **Focus issue** (`.issueflows/01-current-issues/`). For the focus group, read its title from `issue<n>_original.md` and classify the lifecycle stage with the `/iflow` first-match logic:
    - **init** — no `issue<n>_original.md` → `/iflow-init`.
    - **plan** — original exists, no `issue<n>_plan.md` → `/iflow-plan`.
-   - **start** — plan exists, status missing or `- [x] Done` unchecked → `/iflow-start`.
+   - **build** — plan exists, status missing or `- [x] Done` unchecked → `/iflow-build`.
    - **close** — status contains `- [x] Done` (case-insensitive) → `/iflow-close`.
    Report the stage and suggested next step.
 
@@ -84,6 +84,6 @@ When `.issueflows/04-designs-and-guides/multi-repo-workspaces.md` exists, read i
 ## Constraints
 
 - **Read-only.** Writes nothing, moves no files, creates no branches/commits/GitHub issues. Only reads `.issueflows/` and runs read-only `git` / `gh` queries.
-- **Off-path.** Never auto-dispatch from `/iflow`, `/iflow-start`, or `/iflow-close`.
+- **Off-path.** Never auto-dispatch from `/iflow`, `/iflow-build`, or `/iflow-close`.
 - **Degrade gracefully.** Missing `gh`, no network, or an empty `.issueflows/` must still yield a useful local report.
 - Present sections in order (Context, Focus, Parked, Solved, Open GitHub, Summary); note any skipped section.

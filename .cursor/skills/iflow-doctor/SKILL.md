@@ -13,9 +13,9 @@ folders under `.issueflows/`.
 
 Unlike `/iflow-status` (read-only overview), `/iflow-doctor` can **move issue
 groups** when the user confirms repair — using the same safe sweep rules as
-`/iflow-init` and `/iflow-start`.
+`/iflow-init` and `/iflow-build`.
 
-Do **not** auto-dispatch from `/iflow`, `/iflow-start`, or `/iflow-close`.
+Do **not** auto-dispatch from `/iflow`, `/iflow-build`, or `/iflow-close`.
 
 
 **Invoke:** type `iflow doctor` in chat, or `/iflow-doctor` from the slash menu (`iflow-doctor` also works).

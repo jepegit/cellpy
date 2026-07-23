@@ -2,16 +2,16 @@
 name: iflow
 description: >-
   Smart dispatcher: detect where the focus issue stands and dispatch to
-  /iflow-init, /iflow-plan, /iflow-start, or /iflow-close.
+  /iflow-init, /iflow-plan, /iflow-build, or /iflow-close.
 disable-model-invocation: true
 issue-flow-version: 0.4.2a4
 ---
 
 # issue-flow — iflow smart dispatcher (`/iflow`)
 
-Follow this skill to run **the right next step** in the issue-flow lifecycle: it detects state and routes to `/iflow-init`, `/iflow-plan`, `/iflow-start`, or `/iflow-close`, forwarding trailing args verbatim.
+Follow this skill to run **the right next step** in the issue-flow lifecycle: it detects state and routes to `/iflow-init`, `/iflow-plan`, `/iflow-build`, or `/iflow-close`, forwarding trailing args verbatim.
 
-Do **not** use this skill for `/iflow-pick`, `/iflow-pause`, `/iflow-cleanup`, `/iflow-yolo`, `/iflow-fix`, `/iflow-review`, or other off-path helpers. Those are explicit-only commands. (`/iflow-pick` is the front door *before* `/iflow-init`, for when no issue has been chosen yet. `/iflow-fix` runs an interactive iterative-fixes session, driven by `/iflow-fix` + `/iflow-close`.)
+Do **not** use this skill for `/iflow-pick`, `/iflow-pause`, `/iflow-cleanup`, `/iflow-yolo`, `/iflow-fix`, `/iflow-issue`, `/iflow-review`, or other off-path helpers. Those are explicit-only commands. (`/iflow-pick` is the front door *before* `/iflow-init`, for when no issue has been chosen yet. `/iflow-fix` runs an interactive iterative-fixes session, driven by `/iflow-fix` + `/iflow-close`. `/iflow-issue` creates one well-specified normal GitHub issue.)
 
 
 **Invoke:** type `iflow` in chat, or `/iflow` from the slash menu.
@@ -77,7 +77,7 @@ When `.issueflows/04-designs-and-guides/multi-repo-workspaces.md` exists, read i
 
    - **A** — no `issue<N>_original.md` (or no focus issue) → dispatch to **`/iflow-init`**. Reason: "no `*_original.md` yet".
    - **B** — original exists, no `issue<N>_plan.md` → dispatch to **`/iflow-plan`**. Reason: "no plan file yet".
-   - **C** — plan exists, and status file is missing or its `- [x] Done` is unchecked → dispatch to **`/iflow-start`**. Reason: "plan is confirmed but status is not `- [x] Done`".
+   - **C** — plan exists, and status file is missing or its `- [x] Done` is unchecked → dispatch to **`/iflow-build`**. Reason: "plan is confirmed but status is not `- [x] Done`".
    - **D** — status file contains `- [x] Done` (case-insensitive on `done`) → dispatch to **`/iflow-close`**. Reason: "status marks the issue `- [x] Done`".
 
 
@@ -89,10 +89,12 @@ When `.issueflows/04-designs-and-guides/multi-repo-workspaces.md` exists, read i
    - state **D** + PR likely merged → "after the PR merges, run `/iflow-cleanup`"
    - mid-stream context switch needed → "to park this work, run `/iflow-pause`"
    - tiny fix that would benefit from a single-shot chain → "consider `/iflow-yolo` next time"
+   - `graphify-out/GRAPH_REPORT.md` looks stale (large refactor, new modules) → "consider `/iflow-graphify` to refresh the graph"
+
 
 ## Constraints
 
-- Never auto-dispatch to `/iflow-pick`, `/iflow-pause`, `/iflow-cleanup`, `/iflow-yolo`, `/iflow-fix`, `/iflow-review`, `/iflow-epic`, or `/iflow-cycle`.
+- Never auto-dispatch to `/iflow-pick`, `/iflow-pause`, `/iflow-cleanup`, `/iflow-yolo`, `/iflow-fix`, `/iflow-issue`, `/iflow-review`, `/iflow-epic`, `/iflow-cycle`, or `/iflow-auto`.
 - If the focus issue cannot be resolved (multiple groups, branch ambiguous), stop and ask.
 - Do not modify files beyond what the downstream command would normally modify. `/iflow` itself writes nothing — all file changes come from the dispatched command.
 - Dispatch to at most one command per `/iflow` invocation.

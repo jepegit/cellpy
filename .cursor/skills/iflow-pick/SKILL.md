@@ -11,7 +11,7 @@ issue-flow-version: 0.4.2a4
 
 Follow this skill to help the user **choose what to work on next** (parked work first, else ranked open GitHub issues) and get set up to start.
 
-Do **not** use this skill from `/iflow`, `/iflow-start`, or `/iflow-close`. `/iflow-pick` is explicit-only because it creates GitHub issues and branches.
+Do **not** use this skill from `/iflow`, `/iflow-build`, or `/iflow-close`. `/iflow-pick` is explicit-only because it creates GitHub issues and branches.
 
 ## Input
 
@@ -74,7 +74,7 @@ When `.issueflows/04-designs-and-guides/multi-repo-workspaces.md` exists, read i
 5. **Create a `fix` issue (only when requested).** Use `gh issue create` (e.g. `chore: general fixes`), confirm title/body first, capture the new number. A fresh issue is created each time — never reuse an existing open general-fixes issue.
 6. **Over-large issue (note only).** If the chosen issue is too big for one PR, **mention** that breaking it into sub-issues is possible and tracked as a follow-up (Phase B of issue #63). Do **not** auto-create sub-issues here.
 
-7. **Label-driven yolo flow.** If the chosen issue carries the **`yolo`** label (case-insensitive), announce it and fold `/iflow-yolo`'s consolidated confirm into the pick confirmation (one prompt: branch + full `init → plan → start → close yolo` chain). On yes, run Phase 2 then follow the `iflow-yolo` skill **instead of** the Phase 3 handoff — its preflight still applies, but do not re-ask its confirm. Configurable via `label_flows` / `yolo_label` under `[issueflow]` in `.issueflows/config.toml` (re-run `issue-flow update` after changing).
+7. **Label-driven yolo flow.** If the chosen issue carries the **`yolo`** label (case-insensitive), announce it and fold `/iflow-yolo`'s consolidated confirm into the pick confirmation (one prompt: branch + full `init → plan → build → close yolo` chain). On yes, run Phase 2 then follow the `iflow-yolo` skill **instead of** the Phase 3 handoff — its preflight still applies, but do not re-ask its confirm. Configurable via `label_flows` / `yolo_label` under `[issueflow]` in `.issueflows/config.toml` (re-run `issue-flow update` after changing).
 
 
 
@@ -93,7 +93,7 @@ When `.issueflows/04-designs-and-guides/multi-repo-workspaces.md` exists, read i
 
 ## Constraints
 
-- Off-path: never auto-dispatch from `/iflow`, `/iflow-start`, or `/iflow-close`.
+- Off-path: never auto-dispatch from `/iflow`, `/iflow-build`, or `/iflow-close`.
 - Never create a GitHub issue or branch without explicit confirmation; show what will be created first.
 - Branch off the detected default; never force-push or delete branches from this skill.
 - **Phase B is out of scope**: no automated sub-issue creation or sibling parking under `02-partly-solved-issues/`. Only mention the option.

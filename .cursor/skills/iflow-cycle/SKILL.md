@@ -10,7 +10,7 @@ issue-flow-version: 0.4.2a4
 
 # issue-flow — issue cycle (`/iflow-cycle`)
 
-Follow this skill to **process a queue of issues hands-off**, one after another, with a **single up-front confirmation** — the batch equivalent of `/iflow-yolo`. Each issue runs the full yolo chain (`init → plan → start → close yolo`, PR auto-merged, switch back to default); the cycle interrupts you only when input is **strictly necessary**.
+Follow this skill to **process a queue of issues hands-off**, one after another, with a **single up-front confirmation** — the batch equivalent of `/iflow-yolo`. Each issue runs the full yolo chain (`init → plan → build → close yolo`, PR auto-merged, switch back to default); the cycle interrupts you only when input is **strictly necessary**.
 
 Use only when every queued issue is genuinely yolo-fit (small, low-risk, well-specified, test-guarded). A queue of risky changes belongs in the individual commands.
 

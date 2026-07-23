@@ -11,9 +11,9 @@ issue-flow-version: 0.4.2a4
 
 Follow this skill for an **ongoing working session** of many small fixes (small bugs, typos, chores, polish) on one branch, landed via one PR — rather than a single well-defined deliverable.
 
-Do **not** use this skill from `/iflow`, `/iflow-start`, or `/iflow-close`. `/iflow-fix` is explicit-only because it creates GitHub issues and branches and drives an open-ended loop. While a session is active, drive it with `/iflow-fix` + `/iflow-close`, not `/iflow`.
+Do **not** use this skill from `/iflow`, `/iflow-build`, or `/iflow-close`. `/iflow-fix` is explicit-only because it creates GitHub issues and branches and drives an open-ended loop. While a session is active, drive it with `/iflow-fix` + `/iflow-close`, not `/iflow`.
 
-It **coexists** with `/iflow-pick fix`: that command is a one-shot setup back into the normal `/iflow-plan` → `/iflow-start` flow, whereas `/iflow-fix` stays and runs the loop until close.
+It **coexists** with `/iflow-pick fix` (one-shot general-fixes setup into `/iflow-plan` → `/iflow-build`) and `/iflow-issue` (one well-specified normal issue). `/iflow-fix` stays and runs the loop until close.
 
 ## Input
 
@@ -82,7 +82,7 @@ For each proposed fix:
 4. **Implement** the confirmed fix, focused on that one change.
 5. **Record** it: append a dated bullet to **`## Iterative fixes log`** in `issue<N>_status.md`. Offer proactively; always update when asked.
 
-If a "fix" is really a substantial feature or sprawls across unrelated areas, say so and suggest handling it as its own issue via `/iflow-init` → `/iflow-plan` → `/iflow-start`.
+If a "fix" is really a substantial feature or sprawls across unrelated areas, say so and suggest filing it as its own issue via `/iflow-issue` (then `/iflow-plan` → `/iflow-build`).
 
 ### Phase 3 — finish
 
@@ -90,7 +90,7 @@ Tell the user to run **`/iflow-close`** to land the session (tests, optional bum
 
 ## Constraints
 
-- Off-path: never auto-dispatch from `/iflow`, `/iflow-start`, or `/iflow-close`.
+- Off-path: never auto-dispatch from `/iflow`, `/iflow-build`, or `/iflow-close`.
 - Never create a GitHub issue or branch without explicit confirmation; show what will be created first.
 - GitHub only (`gh`); GitLab is not supported.
 - Branch off the detected default (or the current branch when chosen); never force-push or delete branches from this skill.

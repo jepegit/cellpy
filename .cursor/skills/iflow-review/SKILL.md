@@ -12,9 +12,9 @@ Follow this skill to **review open GitHub issues and apply labels**. It is
 extendable by review *kind*; v1 supports **`yolo`** only (apply the configured
 `yolo` label to issues that pass the yolo-fitness judgment).
 
-Do **not** auto-dispatch from `/iflow`, `/iflow-start`, or `/iflow-close`. Off-path
-only. Do **not** create new GitHub issues here (use `/iflow-pick fix` or
-`/iflow-epic … publish`). Do **not** remove labels in v1.
+Do **not** auto-dispatch from `/iflow`, `/iflow-build`, or `/iflow-close`. Off-path
+only. Do **not** create new GitHub issues here (use `/iflow-issue`,
+`/iflow-pick fix`, or `/iflow-epic … publish`). Do **not** remove labels in v1.
 
 
 **Invoke:** type `iflow review` in chat, or `/iflow-review` from the slash menu (`iflow-review` also works).

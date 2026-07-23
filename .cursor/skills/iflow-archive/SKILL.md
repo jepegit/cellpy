@@ -85,7 +85,7 @@ Keep scope tight to what this step requires.
 
 ## Constraints
 
-- **Off-path.** Never auto-dispatch from `/iflow`, `/iflow-start`, or `/iflow-close`. The user opts in explicitly.
+- **Off-path.** Never auto-dispatch from `/iflow`, `/iflow-build`, or `/iflow-close`. The user opts in explicitly.
 - **Destructive, so gated.** Never delete anything before the consolidated confirm in step 3, and never delete files that were not summarised in step 4.
 - Only `.issueflows/03-solved-issues/` is touched — never `01-current-issues/`, `02-partly-solved-issues/`, `00-tools/`, or `04-designs-and-guides/`.
 - Requires a clean working tree; the deletion should land as its own commit so `git show <ref>:<path>` recovery always works.

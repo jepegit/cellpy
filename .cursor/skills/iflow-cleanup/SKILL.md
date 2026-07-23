@@ -2,7 +2,8 @@
 name: iflow-cleanup
 description: >-
   Post-merge branch hygiene: switch to the default branch and delete merged
-  local branches under one consolidated confirm. Never -D.
+  local branches under one consolidated confirm. Optional GitHub remote audit
+  via trailing "include GitHub". Never -D / --force.
 disable-model-invocation: true
 issue-flow-version: 0.4.2a4
 ---
@@ -52,17 +53,25 @@ After resolution, treat the result as `<project_root>` and `<owner/repo>`:
 
 When `.issueflows/04-designs-and-guides/multi-repo-workspaces.md` exists, read it for layout and cross-repo guidance.
 
+## Input
+
+Optional free-form text after the command:
+
+- **No extra text** — Phase A only: detect the current branch's PR, clean that up, plus any other local branches already merged into the default.
+- A **branch name** — Phase A targets that branch instead of the current one (e.g. `/iflow-cleanup 42-fix-login`).
+- **GitHub remote audit** — if the trailing text contains (case-insensitive) `include github`, `include gh`, `with github`, or a standalone `github` token, also run **Phase B** after Phase A: classify `origin/*` remotes, summarise unique work, and optionally delete deletable remotes and/or file a findings issue (second confirm).
+
 ## Instructions
 
 1. **Detect the default branch.** Prefer `gh repo view --repo <owner/repo> --json defaultBranchRef -q .defaultBranchRef.name`, else `git -C <project_root> symbolic-ref --quiet --short refs/remotes/origin/HEAD`, else `main`.
 
-2. **Identify the target branch.** If the user named a branch after `/iflow-cleanup`, use it. Else use the current branch (`git branch --show-current`). If the current branch **is** the default, skip to step 4 (folder sweep only).
+2. **Identify the target branch.** If the user named a branch after `/iflow-cleanup` (ignoring GitHub-audit tokens), use it. Else use the current branch (`git branch --show-current`). If the current branch **is** the default, skip to step 4 (folder sweep only) for Phase A.
 
 3. **Check PR / merge state.** Prefer `gh pr view <branch> --json state,mergedAt,mergeCommit,headRefName`. If `gh` is unavailable, approximate with `git fetch --prune` then `git cherry origin/<default> <branch>` (all commits marked `-` means squash-merged).
-   - **If not merged:** remind the user that the working copy is still on the issue branch; suggest `git switch <default>` before unrelated work and re-run `/iflow-cleanup` after the PR merges. **Stop.** Do not delete anything.
-   - **If merged:** continue.
+   - **If not merged:** remind the user that the working copy is still on the issue branch; suggest `git switch <default>` before unrelated work and re-run `/iflow-cleanup` after the PR merges. **Stop Phase A.** Do not delete anything locally. If a GitHub-audit token was present, you may still offer Phase B alone (remote audit does not require the issue branch to be merged).
+   - **If merged:** continue Phase A.
 
-4. **Consolidated confirm** — one yes/no prompt listing every action:
+4. **Consolidated confirm (Phase A — local)** — one yes/no prompt listing every action:
    - `git switch <default>`
    - `git pull --ff-only`
    - `git fetch --prune`
@@ -73,11 +82,22 @@ When `.issueflows/04-designs-and-guides/multi-repo-workspaces.md` exists, read i
 
 6. **Epic stage gate (offer only).** If the just-merged issue belongs to an epic — its number appears in a `- Published: #<N>` line of an `epic<M>_plan.md` under `.issueflows/05-epics/` — check whether that closed the stage: run `issue-flow agent epic-status <M> --json` and see if the issue's stage now has no open issues left. If the stage just completed, **offer** (do not do automatically) to (a) post a short stage-summary comment on the epic anchor issue and (b) run `/iflow-epic <M> publish` to publish the next stage. Both are the user's explicit call — never auto-publish or auto-comment.
 
-7. **Report.** Summarize: default branch, PR/merge status, commands run, branches deleted, branches skipped (with reason), folder sweep result, and any epic stage-gate offer. If `issue-flow agent resolve --json` reports `sibling_roots`, list them and remind the user that **each scaffolded repo needs its own `/iflow-cleanup`** — do not loop automatically in this step.
+7. **Phase B — GitHub remote audit** (only when an Input GitHub-audit token was present). Prefer the CLI fast path; fall back to manual `git`/`gh` when the CLI is missing.
+   - **CLI:** `issue-flow agent branches --json -C <project_root>` (add `--no-fetch` only if `git fetch --prune` just ran). Payload buckets: `deletable`, `unique_work`, `skipped`.
+   - **Manual fallback:** `git fetch --prune`; list `refs/remotes/origin/*` (skip `HEAD` and the default); for each tip run `git cherry origin/<default> origin/<branch>` (`+` = unique); `git log --oneline origin/<default>..origin/<branch>` (cap ~20) + `git diff --shortstat`; `gh pr list --repo <owner/repo> --state all --head <branch> --json number,title,state,url,mergedAt`. Treat open-PR heads as unique work (never deletable). Protected branches (when `gh api …/branches/<name>` reports `protected: true`) go to skipped.
+   - **Report** the three buckets. For unique-work branches, summarise commit subjects (and open PR titles/URLs) in prose for the user.
+   - **Second consolidated confirm** (never folded into Phase A's yes): list every proposed action, then ask once:
+     - Optional: for each **deletable** name, `git push origin --delete <branch>` (or `gh api -X DELETE repos/<owner>/<repo>/git/refs/heads/<branch>`). Never `--force`. Never delete the default. On push failure (e.g. protection), report and continue.
+     - Optional: create a findings issue with `gh issue create --repo <owner/repo>` after showing the draft title/body (deletable list + unique-work summaries). Suggested title: `chore: remote branch audit (<YYYY-MM-DD>)`. Create only on yes.
+   - Phase B is **read-only until that second confirm**. Declining leaves remotes untouched.
+
+8. **Report.** Summarize: default branch, PR/merge status, Phase A commands/branches deleted or skipped, folder sweep, epic stage-gate offer, and (when run) Phase B bucket counts, remote deletes, findings issue URL or "skipped". If `issue-flow agent resolve --json` reports `sibling_roots`, list them and remind the user that **each scaffolded repo needs its own `/iflow-cleanup`** — do not loop automatically in this step.
 
 ## Constraints
 
 - Never use `git branch -D` or `git push --force`.
-- Never delete the default branch.
+- Never delete the default branch (local or remote).
+- Remote deletes and findings-issue creation require the **Phase B** confirm; Phase A's yes must not imply them.
 - If anything is ambiguous (detached HEAD, multiple remotes, missing tracking info), report and stop rather than guess.
-- Do not open or update PRs. Do not bump version fields — pyproject bumps belong to `/iflow-close`. The only version action allowed here is creating a release tag that `/iflow-close` **planned** (tag-derived strategy), inside the consolidated confirm.
+- Do not open or update PRs. Do not bump version fields — pyproject bumps belong to `/iflow-close`. The only version action allowed here is creating a release tag that `/iflow-close` **planned** (tag-derived strategy), inside the Phase A consolidated confirm.
+- Do **not** offer to update `HISTORY.md` / CHANGELOG here — that belongs in `/iflow-close` before the PR.

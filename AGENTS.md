@@ -115,6 +115,10 @@ When the user message is **exactly** one of these forms, or **starts with** it f
 
 | `iflow archive`, `iflow-archive`, `/iflow-archive`, `/iflow archive` | `iflow-archive` |
 
+| `iflow auto`, `iflow-auto`, `/iflow-auto`, `/iflow auto` | `iflow-auto` |
+
+| `iflow build`, `iflow-build`, `/iflow-build`, `/iflow build` | `iflow-build` |
+
 | `iflow cleanup`, `iflow-cleanup`, `/iflow-cleanup`, `/iflow cleanup` | `iflow-cleanup` |
 
 | `iflow close`, `iflow-close`, `/iflow-close`, `/iflow close` | `iflow-close` |
@@ -131,6 +135,8 @@ When the user message is **exactly** one of these forms, or **starts with** it f
 
 | `iflow init`, `iflow-init`, `/iflow-init`, `/iflow init` | `iflow-init` |
 
+| `iflow issue`, `iflow-issue`, `/iflow-issue`, `/iflow issue` | `iflow-issue` |
+
 | `iflow pause`, `iflow-pause`, `/iflow-pause`, `/iflow pause` | `iflow-pause` |
 
 | `iflow pick`, `iflow-pick`, `/iflow-pick`, `/iflow pick` | `iflow-pick` |
@@ -138,8 +144,6 @@ When the user message is **exactly** one of these forms, or **starts with** it f
 | `iflow plan`, `iflow-plan`, `/iflow-plan`, `/iflow plan` | `iflow-plan` |
 
 | `iflow review`, `iflow-review`, `/iflow-review`, `/iflow review` | `iflow-review` |
-
-| `iflow start`, `iflow-start`, `/iflow-start`, `/iflow start` | `iflow-start` |
 
 | `iflow status`, `iflow-status`, `/iflow-status`, `/iflow status` | `iflow-status` |
 
@@ -152,18 +156,18 @@ Skill `@` attachment is supported on some editors but is not the recommended key
 
 If you have not chosen an issue yet, run **`/iflow-pick`** (or type **`iflow pick`** in chat) — the front door that helps you select the next issue (parked work first, else ranked open GitHub issues), creates the branch, and runs `/iflow-init`. It is off-path (never auto-dispatched).
 
-If you just want the next right step, run **`/iflow`** (or type **`iflow`** in chat) — it detects state (by file presence under `.issueflows/01-current-issues/` and the status-file `- [x] Done` marker) and dispatches to `/iflow-init`, `/iflow-plan`, `/iflow-start`, or `/iflow-close`. It never auto-dispatches to `/iflow-pick`, `/iflow-pause`, `/iflow-cleanup`, or `/iflow-yolo` — those stay explicit.
+If you just want the next right step, run **`/iflow`** (or type **`iflow`** in chat) — it detects state (by file presence under `.issueflows/01-current-issues/` and the status-file `- [x] Done` marker) and dispatches to `/iflow-init`, `/iflow-plan`, `/iflow-build`, or `/iflow-close`. It never auto-dispatches to `/iflow-pick`, `/iflow-pause`, `/iflow-cleanup`, or `/iflow-yolo` — those stay explicit.
 
 The full slash-command lifecycle is:
 
 1. **`/iflow-init`** — capture the GitHub issue as `issue<N>_original.md`.
 2. **`/iflow-plan`** — design the approach in `issue<N>_plan.md` and get explicit confirmation before any code changes.
-3. **`/iflow-start`** — implement the confirmed plan. Asks to run `/iflow-plan` first if the plan file is missing.
+3. **`/iflow-build`** — implement the confirmed plan. Asks to run `/iflow-plan` first if the plan file is missing.
 4. **`/iflow-pause`** *(optional)* — park work mid-stream: update status, move the issue group to `02-partly-solved-issues`, optional WIP commit.
-5. **`/iflow-close`** — tests, optional `uv version --bump`, status update, commit, push, PR. Does not delete branches.
-6. **`/iflow-cleanup`** — post-merge: switch to default, `git pull --ff-only`, `git fetch --prune`, `git branch -d` on merged local branches under a single consolidated confirm. Never `-D`.
+5. **`/iflow-close`** — tests, optional `uv version --bump`, **changelog/`HISTORY.md` update (in the PR commit)**, status update, commit, push, PR. Does not delete branches. Never offer a HISTORY/CHANGELOG update after close finishes or after merge; use `nohistory` only to skip intentionally. (A draft opened earlier via `/iflow-build` early PR does not skip the close HISTORY step.)
+6. **`/iflow-cleanup`** — post-merge: switch to default, `git pull --ff-only`, `git fetch --prune`, `git branch -d` on merged local branches under a single consolidated confirm. Never `-D`. Trailing `include GitHub` (or similar) adds a remote-branch audit with a second confirm for optional remote deletes / findings issue.
 
-`/iflow-yolo` chains `init → plan → start → close yolo` for small, low-risk issues with up-front safeguards (clean tree, passing tests, single consolidated confirm). Its close step is hands-off: changelog decided without a prompt, PR merged (`gh pr merge --squash`; on pending checks may `gh pr checks --watch` then retry, with `--auto` as last resort), then default-branch switch + pull.
+`/iflow-yolo` chains `init → plan → build → close yolo` for small, low-risk issues with up-front safeguards (clean tree, passing tests, single consolidated confirm). Its close step is hands-off: changelog decided without a prompt, PR merged (`gh pr merge --squash`; on pending checks may `gh pr checks --watch` then retry, with `--auto` as last resort), then default-branch switch + pull.
 
 
 Issue labels can select the flow: when an issue picked via `/iflow-pick` carries the **`yolo`** label, it is routed through `/iflow-yolo` (one combined confirmation). Controlled by `label_flows` (default `true`) and `yolo_label` (default `"yolo"`) under `[issueflow]` in `.issueflows/config.toml`; re-run `issue-flow update` after changing them.
@@ -175,6 +179,8 @@ Lifecycle skills include a **`### MODEL & EXECUTION DIRECTIVE`** section that te
 
 `/iflow-fix` opens an interactive iterative-fixes session: it creates one GitHub issue + long-lived branch, then loops over many small fixes (each gets a short plan and is implemented only on confirmation, recorded as a dated bullet in `issue<N>_status.md`), and ends with `/iflow-close`. It is off-path (never auto-dispatched); while a session is active, drive it with `/iflow-fix` + `/iflow-close`, not `/iflow`.
 
+`/iflow-issue` creates **one well-specified normal GitHub issue** (context / spec / acceptance criteria), then optionally branches and runs `/iflow-init` into the standard lifecycle. It fills the gap between `/iflow-fix` (iterative small-fixes) and `/iflow-epic` (multi-issue staged work). Off-path (never auto-dispatched). For an epic anchor: `/iflow-issue epic <intent>`.
+
 `/iflow-status` prints a **read-only** overview of where every issue stands — the local tracking state under `.issueflows/` (focus / parked / solved) plus open GitHub issues cross-referenced against it. It is off-path (never auto-dispatched) and changes nothing.
 
 `/iflow-doctor` audits `.issueflows/` for **dirty** conditions (ambiguous multi-focus, leftovers in `01-current-issues/`, duplicates across folders, and similar) and can apply **safe repairs** on confirmation (`issue-flow doctor` / `agent audit` + `repair`). It is off-path and never auto-dispatched.
@@ -184,6 +190,8 @@ Lifecycle skills include a **`### MODEL & EXECUTION DIRECTIVE`** section that te
 `/iflow-epic <N>` plans a change **too large for one issue** as a staged epic: it drafts `.issueflows/05-epics/epic<N>_plan.md` (anchored to GitHub issue `<N>`), dividing the work into sequential stages of manageable issue specs with explicit dependencies and a per-issue yolo-fitness judgment. Drafting writes nothing on GitHub; **`/iflow-epic <N> publish [stage <k>]`** creates a confirmed stage's issues behind one consolidated confirm (yolo labels per the recorded judgment, task list maintained on the anchor issue, `Published: #<M>` recorded back into the plan so re-runs are idempotent). Off-path (never auto-dispatched); epics decompose into the normal single-issue lifecycle, never around it.
 
 `/iflow-cycle <queue-spec>` processes **many issues hands-off in a row** under a single up-front confirmation — the batch equivalent of `/iflow-yolo`. It resolves a queue via `issue-flow agent queue` (explicit numbers, `label:<L>`, or `epic <N> [stage <k>]`), then runs each issue through the full yolo chain (PR auto-merged), interrupting you only when input is **strictly necessary** (unfixable failure, refused merge / non-fast-forward pull, ambiguous or not-actually-small spec, or anything outside the confirmed queue). It stops the whole cycle on the first such condition, leaving the repo clean on the default branch. **All yolo-labelled issues:** `/iflow-cycle yolo` (alias for `label:yolo`). Off-path (never auto-dispatched); never weakens a yolo safeguard to keep moving.
+
+`/iflow-auto <N>` runs an **unattended large-change** path over a confirmed epic: select a stage, drive it via `/iflow-cycle`, record `auto_status.md`, then adversarial inter-epoch review (`review` token; may reopen/create issues under the overnight confirm). On findings, honour the loop budget (re-queue + re-review, or **stop and ask**: accept / grant N more loops / abort). Advance to stage `k+1` only when stage `k` is clear (`epic-status` done + no open blockers); otherwise `epoch_gated`. Budget baked as **2** (`loops:<n>` overrides). Off-path (never auto-dispatched). See `.issueflows/04-designs-and-guides/advanced-auto-mode.md`.
 
 `/iflow-archive` condenses old solved issue groups under `.issueflows/03-solved-issues/` into a single dated `YYYY-MM-DD_archived_issues.md` summary file (recording the pre-archive git ref for recovery via `git show <ref>:<path>`), then deletes the original `issue<N>_*` files. It is off-path and destructive: nothing is deleted before one consolidated confirmation.
 
@@ -236,7 +244,7 @@ Long-lived design docs, design decisions, and project "good practices" live unde
 
 - **Project brief:** if `.issueflows/04-designs-and-guides/this-project.md` exists, read it early for project-specific context (what the repo is, stack/runtime, how to run/test, conventions, entry points, and known limitations).
 - **Before planning or implementing**, skim `.issueflows/04-designs-and-guides/` for existing docs relevant to the current issue and follow them (cite them in the plan when they influence the approach).
-- **When a non-trivial design decision is made** during `/iflow-plan` or `/iflow-start`, add or update a markdown file here. Keep entries terse: context, the decision, alternatives considered, and a link back to the issue.
+- **When a non-trivial design decision is made** during `/iflow-plan` or `/iflow-build`, add or update a markdown file here. Keep entries terse: context, the decision, alternatives considered, and a link back to the issue.
 - **Never overwritten by `issue-flow update`.** The folder is recreated if missing, but existing files are left alone.
 
 
@@ -253,15 +261,16 @@ When an editor workspace contains **multiple sibling repositories**, each with i
 ### Branch hygiene
 
 - Do issue work on an **issue branch** named like `<N>-<short-slug>`, not on the default branch.
-- Before starting or continuing work on an issue branch, run `git fetch --prune` and check where the branch sits relative to `origin/<default>` (ahead/behind). A branch that is "several commits ahead" after a merged PR usually means the PR was squash-merged and the local branch is stale.
-- **Assume squash-merges on GitHub.** After a PR merges: run **`/iflow-cleanup`** — it switches to the default branch, runs `git pull --ff-only`, `git fetch --prune`, and deletes merged local branches with `git branch -d <branch>` under a single consolidated confirm (never `-D` automatically). `/iflow-close` no longer does this step itself.
+- Before starting or continuing work on an issue branch, run `git fetch --prune` and check where the branch sits relative to `origin/<default>` (ahead/behind). A branch that is "several commits ahead" after a merged PR usually means the PR was merged (this project uses **`squash`**) and the local branch is stale.
+- **Assume `squash` merges on GitHub.** After a PR merges: run **`/iflow-cleanup`** — it switches to the default branch, runs `git pull --ff-only`, `git fetch --prune`, and deletes merged local branches with `git branch -d <branch>` under a single consolidated confirm (never `-D` automatically). `/iflow-close` no longer does this step itself.
+
 - If an issue is already archived under `.issueflows/02-partly-solved-issues` or `.issueflows/03-solved-issues`, the matching local branch is stale; don't resume work on it silently — switch back to the default branch and, if the issue really needs re-opening, do it deliberately through `/iflow-init` (which will ask for a second confirmation).
 
 
 ### Folder hygiene for `.issueflows/01-current-issues`
 
 - Only the **focus issue** (the one currently being worked on) should live in `.issueflows/01-current-issues`.
-- `/iflow-init` and `/iflow-start` both sweep that folder automatically: every `issue<n>_*` group **other than the focus issue** is moved to `.issueflows/03-solved-issues` if a status file contains `- [x] Done`, otherwise to `.issueflows/02-partly-solved-issues`. Keep status files accurate so the sweep routes them correctly.
+- `/iflow-init` and `/iflow-build` both sweep that folder automatically: every `issue<n>_*` group **other than the focus issue** is moved to `.issueflows/03-solved-issues` if a status file contains `- [x] Done`, otherwise to `.issueflows/02-partly-solved-issues`. Keep status files accurate so the sweep routes them correctly.
 
 
 ### Knowledge graph (optional, via [graphify](https://iflow-graphify.net))
@@ -270,7 +279,7 @@ If a `graphify-out/` folder exists in the project root, the project has the opti
 
 - **Before grepping**, skim `graphify-out/GRAPH_REPORT.md`. It surfaces god-nodes (most-connected concepts), surprising cross-module connections, and suggested questions the graph can answer — often a faster way to locate the files an issue actually touches than full-text search.
 - **`/iflow-graphify`** (slash command) or **`issue-flow graphify`** (CLI) rebuild the graph. With no extra args this runs `graphify update <project>` — AST-only, **no LLM API key needed**. For richer semantic relationships (cross-file links surfaced by an LLM pass), run `issue-flow graphify extract` after setting `GEMINI_API_KEY` / `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` / `MOONSHOT_API_KEY` (or pass `--backend ollama` for a local LLM). Other subcommands: `watch` (live), `cluster-only --no-viz` (re-cluster). Trailing flags pass through verbatim. Your agent's own LLM cannot be reused by subprocesses; graphify needs its own backend.
-- `/iflow-graphify` is **off-path**: never auto-dispatched by `/iflow`, `/iflow-start`, or `/iflow-close`. It is the user's call. `/iflow-start` may *suggest* skimming `GRAPH_REPORT.md`; `/iflow-close` may *suggest* a rebuild after large structural changes — neither runs `graphify` automatically.
+- `/iflow-graphify` is **off-path**: never auto-dispatched by `/iflow`, `/iflow-build`, or `/iflow-close`. It is the user's call. `/iflow-build` may *suggest* skimming `GRAPH_REPORT.md`; `/iflow-close` may *suggest* a rebuild after large structural changes — neither runs `graphify` automatically.
 - If `graphify-out/` is not present, ignore graph-related guidance entirely. The integration is opt-in (install with `uv tool install graphifyy`, then `issue-flow update` to register the graphify skill).
 
 <!-- END issue-flow (managed) -->

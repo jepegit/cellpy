@@ -9,13 +9,13 @@ issue-flow-version: 0.4.2a4
 
 # issue-flow — epic planning (`/iflow-epic`)
 
-Follow this skill to plan a change that is **too large for one issue**: divide it into sequential **stages**, each stage into **manageable issues** that flow through the normal lifecycle (`/iflow-init` → `/iflow-plan` → `/iflow-start` → `/iflow-close`).
+Follow this skill to plan a change that is **too large for one issue**: divide it into sequential **stages**, each stage into **manageable issues** that flow through the normal lifecycle (`/iflow-init` → `/iflow-plan` → `/iflow-build` → `/iflow-close`).
 
 The surface has two actions. **Drafting** (the default) is write-free on GitHub: its deliverable is `.issueflows/05-epics/epic<N>_plan.md`, and it never creates GitHub issues, labels, or milestones. **`publish`** is the single exception — it turns a *confirmed* plan into real GitHub issues, stage by stage, behind one consolidated confirm.
 
 ## Input
 
-- **`<N>`** — the GitHub issue number of the **epic anchor** (an umbrella issue describing the large change). Required: an epic without an anchor has nowhere to track progress. If no anchor issue exists yet, stop and ask the user to create one (title prefixed `Epic:`, label `epic` when available) — creating it is the user's call, not this skill's.
+- **`<N>`** — the GitHub issue number of the **epic anchor** (an umbrella issue describing the large change). Required: an epic without an anchor has nowhere to track progress. If no anchor issue exists yet, stop and point the user at **`/iflow-issue epic <intent>`** (creates the anchor with an `Epic:` title and the `epic` label when present) — then re-run `/iflow-epic <N>` with the new number.
 - **`publish [stage <k>]`** — run the publish action (below) instead of drafting. Without a stage number, the earliest stage with unpublished specs is chosen.
 - Optional free text — extra context, constraints, or a proposed stage split to seed the draft.
 
@@ -90,10 +90,13 @@ When `.issueflows/04-designs-and-guides/multi-repo-workspaces.md` exists, read i
    ## Stage 1 — <stage title>
 
    <one paragraph: what this stage proves or delivers>
+   - Goal: <one-line stage / epoch goal>
 
    ### Issue: <title as it will appear on GitHub>
 
    - Spec: <self-contained paragraph: context, scope, acceptance criteria>
+   - Goal: <crisp acceptance someone else can verify>
+   - Model: deep | fast | default
    - Depends on: none | #<M> | stage <j> issue <k>
    - yolo: yes | no — <one-line judgment against the yolo-fitness criteria>
 
@@ -104,11 +107,12 @@ When `.issueflows/04-designs-and-guides/multi-repo-workspaces.md` exists, read i
    ...
    ```
 
-   The `publish` action later appends a `- Published: #<M>` line to each spec it creates — never add those by hand.
+   The `publish` action later appends a `- Published: #<M>` line to each spec it creates — never add those by hand. Older plans without `Goal:` / `Model:` markers still parse (`Model` defaults to `default`).
 
 3. **Sizing rules for issue specs** — every issue must be *manageable*:
    - one issue = one branch = one PR, implementable in roughly a day or less;
-   - a **crisp acceptance criterion** someone else could verify;
+   - a **crisp Goal** (and Spec) someone else could verify;
+   - **Model:** `deep` (planning / judgment), `fast` (mechanical), or `default` (step profile) — copied into the GitHub issue body on publish;
    - dependencies stated explicitly: `#<M>` for already-published issues, `stage <j> issue <k>` placeholders for unpublished ones (the publish step resolves placeholders to real numbers);
    - a **yolo-fitness judgment** per issue: `yes` only when it is well-specified, mechanical or pattern-following, low blast radius, and guarded by existing tests — umbrella work, design decisions, and flag-day changes are `no`.
 
@@ -125,7 +129,7 @@ Turn one stage of a **confirmed** plan into real GitHub issues. Requires `Status
 1. **Select the stage.** A named `stage <k>` publishes exactly that stage; otherwise pick the earliest stage containing specs without a `Published:` line. Specs that already carry `- Published: #<M>` are **skipped** (this makes re-runs idempotent).
 2. **Dry-run listing.** Show what would be created: per spec — title, labels (`yolo` when the judgment says yes **and** the label exists per `gh label list`; otherwise note the gap), and the dependency lines after placeholder resolution. `stage <j> issue <k>` placeholders pointing at already-published specs are rewritten to their real `#<M>`; placeholders at still-unpublished specs stay verbatim with a note.
 3. **Consolidated confirm** (destructive-ish — outward-facing writes; normal prose, never shortened). One prompt covering exactly: which issues get created, with which labels, and that the anchor issue's task list will be updated. Do not proceed without a clear yes.
-4. **Create, in dependency order within the stage.** For each spec: `gh issue create --repo <owner/repo>` with the self-contained body (context, scope, acceptance criteria, resolved `Depends on: #<M>` lines, and a closing `Part of epic #<N>.` line). Immediately record the new number in the plan file as `- Published: #<M>` under that spec.
+4. **Create, in dependency order within the stage.** For each spec: `gh issue create --repo <owner/repo>` with the self-contained body (context, scope, acceptance criteria, **Goal:** and **Model:** lines when present in the plan, resolved `Depends on: #<M>` lines, and a closing `Part of epic #<N>.` line). Immediately record the new number in the plan file as `- Published: #<M>` under that spec.
 5. **Update the anchor issue's task list** (append/patch only — never rewrite the user's own body text): fetch the body, append a `## Stage <k> — <title>` section (or extend it) with one `- [ ] #<M>` line per created issue, and write it back via `gh issue edit <N> --body-file`.
 6. **Report.** Created issues (numbers + titles + labels), skipped already-published specs, unresolved placeholders, and the reminder that the next stage publishes only after this one's issues close.
 

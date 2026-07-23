@@ -9,7 +9,7 @@ issue-flow-version: 0.4.2a4
 
 # issue-flow — issue plan (`/iflow-plan`)
 
-Follow this skill to **design the approach** for the focus issue before touching code, and to get the plan confirmed ahead of `/iflow-start`.
+Follow this skill to **design the approach** for the focus issue before touching code, and to get the plan confirmed ahead of `/iflow-build`.
 
 
 **Invoke:** type `iflow plan` in chat, or `/iflow-plan` from the slash menu (`iflow-plan` also works).
@@ -91,7 +91,7 @@ When `.issueflows/04-designs-and-guides/multi-repo-workspaces.md` exists, read i
 
 7. **Scope check.** If the plan is broad (many unrelated files, mixes refactors with feature work, multiple independent deliverables), propose splitting into smaller issues or phased PRs before finalizing the plan.
 
-8. **Confirm with the user.** Present the plan and **stop**. Accept one of: **Accept** (ready for `/iflow-start`), **Revise** (update `issue<N>_plan.md` in place and re-confirm), or **Abort**.
+8. **Confirm with the user.** Present the plan and **stop**. Accept one of: **Accept** (ready for `/iflow-build`), **Revise** (update `issue<N>_plan.md` in place and re-confirm), or **Abort**.
 
 9. **Conflict on existing `issue<N>_plan.md`.** Do not overwrite silently. Offer: update in place (after review), keep both (`issue<N>_plan.v2.md`), or leave as is.
 
@@ -99,5 +99,5 @@ When `.issueflows/04-designs-and-guides/multi-repo-workspaces.md` exists, read i
 
 - `/iflow-plan` is **read-only on source code**. The only file it writes is `.issueflows/01-current-issues/issue<N>_plan.md`.
 - Do not move files between `01-` / `02-` / `03-` folders from `/iflow-plan`.
-- Do not run tests or package managers; that belongs to `/iflow-start` and `/iflow-close`.
-- Do not proceed to implementation from this skill. Hand off to `/iflow-start` once the user confirms.
+- Do not run tests or package managers; that belongs to `/iflow-build` and `/iflow-close`.
+- Do not proceed to implementation from this skill. Hand off to `/iflow-build` once the user confirms.

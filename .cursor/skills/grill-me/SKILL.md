@@ -54,4 +54,4 @@ project, set `grill_me_default = true` under `[issueflow]` in
 
 - Grilling is a **planning** aid: it questions and aligns, it does not write code.
 - Hand the agreed decisions to `/iflow-plan` so they land in `issue<N>_plan.md`;
-  implementation still goes through `/iflow-start`.
+  implementation still goes through `/iflow-build`.
