@@ -16,4 +16,4 @@
 
 ## Remaining work
 
-- None (close / PR).
+- None (close / PR). Follow-up: CI full fixed by `accept_old=True` on `neware_uio.h5` (v7) fixtures.
