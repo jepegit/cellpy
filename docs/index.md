@@ -1,5 +1,9 @@
 # cellpy
 
+!!! warning
+    This is a release candidate and might not work as expected.
+    Let us know if you find some of the hidden bugs we have planted.
+
 **cellpy** reads data from battery cycling instruments, turns it into one
 consistent format, and gives you the derived quantities — capacities,
 coulombic efficiencies, incremental capacity — without you writing the
