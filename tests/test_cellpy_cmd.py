@@ -255,6 +255,9 @@ def test_cli_setup():
         result = runner.invoke(cli.cli, ["setup", "--dry-run"])
         print(result.output)
         assert result.exit_code == 0
+        assert "Configuration file written!" not in result.output
+        assert "Environment file written!" not in result.output
+        assert result.output.count("dry-run: would write") == 3
 
 
 def test_cli_setup_interactive():
