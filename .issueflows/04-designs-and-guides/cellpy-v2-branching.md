@@ -155,14 +155,22 @@ cellpy-core migration guide).
 
 ## At v2.0 release (checklist)
 
-- [ ] Full `uv run pytest` green on `master`
-- [ ] Tag `v2.0.0` on `master`
-- [ ] Pin exact `cellpycore==…` in the release commit
-- [ ] Publish migration guide (v1 files → v2 read path; see
-      `architecture-plan/cellpy-v104-migration-notes.md` for the 1.0.3→1.0.4 part)
-- [ ] Update epic #402; archive issue-flow docs to `03-solved-issues`
-- [ ] `v1.x` remains open for critical fixes as long as needed; announce its
-      end-of-life explicitly when the time comes
+Tracked by [#574](https://github.com/jepegit/cellpy/issues/574). Prefer an **rc
+soak** before the stable tag:
+
+- [ ] Full `uv run pytest` green on `master` (`essential` + `full` CI jobs)
+- [ ] Benchmark compare vs GHA `v1x` baseline: no fail-band (+100%); load/summary
+      warn-band (+20%) investigated or explained (see #574 status)
+- [ ] Tag **`v2.0.0rc1`** on `master` → PyPI `--pre` (soak)
+- [ ] Tag **`v2.0.0`** on `master` after soak
+- [ ] Pin exact `cellpycore==…` in the release commit (master currently `==0.2.3`)
+- [ ] Migration guide published (`docs/getting_started/migration_v1_to_v2.md`);
+      `DEPRECATIONS.md` current
+- [ ] Update epic #402 / Stage-3 tracking #575; archive issue-flow docs to
+      `03-solved-issues`
+- [ ] Announce **`v1.x` bugfix-only for 12 months from the stable `v2.0.0`
+      date** (decision #438-6) — clock does **not** start at rc1
+- [ ] conda-forge feedstock bump with **stable** (not required for rc1)
 
 ## Tracking
 

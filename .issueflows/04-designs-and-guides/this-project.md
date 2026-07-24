@@ -50,14 +50,14 @@ See also [testing-and-coverage.md](testing-and-coverage.md) and [ci-tiers.md](ci
 
 - Do **not** edit a version into `pyproject.toml`.
 - Latest tag → next pre-release on the same channel by default
-  (e.g. `v2.0.0a5` + `bump` → plan `v2.0.0a6`).
+  (e.g. after alphas, plan `v2.0.0rc1`; after soak, `v2.0.0`).
 - Create the tag **after** the PR is squash-merged onto `master`:
 
 ```bash
 git switch master && git pull --ff-only
-git tag v2.0.0a6
-git push origin v2.0.0a6
-# or: gh release create v2.0.0a6 --generate-notes
+git tag v2.0.0rc1
+git push origin v2.0.0rc1
+# or: gh release create v2.0.0rc1 --generate-notes
 ```
 
 - `/iflow-close bump` only **plans** the tag (records it in the status file);

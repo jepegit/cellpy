@@ -92,9 +92,9 @@ uv run pytest -m essential   # full suite before v2.0.0 stable
 
 git status                   # must show a clean tree (no untracked)
 
-# Pre-release while v2 is unfinished:
-gh release create v2.0.0a2 --target master --generate-notes
-# Stable only when flip + gates are done:
+# Pre-release while soaking gates (alphas already shipped; next is rc):
+gh release create v2.0.0rc1 --target master --generate-notes
+# Stable only when #574 gates + soak are done:
 # gh release create v2.0.0 --target master --generate-notes
 
 gh run list --workflow release.yml --limit 1
@@ -135,10 +135,13 @@ coulombic-difference, dropped columns, step classification must be intended
 **and** release-noted (or fixed). User notes:
 `architecture-plan/cellpy-v104-migration-notes.md`.
 
-### Extra gates — `v2.0.0` stable
+### Extra gates — `v2.0.0rc1` / `v2.0.0` stable
 
 `cellpy-v2-branching.md` “At v2.0 release” + architecture release plan (support
-matrix, benchmarks, dependency budget). No stable 2.x until flip criteria pass.
+matrix, benchmarks, dependency budget) + issue [#574](https://github.com/jepegit/cellpy/issues/574).
+Cut **`v2.0.0rc1`** when gates are green enough to soak; no **stable** `v2.0.0`
+until flip criteria + soak pass. Feedstock follows **stable**, not rc.
+The 12-month `v1.x` bugfix-only window starts at stable only.
 
 ---
 
