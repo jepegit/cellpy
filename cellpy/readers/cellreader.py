@@ -887,21 +887,27 @@ class CellpyCell:
     @property
     def cycle_mode(self):
         # TODO: v2.0 edit this from scalar to list
+        from cellpy.readers.cellpy_file.meta import unwrap_meta_value
+
         try:
             data = self.data
             m = data.meta_test_dependent.cycle_mode
             # cellpy saves this as a list (ready for v2.0),
-            # but we want to return a scalar for the moment
-            # Temporary fix to make sure that cycle_mode is a scalar:
-            if isinstance(m, (tuple, list)):
-                return m[0]
-            return m
+            # but we want to return a scalar for the moment.
+            # Recursively unwrap nested 1-element lists (issue #668).
+            unwrapped = unwrap_meta_value(m)
+            if unwrapped is not m:
+                data.meta_test_dependent.cycle_mode = unwrapped
+            return unwrapped
         except NoDataFound:
-            return self._cycle_mode
+            return unwrap_meta_value(self._cycle_mode)
 
     @cycle_mode.setter
     def cycle_mode(self, cycle_mode):
         # TODO: v2.0 edit this from scalar to list
+        from cellpy.readers.cellpy_file.meta import unwrap_meta_value
+
+        cycle_mode = unwrap_meta_value(cycle_mode)
         logging.debug(f"-> cycle_mode: {cycle_mode}")
         try:
             data = self.data
@@ -4810,6 +4816,9 @@ class CellpyCell:
         # cellpy-core takes unit conversions by value: cellpy (the consumer, which
         # owns cellpy_units and pint) computes the factors and passes them in, so
         # the core summary engine needs no pint.
+        # Normalize nested list-boxed cycle_mode into meta before the bridge
+        # reads it (OldCellpyCellCore only unwraps one level; issue #668).
+        _ = self.cycle_mode
         current_conversion_factor = core_units.calculate_current_conversion_factor(
             data.raw_units["current"], to_units=self.cellpy_units
         )

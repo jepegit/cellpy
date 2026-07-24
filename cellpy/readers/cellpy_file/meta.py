@@ -3,10 +3,30 @@
 from __future__ import annotations
 
 import warnings
+from typing import Any
 
 from cellpy.readers import externals
 from cellpy.exceptions import WrongFileVersion
 from cellpy.parameters import prms
+
+
+def unwrap_meta_value(value: Any) -> Any:
+    """Normalize a legacy meta value to a plain scalar (or ``None``).
+
+    Cellpy-file loads leave 1-element lists in ``meta_test_dependent`` (the
+    ``update(as_list=True)`` path). Older files can also carry double-nested
+    values such as ``[['anode']]`` for ``cycle_mode``; the summarizer bridge
+    needs a scalar string (issue #668).
+    """
+    if isinstance(value, (list, tuple)):
+        if len(value) == 1:
+            return unwrap_meta_value(value[0])
+        return value
+    if isinstance(value, externals.numpy.generic):
+        value = value.item()
+    if isinstance(value, float) and value != value:  # NaN -> absent
+        return None
+    return value
 
 
 def extract_from_meta_dictionary(

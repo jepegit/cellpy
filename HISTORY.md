@@ -4,6 +4,8 @@ Note! Only v1 related changes are collected here.
 
 ## [Unreleased]
 
+* Fix: batch `b.plot` unnamed cycle index and nested list `cycle_mode` crashing `make_summary`. (#668)
+
 ## 1.1.0.post2 - 2026-07-23
 
 * Fix: lazy config load pushes `.env_cellpy` into `os.environ` so OtherPath SSH auth works again after #453. (#662)
