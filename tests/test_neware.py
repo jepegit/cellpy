@@ -11,7 +11,10 @@ log.setup_logging(default_level=logging.DEBUG, testing=True)
 
 @pytest.fixture
 def neware_cell(cellpy_data_instance, parameters):
-    return cellpy_data_instance.load(parameters.nw_cellpy_file_path)
+    # neware_uio.h5 is still v7; escape the 2.0 pre-v8 freeze (#573).
+    return cellpy_data_instance.load(
+        parameters.nw_cellpy_file_path, accept_old=True
+    )
 
 
 def test_get_neware_from_csv(parameters):

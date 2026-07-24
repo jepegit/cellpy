@@ -16,7 +16,10 @@ def cellpy_cell(cellpy_data_instance, parameters):
 
 @pytest.fixture
 def neware_cellpy_cell(cellpy_data_instance, parameters):
-    return cellpy_data_instance.load(parameters.nw_cellpy_file_path)
+    # neware_uio.h5 is still v7; escape the 2.0 pre-v8 freeze (#573).
+    return cellpy_data_instance.load(
+        parameters.nw_cellpy_file_path, accept_old=True
+    )
 
 
 # TODO: this cellpy file is not found - fix it!
@@ -32,12 +35,16 @@ def neware_cellpy_cell(cellpy_data_instance, parameters):
 
 @pytest.fixture
 def cellpy_cell_v5(cellpy_data_instance, parameters):
-    return cellpy_data_instance.load(parameters.cellpy_file_path_v5)
+    return cellpy_data_instance.load(
+        parameters.cellpy_file_path_v5, accept_old=True
+    )
 
 
 @pytest.fixture
 def cellpy_cell_v6(cellpy_data_instance, parameters):
-    return cellpy_data_instance.load(parameters.cellpy_file_path_v6)
+    return cellpy_data_instance.load(
+        parameters.cellpy_file_path_v6, accept_old=True
+    )
 
 
 @pytest.fixture

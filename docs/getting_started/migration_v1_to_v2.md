@@ -12,9 +12,9 @@ the 2.0 release date (decision #438-6). Feature work lands only on 2.x.
 | | 1.x | 2.x (current alphas / intended GA) |
 |---|-----|-------------------------------------|
 | Default `save()` | HDF5 (`.h5` / `.hdf5` / `.cellpy` as HDF5) | **v9** zip-of-parquet + `meta.json` (`.cellpy`) |
-| `load()` | v4–v8 HDF5 | **v4–v8 HDF5 and v9** (sniffs zip vs HDF5) |
+| `load()` | v4–v8 HDF5 | **v8 HDF5 and v9** only (sniffs zip vs HDF5). Pre-v8 raises `WrongFileVersion`. |
 | Write v8 / HDF5 | default | Escape: `save("out.h5")` or `cellpy_file_format="hdf5"` / `"v8"` |
-| Very old (pre-v8) rewrite | `cellpy convert` on **1.x** | Prefer convert on 1.x, then open in 2.x; or `load` + `save` to v9 when 2.x still reads that vintage |
+| Very old (pre-v8) rewrite | `cellpy convert` | Prefer **1.x** `cellpy convert`, then open in 2.x. 2.x `cellpy convert --to v9|v8` also rewrites. Escape: `load(..., accept_old=True)`. |
 
 v9 stores raw / steps / summary (and optional fid) as parquet members inside a
 zip, with typed metadata in `meta.json`. Parquet columns use **native** header
@@ -32,7 +32,7 @@ cellpy convert old.h5 --to v8         # keep HDF5 if you must
 from cellpy.readers.cellreader import CellpyCell
 
 cell = CellpyCell()
-cell.load("legacy_run.h5")          # v4–v8 HDF5
+cell.load("legacy_run.h5")          # v8 HDF5 (or v9 .cellpy)
 cell.save("legacy_run.cellpy")      # v9 zip-of-parquet
 ```
 

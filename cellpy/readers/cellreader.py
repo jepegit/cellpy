@@ -1509,7 +1509,7 @@ class CellpyCell:
         cellpy_file,
         parent_level=None,
         return_cls=True,
-        accept_old=True,
+        accept_old=False,
         selector=None,
         **kwargs,
     ):
@@ -1519,8 +1519,11 @@ class CellpyCell:
             cellpy_file (OtherPath, str): Full path to the cellpy file.
             parent_level (str, optional): Parent level. Warning! Deprecating this soon!
             return_cls (bool): Return the class.
-            accept_old (bool): Accept loading old cellpy-file versions.
-                Instead of raising WrongFileVersion it only issues a warning.
+            accept_old (bool): Accept loading pre-v8 cellpy-file versions.
+                Default is ``False`` (2.0 freeze): pre-v8 raises
+                ``WrongFileVersion`` naming ``cellpy convert`` on 1.x. Pass
+                ``True`` only as an escape (tests / advanced use). Prefer
+                rewriting with ``cellpy convert`` instead.
             selector (dict): Experimental feature - select specific ranges of data.
 
         Returns:

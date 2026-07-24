@@ -677,7 +677,12 @@ def test_make_summary(cellpy_data_instance, parameters):
 
 def test_v6(parameters):
     # c = cellpy.get(logging_mode="DEBUG", testing=True)
-    c2 = cellpy.get(parameters.cellpy_file_path_v6, logging_mode="DEBUG", testing=True)
+    c2 = cellpy.get(
+        parameters.cellpy_file_path_v6,
+        logging_mode="DEBUG",
+        testing=True,
+        accept_old=True,
+    )
     # c.load(parameters.cellpy_file_path_v6)
 
 
@@ -740,7 +745,7 @@ def test_make_summary_new_version(parameters):
 
     s1 = c_raw.data.summary
     c_h5 = cellpy.get(logging_mode="DEBUG", testing=True)
-    c_h5.load(parameters.cellpy_file_path_v6)
+    c_h5.load(parameters.cellpy_file_path_v6, accept_old=True)
     s2 = c_h5.data.summary
 
     print()

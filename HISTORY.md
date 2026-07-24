@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+* Lock the file-format compatibility matrix (v8/v9 read/write, convert, pre-v8 freeze) (#573).
+
 * Complete cli_api extraction for remaining CLI commands (new, serve, setup, …) (#651).
 
 * Fix summary CV-split plots: use exclude_step_types and full−non_cv instead of dead selector_type (#654).
