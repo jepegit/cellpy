@@ -12,7 +12,7 @@ After installing `cellpy`, continue to
 - [Setup and configuration](configuration.md)
 - [Check your cellpy installation](checkup.md)
 
-(cellpy_install_windows)=
+<a id="cellpy_install_windows"></a>
 ## Installation on Windows
 
 ### Conda
@@ -44,7 +44,7 @@ on windows (e.g. `pytables`) and when using pip, you have to take care of this y
     based on the provided [environment.yml](https://github.com/jepegit/cellpy/blob/master/environment.yml) file, or install using the [requirements.txt](https://github.com/jepegit/cellpy/blob/master/requirements.txt) file.
     For windows, make also sure to have the correct drivers for the .res files.
 
-(cellpy_install_linux)=
+<a id="cellpy_install_linux"></a>
 ## Installation on Linux (and macOS)
 
 It is especially recommended to install `cellpy` in a virtual environment on Linux and macOS.
@@ -106,7 +106,7 @@ sudo apt-get install libhdf5-serial-dev
     python -m pip install cellpy
     ```
 
-(cellpy-install-sources)=
+<a id="cellpy-install-sources"></a>
 ## Installation from sources
 
 The sources for `cellpy` can be downloaded from the [Github repo].
@@ -135,7 +135,7 @@ $ python -m pip install -e .
 (assuming that you are in the project folder, *i.e.* the folder that
 contains the ``pyproject.toml`` file)
 
-(cellpy_dependencies)=
+<a id="cellpy_dependencies"></a>
 ## Dependencies
 
 `cellpy` relies on a number of other python package and these need
@@ -207,7 +207,7 @@ For more details, have a look at the documentation of these packages.
 
 ### Additional requirements for .res files
 
-(note_windows)=
+<a id="note_windows"></a>
 !!! note "For Windows users"
     .res files from Arbin testers are actually in a Microsoft Access format.
     If you do not have one of the most recent Office  versions, you might not be allowed to install a driver
@@ -227,7 +227,7 @@ For more details, have a look at the documentation of these packages.
     You can install `mdbtools` using your systems preferred package manager (*e.g.* `apt-get install mdbtools` on
     ubuntu or if you are on macOS, try `brew install mdbtools`).
 
-(cellpy_setup_teaspoon)=
+<a id="cellpy_setup_teaspoon"></a>
 ## The teaspoon explanation including installation of Python
 
 This guide provides step-by-step instructions for installing cellpy on a Windows system,

@@ -1,28 +1,64 @@
-# Create package for PyPI
+# Packaging for PyPI
 
-## Build package
+Packaging is defined in `pyproject.toml` (hatchling). The package version comes
+from the **git tag** via `uv-dynamic-versioning` — there is no hand-edited
+version string. Tag `vX.Y.Z` → PyPI version `X.Y.Z`.
 
-```bash
-$ python -m build
+## Recommended: GitHub release → CI
+
+Publishing a GitHub release runs `.github/workflows/release.yml`: validate the
+tag against the branch → run essential tests → `uv build` → upload to PyPI with
+trusted publishing (OIDC; no API token in CI).
+
+| Tag pattern | Branch | Notes |
+|-------------|--------|--------|
+| `v1.x.y` (and 1.x pre-releases) | `v1.x` | 1.x maintenance |
+| `v2.x.y` (and 2.x pre-releases) | `master` | v2 development |
+
+Example (v2 pre-release from `master`):
+
+```shell
+git switch master && git pull --ff-only
+git status   # must be clean — no untracked files either
+gh release create v2.0.0a2 --target master --generate-notes
 ```
 
-## Upload package
+Example (1.x from `v1.x`):
 
-The `cellpy` package on PyPI requires 2-factor identification. For this to work, you need to create a token.
-See below for instructions on how to do this.
-
-```bash
-$ python -m twine upload dist/* -u __token__ -p pypi-<token>"
+```shell
+git switch v1.x && git pull --ff-only
+git status
+gh release create v1.1.1 --target v1.x --generate-notes
 ```
 
-!!! note
-    The following instructions are copied from the PyPI website (<https://pypi.org/help/#apitoken>).
-    Please see the PyPI website for the latest instructions.
+!!! warning
+    Releases tag whatever commit is at HEAD. Keep the tree clean before cutting
+    a release — stray untracked files on that commit ship with it.
 
-    Get the API token:
-      - Verify your email address (check your account settings).
-      - In your account settings, go to the API tokens section and select "Add API token"
+## Build locally
 
-    To use an API token:
-      - Set your username to "\_\_token\_\_"
-      - Set your password to the token value, including the pypi- prefix
+Check the sdist and wheel without publishing:
+
+```shell
+uv build
+```
+
+Optional Docker smoke test (clean install + `import cellpy` + CLI):
+
+```shell
+scripts/build_test.sh
+```
+
+Between tags, `uv build` yields a dev version such as
+`2.0.0a1.post3.dev0+<hash>` — that is expected.
+
+## Manual publish (fallback)
+
+Prefer the GitHub release path. If you must publish by hand:
+
+1. Tag the commit (`vX.Y.Z`) on the correct branch and push the tag.
+2. `uv build`
+3. `uv publish` (or twine) using your PyPI credentials / token.
+
+Trusted publishing via the `pypi` GitHub environment is the normal path; API
+tokens are only for exceptional manual uploads.

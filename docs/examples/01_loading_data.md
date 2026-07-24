@@ -238,6 +238,7 @@ c.cell_name = "20210210_FC"
     c.make_summary()
     ```
 
+
 To check the units that are used within cellpy:
 
 
@@ -245,29 +246,27 @@ To check the units that are used within cellpy:
 print(c.cellpy_units)
 ```
 
-
-    [1;35mCellpyUnits[0m[1m([0m
-        [33mcurrent[0m=[32m'A'[0m,
-        [33mcharge[0m=[32m'mAh'[0m,
-        [33mvoltage[0m=[32m'V'[0m,
-        [33mtime[0m=[32m'sec'[0m,
-        [33mresistance[0m=[32m'ohm'[0m,
-        [33mpower[0m=[32m'W'[0m,
-        [33menergy[0m=[32m'Wh'[0m,
-        [33mfrequency[0m=[32m'hz'[0m,
-        [33mmass[0m=[32m'mg'[0m,
-        [33mnominal_capacity[0m=[32m'mAh/g'[0m,
-        [33mspecific_gravimetric[0m=[32m'g'[0m,
-        [33mspecific_areal[0m=[32m'cm**2'[0m,
-        [33mspecific_volumetric[0m=[32m'cm**3'[0m,
-        [33mlength[0m=[32m'cm'[0m,
-        [33marea[0m=[32m'cm**2'[0m,
-        [33mvolume[0m=[32m'cm**3'[0m,
-        [33mtemperature[0m=[32m'C'[0m,
-        [33mpressure[0m=[32m'bar'[0m
-    [1m)[0m
+    CellpyUnits(
+        current='A',
+        charge='mAh',
+        voltage='V',
+        time='sec',
+        resistance='ohm',
+        power='W',
+        energy='Wh',
+        frequency='hz',
+        mass='mg',
+        nominal_capacity='mAh/g',
+        specific_gravimetric='g',
+        specific_areal='cm**2',
+        specific_volumetric='cm**3',
+        length='cm',
+        area='cm**2',
+        volume='cm**3',
+        temperature='C',
+        pressure='bar'
+    )
     
-
 
 Metadata can also be included by the use of a database file containing the required values. The information on database filename and content has to be set in the config file.
 

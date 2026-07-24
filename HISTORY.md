@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+* Iterative docs cleanup: landing pages, packaging/conda/dev guides, Mermaid and tutorial rendering, and a clean Zensical build (#673).
+
 * Align 2.0 release guides for a `v2.0.0rc1` soak and record the Stage 3.17 gate audit (#574).
 
 * Lock the file-format compatibility matrix (v8/v9 read/write, convert, pre-v8 freeze) (#573).

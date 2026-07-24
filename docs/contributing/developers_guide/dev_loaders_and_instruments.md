@@ -56,7 +56,7 @@ Subclasses of the `AutoLoader` class must implement the following methods:
 The `query_file` method must return a `pandas.DataFrame` and accept a filename as argument,
 e.g.:
 
-```
+```python
 def query_file(self, name):
     return pd.read_csv(name)
 ```
@@ -64,14 +64,14 @@ def query_file(self, name):
 You can´t provide additional arguments to the `query_file` method, but instead
 promote them to instance variables using the `parse_formatter_parameter` method:
 
-```
+```python
 def parse_loader_parameters(self, **kwargs):
     self.warn_bad_lines = kwargs.get("warn_bad_lines", None)
 ```
 
 and then use the instance variables in the `query_file` method:
 
-```
+```python
 def query_file(self, name):
     return pd.read_csv(name, warn_bad_lines=self.warn_bad_lines)
 ```
