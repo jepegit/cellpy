@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+* Align 2.0 release guides for a `v2.0.0rc1` soak and record the Stage 3.17 gate audit (#574).
+
 * Lock the file-format compatibility matrix (v8/v9 read/write, convert, pre-v8 freeze) (#573).
 
 * Complete cli_api extraction for remaining CLI commands (new, serve, setup, …) (#651).
