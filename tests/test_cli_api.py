@@ -30,6 +30,13 @@ def test_every_extracted_command_is_importable():
         "run_project",
         "list_journals",
         "open_db_editor",
+        "setup_config",
+        "migrate_config",
+        "show_info",
+        "start_jupyter",
+        "edit_file",
+        "pull_resources",
+        "create_project",
     ):
         assert callable(getattr(cli_api, name)), name
 
@@ -278,3 +285,60 @@ def test_convert_really_upgrades_a_legacy_file(tmp_path, target):
     reloaded = cellreader.CellpyCell().load(written)
     assert len(reloaded.get_cycle_numbers()) > 0
     assert len(reloaded.data.raw) > 0
+
+
+# -- remaining commands (#651) ----------------------------------------------------
+
+
+@pytest.mark.essential
+def test_show_info_is_quiet_by_default(capsys):
+    cli_api.show_info(version=True)
+    assert "version" not in capsys.readouterr().out
+
+
+@pytest.mark.essential
+def test_show_info_echoes_when_asked(capsys):
+    cli_api.show_info(version=True, echo=print)
+    assert "version" in capsys.readouterr().out
+
+
+@pytest.mark.essential
+def test_start_jupyter_reports_missing_directory(tmp_path, capsys):
+    missing = tmp_path / "no_such_notebooks"
+    cli_api.start_jupyter(directory=str(missing), echo=print)
+    out = capsys.readouterr().out
+    assert "does not exist" in out
+
+
+@pytest.mark.essential
+def test_create_project_returns_when_cookiecutter_missing(monkeypatch, capsys):
+    """Missing cookiecutter used to echo and then NameError (#651)."""
+    import builtins
+    import sys
+
+    for mod in [m for m in sys.modules if m.startswith("cookiecutter")]:
+        monkeypatch.delitem(sys.modules, mod, raising=False)
+
+    real_import = builtins.__import__
+
+    def fake_import(name, *args, **kwargs):
+        if name.startswith("cookiecutter"):
+            raise ModuleNotFoundError(name)
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", fake_import)
+    cli_api.create_project(list_=False, echo=print)
+    out = capsys.readouterr().out
+    assert "Could not import cookiecutter" in out
+
+
+@pytest.mark.essential
+def test_pull_resources_with_nothing_selected_is_quiet_by_default(capsys):
+    cli_api.pull_resources()
+    assert "Nothing selected" not in capsys.readouterr().out
+
+
+@pytest.mark.essential
+def test_config_path_returns_a_path_or_none():
+    result = cli_api.config_path()
+    assert result is None or hasattr(result, "exists") or isinstance(result, str)
