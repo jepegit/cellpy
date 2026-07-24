@@ -163,7 +163,7 @@ soak** before the stable tag:
       warn-band (+20%) investigated or explained (see #574 status)
 - [ ] Tag **`v2.0.0rc1`** on `master` → PyPI `--pre` (soak)
 - [ ] Tag **`v2.0.0`** on `master` after soak
-- [ ] Pin exact `cellpycore==…` in the release commit (master currently `==0.2.3`)
+- [ ] Pin exact `cellpycore==…` in the release commit (master currently `==0.2.4`)
 - [ ] Migration guide published (`docs/getting_started/migration_v1_to_v2.md`);
       `DEPRECATIONS.md` current
 - [ ] Update epic #402 / Stage-3 tracking #575; archive issue-flow docs to

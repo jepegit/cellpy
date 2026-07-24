@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+* Pin `cellpycore==0.2.4` (EFC summary columns); sync `HeadersSummary` and pipeline_smoke goldens (#675).
+
 * Iterative docs cleanup: landing pages, packaging/conda/dev guides, Mermaid and tutorial rendering, and a clean Zensical build (#673).
 * Report dry-run setup destinations without claiming that files were written (#666).
 
