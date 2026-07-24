@@ -67,7 +67,7 @@ can drop the extra.
 Escape hatch for old on-frame names (not recommended for new work):
 `CellpyCell(native_schema=False)`.
 
-### Notebook / batch post-processing
+### Notebook and batch post-processing
 
 Hard-coded 1.x names break under native headers, e.g.
 `steps.query("type=='discharge'")` → `UndefinedVariableError` because the

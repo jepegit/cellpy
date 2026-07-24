@@ -9,7 +9,7 @@ cellpy-core classes (`RawCols`, `CycleCols`, `StepCols` in `cellpycore.config`).
 scripts that still hard-code 1.x strings. Prefer `c.schema.*` so code tracks
 the runtime. A worked batch/notebook example (including the
 `cumulative_discharge_capacity` gotcha) lives in
-[Migrating from cellpy 1.x to 2.x](../getting_started/migration_v1_to_v2.md#notebook--batch-post-processing).
+[Migrating from cellpy 1.x to 2.x](../getting_started/migration_v1_to_v2.md#notebook-and-batch-post-processing).
 
 ---
 
