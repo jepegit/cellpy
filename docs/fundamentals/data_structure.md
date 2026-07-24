@@ -199,6 +199,7 @@ discharge_steps = c.data.steps.query(
 | charge / discharge capacity | `charge_capacity` / `discharge_capacity` |
 | coulombic efficiency | `coulombic_efficiency` |
 | C-rates | `charge_c_rate` / `discharge_c_rate` |
+| capacity throughput / EFC | `cumulated_capacity_throughput` / `equivalent_full_cycles` |
 
 Specific (mass-/area-normalized) columns still use postfixes such as
 `_gravimetric` and `_areal`. The summary frame has more native-only columns

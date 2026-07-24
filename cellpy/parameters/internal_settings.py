@@ -499,6 +499,8 @@ class HeadersSummary(BaseHeaders):
     cumulated_ric_sei: str = "cumulated_ric_sei"
     cumulated_ric: str = "cumulated_ric"
     normalized_cycle_index: str = "normalized_cycle_index"
+    cumulated_capacity_throughput: str = "cumulated_capacity_throughput"
+    equivalent_full_cycles: str = "equivalent_full_cycles"
     low_level: str = "low_level"
     high_level: str = "high_level"
 
