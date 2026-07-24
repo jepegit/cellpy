@@ -234,8 +234,7 @@ Batch:
 ...
 ```
 
-(cellpy-database-file)=
-
+<a id="cellpy-database-file"></a>
 ## The 'database' file
 
 The database file should contain information (cell name, type, mass loading etc.)

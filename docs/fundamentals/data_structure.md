@@ -51,8 +51,8 @@ The data is stored as an instance of the Data class, `CellpyCell.data`
 ```mermaid
 flowchart TD
     n0[CellpyCell] --> n1[Data]
-    n1[Data] --> n2[cell metadata (cell)]
-    n1[Data] --> n3[cell metadata (test)]
+    n1[Data] --> n2["cell metadata (cell)"]
+    n1[Data] --> n3["cell metadata (test)"]
     n1[Data] --> n4[methods]
     n1[Data] --> n5[raw]
     n1[Data] --> n6[steps]

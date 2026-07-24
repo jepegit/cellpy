@@ -1,13 +1,19 @@
-# cellpy
+<img src="_static/cellpy-icon-long.svg" height="300" alt="cellpy-icon">
 
-!!! warning
-    This is a release candidate and might not work as expected.
-    Let us know if you find some of the hidden bugs we have planted.
+
+# - *a library for assisting in analysing batteries and cells*
+
+
+[![cellpy package](https://img.shields.io/pypi/v/cellpy.svg)](https://pypi.python.org/pypi/cellpy)
+[![Documentation Status](https://readthedocs.org/projects/cellpy/badge/?version=latest)](https://cellpy.readthedocs.io/en/latest/?badge=latest)
+[![Downloads](https://pepy.tech/badge/cellpy)](https://pepy.tech/project/cellpy)
+
 
 **cellpy** reads data from battery cycling instruments, turns it into one
 consistent format, and gives you the derived quantities — capacities,
 coulombic efficiencies, incremental capacity — without you writing the
 bookkeeping.
+
 
 ```python
 import cellpy
@@ -15,6 +21,10 @@ import cellpy
 c = cellpy.get("my_cell.res", instrument="arbin_res", mass=0.85)
 c.data.summary[c.schema.summary.charge_capacity]
 ```
+
+!!! warning
+    This is a release candidate and might not work as expected.
+    Let us know if you find some of the hidden bugs we have planted.
 
 ## Where to start
 
@@ -40,9 +50,13 @@ If cellpy does not read your instrument's files yet, you can add a loader from
 your own package without patching cellpy: see
 [writing an instrument loader plugin](other/writing_a_loader_plugin.md).
 
-## About
+## History
 
---8<-- "docs/adapted_readme.md"
+This Python Package was developed to help the
+researchers at IFE, Norway, in their cumbersome task of
+interpreting and handling data from cycling tests of
+batteries and cells.
+
 
 ## License
 

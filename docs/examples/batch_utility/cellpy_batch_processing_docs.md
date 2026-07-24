@@ -70,10 +70,8 @@ print(" INITIALISATION OF BATCH ".center(80, "="))
 b = batch.init(name, project, batch_col=batch_col)
 ```
 
-
     =========================== INITIALISATION OF BATCH ============================
     
-
 
 Setting some parameters on automatic export of selected files:
 
@@ -171,9 +169,8 @@ Now that everything is set up `b.update()` loads the data (and exports the corre
 b.update()
 ```
 
-
       0%|          | 0/7 [00:00<?, ?it/s]
-
+    
 
 ## Exploring batch data
 
@@ -345,18 +342,16 @@ cell_labels = b.experiment.cell_names
 print(cell_labels)
 ```
 
-
-    [1m[[0m
-        [32m'20180418_sf033_2_cc'[0m,
-        [32m'20180418_sf033_3_cc'[0m,
-        [32m'20180418_sf033_4_cc'[0m,
-        [32m'20180418_sf033_5_cc'[0m,
-        [32m'20180420_sf036_2_cc'[0m,
-        [32m'20180420_sf036_3_cc'[0m,
-        [32m'20180420_sf036_4_cc'[0m
-    [1m][0m
+    [
+        '20180418_sf033_2_cc',
+        '20180418_sf033_3_cc',
+        '20180418_sf033_4_cc',
+        '20180418_sf033_5_cc',
+        '20180420_sf036_2_cc',
+        '20180420_sf036_3_cc',
+        '20180420_sf036_4_cc'
+    ]
     
-
 
 Select one cell to look at:
 

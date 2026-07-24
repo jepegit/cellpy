@@ -21,12 +21,10 @@ from cellpy.readers import core
 print(core.find_all_instruments().keys())
 ```
 
-
-    [1;35mdict_keys[0m[1m([0m[1m[[0m[32m'arbin_res'[0m, [32m'arbin_sql'[0m, [32m'arbin_sql_7'[0m, [32m'arbin_sql_csv'[0m, [32m'arbin_sql_h5'[0m, [32m'arbin_sql_xlsx'[0m, 
-    [32m'biologics_mpr'[0m, [32m'custom'[0m, [32m'ext_nda_reader'[0m, [32m'local_instrument'[0m, [32m'maccor_txt'[0m, [32m'neware_txt'[0m, [32m'neware_xlsx'[0m, 
-    [32m'pec_csv'[0m[1m][0m[1m)[0m
+    dict_keys(['arbin_res', 'arbin_sql', 'arbin_sql_7', 'arbin_sql_csv', 'arbin_sql_h5', 'arbin_sql_xlsx', 
+    'biologics_mpr', 'custom', 'ext_nda_reader', 'local_instrument', 'maccor_txt', 'neware_txt', 'neware_xlsx', 
+    'pec_csv'])
     
-
 
 Some instruments have different types of `models` - for more details on those, have a look at the section on reading of *Maccor* data below.
 
@@ -35,11 +33,16 @@ Defining a simple utility-function to get a peek of the file in question:
 
 ```python
 def head(f, n=5):
-    print(f" {f.name} ".center(80, "-"))
+    """Print the first *n* lines of a text file as one block."""
+    lines = [f" {f.name} ".center(80, "-")]
     with open(f) as datafile:
         for j in range(n):
             line = datafile.readline()
-            print(f"[{j + 1:02}] {line.strip()}")
+            if not line:
+                break
+            lines.append(f"[{j + 1:02}] {line.rstrip()}")
+    print(chr(10).join(lines))
+
 ```
 
 ## PEC CSV data
@@ -54,10 +57,8 @@ p = example_data.pec_file_path()
 print(f"{p.name=}")
 ```
 
-
-    p.[33mname[0m=[32m'pec.csv'[0m
+    p.name='pec.csv'
     
-
 
 Below we take a look at the first 35 lines of the example PEC csv-files.
 
@@ -68,192 +69,50 @@ If the file you want to load is not similar to this, either a custom loader must
 head(p, 35)
 ```
 
-
     ----------------------------------- pec.csv ------------------------------------
+    [01] Request Year:,2019
+    [02] Test:,187
+    [03] Test Description:,
+    [04] TestRegime Name:,FirstCell dQdV C/25
+    [05] TestRegime Suffix:,HWL
+    [06] TestRegime CellSize:,Default cellsize
+    [07] TestRegime Version:,1
+    [08] Project Group Name:,Immediate
+    [09] Project Group Description:,Immediate
+    [10] Project Group Memo:,
+    [11] Project Group Storage Environment:,R.T./AMB
+    [12] Project Group Test Environment:,R.T./AMB
+    [13] Number Of Cells:,1
+    [14] Parameter names:,
+    [15] Parameter values:,
+    [16] Variable names:
+    [17] LotID:,
+    [18] Lot Description:,
+    [19] Date Made:,1/21/2003 0:00
+    [20] Origin:,Other
+    [21] Requestor:,Admin
+    [22] Product ID:,Default product
+    [23] Storage Temp:,R.T./AMB
+    [24] Storage Delay:,0 days
+    [25] Test Temp:,R.T./AMB
+    [26] Start Time:,02/22/2019 16:21:35
+    [27] End Time:,1/1/0001 0:00
+    [28] Operator Instructions:,Also connect cell temp to channel TC-K and ambient temp to NTC
+    [29] #RESULTS CHECK
+    [30] ReqYear,Test,CellNr,Type,Value,Reason,
+    [31] 2019,187,1,1,3272,3,
+    [32] #END RESULTS CHECK
+    [33] Test,Cell,Rack,Shelf,Position,Cell ID,Step,Cycle,Total Time (Seconds),Load On Time (Seconds),Step Time 
+    (Seconds),Cycle Charge Time (Seconds),Cycle Discharge Time (Seconds),Real Time,Position Start Time,Voltage 
+    (mV),Current (mA),Charge Capacity (mAh),Discharge Capacity (mAh),Charge Capacity (mWh),Discharge Capacity 
+    (mWh),ReasonCode,50% DoD (mV),PeakPower 1 (W),PeakPower 2 (W),Open Circuit Voltage 1 (V),Open Circuit Voltage 2 
+    (V),Internal Resistance 1 (mOhm),Internal Resistance 2 (mOhm),Ambient temperature (Â°C),Cell surface temperature 
+    (Â°C),DC Internal Resistance (mOhm),AC Internal Resistance (mOhm),Station Temperature (Â°C),
+    [34] 187,1,SBT0550,001,1,,0,0,1,0,1,0,0,02/22/2019 16:23:27,02/22/2019 
+    16:23:26,3272.632,0,0,0,0,0,30,0,0,0,0,0,0,0,25.83,24.9,,,,
+    [35] 187,1,SBT0550,001,1,,0,0,5,0,5,0,0,02/22/2019 16:23:31,02/22/2019 
+    16:23:26,3272.2776,0,0,0,0,0,30,0,0,0,0,0,0,0,25.83,24.9,,,,
     
-
-
-
-    [1m[[0m[1;36m01[0m[1m][0m Request Year:,[1;36m2019[0m
-    
-
-
-
-    [1m[[0m[1;36m02[0m[1m][0m Test:,[1;36m187[0m
-    
-
-
-
-    [1m[[0m[1;36m03[0m[1m][0m Test Description:,
-    
-
-
-
-    [1m[[0m[1;36m04[0m[1m][0m TestRegime Name:,FirstCell dQdV C/[1;36m25[0m
-    
-
-
-
-    [1m[[0m[1;36m05[0m[1m][0m TestRegime Suffix:,HWL
-    
-
-
-
-    [1m[[0m[1;36m06[0m[1m][0m TestRegime CellSize:,Default cellsize
-    
-
-
-
-    [1m[[0m[1;36m07[0m[1m][0m TestRegime Version:,[1;36m1[0m
-    
-
-
-
-    [1m[[0m[1;36m08[0m[1m][0m Project Group Name:,Immediate
-    
-
-
-
-    [1m[[0m[1;36m09[0m[1m][0m Project Group Description:,Immediate
-    
-
-
-
-    [1m[[0m[1;36m10[0m[1m][0m Project Group Memo:,
-    
-
-
-
-    [1m[[0m[1;36m11[0m[1m][0m Project Group Storage Environment:,R.T.[35m/[0m[95mAMB[0m
-    
-
-
-
-    [1m[[0m[1;36m12[0m[1m][0m Project Group Test Environment:,R.T.[35m/[0m[95mAMB[0m
-    
-
-
-
-    [1m[[0m[1;36m13[0m[1m][0m Number Of Cells:,[1;36m1[0m
-    
-
-
-
-    [1m[[0m[1;36m14[0m[1m][0m Parameter names:,
-    
-
-
-
-    [1m[[0m[1;36m15[0m[1m][0m Parameter values:,
-    
-
-
-
-    [1m[[0m[1;36m16[0m[1m][0m Variable names:
-    
-
-
-
-    [1m[[0m[1;36m17[0m[1m][0m LotID:,
-    
-
-
-
-    [1m[[0m[1;36m18[0m[1m][0m Lot Description:,
-    
-
-
-
-    [1m[[0m[1;36m19[0m[1m][0m Date Made:,[1;36m1[0m/[1;36m21[0m/[1;36m2003[0m [1;92m0:00[0m
-    
-
-
-
-    [1m[[0m[1;36m20[0m[1m][0m Origin:,Other
-    
-
-
-
-    [1m[[0m[1;36m21[0m[1m][0m Requestor:,Admin
-    
-
-
-
-    [1m[[0m[1;36m22[0m[1m][0m Product ID:,Default product
-    
-
-
-
-    [1m[[0m[1;36m23[0m[1m][0m Storage Temp:,R.T.[35m/[0m[95mAMB[0m
-    
-
-
-
-    [1m[[0m[1;36m24[0m[1m][0m Storage Delay:,[1;36m0[0m days
-    
-
-
-
-    [1m[[0m[1;36m25[0m[1m][0m Test Temp:,R.T.[35m/[0m[95mAMB[0m
-    
-
-
-
-    [1m[[0m[1;36m26[0m[1m][0m Start Time:,[1;36m02[0m/[1;36m22[0m/[1;36m2019[0m [1;92m16:21:35[0m
-    
-
-
-
-    [1m[[0m[1;36m27[0m[1m][0m End Time:,[1;36m1[0m/[1;36m1[0m/[1;36m0001[0m [1;92m0:00[0m
-    
-
-
-
-    [1m[[0m[1;36m28[0m[1m][0m Operator Instructions:,Also connect cell temp to channel TC-K and ambient temp to NTC
-    
-
-
-
-    [1m[[0m[1;36m29[0m[1m][0m #RESULTS CHECK
-    
-
-
-
-    [1m[[0m[1;36m30[0m[1m][0m ReqYear,Test,CellNr,Type,Value,Reason,
-    
-
-
-
-    [1m[[0m[1;36m31[0m[1m][0m [1;36m2019[0m,[1;36m187[0m,[1;36m1[0m,[1;36m1[0m,[1;36m3272[0m,[1;36m3[0m,
-    
-
-
-
-    [1m[[0m[1;36m32[0m[1m][0m #END RESULTS CHECK
-    
-
-
-
-    [1m[[0m[1;36m33[0m[1m][0m Test,Cell,Rack,Shelf,Position,Cell ID,Step,Cycle,Total Time [1m([0mSeconds[1m)[0m,Load On Time [1m([0mSeconds[1m)[0m,Step Time 
-    [1m([0mSeconds[1m)[0m,Cycle Charge Time [1m([0mSeconds[1m)[0m,Cycle Discharge Time [1m([0mSeconds[1m)[0m,Real Time,Position Start Time,Voltage 
-    [1m([0mmV[1m)[0m,Current [1m([0mmA[1m)[0m,Charge Capacity [1m([0mmAh[1m)[0m,Discharge Capacity [1m([0mmAh[1m)[0m,Charge Capacity [1m([0mmWh[1m)[0m,Discharge Capacity 
-    [1m([0mmWh[1m)[0m,ReasonCode,[1;36m50[0m% DoD [1m([0mmV[1m)[0m,PeakPower [1;36m1[0m [1m([0mW[1m)[0m,PeakPower [1;36m2[0m [1m([0mW[1m)[0m,Open Circuit Voltage [1;36m1[0m [1m([0mV[1m)[0m,Open Circuit Voltage [1;36m2[0m 
-    [1m([0mV[1m)[0m,Internal Resistance [1;36m1[0m [1m([0mmOhm[1m)[0m,Internal Resistance [1;36m2[0m [1m([0mmOhm[1m)[0m,Ambient temperature [1m([0mÂ°C[1m)[0m,Cell surface temperature 
-    [1m([0mÂ°C[1m)[0m,DC Internal Resistance [1m([0mmOhm[1m)[0m,AC Internal Resistance [1m([0mmOhm[1m)[0m,Station Temperature [1m([0mÂ°C[1m)[0m,
-    
-
-
-
-    [1m[[0m[1;36m34[0m[1m][0m [1;36m187[0m,[1;36m1[0m,SBT0550,[1;36m001[0m,[1;36m1[0m,,[1;36m0[0m,[1;36m0[0m,[1;36m1[0m,[1;36m0[0m,[1;36m1[0m,[1;36m0[0m,[1;36m0[0m,[1;36m02[0m/[1;36m22[0m/[1;36m2019[0m [1;92m16:23:27[0m,[1;36m02[0m/[1;36m22[0m/[1;36m2019[0m 
-    [1;92m16:23:26[0m,[1;36m3272.632[0m,[1;36m0[0m,[1;36m0[0m,[1;36m0[0m,[1;36m0[0m,[1;36m0[0m,[1;36m30[0m,[1;36m0[0m,[1;36m0[0m,[1;36m0[0m,[1;36m0[0m,[1;36m0[0m,[1;36m0[0m,[1;36m0[0m,[1;36m25.83[0m,[1;36m24.9[0m,,,,
-    
-
-
-
-    [1m[[0m[1;36m35[0m[1m][0m [1;36m187[0m,[1;36m1[0m,SBT0550,[1;36m001[0m,[1;36m1[0m,,[1;36m0[0m,[1;36m0[0m,[1;36m5[0m,[1;36m0[0m,[1;36m5[0m,[1;36m0[0m,[1;36m0[0m,[1;36m02[0m/[1;36m22[0m/[1;36m2019[0m [1;92m16:23:31[0m,[1;36m02[0m/[1;36m22[0m/[1;36m2019[0m 
-    [1;92m16:23:26[0m,[1;36m3272.2776[0m,[1;36m0[0m,[1;36m0[0m,[1;36m0[0m,[1;36m0[0m,[1;36m0[0m,[1;36m30[0m,[1;36m0[0m,[1;36m0[0m,[1;36m0[0m,[1;36m0[0m,[1;36m0[0m,[1;36m0[0m,[1;36m0[0m,[1;36m25.83[0m,[1;36m24.9[0m,,,,
-    
-
 
 ### Loading the file
 
@@ -294,10 +153,8 @@ config = core.instrument_configurations("maccor")
 print(config.keys())
 ```
 
-
-    [1;35mdict_keys[0m[1m([0m[1m[[0m[32m'maccor_txt'[0m[1m][0m[1m)[0m
+    dict_keys(['maccor_txt'])
     
-
 
 2. Check which *models* are available for Maccor:
 
@@ -306,10 +163,8 @@ print(config.keys())
 print(config["maccor_txt"]["__all__"])
 ```
 
-
-    [1m[[0m[32m'default'[0m, [32m'ZERO'[0m, [32m'ONE'[0m, [32m'TWO'[0m, [32m'THREE'[0m, [32m'S4000-UBHAM'[0m, [32m'S4000-KIT'[0m, [32m'S4000-WMG'[0m[1m][0m
+    ['default', 'ZERO', 'ONE', 'TWO', 'THREE', 'S4000-UBHAM', 'S4000-KIT', 'S4000-WMG']
     
-
 
 3. Have a closer look at a selected model configuration, here for model `THREE`:
 
@@ -318,76 +173,74 @@ print(config["maccor_txt"]["__all__"])
 print(config["maccor_txt"]["THREE"])
 ```
 
-
-    [1m{[0m
-        [32m'config_params'[0m: [1;35mModelParameters[0m[1m([0m
-            [33mname[0m=[32m'THREE'[0m,
-            [33mfile_info[0m=[1m{[0m[32m'raw_extension'[0m: [32m'txt'[0m[1m}[0m,
-            [33munit_labels[0m=[1m{[0m
-                [32m'resistance'[0m: [32m'Ohms'[0m,
-                [32m'time'[0m: [32m's'[0m,
-                [32m'current'[0m: [32m'mA'[0m,
-                [32m'voltage'[0m: [32m'mV'[0m,
-                [32m'power'[0m: [32m'mW'[0m,
-                [32m'capacity'[0m: [32m'mAh'[0m,
-                [32m'energy'[0m: [32m'mWh'[0m,
-                [32m'temperature'[0m: [32m'C'[0m
-            [1m}[0m,
-            [33mincremental_unit_labels[0m=[1m{[0m[1m}[0m,
-            [33mnormal_headers_renaming_dict[0m=[1m{[0m
-                [32m'data_point_txt'[0m: [32m'Rec#'[0m,
-                [32m'cycle_index_txt'[0m: [32m'Cyc#'[0m,
-                [32m'step_index_txt'[0m: [32m'Step'[0m,
-                [32m'test_time_txt'[0m: [32m'TestTime'[0m,
-                [32m'step_time_txt'[0m: [32m'StepTime'[0m,
-                [32m'charge_capacity_txt'[0m: [32m'mAmp-hr'[0m,
-                [32m'charge_energy_txt'[0m: [32m'mWatt-hr'[0m,
-                [32m'current_txt'[0m: [32m'mAmps'[0m,
-                [32m'voltage_txt'[0m: [32m'Volts'[0m,
-                [32m'datetime_txt'[0m: [32m'DPt Time'[0m
-            [1m}[0m,
-            [33mnot_implemented_in_cellpy_yet_renaming_dict[0m=[1m{[0m[1m}[0m,
-            [33mcolumns_to_keep[0m=[1m[[0m[1m][0m,
-            [33mstates[0m=[1m{[0m[32m'column_name'[0m: [32m'State'[0m, [32m'charge_keys'[0m: [1m[[0m[32m'C'[0m[1m][0m, [32m'discharge_keys'[0m: [1m[[0m[32m'D'[0m[1m][0m, [32m'rest_keys'[0m: [1m[[0m[32m'R'[0m[1m][0m[1m}[0m,
-            [33mraw_units[0m=[1m{[0m[32m'current'[0m: [32m'mA'[0m, [32m'charge'[0m: [32m'mAh'[0m, [32m'mass'[0m: [32m'g'[0m, [32m'voltage'[0m: [32m'mV'[0m[1m}[0m,
-            [33mraw_limits[0m=[1m{[0m
-                [32m'current_hard'[0m: [1;36m1e-13[0m,
-                [32m'current_soft'[0m: [1;36m1e-05[0m,
-                [32m'stable_current_hard'[0m: [1;36m2.0[0m,
-                [32m'stable_current_soft'[0m: [1;36m4.0[0m,
-                [32m'stable_voltage_hard'[0m: [1;36m2.0[0m,
-                [32m'stable_voltage_soft'[0m: [1;36m4.0[0m,
-                [32m'stable_charge_hard'[0m: [1;36m0.001[0m,
-                [32m'stable_charge_soft'[0m: [1;36m5.0[0m,
-                [32m'ir_change'[0m: [1;36m1e-05[0m
-            [1m}[0m,
-            [33mformatters[0m=[1m{[0m
-                [32m'skiprows'[0m: [1;36m2[0m,
-                [32m'sep'[0m: [32m'\t'[0m,
-                [32m'header'[0m: [1;36m0[0m,
-                [32m'encoding'[0m: [32m'ISO-8859-1'[0m,
-                [32m'decimal'[0m: [32m','[0m,
-                [32m'thousands'[0m: [3;35mNone[0m
-            [1m}[0m,
-            [33mmeta_keys[0m=[1m{[0m[1m}[0m,
-            [33mpre_processors[0m=[1m{[0m[32m'remove_empty_lines'[0m: [3;92mTrue[0m[1m}[0m,
-            [33mpost_processors[0m=[1m{[0m
-                [32m'split_capacity'[0m: [3;92mTrue[0m,
-                [32m'split_current'[0m: [3;92mTrue[0m,
-                [32m'set_index'[0m: [3;92mTrue[0m,
-                [32m'rename_headers'[0m: [3;92mTrue[0m,
-                [32m'set_cycle_number_not_zero'[0m: [3;92mTrue[0m,
-                [32m'remove_last_if_bad'[0m: [3;92mTrue[0m,
-                [32m'convert_date_time_to_datetime'[0m: [3;92mTrue[0m,
-                [32m'convert_step_time_to_timedelta'[0m: [3;92mTrue[0m,
-                [32m'convert_test_time_to_timedelta'[0m: [3;92mTrue[0m
-            [1m}[0m,
-            [33mprefixes[0m=[1m{[0m[1m}[0m
-        [1m)[0m,
-        [32m'doc'[0m: [32m'Class for loading data from Maccor txt files.'[0m
-    [1m}[0m
+    {
+        'config_params': ModelParameters(
+            name='THREE',
+            file_info={'raw_extension': 'txt'},
+            unit_labels={
+                'resistance': 'Ohms',
+                'time': 's',
+                'current': 'mA',
+                'voltage': 'mV',
+                'power': 'mW',
+                'capacity': 'mAh',
+                'energy': 'mWh',
+                'temperature': 'C'
+            },
+            incremental_unit_labels={},
+            normal_headers_renaming_dict={
+                'data_point_txt': 'Rec#',
+                'cycle_index_txt': 'Cyc#',
+                'step_index_txt': 'Step',
+                'test_time_txt': 'TestTime',
+                'step_time_txt': 'StepTime',
+                'charge_capacity_txt': 'mAmp-hr',
+                'charge_energy_txt': 'mWatt-hr',
+                'current_txt': 'mAmps',
+                'voltage_txt': 'Volts',
+                'datetime_txt': 'DPt Time'
+            },
+            not_implemented_in_cellpy_yet_renaming_dict={},
+            columns_to_keep=[],
+            states={'column_name': 'State', 'charge_keys': ['C'], 'discharge_keys': ['D'], 'rest_keys': ['R']},
+            raw_units={'current': 'mA', 'charge': 'mAh', 'mass': 'g', 'voltage': 'mV'},
+            raw_limits={
+                'current_hard': 1e-13,
+                'current_soft': 1e-05,
+                'stable_current_hard': 2.0,
+                'stable_current_soft': 4.0,
+                'stable_voltage_hard': 2.0,
+                'stable_voltage_soft': 4.0,
+                'stable_charge_hard': 0.001,
+                'stable_charge_soft': 5.0,
+                'ir_change': 1e-05
+            },
+            formatters={
+                'skiprows': 2,
+                'sep': '\t',
+                'header': 0,
+                'encoding': 'ISO-8859-1',
+                'decimal': ',',
+                'thousands': None
+            },
+            meta_keys={},
+            pre_processors={'remove_empty_lines': True},
+            post_processors={
+                'split_capacity': True,
+                'split_current': True,
+                'set_index': True,
+                'rename_headers': True,
+                'set_cycle_number_not_zero': True,
+                'remove_last_if_bad': True,
+                'convert_date_time_to_datetime': True,
+                'convert_step_time_to_timedelta': True,
+                'convert_test_time_to_timedelta': True
+            },
+            prefixes={}
+        ),
+        'doc': 'Class for loading data from Maccor txt files.'
+    }
     
-
 
 Especially the `formatters` give valuable hints if a model is promising for your specific file or not:
 
@@ -396,10 +249,8 @@ Especially the `formatters` give valuable hints if a model is promising for your
 print(config["maccor_txt"]["THREE"]["config_params"].formatters)
 ```
 
-
-    [1m{[0m[32m'skiprows'[0m: [1;36m2[0m, [32m'sep'[0m: [32m'\t'[0m, [32m'header'[0m: [1;36m0[0m, [32m'encoding'[0m: [32m'ISO-8859-1'[0m, [32m'decimal'[0m: [32m','[0m, [32m'thousands'[0m: [3;35mNone[0m[1m}[0m
+    {'skiprows': 2, 'sep': '\t', 'header': 0, 'encoding': 'ISO-8859-1', 'decimal': ',', 'thousands': None}
     
-
 
 Note that "config_params" is not a dictionary, but an instance of the ModelParameters class (so dot notation is needed).
 
@@ -412,76 +263,32 @@ p = example_data.maccor_file_path()
 print(f"{p.name=}")
 ```
 
-
-    p.[33mname[0m=[32m'maccor_three.txt'[0m
+    p.name='maccor_three.txt'
     
-
 
 
 ```python
 head(p, 10)
 ```
 
-
     ------------------------------- maccor_three.txt -------------------------------
+    [01] Today''s Date      03/28/2022 12:50:27 PM
+    [02] 
+    [03] Date of Test:      08/23/2021 6:04:18 PM
+    [04] 
+    [05] Rec#       Cyc#    Step    TestTime        StepTime        mAmp-hr mWatt-hr        mAmps   Volts   State   ES 
+    DPt Time        Unnamed: 12
+    [06] 1  0       1         0d 00:00:00.00          0d 00:00:00.00        0.0     0.0     0.0     1853.8186       R  
+    0       08/23/2021 6:04:18 PM
+    [07] 2  0       1         0d 00:01:00.00          0d 00:01:00.00        0.0     0.0     0.0     1853.0556       R  
+    1       08/23/2021 6:05:18 PM
+    [08] 3  0       1         0d 00:02:00.00          0d 00:02:00.00        0.0     0.0     0.0     1853.0556       R  
+    1       08/23/2021 6:06:18 PM
+    [09] 4  0       1         0d 00:03:00.00          0d 00:03:00.00        0.0     0.0     0.0     1853.2082       R  
+    1       08/23/2021 6:07:18 PM
+    [10] 5  0       1         0d 00:04:00.00          0d 00:04:00.00        0.0     0.0     0.0     1853.0556       R  
+    1       08/23/2021 6:08:18 PM
     
-
-
-
-    [1m[[0m[1;36m01[0m[1m][0m Today''s Date      [1;36m03[0m/[1;36m28[0m/[1;36m2022[0m [1;92m12:50:27[0m PM
-    
-
-
-
-    [1m[[0m[1;36m02[0m[1m][0m 
-    
-
-
-
-    [1m[[0m[1;36m03[0m[1m][0m Date of Test:      [1;36m08[0m/[1;36m23[0m/[1;36m2021[0m [1;92m6:04:18[0m PM
-    
-
-
-
-    [1m[[0m[1;36m04[0m[1m][0m 
-    
-
-
-
-    [1m[[0m[1;36m05[0m[1m][0m Rec#       Cyc#    Step    TestTime        StepTime        mAmp-hr mWatt-hr        mAmps   Volts   State   ES 
-    DPt Time        Unnamed: [1;36m12[0m
-    
-
-
-
-    [1m[[0m[1;36m06[0m[1m][0m [1;36m1[0m  [1;36m0[0m       [1;36m1[0m         0d [1;92m00:00:00[0m.[1;36m00[0m          0d [1;92m00:00:00[0m.[1;36m00[0m        [1;36m0.0[0m     [1;36m0.0[0m     [1;36m0.0[0m     [1;36m1853.8186[0m       R  
-    [1;36m0[0m       [1;36m08[0m/[1;36m23[0m/[1;36m2021[0m [1;92m6:04:18[0m PM
-    
-
-
-
-    [1m[[0m[1;36m07[0m[1m][0m [1;36m2[0m  [1;36m0[0m       [1;36m1[0m         0d [1;92m00:01:00[0m.[1;36m00[0m          0d [1;92m00:01:00[0m.[1;36m00[0m        [1;36m0.0[0m     [1;36m0.0[0m     [1;36m0.0[0m     [1;36m1853.0556[0m       R  
-    [1;36m1[0m       [1;36m08[0m/[1;36m23[0m/[1;36m2021[0m [1;92m6:05:18[0m PM
-    
-
-
-
-    [1m[[0m[1;36m08[0m[1m][0m [1;36m3[0m  [1;36m0[0m       [1;36m1[0m         0d [1;92m00:02:00[0m.[1;36m00[0m          0d [1;92m00:02:00[0m.[1;36m00[0m        [1;36m0.0[0m     [1;36m0.0[0m     [1;36m0.0[0m     [1;36m1853.0556[0m       R  
-    [1;36m1[0m       [1;36m08[0m/[1;36m23[0m/[1;36m2021[0m [1;92m6:06:18[0m PM
-    
-
-
-
-    [1m[[0m[1;36m09[0m[1m][0m [1;36m4[0m  [1;36m0[0m       [1;36m1[0m         0d [1;92m00:03:00[0m.[1;36m00[0m          0d [1;92m00:03:00[0m.[1;36m00[0m        [1;36m0.0[0m     [1;36m0.0[0m     [1;36m0.0[0m     [1;36m1853.2082[0m       R  
-    [1;36m1[0m       [1;36m08[0m/[1;36m23[0m/[1;36m2021[0m [1;92m6:07:18[0m PM
-    
-
-
-
-    [1m[[0m[1;36m10[0m[1m][0m [1;36m5[0m  [1;36m0[0m       [1;36m1[0m         0d [1;92m00:04:00[0m.[1;36m00[0m          0d [1;92m00:04:00[0m.[1;36m00[0m        [1;36m0.0[0m     [1;36m0.0[0m     [1;36m0.0[0m     [1;36m1853.0556[0m       R  
-    [1;36m1[0m       [1;36m08[0m/[1;36m23[0m/[1;36m2021[0m [1;92m6:08:18[0m PM
-    
-
 
 The file format for this file is handled by the model `THREE` in `cellpy`. Both, information on the instrument ("maccor_txt") and on the *model* ("THREE") has to be included when loading the data using the standard  `cellpy.get` method:
 
@@ -514,10 +321,8 @@ print(f"Available cycles in the file: {c.get_cycle_numbers()}")
 plotutils.raw_plot(c, width=1200, height=400)
 ```
 
-
-    Available cycles in the file: [1m[[0m [1;36m1[0m  [1;36m2[0m  [1;36m3[0m  [1;36m4[0m  [1;36m5[0m  [1;36m6[0m  [1;36m7[0m  [1;36m8[0m  [1;36m9[0m [1;36m10[0m [1;36m11[0m [1;36m12[0m [1;36m13[0m [1;36m14[0m [1;36m15[0m[1m][0m
+    Available cycles in the file: [ 1  2  3  4  5  6  7  8  9 10 11 12 13 14 15]
     
-
 
 
 
@@ -538,10 +343,8 @@ config = core.instrument_configurations("neware")
 print(config["neware_txt"]["__all__"])
 ```
 
-
-    [1m[[0m[32m'default'[0m, [32m'ONE'[0m, [32m'UIO'[0m[1m][0m
+    ['default', 'ONE', 'UIO']
     
-
 
 Check the configuration for *model* `ONE`:
 
@@ -550,85 +353,83 @@ Check the configuration for *model* `ONE`:
 print(config["neware_txt"]["ONE"])
 ```
 
-
-    [1m{[0m
-        [32m'config_params'[0m: [1;35mModelParameters[0m[1m([0m
-            [33mname[0m=[32m'ONE'[0m,
-            [33mfile_info[0m=[1m{[0m[32m'raw_extension'[0m: [32m'csv'[0m[1m}[0m,
-            [33munit_labels[0m=[1m{[0m[1m}[0m,
-            [33mincremental_unit_labels[0m=[1m{[0m[1m}[0m,
-            [33mnormal_headers_renaming_dict[0m=[1m{[0m
-                [32m'data_point_txt'[0m: [32m'DataPoint'[0m,
-                [32m'cycle_index_txt'[0m: [32m'Cycle Index'[0m,
-                [32m'step_index_txt'[0m: [32m'Step Index'[0m,
-                [32m'current_txt'[0m: [32m'Current[0m[32m([0m[32mA[0m[32m)[0m[32m'[0m,
-                [32m'voltage_txt'[0m: [32m'Voltage[0m[32m([0m[32mV[0m[32m)[0m[32m'[0m,
-                [32m'charge_capacity_txt'[0m: [32m'Chg. Cap.[0m[32m([0m[32mAh[0m[32m)[0m[32m'[0m,
-                [32m'charge_energy_txt'[0m: [32m'Chg. Energy[0m[32m([0m[32mWh[0m[32m)[0m[32m'[0m,
-                [32m'discharge_capacity_txt'[0m: [32m'DChg. Cap.[0m[32m([0m[32mAh[0m[32m)[0m[32m'[0m,
-                [32m'discharge_energy_txt'[0m: [32m'DChg. Energy[0m[32m([0m[32mWh[0m[32m)[0m[32m'[0m,
-                [32m'datetime_txt'[0m: [32m'Date'[0m,
-                [32m'step_time_txt'[0m: [32m'Time'[0m,
-                [32m'dq_dv_txt'[0m: [32m'dQ/dV[0m[32m([0m[32mmAh/V[0m[32m)[0m[32m'[0m,
-                [32m'internal_resistance_txt'[0m: [32m'Contact resistance[0m[32m([0m[32mmO[0m[32m)[0m[32m'[0m,
-                [32m'power_txt'[0m: [32m'Power[0m[32m([0m[32mW[0m[32m)[0m[32m'[0m,
-                [32m'test_time_txt'[0m: [32m'Cumulative Time'[0m
-            [1m}[0m,
-            [33mnot_implemented_in_cellpy_yet_renaming_dict[0m=[1m{[0m[1m}[0m,
-            [33mcolumns_to_keep[0m=[1m[[0m[1m][0m,
-            [33mstates[0m=[1m{[0m
-                [32m'column_name'[0m: [32m'Step Type'[0m,
-                [32m'charge_keys'[0m: [1m[[0m[32m'CC Chg'[0m[1m][0m,
-                [32m'discharge_keys'[0m: [1m[[0m[32m'CC DChg'[0m[1m][0m,
-                [32m'rest_keys'[0m: [1m[[0m[32m'Rest'[0m[1m][0m
-            [1m}[0m,
-            [33mraw_units[0m=[1m{[0m
-                [32m'current'[0m: [32m'A'[0m,
-                [32m'charge'[0m: [32m'Ah'[0m,
-                [32m'mass'[0m: [32m'g'[0m,
-                [32m'voltage'[0m: [32m'V'[0m,
-                [32m'energy'[0m: [32m'Wh'[0m,
-                [32m'power'[0m: [32m'W'[0m,
-                [32m'resistance'[0m: [32m'Ohm'[0m
-            [1m}[0m,
-            [33mraw_limits[0m=[1m{[0m
-                [32m'current_hard'[0m: [1;36m1e-13[0m,
-                [32m'current_soft'[0m: [1;36m1e-05[0m,
-                [32m'stable_current_hard'[0m: [1;36m2.0[0m,
-                [32m'stable_current_soft'[0m: [1;36m4.0[0m,
-                [32m'stable_voltage_hard'[0m: [1;36m2.0[0m,
-                [32m'stable_voltage_soft'[0m: [1;36m4.0[0m,
-                [32m'stable_charge_hard'[0m: [1;36m0.001[0m,
-                [32m'stable_charge_soft'[0m: [1;36m5.0[0m,
-                [32m'ir_change'[0m: [1;36m1e-05[0m
-            [1m}[0m,
-            [33mformatters[0m=[1m{[0m
-                [32m'skiprows'[0m: [1;36m0[0m,
-                [32m'sep'[0m: [3;35mNone[0m,
-                [32m'header'[0m: [1;36m0[0m,
-                [32m'encoding'[0m: [32m'ISO-8859-1'[0m,
-                [32m'decimal'[0m: [32m'.'[0m,
-                [32m'thousands'[0m: [3;35mNone[0m
-            [1m}[0m,
-            [33mmeta_keys[0m=[1m{[0m[1m}[0m,
-            [33mpre_processors[0m=[1m{[0m[1m}[0m,
-            [33mpost_processors[0m=[1m{[0m
-                [32m'split_capacity'[0m: [3;91mFalse[0m,
-                [32m'split_current'[0m: [3;91mFalse[0m,
-                [32m'cumulate_capacity_within_cycle'[0m: [3;92mTrue[0m,
-                [32m'set_index'[0m: [3;92mTrue[0m,
-                [32m'rename_headers'[0m: [3;92mTrue[0m,
-                [32m'set_cycle_number_not_zero'[0m: [3;91mFalse[0m,
-                [32m'convert_date_time_to_datetime'[0m: [3;92mTrue[0m,
-                [32m'convert_step_time_to_timedelta'[0m: [3;92mTrue[0m,
-                [32m'convert_test_time_to_timedelta'[0m: [3;92mTrue[0m
-            [1m}[0m,
-            [33mprefixes[0m=[1m{[0m[1m}[0m
-        [1m)[0m,
-        [32m'doc'[0m: [32m'Class for loading data from Neware txt files.'[0m
-    [1m}[0m
+    {
+        'config_params': ModelParameters(
+            name='ONE',
+            file_info={'raw_extension': 'csv'},
+            unit_labels={},
+            incremental_unit_labels={},
+            normal_headers_renaming_dict={
+                'data_point_txt': 'DataPoint',
+                'cycle_index_txt': 'Cycle Index',
+                'step_index_txt': 'Step Index',
+                'current_txt': 'Current(A)',
+                'voltage_txt': 'Voltage(V)',
+                'charge_capacity_txt': 'Chg. Cap.(Ah)',
+                'charge_energy_txt': 'Chg. Energy(Wh)',
+                'discharge_capacity_txt': 'DChg. Cap.(Ah)',
+                'discharge_energy_txt': 'DChg. Energy(Wh)',
+                'datetime_txt': 'Date',
+                'step_time_txt': 'Time',
+                'dq_dv_txt': 'dQ/dV(mAh/V)',
+                'internal_resistance_txt': 'Contact resistance(mO)',
+                'power_txt': 'Power(W)',
+                'test_time_txt': 'Cumulative Time'
+            },
+            not_implemented_in_cellpy_yet_renaming_dict={},
+            columns_to_keep=[],
+            states={
+                'column_name': 'Step Type',
+                'charge_keys': ['CC Chg'],
+                'discharge_keys': ['CC DChg'],
+                'rest_keys': ['Rest']
+            },
+            raw_units={
+                'current': 'A',
+                'charge': 'Ah',
+                'mass': 'g',
+                'voltage': 'V',
+                'energy': 'Wh',
+                'power': 'W',
+                'resistance': 'Ohm'
+            },
+            raw_limits={
+                'current_hard': 1e-13,
+                'current_soft': 1e-05,
+                'stable_current_hard': 2.0,
+                'stable_current_soft': 4.0,
+                'stable_voltage_hard': 2.0,
+                'stable_voltage_soft': 4.0,
+                'stable_charge_hard': 0.001,
+                'stable_charge_soft': 5.0,
+                'ir_change': 1e-05
+            },
+            formatters={
+                'skiprows': 0,
+                'sep': None,
+                'header': 0,
+                'encoding': 'ISO-8859-1',
+                'decimal': '.',
+                'thousands': None
+            },
+            meta_keys={},
+            pre_processors={},
+            post_processors={
+                'split_capacity': False,
+                'split_current': False,
+                'cumulate_capacity_within_cycle': True,
+                'set_index': True,
+                'rename_headers': True,
+                'set_cycle_number_not_zero': False,
+                'convert_date_time_to_datetime': True,
+                'convert_step_time_to_timedelta': True,
+                'convert_test_time_to_timedelta': True
+            },
+            prefixes={}
+        ),
+        'doc': 'Class for loading data from Neware txt files.'
+    }
     
-
 
 
 ```python
@@ -636,10 +437,8 @@ p = example_data.neware_file_path()
 print(f"{p.name=}")
 ```
 
-
-    p.[33mname[0m=[32m'neware_uio.csv'[0m
+    p.name='neware_uio.csv'
     
-
 
 
 ```python

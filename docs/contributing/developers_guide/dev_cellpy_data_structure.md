@@ -1,13 +1,11 @@
-(cellpy-objects)=
-
+<a id="cellpy-objects"></a>
 # Main cellpy objects
 
 !!! note
     This chapter would benefit from some more love and care. Any help
     on that would be highly appreciated.
 
-(cellpycell-object)=
-
+<a id="cellpycell-object"></a>
 ## The `CellpyCell` object
 
 ```mermaid
@@ -20,7 +18,7 @@ flowchart TD
 
 The `CellpyCell` object contains the main methods as well as the actual data:
 
-```
+```python
 cellpy_instance = CellpyCell(...)
 ```
 
@@ -29,8 +27,8 @@ Data is stored within an instance of the `Data` class.
 ```mermaid
 flowchart TD
     n0[CellpyCell] --> n1[Data]
-    n1[Data] --> n2[cell metadata (cell)]
-    n1[Data] --> n3[cell metadata (test)]
+    n1[Data] --> n2["cell metadata (cell)"]
+    n1[Data] --> n3["cell metadata (test)"]
     n1[Data] --> n4[methods]
     n1[Data] --> n5[raw]
     n1[Data] --> n6[steps]
@@ -39,18 +37,16 @@ flowchart TD
 
 The `Data` instance can be reached using the `data` property:
 
-```
+```python
 cell_data = cellpy_instance.data
 ```
 
-(data-object)=
-
+<a id="data-object"></a>
 ## The `Data` object
 
 The `Data` object contains the data and the meta-data for the cell characterisation experiment(s).
 
-(cellpy-file-object)=
-
+<a id="cellpy-file-object"></a>
 ## The cellpy file format
 
 As default (cellpy 2.x / file version 9), cellpy stores files as a zip of
