@@ -382,13 +382,16 @@ def load_current_version(
 def load(
     filename,
     *,
-    accept_old: bool = True,
+    accept_old: bool = False,
     selector=None,
     parent_level: str | None = None,
 ) -> LoadResult:
     """Load a cellpy-file and return populated ``Data`` with explicit limits.
 
     Dispatches by container sniff: zip (v9 ``.cellpy``) vs HDF5 (v4–v8).
+    Default ``accept_old=False`` freezes pre-v8: raises ``WrongFileVersion``
+    naming ``cellpy convert`` on 1.x. Pass ``accept_old=True`` to load
+    legacy vintages (escape hatch used by ``cli_api.convert``).
     """
     from cellpy.readers.cellpy_file import legacy_read
     from cellpy.readers.cellpy_file import v9 as cellpy_file_v9
@@ -446,8 +449,8 @@ def load(
                 logging.debug(data)
             else:
                 raise WrongFileVersion(
-                    f"File format too old: {filename} :: version: {cellpy_file_version}"
-                    f"Try loading setting accept_old=True"
+                    f"File format too old (v{cellpy_file_version}): {filename}. "
+                    f"Use cellpy 1.x `cellpy convert` to rewrite to v8+, then open in 2.x."
                 )
         else:
             logging.debug(f"Loading {filename} :: v{cellpy_file_version}")

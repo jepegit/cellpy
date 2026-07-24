@@ -32,12 +32,16 @@ def neware_cellpy_cell(cellpy_data_instance, parameters):
 
 @pytest.fixture
 def cellpy_cell_v5(cellpy_data_instance, parameters):
-    return cellpy_data_instance.load(parameters.cellpy_file_path_v5)
+    return cellpy_data_instance.load(
+        parameters.cellpy_file_path_v5, accept_old=True
+    )
 
 
 @pytest.fixture
 def cellpy_cell_v6(cellpy_data_instance, parameters):
-    return cellpy_data_instance.load(parameters.cellpy_file_path_v6)
+    return cellpy_data_instance.load(
+        parameters.cellpy_file_path_v6, accept_old=True
+    )
 
 
 @pytest.fixture

@@ -49,6 +49,13 @@ Philosophy (loader-free core vs loaderful cellpy): see
 2. Add tests that read from `tests/data/goldens/my_suite/` (skip if files missing).
 3. Document the suite in [`data/goldens/README.md`](data/goldens/README.md).
 
+## File-format compatibility matrix (Stage 3.16 / #573)
+
+Release-contract suite: [`test_file_format_compat_matrix.py`](test_file_format_compat_matrix.py)
+(all `@pytest.mark.essential`). Asserts read v8/v9, write v9/v8, default reject of
+v&lt;8 (message names `cellpy convert` on 1.x), convert rewrite escape, and v8→v9
+value parity. Deeper HDF5 characterization stays below.
+
 ## Cellpy-file characterization (Stage 0.2)
 
 HDF5 load/save behavior is locked in [`test_cellpy_file_roundtrip.py`](test_cellpy_file_roundtrip.py)
