@@ -753,7 +753,7 @@ def summary_plotting_engine(**kwargs):
                 logging.debug("OH NO! Could not generate canvas")
             farms.append(canvas)
             if backend == "plotly":
-                if kwargs.pop("plotly_show", True):
+                if canvas is not None and kwargs.pop("plotly_show", True):
                     canvas.show()
 
     return farms, barn
@@ -808,10 +808,14 @@ def generate_summary_frame_for_plotting(pages, experiment, **kwargs) -> pd.DataF
         keys.append(df.name)
 
     summaries = pd.concat(summary_frames, keys=keys, axis=1)
+    hdr_cycle = hdr_summary["cycle_index"]
+    # Summary farms often carry an unnamed cycle index after join_summaries;
+    # name it so reset_index() yields a selectable ``cycle_index`` column (#668).
+    if summaries.index.name is None:
+        summaries.index.name = hdr_cycle
     summaries = summaries.reset_index()
     summaries.columns.names = ["variable", "cell"]
 
-    hdr_cycle = hdr_summary["cycle_index"]
     hdr_charge, hdr_discharge = _get_capacity_columns(
         capacity_specifics=capacity_specifics
     )

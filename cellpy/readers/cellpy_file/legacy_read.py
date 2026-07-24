@@ -64,6 +64,13 @@ def extract_meta_from_old_cellpy_file_max_v7(
     meta_dict = data.meta_common.digest(as_list=False, **meta_dict)
     data.meta_test_dependent.update(as_list=True, **meta_dict)
 
+    # Same nested cycle_mode unwrap as the v8 reader (issue #668).
+    from cellpy.readers.cellpy_file import meta as cellpy_file_meta
+
+    data.meta_test_dependent.cycle_mode = cellpy_file_meta.unwrap_meta_value(
+        data.meta_test_dependent.cycle_mode
+    )
+
 
 def load_v7(filename, selector=None) -> tuple["Data", LoadLimits]:
     logging.debug("--- loading v7")
