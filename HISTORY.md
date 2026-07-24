@@ -4,6 +4,8 @@ Note! Only v1 related changes are collected here.
 
 ## [Unreleased]
 
+## 1.1.0.post3 - 2026-07-24
+
 * Fix: batch `b.plot` unnamed cycle index and nested list `cycle_mode` crashing `make_summary`. (#668)
 
 ## 1.1.0.post2 - 2026-07-23
