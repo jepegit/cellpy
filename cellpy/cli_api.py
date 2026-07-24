@@ -1116,6 +1116,12 @@ def _write_config_file(user_dir, dst_file, init_filename, dry_run):
             _txt += "[cellpy] (setup) Well, guess you have to talk to the developers."
             _say(_txt)
     else:
+        if dry_run:
+            _say(
+                "[cellpy] (setup) dry-run: would write "
+                f"{dst_file} (not written)"
+            )
+            return
         _say("[cellpy] (setup) Configuration file written!")
         _say(
             "[cellpy] (setup) OK! Now you can edit it. For example by "
@@ -1145,6 +1151,12 @@ def _write_env_file(user_dir, dst_file, dry_run):
         _txt += "[cellpy] (setup) Well, guess you have to talk to the developers."
         _say(_txt)
     else:
+        if dry_run:
+            _say(
+                "[cellpy] (setup) dry-run: would write "
+                f"{dst_file} (not written)"
+            )
+            return
         _say("[cellpy] (setup) Environment file written!")
         _say(
             "[cellpy] (setup) OK! Now you can edit it. For example by "

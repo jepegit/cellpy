@@ -3,6 +3,7 @@
 ## [Unreleased]
 
 * Iterative docs cleanup: landing pages, packaging/conda/dev guides, Mermaid and tutorial rendering, and a clean Zensical build (#673).
+* Report dry-run setup destinations without claiming that files were written (#666).
 
 * Align 2.0 release guides for a `v2.0.0rc1` soak and record the Stage 3.17 gate audit (#574).
 
