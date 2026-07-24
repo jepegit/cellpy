@@ -1,22 +1,30 @@
 # v2 cellpycore pin gate (#510 Milestone C)
 
+**Status:** satisfied for the 2.0 line (as of 2026-07-24 / issue #574).
+
 **Context.** V2-15 wants an exact `cellpycore==` pin in the cellpy release
-commit. cellpy already pins `cellpycore==0.2.1` (latest core PyPI as of
-2026-07-15).
+commit.
 
-**Decision.** Do not cut the v2.0 release pin (or claim V2-15 done) until
+**Decision (historical, #510).** Do not cut the v2.0 release pin until
 [cellpy/cellpy-core#136](https://github.com/cellpy/cellpy-core/issues/136) ships
-in a **new** core release, then re-pin cellpy to that version.
+in a **new** core release, then re-pin cellpy to that version. #136 fixed
+legacy-bridge stripping of `test_id` on steps/summary and the legacy-schema
+`merge_data` story; releasing against `0.2.1` would have frozen the #507
+workaround.
 
-**Why.** #136 fixes legacy-bridge stripping of `test_id` on steps/summary and
-the legacy-schema `merge_data` story. cellpy #507 works around the strip today;
-releasing v2 against 0.2.1 would freeze the workaround as the supported path.
+**Current pin (master).** `cellpycore==0.2.3` in `[project.dependencies]` /
+`uv.lock` (core #136 closed; re-pin landed with the 0.2.3 wave). Keep an exact
+`==` pin on every release commit; bump only via the F9 order (core release →
+cellpy re-pin → cellpy release).
 
-**Sequence.**
+**`v1.x` line.** Stays on the conservative `cellpycore==0.2.1` pin unless a
+fix demands a patch bump (`cellpy-v2-branching.md`).
+
+**Sequence (still the rule for future bumps).**
 
 ```text
-core#136 fix → core bump/tag/PyPI → cellpy pin + UV_NO_SOURCES=1 uv lock
-  → essential green → v2.0.0aN / release checklist
+core fix → core bump/tag/PyPI → cellpy pin + UV_NO_SOURCES=1 uv lock
+  → essential green → cellpy tag
 ```
 
-**Refs.** cellpy #510 / #507 / #511; `.issueflows/04-designs-and-guides/release-procedure.md`.
+**Refs.** cellpy #510 / #507 / #511 / #574; `.issueflows/04-designs-and-guides/release-procedure.md`.
