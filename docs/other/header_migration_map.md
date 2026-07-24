@@ -1,11 +1,15 @@
 # Header migration map: cellpy → cellpy-core
 
 Mapping of DataFrame column string values from the old cellpy header classes
-(`HeadersNormal`, `HeadersSummary`, `HeadersStepTable`) to the new native
+(`HeadersNormal`, `HeadersSummary`, `HeadersStepTable`) to the native
 cellpy-core classes (`RawCols`, `CycleCols`, `StepCols` in `cellpycore.config`).
 
-The legacy bridge (`cellpycore.legacy`) keeps the old names alive during the
-transition; this document tracks what changes when the legacy layer is dropped.
+**In cellpy 2.0 the native names are the default on-frame columns**
+(`CellpyCell(native_schema=True)`). Use this map when migrating notebooks and
+scripts that still hard-code 1.x strings. Prefer `c.schema.*` so code tracks
+the runtime. A worked batch/notebook example (including the
+`cumulative_discharge_capacity` gotcha) lives in
+[Migrating from cellpy 1.x to 2.x](../getting_started/migration_v1_to_v2.md#notebook--batch-post-processing).
 
 ---
 

@@ -166,5 +166,10 @@ def test_schema_columns_are_keys_into_the_frames(dataset):
     """The contract, end to end: schema names index the real frames."""
     schema = dataset.schema
     assert schema.raw.potential in dataset.data.raw.columns
+    assert schema.raw.cumulative_discharge_capacity in dataset.data.raw.columns
     assert schema.summary.charge_capacity in dataset.data.summary.columns
     assert schema.steps.cycle_num in dataset.data.steps.columns
+    assert schema.steps.step_type in dataset.data.steps.columns
+    # Common 1.x mistake after the native-headers flip (#676): RawCols has no
+    # ``discharge_capacity`` — only ``cumulative_discharge_capacity``.
+    assert not hasattr(schema.raw, "discharge_capacity")

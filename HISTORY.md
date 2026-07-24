@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+* Update docs and batch-loader examples for native step/raw headers (cellpy 2.0). (#676).
+
 * Iterative docs cleanup: landing pages, packaging/conda/dev guides, Mermaid and tutorial rendering, and a clean Zensical build (#673).
 * Report dry-run setup destinations without claiming that files were written (#666).
 
