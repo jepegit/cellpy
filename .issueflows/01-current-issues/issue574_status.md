@@ -27,7 +27,7 @@
 ## Remaining work
 
 - [x] User accepted warn explanation for **rc1** (2026-07-24)
-- [ ] Commit/push readiness PR (guiding docs + issueflow notes); CI green on PR
+- [x] Readiness PR: https://github.com/jepegit/cellpy/pull/671 (`Refs #574`)
 - [ ] `/iflow-close` (owns `HISTORY.md` `[2.0.0rc1]` bullet)
 - [ ] Phase C after merge: clean `master` → `gh release create v2.0.0rc1 --target master`
 - [ ] Later: soak → re-audit → stable `v2.0.0` + feedstock + start 12-month `v1.x` window
