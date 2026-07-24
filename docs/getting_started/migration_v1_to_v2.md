@@ -45,29 +45,60 @@ can drop the extra.
 
 ## Frames and column names
 
-### What is true on current 2.0 alphas
+### What is true on cellpy 2.0 (rc1+)
 
-- **Default `CellpyCell` frames are still pandas**, with a legacy↔native bridge
-  in play for many paths. A full **polars** user-facing frame flip is the
-  remaining flag-day — watch `HISTORY.md` when it lands; do not assume every
-  API already returns `polars.DataFrame`.
+- **Default `CellpyCell` uses native headers**
+  (`native_schema=True`). On-frame names match `cellpycore` (`cycle_num`,
+  `potential`, `step_type`, `cumulative_discharge_capacity`, …). Frames are
+  still **pandas** at the public surface; a full polars user-facing flip is a
+  later flag-day — watch `HISTORY.md`.
 - Prefer **`cell.schema`** for column identities:
-  `cell.schema.raw` / `.steps` / `.summary` (native `cellpycore` column
-  objects). Legacy `headers_normal` / `headers_summary` / `headers_step_table`
-  still work via a shim and warn once per attribute (removal **2.1**). See
+  `cell.schema.raw` / `.steps` / `.summary`. Legacy
+  `headers_normal` / `headers_summary` / `headers_step_table` still resolve via
+  a shim and warn once per attribute (removal **2.1**). See
   [`DEPRECATIONS.md`](../reference/deprecations.md).
 - Column renames (raw examples): `voltage` → `potential`, `cycle_index` →
-  `cycle_num`, capacity/energy columns gain a `cumulative_` prefix in the
-  native schema. Full table:
+  `cycle_num`, `type` → `step_type`, capacity/energy columns gain a
+  `cumulative_` prefix. Full table:
   [`header_migration_map.md`](../other/header_migration_map.md).
+  Fundamentals overview:
+  [`data_structure.md`](../fundamentals/data_structure.md).
 
-### Opt-in native schema (advanced)
+Escape hatch for old on-frame names (not recommended for new work):
+`CellpyCell(native_schema=False)`.
 
-`CellpyCell(native_schema=True)` keeps frames in native names and runs the
-polars engine for the supported pipeline (`from_raw` / `load` → steps →
-summary → v9 `save`). Legacy-named consumers (`get_cap`, exporters, plotting,
-campaign merge) are **not** all supported on that path yet — see `HISTORY`
-(#511).
+### Notebook and batch post-processing
+
+Hard-coded 1.x names break under native headers, e.g.
+`steps.query("type=='discharge'")` → `UndefinedVariableError` because the
+column is `step_type`. Resolve names through `c.schema`:
+
+```python
+def update_cell(c):
+    raw = c.data.raw
+    steps = c.data.steps
+    st, r = c.schema.steps, c.schema.raw
+
+    type_col = st.step_type                       # "step_type"
+    step_col = st.step_num                        # "step_num"
+    cycle_col = r.cycle_num                       # "cycle_num"
+    raw_step_col = r.step_num                     # "step_num"
+    point_col = r.datapoint_num                   # "datapoint_num"
+    # NOT schema.raw.discharge_capacity — that attribute does not exist:
+    dc_col = r.cumulative_discharge_capacity      # "cumulative_discharge_capacity"
+
+    discharge = steps.query(f"{type_col}=='discharge'")
+    un = set(discharge[step_col].unique())
+    for i, g in raw.groupby(cycle_col):
+        sts = set(g[raw_step_col].unique()) & un
+        dc_max = g[dc_col].max()
+        if sts:
+            lp = g.loc[g[raw_step_col] == max(sts), point_col].max()
+            raw.loc[(raw[point_col] > lp) & (raw[cycle_col] == i), dc_col] = dc_max
+    c.make_step_table()
+    c.make_summary()
+    return c
+```
 
 ### Breaking: `get_cap` frame columns (#540)
 

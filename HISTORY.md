@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+* Update docs and batch-loader examples for native step/raw headers (cellpy 2.0). (#676).
 * Pin `cellpycore==0.2.4` (EFC summary columns); sync `HeadersSummary` and pipeline_smoke goldens (#675).
 
 * Iterative docs cleanup: landing pages, packaging/conda/dev guides, Mermaid and tutorial rendering, and a clean Zensical build (#673).

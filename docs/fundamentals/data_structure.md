@@ -122,159 +122,88 @@ Notice that `FileID` will contain a list of file identification parameters if th
 
 ## Column headings
 
-Cellpy uses `pandas.DataFrame` objects internally. The column headers
-of the dataframes are defined in corresponding dataclass objects that can be
-accessed using both dot-notation and through normal dictionary look-up.
-
-All the headers are set internally in `cellpy` and you can get them directly
-by e.g.
+In cellpy 2.0 the on-frame column names are the **native** `cellpycore`
+schema (`RawCols` / `StepCols` / `CycleCols`). Prefer **`c.schema`** so code
+tracks the runtime:
 
 ```python
-from cellpy.parameters.internal_settings import headers_normal
-
-cycle_column_header = headers_normal.cycle_index_txt
+c.schema.raw.cycle_num                 # -> "cycle_num"
+c.schema.raw.potential                 # -> "potential"
+c.schema.raw.cumulative_discharge_capacity
+c.schema.steps.step_type               # -> "step_type"
+c.schema.summary.charge_capacity
 ```
 
-### Column headings - raw data (or "normal" data)
+Legacy `headers_normal` / `headers_step_table` / `headers_summary` still resolve
+via a shim (one-shot deprecation warning per attribute; removal **2.1**). Full
+1.x → 2.x rename table:
+[header migration map](../other/header_migration_map.md). Coming from 1.x:
+[migration guide](../getting_started/migration_v1_to_v2.md).
 
-```python
-@dataclass
-class HeadersNormal(BaseHeaders):
-    aci_phase_angle_txt: str = "aci_phase_angle"
-    ref_aci_phase_angle_txt: str = "ref_aci_phase_angle"
-    ac_impedance_txt: str = "ac_impedance"
-    ref_ac_impedance_txt: str = "ref_ac_impedance"
-    charge_capacity_txt: str = "charge_capacity"
-    charge_energy_txt: str = "charge_energy"
-    current_txt: str = "current"
-    cycle_index_txt: str = "cycle_index"
-    data_point_txt: str = "data_point"
-    datetime_txt: str = "date_time"
-    discharge_capacity_txt: str = "discharge_capacity"
-    discharge_energy_txt: str = "discharge_energy"
-    internal_resistance_txt: str = "internal_resistance"
-    power_txt: str = "power"
-    is_fc_data_txt: str = "is_fc_data"
-    step_index_txt: str = "step_index"
-    sub_step_index_txt: str = "sub_step_index"
-    step_time_txt: str = "step_time"
-    sub_step_time_txt: str = "sub_step_time"
-    test_id_txt: str = "test_id"
-    test_time_txt: str = "test_time"
-    voltage_txt: str = "voltage"
-    ref_voltage_txt: str = "reference_voltage"
-    dv_dt_txt: str = "dv_dt"
-    frequency_txt: str = "frequency"
-    amplitude_txt: str = "amplitude"
-    channel_id_txt: str = "channel_id"
-    data_flag_txt: str = "data_flag"
-    test_name_txt: str = "test_name"
-```
+### Key columns — raw
 
-### Column headings - summary data
+| Logical field | Column (`c.schema.raw.…`) |
+|---|---|
+| data point | `datapoint_num` |
+| cycle | `cycle_num` |
+| step | `step_num` |
+| potential (was `voltage`) | `potential` |
+| current | `current` |
+| charge capacity | `cumulative_charge_capacity` |
+| discharge capacity | `cumulative_discharge_capacity` |
+| test / step time | `test_time` / `step_time` |
+| internal resistance | `internal_resistance` |
 
-```python
-@dataclass
-class HeadersSummary(BaseHeaders):
-    """In addition to the headers defined here, the summary might also contain
-    specific headers (ending in _gravimetric or _areal).
-    """
+**Gotcha:** there is no `schema.raw.discharge_capacity` — use
+`cumulative_discharge_capacity`.
 
-    postfixes = ["gravimetric", "areal"]
+### Key columns — step table
 
-    cycle_index: str = "cycle_index"
-    data_point: str = "data_point"
-    test_time: str = "test_time"
-    datetime: str = "date_time"
-    discharge_capacity_raw: str = "discharge_capacity"
-    charge_capacity_raw: str = "charge_capacity"
-    test_name: str = "test_name"
-    data_flag: str = "data_flag"
-    channel_id: str = "channel_id"
+| Logical field | Column (`c.schema.steps.…`) |
+|---|---|
+| cycle | `cycle_num` |
+| step | `step_num` |
+| sub-step | `sub_step_num` |
+| step type | `step_type` |
+| C-rate | `c_rate` |
 
-    coulombic_efficiency: str = "coulombic_efficiency"
-    cumulated_coulombic_efficiency: str = "cumulated_coulombic_efficiency"
-
-    discharge_capacity: str = "discharge_capacity"
-    charge_capacity: str = "charge_capacity"
-    cumulated_charge_capacity: str = "cumulated_charge_capacity"
-    cumulated_discharge_capacity: str = "cumulated_discharge_capacity"
-
-    coulombic_difference: str = "coulombic_difference"
-    cumulated_coulombic_difference: str = "cumulated_coulombic_difference"
-    discharge_capacity_loss: str = "discharge_capacity_loss"
-    charge_capacity_loss: str = "charge_capacity_loss"
-    cumulated_discharge_capacity_loss: str = "cumulated_discharge_capacity_loss"
-    cumulated_charge_capacity_loss: str = "cumulated_charge_capacity_loss"
-
-    normalized_charge_capacity: str = "normalized_charge_capacity"
-    normalized_discharge_capacity: str = "normalized_discharge_capacity"
-
-    shifted_charge_capacity: str = "shifted_charge_capacity"
-    shifted_discharge_capacity: str = "shifted_discharge_capacity"
-
-    ir_discharge: str = "ir_discharge"
-    ir_charge: str = "ir_charge"
-    ocv_first_min: str = "ocv_first_min"
-    ocv_second_min: str = "ocv_second_min"
-    ocv_first_max: str = "ocv_first_max"
-    ocv_second_max: str = "ocv_second_max"
-    end_voltage_discharge: str = "end_voltage_discharge"
-    end_voltage_charge: str = "end_voltage_charge"
-    cumulated_ric_disconnect: str = "cumulated_ric_disconnect"
-    cumulated_ric_sei: str = "cumulated_ric_sei"
-    cumulated_ric: str = "cumulated_ric"
-    normalized_cycle_index: str = "normalized_cycle_index"
-    cumulated_capacity_throughput: str = "cumulated_capacity_throughput"
-    equivalent_full_cycles: str = "equivalent_full_cycles"
-    low_level: str = "low_level"
-    high_level: str = "high_level"
-
-    temperature_last: str = "temperature_last"
-    temperature_mean: str = "temperature_mean"
-
-    charge_c_rate: str = "charge_c_rate"
-    discharge_c_rate: str = "discharge_c_rate"
-    pre_aux: str = "aux_"
-```
-
-### Column headings - step table
-
-```python
-@dataclass
-class HeadersStepTable(BaseHeaders):
-    test: str = "test"
-    ustep: str = "ustep"
-    cycle: str = "cycle"
-    step: str = "step"
-    test_time: str = "test_time"
-    step_time: str = "step_time"
-    sub_step: str = "sub_step"
-    type: str = "type"
-    sub_type: str = "sub_type"
-    info: str = "info"
-    voltage: str = "voltage"
-    current: str = "current"
-    charge: str = "charge"
-    discharge: str = "discharge"
-    point: str = "point"
-    internal_resistance: str = "ir"
-    internal_resistance_change: str = "ir_pct_change"
-    rate_avr: str = "rate_avr"
-```
+Statistic columns are expanded as `<base>_<stat>` (e.g. `potential_mean`,
+`charge_capacity_last`, `datapoint_num_first`). See the migration map for the
+full list.
 
 #### Step types
 
-Identifiers for the different steps have pre-defined names given in the
-class attribute list `list_of_step_types` and is written to the "step" column.
+Step-type labels are written to the **`step_type`** column. Typical values:
 
 ```python
-list_of_step_types = ['charge', 'discharge',
-                      'cv_charge', 'cv_discharge',
-                      'charge_cv', 'discharge_cv',
-                      'ocvrlx_up', 'ocvrlx_down', 'ir',
-                      'rest', 'not_known']
+['charge', 'discharge',
+ 'cv_charge', 'cv_discharge',
+ 'charge_cv', 'discharge_cv',
+ 'ocvrlx_up', 'ocvrlx_down', 'ir',
+ 'rest', 'not_known']
 ```
+
+Example:
+
+```python
+discharge_steps = c.data.steps.query(
+    f"{c.schema.steps.step_type}=='discharge'"
+)
+```
+
+### Key columns — summary
+
+| Logical field | Column (`c.schema.summary.…`) |
+|---|---|
+| cycle | `cycle_num` |
+| charge / discharge capacity | `charge_capacity` / `discharge_capacity` |
+| coulombic efficiency | `coulombic_efficiency` |
+| C-rates | `charge_c_rate` / `discharge_c_rate` |
+| capacity throughput / EFC | `cumulated_capacity_throughput` / `equivalent_full_cycles` |
+
+Specific (mass-/area-normalized) columns still use postfixes such as
+`_gravimetric` and `_areal`. The summary frame has more native-only columns
+than 1.x (durations, energies, per-direction stats); see the migration map.
 
 ### Column headings - journal pages
 
