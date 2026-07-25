@@ -1,124 +1,124 @@
 # Data structure
 
-The most important file formats and data structures for cellpy are
-summarized here. It is also possible to look into the source-code at the
-repository <https://github.com/jepegit/cellpy>.
+How cellpy 2.x organises a loaded run: the **`CellpyCell`** facade, the
+**`Data`** object (frames + metadata), and how to refer to columns via
+**`c.schema`**. Source: <https://github.com/jepegit/cellpy>.
 
-## CellpyCell - main structure
+Coming from 1.x? Start with the
+[migration guide](../getting_started/migration_v1_to_v2.md).
 
-The **CellpyCell** is the main work-horse for cellpy, containing
-all the data, stored in the **Data** object, as well as all the functions
-for reading, selecting, and tweaking your data.
-It also contains the header definitions, both for the cellpy HDF5 format,
-and for the various cell-tester file-formats that can be read. The class
-can contain several tests and each test is stored in a list. The class also
-contains several attributes that can be assigned directly.
+## CellpyCell — main structure
+
+**`CellpyCell`** is the main work-horse: load / process / save, plus helpers
+that extract curves and cycle views. Measurement data live on
+**`CellpyCell.data`** (a [`Data`](#data) instance). Column identities for the
+active runtime schema are on **`CellpyCell.schema`** (prefer this over legacy
+`headers_*` attributes).
 
 ```mermaid
 flowchart TD
     n0[CellpyCell] --> n1[Data]
-    n0[CellpyCell] --> n2[session metadata]
-    n0[CellpyCell] --> n3[cellpy metadata]
+    n0[CellpyCell] --> n2[schema]
+    n0[CellpyCell] --> n3[session name / options]
     n0[CellpyCell] --> n4[methods]
 ```
 
+Typical entry point:
+
+```python
+import cellpy
+
+c = cellpy.get("my_run.cellpy")   # or a raw instrument file
+# c.data.raw / .steps / .summary
+# c.schema.raw.potential, …
+```
+
+Multi-test / campaign merges are keyed by compact **`test_id`** on the frames
+and recorded in **`Data.tests`** — not a list of separate `Data` objects on
+`CellpyCell`. See
+[Metadata and campaign merge](../getting_started/migration_v1_to_v2.md#metadata-and-campaign-merge).
+
 ## Methods
 
-The **CellpyCell** object contains lots of methods for manipulating, extracting
-and summarising the data from the run(s).
-The following two methods are typically automatically run upon loading your data using
-`cellpy.get(filename)` and thereby creating your **CellpyCell** object:
+These two usually run when you load with `cellpy.get(...)`:
 
-> - `make_step_table`: creates a statistical summary of all the steps in the run(s) and categorizes
->   the step type from that. It is also possible to give the step types directly (step_specifications).
-> - `make_summary`: create a summary based on cycle number.
+- `make_step_table` — step statistics and step-type labels (or use
+  `step_specifications` to supply types).
+- `make_summary` — per-cycle summary (capacities, efficiencies, C-rates, …).
 
-Other common methods worth mentioning are:
+Other common methods:
 
-> - `load`: load a cellpy file.
-> - `load_raw`: load raw data file(s) (merges automatically if several filenames are given as a list).
-> - `get_cap`: get the capacity-voltage graph from one or more cycles in three different formats as well
->   as optionally interpolated, normalized and/or scaled.
-> - `get_cycle_numbers`: get the cycle numbers for your run.
-> - `get_ocv`: get the rest steps after each charge and discharge step.
-
+- `load` / `save` — cellpy files (default **v9** `.cellpy`; see
+  [file formats](file_formats.md)).
+- `load_raw` — raw instrument file(s); several paths merge automatically.
+- `get_cap` — capacity–potential curves (optionally interpolated / scaled).
+- `get_cycle_numbers` — cycle numbers present in the run.
+- `get_ocv` — rest steps after charge / discharge.
 
 ## Data
 
-The data is stored as an instance of the Data class, `CellpyCell.data`
-(a `cellpy.cellreader.Data` instance).
+Data live on `c.data` (`cellpy.readers.data_structures.Data`).
 
 ```mermaid
 flowchart TD
     n0[CellpyCell] --> n1[Data]
-    n1[Data] --> n2["cell metadata (cell)"]
-    n1[Data] --> n3["cell metadata (test)"]
-    n1[Data] --> n4[methods]
-    n1[Data] --> n5[raw]
-    n1[Data] --> n6[steps]
-    n1[Data] --> n7[summary]
+    n1[Data] --> n2[raw]
+    n1[Data] --> n3[steps]
+    n1[Data] --> n4[summary]
+    n1[Data] --> n5[meta_common / meta_test_dependent]
+    n1[Data] --> n6[tests]
+    n1[Data] --> n7[raw_units / raw_limits]
+    n1[Data] --> n8[raw_data_files FileID]
 ```
 
-The Data object contains the data and the metadata for the cell characterisation experiment(s).
+### Frames
 
-The actual measurement data, information, and summary are stored in three `pandas.DataFrames`:
+Three **pandas** `DataFrame`s hold the measurement content (still the public
+surface in 2.x):
 
-> - `raw`: raw data from the run.
-> - `steps`: stats from each step (and step type), created using the `CellpyCell.make_step_table` method.
-> - `summary`: summary data vs. cycle number (e.g. coulombic efficiency), created using the `CellpyCell.make_summary` method.
+| Attribute | Contents |
+|---|---|
+| `raw` | Point-wise data from the instrument run |
+| `steps` | Per-step stats and `step_type`, from `make_step_table` |
+| `summary` | Per-cycle summary, from `make_summary` |
 
-For details on column headings, see below.
+Column names follow the native `cellpycore` schema by default — see
+[Column headings](#column-headings).
 
 ### Metadata
 
-The Data object contains the following metadata:
+Common fields are still convenient as properties on `Data` (they forward into
+the meta boxes):
 
 ```python
-cell_no = None
-mass = prms.Materials.default_mass  # active material (in mg)
-tot_mass = prms.Materials.default_mass  # total material (in mg)
-no_cycles = 0.0
-charge_steps = None
-discharge_steps = None
-ir_steps = None
-ocv_steps = None
-nom_cap = prms.DataSet.nom_cap  # mAh/g (for finding c-rates)
-mass_given = False
-material = prms.Materials.default_material
-merged = False
-file_errors = None  # not in use at the moment
-loaded_from = None  # loaded from (can be list if merged)
-channel_index = None
-channel_number = None
-creator = None
-item_ID = None
-schedule_file_name = None
-start_datetime = None
-test_ID = None
-name = None
-cycle_mode = prms.Reader.cycle_mode
-active_electrode_area = None  # [cm2]
-active_electrode_thickness = None  # [micron]
-electrolyte_type = None  #
-electrolyte_volume = None  # [micro-liter]
-active_electrode_type = None
-counter_electrode_type = None
-reference_electrode_type = None
-experiment_type = None
-cell_type = None
-separator_type = None
-active_electrode_current_collector = None
-reference_electrode_current_collector = None
-comment = None
+c.data.mass = 1.2          # active material (mg)
+c.data.tot_mass = 12.0
+c.data.nom_cap = 3579.0    # used when deriving C-rates
+c.data.material = "Si"
+c.data.active_electrode_area = 1.767
 ```
 
-The `Data` object can also take custom metadata if provided as keyword arguments.
+Under the hood:
+
+- **`meta_common`** / **`meta_test_dependent`** — authoritative boxes for the
+  *active* test.
+- **`tests`** — `TestMetaCollection` keyed by `test_id` (0 for a single
+  unmerged test). Extra tests from a campaign merge live here; **v9** persists
+  the full collection, **v8 HDF5** only the active test.
+- **`raw_units`** / **`raw_limits`** — units and limits for the raw frame.
+- **`custom_info`** — free-form extras; keyword args on `Data(...)` can set
+  known attributes.
+
+Defaults for mass / material / nominal capacity come from **`cellpy.config`**
+(not the old `prms.Materials…` spelling). See
+[configuration](../getting_started/configuration.md).
 
 ### FileID
 
-The `FileID` object contains information about the raw file(s) and is used when comparing the cellpy-file
-with the raw file(s) (for example to check if it has been updated compared to the cellpy-file).
-Notice that `FileID` will contain a list of file identification parameters if the run is from several raw files.
+`Data.raw_data_files` is a list of **`FileID`** objects describing the raw
+source file(s). Cellpy uses them when deciding whether a saved cellpy file is
+still in sync with the raw inputs (for example after the instrument wrote more
+data). Merged loads keep one `FileID` entry per raw file.
 
 ## Column headings
 
@@ -205,36 +205,8 @@ Specific (mass-/area-normalized) columns still use postfixes such as
 `_gravimetric` and `_areal`. The summary frame has more native-only columns
 than 1.x (durations, energies, per-direction stats); see the migration map.
 
-### Column headings - journal pages
+### Batch journal columns
 
-```python
-@dataclass
-class HeadersJournal(BaseHeaders):
-    filename: str = "filename"
-    mass: str = "mass"
-    total_mass: str = "total_mass"
-    loading: str = "loading"
-    area: str = "area"
-    nom_cap: str = "nom_cap"
-    experiment: str = "experiment"
-    fixed: str = "fixed"
-    label: str = "label"
-    cell_type: str = "cell_type"
-    instrument: str = "instrument"
-    raw_file_names: str = "raw_file_names"
-    cellpy_file_name: str = "cellpy_file_name"
-    group: str = "group"
-    sub_group: str = "sub_group"
-    comment: str = "comment"
-    argument: str = "argument"
-
-
-CellpyCell.keys_journal_session = ["starred", "bad_cells", "bad_cycles", "notes"]
-```
-
-## Tester-dependent attributes
-
-For each type of testers that are supported by `cellpy`,
-a set of column headings and other different settings/attributes might also exist.
-These definitions stored in the `cellpy.parameters.internal_settings` module and
-are also injected into the `CellpyCell` class upon initiation.
+Batch journal page column names (filename, mass, loading, group, …) are part of
+the batch workflow, not the per-cell frames above. See
+[Batch processing](../examples/batch_utility/cellpy_batch_processing_docs.md).

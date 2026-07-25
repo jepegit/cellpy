@@ -1,4 +1,5 @@
 # The fundamentals of cellpy
+
 `cellpy` is implemented in Python and can be used as either a library within Python scripts,
 or as a stand-alone application for analysing battery cell test data. Internally, `cellpy` utilises the rich
 ecosystem of scientific tools available for Python. In particular, `cellpy` uses `pandas` DataFrames as the
@@ -10,7 +11,8 @@ The core of `cellpy` is the **CellpyCell** object ([illustration of the CellpyCe
 both the data (stored in the **Data** object) and central methods required to read, process and store battery testing data.
 The CellpyCell provides the appropriate interface and coordination of the resources needed, such as loading
 configurations (*e.g* default reader, default raw-data location), selecting readers for different data formats and
-exporters for saving the data.
+exporters for saving the data. Column identities for the active schema are available as **`c.schema`**
+(see [The data structure](data_structure.md)).
 
 ![cellpycell-object](figures/CellpyCell.jpg){ .center }
 
@@ -41,7 +43,9 @@ A utility can work on (A) a single **CellpyCell** object, or (B) a set of Cellpy
 objects such as the Batch utility that helps the user in automating
 and comparing results from many data sets.
 
-The `cellpy`-file format (usually stored in HDF5 format) contains all the data contained in
-the Data object together with additional relevant metadata, including information about the file version.
+The default **cellpy-file** format in 2.x is **v9**: a zip of parquet tables plus
+`meta.json` (usually with a `.cellpy` extension). Older HDF5 layouts remain
+readable; see [File formats](file_formats.md) and the
+[migration guide](../getting_started/migration_v1_to_v2.md).
 
 (Ref: [paper.md](https://github.com/jepegit/cellpy/tree/master/paper))
