@@ -1,0 +1,48 @@
+# Docs / issueflows twin of ci.yml.
+#
+# Branch protection requires "essential (linux / uv)" and "full (linux / uv)".
+# ci.yml path-ignores pure docs/md/issueflows PRs, so those checks would never
+# start. This workflow runs only on those paths and reports the same check
+# names as no-ops so required status checks stay green.
+#
+# Workflow name + job display names must match ci.yml exactly.
+# Do not share ci.yml's concurrency group (mixed code+docs PRs run both).
+name: CI
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - "docs/**"
+      - "paper/**"
+      - ".issueflows/01-current-issues/**"
+      - ".issueflows/02-partly-solved-issues/**"
+      - ".issueflows/03-solved-issues/**"
+      - ".issueflows/04-designs-and-guides/**"
+      - ".issueflows/05-epics/**"
+      - "graphify-out/**"
+      - "**/*.md"
+  push:
+    branches: [master]
+    paths:
+      - "docs/**"
+      - "paper/**"
+      - ".issueflows/01-current-issues/**"
+      - ".issueflows/02-partly-solved-issues/**"
+      - ".issueflows/03-solved-issues/**"
+      - ".issueflows/04-designs-and-guides/**"
+      - ".issueflows/05-epics/**"
+      - "graphify-out/**"
+      - "**/*.md"
+
+jobs:
+  essential:
+    name: essential (linux / uv)
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Skipping tests (docs/issueflows-only change)"
+
+  full:
+    name: full (linux / uv)
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Skipping tests (docs/issueflows-only change)"

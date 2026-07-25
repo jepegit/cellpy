@@ -1,9 +1,10 @@
 # Merge gate (Tier 1): PRs and pushes to master only.
-# (noop touch so docs/HISTORY PR #633 registers required CI checks)
-# ``essential`` is the fast signal; ``full`` runs the whole linux suite and is
-# the intended required check (issue #530 — four non-essential test failures
-# once landed on master through the essential-only gate).
-# Full conda / pip matrix runs in ci-scheduled.yml (Tier 3).
+# ``essential`` is the fast signal; ``full`` runs the whole linux suite.
+# Both job display names are required status checks on master.
+#
+# Pure docs/md/issueflows PRs are path-ignored here; ci-dummy.yml reports the
+# same check names as no-ops so branch protection does not block those PRs.
+# Full conda / pip matrix runs in ci-scheduled.yml (Tier 3) — no dummy needed.
 name: CI
 on:
   pull_request:
@@ -15,6 +16,7 @@ on:
       - ".issueflows/02-partly-solved-issues/**"
       - ".issueflows/03-solved-issues/**"
       - ".issueflows/04-designs-and-guides/**"
+      - ".issueflows/05-epics/**"
       - "graphify-out/**"
       - "**/*.md"
   push:
@@ -26,6 +28,7 @@ on:
       - ".issueflows/02-partly-solved-issues/**"
       - ".issueflows/03-solved-issues/**"
       - ".issueflows/04-designs-and-guides/**"
+      - ".issueflows/05-epics/**"
       - "graphify-out/**"
       - "**/*.md"
   workflow_dispatch:
