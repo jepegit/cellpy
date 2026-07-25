@@ -1,3 +1,7 @@
+---
+icon: material/rocket-launch
+---
+
 # Getting started
 
 Install cellpy, point it at a file, and get a first look at the data. Work

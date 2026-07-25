@@ -55,6 +55,10 @@ failure.
 - Pages are plain markdown with
   [pymdownx](https://facelessuser.github.io/pymdown-extensions/) extensions.
   Admonitions are `!!! note`, not `:::{note}`.
+- **Naming cellpy in prose:** write plain cellpy for the project/product
+  name; use backticks only for the package, import, or CLI
+  (`pip install cellpy`, `cellpy setup`). Bold is optional for brand emphasis
+  on a landing page — do not scatter it through body text.
 - Diagrams are ```mermaid fences, rendered client-side — no graphviz binary
   needed.
 - Files outside `docs/` (`README.md`, `HISTORY.md`, `DEPRECATIONS.md`, …) are

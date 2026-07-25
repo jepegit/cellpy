@@ -168,7 +168,8 @@ the instruments API. Coming from cellpy 1.x:
 - **Writing into the install tree** — treat user data dirs as read/write;
   never assume repo `testdata/` exists for end users.
 - **Committing secrets / local config** — `cellpy setup` writes
-  `.env_cellpy` and `~/.cellpy_prms_*.conf`; do not commit those.
+  `.env_cellpy` and a user `cellpy.toml` (legacy installs may still have
+  `~/.cellpy_prms_*.conf`); do not commit those.
 - **Plot backends in headless CI** — set `MPLBACKEND=Agg` when running tests
   or batch plot export without a display.
 

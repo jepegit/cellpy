@@ -30,6 +30,7 @@ nav = [
         { "Setup and configuration" = "getting_started/configuration.md" },
         { "Check your installation" = "getting_started/checkup.md" },
         { "Basic usage" = "getting_started/basic_usage.md" },
+        { "Using cellpy from an agent" = "getting_started/agents.md" },
         { "Coming from cellpy 1.x" = "getting_started/migration_v1_to_v2.md" },
     ] },
     { "Tutorials" = [
@@ -45,6 +46,7 @@ nav = [
         { "Templates" = "examples/templates/tutorial_templates.md" },
     ] },
     { "How-to guides" = [
+        "guides/index.md",
         { "Work with remote files" = "getting_started/remote_paths.md" },
         { "Write an instrument loader plugin" = "other/writing_a_loader_plugin.md" },
     ] },
@@ -55,6 +57,7 @@ nav = [
         { "File formats" = "fundamentals/file_formats.md" },
     ] },
     { "Reference" = [
+        "reference/index.md",
         { "Configuration settings" = "getting_started/configuration_reference.md" },
         { "Deprecations" = "reference/deprecations.md" },
         { "Legacy header map" = "other/header_migration_map.md" },
@@ -86,8 +89,10 @@ nav = [
         { "Issue workflow" = "issue-workflow.md" },
     ] },
     { "About" = [
+        "other/index.md",
         { "Release history" = "other/project-history.md" },
         { "Authors" = "other/authors.md" },
+        { "Citing cellpy" = "other/citing.md" },
         { "Code of conduct" = "other/code-of-conduct.md" },
         { "License" = "other/project-license.md" },
     ] },

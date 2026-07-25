@@ -1,3 +1,7 @@
+---
+icon: material/bookshelf
+---
+
 # Concepts
 
 How cellpy organises data — objects, frames, and file formats.

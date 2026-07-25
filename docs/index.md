@@ -52,12 +52,21 @@ your own package without patching cellpy: see
 
 ## History
 
-This Python Package was developed to help the
-researchers at IFE, Norway, in their cumbersome task of
-interpreting and handling data from cycling tests of
-batteries and cells.
+This Python package was developed to help the researchers at IFE, Norway, in
+their cumbersome task of interpreting and handling data from cycling tests of
+batteries and cells. Building and maintaining it has taken a lot of work over
+many years — loaders, formats, edge cases, and all the bookkeeping that used to
+live in one-off scripts.
+
+cellpy often sits *in the background* of an analysis pipeline: you load a file,
+get a summary, and move on to the science. That makes it easy for the library
+to disappear from the credits even when it did a large share of the grunt work.
+If cellpy saved you time in a paper, thesis, or report, please
+[cite it](other/citing.md) — a citation is how open-source tools like this stay
+visible and fundable.
 
 
 ## License
 
-`cellpy` is free software under the MIT License.
+cellpy is free software under the MIT License.
+

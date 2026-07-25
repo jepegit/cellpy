@@ -1,3 +1,7 @@
+---
+icon: material/school
+---
+
 # Examples & tutorials
 
 Here we provide a few basic examples to get you started with cellpy - from reading the data to creating some basic plots. These notebooks, the used datafiles and a little more can be found in the [examples

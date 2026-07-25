@@ -1,10 +1,14 @@
+---
+icon: material/api
+---
+
 # API reference
 
 Generated from the docstrings in the source, so it cannot drift from the code.
 
 If you are looking for *how to do something*, start with the
 [tutorials](../examples/index.md) or the
-[how-to guides](../getting_started/basic_usage.md) — this section is for when
+[how-to guides](../guides/index.md) — this section is for when
 you already know what you want and need the signature.
 
 ## Where to look

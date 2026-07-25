@@ -1,3 +1,9 @@
+---
+icon: material/hammer-wrench
+---
+
+# Development
+
 How to contribute to cellpy — from a first pull request to packaging and
 docs.
 
