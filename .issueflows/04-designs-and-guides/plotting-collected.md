@@ -25,6 +25,9 @@ Epic #567 Stage 3 / issue #657 re-bases collectors' drawing half onto
   `collected_plot`; custom `plotter=` callables still work if provided.
 - Collector plotly templates remain in `cellpy.plotting.theme`
   (`make_collector_templates`).
+- **Cycle column:** capacity-curve frames use native `cycle_num`; ICA frames
+  use `cycle`. Plotters must use the `z` (cycle-column) argument for counts and
+  filters — never hardcode `cycle_num` or `.cycle` on the curve/ICA paths (#679).
 
 ## Links
 

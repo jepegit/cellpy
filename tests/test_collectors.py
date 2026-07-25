@@ -97,6 +97,31 @@ def test_batch_ica_collector_film_mode(populated_batch):
     _assert_ran(collector)
 
 
+@pytest.mark.essential
+def test_batch_ica_collector_fig_pr_cycle(populated_batch):
+    """Per-cycle ICA layout must use the ICA ``cycle`` column, not ``cycle_num`` (#679)."""
+    collector = BatchICACollector(populated_batch, plot_type="fig_pr_cycle")
+    _assert_ran(collector)
+
+
+@pytest.mark.essential
+def test_batch_ica_collector_fig_pr_cycle_with_cycles_arg(populated_batch):
+    """Constructor ``cycles=`` filters collection; plotter still renders (#679)."""
+    collector = BatchICACollector(
+        populated_batch, plot_type="fig_pr_cycle", cycles=[1, 2]
+    )
+    _assert_ran(collector)
+
+
+@pytest.mark.essential
+def test_batch_cycles_collector_fig_pr_cycle(populated_batch):
+    """Capacity-curve ``fig_pr_cycle`` filters via ``cycle_num`` (#679 hardening)."""
+    collector = BatchCyclesCollector(
+        populated_batch, plot_type="fig_pr_cycle", cycles_to_plot=[1]
+    )
+    _assert_ran(collector)
+
+
 def test_select_direction_handles_both_encodings():
     """The plotters see specced string frames and raw ±1 get_cap frames."""
     import pandas as pd
