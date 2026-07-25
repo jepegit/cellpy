@@ -55,6 +55,11 @@ from cellpycore.config import CurveCols
 from cellpy._deprecation import warn_once
 from cellpy.exceptions import NullData
 
+logger = logging.getLogger(__name__)
+
+# Process-level: BatchICACollector can hit empty half-cycles many times.
+_dqdv_half_cycle_warned = False
+
 __all__ = [
     "BOTH",
     "CHARGE",
@@ -1325,6 +1330,21 @@ def dqdv_cycle(cycle_df, splitter=True, label_direction=False, **kwargs):
     )
 
 
+def _warn_dqdv_half_cycle(which: str, exc: BaseException) -> None:
+    """Log a half-cycle failure once at WARNING; later hits at DEBUG."""
+    global _dqdv_half_cycle_warned
+    msg = "Error in dqdv_cycle - %s half-cycle: %s"
+    if not _dqdv_half_cycle_warned:
+        logger.warning(
+            msg + " Further occurrences in this process are logged at DEBUG.",
+            which,
+            exc,
+        )
+        _dqdv_half_cycle_warned = True
+    else:
+        logger.debug(msg, which, exc)
+
+
 def _dqdv_cycle_impl(cycle_df, splitter=True, label_direction=False, **kwargs):
     if cycle_df.empty:
         raise NullData(f"The cycle (type={type(cycle_df)}) is empty.")
@@ -1337,8 +1357,7 @@ def _dqdv_cycle_impl(cycle_df, splitter=True, label_direction=False, **kwargs):
             voltage_first = np.append(voltage_first, np.nan)
             incremental_first = np.append(incremental_first, np.nan)
     except Exception as e:  # noqa: BLE001 - 1.x behaviour, preserved
-        logging.warning("Error in dqdv_cycle - first half-cycle")
-        logging.warning(f" - error-message: '{e}'")
+        _warn_dqdv_half_cycle("first", e)
         voltage_first = np.array([])
         incremental_first = np.array([])
 
@@ -1347,8 +1366,7 @@ def _dqdv_cycle_impl(cycle_df, splitter=True, label_direction=False, **kwargs):
         voltage_last = voltage_last[::-1]
         incremental_last = incremental_last[::-1]
     except Exception as e:  # noqa: BLE001 - 1.x behaviour, preserved
-        logging.warning("Error in dqdv_cycle - last half-cycle")
-        logging.warning(f" - error-message: '{e}'")
+        _warn_dqdv_half_cycle("last", e)
         voltage_last = np.array([])
         incremental_last = np.array([])
 

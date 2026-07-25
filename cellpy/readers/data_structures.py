@@ -35,6 +35,11 @@ from cellpy.parameters.internal_settings import (
 )
 
 
+logger = logging.getLogger(__name__)
+
+# Process-level: max_segments fallback can fire once per cycle in collectors.
+_max_segments_warned = False
+
 LOADERS_NOT_READY_FOR_PROD = [
     "ext_nda_reader"
 ]  # used by the instruments_configurations helper function (move?)
@@ -1423,12 +1428,20 @@ def interpolate_y_on_x_per_monotonic_segments(
 
     n_segments = int(segment_start.sum())
     if max_segments is not None and n_segments > max_segments:
-        logging.warning(
-            "interpolate_y_on_x_per_monotonic_segments: %d segments exceeds max_segments=%s; "
-            "returning dataframe unchanged (likely noisy x-data).",
-            n_segments,
-            max_segments,
+        global _max_segments_warned
+        msg = (
+            "interpolate_y_on_x_per_monotonic_segments: %d segments exceeds "
+            "max_segments=%s; returning dataframe unchanged (likely noisy x-data)."
         )
+        if not _max_segments_warned:
+            logger.warning(
+                msg + " Further occurrences in this process are logged at DEBUG.",
+                n_segments,
+                max_segments,
+            )
+            _max_segments_warned = True
+        else:
+            logger.debug(msg, n_segments, max_segments)
         return df
 
     segment_id = externals.numpy.cumsum(segment_start) - 1
