@@ -446,8 +446,10 @@ def sequence_plotter(
         else:
             plotly_arguments["facet_col"] = g
 
+        # Filter on ``z`` (cycle column) — capacity curves use ``cycle_num``,
+        # ICA uses ``cycle`` (#679). Do not hardcode ``.cycle``.
         if cycles is not None:
-            curves = collected_curves.loc[collected_curves.cycle.isin(cycles), :]
+            curves = collected_curves.loc[collected_curves[z].isin(cycles), :]
         else:
             curves = collected_curves
         logging.debug(f"filtered_curves:\n{curves}")
@@ -463,14 +465,15 @@ def sequence_plotter(
                 curves[y] = curves[y].apply(np.abs)
 
     elif method == "fig_pr_cycle":
+        # Filter before swapping ``z``/``g`` so ``z`` is still the cycle column.
+        if cycles is not None:
+            curves = collected_curves.loc[collected_curves[z].isin(cycles), :]
+        else:
+            curves = collected_curves
+
         z, g = g, z
         plotly_arguments["facet_col"] = g
         seaborn_arguments["col"] = g
-
-        if cycles is not None:
-            curves = collected_curves.loc[collected_curves.cycle.isin(cycles), :]
-        else:
-            curves = collected_curves
 
         if group_cells:
             plotly_arguments["color"] = group
@@ -484,6 +487,7 @@ def sequence_plotter(
             seaborn_arguments["style"] = z
 
     elif method == "summary":
+        # Summary collectors label the cycle column ``cycle``.
         if cycles is not None:
             curves = collected_curves.loc[collected_curves.cycle.isin(cycles), :]
         else:
@@ -908,7 +912,9 @@ def _cycles_plotter(
         if cycles is not None:
             number_of_figs = len(cycles)
         else:
-            number_of_figs = len(collected_curves[_CCOLS.cycle_num].unique())
+            # ``z`` is the cycle column: ``cycle_num`` for capacity curves,
+            # ``cycle`` for the specced ICA frame (#679).
+            number_of_figs = len(collected_curves[z].unique())
     elif method == "summary":
         number_of_figs = len(collected_curves["variable"].unique())
         sub_fig_min_height = 300
@@ -1211,7 +1217,7 @@ def cycles_plotter(
     """
 
     if cycles_to_plot is not None:
-        unique_cycles = list(collected_curves.cycle.unique())
+        unique_cycles = list(collected_curves[_CCOLS.cycle_num].unique())
         if len(unique_cycles) > 50:
             print(f"Too many cycles - setting it to default {DEFAULT_CYCLES}")
             cycles_to_plot = DEFAULT_CYCLES
