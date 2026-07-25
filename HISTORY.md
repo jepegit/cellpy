@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+* Add agent usage chapter for library/app builders. (#682).
 * Update docs about data structure. (#680).
 * Update docs and batch-loader examples for native step/raw headers (cellpy 2.0). (#676).
 * Pin `cellpycore==0.2.4` (EFC summary columns); sync `HeadersSummary` and pipeline_smoke goldens (#675).
