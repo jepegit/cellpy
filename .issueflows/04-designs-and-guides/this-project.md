@@ -32,6 +32,11 @@ See also [testing-and-coverage.md](testing-and-coverage.md) and [ci-tiers.md](ci
   normalize to **forward slashes** — use `pathlib.Path(...).as_posix()` or
   `path.replace("\\", "/")`, not raw `str(path)` on Windows. Parquet/frame comparisons are
   unaffected; string metadata in JSON is where `\` vs `/` bites (see #433).
+- **Agent usage docs (#682):** When a change alters the public `cellpy.get` /
+  `CellpyCell` / `schema` / CLI surface that app-building agents rely on, update
+  [`docs/getting_started/agents.md`](../../docs/getting_started/agents.md) and the
+  short **Using cellpy (for agents)** section in root `AGENTS.md` in the same PR.
+  Do not put long recipes inside the managed issue-flow block of `AGENTS.md`.
 - TODO: Branch, commit, formatting, typing, or review conventions beyond the above.
 
 ## Entry points

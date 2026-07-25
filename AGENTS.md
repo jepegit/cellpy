@@ -284,6 +284,24 @@ If a `graphify-out/` folder exists in the project root, the project has the opti
 
 <!-- END issue-flow (managed) -->
 
+## Using cellpy (for agents)
+
+Coding agents that **call cellpy as a library** (e.g. a researcher’s small
+GUI/app around cycling data) should read the usage chapter:
+
+**[`docs/getting_started/agents.md`](docs/getting_started/agents.md)**
+
+Quick facts:
+
+- Product: Python library + `cellpy` CLI — not a hosted GUI server.
+- Entry: `import cellpy` then `c = cellpy.get(path, mass=..., instrument=...)`.
+- Frames: `c.data.raw` / `.steps` / `.summary`; columns via `c.schema.*`.
+- Example data: `from cellpy.utils import example_data` → `example_data.raw_file()`.
+- Persist: `c.save("out.cellpy")`, `c.to_csv("out_dir")`.
+- Prefer schema-resolved names over hard-coded 1.x header strings.
+- When changing public get/save/schema/CLI surface, update
+  `docs/getting_started/agents.md` and this section in the same PR.
+
 ## Cursor Cloud specific instructions
 
 Environment is already provisioned on cloud VM startup: `uv` (on PATH via
