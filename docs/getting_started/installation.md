@@ -7,9 +7,11 @@ you want a lean install and can manage system packages yourself.
 After installing, continue to [Setup and configuration](configuration.md) and
 [Check your installation](checkup.md).
 
+## Install by platform
+
 === ":fontawesome-brands-windows: Windows"
 
-    ### Conda
+    **Conda**
 
     ```console
     conda install -c conda-forge cellpy
@@ -38,7 +40,7 @@ After installing, continue to [Setup and configuration](configuration.md) and
         Bitness matters for Arbin `.res` (Access) drivers: match the driver to
         your Python build (32- vs 64-bit).
 
-    ### Pip
+    **Pip**
 
     ```console
     python -m pip install cellpy
@@ -47,7 +49,6 @@ After installing, continue to [Setup and configuration](configuration.md) and
     On Windows, packages such as `tables` (HDF5) can be awkward with pip. Prefer
     conda, or create an env from the repo
     [environment.yml](https://github.com/jepegit/cellpy/blob/master/environment.yml)
-    / [requirements.txt](https://github.com/jepegit/cellpy/blob/master/requirements.txt)
     first.
 
     !!! note "Arbin `.res` files"
@@ -62,9 +63,11 @@ After installing, continue to [Setup and configuration](configuration.md) and
 
 === ":fontawesome-brands-apple: macOS"
 
-    ### System packages
+    **System packages**
 
-    For Arbin `.res` support (via mdbtools) and HDF5 when installing with pip:
+    For Arbin `.res` support, cellpy uses **mdbtools** to export to temporary CSV
+    (there is no Access ODBC path like on Windows). Also install HDF5 libs if you
+    plan to build `tables` with pip:
 
     ```console
     brew install mdbtools hdf5 c-blosc
@@ -78,13 +81,13 @@ After installing, continue to [Setup and configuration](configuration.md) and
     python -m pip install cython tables
     ```
 
-    ### Conda
+    **Conda**
 
     ```console
     conda install -c conda-forge cellpy
     ```
 
-    ### Pip
+    **Pip**
 
     ```console
     python -m pip install cellpy
@@ -94,9 +97,11 @@ After installing, continue to [Setup and configuration](configuration.md) and
 
 === ":fontawesome-brands-linux: Linux"
 
-    ### System packages
+    **System packages**
 
-    For Arbin `.res` support and common pip build deps (Ubuntu/Debian):
+    For Arbin `.res` support, cellpy uses **mdbtools** to export to temporary CSV
+    (there is no Access ODBC path like on Windows). Ubuntu/Debian example, plus
+    common pip build deps:
 
     ```console
     sudo apt update
@@ -105,13 +110,13 @@ After installing, continue to [Setup and configuration](configuration.md) and
 
     Other distros: install the equivalent packages with your package manager.
 
-    ### Conda
+    **Conda**
 
     ```console
     conda install -c conda-forge cellpy
     ```
 
-    ### Pip
+    **Pip**
 
     ```console
     python -m pip install cellpy
@@ -145,8 +150,8 @@ python -m pip install -e .
 
 ## Dependencies
 
-Conda and `environment.yml` / the project lockfile install what you need for
-normal use. Highlights:
+Conda and `environment.yml` / the project lockfile (`uv.lock`, driven by
+`pyproject.toml`) install what you need for normal use. Highlights:
 
 | Need | Packages / notes |
 | --- | --- |
@@ -158,7 +163,3 @@ normal use. Highlights:
 
 Optional extras and plotting backends evolve with the release — prefer the
 conda-forge package or the repo env file over hand-picking versions.
-
-For Arbin `.res` on POSIX, cellpy uses **mdbtools** to export to temporary CSV
-before pandas reads the data (there is no Access ODBC driver path like on
-Windows).
