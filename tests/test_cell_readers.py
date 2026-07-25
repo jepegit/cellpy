@@ -1052,20 +1052,36 @@ def test_interpolate_y_on_x_per_monotonic_segments_preserves_taper_steps():
     assert out["capacity"].max() >= 150.0
 
 
-def test_interpolate_y_on_x_per_monotonic_segments_max_segments_fallback():
+@pytest.mark.essential
+def test_interpolate_y_on_x_per_monotonic_segments_max_segments_fallback(caplog):
     """When segment count exceeds max_segments, return df unchanged (avoid slow/noisy path)."""
+    import logging
+
     import pandas as pd
+
+    import cellpy.readers.data_structures as ds
 
     # Noisy x: many small reversals -> many segments
     df = pd.DataFrame({
         "voltage": [3.0, 3.1, 3.05, 3.15, 3.1, 3.2] * 20,  # 120 points, many segments
         "capacity": range(120),
     })
-    out = cellpy.readers.data_structures.interpolate_y_on_x_per_monotonic_segments(
-        df, x="voltage", y="capacity", number_of_points=5, direction=1, max_segments=10
-    )
+    ds._max_segments_warned = False
+    with caplog.at_level(logging.WARNING, logger="cellpy.readers.data_structures"):
+        out = ds.interpolate_y_on_x_per_monotonic_segments(
+            df, x="voltage", y="capacity", number_of_points=5, direction=1, max_segments=10
+        )
+        out2 = ds.interpolate_y_on_x_per_monotonic_segments(
+            df, x="voltage", y="capacity", number_of_points=5, direction=1, max_segments=10
+        )
     # Should return unchanged (same length as input)
     assert out is df or (out.shape == df.shape and (out.values == df.values).all())
+    assert out2 is df or (out2.shape == df.shape and (out2.values == df.values).all())
+    # Collector spam fix (#669): one WARNING, not one per call
+    warnings_logged = [
+        r for r in caplog.records if r.levelno == logging.WARNING and "max_segments" in r.getMessage()
+    ]
+    assert len(warnings_logged) == 1
 
 
 def test_group_by_interpolate(dataset):
