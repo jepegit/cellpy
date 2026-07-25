@@ -1,130 +1,140 @@
-# Issue #668 — Plan
+# Issue #668 — Plan (v2: remaining `NullData` after #670)
+
+Supersedes the #670 plan (cycle_index + nested `cycle_mode`). Those fixes shipped
+in [PR #670](https://github.com/jepegit/cellpy/pull/670). This plan covers the
+**post-merge** failure only.
 
 ## Goal
 
-Fix two 1.x batch-workflow crashes from the loader notebook: `b.plot(...)`
-failing when the summary cycle index is unnamed, and `make_summary()` failing
-when `cycle_mode` is still list-shaped. Confirm what (if anything) still needs
-work on the v2/`master` line and track that separately.
+Make `b.plot(...)` succeed (or fail with an actionable error) on `v1.x` when the
+batch has been loaded via the standard template — specifically eliminate
+`NullData: No summaries available to join` from `summary_collector` /
+`join_summaries`.
 
 ## Constraints
 
-- **Target branch:** `v1.x` (label `v1x`). PR against `v1.x`, not `master`.
-- **Worktree:** `../cellpy-v1x` on `668-batch-bugs` (main `cellpy` checkout stays on other work).
-- **Fixes-only** on `v1.x` — no refactors, no dependency churn beyond what a fix needs
-  (`cellpycore==0.2.1` pin stays unless a core patch release is required and agreed).
-- Prefer the smallest backport that matches known-good `master` behaviour over a
-  new design.
-- Do not change public batch API surface.
+- **Target branch:** `v1.x` (`v1x` label). PR against `v1.x`, not `master`.
+- **Branch:** `668-batch-summaries` (from `origin/v1.x`).
+- Fixes-only on `v1.x` — no batch redesign, no `cellpycore` pin bump unless proven
+  necessary (durable `cycle_mode` hardening stays on
+  [cellpy-core#142](https://github.com/cellpy/cellpy-core/issues/142)).
+- Do not change public `Batch.plot` / journal API.
+- Keep #670 regressions green (`tests/test_issue668_batch_bugs.py`).
 
 ### Prior art
 
-- **`master` #658** — deleted `batch_plotters.py`, moved frame prep to
-  [`cellpy/plotting/batch_summary.py`](../../../../cellpy/cellpy/plotting/batch_summary.py).
-  Explicit fix: name unnamed summary index to `cycle_index` before `reset_index`
-  (see `issue658_status.md`). **Mirror this into v1.x `batch_plotters.py`.**
-- **`master` load unwrap** — [`cellpy/readers/cellpy_file/read.py`](../../../../cellpy/cellpy/readers/cellpy_file/read.py)
-  + recursive `test_meta._unwrap` (and tests in `tests/test_test_meta_collection.py`)
-  for double-nested `cycle_mode` (e.g. `[['anode']]`). **Port a minimal unwrap to v1.x.**
-- **`cellpycore.OldCellpyCellCore.cycle_mode`** — one-level `m[0]` getter; setter
-  keeps lists as lists; `_cycle_mode_to_test_mode` assumes `str` and calls `.strip()`.
-  Shared by both lines; still fragile even when consumer unwraps on load.
-- Toolbox (`00-tools/`): nothing for batch plots / cycle_mode. Graphify: absent in this worktree.
-
-### v2 / master impact check (done during planning)
-
-| Symptom | On `master`? | Action |
-|---------|--------------|--------|
-| A. `b.plot` / `cycle_index` KeyError → `NoneType.show` | **No** — fixed in #658 (`batch_summary.py` names index; old `batch_plotters.py` deleted) | No v2 issue |
-| B. `make_summary` / `cycle_mode` list → `.strip()` | **Partly mitigated** on consumer load path; **still fragile in `cellpycore`** | Opened [cellpy/cellpy-core#142](https://github.com/cellpy/cellpy-core/issues/142) |
+- **`summary_engine` / `_load_summaries`** —
+  [`cellpy/utils/batch_tools/engines.py`](../../cellpy/utils/batch_tools/engines.py):
+  on `reset=True` (always used by `Batch.plot` when `summary_engine` not in
+  `memory_dumped`), **discards** `experiment.summary_frames` and rebuilds from
+  `experiment.data[label].data.summary` for each `cell_names` entry.
+- **`join_summaries`** —
+  [`cellpy/utils/batch_tools/batch_helpers.py`](../../cellpy/utils/batch_tools/batch_helpers.py):
+  `NullData("No summaries available to join")` only when `summary_frames` is
+  falsy (empty dict / None) — **not** when frames exist but are empty DataFrames.
+- **`CyclingExperiment.update`** —
+  [`batch_experiments.py`](../../cellpy/utils/batch_tools/batch_experiments.py):
+  fills `self.summary_frames` with real summaries; with default
+  `all_in_memory=False` stores **stubs** in `cell_data_frames` (steps only).
+  Lazy reload via `Data.__look_up__` needs a readable cellpy file.
+- **`cell_names`** — keys of `cell_data_frames` only (not journal pages). Empty
+  `cell_data_frames` → `_load_summaries` → `{}` → exact `NullData` seen in the
+  issue comment.
+- **#670** — index-name + `cycle_mode` unwrap; did **not** touch engines /
+  summary_collector. Original KeyError path implied collector once succeeded.
+- Toolbox / graphify: nothing specific for this collector path.
 
 ## Approach
 
-### 0. Inform v2 / core (tracking issue)
+### 0. Diagnose (read-only / small repro) before coding the fix
 
-**Done:** [cellpy/cellpy-core#142](https://github.com/cellpy/cellpy-core/issues/142) — harden:
+Reproduce on `668-batch-summaries` with the loader-notebook sequence (or a minimal
+batch fixture). Record:
 
-1. `OldCellpyCellCore.cycle_mode` getter: recursively unwrap 1-element lists/tuples to a scalar (same semantics as cellpy `test_meta._unwrap`).
-2. Setter: store a **scalar** (unwrap first), not a list of lowered strings.
-3. `_cycle_mode_to_test_mode`: accept list/tuple by unwrapping before `.strip()`; keep current string behaviour.
-4. Tests: nested `[['anode']]`, `['anode']`, scalar `'anode'`, `None`.
+| Probe | Implication if true |
+|-------|---------------------|
+| `b.experiment.cell_names` empty / `cell_data_frames == {}` | Never updated, or all cells failed load → UX / load errors, not plotter |
+| `summary_frames` from `update` non-empty, but `reset=True` reload yields `{}` | Collector discards good cache; stubs + failed look-up |
+| Cells present, summaries empty after look-up | File/link/`save_cellpy` path; improve `_load_summaries` fallback |
+| Plot called before `update` | Clearer error; optional doc note in template |
 
-Note on the cellpy #668 thread once the core issue number exists. No change required
-to master’s batch plotter path for symptom A.
+Primary hypothesis to confirm/falsify: **`plot` → `summary_collector.do(reset=True)`
+throws away `update()`'s `summary_frames` and rebuilds from stub cells; when
+look-up cannot restore summaries (or `cell_names` is empty), join raises
+`NullData`.**
 
-### 1. Fix A — `b.plot` / summary frame (v1.x only)
+### 1. Fix (choose after diagnose; prefer smallest)
 
-In [`cellpy/utils/batch_tools/batch_plotters.py`](../../cellpy/utils/batch_tools/batch_plotters.py)
-`generate_summary_frame_for_plotting`:
+**Likely fix A — prefer cached frames on reset (recommended if hypothesis holds):**
 
-- After `pd.concat(...)`, if `summaries.index.name is None`, set it to
-  `hdr_summary["cycle_index"]` (same as master `batch_summary.py`).
-- In `summary_plotting_engine`, only call `canvas.show()` when `canvas is not None`
-  (secondary crash after failed frame prep).
+In `summary_engine` / `_load_summaries`:
 
-### 2. Fix B — `cycle_mode` list on `make_summary` (v1.x consumer)
+- If `experiment.summary_frames` already has non-empty entries, **reuse** them on
+  `reset` unless an explicit force-reload flag is set (or only rebuild missing
+  labels).
+- Else load from `experiment.data[label].data.summary` as today.
+- If still empty: raise `NullData` with a message that distinguishes
+  “no cells loaded (`cell_names` empty — run `b.update()`)” vs
+  “cells present but no summary tables”.
 
-Without waiting for a core release:
+**Likely fix B — harden `_load_summaries` only:**
 
-- Add a tiny recursive `_unwrap` helper on v1.x (either a few lines next to the
-  load site, or a minimal shared helper — prefer one place used by load + property).
-- After `meta_test_dependent.update(as_list=True, ...)` in
-  [`cellpy/readers/cellpy_file/read.py`](../../cellpy/readers/cellpy_file/read.py)
-  (and `legacy_read.py` if it has the same path), assign
-  `cycle_mode = _unwrap(...)`.
-- Harden [`CellpyCell.cycle_mode`](../../cellpy/readers/cellreader.py) getter to
-  recursively unwrap (current code only does one level — insufficient for
-  `[['anode']]`).
+- Iterate journal page index (or `cell_names`), lazy-load via `.data[label]`,
+  and fall back to `experiment.summary_frames[label]` when the in-memory cell
+  summary is missing/empty.
+- Same clearer `NullData` text.
 
-Do **not** bump `cellpycore` in this PR unless we decide the consumer-only fix is
-insufficient for the reported notebook path after tests.
+Do **not** do both large redesigns; pick A or B after the probe table.
 
-### 3. Ordering
+### 2. Tests
 
-1. Core tracking issue (step 0).
-2. Fix A + tests.
-3. Fix B + tests.
-4. Run essential suite on the worktree.
+Extend `tests/test_issue668_batch_bugs.py` (keep `@pytest.mark.essential`):
+
+- Stub experiment mimicking post-`update` / `all_in_memory=False`:
+  `summary_frames` populated, `cell_data_frames` stubs without summaries →
+  `summary_engine(..., reset=True)` must still produce joinable farms (or the
+  chosen fallback behaviour).
+- Empty `cell_names` → `NullData` message mentions update / no cells (not a
+  vague join failure).
+- Keep existing #670 tests green.
+
+### 3. Out of scope
+
+- cellpy-core#142 bridge hardening.
+- master / `cellpy.plotting` (already on #658 path).
+- Full batch redesign / collectors v3.
 
 ## Files to touch
 
 | Path | Change |
 |------|--------|
-| `cellpy/utils/batch_tools/batch_plotters.py` | Name cycle index before `reset_index`; guard `canvas.show()` |
-| `cellpy/readers/cellpy_file/read.py` | Unwrap `cycle_mode` after list-shaped meta load |
-| `cellpy/readers/cellpy_file/legacy_read.py` | Same unwrap if applicable |
-| `cellpy/readers/cellreader.py` | Recursive unwrap in `cycle_mode` getter |
-| `tests/…` (new or extend existing batch / meta tests) | Regression for A + B |
-| `.issueflows/01-current-issues/issue668_status.md` | Status after build |
-
-Out of scope for this PR: deleting `batch_plotters.py`, porting #658 plotting package, core release/pin bump (follow-up via the new core issue).
+| [`cellpy/utils/batch_tools/engines.py`](../../cellpy/utils/batch_tools/engines.py) | Reuse / fallback summary frames; clearer empty case |
+| [`cellpy/utils/batch_tools/batch_helpers.py`](../../cellpy/utils/batch_tools/batch_helpers.py) | Optional: richer `NullData` message only if raised here |
+| [`tests/test_issue668_batch_bugs.py`](../../tests/test_issue668_batch_bugs.py) | New collector / stub-memory cases |
+| `HISTORY.md` | Unreleased bullet for the follow-up fix |
 
 ## Test strategy
 
-In `cellpy-v1x` worktree:
-
 ```bash
-uv sync
 uv run pytest -m essential
+uv run pytest tests/test_issue668_batch_bugs.py -q
 ```
 
-Plus focused tests:
-
-- **A:** Build a multi-cell summary concat with unnamed index; assert frame prep
-  yields a `cycle_index` column (or call the plot helper with `plotly_show=False`
-  and assert no `AttributeError`). Prefer unit-level frame prep if full batch
-  fixtures are heavy.
-- **B:** Meta / cell with `cycle_mode` as `['anode']` and `[['anode']]`;
-  `make_summary()` must not raise `AttributeError` on `.strip()`.
-
-Mark merge-gate tests `@pytest.mark.essential` only if they stay fast and stable.
+(On this machine, conda `cellpy_dev_313` is also fine if that is the usual v1.x env — match whatever the branch already uses.)
 
 ## Open questions
 
-1. **Core issue home:** create under `cellpy/cellpy-core` (recommended) vs only a
-   `jepegit/cellpy` `master`/`v2` reminder issue. Default: **core**.
-2. **Pin bump:** if consumer unwrap alone is enough for the notebook, leave
-   `cellpycore==0.2.1` and let the core issue ship later. Agree?
-3. **Scope of B:** unwrap only `cycle_mode`, or also other list-boxed meta fields
-   on load (master unwraps via a helper used more broadly)? Default: **cycle_mode
-   only** on v1.x to keep the PR small.
+_All resolved 2026-07-25 — plan **Accepted** with defaults._
+
+1. **Notebook probes:** none provided — diagnose during `/iflow-build` via
+   unit repro (stub `all_in_memory=False` experiment) instead of waiting on
+   a live notebook session.
+2. **Force-reload semantics:** **yes** — `Batch.plot(reload_data=True)` /
+   hard reset rebuilds from cells/files; plain first plot / soft `reset`
+   reuses non-empty cached `experiment.summary_frames` (Fix A).
+3. **Plan file:** replace #670 plan in place — confirmed.
+
+## Status
+
+- **Confirmed:** 2026-07-25
+- **Next:** `/iflow-build` (implement Fix A + tests)

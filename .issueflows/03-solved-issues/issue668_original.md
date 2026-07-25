@@ -175,3 +175,17 @@ File [~\.pixi\envs\cellpy-v1\Lib\site-packages\cellpycore\cell_core.py:48](file:
 
 AttributeError: 'list' object has no attribute 'strip'
 ```
+
+## Comments (curated summary)
+
+- **Additional tasks**:
+  - After PR #670, `b.plot(rate=True, ir=True, direction="discharge")` still fails: `NullData: No summaries available to join` from `join_summaries` when `summary_frames` is empty — find why the summary collector yields nothing and fix that path on `v1.x`.
+  - Durable `cycle_mode` hardening tracked in [cellpy/cellpy-core#142](https://github.com/cellpy/cellpy-core/issues/142) (not this PR unless a pin bump is required).
+- **Clarifications / constraints**:
+  - Target **`v1.x`** (`v1x` label); do not conflate with master/`cellpy.plotting` (#658 already covers the index-name fix on v2).
+  - Original `KeyError: cycle_index` / `NoneType.show` and list-`cycle_mode` `.strip()` crashes were addressed in #670; remaining scope is the empty-summaries failure.
+- **Superseded / retracted**:
+  - Prior close as fully Done (local status after #670) — reopened: error message improved, underlying plot still broken.
+
+_Note: this section is an interpretive summary of the comment thread, not a verbatim dump. Source comments: 3, last comment by @jepegit on 2026-07-24._
+

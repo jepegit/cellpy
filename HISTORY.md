@@ -4,6 +4,10 @@ Note! Only v1 related changes are collected here.
 
 ## [Unreleased]
 
+* Fix: `b.plot` reuses `update()` summary frames on soft reset so default
+  `all_in_memory=False` batches no longer raise `NullData: No summaries
+  available to join`; `reload_data=True` still force-rebuilds. (#668)
+
 ## 1.1.0.post3 - 2026-07-24
 
 * Fix: batch `b.plot` unnamed cycle index and nested list `cycle_mode` crashing `make_summary`. (#668)

@@ -88,6 +88,34 @@ def raw_data_engine(**kwargs):
     raise NotImplementedError
 
 
+def _usable_summary_frames(summary_frames):
+    """True when at least one summary frame is non-empty (issue #668)."""
+    if not summary_frames:
+        return False
+    try:
+        return any(not getattr(frame, "empty", False) for frame in summary_frames.values())
+    except Exception:
+        return True
+
+
+def _ensure_summaries_or_raise(experiment):
+    """Raise ``NullData`` with an actionable message when frames are missing."""
+    from cellpy.exceptions import NullData
+
+    if _usable_summary_frames(experiment.summary_frames):
+        return
+    cell_names = experiment.cell_names or []
+    if not cell_names:
+        raise NullData(
+            "No summaries available to join: no cells loaded in the experiment "
+            "(cell_data_frames is empty). Run b.update() first."
+        )
+    raise NullData(
+        "No summaries available to join: cells are present but summary tables "
+        "are missing or empty."
+    )
+
+
 def summary_engine(**kwargs):
     """engine to extract summary data"""
     logging.debug("summary_engine")
@@ -95,6 +123,9 @@ def summary_engine(**kwargs):
 
     farms = []
     experiments = kwargs.pop("experiments")
+    # reset=True: hard rebuild from cells/files (Batch.plot(reload_data=True)).
+    # reset=False: reuse non-empty experiment.summary_frames from update()
+    # (avoids wiping the cache when cell_data_frames only hold step stubs).
     reset = kwargs.pop("reset", False)
 
     for experiment in experiments:
@@ -103,10 +134,14 @@ def summary_engine(**kwargs):
         else:
             selected_summaries = experiment.selected_summaries
         logging.debug(f"selected summaries: {selected_summaries}")
-        if reset or experiment.summary_frames is None:
+        if reset:
+            logging.debug("Hard-reset: re-loading summary frames from cells")
+            experiment.summary_frames = _load_summaries(experiment)
+        elif not _usable_summary_frames(experiment.summary_frames):
             logging.debug("No summary frames found")
             logging.debug("Re-loading")
             experiment.summary_frames = _load_summaries(experiment)
+        _ensure_summaries_or_raise(experiment)
         farm = helper.join_summaries(experiment.summary_frames, selected_summaries)
         farms.append(farm)
     barn = "batch_dir"
@@ -116,7 +151,8 @@ def summary_engine(**kwargs):
 
 def _load_summaries(experiment):
     summary_frames = {}
-    for label in experiment.cell_names:
+    labels = experiment.cell_names or []
+    for label in labels:
         # TODO: replace this with direct lookup from hdf5?
         summary_frames[label] = experiment.data[label].data.summary
     return summary_frames

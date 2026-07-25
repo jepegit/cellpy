@@ -1404,7 +1404,9 @@ class Batch:
 
         if reload_data or ("summary_engine" not in self.experiment.memory_dumped):
             logging.debug("running summary_collector")
-            self.summary_collector.do(reset=True)
+            # Soft reset reuses update()'s summary_frames; reload_data forces
+            # a hard rebuild from cells/files (#668).
+            self.summary_collector.do(reset=bool(reload_data))
 
         if backend is None:
             backend = config.batch.backend
@@ -1465,7 +1467,7 @@ class Batch:
         warnings.warn("Deprecated - use plot instead.", DeprecationWarning)
         if reload_data or ("summary_engine" not in self.experiment.memory_dumped):
             logging.debug("running summary_collector")
-            self.summary_collector.do(reset=True)
+            self.summary_collector.do(reset=bool(reload_data))
 
         if backend is None:
             backend = config.batch.backend
