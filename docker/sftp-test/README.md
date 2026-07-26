@@ -18,4 +18,6 @@ docker compose -f docker/sftp-test/compose.yml down -v
 
 The pytest session fixture starts/stops compose automatically when Docker is
 available; these tests are marked `onlylocal` and are deselected by the default
-`addopts` marker filter.
+`addopts` marker filter. After start it creates a directory symlink
+`testdata/project_link` → `nested` (volume is mounted read-write) so
+`OtherPath.rglob` symlink-following can be exercised (#688).

@@ -91,6 +91,19 @@ def _wait_for_sftp(timeout: float = 30.0) -> None:
     raise TimeoutError(f"SFTP server not ready on {SFTP_HOST}:{SFTP_PORT}: {last_err}")
 
 
+def _ensure_project_symlink() -> None:
+    """Create ``testdata/project_link`` -> ``nested`` inside the container (#688)."""
+    # Run as root in the container; volume is rw for this purpose.
+    _compose(
+        "exec",
+        "-T",
+        "cellpy-sftp",
+        "sh",
+        "-c",
+        "ln -sfn nested /home/cellpy/testdata/project_link",
+    )
+
+
 @pytest.fixture(scope="session")
 def sftp_server():
     """Start the docker SFTP fixture for the test session."""
@@ -102,6 +115,10 @@ def sftp_server():
     _compose("up", "-d", "--wait")
     try:
         _wait_for_sftp()
+        try:
+            _ensure_project_symlink()
+        except subprocess.CalledProcessError as exc:
+            pytest.skip(f"Could not create SFTP symlink fixture: {exc}")
         yield {
             "user": SFTP_USER,
             "password": SFTP_PASSWORD,
@@ -172,6 +189,22 @@ def test_remote_glob_rglob_and_joinpath(sftp_env):
     assert child.exists() is True
     assert child.name == "sample.txt"
     assert child.parent.name == "nested"
+
+
+def test_remote_rglob_follows_directory_symlink(sftp_env):
+    """Symlink project dirs under rawdatadir must be searched (#688)."""
+    root = OtherPath(_uri(sftp_env, REMOTE_ROOT))
+    link = OtherPath(_uri(sftp_env, REMOTE_ROOT, "project_link"))
+    assert link.exists() is True
+    # Listing detail from parent should see a link; rglob must still find files.
+    names = sorted(p.name for p in root.rglob("sample.txt"))
+    assert "sample.txt" in names
+    via_link = [
+        p
+        for p in root.rglob("sample.txt")
+        if "project_link" in p.raw_path.replace("\\", "/")
+    ]
+    assert via_link, "expected sample.txt reached via project_link symlink"
 
 
 def test_remote_copy_returns_local_path_with_content(sftp_env, tmp_path):

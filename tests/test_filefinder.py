@@ -167,3 +167,28 @@ def test_list_raw_file_directory_only_filename(raw_tree):
         "runA_02.res",
         "runB_01.res",
     ]
+
+
+def test_find_in_raw_file_directory_files_only(raw_tree, caplog):
+    """Directories matching ``*`` must not be counted as files (#688)."""
+    import logging
+
+    raw_dir, _ = raw_tree
+    with caplog.at_level(logging.INFO):
+        file_list = filefinder.find_in_raw_file_directory(raw_file_dir=raw_dir)
+    names = sorted(pathlib.Path(f).name for f in file_list)
+    assert "sub" not in names
+    assert "runA_01.res" in names
+    assert "runA_03.res" in names
+    assert any("Found " in r.message and "files" in r.message for r in caplog.records)
+
+
+def test_find_in_raw_file_directory_empty_warns(tmp_path, caplog):
+    import logging
+
+    empty = tmp_path / "empty_raw"
+    empty.mkdir()
+    with caplog.at_level(logging.CRITICAL):
+        file_list = filefinder.find_in_raw_file_directory(raw_file_dir=empty)
+    assert file_list == []
+    assert any("No files found" in r.message for r in caplog.records)

@@ -77,6 +77,12 @@ Use `cellpy.utils.helpers.check_connection()` (or
   pass) and returns a local `pathlib.Path`.
 - `OtherPath` is **not** a subclass of `pathlib.Path`. Prefer
   `isinstance(x, OtherPath)` or `os.fspath(x)` for local paths.
+- Remote `OtherPath.rglob` (and deep `listdir`) **follows directory symlinks**
+  when walking a tree, with a cycle guard. This matters when `rawdatadir` is a
+  shared projects root and each project folder is a symlink (common on some
+  lab file servers). Plain fsspec/UPath `rglob` does not follow those links.
+  Shallow `glob` / `listdir(levels≤1)` stay non-recursive and do not add extra
+  follow behaviour.
 
 ## Live SFTP tests (Docker)
 

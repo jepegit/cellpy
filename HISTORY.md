@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+* Follow directory symlinks in remote OtherPath.rglob so batch file discovery works under symlink project dirs. (#688).
+
 * Rate-limit noisy collector warnings from max_segments interpolation fallback and dqdv half-cycle failures. (#669).
 
 * Fix BatchICACollector fig_pr_cycle KeyError on cycle_num (use ICA cycle column). (#679).

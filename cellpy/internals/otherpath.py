@@ -9,12 +9,14 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
+import fnmatch
 import logging
 import os
 import pathlib
+import posixpath
 import shutil
 import tempfile
-from typing import Any, Dict, Generator, List, Optional, Tuple, Union
+from typing import Any, Dict, Generator, List, Optional, Set, Tuple, Union
 
 from upath import UPath
 
@@ -408,7 +410,109 @@ class OtherPath:
 
     def _wrap_remote_child(self, child: UPath) -> "OtherPath":
         child_path = child.path if child.path.startswith("/") else f"/{child.path}"
-        return OtherPath(f"{self._uri_prefix}{self._location}{child_path}")
+        return self._wrap_remote_path(child_path)
+
+    def _wrap_remote_path(self, child_path: str) -> "OtherPath":
+        path = child_path if child_path.startswith("/") else f"/{child_path}"
+        return OtherPath(f"{self._uri_prefix}{self._location}{path}")
+
+    @staticmethod
+    def _remote_rglob_matches(rel: str, name: str, pattern: str) -> bool:
+        """Match like ``pathlib.Path.rglob`` (``**/`` + pattern)."""
+        rel = rel.replace("\\", "/")
+        candidates = [pattern]
+        if not pattern.startswith("**/"):
+            candidates.append(f"**/{pattern}")
+        return any(
+            fnmatch.fnmatch(name, pattern) or fnmatch.fnmatch(rel, candidate)
+            for candidate in candidates
+        )
+
+    def _remote_rglob_walk(
+        self,
+        glob_str: str,
+        *,
+        testing: bool = False,
+    ) -> Generator["OtherPath", None, None]:
+        """Recursive remote listing that follows directory symlinks.
+
+        fsspec SFTP ``rglob`` / ``find`` treat symlink directories as leaves, which
+        breaks shared ``rawdatadir`` layouts where project folders are links
+        (issue #688). Walk with ``ls(detail=True)`` and recurse into links that
+        resolve to directories, with a visited-set cycle guard.
+        """
+        upath = self._upath_with_credentials(testing=testing)
+        fs = upath.fs
+        root = upath.path.rstrip("/") or "/"
+        visited: Set[Any] = set()
+
+        def visit_key(dir_path: str) -> Any:
+            """Identity for cycle detection (inode / link target / path)."""
+            try:
+                info = fs.info(dir_path)
+            except (FileNotFoundError, OSError, AttributeError):
+                return ("path", dir_path.rstrip("/") or "/")
+            if not isinstance(info, dict):
+                return ("path", dir_path.rstrip("/") or "/")
+            ino = info.get("ino", info.get("inode"))
+            if ino is not None:
+                return ("ino", ino)
+            dest = info.get("destination", info.get("target"))
+            if dest:
+                return ("path", str(dest).rstrip("/") or "/")
+            return ("path", dir_path.rstrip("/") or "/")
+
+        def walk(dir_path: str) -> Generator["OtherPath", None, None]:
+            key = visit_key(dir_path)
+            if key in visited:
+                return
+            visited.add(key)
+            try:
+                entries = fs.ls(dir_path, detail=True)
+            except (FileNotFoundError, OSError, PermissionError) as exc:
+                logging.debug("Remote ls failed for %s: %s", dir_path, exc)
+                return
+
+            for entry in entries:
+                if isinstance(entry, dict):
+                    child_path = entry.get("name") or ""
+                    etype = entry.get("type")
+                else:
+                    child_path = str(entry)
+                    etype = None
+                if not child_path:
+                    continue
+                name = posixpath.basename(child_path.rstrip("/"))
+                if name in (".", ".."):
+                    continue
+
+                if child_path.rstrip("/") == root:
+                    continue
+                if child_path.startswith(root + "/"):
+                    rel = child_path[len(root) + 1 :]
+                else:
+                    rel = name
+
+                is_dir = False
+                if etype == "directory":
+                    is_dir = True
+                elif etype == "link":
+                    try:
+                        is_dir = bool(fs.isdir(child_path))
+                    except (OSError, FileNotFoundError):
+                        is_dir = False
+                elif etype is None:
+                    try:
+                        is_dir = bool(fs.isdir(child_path))
+                    except (OSError, FileNotFoundError):
+                        is_dir = False
+
+                if self._remote_rglob_matches(rel, name, glob_str):
+                    yield self._wrap_remote_path(child_path)
+                if is_dir:
+                    yield from walk(child_path)
+
+        yield from walk(root)
 
     def glob(self, glob_str: str, *args: Any, **kwargs: Any) -> Generator["OtherPath", None, None]:
         testing = kwargs.pop("testing", False)
@@ -423,9 +527,7 @@ class OtherPath:
     def rglob(self, glob_str: str, *args: Any, **kwargs: Any) -> Generator["OtherPath", None, None]:
         testing = kwargs.pop("testing", False)
         if self.is_external:
-            upath = self._upath_with_credentials(testing=testing)
-            for child in upath.rglob(glob_str):
-                yield self._wrap_remote_child(child)
+            yield from self._remote_rglob_walk(glob_str, testing=testing)
             return
         for child in pathlib.Path(os.fspath(self)).rglob(glob_str):
             yield OtherPath(child)
@@ -434,15 +536,13 @@ class OtherPath:
         """List directory contents (shallow by default for remote)."""
         testing = kwargs.pop("testing", False)
         if self.is_external:
-            upath = self._upath_with_credentials(testing=testing)
-            if levels == 0:
-                pattern = "*"
-            elif levels == 1:
-                pattern = "*"
-            else:
-                pattern = "**/*"
-            for child in upath.glob(pattern) if levels <= 1 else upath.rglob("*"):
-                yield self._wrap_remote_child(child)
+            if levels <= 1:
+                upath = self._upath_with_credentials(testing=testing)
+                for child in upath.glob("*"):
+                    yield self._wrap_remote_child(child)
+                return
+            # Deep listing shares symlink-following walk with rglob (#688).
+            yield from self.rglob("*", testing=testing)
             return
         base = pathlib.Path(os.fspath(self))
         if not base.is_dir():
