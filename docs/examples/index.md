@@ -7,9 +7,10 @@ icon: material/school
 Here we provide a few basic examples to get you started with cellpy - from reading the data to creating some basic plots. These notebooks, the used datafiles and a little more can be found in the [examples
 folder](https://github.com/jepegit/cellpy/tree/master/examples) in the cellpy GitHub repository.
 
-!!! warning
-    This release (v.2.0.0), is not very mature and notebooks used for the examples have not been thoroughly checked yet. Let us know if you
-    find any bugs.
+!!! note
+    Most of these notebooks were written for cellpy 1.x. They should still run
+    under 2.x thanks to the compatibility layer, but if something looks off,
+    [let us know](https://github.com/jepegit/cellpy/issues).
 
 [Contributions](../contributing/contributing.md) to more example notebooks are of course very welcome!
 

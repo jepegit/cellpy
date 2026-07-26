@@ -22,9 +22,9 @@ c = cellpy.get("my_cell.res", instrument="arbin_res", mass=0.85)
 c.data.summary[c.schema.summary.charge_capacity]
 ```
 
-!!! warning
-    This version is prettye new and might not work as expected.
-    Let us know if you find some of the hidden bugs we have planted.
+!!! note
+    cellpy 2 is still settling in. If something looks wrong, tell us —
+    [GitHub issues](https://github.com/jepegit/cellpy/issues) welcome.
 
 ## Where to start
 
