@@ -77,9 +77,12 @@ class Batch:
     def result(self) -> BatchResult | None:
         return self._result
 
-    def update(self, on_progress=None, **overrides) -> BatchResult:
-        """Load every cell (serial), caching them in the store.
+    def update(
+        self, on_progress=None, executor: str = "serial", **overrides
+    ) -> BatchResult:
+        """Load every cell, caching them in the store.
 
+        ``executor`` is ``"serial"`` (default), ``"threads"`` or ``"processes"``.
         Known :class:`LoadPolicy` fields in ``overrides`` update the policy;
         unknown (legacy) kwargs like ``testing`` are forwarded to the loader
         (``cellpy.get``) via ``loader_kwargs``.
@@ -95,7 +98,9 @@ class Batch:
                 policy = replace(
                     policy, loader_kwargs={**policy.loader_kwargs, **extra}
                 )
-        self._result = run(self.journal, policy, on_progress=on_progress)
+        self._result = run(
+            self.journal, policy, on_progress=on_progress, executor=executor
+        )
         self._store = CellStore.from_cells(self._result.cells())
         self._summaries = None
         return self._result
