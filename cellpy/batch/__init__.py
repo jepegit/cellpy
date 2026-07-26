@@ -16,7 +16,9 @@ from __future__ import annotations
 
 from cellpy.batch.journal import (
     Journal,
+    journal_from_custom_json,
     journal_from_frame,
+    read_custom_json,
     read_journal,
     write_journal,
 )
@@ -27,6 +29,8 @@ __all__ = [
     "read_journal",
     "write_journal",
     "journal_from_frame",
+    "read_custom_json",
+    "journal_from_custom_json",
     "BatchPaths",
     "ensure_dirs",
 ]

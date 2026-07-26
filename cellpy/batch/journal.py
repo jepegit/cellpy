@@ -15,6 +15,7 @@ the cell label lives in the ``filename`` *column*, never in an index.
 from __future__ import annotations
 
 import json
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -119,8 +120,16 @@ def _pages_to_info_df(pages: pl.DataFrame) -> dict:
 
 
 def read_journal(path: Path | str) -> Journal:
-    """Load a journal from a ``.json`` file into the :class:`Journal` model."""
+    """Load a journal into the :class:`Journal` model.
+
+    ``.json`` is the native, round-trippable format. ``.xlsx`` is supported
+    **read-only** (a lab convenience); writing Excel is intentionally not
+    supported in batch v3 (see :func:`write_journal`).
+    """
     path = Path(path)
+    if path.suffix == ".xlsx":
+        return _read_journal_excel(path)
+
     raw = json.loads(path.read_text(encoding="utf-8"))
     if "info_df" not in raw:
         raise ValueError(f"not a cellpy journal (missing 'info_df'): {path}")
@@ -140,9 +149,84 @@ def read_journal(path: Path | str) -> Journal:
     )
 
 
+def _read_journal_excel(path: Path) -> Journal:
+    """Read the ``pages`` sheet of an Excel journal (read-only)."""
+    pdf = pd.read_excel(path, sheet_name="pages", engine="openpyxl")
+    if FILENAME not in pdf.columns:
+        # legacy Excel writes the cell label as the (index) first column
+        first = pdf.columns[0]
+        if str(first).lower().startswith("unnamed") or first == "index":
+            pdf = pdf.rename(columns={first: FILENAME})
+    pdf = pdf.dropna(how="all").reset_index(drop=True)
+
+    meta: dict = {}
+    try:
+        mdf = pd.read_excel(path, sheet_name="meta", engine="openpyxl")
+        if {"parameter", "value"}.issubset(mdf.columns):
+            meta = dict(zip(mdf["parameter"], mdf["value"]))
+    except (ValueError, KeyError):
+        pass
+
+    return Journal(
+        name=meta.get("name", path.stem),
+        project=meta.get("project"),
+        pages=_to_polars(pdf),
+        meta=meta,
+    )
+
+
+def read_custom_json(path: Path | str, column_map: Mapping[str, str]) -> pl.DataFrame:
+    """Read an arbitrary JSON file into journal pages via a column map (#345).
+
+    ``column_map`` maps *source* JSON keys to cellpy journal keys, e.g.
+    ``{"cell_id": "filename", "mass_mg": "mass", "instrument_name": "instrument"}``.
+    The JSON may be a dict of columns (``{key: [values]}``) or a list of
+    records. At least one source key must map to ``filename``.
+    """
+    data = json.loads(Path(path).read_text(encoding="utf-8"))
+    pdf = pd.DataFrame(data)
+
+    rename = {
+        src: _hdr[cellpy_key]
+        for src, cellpy_key in column_map.items()
+        if src in pdf.columns
+    }
+    pdf = pdf.rename(columns=rename)
+    keep = [c for c in pdf.columns if c in set(rename.values())]
+    pdf = pdf[keep]
+
+    if FILENAME not in pdf.columns:
+        raise ValueError(
+            "column_map must map a source column to 'filename' "
+            f"(got mappings to {sorted(set(rename.values()))})"
+        )
+    return _to_polars(pdf.reset_index(drop=True))
+
+
+def journal_from_custom_json(
+    path: Path | str,
+    column_map: Mapping[str, str],
+    name: str | None = None,
+    project: str | None = None,
+) -> Journal:
+    """Build a :class:`Journal` from an arbitrary JSON file (#345)."""
+    return Journal(
+        name=name, project=project, pages=read_custom_json(path, column_map)
+    )
+
+
 def write_journal(journal: Journal, path: Path | str) -> Path:
-    """Write a :class:`Journal` to ``path`` in the compatible JSON format."""
+    """Write a :class:`Journal` to ``path`` in the compatible JSON format.
+
+    Only ``.json`` is written. Excel journals are read-only in batch v3
+    (metadata plan Step 4); export a report frame instead of a journal.
+    """
     path = Path(path)
+    if path.suffix == ".xlsx":
+        raise ValueError(
+            "Excel journals are read-only in batch v3; write a .json journal "
+            "instead (use outputs.write_excel for report frames)."
+        )
     meta = dict(journal.meta)
     meta.setdefault("name", journal.name)
     meta.setdefault("project", journal.project)

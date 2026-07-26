@@ -1,5 +1,7 @@
 """Unit tests for the batch v3 package (#698): journal model + layout."""
 
+import pathlib
+
 import polars as pl
 import pytest
 
@@ -7,11 +9,15 @@ from cellpy.batch import (
     BatchPaths,
     Journal,
     ensure_dirs,
+    journal_from_custom_json,
     journal_from_frame,
+    read_custom_json,
     read_journal,
     write_journal,
 )
 from cellpy.batch.journal import FILENAME
+
+FIXTURES = pathlib.Path(__file__).parent / "fixtures"
 
 
 # ---- journal.py ---------------------------------------------------------
@@ -66,6 +72,55 @@ def test_read_journal_rejects_non_journal(tmp_path):
     bad.write_text('{"hello": "world"}', encoding="utf-8")
     with pytest.raises(ValueError, match="not a cellpy journal"):
         read_journal(bad)
+
+
+# ---- custom JSON (#345) -------------------------------------------------
+
+
+def test_read_custom_json_with_column_map():
+    column_map = {
+        "cell_id": "filename",
+        "mass_mg": "mass",
+        "total_mass_mg": "total_mass",
+        "instrument_name": "instrument",
+    }
+    pages = read_custom_json(FIXTURES / "custom_json_batch_like.json", column_map)
+    assert isinstance(pages, pl.DataFrame)
+    assert FILENAME in pages.columns
+    assert "mass" in pages.columns and "instrument" in pages.columns
+    assert pages[FILENAME].to_list() == ["20160805_test001_45_cc"]
+
+    j = journal_from_custom_json(
+        FIXTURES / "custom_json_batch_like.json",
+        column_map,
+        name="cj",
+        project="p",
+    )
+    assert j.name == "cj"
+    assert j.cell_names == ["20160805_test001_45_cc"]
+
+
+def test_custom_json_requires_filename_mapping():
+    with pytest.raises(ValueError, match="must map a source column to 'filename'"):
+        read_custom_json(
+            FIXTURES / "custom_json_batch_like.json", {"mass_mg": "mass"}
+        )
+
+
+# ---- Excel read-only ----------------------------------------------------
+
+
+def test_read_journal_excel(parameters):
+    j = read_journal(parameters.journal_file_full_xlsx_path)
+    assert isinstance(j.pages, pl.DataFrame)
+    assert len(j) == 2
+    assert FILENAME in j.pages.columns
+
+
+def test_write_journal_rejects_excel(parameters, tmp_path):
+    j = read_journal(parameters.journal_file_json_path)
+    with pytest.raises(ValueError, match="read-only"):
+        write_journal(j, tmp_path / "nope.xlsx")
 
 
 # ---- layout.py ----------------------------------------------------------
