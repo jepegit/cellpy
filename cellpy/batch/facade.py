@@ -14,7 +14,7 @@ adapter; the full tidy-frame plot path lands with the collectors redesign
 
 from __future__ import annotations
 
-from dataclasses import replace
+from dataclasses import fields, replace
 from pathlib import Path
 from typing import Any
 
@@ -38,12 +38,27 @@ from cellpy.batch.store import CellStore
 class Batch:
     """A batch of cells: a journal, a lazy cell store, and derived frames."""
 
-    def __init__(self, journal: Journal, policy: LoadPolicy | None = None) -> None:
+    def __init__(
+        self,
+        journal: Journal,
+        policy: LoadPolicy | None = None,
+        _db: dict | None = None,
+    ) -> None:
         self.journal = journal
         self.policy = policy or LoadPolicy()
         self._store = CellStore()
         self._result: BatchResult | None = None
         self._summaries: pl.DataFrame | None = None
+        self._db = _db  # deferred db-read config for create_journal()
+
+    @classmethod
+    def from_db(
+        cls, name: str, project: str, policy: LoadPolicy | None = None, **db_kwargs
+    ) -> "Batch":
+        """Build a batch by reading a database (Excel or JSON)."""
+        from cellpy.batch.db import journal_from_db
+
+        return cls(journal_from_db(name, project, **db_kwargs), policy=policy)
 
     # -- data surface ----------------------------------------------------
     @property
@@ -63,8 +78,23 @@ class Batch:
         return self._result
 
     def update(self, on_progress=None, **overrides) -> BatchResult:
-        """Load every cell (serial), caching them in the store."""
-        policy = replace(self.policy, **overrides) if overrides else self.policy
+        """Load every cell (serial), caching them in the store.
+
+        Known :class:`LoadPolicy` fields in ``overrides`` update the policy;
+        unknown (legacy) kwargs like ``testing`` are forwarded to the loader
+        (``cellpy.get``) via ``loader_kwargs``.
+        """
+        policy = self.policy
+        if overrides:
+            known = {f.name for f in fields(LoadPolicy)}
+            policy_over = {k: v for k, v in overrides.items() if k in known}
+            extra = {k: v for k, v in overrides.items() if k not in known}
+            if policy_over:
+                policy = replace(policy, **policy_over)
+            if extra:
+                policy = replace(
+                    policy, loader_kwargs={**policy.loader_kwargs, **extra}
+                )
         self._result = run(self.journal, policy, on_progress=on_progress)
         self._store = CellStore.from_cells(self._result.cells())
         self._summaries = None
@@ -103,7 +133,20 @@ class Batch:
     def export_journal(self, path: Path | str | None = None) -> Path:
         return self.save(path)
 
-    def create_journal(self) -> Journal:
+    def create_journal(self, **kwargs) -> Journal:
+        """Populate the journal from the configured database (if any).
+
+        Mirrors the legacy ``init()`` -> ``create_journal()`` flow: ``init``
+        stores the db config, ``create_journal`` performs the read.
+        """
+        if self._db is not None:
+            from cellpy.batch.db import journal_from_db
+
+            config = {**self._db, **kwargs}
+            self.journal = journal_from_db(
+                self.journal.name, self.journal.project, **config
+            )
+            self._summaries = None
         return self.journal
 
     def paginate(self) -> tuple[Path, ...]:
@@ -139,6 +182,17 @@ class Batch:
             **kwargs,
         )
 
+    @property
+    def experiment(self) -> "_LegacyExperimentAdapter":
+        """Backward-compat view for legacy consumers (helpers/collectors).
+
+        ``cellpy.utils.helpers`` and ``cellpy.utils.collectors`` still reach
+        into ``b.experiment.{cell_names,data,journal.pages,summary_frames}``.
+        This adapter keeps them working against the new Batch until they are
+        migrated (Epic B/C); it is not part of the blessed API.
+        """
+        return _LegacyExperimentAdapter(self.journal, self._store)
+
     def __repr__(self) -> str:
         return (
             f"Batch(name={self.journal.name!r}, project={self.journal.project!r}, "
@@ -155,14 +209,19 @@ class _LegacyJournalAdapter:
 
 
 class _LegacyExperimentAdapter:
-    """Minimal shim so the legacy summary plotter can read the new Batch.
+    """Minimal shim exposing the legacy ``experiment`` surface over a new Batch.
 
-    Full plotting on the tidy ``combine_summaries`` frame is Epic B.
+    Covers what ``helpers``/``collectors`` and the summary plotter read:
+    ``journal.pages``, ``cell_names``, ``data``, ``summary_frames`` and
+    ``memory_dumped``. Full migration of those consumers is Epic B/C.
     """
 
     def __init__(self, journal: Journal, store: CellStore) -> None:
         self.journal = _LegacyJournalAdapter(journal)
+        self.data = store
+        self.cell_names = list(store)
         summaries = []
+        summary_frames = {}
         for label, cell in store.items():
             summary = getattr(getattr(cell, "data", None), "summary", None)
             if summary is None:
@@ -170,8 +229,9 @@ class _LegacyExperimentAdapter:
             pdf = summary.to_pandas() if hasattr(summary, "to_pandas") else summary
             pdf.name = label
             summaries.append(pdf)
+            summary_frames[label] = pdf
         self.memory_dumped = {"summary_engine": summaries}
-        self.data = store
+        self.summary_frames = summary_frames
 
 
 # -- module-level constructors -------------------------------------------
@@ -191,16 +251,23 @@ def load(
     journal: Journal | None = None,
     journal_file: Path | str | None = None,
     frame: Any | None = None,
+    db: str | bool | None = None,
     policy: LoadPolicy | None = None,
-    **_kwargs,
+    **kwargs,
 ) -> Batch:
-    """Build a :class:`Batch` from a journal source (file / frame / model / name)."""
+    """Build a :class:`Batch` from a journal source.
+
+    Source precedence: explicit ``journal`` model, ``journal_file``, ``frame``,
+    then a database read (``db`` reader name, or when only ``name``/``project``
+    are given). Falls back to an empty named journal.
+    """
     if journal is not None:
-        model = journal
-    elif journal_file is not None:
-        model = read_journal(journal_file)
-    elif frame is not None:
-        model = journal_from_frame(frame, name=name, project=project)
-    else:
-        model = Journal(name=name, project=project)
-    return Batch(model, policy=policy)
+        return Batch(journal, policy=policy)
+    if journal_file is not None:
+        return Batch(read_journal(journal_file), policy=policy)
+    if frame is not None:
+        return Batch(journal_from_frame(frame, name=name, project=project), policy=policy)
+    if db is not None or (name and project):
+        reader = db if isinstance(db, str) else "default"
+        return Batch.from_db(name, project, db_reader=reader, policy=policy, **kwargs)
+    return Batch(Journal(name=name, project=project), policy=policy)

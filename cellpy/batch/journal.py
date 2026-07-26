@@ -89,8 +89,14 @@ def _to_polars(pdf: pd.DataFrame) -> pl.DataFrame:
                 for v in values
             ]
             data[col] = pl.Series(col, normalised, dtype=pl.List(pl.Utf8))
+        elif any(isinstance(v, dict) for v in values):
+            # e.g. the db `argument` column holds parsed dicts -> keep as-is
+            data[col] = pl.Series(col, values, dtype=pl.Object)
         else:
-            data[col] = pl.Series(col, values)
+            try:
+                data[col] = pl.Series(col, values)
+            except (TypeError, OverflowError, pl.exceptions.PolarsError):
+                data[col] = pl.Series(col, values, dtype=pl.Object)
     return pl.DataFrame(data)
 
 

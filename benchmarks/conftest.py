@@ -70,8 +70,11 @@ def pipeline_cell():
 def batch_twenty_cells():
     """Batch with 20 cells loaded from the same v8 oracle (unique virtual file names)."""
     import cellpy
+    import polars as pl
     from cellpy import log, prms
-    from cellpy.utils.batch import Batch
+    from cellpy.batch import Batch, Journal
+    from cellpy.batch.journal import FILENAME
+    from cellpy.batch.store import CellStore
     from tests import fdv
 
     log.setup_logging(testing=True)
@@ -82,19 +85,17 @@ def batch_twenty_cells():
     prms.Paths.outdatadir = fdv.output_dir
     prms.Batch.auto_use_file_list = False
 
-    cells = []
+    cells = {}
     for i in range(20):
+        label = f"bench_cell_{i}"
         cell = cellpy.get(str(V8_FILE), testing=True)
-        cell.cell_name = f"bench_cell_{i}"
-        cell.cellpy_file_name = f"bench_cell_{i}_{V8_FILE.name}"
-        cells.append(cell)
+        cell.cell_name = label
+        cell.cellpy_file_name = f"{label}_{V8_FILE.name}"
+        cells[label] = cell
 
-    batch = Batch(
-        mode="new",
-        cells=cells,
-        db_reader="off",
-        export_raw=False,
-        export_cycles=False,
-        export_ica=False,
+    journal = Journal(
+        name="bench", project="bench", pages=pl.DataFrame({FILENAME: list(cells)})
     )
+    batch = Batch(journal)
+    batch._store = CellStore.from_cells(cells)
     return batch

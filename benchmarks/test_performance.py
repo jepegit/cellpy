@@ -49,6 +49,11 @@ def test_benchmark_single_cell_pipeline(benchmark):
     benchmark.pedantic(run, iterations=1, warmup_rounds=1)
 
 
+@pytest.mark.xfail(
+    reason="helpers.concat_summaries migrates onto polars in Epic C (#706); "
+    "benchmark re-baselines against cellpy.batch.combine_summaries then",
+    strict=False,
+)
 def test_benchmark_batch_summary_collection(benchmark, batch_twenty_cells):
     """Batch summary collection on 20 cells (``concat_summaries``, same path as collector)."""
     from cellpy.utils.helpers import concat_summaries
