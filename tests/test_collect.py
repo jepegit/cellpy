@@ -10,12 +10,16 @@ from cellpy.batch import Batch, Journal
 from cellpy.batch.journal import FILENAME
 from cellpy.batch.store import CellStore
 from cellpy.collect import (
+    BatchCollector,
     Collection,
     CollectionMeta,
     SummaryOptions,
     collect_cycles,
     collect_summaries,
     load_collection,
+    normalize_column,
+    standard_gravimetric,
+    summary_collector,
 )
 from tests import fdv
 
@@ -164,6 +168,72 @@ def test_collect_summaries_group_average_needs_group_column():
     b = _batch_with_cells({"x": _SummaryCell([1.0, 2.0])}, pages)
     col = collect_summaries(b, group_it=True)
     assert "variable" not in col.data.columns
+
+
+# ---- BatchCollector convenience + recipes (#707) ------------------------
+
+
+def test_batch_collector_autoruns_and_exposes_data(real_batch):
+    bc = BatchCollector(real_batch, collect_summaries, columns=("charge_capacity",))
+    assert bc.collection.kind == "summary"
+    assert "charge_capacity" in bc.data.columns
+
+
+def test_batch_collector_no_autorun_then_update(real_batch):
+    bc = BatchCollector(real_batch, collect_summaries, autorun=False)
+    assert bc._collection is None
+    bc.update(max_cycle=3)
+    assert bc.data["cycle_num"].max() <= 3
+
+
+def test_batch_collector_plot_points_to_b4(real_batch):
+    bc = summary_collector(real_batch)
+    with pytest.raises(NotImplementedError, match="#708"):
+        bc.plot()
+
+
+def test_batch_collector_save(real_batch, tmp_path):
+    bc = summary_collector(real_batch, columns=("charge_capacity",))
+    written = bc.save(tmp_path)
+    assert any(p.suffix == ".json" for p in written)
+
+
+def test_normalize_column_wide():
+    frame = pl.DataFrame({"cycle_num": [1, 2], "discharge_capacity": [60.0, 120.0]})
+    out = normalize_column("discharge_capacity", 120.0)(frame)
+    assert out["discharge_capacity_norm"].to_list() == [50.0, 100.0]
+
+
+def test_normalize_column_long():
+    frame = pl.DataFrame(
+        {
+            "group": [1, 1],
+            "cycle_num": [1, 2],
+            "variable": ["discharge_capacity", "discharge_capacity"],
+            "mean": [60.0, 120.0],
+            "std": [0.0, 0.0],
+        }
+    )
+    out = normalize_column("discharge_capacity", 120.0)(frame)
+    norm = out.filter(pl.col("variable") == "discharge_capacity_norm").sort("cycle_num")
+    assert norm["mean"].to_list() == [50.0, 100.0]
+
+
+def test_standard_gravimetric_recipe():
+    pages = pl.DataFrame(
+        {FILENAME: ["x", "y"], "group": [1, 1], "sub_group": [1, 2]}
+    )
+    b = _batch_with_cells(
+        {"x": _SummaryCell([60.0, 120.0]), "y": _SummaryCell([80.0, 160.0])}, pages
+    )
+    bc = standard_gravimetric(
+        b, norm_factor=120.0, columns=("charge_capacity",), retention_on="charge_capacity"
+    )
+    data = bc.data
+    # grouped long format with a normalized retention variable added
+    variables = set(data["variable"].to_list())
+    assert "charge_capacity" in variables
+    assert "charge_capacity_norm" in variables
 
 
 # ---- collect_cycles: the cross-cell narrowing bug is fixed by design ----
