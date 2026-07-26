@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+* Clarify Neware docs: binary `.nda`/`.ndax` via `neware_nda` (bundled fastnda) vs exported `neware_txt` models.
+
 * Iterative docs fixes: example notebook typos/hedges, GITT intro quote, and batch config note for 1.x vs `cellpy.toml`. (#695).
 
 ## [2.0.0] - 2026-07-26

@@ -335,7 +335,17 @@ plotutils.summary_plot(c, y="capacities", width=1200, height=400, y_range=[0, 10
 
 ## NEWARE
 
-Neware support is limited today: one `model` is implemented ("ONE"). Using the method described above for getting information, currently you will see three model names appear. The "default" is the one that will be picked if no model name is provided ("ONE" for now), while "UIO" is just a nickname for the "ONE" model.
+Neware shows up in two ways:
+
+- **Binary `.nda` / `.ndax`** — load with `instrument="neware_nda"`. That path uses a bundled [fastnda](https://pypi.org/project/fastnda/)-based reader (`cellpy.libs.local_fastnda`).
+- **Exported text/CSV** — load with `instrument="neware_txt"` and a `model` for the export layout. The model names below (`ONE` / `UIO`, …) apply only to that text loader.
+
+```python
+c = cellpy.get("my_cell.nda", instrument="neware_nda")
+```
+
+For exported Neware files, the default text `model` is `"ONE"` (`"UIO"` is a nickname for the same layout). Using the method above for instrument info, you will also see those model names listed under `neware_txt`:
+
 
 
 ```python
