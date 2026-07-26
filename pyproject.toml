@@ -96,6 +96,8 @@ dev = [
 ]
 docs = [
     "ipykernel>=7.3.0",
+    "marimo>=0.23.15",
+    "marimo-md-export>=0.8.0",
     "matplotlib>=3.10.6",
     "mkdocstrings-python>=2.0.5",
     "nbconvert>=7.17.1",

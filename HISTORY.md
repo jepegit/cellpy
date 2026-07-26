@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+* Include marimo notebooks in the docs (sample under `docs/examples/marimo/`, `marimo-md-export` render path). (#724).
+
 * Clarify Neware docs: binary `.nda`/`.ndax` via `neware_nda` (bundled fastnda) vs exported `neware_txt` models.
 
 * Iterative docs fixes: example notebook typos/hedges, GITT intro quote, and batch config note for 1.x vs `cellpy.toml`. (#695).
