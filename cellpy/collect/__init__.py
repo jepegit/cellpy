@@ -13,6 +13,13 @@ from __future__ import annotations
 
 from cellpy.collect.cells import CellItem, iter_cells
 from cellpy.collect.collection import Collection, CollectionMeta, load_collection
+from cellpy.collect.collector import (
+    BatchCollector,
+    cycles_collector,
+    normalize_column,
+    standard_gravimetric,
+    summary_collector,
+)
 from cellpy.collect.curves import collect_cycles
 from cellpy.collect.options import (
     CurveOptions,
@@ -34,4 +41,9 @@ __all__ = [
     "CurveOptions",
     "IcaOptions",
     "SaveOptions",
+    "BatchCollector",
+    "summary_collector",
+    "cycles_collector",
+    "standard_gravimetric",
+    "normalize_column",
 ]
