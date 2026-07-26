@@ -162,15 +162,16 @@ soak** before the stable tag:
 - [x] Benchmark compare vs GHA `v1x` baseline: no fail-band (+100%); load/summary
       warn-band (+20%) investigated or explained (see #574 status)
 - [x] Tag **`v2.0.0rc1`** on `master` → PyPI `--pre` (soak); also `v2.0.0rc2`
-- [ ] Tag **`v2.0.0`** on `master` after soak
+- [x] Tag **`v2.0.0`** on `master` after soak (2026-07-26)
 - [x] Pin exact `cellpycore==…` in the release commit (master currently `==0.2.4`)
 - [x] Migration guide published (`docs/getting_started/migration_v1_to_v2.md`);
       `DEPRECATIONS.md` current
-- [ ] Update epic #402 / Stage-3 tracking #575; archive issue-flow docs to
+- [x] Update epic #402 / Stage-3 tracking #575; archive issue-flow docs to
       `03-solved-issues`
-- [ ] Announce **`v1.x` bugfix-only for 12 months from the stable `v2.0.0`
-      date** (decision #438-6) — clock does **not** start at rc1
-- [ ] conda-forge feedstock bump with **stable** (not required for rc1)
+- [x] Announce **`v1.x` bugfix-only for 12 months from the stable `v2.0.0`
+      date** (decision #438-6) — clock starts 2026-07-26
+- [x] conda-forge feedstock bump with **stable**
+      (https://github.com/conda-forge/cellpy-feedstock/pull/59)
 
 ## Tracking
 
