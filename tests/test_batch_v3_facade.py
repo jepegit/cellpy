@@ -85,3 +85,42 @@ def test_load_from_frame():
     assert isinstance(b, Batch)
     assert b.cell_names == ["a", "b"]
     assert b.journal.name == "n" and b.journal.project == "p"
+
+
+# ---- db path (#703) -----------------------------------------------------
+
+
+@pytest.fixture
+def db_env(parameters, tmp_path, monkeypatch):
+    from cellpy import prms
+
+    monkeypatch.chdir(tmp_path)
+    prms.Paths.db_filename = parameters.db_file_name
+    prms.Paths.cellpydatadir = str(tmp_path)
+    prms.Paths.outdatadir = str(tmp_path)
+    prms.Paths.rawdatadir = parameters.raw_data_dir
+    prms.Paths.db_path = parameters.db_dir
+    prms.Paths.instrumentdir = parameters.instrument_dir
+    prms.Batch.auto_use_file_list = False
+    return parameters
+
+
+_DB_CELLS = {"20160805_test001_46_cc", "20160805_test001_47_cc"}
+
+
+def test_batch_from_db(db_env):
+    b = Batch.from_db(
+        "test", "ProjectOfRun", db_reader="simple_excel_reader", batch_col="b01"
+    )
+    assert set(b.cell_names) == _DB_CELLS
+
+
+def test_create_journal_reads_db(db_env):
+    # the legacy init() -> create_journal() flow via deferred _db config
+    b = Batch(
+        Journal(name="test", project="ProjectOfRun"),
+        _db={"db_reader": "simple_excel_reader", "batch_col": "b01"},
+    )
+    assert b.cell_names == []
+    b.create_journal()
+    assert set(b.cell_names) == _DB_CELLS

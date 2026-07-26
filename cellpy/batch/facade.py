@@ -38,12 +38,27 @@ from cellpy.batch.store import CellStore
 class Batch:
     """A batch of cells: a journal, a lazy cell store, and derived frames."""
 
-    def __init__(self, journal: Journal, policy: LoadPolicy | None = None) -> None:
+    def __init__(
+        self,
+        journal: Journal,
+        policy: LoadPolicy | None = None,
+        _db: dict | None = None,
+    ) -> None:
         self.journal = journal
         self.policy = policy or LoadPolicy()
         self._store = CellStore()
         self._result: BatchResult | None = None
         self._summaries: pl.DataFrame | None = None
+        self._db = _db  # deferred db-read config for create_journal()
+
+    @classmethod
+    def from_db(
+        cls, name: str, project: str, policy: LoadPolicy | None = None, **db_kwargs
+    ) -> "Batch":
+        """Build a batch by reading a database (Excel or JSON)."""
+        from cellpy.batch.db import journal_from_db
+
+        return cls(journal_from_db(name, project, **db_kwargs), policy=policy)
 
     # -- data surface ----------------------------------------------------
     @property
@@ -103,7 +118,20 @@ class Batch:
     def export_journal(self, path: Path | str | None = None) -> Path:
         return self.save(path)
 
-    def create_journal(self) -> Journal:
+    def create_journal(self, **kwargs) -> Journal:
+        """Populate the journal from the configured database (if any).
+
+        Mirrors the legacy ``init()`` -> ``create_journal()`` flow: ``init``
+        stores the db config, ``create_journal`` performs the read.
+        """
+        if self._db is not None:
+            from cellpy.batch.db import journal_from_db
+
+            config = {**self._db, **kwargs}
+            self.journal = journal_from_db(
+                self.journal.name, self.journal.project, **config
+            )
+            self._summaries = None
         return self.journal
 
     def paginate(self) -> tuple[Path, ...]:
@@ -191,16 +219,23 @@ def load(
     journal: Journal | None = None,
     journal_file: Path | str | None = None,
     frame: Any | None = None,
+    db: str | bool | None = None,
     policy: LoadPolicy | None = None,
-    **_kwargs,
+    **kwargs,
 ) -> Batch:
-    """Build a :class:`Batch` from a journal source (file / frame / model / name)."""
+    """Build a :class:`Batch` from a journal source.
+
+    Source precedence: explicit ``journal`` model, ``journal_file``, ``frame``,
+    then a database read (``db`` reader name, or when only ``name``/``project``
+    are given). Falls back to an empty named journal.
+    """
     if journal is not None:
-        model = journal
-    elif journal_file is not None:
-        model = read_journal(journal_file)
-    elif frame is not None:
-        model = journal_from_frame(frame, name=name, project=project)
-    else:
-        model = Journal(name=name, project=project)
-    return Batch(model, policy=policy)
+        return Batch(journal, policy=policy)
+    if journal_file is not None:
+        return Batch(read_journal(journal_file), policy=policy)
+    if frame is not None:
+        return Batch(journal_from_frame(frame, name=name, project=project), policy=policy)
+    if db is not None or (name and project):
+        reader = db if isinstance(db, str) else "default"
+        return Batch.from_db(name, project, db_reader=reader, policy=policy, **kwargs)
+    return Batch(Journal(name=name, project=project), policy=policy)

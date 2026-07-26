@@ -40,6 +40,7 @@ from cellpy.batch.runner import load_cell, run
 from cellpy.batch.store import CellStore
 from cellpy.batch import aggregate, outputs, qc
 from cellpy.batch.aggregate import combine_summaries
+from cellpy.batch.db import journal_from_db
 from cellpy.batch.facade import Batch, from_journal, load
 
 __all__ = [
