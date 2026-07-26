@@ -186,10 +186,12 @@ def test_batch_collector_no_autorun_then_update(real_batch):
     assert bc.data["cycle_num"].max() <= 3
 
 
-def test_batch_collector_plot_points_to_b4(real_batch):
-    bc = summary_collector(real_batch)
-    with pytest.raises(NotImplementedError, match="#708"):
-        bc.plot()
+def test_batch_collector_plot_renders(real_batch):
+    pytest.importorskip("plotly", reason="plotting extras (batch) not installed")
+    bc = summary_collector(real_batch, columns=("charge_capacity",))
+    figure = bc.plot()
+    assert figure is not None
+    assert len(figure.data) > 0
 
 
 def test_batch_collector_save(real_batch, tmp_path):

@@ -52,11 +52,30 @@ class Collection:
     name: str
     meta: CollectionMeta
 
+    #: collection kind -> ``collected_plot`` family (#657).
+    _FAMILY = {"summary": "summary", "cycles": "cycles", "ica": "ica"}
+
     def to_wide(
         self, values: str, index: str = "cycle_num", columns: str = "cell"
     ) -> pl.DataFrame:
         """Explicit, tested pivot to wide layout (replaces the try/except pivots)."""
         return self.data.pivot(values=values, index=index, on=columns)
+
+    def plot(self, *, family_kind: str | None = None, **kwargs):
+        """Draw the collection via :func:`cellpy.plotting.collected_plot`.
+
+        The drawing lives in ``cellpy.plotting`` (#657); a collection just hands
+        it the tidy frame and the family. The only reconciliation needed is the
+        summary family's cycle column, which the summary plotter spells
+        ``cycle`` (capacity/ICA curves keep ``cycle_num`` / ``cycle``).
+        """
+        from cellpy.plotting import collected_plot
+
+        family = family_kind or self._FAMILY.get(self.kind, "cycles")
+        frame = self.data.to_pandas()
+        if family == "summary" and "cycle_num" in frame.columns:
+            frame = frame.rename(columns={"cycle_num": "cycle"})
+        return collected_plot(frame, family_kind=family, **kwargs)
 
     def save(
         self,
