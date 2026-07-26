@@ -1,4 +1,6 @@
-"""Tests for the cellpy.collect foundation (collectors redesign, #705)."""
+"""Tests for the cellpy.collect foundation (collectors redesign, #705/#706)."""
+
+from types import SimpleNamespace
 
 import polars as pl
 import pytest
@@ -85,6 +87,83 @@ def test_collect_summaries_column_selection(real_batch):
     col = collect_summaries(real_batch, columns=("charge_capacity",))
     assert "charge_capacity" in col.data.columns
     assert "cell" in col.data.columns  # keys always kept
+
+
+def test_collect_summaries_max_cycle(real_batch):
+    col = collect_summaries(real_batch, max_cycle=5)
+    assert col.data["cycle_num"].max() <= 5
+
+
+def test_collect_summaries_rate_filter(real_batch):
+    # charge C-rate is ~0.043 for cycles 1-3, ~0.085 from cycle 4 on.
+    col = collect_summaries(
+        real_batch, rate=0.043, rate_std=0.01, rate_on="charge"
+    )
+    assert set(col.data["cycle_num"].to_list()) == {1, 2, 3}
+
+
+def test_collect_summaries_rate_inverted(real_batch):
+    col = collect_summaries(
+        real_batch, rate=0.043, rate_std=0.01, rate_on="charge", rate_inverted=True
+    )
+    cycles = set(col.data["cycle_num"].to_list())
+    assert cycles and cycles.isdisjoint({1, 2, 3})
+
+
+def test_collect_summaries_partition_by_cv_adds_columns(real_batch):
+    # this cell has no cv_ steps, so *_cv columns are ~0 but must still appear.
+    col = collect_summaries(
+        real_batch, columns=("charge_capacity",), partition_by_cv=True
+    )
+    assert "charge_capacity_non_cv" in col.data.columns
+    assert "charge_capacity_cv" in col.data.columns
+
+
+# ---- group averaging (helpers._make_average port) -----------------------
+
+
+class _SummaryCell:
+    """A fake cell exposing a polars summary (schema falls back to defaults)."""
+
+    def __init__(self, charge_capacity):
+        self.data = SimpleNamespace(
+            summary=pl.DataFrame(
+                {
+                    "cycle_num": list(range(1, len(charge_capacity) + 1)),
+                    "charge_capacity": [float(v) for v in charge_capacity],
+                }
+            ),
+            steps=None,
+        )
+
+
+def test_collect_summaries_group_average():
+    pages = pl.DataFrame(
+        {FILENAME: ["x", "y"], "group": [1, 1], "sub_group": [1, 2]}
+    )
+    b = _batch_with_cells(
+        {"x": _SummaryCell([10.0, 20.0]), "y": _SummaryCell([20.0, 40.0])}, pages
+    )
+
+    col = collect_summaries(b, group_it=True, columns=("charge_capacity",))
+    data = col.data
+
+    # long format: one row per (group, cycle_num, variable) with mean + std
+    for key in ("group", "cycle_num", "variable", "mean", "std"):
+        assert key in data.columns
+
+    cc = data.filter(pl.col("variable") == "charge_capacity").sort("cycle_num")
+    assert cc["mean"].to_list() == [15.0, 30.0]
+    # std of [10, 20] (ddof=1) == 7.071...; of [20, 40] == 14.142...
+    assert cc["std"].to_list() == pytest.approx([7.0710678, 14.1421356])
+
+
+def test_collect_summaries_group_average_needs_group_column():
+    # no group column in pages -> grouping is a no-op, stays wide
+    pages = pl.DataFrame({FILENAME: ["x"]})
+    b = _batch_with_cells({"x": _SummaryCell([1.0, 2.0])}, pages)
+    col = collect_summaries(b, group_it=True)
+    assert "variable" not in col.data.columns
 
 
 # ---- collect_cycles: the cross-cell narrowing bug is fixed by design ----
