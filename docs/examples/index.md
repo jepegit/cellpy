@@ -8,8 +8,8 @@ Here we provide a few basic examples to get you started with cellpy - from readi
 folder](https://github.com/jepegit/cellpy/tree/master/examples) in the cellpy GitHub repository.
 
 !!! warning
-    This is a release candidate and notebooks used for the examples
-    have not been thoroughly checked yet.
+    This release (v.2.0.0), is not very mature and notebooks used for the examples have not been thoroughly checked yet. Let us know if you
+    find any bugs.
 
 [Contributions](../contributing/contributing.md) to more example notebooks are of course very welcome!
 

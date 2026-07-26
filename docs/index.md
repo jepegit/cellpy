@@ -23,7 +23,7 @@ c.data.summary[c.schema.summary.charge_capacity]
 ```
 
 !!! warning
-    This is a release candidate and might not work as expected.
+    This version is prettye new and might not work as expected.
     Let us know if you find some of the hidden bugs we have planted.
 
 ## Where to start
