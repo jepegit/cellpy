@@ -14,7 +14,7 @@ adapter; the full tidy-frame plot path lands with the collectors redesign
 
 from __future__ import annotations
 
-from dataclasses import replace
+from dataclasses import fields, replace
 from pathlib import Path
 from typing import Any
 
@@ -78,8 +78,23 @@ class Batch:
         return self._result
 
     def update(self, on_progress=None, **overrides) -> BatchResult:
-        """Load every cell (serial), caching them in the store."""
-        policy = replace(self.policy, **overrides) if overrides else self.policy
+        """Load every cell (serial), caching them in the store.
+
+        Known :class:`LoadPolicy` fields in ``overrides`` update the policy;
+        unknown (legacy) kwargs like ``testing`` are forwarded to the loader
+        (``cellpy.get``) via ``loader_kwargs``.
+        """
+        policy = self.policy
+        if overrides:
+            known = {f.name for f in fields(LoadPolicy)}
+            policy_over = {k: v for k, v in overrides.items() if k in known}
+            extra = {k: v for k, v in overrides.items() if k not in known}
+            if policy_over:
+                policy = replace(policy, **policy_over)
+            if extra:
+                policy = replace(
+                    policy, loader_kwargs={**policy.loader_kwargs, **extra}
+                )
         self._result = run(self.journal, policy, on_progress=on_progress)
         self._store = CellStore.from_cells(self._result.cells())
         self._summaries = None
@@ -167,6 +182,17 @@ class Batch:
             **kwargs,
         )
 
+    @property
+    def experiment(self) -> "_LegacyExperimentAdapter":
+        """Backward-compat view for legacy consumers (helpers/collectors).
+
+        ``cellpy.utils.helpers`` and ``cellpy.utils.collectors`` still reach
+        into ``b.experiment.{cell_names,data,journal.pages,summary_frames}``.
+        This adapter keeps them working against the new Batch until they are
+        migrated (Epic B/C); it is not part of the blessed API.
+        """
+        return _LegacyExperimentAdapter(self.journal, self._store)
+
     def __repr__(self) -> str:
         return (
             f"Batch(name={self.journal.name!r}, project={self.journal.project!r}, "
@@ -183,14 +209,19 @@ class _LegacyJournalAdapter:
 
 
 class _LegacyExperimentAdapter:
-    """Minimal shim so the legacy summary plotter can read the new Batch.
+    """Minimal shim exposing the legacy ``experiment`` surface over a new Batch.
 
-    Full plotting on the tidy ``combine_summaries`` frame is Epic B.
+    Covers what ``helpers``/``collectors`` and the summary plotter read:
+    ``journal.pages``, ``cell_names``, ``data``, ``summary_frames`` and
+    ``memory_dumped``. Full migration of those consumers is Epic B/C.
     """
 
     def __init__(self, journal: Journal, store: CellStore) -> None:
         self.journal = _LegacyJournalAdapter(journal)
+        self.data = store
+        self.cell_names = list(store)
         summaries = []
+        summary_frames = {}
         for label, cell in store.items():
             summary = getattr(getattr(cell, "data", None), "summary", None)
             if summary is None:
@@ -198,8 +229,9 @@ class _LegacyExperimentAdapter:
             pdf = summary.to_pandas() if hasattr(summary, "to_pandas") else summary
             pdf.name = label
             summaries.append(pdf)
+            summary_frames[label] = pdf
         self.memory_dumped = {"summary_engine": summaries}
-        self.data = store
+        self.summary_frames = summary_frames
 
 
 # -- module-level constructors -------------------------------------------
