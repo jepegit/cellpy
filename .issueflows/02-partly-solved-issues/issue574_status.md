@@ -34,11 +34,12 @@
 - `HISTORY.md`: `## [2.0.0] - 2026-07-26` (+ support / #687 known limitation).
 - Docs: `remote_paths.md` Host-alias workaround; migration + configuration pointers.
 - Guiding docs: branching checklist ticks; release-procedure examples.
-- `/iflow-close`: essential tests green; readiness PR opened (see below).
+- `/iflow-close`: essential tests green; readiness PR
+  https://github.com/jepegit/cellpy/pull/693
 
 ## Remaining work
 
-- Merge readiness PR → clean `master`
+- Merge readiness PR #693 → clean `master`
 - Tag **`v2.0.0`**, watch `release.yml` → PyPI
 - conda-forge **cellpy-feedstock** bump to `2.0.0`
 - Announce 12-month `v1.x` window; tick remaining branching-checklist boxes;
