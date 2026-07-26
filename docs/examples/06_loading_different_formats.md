@@ -1,6 +1,6 @@
 # Different data formats
 
-This notebook shows some examples for loading file formats from different battery testers as well as some "tweaking" possibilites provided by `cellpy`. We hope that, as time goes, a more complete set of instruments will be fully supported. Loading non-supported ("custom") file formats is explained in more detail [here](./07_custom_loaders.ipynb).
+This notebook shows some examples for loading file formats from different battery testers as well as some "tweaking" possibilities provided by `cellpy`. Instrument coverage is still expanding. Loading non-supported ("custom") file formats is explained in more detail [here](./07_custom_loaders.ipynb).
 
 
 ```python
@@ -139,7 +139,7 @@ plotutils.summary_plot(c, y="capacities", width=1200, height=400)
 
 ## MACCOR
 
-The implemented loader for exported data from Maccor is able to load several "file-morphologies" (so-called `models`). This illustrates one of the main weaknesses of not having direct access to the raw-data: the operator/user typically has the possibility select (consciously or not) how the final exported data file will look. This can be, for example, what to name the columns, what to use as delimiter, or what symbol to use as thousand seperator.
+The implemented loader for exported data from Maccor is able to load several "file-morphologies" (so-called `models`). This illustrates one of the main weaknesses of not having direct access to the raw-data: the operator/user typically has the possibility to select (consciously or not) how the final exported data file will look. This can be, for example, what to name the columns, what to use as delimiter, or what symbol to use as thousand separator.
 
 ### Different models
 
@@ -335,7 +335,7 @@ plotutils.summary_plot(c, y="capacities", width=1200, height=400, y_range=[0, 10
 
 ## NEWARE
 
-Data from Neware testers will be improved soon. Currently, one `model` is implemented ("ONE"). Using the method described above for getting information, currently you will see three model names appear. The "default" is the one that will be picked if no model name is provided ("ONE" for now), while "UIO" is just a nick-name for the "ONE" model.
+Neware support is limited today: one `model` is implemented ("ONE"). Using the method described above for getting information, currently you will see three model names appear. The "default" is the one that will be picked if no model name is provided ("ONE" for now), while "UIO" is just a nickname for the "ONE" model.
 
 
 ```python

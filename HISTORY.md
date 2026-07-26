@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+* Iterative docs fixes: example notebook typos/hedges, GITT intro quote, and batch config note for 1.x vs `cellpy.toml`. (#695).
+
 ## [2.0.0] - 2026-07-26
 
 * **Stable cellpy 2.0.0.** Native headers, v9 zip-of-parquet cellpy files

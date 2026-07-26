@@ -4,7 +4,7 @@ The batch processing routines allow for convenient processing and comparison of 
 ## Setting up things properly
 
 ### Make sure you have a properly working config file
-For `cellpy` to find stuff, it needs to know where to look. A config file exists for this purpose. This is typically called `.cellpy_prms_username.conf`, and located in your home or user directory.
+For `cellpy` to find stuff, it needs to know where to look. Older installs used a `.cellpy_prms_username.conf` in the home directory and the `prms.Paths` API shown below. Prefer `cellpy.toml` and the 2.x config API — see [Setup and configuration](../../getting_started/configuration.md). The legacy names still work via the compatibility layer.
 
 For more details on the config file, have a look at [Setup and configuration](../../getting_started/configuration.md).
 

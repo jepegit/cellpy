@@ -99,7 +99,7 @@ created:
 ```
 
 
-Congratulations - you have succesfully created a directory structure and several `jupyter` notebooks you can use for processing your cell data!
+Congratulations - you have successfully created a directory structure and several `jupyter` notebooks you can use for processing your cell data!
 
 ## Run the notebooks
 
