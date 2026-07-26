@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+* Speed up remote auto_use_file_list / OtherPath.rglob dump. (#690).
+
 * Follow directory symlinks in remote OtherPath.rglob so batch file discovery works under symlink project dirs. (#688).
 
 * Rate-limit noisy collector warnings from max_segments interpolation fallback and dqdv half-cycle failures. (#669).

@@ -25,3 +25,12 @@ dirs are links. `OtherPath.rglob` (and deep `listdir`) therefore use an explicit
 visited-set cycle guard (inode / link destination / path). Shallow `glob` /
 `listdir(levels≤1)` remain UPath passthrough. `filefinder.find_in_raw_file_directory`
 keeps only regular files so directory matches are not counted as “files”.
+
+**Remote dump performance (issue #690):** Chatty per-directory SFTP STATs made
+`auto_use_file_list` dumps over a huge shared projects root very slow. Mitigations:
+(1) reuse `ls(detail=True)` metadata for cycle keys / link targets instead of
+extra `info`/`isdir` round-trips; (2) `rglob(..., files_only=True)` filters by
+listing `type` so the dump does not call `is_file()` per path; (3) when Paramiko
+`exec_command` is available, prefer a single remote `find -L <root> -type f`
+and fall back to the optimized walk. Document that huge shared roots remain
+expensive; prefer project-scoped `rawdatadir` (companion #691 for smarter scoping).

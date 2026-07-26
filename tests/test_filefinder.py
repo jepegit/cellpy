@@ -192,3 +192,56 @@ def test_find_in_raw_file_directory_empty_warns(tmp_path, caplog):
         file_list = filefinder.find_in_raw_file_directory(raw_file_dir=empty)
     assert file_list == []
     assert any("No files found" in r.message for r in caplog.records)
+
+
+def test_find_in_raw_file_directory_remote_no_isfile_stat(
+    monkeypatch, mock_env_cellpy_key_filename
+):
+    """Remote dump must not call is_file() per path (#690)."""
+    from tests.test_otherpath_symlink_rglob import _FakeFS, _FakeUPath
+
+    shared_fs = _FakeFS()
+
+    class _BoundFakeUPath(_FakeUPath):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, fs=shared_fs, **kwargs)
+
+    monkeypatch.setattr("cellpy.internals.otherpath.UPath", _BoundFakeUPath)
+    # filefinder does not pass testing=True; skip real key-file existence check.
+    monkeypatch.setattr(
+        "cellpy.internals.otherpath._credentials_from_env",
+        lambda *, testing=False: {},
+    )
+
+    from cellpy.internals.connections import OtherPath
+
+    calls = {"is_file": 0}
+    original = OtherPath.is_file
+
+    def _counting_is_file(self, *args, **kwargs):
+        calls["is_file"] += 1
+        return original(self, *args, **kwargs)
+
+    monkeypatch.setattr(OtherPath, "is_file", _counting_is_file)
+
+    root = OtherPath("sftp://user@host/home/user/projects")
+    file_list = filefinder.find_in_raw_file_directory(raw_file_dir=root)
+    assert any("20250709_lol079_01_cc_01.h5" in p for p in file_list)
+    assert any(p.endswith("other.h5") for p in file_list)
+    assert calls["is_file"] == 0
+    assert shared_fs.isfile_calls == 0
+
+
+def test_find_in_raw_file_directory_large_n_warns(tmp_path, caplog, monkeypatch):
+    import logging
+
+    monkeypatch.setattr(filefinder, "_LARGE_FILE_LIST_WARN", 2)
+    raw = tmp_path / "raw"
+    raw.mkdir()
+    (raw / "a.res").write_text("x")
+    (raw / "b.res").write_text("y")
+    (raw / "c.res").write_text("z")
+    with caplog.at_level(logging.WARNING):
+        file_list = filefinder.find_in_raw_file_directory(raw_file_dir=raw)
+    assert len(file_list) == 3
+    assert any("huge shared" in r.message or "project-scoped" in r.message for r in caplog.records)
