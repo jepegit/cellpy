@@ -44,6 +44,7 @@ nav = [
         { "GITT" = "examples/05_GITT.md" },
         { "Batch processing" = "examples/batch_utility/cellpy_batch_processing_docs.md" },
         { "Templates" = "examples/templates/tutorial_templates.md" },
+        { "Hello cellpy (marimo)" = "examples/marimo/01_hello_cellpy.md" },
     ] },
     { "How-to guides" = [
         "guides/index.md",
