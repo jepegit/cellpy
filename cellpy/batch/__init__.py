@@ -30,6 +30,14 @@ from cellpy.batch.policy import (
     parse_argument,
     resolve_specs,
 )
+from cellpy.batch.result import (
+    BatchLoadError,
+    BatchResult,
+    CellOutcome,
+    CellResult,
+)
+from cellpy.batch.runner import load_cell, run
+from cellpy.batch.store import CellStore
 
 __all__ = [
     "Journal",
@@ -45,4 +53,11 @@ __all__ = [
     "CellSpec",
     "resolve_specs",
     "parse_argument",
+    "CellResult",
+    "BatchResult",
+    "CellOutcome",
+    "BatchLoadError",
+    "load_cell",
+    "run",
+    "CellStore",
 ]
