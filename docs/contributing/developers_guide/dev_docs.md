@@ -90,23 +90,6 @@ The `.ipynb` files stay in the tree as the interactive source.
 It renders the outputs already stored in the notebooks; it does **not** execute
 them.
 
-### Example notebooks (marimo)
-
-Marimo sources live under `docs/examples/marimo/` (``.py`` notebooks). Zensical
-does not execute them either; export to committed markdown with
-[`marimo-md-export`](https://jmarshrossney.github.io/marimo-md-export/):
-
-```shell
-uv run --group docs python dev/render_marimo_notebooks.py
-```
-
-Unlike the Jupyter path, this **does** run the notebooks (via `marimo export`),
-so cellpy must be importable. Keep figures light — the exporter embeds images
-as base64 and large plotly-style blobs bloat the committed pages. Prefer
-matplotlib (or `# @suppress` on heavy cells). No Pyodide / live Python in the
-docs site; readers who want to edit interactively should open the ``.py`` with
-`marimo edit`.
-
 ### Doc-strings
 
 - Use Google-style doc-strings

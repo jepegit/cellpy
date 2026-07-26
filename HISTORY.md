@@ -2,7 +2,9 @@
 
 ## [Unreleased]
 
-* Include marimo notebooks in the docs (sample under `docs/examples/marimo/`, `marimo-md-export` render path). (#724).
+* Tried shipping marimo notebooks in the docs (#724); withdrawn — Zensical
+  embeds could not keep a real marimo table/plot experience without hanging
+  Pyodide or replacing widgets with non-marimo UI.
 
 * Clarify Neware docs: binary `.nda`/`.ndax` via `neware_nda` (bundled fastnda) vs exported `neware_txt` models.
 

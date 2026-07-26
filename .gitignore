@@ -35,7 +35,6 @@ dev_utils/BioLogic.py_tmp
 
 dev_utils/.ipynb_checkpoints
 *.ipynb_checkpoints
-__marimo__/
 
 # Distribution / packaging
 .Python
