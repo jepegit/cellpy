@@ -112,13 +112,23 @@ def find_in_raw_file_directory(
             matches = []
 
         for match in matches:
+            # rglob("*") also yields directories; journal matching needs files only (#688).
+            try:
+                if not match.is_file():
+                    continue
+            except (OSError, FileNotFoundError) as exc:
+                logging.debug("Skipping %s (is_file failed: %s)", match, exc)
+                continue
             if match.is_external:
                 file_list.append(match.full_path)
             else:
                 file_list.append(str(match).replace("\\", "/"))
     number_of_files = len(file_list)
     if number_of_files == 0:
-        logging.critical("No files found")
+        logging.critical(
+            "No files found (recursive search returned no regular files; "
+            "directories/symlinks alone are not counted)"
+        )
     logging.info(f"Found {number_of_files} files")
     return file_list
 

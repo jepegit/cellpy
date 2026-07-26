@@ -14,7 +14,8 @@ services:
     # User is chrooted to /home/cellpy; data volume appears as /testdata.
     command: cellpy:cellpy:1001:100:testdata
     volumes:
-      - ./data:/home/cellpy/testdata:ro
+      # rw so integration tests can create directory symlinks (#688).
+      - ./data:/home/cellpy/testdata:rw
     healthcheck:
       test: ["CMD-SHELL", "pgrep sshd >/dev/null || exit 1"]
       interval: 2s

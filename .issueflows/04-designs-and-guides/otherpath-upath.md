@@ -17,3 +17,11 @@ Paramiko defaults.
 
 **Not a `pathlib.Path` subclass:** call sites must accept `OtherPath` / `PathLike`
 explicitly; do not rely on `isinstance(x, pathlib.Path)`.
+
+**Symlink-following remote walk (issue #688):** fsspec SFTP `rglob` / `find` treat
+directory symlinks as leaves, which breaks `rawdatadir=…/projects` when project
+dirs are links. `OtherPath.rglob` (and deep `listdir`) therefore use an explicit
+`ls(detail=True)` walk that recurses into links that resolve to directories, with a
+visited-set cycle guard (inode / link destination / path). Shallow `glob` /
+`listdir(levels≤1)` remain UPath passthrough. `filefinder.find_in_raw_file_directory`
+keeps only regular files so directory matches are not counted as “files”.

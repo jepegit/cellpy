@@ -8,6 +8,7 @@ import pandas as pd
 
 import cellpy.parameters.internal_settings
 from cellpy import filefinder, prms
+from cellpy.exceptions import NullData
 from cellpy.readers import data_structures as core
 import cellpy.config as config
 
