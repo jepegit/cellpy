@@ -23,6 +23,13 @@ from cellpy.batch.journal import (
     write_journal,
 )
 from cellpy.batch.layout import BatchPaths, ensure_dirs
+from cellpy.batch.policy import (
+    CellSpec,
+    LoadPolicy,
+    SourcePreference,
+    parse_argument,
+    resolve_specs,
+)
 
 __all__ = [
     "Journal",
@@ -33,4 +40,9 @@ __all__ = [
     "journal_from_custom_json",
     "BatchPaths",
     "ensure_dirs",
+    "SourcePreference",
+    "LoadPolicy",
+    "CellSpec",
+    "resolve_specs",
+    "parse_argument",
 ]
