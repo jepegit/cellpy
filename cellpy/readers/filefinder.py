@@ -24,6 +24,9 @@ import cellpy.config as config
 # TODO: @jepe - add function for searching in database (sqlite, postgresql etc)
 # TODO: @jepe - allow for providing a glob pattern also when using file_list by editing the batch.py script
 
+# Warn when auto_use_file_list dumps a huge shared tree (issue #690).
+_LARGE_FILE_LIST_WARN = 5000
+
 
 def find_in_raw_file_directory(
     raw_file_dir: Union[OtherPath, pathlib.Path, str, None] = None,
@@ -66,7 +69,9 @@ def find_in_raw_file_directory(
         >>>)
 
     Notes:
-        Uses ``OtherPath.rglob`` (local pathlib or remote UPath/fsspec).
+        Uses ``OtherPath.rglob(..., files_only=True)`` so remote dumps can use
+        listing ``type`` / ``find -L`` without a per-path ``is_file()`` STAT
+        (issues #688 / #690).
     """
 
     file_list = []
@@ -97,7 +102,8 @@ def find_in_raw_file_directory(
     for d in raw_file_dir:
         logging.debug(f"searching in folder: {d}")
         try:
-            matches = list(d.rglob(glob_txt))
+            # files_only: directories matching "*" are excluded without remote is_file STATs.
+            matches = list(d.rglob(glob_txt, files_only=True))
         except Exception as exc:
             logging.critical(
                 f"Errors encounter when searching in {d.raw_path}: {exc}"
@@ -112,13 +118,6 @@ def find_in_raw_file_directory(
             matches = []
 
         for match in matches:
-            # rglob("*") also yields directories; journal matching needs files only (#688).
-            try:
-                if not match.is_file():
-                    continue
-            except (OSError, FileNotFoundError) as exc:
-                logging.debug("Skipping %s (is_file failed: %s)", match, exc)
-                continue
             if match.is_external:
                 file_list.append(match.full_path)
             else:
@@ -128,6 +127,15 @@ def find_in_raw_file_directory(
         logging.critical(
             "No files found (recursive search returned no regular files; "
             "directories/symlinks alone are not counted)"
+        )
+    elif number_of_files >= _LARGE_FILE_LIST_WARN:
+        logging.warning(
+            "Raw-file dump found %s files (>= %s). Walking a huge shared "
+            "rawdatadir (e.g. all projects) is slow over SFTP; prefer a "
+            "project-scoped rawdatadir, set auto_use_file_list=False, or see "
+            "issue #691 for project-scoped search.",
+            number_of_files,
+            _LARGE_FILE_LIST_WARN,
         )
     logging.info(f"Found {number_of_files} files")
     return file_list

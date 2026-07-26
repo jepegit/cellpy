@@ -1,6 +1,8 @@
-"""Unit tests for remote OtherPath.rglob symlink following (issue #688)."""
+"""Unit tests for remote OtherPath.rglob symlink following (#688) and perf (#690)."""
 
 from __future__ import annotations
+
+from types import SimpleNamespace
 
 import pytest
 
@@ -86,8 +88,14 @@ class _FakeFS:
             },
         }
         self.link_dirs = set(self._info)
+        self.info_calls = 0
+        self.isdir_calls = 0
+        self.ls_calls = 0
+        self.isfile_calls = 0
+        self.client = None
 
     def info(self, path):
+        self.info_calls += 1
         path = path.rstrip("/") or "/"
         if path in self._info:
             return dict(self._info[path])
@@ -100,19 +108,28 @@ class _FakeFS:
         raise FileNotFoundError(path)
 
     def ls(self, path, detail=True):
+        self.ls_calls += 1
         path = path.rstrip("/") or "/"
-        entries = self.tree.get(path, [])
+        # Symlink project dirs list via their path key (Paramiko follows for listdir).
+        entries = self.tree.get(path)
+        if entries is None and path in self.link_dirs:
+            # Destination-only keys are not listed; treat as empty dir listing success.
+            entries = []
+        if entries is None:
+            entries = []
         if detail:
             return list(entries)
         return [e["name"] for e in entries]
 
     def isdir(self, path):
+        self.isdir_calls += 1
         path = path.rstrip("/") or "/"
         if path in self.tree or path in self.link_dirs:
             return True
         return False
 
     def isfile(self, path):
+        self.isfile_calls += 1
         path = path.rstrip("/") or "/"
         for entries in self.tree.values():
             for e in entries:
@@ -164,3 +181,65 @@ def test_rglob_cycle_guard_terminates(fake_remote):
     root = OtherPath("sftp://user@host/home/user/cycle")
     names = sorted(p.name for p in root.rglob("*.h5", testing=True))
     assert names == ["ok.h5"]
+
+
+def test_rglob_files_only_skips_directories(fake_remote):
+    root = OtherPath("sftp://user@host/home/user/projects")
+    paths = [p.raw_path for p in root.rglob("*", testing=True, files_only=True)]
+    assert all(p.endswith(".h5") for p in paths)
+    assert any(p.endswith("20250709_lol079_01_cc_01.h5") for p in paths)
+    assert any(p.endswith("other.h5") for p in paths)
+
+
+def test_rglob_walk_avoids_per_dir_info_and_isdir(fake_remote):
+    """STAT diet (#690): reuse ls detail; probe links with ls, not isdir+info."""
+    root = OtherPath("sftp://user@host/home/user/projects")
+    list(root.rglob("*.h5", testing=True))
+    # Root may still call info once; children should use ls detail / destination.
+    assert fake_remote.info_calls <= 1
+    assert fake_remote.isdir_calls == 0
+
+
+def test_rglob_find_l_fast_path(fake_remote):
+    """When Paramiko exec is available, files_only uses find -L (#690)."""
+
+    class _Stdout:
+        def __init__(self, text: str):
+            self.channel = SimpleNamespace(recv_exit_status=lambda: 0)
+            self._text = text.encode("utf-8")
+
+        def read(self):
+            return self._text
+
+    class _Stderr:
+        def read(self):
+            return b""
+
+    def exec_command(cmd, timeout=None):
+        assert "find -L" in cmd
+        assert "-type f" in cmd
+        body = "\n".join(
+            [
+                "/home/user/projects/LongLife/20250709_lol079_01_cc_01.h5",
+                "/home/user/projects/plain/other.h5",
+            ]
+        )
+        return None, _Stdout(body), _Stderr()
+
+    fake_remote.client = SimpleNamespace(exec_command=exec_command)
+    ls_before = fake_remote.ls_calls
+    root = OtherPath("sftp://user@host/home/user/projects")
+    names = sorted(p.name for p in root.rglob("*.h5", testing=True, files_only=True))
+    assert names == ["20250709_lol079_01_cc_01.h5", "other.h5"]
+    assert fake_remote.ls_calls == ls_before  # walk not used
+
+
+def test_rglob_find_l_failure_falls_back_to_walk(fake_remote):
+    def exec_command(cmd, timeout=None):
+        raise OSError("no shell")
+
+    fake_remote.client = SimpleNamespace(exec_command=exec_command)
+    root = OtherPath("sftp://user@host/home/user/projects")
+    names = sorted(p.name for p in root.rglob("*.h5", testing=True, files_only=True))
+    assert "20250709_lol079_01_cc_01.h5" in names
+    assert fake_remote.ls_calls > 0

@@ -14,6 +14,7 @@ import logging
 import os
 import pathlib
 import posixpath
+import shlex
 import shutil
 import tempfile
 from typing import Any, Dict, Generator, List, Optional, Set, Tuple, Union
@@ -428,11 +429,84 @@ class OtherPath:
             for candidate in candidates
         )
 
+    @staticmethod
+    def _remote_visit_key_from_info(info: Any, dir_path: str) -> Any:
+        """Build a cycle-guard key from ``ls``/``info`` detail when available."""
+        if not isinstance(info, dict):
+            return ("path", dir_path.rstrip("/") or "/")
+        ino = info.get("ino", info.get("inode"))
+        if ino is not None:
+            return ("ino", ino)
+        dest = info.get("destination", info.get("target"))
+        if dest:
+            return ("path", str(dest).rstrip("/") or "/")
+        return ("path", dir_path.rstrip("/") or "/")
+
+    def _remote_find_l_file_paths(self, fs: Any, root: str) -> Optional[List[str]]:
+        """Bulk list files via remote ``find -L`` when Paramiko exec is available.
+
+        Returns ``None`` on any failure so callers fall back to the ls-walk.
+        """
+        client = getattr(fs, "client", None)
+        exec_command = getattr(client, "exec_command", None) if client is not None else None
+        if exec_command is None:
+            return None
+        cmd = f"find -L {shlex.quote(root)} -type f -print"
+        try:
+            _stdin, stdout, stderr = exec_command(cmd, timeout=300)
+            exit_status = stdout.channel.recv_exit_status()
+            out = stdout.read()
+            err = stderr.read()
+        except (OSError, AttributeError, TypeError, ValueError) as exc:
+            logging.debug("Remote find -L failed for %s: %s", root, exc)
+            return None
+        if exit_status not in (0, None):
+            logging.debug(
+                "Remote find -L exit %s for %s: %s",
+                exit_status,
+                root,
+                err[:200] if isinstance(err, (bytes, bytearray)) else err,
+            )
+            return None
+        if isinstance(out, (bytes, bytearray)):
+            text = out.decode("utf-8", errors="replace")
+        else:
+            text = str(out)
+        paths: List[str] = []
+        for line in text.splitlines():
+            path = line.strip()
+            if path:
+                paths.append(path)
+        return paths
+
+    def _remote_rglob_from_find(
+        self,
+        glob_str: str,
+        *,
+        fs: Any,
+        root: str,
+    ) -> Optional[List["OtherPath"]]:
+        """Try bulk ``find -L`` listing; return matches or ``None`` to fall back."""
+        bulk = self._remote_find_l_file_paths(fs, root)
+        if bulk is None:
+            return None
+        matches: List["OtherPath"] = []
+        for child_path in bulk:
+            name = posixpath.basename(child_path.rstrip("/"))
+            if child_path.startswith(root + "/"):
+                rel = child_path[len(root) + 1 :]
+            else:
+                rel = name
+            if self._remote_rglob_matches(rel, name, glob_str):
+                matches.append(self._wrap_remote_path(child_path))
+        return matches
+
     def _remote_rglob_walk(
         self,
         glob_str: str,
         *,
         testing: bool = False,
+        files_only: bool = False,
     ) -> Generator["OtherPath", None, None]:
         """Recursive remote listing that follows directory symlinks.
 
@@ -440,30 +514,55 @@ class OtherPath:
         breaks shared ``rawdatadir`` layouts where project folders are links
         (issue #688). Walk with ``ls(detail=True)`` and recurse into links that
         resolve to directories, with a visited-set cycle guard.
+
+        When ``files_only`` is True, prefer a single remote ``find -L … -type f``
+        (issue #690) and fall back to this walk, filtering with listing ``type``
+        so callers do not need a per-path ``is_file()`` STAT.
         """
         upath = self._upath_with_credentials(testing=testing)
         fs = upath.fs
         root = upath.path.rstrip("/") or "/"
+
+        if files_only:
+            bulk_matches = self._remote_rglob_from_find(glob_str, fs=fs, root=root)
+            if bulk_matches is not None:
+                logging.debug(
+                    "Remote rglob used find -L fast path (%s paths) under %s",
+                    len(bulk_matches),
+                    root,
+                )
+                yield from bulk_matches
+                return
+
         visited: Set[Any] = set()
 
-        def visit_key(dir_path: str) -> Any:
+        def visit_key(dir_path: str, info: Any = None) -> Any:
             """Identity for cycle detection (inode / link target / path)."""
+            if info is not None:
+                return self._remote_visit_key_from_info(info, dir_path)
             try:
-                info = fs.info(dir_path)
+                fetched = fs.info(dir_path)
             except (FileNotFoundError, OSError, AttributeError):
                 return ("path", dir_path.rstrip("/") or "/")
-            if not isinstance(info, dict):
-                return ("path", dir_path.rstrip("/") or "/")
-            ino = info.get("ino", info.get("inode"))
-            if ino is not None:
-                return ("ino", ino)
-            dest = info.get("destination", info.get("target"))
-            if dest:
-                return ("path", str(dest).rstrip("/") or "/")
-            return ("path", dir_path.rstrip("/") or "/")
+            return self._remote_visit_key_from_info(fetched, dir_path)
 
-        def walk(dir_path: str) -> Generator["OtherPath", None, None]:
-            key = visit_key(dir_path)
+        def link_is_dir(child_path: str) -> bool:
+            """Decide whether a symlink should be recursed into.
+
+            Probe with ``ls`` (one round-trip) instead of a separate ``isdir``
+            STAT; cycle keys still prefer ``destination`` from parent ``ls``.
+            """
+            try:
+                fs.ls(child_path, detail=False)
+                return True
+            except (FileNotFoundError, OSError, PermissionError, NotADirectoryError):
+                return False
+
+        def walk(
+            dir_path: str,
+            dir_info: Any = None,
+        ) -> Generator["OtherPath", None, None]:
+            key = visit_key(dir_path, dir_info)
             if key in visited:
                 return
             visited.add(key)
@@ -477,9 +576,11 @@ class OtherPath:
                 if isinstance(entry, dict):
                     child_path = entry.get("name") or ""
                     etype = entry.get("type")
+                    child_info: Any = entry
                 else:
                     child_path = str(entry)
                     etype = None
+                    child_info = None
                 if not child_path:
                     continue
                 name = posixpath.basename(child_path.rstrip("/"))
@@ -497,20 +598,26 @@ class OtherPath:
                 if etype == "directory":
                     is_dir = True
                 elif etype == "link":
-                    try:
-                        is_dir = bool(fs.isdir(child_path))
-                    except (OSError, FileNotFoundError):
-                        is_dir = False
+                    is_dir = link_is_dir(child_path)
                 elif etype is None:
                     try:
                         is_dir = bool(fs.isdir(child_path))
                     except (OSError, FileNotFoundError):
                         is_dir = False
 
-                if self._remote_rglob_matches(rel, name, glob_str):
+                is_file = etype == "file" or (etype == "link" and not is_dir)
+                if etype is None and not is_dir:
+                    # Unknown listing shape: treat non-dirs as file candidates.
+                    is_file = True
+
+                if files_only:
+                    if is_file and self._remote_rglob_matches(rel, name, glob_str):
+                        yield self._wrap_remote_path(child_path)
+                elif self._remote_rglob_matches(rel, name, glob_str):
                     yield self._wrap_remote_path(child_path)
+
                 if is_dir:
-                    yield from walk(child_path)
+                    yield from walk(child_path, child_info)
 
         yield from walk(root)
 
@@ -526,10 +633,15 @@ class OtherPath:
 
     def rglob(self, glob_str: str, *args: Any, **kwargs: Any) -> Generator["OtherPath", None, None]:
         testing = kwargs.pop("testing", False)
+        files_only = bool(kwargs.pop("files_only", False))
         if self.is_external:
-            yield from self._remote_rglob_walk(glob_str, testing=testing)
+            yield from self._remote_rglob_walk(
+                glob_str, testing=testing, files_only=files_only
+            )
             return
         for child in pathlib.Path(os.fspath(self)).rglob(glob_str):
+            if files_only and not child.is_file():
+                continue
             yield OtherPath(child)
 
     def listdir(self, levels: int = 1, **kwargs: Any) -> Generator["OtherPath", None, None]:

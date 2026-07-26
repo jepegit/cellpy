@@ -83,6 +83,14 @@ Use `cellpy.utils.helpers.check_connection()` (or
   lab file servers). Plain fsspec/UPath `rglob` does not follow those links.
   Shallow `glob` / `listdir(levels≤1)` stay non-recursive and do not add extra
   follow behaviour.
+- **`Batch.auto_use_file_list` / `find_in_raw_file_directory`:** dumping an
+  entire shared `rawdatadir` (all projects) over SFTP can still be expensive
+  even though cellpy follows symlinks. Prefer pointing `rawdatadir` at the
+  project folder, or set `auto_use_file_list: false`. Remote dumps use a
+  file-only listing (`files_only`) and, when the SSH session allows it, a
+  single remote `find -L … -type f` for speed, with a walk fallback. A warning
+  is logged if the dump returns thousands of paths. Smarter project-scoped
+  search is tracked separately (issue #691).
 
 ## Live SFTP tests (Docker)
 
