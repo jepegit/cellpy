@@ -38,8 +38,14 @@ from cellpy.batch.result import (
 )
 from cellpy.batch.runner import load_cell, run
 from cellpy.batch.store import CellStore
+from cellpy.batch import aggregate, outputs, qc
+from cellpy.batch.aggregate import combine_summaries
 
 __all__ = [
+    "aggregate",
+    "qc",
+    "outputs",
+    "combine_summaries",
     "Journal",
     "read_journal",
     "write_journal",
