@@ -39,8 +39,8 @@ PyPI trusted publishing.
 | `v2.0.0aN` / `bN` / `rcN` | **`master`** | pre-release only |
 | `v2.0.0` and later `v2.x.y` | **`master`** | stable |
 
-As of 2026-07-17: 1.x line at **`v1.1.0.post1`** on `v1.x`; v2 pre-releases from
-`master` (e.g. **`v2.0.0a1`**).
+As of 2026-07-26: 1.x line at **`v1.1.0.post3`** on `v1.x`; v2 soak tags
+`v2.0.0rc1` / `v2.0.0rc2` on `master` (stable cut tracked by #574).
 
 ---
 
@@ -92,10 +92,11 @@ uv run pytest -m essential   # full suite before v2.0.0 stable
 
 git status                   # must show a clean tree (no untracked)
 
-# Pre-release while soaking gates (alphas already shipped; next is rc):
-gh release create v2.0.0rc1 --target master --generate-notes
-# Stable only when #574 gates + soak are done:
-# gh release create v2.0.0 --target master --generate-notes
+# Pre-release soak (already shipped: v2.0.0rc1, v2.0.0rc2):
+# gh release create v2.0.0rcN --target master --generate-notes --prerelease
+# Stable when #574 gates + soak are done:
+gh release create v2.0.0 --target master --generate-notes
+
 
 gh run list --workflow release.yml --limit 1
 gh run watch <run-id>

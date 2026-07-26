@@ -130,7 +130,7 @@ file:
 | Setting | Environment variable |
 | --- | --- |
 | password | `CELLPY_PASSWORD` |
-| ssh key file | `CELLPY_KEY_FILENAME` |
+| ssh key file | `CELLPY_KEY_FILENAME` (required for reliable remotes; see [Remote paths](remote_paths.md) / #687) |
 | host | `CELLPY_HOST` |
 | user | `CELLPY_USER` |
 

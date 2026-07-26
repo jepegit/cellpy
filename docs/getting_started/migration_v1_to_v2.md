@@ -1,15 +1,19 @@
 # Migrating from cellpy 1.x to 2.x
 
 This guide maps **user-visible breaks** between the 1.x line and cellpy 2.0
-(including current 2.0 alphas on `master`) to a named fix or workaround. Keep
-the `v1.x` branch / 1.x PyPI releases if you need unchanged 1.x behaviour.
+to a named fix or workaround. Keep the `v1.x` branch / 1.x PyPI releases if you
+need unchanged 1.x behaviour.
 
-After **cellpy 2.0 GA**, the `v1.x` line is **bugfix-only for 12 months** from
+After **cellpy 2.0.0**, the `v1.x` line is **bugfix-only for 12 months** from
 the 2.0 release date (decision #438-6). Feature work lands only on 2.x.
+
+**Remote paths:** if `scp://` / `sftp://` short SSH `Host` aliases stop
+resolving, use a real hostname + `CELLPY_KEY_FILENAME` — see
+[Remote paths](remote_paths.md) (#687).
 
 ## Support matrix (files)
 
-| | 1.x | 2.x (current alphas / intended GA) |
+| | 1.x | 2.x (2.0.0+) |
 |---|-----|-------------------------------------|
 | Default `save()` | HDF5 (`.h5` / `.hdf5` / `.cellpy` as HDF5) | **v9** zip-of-parquet + `meta.json` (`.cellpy`) |
 | `load()` | v4–v8 HDF5 | **v8 HDF5 and v9** only (sniffs zip vs HDF5). Pre-v8 raises `WrongFileVersion`. |
