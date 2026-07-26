@@ -14,7 +14,6 @@ on:
       - "zensical.toml"
       - ".readthedocs.yaml"
       - "dev/render_example_notebooks.py"
-      - "dev/render_marimo_notebooks.py"
       - ".github/workflows/docs.yml"
   pull_request:
     paths:
@@ -22,7 +21,6 @@ on:
       - "zensical.toml"
       - ".readthedocs.yaml"
       - "dev/render_example_notebooks.py"
-      - "dev/render_marimo_notebooks.py"
       - ".github/workflows/docs.yml"
 
 jobs:

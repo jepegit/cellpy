@@ -23,7 +23,6 @@ folder](https://github.com/jepegit/cellpy/tree/master/examples) in the cellpy Gi
 - [GITT](05_GITT.md)
 - [Batch processing](batch_utility/cellpy_batch_processing_docs.md)
 - [Templates](templates/tutorial_templates.md)
-- [Hello cellpy (marimo)](marimo/01_hello_cellpy.md)
 
 ## About these pages
 
@@ -37,14 +36,4 @@ To re-render after changing a Jupyter notebook:
 
 ```shell
 uv run --group docs python dev/render_example_notebooks.py
-```
-
-There is also a small [marimo](https://marimo.io) spike under
-[`docs/examples/marimo/`](https://github.com/jepegit/cellpy/tree/master/docs/examples/marimo).
-Those pages are exported with
-[`marimo-md-export`](https://jmarshrossney.github.io/marimo-md-export/) (markdown
-plus embedded outputs — no Pyodide in the docs site). Re-render with:
-
-```shell
-uv run --group docs python dev/render_marimo_notebooks.py
 ```
