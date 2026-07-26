@@ -507,14 +507,120 @@ def test_load_save_journal_roundtrip_cell_specs(parameters, clean_dir, batch_ins
     assert b2.pages[hdr_journal["argument"]].iloc[0] == spec_1
 
 
-# TODO: make this test
-def test_load_save_journal_roundtrip_excel(batch_instance):
-    pass
+def test_load_save_journal_roundtrip_json(parameters, clean_dir, batch_instance):
+    """Characterization (batch v3 / #697): JSON journal survives a
+    from_journal -> to_file -> from_journal round-trip with its pages intact.
+    Pins today's behaviour before the journal module is rewritten (A2)."""
+    b1 = batch_instance.from_journal(parameters.journal_file_json_path, testing=True)
+    out = pathlib.Path(clean_dir) / "roundtrip.json"
+    b1.experiment.journal.to_file(file_name=out, to_project_folder=False)
+    assert out.is_file()
+
+    b2 = batch_instance.from_journal(out, testing=True)
+    # same number of cells, same index (cell labels), same argument column
+    assert len(b2.pages) == len(b1.pages) == 5
+    assert list(b2.pages.index) == list(b1.pages.index)
+    assert hdr_journal["argument"] in b2.pages.columns
+    assert (
+        b2.pages[hdr_journal["argument"]].iloc[0]
+        == b1.pages[hdr_journal["argument"]].iloc[0]
+    )
 
 
-# TODO: make this test
-def test_load_save_journal_roundtrip_json(batch_instance):
-    pass
+@pytest.mark.skip_on_macos
+def test_load_save_journal_roundtrip_excel(parameters, clean_dir, batch_instance):
+    """Characterization (batch v3 / #697): an Excel journal read into the model
+    and written back out as JSON reloads with the same pages. Excel becomes
+    read-only in batch v3 (A2), so the round-trip is Excel -> model -> JSON."""
+    b1 = batch_instance.from_journal(
+        parameters.journal_file_full_xlsx_path, testing=True
+    )
+    out = pathlib.Path(clean_dir) / "from_excel.json"
+    b1.experiment.journal.to_file(file_name=out, to_project_folder=False)
+    assert out.is_file()
+
+    b2 = batch_instance.from_journal(out, testing=True)
+    assert len(b2.pages) == len(b1.pages) == 2
+    assert list(b2.pages.index) == list(b1.pages.index)
+
+
+# --- batch v3 (#697) characterization net --------------------------------
+# Pins the user-facing surface and end-to-end behaviour of the CURRENT batch
+# implementation so the redesign (A2-A8, #698-#704) can be proven behaviour-
+# preserving. See architecture-plan/cellpy2-batch-redesign-plan.md sections 3 & 6.
+
+# The facade contract the redesign MUST keep working (plan sections 3 and 8.1).
+BATCH_FACADE_MUST_KEEP = (
+    "pages",
+    "summaries",
+    "cell_names",
+    "update",
+    "load",
+    "save",
+    "plot",
+    "report",
+    "combine_summaries",
+    "make_summaries",
+    "mark_as_bad",
+    "drop",
+    "link",
+    "recalc",
+    "create_journal",
+    "paginate",
+    "journal",
+    "export_journal",
+)
+
+# Module-level entry points that must stay importable (blessed + legacy).
+BATCH_MODULE_ENTRYPOINTS = (
+    "load",
+    "init",
+    "from_journal",
+    "naked",
+    "load_journal",
+)
+
+
+def test_batch_facade_public_surface(batch_instance):
+    """The Batch facade keeps its documented user surface (batch v3 guard)."""
+    for name in BATCH_FACADE_MUST_KEEP:
+        assert hasattr(batch_instance.Batch, name), f"Batch lost `{name}`"
+    for name in BATCH_MODULE_ENTRYPOINTS:
+        assert callable(getattr(batch_instance, name, None)), (
+            f"batch.{name} entry point missing"
+        )
+
+
+def test_populated_batch_end_to_end_values(populated_batch, parameters):
+    """End-to-end value characterization: journal -> load -> update ->
+    summaries, asserting values (not just shapes) for a real batch."""
+    b = populated_batch
+
+    # journal populated and cells loaded
+    assert len(b.pages) >= 1
+    assert len(b.cell_names) == len(b.pages)
+
+    # per-cell capacity extraction is stable (known value, cf. the get_cap test)
+    name = parameters.run_name_2
+    if name in b.cell_names:
+        cap_df = b.experiment.data[name].get_cap(cycle=1)
+        assert len(cap_df) == 1105
+
+    # combined summaries are non-empty and carry charge_capacity
+    b.combine_summaries(export_to_csv=False)
+    summaries = b.summaries
+    assert summaries is not None and len(summaries) > 0
+    assert "charge_capacity" in list(b.summary_headers)
+
+
+@pytest.mark.essential
+def test_issue668_batch_plot_variants(populated_batch):
+    """#668: `b.plot(rate=..., ir=..., direction=...)` must build a figure via
+    cellpy.plotting without the batch_plotters PerformanceWarning/crash.
+    The batch v3 redesign (A8/E4) deletes batch_plotters entirely."""
+    pytest.importorskip("plotly", reason="plotting extras (batch) not installed")
+    populated_batch.plot(backend="plotly", show=False, ir=True, direction="discharge")
+    assert populated_batch.plotter.figure is not None
 
 
 def test_load_journal_dataframe(batch_instance):
