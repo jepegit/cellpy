@@ -39,5 +39,7 @@ architecture plan §6 row 3.6.
 
 - **Additional tasks**:
   - Check alignment with guiding docs under `.issueflows/04-designs-and-guides`; update those docs if needed.
+- **Clarifications / constraints**:
+  - Phase C (`v2.0.0rc1`) already shipped from clean `master` after #671 (PyPI publish green). Remaining work is soak → stable `v2.0.0` + feedstock + start the v1.x 12-month bugfix-only window.
 
-_Note: this section is an interpretive summary of the comment thread, not a verbatim dump. Source comments: 1, last comment by @jepegit on 2026-07-23._
+_Note: this section is an interpretive summary of the comment thread, not a verbatim dump. Source comments: 2, last comment by @jepegit on 2026-07-24._

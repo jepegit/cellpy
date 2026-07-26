@@ -34,8 +34,35 @@ Set one of these environment variables (or in your `.env_cellpy` file):
 | `CELLPY_PASSWORD` | Password fallback if no key is set |
 | `CELLPY_HOST` / `CELLPY_USER` | Optional helpers used by some tools/tests |
 
-Paramiko may also use your SSH agent and `~/.ssh/config` for the host/user in
-the URI. Do not put passwords in the cellpy YAML config file.
+Paramiko may also use your SSH agent for keys. Do not put passwords in the
+cellpy YAML config file.
+
+### OpenSSH `Host` aliases (known limitation, #687)
+
+URIs that use a short **`Host` alias** from `~/.ssh/config` (for example
+`scp://odin/...` when `Host odin` maps to a real `HostName`) often fail with
+`getaddrinfo` / DNS errors after the OtherPath → UPath switch. OpenSSH resolves
+the alias; Paramiko/fsspec as used today typically does **not**.
+
+**Workaround (supported today):**
+
+1. Put the **fully resolvable hostname** (or IP) in the URI, not the short alias.
+2. Export the private key explicitly (OpenSSH `IdentityFile` alone is not enough
+   for this path):
+
+```bash
+export CELLPY_KEY_FILENAME="/path/to/your/private_key"
+```
+
+```yaml
+Paths:
+  # use the real HostName from ssh config, not the Host alias
+  rawdatadir: scp://d1-odin-01.example.org/home/user/projects
+```
+
+If an earlier failed run left journal `raw_file_names` empty, recreate the
+journal after fixing the URI. Restoring full `~/.ssh/config` Host-alias support
+is tracked in [#687](https://github.com/jepegit/cellpy/issues/687).
 
 ## Configuring a remote raw-data directory
 

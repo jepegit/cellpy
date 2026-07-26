@@ -2,6 +2,20 @@
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-07-26
+
+* **Stable cellpy 2.0.0.** Native headers, v9 zip-of-parquet cellpy files
+  (v8 HDF5 still readable; write v8 via escape), `cellpycore==0.2.4`, and the
+  Stage-3 assembly close-out (#574). Soak tags: `v2.0.0rc1`, `v2.0.0rc2`.
+* **Support:** Python ≥3.13. The `v1.x` line is **bugfix-only for 12 months
+  from this release date** (decision #438-6). See
+  `docs/getting_started/migration_v1_to_v2.md` and `DEPRECATIONS.md`.
+* **Known limitation (#687):** `scp://` / `sftp://` URIs that use an OpenSSH
+  `Host` alias (short name from `~/.ssh/config`) may fail DNS after the
+  OtherPath → UPath switch. Workaround: put the real hostname in the URI and
+  set `CELLPY_KEY_FILENAME` — documented in
+  `docs/getting_started/remote_paths.md`. Fix tracked in #687.
+
 * Speed up remote auto_use_file_list / OtherPath.rglob dump. (#690).
 
 * Follow directory symlinks in remote OtherPath.rglob so batch file discovery works under symlink project dirs. (#688).
