@@ -1,14 +1,15 @@
-"""Batch runner (batch v3, #700).
+"""Batch runner (batch v3, #700, #704).
 
 Per-cell work is a pure function -- one cell in, one result out, no shared
 mutable state. Serial vs parallel execution is then a choice of executor, not a
-second 300-line method (the legacy ``update`` / ``parallel_update`` clone).
-This arc ships the serial executor; the process pool is A8 (#704).
+second 300-line method (the legacy ``update`` / ``parallel_update`` clone):
+``executor="serial" | "threads" | "processes"`` all reuse :func:`load_cell`.
 """
 
 from __future__ import annotations
 
 import time
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
 from typing import Any, Callable
 
 from cellpy import get as _cellpy_get
@@ -82,29 +83,106 @@ def load_cell(spec: CellSpec, policy: LoadPolicy | None = None) -> CellResult:
     )
 
 
+def _strip_cell(result: CellResult) -> CellResult:
+    """Drop the live cell (and un-pickleable exception) for cross-process return."""
+    if result.cell is None and (result.error is None or isinstance(result.error, RuntimeError)):
+        return result
+    return CellResult(
+        label=result.label,
+        outcome=result.outcome,
+        cell=None,
+        source=result.source,
+        seconds=result.seconds,
+        error=None if result.error is None else RuntimeError(str(result.error)),
+    )
+
+
+def _dispatch(spec: CellSpec, policy: LoadPolicy, bad: frozenset) -> CellResult:
+    if spec.label in bad:
+        return CellResult(spec.label, CellOutcome.SKIPPED, source=None)
+    return load_cell(spec, policy)
+
+
+def _dispatch_lite(spec: CellSpec, policy: LoadPolicy, bad: frozenset) -> CellResult:
+    """Process-pool worker: like :func:`_dispatch` but returns a picklable result.
+
+    The live :class:`CellpyCell` is not returned across the process boundary
+    (batch plan section 7, Windows pickling); ``executor="processes"`` yields
+    outcomes/timings, and cells are re-read from their cellpy files on demand.
+    """
+    return _strip_cell(_dispatch(spec, policy, bad))
+
+
+def _run_serial(specs, policy, bad, on_progress) -> list[CellResult]:
+    results: list[CellResult] = []
+    total = len(specs)
+    for index, spec in enumerate(specs, start=1):
+        result = _dispatch(spec, policy, bad)
+        results.append(result)
+        if on_progress is not None:
+            on_progress(index, total, result)
+    return results
+
+
+def _run_pool(pool_cls, worker, specs, policy, bad, on_progress) -> list[CellResult]:
+    results: list[CellResult | None] = [None] * len(specs)
+    total = len(specs)
+    with pool_cls() as pool:
+        futures = {
+            pool.submit(worker, spec, policy, bad): i
+            for i, spec in enumerate(specs)
+        }
+        done = 0
+        for future in as_completed(futures):
+            index = futures[future]
+            results[index] = future.result()
+            done += 1
+            if on_progress is not None:
+                on_progress(done, total, results[index])
+    return results  # type: ignore[return-value]
+
+
+def _run_threads(specs, policy, bad, on_progress) -> list[CellResult]:
+    return _run_pool(ThreadPoolExecutor, _dispatch, specs, policy, bad, on_progress)
+
+
+def _run_processes(specs, policy, bad, on_progress) -> list[CellResult]:
+    return _run_pool(ProcessPoolExecutor, _dispatch_lite, specs, policy, bad, on_progress)
+
+
+#: Available executors. Serial/threads keep live cells; processes returns
+#: outcomes only (frames/paths, not live objects) to stay pickle-safe.
+EXECUTORS = {
+    "serial": _run_serial,
+    "threads": _run_threads,
+    "processes": _run_processes,
+}
+
+
 def run(
     journal: Journal,
     policy: LoadPolicy | None = None,
     per_cell: dict | None = None,
     on_progress: ProgressHook | None = None,
+    executor: str = "serial",
 ) -> BatchResult:
-    """Load every cell in ``journal`` (serial), returning a :class:`BatchResult`.
+    """Load every cell in ``journal``, returning a :class:`BatchResult`.
 
-    Progress is reported via the ``on_progress`` callback; the runner never
-    imports tqdm or prints.
+    ``executor`` chooses ``"serial"`` (default), ``"threads"`` or
+    ``"processes"`` -- all reuse :func:`load_cell`. Progress is reported via the
+    ``on_progress`` callback; the runner never imports tqdm or prints.
     """
     policy = policy or LoadPolicy()
     specs = resolve_specs(journal, policy, per_cell)
-    bad = set(journal.session.get("bad_cells") or []) if policy.skip_bad_cells else set()
-
-    results: list[CellResult] = []
-    total = len(specs)
-    for index, spec in enumerate(specs, start=1):
-        if spec.label in bad:
-            result = CellResult(spec.label, CellOutcome.SKIPPED, source=None)
-        else:
-            result = load_cell(spec, policy)
-        results.append(result)
-        if on_progress is not None:
-            on_progress(index, total, result)
-    return BatchResult(results)
+    bad = (
+        frozenset(journal.session.get("bad_cells") or [])
+        if policy.skip_bad_cells
+        else frozenset()
+    )
+    try:
+        runner_fn = EXECUTORS[executor]
+    except KeyError:
+        raise ValueError(
+            f"unknown executor {executor!r}; choose one of {sorted(EXECUTORS)}"
+        ) from None
+    return BatchResult(runner_fn(specs, policy, bad, on_progress))

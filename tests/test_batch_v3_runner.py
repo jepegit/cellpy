@@ -139,3 +139,47 @@ def test_run_skips_bad_cells(parameters):
     j.session["bad_cells"] = ["c45"]
     br = run(j, LoadPolicy(source=SourcePreference.CELLPY_ONLY, skip_bad_cells=True))
     assert br["c45"].outcome == CellOutcome.SKIPPED
+
+
+# ---- executors (#704) ---------------------------------------------------
+
+
+def _two_cell_journal(cellpy_file):
+    return Journal(
+        name="t",
+        project="p",
+        pages=pl.DataFrame(
+            {
+                FILENAME: ["c_a", "c_b"],
+                "cellpy_file_name": [str(cellpy_file), str(cellpy_file)],
+            }
+        ),
+    )
+
+
+def test_run_threads_keeps_live_cells(parameters):
+    j = _two_cell_journal(parameters.cellpy_file_path)
+    seen = []
+    br = run(
+        j,
+        LoadPolicy(source=SourcePreference.CELLPY_ONLY),
+        executor="threads",
+        on_progress=lambda i, n, r: seen.append(i),
+    )
+    assert {r.label for r in br.loaded} == {"c_a", "c_b"}
+    assert all(r.cell is not None for r in br.loaded)  # live cells in threads
+    assert sorted(seen) == [1, 2]
+
+
+def test_run_processes_returns_outcomes(parameters):
+    j = _one_cell_journal("c45", parameters.cellpy_file_path)
+    br = run(j, LoadPolicy(source=SourcePreference.CELLPY_ONLY), executor="processes")
+    assert br["c45"].ok
+    # processes mode returns pickle-safe results (no live cell across the boundary)
+    assert br["c45"].cell is None
+
+
+def test_run_unknown_executor(parameters):
+    j = _one_cell_journal("c45", parameters.cellpy_file_path)
+    with pytest.raises(ValueError, match="unknown executor"):
+        run(j, executor="magic")
