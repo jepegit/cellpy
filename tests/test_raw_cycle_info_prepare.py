@@ -64,36 +64,10 @@ def test_cycle_info_plot_backend_matplotlib(cell):
 
 
 @pytest.mark.essential
-def test_raw_plot_interactive_alias_warns(cell):
-    from cellpy import _deprecation
+def test_raw_and_cycle_info_interactive_removed(cell):
+    import inspect
 
-    _deprecation._WARNED_SITES.clear()
-    with warnings.catch_warnings(record=True) as caught:
-        warnings.simplefilter("always", DeprecationWarning)
-        fig = raw_plot(cell, interactive=False)
-    assert fig is not None
-    messages = [
-        str(w.message)
-        for w in caught
-        if issubclass(w.category, DeprecationWarning)
-        and "interactive" in str(w.message)
-    ]
-    assert messages
-    assert "backend=" in messages[0] or "matplotlib" in messages[0]
-
-
-@pytest.mark.essential
-def test_cycle_info_plot_interactive_alias_warns(cell):
-    from cellpy import _deprecation
-
-    _deprecation._WARNED_SITES.clear()
-    with warnings.catch_warnings(record=True) as caught:
-        warnings.simplefilter("always", DeprecationWarning)
-        cycle_info_plot(cell, cycle=3, interactive=False)
-    messages = [
-        str(w.message)
-        for w in caught
-        if issubclass(w.category, DeprecationWarning)
-        and "interactive" in str(w.message)
-    ]
-    assert messages
+    assert "interactive" not in inspect.signature(raw_plot).parameters
+    assert "interactive" not in inspect.signature(cycle_info_plot).parameters
+    assert raw_plot(cell, backend="matplotlib") is not None
+    cycle_info_plot(cell, cycle=3, backend="matplotlib")

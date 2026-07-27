@@ -41,42 +41,17 @@ def test_cycles_plot_backend_matplotlib(cell):
 
 
 @pytest.mark.essential
-def test_cycles_plot_interactive_alias_warns(cell):
-    from cellpy import _deprecation
+def test_cycles_plot_interactive_and_range_shims_removed(cell):
+    # interactive=/xlim/ylim were removed in 2.1 (E1, #713); canonical spellings only.
+    import inspect
 
-    _deprecation._WARNED_SITES.clear()
-    with warnings.catch_warnings(record=True) as caught:
-        warnings.simplefilter("always", DeprecationWarning)
-        fig = cycles_plot(cell, interactive=False, return_figure=True)
+    params = inspect.signature(cycles_plot).parameters
+    assert "interactive" not in params
+    assert "xlim" not in params and "ylim" not in params
+    fig = cycles_plot(
+        cell, backend="matplotlib", x_range=[0, 1], y_range=[0, 2], return_figure=True
+    )
     assert fig is not None
-    messages = [
-        str(w.message)
-        for w in caught
-        if issubclass(w.category, DeprecationWarning)
-        and "interactive" in str(w.message)
-    ]
-    assert messages
-    assert "backend=" in messages[0] or "matplotlib" in messages[0]
-
-
-@pytest.mark.essential
-def test_cycles_plot_xlim_ylim_alias_warns(cell):
-    from cellpy import _deprecation
-
-    _deprecation._WARNED_SITES.clear()
-    with warnings.catch_warnings(record=True) as caught:
-        warnings.simplefilter("always", DeprecationWarning)
-        fig = cycles_plot(
-            cell,
-            backend="matplotlib",
-            xlim=[0, 1],
-            ylim=[0, 2],
-            return_figure=True,
-        )
-    assert fig is not None
-    texts = [str(w.message) for w in caught if issubclass(w.category, DeprecationWarning)]
-    assert any("xlim" in t for t in texts)
-    assert any("ylim" in t for t in texts)
 
 
 @pytest.mark.essential

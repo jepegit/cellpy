@@ -71,37 +71,10 @@ def test_dva_plot_backend_matplotlib(cell):
 
 
 @pytest.mark.essential
-def test_ica_plot_interactive_alias_warns(cell):
-    from cellpy import _deprecation
+def test_ica_dva_interactive_removed(cell):
+    import inspect
 
-    _deprecation._WARNED_SITES.clear()
-    with warnings.catch_warnings(record=True) as caught:
-        warnings.simplefilter("always", DeprecationWarning)
-        fig = ica_plot(cell, cycles=1, interactive=False)
-    assert fig is not None
-    messages = [
-        str(w.message)
-        for w in caught
-        if issubclass(w.category, DeprecationWarning)
-        and "interactive" in str(w.message)
-    ]
-    assert messages
-    assert "backend=" in messages[0] or "matplotlib" in messages[0]
-
-
-@pytest.mark.essential
-def test_dva_plot_interactive_alias_warns(cell):
-    from cellpy import _deprecation
-
-    _deprecation._WARNED_SITES.clear()
-    with warnings.catch_warnings(record=True) as caught:
-        warnings.simplefilter("always", DeprecationWarning)
-        fig = dva_plot(cell, cycles=1, interactive=False)
-    assert fig is not None
-    messages = [
-        str(w.message)
-        for w in caught
-        if issubclass(w.category, DeprecationWarning)
-        and "interactive" in str(w.message)
-    ]
-    assert messages
+    assert "interactive" not in inspect.signature(ica_plot).parameters
+    assert "interactive" not in inspect.signature(dva_plot).parameters
+    assert ica_plot(cell, cycles=1, backend="matplotlib") is not None
+    assert dva_plot(cell, cycles=1, backend="matplotlib") is not None

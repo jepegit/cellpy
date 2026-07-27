@@ -607,7 +607,6 @@ class SummaryPlotConfig:
     hover_columns: Optional[list] = None
     auto_convert_legend_labels: bool = True
     backend: Optional[str] = None
-    interactive: Optional[bool] = None
     share_y: bool = False
     rangeslider: bool = False
 
@@ -920,97 +919,6 @@ class SummaryPlotInfo:
 
 
 
-def summary_plot_legacy(
-    c,
-    x: Optional[str] = None,
-    y: str = "capacities_gravimetric_coulombic_efficiency",
-    height: Optional[int] = None,
-    width: int = 900,
-    markers: bool = True,
-    title: Optional[str] = None,
-    x_range: Optional[list] = None,
-    y_range: Optional[list] = None,
-    ce_range: Optional[list] = None,
-    norm_range: Optional[list] = None,
-    cv_share_range: Optional[list] = None,
-    split: bool = True,
-    auto_convert_legend_labels: bool = True,
-    interactive: bool = True,
-    share_y: bool = False,
-    rangeslider: bool = False,
-    return_data: bool = False,
-    verbose: bool = False,
-    plotly_template: Optional[str] = None,
-    seaborn_palette: str = "deep",
-    seaborn_style: str = "dark",
-    formation_cycles: int = 3,
-    show_formation: bool = True,
-    show_legend: bool = True,
-    x_axis_domain_formation_fraction: float = 0.2,
-    column_separator: float = 0.01,
-    reset_losses: bool = True,
-    link_capacity_scales: bool = False,
-    fullcell_standard_normalization_type: str = "on-max",
-    fullcell_standard_normalization_factor: Optional[float] = None,
-    fullcell_standard_normalization_scaler: float = 1.0,
-    seaborn_line_hooks: Optional[list[tuple[str, list, dict]]] = None,
-    **kwargs,
-) -> Any:
-    """Deprecated. Use [`summary_plot`][cellpy.utils.plotutils.summary_plot].
-
-    The 1 400-line implementation that used to live here was **broken, not
-    merely redundant**: its first statement unpacked the return value of
-    ``SummaryPlotInfo._create_col_info``, which stores its results as
-    attributes and returns ``None`` — so every call raised ``TypeError``
-    regardless of the cell or the runtime (#567). Nothing in the repo called
-    it, and nothing outside it could have called it successfully either.
-
-    Delegates to ``summary_plot``, which draws the same figures through the
-    builder pipeline. Removal in 2.1.
-    """
-    warn_once(
-        "plotutils.summary_plot_legacy",
-        "cellpy.utils.plotutils.summary_plot (same figures, same options)",
-        removal="2.1",
-    )
-    return summary_plot(
-        c,
-        x=x,
-        y=y,
-        height=height,
-        width=width,
-        markers=markers,
-        title=title,
-        x_range=x_range,
-        y_range=y_range,
-        ce_range=ce_range,
-        norm_range=norm_range,
-        cv_share_range=cv_share_range,
-        split=split,
-        auto_convert_legend_labels=auto_convert_legend_labels,
-        interactive=interactive,
-        share_y=share_y,
-        rangeslider=rangeslider,
-        return_data=return_data,
-        verbose=verbose,
-        plotly_template=plotly_template,
-        seaborn_palette=seaborn_palette,
-        seaborn_style=seaborn_style,
-        formation_cycles=formation_cycles,
-        show_formation=show_formation,
-        show_legend=show_legend,
-        x_axis_domain_formation_fraction=x_axis_domain_formation_fraction,
-        column_separator=column_separator,
-        reset_losses=reset_losses,
-        link_capacity_scales=link_capacity_scales,
-        fullcell_standard_normalization_type=fullcell_standard_normalization_type,
-        fullcell_standard_normalization_factor=fullcell_standard_normalization_factor,
-        fullcell_standard_normalization_scaler=fullcell_standard_normalization_scaler,
-        seaborn_line_hooks=seaborn_line_hooks,
-        **kwargs,
-    )
-
-
 @notebook_docstring_printer
 def summary_plot(
     c,
@@ -1029,7 +937,6 @@ def summary_plot(
     hover_columns: Optional[list] = None,
     auto_convert_legend_labels: bool = True,
     backend: Optional[str] = None,
-    interactive: Optional[bool] = None,
     share_y: bool = False,
     rangeslider: bool = False,
     return_data: bool = False,
@@ -1081,8 +988,6 @@ def summary_plot(
         auto_convert_legend_labels: convert the legend labels to a nicer format.
         backend: plotting backend (``"plotly"`` or ``"matplotlib"``; default
             ``"plotly"``)
-        interactive: deprecated alias for backend selection
-            (``True`` → ``"plotly"``, ``False`` → ``"matplotlib"``); removal 2.1
         rangeslider: add a range slider to the x-axis (only for plotly)
         share_y: share y-axis (only for plotly)
         return_data: return the data used for plotting
@@ -1219,7 +1124,6 @@ def summary_plot(
         hover_columns=hover_columns,
         auto_convert_legend_labels=auto_convert_legend_labels,
         backend=backend,
-        interactive=interactive,
         share_y=share_y,
         rangeslider=rangeslider,
         return_data=return_data,
@@ -1250,18 +1154,7 @@ def summary_plot(
     config.x = _resolve_summary_column(c, config.x)
     config.hover_columns = _resolve_summary_columns(c, config.hover_columns)
 
-    # Resolve backend= vs deprecated interactive= (#639).
-    resolved_backend = config.backend
-    if config.interactive is not None:
-        warn_once(
-            "summary_plot(interactive=...)",
-            'backend="plotly"|"matplotlib"',
-            removal="2.1",
-        )
-        if resolved_backend is None:
-            resolved_backend = "plotly" if config.interactive else "matplotlib"
-    if resolved_backend is None:
-        resolved_backend = "plotly"
+    resolved_backend = config.backend or "plotly"
     config.backend = resolved_backend
 
     if resolved_backend == "plotly" and not plotly_available:
@@ -1367,7 +1260,6 @@ def raw_plot(
     x_label=None,
     title=None,
     backend: Optional[str] = None,
-    interactive: Optional[bool] = None,
     plot_type="voltage-current",
     double_y=True,
     **kwargs,
@@ -1384,8 +1276,6 @@ def raw_plot(
         x_label (str): label for x-axis
         title (str): title of the plot
         backend (str, optional): ``"plotly"`` (default) or ``"matplotlib"``.
-        interactive (bool, optional): Deprecated alias for backend selection
-            (``True``→plotly, ``False``→matplotlib; removal 2.1).
         plot_type (str): type of plot (defaults to "voltage-current") (overrides given y if y is not None),
           currently only "voltage-current", "raw", "capacity", "capacity-current", and "full" is supported.
         double_y (bool): use double y-axis (only for matplotlib and when plot_type with 2 rows is used)
@@ -1395,17 +1285,7 @@ def raw_plot(
         ``matplotlib`` figure or ``plotly`` figure
 
     """
-    resolved_backend = backend
-    if interactive is not None:
-        warn_once(
-            "raw_plot(interactive=...)",
-            'backend="plotly"|"matplotlib"',
-            removal="2.1",
-        )
-        if resolved_backend is None:
-            resolved_backend = "plotly" if interactive else "matplotlib"
-    if resolved_backend is None:
-        resolved_backend = "plotly"
+    resolved_backend = backend or "plotly"
 
     if resolved_backend == "plotly" and not plotly_available:
         warnings.warn("Can not perform interactive plotting. Plotly is not available.")
@@ -1442,7 +1322,6 @@ def cycle_info_plot(
     cycle=None,
     get_axes=False,
     backend: Optional[str] = None,
-    interactive: Optional[bool] = None,
     t_unit="hours",
     v_unit="V",
     i_unit="mA",
@@ -1457,8 +1336,6 @@ def cycle_info_plot(
         cycle (int or list or tuple): cycle(s) to select (must be int for matplotlib)
         get_axes (bool): return axes (for matplotlib) or figure (for plotly)
         backend (str, optional): ``"plotly"`` (default) or ``"matplotlib"``.
-        interactive (bool, optional): Deprecated alias for backend selection
-            (``True``→plotly, ``False``→matplotlib; removal 2.1).
         t_unit (str): unit for x-axis (default: "hours")
         v_unit (str): unit for y-axis (default: "V")
         i_unit (str): unit for current (default: "mA")
@@ -1467,17 +1344,7 @@ def cycle_info_plot(
     Returns:
         ``matplotlib.axes`` or None (or a figure when ``get_axes`` / backend semantics require it)
     """
-    resolved_backend = backend
-    if interactive is not None:
-        warn_once(
-            "cycle_info_plot(interactive=...)",
-            'backend="plotly"|"matplotlib"',
-            removal="2.1",
-        )
-        if resolved_backend is None:
-            resolved_backend = "plotly" if interactive else "matplotlib"
-    if resolved_backend is None:
-        resolved_backend = "plotly"
+    resolved_backend = backend or "plotly"
 
     if resolved_backend == "plotly" and not plotly_available:
         warnings.warn("Can not perform interactive plotting. Plotly is not available.")
@@ -1536,10 +1403,7 @@ def cycles_plot(
     figsize=(6, 4),
     x_range=None,
     y_range=None,
-    xlim=None,
-    ylim=None,
     backend: Optional[str] = None,
-    interactive: Optional[bool] = None,
     return_figure=None,
     width=800,
     height=600,
@@ -1580,11 +1444,7 @@ def cycles_plot(
         figsize (tuple, optional): Size of the figure for matplotlib. Default is (6, 4).
         x_range (list, optional): Limits for the x-axis.
         y_range (list, optional): Limits for the y-axis.
-        xlim (list, optional): Deprecated alias for ``x_range`` (removal 2.1).
-        ylim (list, optional): Deprecated alias for ``y_range`` (removal 2.1).
         backend (str, optional): ``"plotly"`` (default) or ``"matplotlib"``.
-        interactive (bool, optional): Deprecated alias for backend selection
-            (``True``→plotly, ``False``→matplotlib; removal 2.1).
         return_figure (bool, optional): Whether to return the figure object.
             Default is ``True`` for matplotlib and ``False`` for plotly (``fig.show()``).
         width (int, optional): Width of the figure for Plotly. Default is 800.
@@ -1614,18 +1474,7 @@ def cycles_plot(
         Else:
             None: The plot is shown in the default browser.
     """
-    # Resolve backend= vs deprecated interactive= (#646 / same as #639).
-    resolved_backend = backend
-    if interactive is not None:
-        warn_once(
-            "cycles_plot(interactive=...)",
-            'backend="plotly"|"matplotlib"',
-            removal="2.1",
-        )
-        if resolved_backend is None:
-            resolved_backend = "plotly" if interactive else "matplotlib"
-    if resolved_backend is None:
-        resolved_backend = "plotly"
+    resolved_backend = backend or "plotly"
 
     if resolved_backend == "plotly" and not plotly_available:
         warnings.warn("Can not perform interactive plotting. Plotly is not available.")
@@ -1633,24 +1482,6 @@ def cycles_plot(
 
     if return_figure is None:
         return_figure = resolved_backend != "plotly"
-
-    # Canonical range spelling: x_range/y_range; xlim/ylim are warn_once aliases.
-    if xlim is not None:
-        warn_once(
-            "cycles_plot(xlim=...)",
-            "cycles_plot(x_range=...)",
-            removal="2.1",
-        )
-        if x_range is None:
-            x_range = xlim
-    if ylim is not None:
-        warn_once(
-            "cycles_plot(ylim=...)",
-            "cycles_plot(y_range=...)",
-            removal="2.1",
-        )
-        if y_range is None:
-            y_range = ylim
 
     seaborn_context = kwargs.pop("seaborn_context", "notebook")
     seaborn_facecolor = kwargs.pop("seaborn_facecolor", "#EAEAF2")
@@ -1712,24 +1543,9 @@ def cycles_plot(
     return None
 
 
-def _resolve_plot_backend(
-    *,
-    backend: Optional[str],
-    interactive: Optional[bool],
-    deprecation_site: str,
-) -> str:
-    """Resolve ``backend=`` vs deprecated ``interactive=`` for plot entry points."""
-    resolved = backend
-    if interactive is not None:
-        warn_once(
-            deprecation_site,
-            'backend="plotly"|"matplotlib"',
-            removal="2.1",
-        )
-        if resolved is None:
-            resolved = "plotly" if interactive else "matplotlib"
-    if resolved is None:
-        resolved = "plotly"
+def _resolve_plot_backend(backend: Optional[str]) -> str:
+    """Resolve the plotting backend for plot entry points (default ``plotly``)."""
+    resolved = backend or "plotly"
     if resolved == "plotly" and not plotly_available:
         warnings.warn("Can not perform interactive plotting. Plotly is not available.")
         resolved = "matplotlib"
@@ -1743,7 +1559,6 @@ def ica_plot(
     options=None,
     *,
     backend: Optional[str] = None,
-    interactive: Optional[bool] = None,
     title=None,
     colormap="viridis",
     width=800,
@@ -1767,7 +1582,6 @@ def ica_plot(
         direction: ``"charge"``, ``"discharge"``, or ``"both"``.
         options: Optional [`IcaOptions`][cellpy.ica.IcaOptions].
         backend: ``"plotly"`` (default) or ``"matplotlib"``.
-        interactive: Deprecated alias for backend selection (removal 2.1).
         title: Figure title.
         colormap: Cycle colour map.
         width, height: Plotly figure size.
@@ -1785,11 +1599,7 @@ def ica_plot(
     from cellpy.plotting.context import from_source
     from cellpy.plotting.prepare.ica import IcaPrepareConfig, prepare as prepare_ica
 
-    resolved_backend = _resolve_plot_backend(
-        backend=backend,
-        interactive=interactive,
-        deprecation_site="ica_plot(interactive=...)",
-    )
+    resolved_backend = _resolve_plot_backend(backend)
 
     option_keys = {
         "voltage_resolution",
@@ -1850,7 +1660,6 @@ def dva_plot(
     options=None,
     *,
     backend: Optional[str] = None,
-    interactive: Optional[bool] = None,
     title=None,
     colormap="viridis",
     width=800,
@@ -1875,7 +1684,6 @@ def dva_plot(
         options: Optional [`IcaOptions`][cellpy.ica.IcaOptions] (defaults to
             DVA-oriented options inside ``dvdq``).
         backend: ``"plotly"`` (default) or ``"matplotlib"``.
-        interactive: Deprecated alias for backend selection (removal 2.1).
         title: Figure title.
         colormap: Cycle colour map.
         width, height: Plotly figure size.
@@ -1893,11 +1701,7 @@ def dva_plot(
     from cellpy.plotting.context import from_source
     from cellpy.plotting.prepare.ica import IcaPrepareConfig, prepare as prepare_ica
 
-    resolved_backend = _resolve_plot_backend(
-        backend=backend,
-        interactive=interactive,
-        deprecation_site="dva_plot(interactive=...)",
-    )
+    resolved_backend = _resolve_plot_backend(backend)
 
     option_keys = {
         "voltage_resolution",
@@ -1984,11 +1788,11 @@ def _check_plotter_plotly():
     c = cellpy.get(p)
     fig = cycles_plot(
         c,
-        ylim=[0.0, 1.0],
+        y_range=[0.0, 1.0],
         show_formation=False,
         cut_colorbar=False,
         title="My nice plot",
-        interactive=True,
+        backend="plotly",
         return_figure=True,
     )
     print("saving figure")
@@ -2011,11 +1815,11 @@ def _check_plotter_matplotlib():
     c = cellpy.get(p)
     fig = cycles_plot(
         c,
-        ylim=[0.0, 1.0],
+        y_range=[0.0, 1.0],
         show_formation=False,
         cut_colorbar=False,
         title="My nice plot",
-        interactive=False,
+        backend="matplotlib",
         return_figure=True,
     )
     print("saving figure")
@@ -2044,7 +1848,7 @@ def _check_summary_plotter_plotly():
         # cut_colorbar=False,
         # split=True,
         title="My nice plot",
-        interactive=True,  # rangeslider=True,
+        backend="plotly",  # rangeslider=True,
         show_formation=True,
         # return_data=False,
     )
@@ -2078,7 +1882,7 @@ def _check_summary_plotter_seaborn():
         # cut_colorbar=False,
         # split=True,
         title="My nice plot",
-        interactive=False,  # rangeslider=True,
+        backend="matplotlib",  # rangeslider=True,
         show_formation=True,  # return_figure=True,
     )
     # print("saving figure")
@@ -2098,7 +1902,7 @@ def _check_cycles_plotter_plotly():
         c,
         y="capacities_gravimetric",
         cycles=[1, 2, 3, 4, 5, 20, 40, 60],
-        interactive=True,
+        backend="plotly",
         return_figure=True,
     )
     save_image_files(fig, out / "test_plot_cycles_plotly", backend="plotly")
@@ -2114,7 +1918,7 @@ def _check_cycles_plotter_matplotlib():
     fig = cycles_plot(
         c,
         y="capacities_gravimetric",
-        interactive=False,
+        backend="matplotlib",
         return_figure=True,
     )
     save_image_files(fig, out / "test_plot_cycles_matplotlib", backend="matplotlib")
