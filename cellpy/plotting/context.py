@@ -25,10 +25,6 @@ class CellContext:
         return self.cell.data.summary
 
     @property
-    def headers_summary(self) -> Any:
-        return self.cell.headers_summary
-
-    @property
     def schema(self) -> Any:
         return self.cell.schema
 

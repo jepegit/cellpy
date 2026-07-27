@@ -750,12 +750,12 @@ class SummaryPlotInfo:
 
         """
 
-        hdr = c.headers_summary
+        hdr = c.schema.summary
         x_axis_labels = {
-            hdr.cycle_index: "Cycle Number",
-            hdr.data_point: "Point",
-            hdr.test_time: with_cellpy_unit("Test Time", "time", units=c.cellpy_units),
-            hdr.datetime: "Date",
+            hdr.cycle_num: "Cycle Number",
+            hdr.datapoint_num_last: "Point",
+            hdr.last_test_time: with_cellpy_unit("Test Time", "time", units=c.cellpy_units),
+            "date_time": "Date",
             hdr.normalized_cycle_index: "Equivalent Full Cycle",  # hdr.normalized_cycle_index: "Normalized Cycle Number",
         }
 
@@ -883,7 +883,7 @@ class SummaryPlotInfo:
 
         Thin adapter over :mod:`cellpy.plotting.registry` (#636). Column-set
         selection for named ``y`` values lives in ``PlotFamily`` records; this
-        method only materialises them against ``c.headers_summary``. Keep in
+        method only materialises them against ``c.schema.summary``. Keep in
         sync with :meth:`_create_label_dict`.
 
         Args:
@@ -894,13 +894,13 @@ class SummaryPlotInfo:
 
         """
 
-        hdr = c.headers_summary
+        hdr = c.schema.summary
         x_columns = (
             [
-                hdr.cycle_index,
-                hdr.data_point,
-                hdr.test_time,
-                hdr.datetime,
+                hdr.cycle_num,
+                hdr.datapoint_num_last,
+                hdr.last_test_time,
+                "date_time",
                 hdr.normalized_cycle_index,
             ],
         )
