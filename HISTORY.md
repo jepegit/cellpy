@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+* Tried shipping marimo notebooks in the docs (#724); withdrawn — Zensical
+  embeds could not keep a real marimo table/plot experience without hanging
+  Pyodide or replacing widgets with non-marimo UI.
+
 * Clarify Neware docs: binary `.nda`/`.ndax` via `neware_nda` (bundled fastnda) vs exported `neware_txt` models.
 
 * Iterative docs fixes: example notebook typos/hedges, GITT intro quote, and batch config note for 1.x vs `cellpy.toml`. (#695).

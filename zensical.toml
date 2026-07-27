@@ -18,6 +18,9 @@ copyright = """
 Copyright &copy; The cellpy developers
 """
 
+# Pandas tables from rendered example notebooks (horizontal scroll + striping).
+extra_css = ["stylesheets/extra.css"]
+
 # Researcher-first information architecture: ordered by what someone is trying
 # to *do* (install it, load my data, answer a question about my cells), not by
 # how the package is laid out. Module-shaped navigation belongs in the API

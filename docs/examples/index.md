@@ -26,13 +26,13 @@ folder](https://github.com/jepegit/cellpy/tree/master/examples) in the cellpy Gi
 
 ## About these pages
 
-The pages here are rendered from the notebooks in
+Most pages here are rendered from the Jupyter notebooks in
 [`docs/examples/`](https://github.com/jepegit/cellpy/tree/master/docs/examples)
 and show the outputs their authors saved. Interactive plotly figures are
 replaced by their static renderings — grab the `.ipynb` from the repository if
 you want to pan and zoom.
 
-To re-render after changing a notebook:
+To re-render after changing a Jupyter notebook:
 
 ```shell
 uv run --group docs python dev/render_example_notebooks.py
