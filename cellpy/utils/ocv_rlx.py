@@ -21,10 +21,13 @@ import pandas as pd
 from cellpycore.config import StepType
 
 from cellpy import cellreader
-from cellpy.parameters.internal_settings import get_headers_normal, get_headers_step_table
+from cellpy._deprecation import warn_once
 
-hdr_raw = get_headers_normal()
-hdr_steps = get_headers_step_table()
+# Header access is native (#709, C1): column names come from ``cell.schema``
+# (``schema.raw`` / ``schema.steps``), not the deprecated ``headers_normal`` /
+# ``headers_step_table`` singletons (removed in 2.1, E3). Step-table statistic
+# columns are composed as ``f"{base}_{stat}"`` off the native raw base name
+# (potential/current/step_time).
 
 # TODO: (28.05.2017 jepe) Docstrings are missing!!!!!!!! - AU: fix!
 
@@ -91,22 +94,20 @@ def select_ocv_points(
     step_table = cellpydata.data.steps
     dfdata = cellpydata.data.raw
 
-    # use the cell's own headers (native names via the shim after the flip)
-    # rather than the module-level legacy singletons.
-    hdr_steps = cellpydata.headers_step_table
-    hdr_raw = cellpydata.headers_normal
-    # step-table statistic columns are composed as f"{base}_{stat}"; the base
-    # resolves to the native name via the shim (voltage -> potential).
-    v_first = f"{hdr_steps.voltage}_first"
-    v_last = f"{hdr_steps.voltage}_last"
-    v_delta = f"{hdr_steps.voltage}_delta"
-    st_first = f"{hdr_steps.step_time}_first"
-    st_last = f"{hdr_steps.step_time}_last"
-    st_delta = f"{hdr_steps.step_time}_delta"
+    # native header access (#709): schema.steps for step/cycle/type, schema.raw
+    # for the potential/step_time bases the step-table statistic columns build on.
+    steps_hdr = cellpydata.schema.steps
+    raw_hdr = cellpydata.schema.raw
+    v_first = f"{raw_hdr.potential}_first"
+    v_last = f"{raw_hdr.potential}_last"
+    v_delta = f"{raw_hdr.potential}_delta"
+    st_first = f"{raw_hdr.step_time}_first"
+    st_last = f"{raw_hdr.step_time}_last"
+    st_delta = f"{raw_hdr.step_time}_delta"
 
-    ocv_steps = step_table.loc[step_table[hdr_steps.cycle].isin(cycles), :]
+    ocv_steps = step_table.loc[step_table[steps_hdr.cycle_num].isin(cycles), :]
     ocv_steps = ocv_steps.loc[
-        ocv_steps[hdr_steps.type].str.startswith(ocv_rlx_id, na=False), :
+        ocv_steps[steps_hdr.step_type].str.startswith(ocv_rlx_id, na=False), :
     ]
 
     if selection_method in ["fixed_times", "fixed_points", "selected_times"]:
@@ -153,12 +154,12 @@ def select_ocv_points(
             row[st_delta],
         )
 
-        cycle, step = (row[hdr_steps.cycle], row[hdr_steps.step])
-        info = row[hdr_steps.type]
+        cycle, step = (row[steps_hdr.cycle_num], row[steps_hdr.step_num])
+        info = row[steps_hdr.step_type]
 
         v_df = dfdata.loc[
-            (dfdata[hdr_raw.cycle_index_txt] == cycle) & (dfdata[hdr_raw.step_index_txt] == step),
-            [hdr_raw.step_time_txt, hdr_raw.voltage_txt],
+            (dfdata[raw_hdr.cycle_num] == cycle) & (dfdata[raw_hdr.step_num] == step),
+            [raw_hdr.step_time, raw_hdr.potential],
         ]
 
         poi = []
@@ -195,16 +196,16 @@ def select_ocv_points(
         if selection_method == "martin":
             poi.reverse()
 
-        df_poi = pd.DataFrame({hdr_raw.step_time_txt: poi})
-        df_poi[hdr_raw.voltage_txt] = np.nan
+        df_poi = pd.DataFrame({raw_hdr.step_time: poi})
+        df_poi[raw_hdr.potential] = np.nan
 
         v_df = pd.concat([v_df, df_poi], ignore_index=True)
-        v_df = v_df.sort_values(hdr_raw.step_time_txt).reset_index(drop=True)
-        v_df["new"] = v_df[hdr_raw.voltage_txt].interpolate()
+        v_df = v_df.sort_values(raw_hdr.step_time).reset_index(drop=True)
+        v_df["new"] = v_df[raw_hdr.potential].interpolate()
 
         voi = []
         for p in poi:
-            _v = v_df.loc[v_df[hdr_raw.step_time_txt].isin([p]), "new"].values
+            _v = v_df.loc[v_df[raw_hdr.step_time].isin([p]), "new"].values
             _v = _v - voltage_reference
             voi.append(_v[0])
 
@@ -214,12 +215,12 @@ def select_ocv_points(
             poi.append(end)
             voi.append(last - voltage_reference)
 
-        d1 = {hdr_steps.cycle: cycle}
+        d1 = {steps_hdr.cycle_num: cycle}
         d2 = {h: [v] for h, v in zip(headers2, voi)}
         d = {**d1, **d2}
         result = pd.DataFrame(d)
-        result[hdr_steps.step] = step
-        result[hdr_steps.type] = info
+        result[steps_hdr.step_num] = step
+        result[steps_hdr.step_type] = info
         results_list.append(result)
 
         if "t0" not in info_dict:
@@ -231,9 +232,9 @@ def select_ocv_points(
     final = pd.concat(results_list)
 
     if direction == "down":
-        final = final.loc[final[hdr_steps.type] == "ocvrlx_down", :]
+        final = final.loc[final[steps_hdr.step_type] == "ocvrlx_down", :]
     elif direction == "up":
-        final = final.loc[final[hdr_steps.type] == "ocvrlx_up", :]
+        final = final.loc[final[steps_hdr.step_type] == "ocvrlx_up", :]
 
     if cell_label is not None:
         final = final.assign(cell=cell_label)
@@ -275,7 +276,7 @@ class MultiCycleOcvFit:
             circuits (int): number of circuits to use in fitting.
         """
         self._cycles = cycles
-        self.data = cellpydata
+        self.cell = cellpydata
         self.circuits = circuits
 
         self.fit_cycles = []
@@ -283,6 +284,18 @@ class MultiCycleOcvFit:
         self.best_fit_data = []
         self.best_fit_parameters = []
         self.best_fit_parameters_translated = []
+
+    @property
+    def data(self):
+        """Deprecated alias for :attr:`cell` (the held CellpyCell) -- #709 renamed
+        it to end the ``self.data.data.steps`` double-``.data`` trap."""
+        warn_once("MultiCycleOcvFit.data", "MultiCycleOcvFit.cell", removal="2.2")
+        return self.cell
+
+    @data.setter
+    def data(self, value):
+        warn_once("MultiCycleOcvFit.data", "MultiCycleOcvFit.cell", removal="2.2")
+        self.cell = value
 
     @property
     def cycles(self):
@@ -297,10 +310,17 @@ class MultiCycleOcvFit:
         else:
             raise TypeError("cycles must be int or list of ints")
 
-    def set_data(self, cellpydata):
+    def set_cell(self, cellpydata):
         """Sets the CellpyCell."""
 
-        self.data = cellpydata
+        self.cell = cellpydata
+
+    def set_data(self, cellpydata):
+        """Deprecated alias for :meth:`set_cell` (#709)."""
+        warn_once(
+            "MultiCycleOcvFit.set_data", "MultiCycleOcvFit.set_cell", removal="2.2"
+        )
+        self.set_cell(cellpydata)
 
     def set_cycles(self, cycles):
         """Sets the cycles."""
@@ -319,14 +339,12 @@ class MultiCycleOcvFit:
 
         """
 
-        # TODO @jepe: refactor and use col names directly from HeadersNormal instead:
-
         ocv_fitter = OcvFit()
         ocv_fitter.set_circuits(self.circuits)
-        time_voltage = self.data.get_ocv(direction=direction, cycles=self.cycles[0])
-        hdr = self.data.headers_normal
-        time_step = time_voltage[hdr.step_time_txt]
-        voltage = time_voltage[hdr.voltage_txt]
+        time_voltage = self.cell.get_ocv(direction=direction, cycles=self.cycles[0])
+        raw_hdr = self.cell.schema.raw
+        time_step = time_voltage[raw_hdr.step_time]
+        voltage = time_voltage[raw_hdr.potential]
         if voltage is not None and time_step is not None:
             ocv_fitter.set_data(time_step, voltage)
         else:
@@ -344,11 +362,11 @@ class MultiCycleOcvFit:
                 remove_first = True
             else:
                 remove_first = False
-            time_voltage = self.data.get_ocv(
+            time_voltage = self.cell.get_ocv(
                 direction=direction, cycles=cycle, remove_first=remove_first
             )
-            time_step = time_voltage[hdr.step_time_txt]
-            voltage = time_voltage[hdr.voltage_txt]
+            time_step = time_voltage[raw_hdr.step_time]
+            voltage = time_voltage[raw_hdr.potential]
 
             if voltage is not None:
                 try:
@@ -382,30 +400,25 @@ class MultiCycleOcvFit:
                         self.best_fit_data.append(ocv_fitter.get_best_fit_data())
 
     def find_zero(self, cycle, direction):
-        step_table = self.data.data.steps
-        hdr = self.data.headers_step_table
+        step_table = self.cell.data.steps
+        steps_hdr = self.cell.schema.steps
+        raw_hdr = self.cell.schema.raw
+        v_last = f"{raw_hdr.potential}_last"
+        i_last = f"{raw_hdr.current}_last"
         end_current = 0
         end_voltage = 0
         if direction == "up":
-            end_voltage = step_table[
-                (step_table[hdr.cycle] == cycle)
-                & (step_table[hdr.type].isin([StepType.DISCHARGE.value]))
-            ][hdr.voltage + "_last"].values[0]
-
-            end_current = step_table[
-                (step_table[hdr.cycle] == cycle)
-                & (step_table[hdr.type].isin([StepType.DISCHARGE.value]))
-            ][hdr.current + "_last"].values[0]
-
+            zero_step_type = StepType.DISCHARGE.value
         elif direction == "down":
-            end_voltage = step_table[
-                (step_table[hdr.cycle] == cycle) & (step_table[hdr.type].isin([StepType.CHARGE.value]))
-            ][hdr.voltage + "_last"].values[0]
+            zero_step_type = StepType.CHARGE.value
+        else:
+            return end_current, end_voltage
 
-            end_current = step_table[
-                (step_table[hdr.cycle] == cycle) & (step_table[hdr.type].isin([StepType.CHARGE.value]))
-            ][hdr.current + "_last"].values[0]
-
+        mask = (step_table[steps_hdr.cycle_num] == cycle) & (
+            step_table[steps_hdr.step_type].isin([zero_step_type])
+        )
+        end_voltage = step_table[mask][v_last].values[0]
+        end_current = step_table[mask][i_last].values[0]
         return end_current, end_voltage
 
     def get_best_fit_data(self):
@@ -545,7 +558,7 @@ class MultiCycleOcvFit:
         """Convenience function for creating a dataframe of the summary of the
         fit (translated)"""
         data = self.get_best_fit_parameters_translated_grouped()
-        cycle_col = self.data.schema.steps.cycle_num
+        cycle_col = self.cell.schema.steps.cycle_num
         data[cycle_col] = self.get_fit_cycles()
         df = pd.DataFrame(data)
         df = df.set_index(cycle_col)
@@ -652,9 +665,9 @@ class OcvFit(object):
 
         """
         time_voltage = cellpydata.get_ocv(direction=self.direction, cycles=cycle)
-        hdr = cellpydata.headers_normal
+        raw_hdr = cellpydata.schema.raw
         self.set_data(
-            time_voltage[hdr.step_time_txt], time_voltage[hdr.voltage_txt]
+            time_voltage[raw_hdr.step_time], time_voltage[raw_hdr.potential]
         )
 
     def set_data(self, t, v):

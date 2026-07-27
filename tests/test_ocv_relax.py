@@ -56,6 +56,24 @@ def test_ocv_rlx_multi(dataset):
     ocv_fit.run_fitting(direction="up")
 
 
+def test_multicycle_holds_cell_under_new_name(dataset):
+    """#709: the held CellpyCell is ``.cell`` (was the ``self.data.data.steps`` trap)."""
+    ocv_fit = ocv_rlx.MultiCycleOcvFit(dataset, [1], circuits=2)
+    assert ocv_fit.cell is dataset
+
+
+def test_multicycle_data_alias_is_deprecated(dataset):
+    """`.data` / `set_data` stay as deprecated aliases for `.cell` / `set_cell`."""
+    ocv_fit = ocv_rlx.MultiCycleOcvFit(dataset, [1], circuits=2)
+    with pytest.warns(DeprecationWarning):
+        assert ocv_fit.data is dataset
+    ocv_fit.set_cell(dataset)
+    assert ocv_fit.cell is dataset
+    with pytest.warns(DeprecationWarning):
+        ocv_fit.set_data(dataset)
+    assert ocv_fit.cell is dataset
+
+
 def test_select_ocv_points(dataset):
     # 2023-04-05: the test fails on GitHub actions py3.10 (AttributeError: DataFrame has no attribute 'append')
     out = ocv_rlx.select_ocv_points(dataset)
