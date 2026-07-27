@@ -215,15 +215,6 @@ def update_journal_cellpy_data_dir(
     return pages
 
 
-def make_new_cell():
-    """create an empty CellpyCell object."""
-    from cellpy._deprecation import warn_once
-
-    warn_once("make_new_cell", "CellpyCell.vacant")
-    new_cell = cellpy.cellreader.CellpyCell(initialize=True)
-    return new_cell
-
-
 def add_normalized_cycle_index(summary, nom_cap, column_name=None):
     """Adds normalized cycles to the summary data frame.
 
