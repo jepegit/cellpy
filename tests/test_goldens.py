@@ -40,8 +40,8 @@ def _run_pipeline_smoke() -> tuple[pd.DataFrame, pd.DataFrame, str]:
     cell.make_summary()
     summary = cell.data.summary.reset_index(drop=True)
     steps = cell.data.steps.reset_index(drop=True)
-    # summary per-cycle datapoint column (native name via the header shim)
-    return summary, steps, cell.headers_summary.data_point
+    # summary per-cycle datapoint column (native name)
+    return summary, steps, cell.schema.summary.datapoint_num_last
 
 
 @pytest.mark.essential

@@ -365,7 +365,7 @@ class TestSummaryPlotFiltersAndRate:
     introduced in issue #363."""
 
     def _rate_cols(self, cell):
-        h = cell.headers_summary
+        h = cell.schema.summary
         return h.charge_c_rate, h.discharge_c_rate
 
     def test_filters_rate_range_drops_rows(self, cell):
@@ -490,8 +490,8 @@ class TestSummaryPlotHoverColumns:
 
     def test_hover_columns_added(self, cell):
         """hover_columns survives the melt and reaches the plotly hover."""
-        hdr = cell.headers_summary
-        extras = [hdr.test_time, hdr.data_point]
+        hdr = cell.schema.summary
+        extras = [hdr.last_test_time, hdr.datapoint_num_last]
 
         fig, data = summary_plot(
             cell,
@@ -515,19 +515,19 @@ class TestSummaryPlotHoverColumns:
 
     def test_hover_columns_unknown_warns(self, cell, caplog):
         """Unknown hover columns are dropped with a warning, not raised."""
-        hdr = cell.headers_summary
+        hdr = cell.schema.summary
         with caplog.at_level(logging.WARNING):
             fig, data = summary_plot(
                 cell,
                 y="capacities_gravimetric",
-                hover_columns=[hdr.test_time, "definitely_not_a_real_column"],
+                hover_columns=[hdr.last_test_time, "definitely_not_a_real_column"],
                 return_data=True,
                 backend="plotly",
                 show_formation=False,
             )
 
         assert fig is not None
-        assert hdr.test_time in data.columns
+        assert hdr.last_test_time in data.columns
         assert "definitely_not_a_real_column" not in data.columns
         assert any(
             "definitely_not_a_real_column" in rec.getMessage()
@@ -536,12 +536,12 @@ class TestSummaryPlotHoverColumns:
 
     def test_hover_columns_ignored_for_fullcell(self, cell, caplog):
         """fullcell_standard_* is out of scope: warn and continue."""
-        hdr = cell.headers_summary
+        hdr = cell.schema.summary
         with caplog.at_level(logging.WARNING):
             fig = summary_plot(
                 cell,
                 y="fullcell_standard_gravimetric",
-                hover_columns=[hdr.test_time],
+                hover_columns=[hdr.last_test_time],
                 backend="plotly",
                 show_formation=False,
             )

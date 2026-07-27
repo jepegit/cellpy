@@ -60,7 +60,7 @@ def test_partition_summary_cv_steps_cc_only_has_zero_cv(figure_cell):
     """Golden CC-only figure cell: with-CV ≈ 0, without-CV ≈ all."""
     cycle = _summary_cycle_column(figure_cell.data.summary)
     # Prefer gravimetric if present (summary_plot family), else raw.
-    hs = figure_cell.headers_summary
+    hs = figure_cell.schema.summary
     col = hs.charge_capacity + "_gravimetric"
     if col not in figure_cell.data.summary.columns:
         col = "charge_capacity"

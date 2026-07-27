@@ -53,8 +53,8 @@ def test_raw_bad_data_cycle_and_step(cellpy_data_instance, parameters):
     cycle = 5
     step = 10
     step_left = 11
-    step_header = cellpy_data_instance.headers_normal.step_index_txt
-    cycle_header = cellpy_data_instance.headers_normal.cycle_index_txt
+    step_header = cellpy_data_instance.schema.raw.step_num
+    cycle_header = cellpy_data_instance.schema.raw.cycle_num
 
     cellpy_data_instance.from_raw(parameters.res_file_path, bad_steps=((cycle, step),))
 
@@ -65,7 +65,7 @@ def test_raw_bad_data_cycle_and_step(cellpy_data_instance, parameters):
 
 
 def test_raw_data_from_data_point(cellpy_data_instance, parameters):
-    data_point_header = cellpy_data_instance.headers_normal.data_point_txt
+    data_point_header = cellpy_data_instance.schema.raw.datapoint_num
     cellpy_data_instance.from_raw(parameters.res_file_path, data_points=(10_000, None))
 
     p1 = cellpy_data_instance.data.raw[data_point_header].iloc[0]
@@ -73,7 +73,7 @@ def test_raw_data_from_data_point(cellpy_data_instance, parameters):
 
 
 def test_raw_data_data_point(cellpy_data_instance, parameters):
-    data_point_header = cellpy_data_instance.headers_normal.data_point_txt
+    data_point_header = cellpy_data_instance.schema.raw.datapoint_num
     cellpy_data_instance.from_raw(
         parameters.res_file_path, data_points=(10_000, 10_200)
     )
@@ -157,7 +157,7 @@ def test_merge_auto_from_list(parameters):
     cdi2.from_raw(f2)
     cdi3.from_raw(files)
 
-    dp = cdi1.headers_normal.data_point_txt
+    dp = cdi1.schema.raw.datapoint_num
     table_first = cdi1.data.raw.describe()
     count_first = table_first.loc["count", dp]
 
@@ -181,7 +181,7 @@ def test_print_step_table(dataset):
 
 def test_c_rate_calc(dataset):
     table = dataset.data.steps
-    unique = table[dataset.headers_step_table.rate_avr].unique()
+    unique = table[dataset.schema.steps.c_rate].unique()
     assert len(unique) == 6
 
 
@@ -517,14 +517,14 @@ def test_load_step_specs_short(
     file_name = parameters.short_step_table_file_path
     assert os.path.isfile(file_name)
     cellpy_data_instance.load_step_specifications(file_name, short=True)
-    hst = cellpy_data_instance.headers_step_table
+    hst = cellpy_data_instance.schema.steps
     step_table = cellpy_data_instance.data.steps
     t = step_table.loc[
-        (step_table[hst.cycle] == cycle) & (step_table[hst.step] == step), hst.type
+        (step_table[hst.cycle_num] == cycle) & (step_table[hst.step_num] == step), hst.step_type
     ].values[0]
     assert t == expected_type
     i = step_table.loc[
-        (step_table[hst.cycle] == cycle) & (step_table[hst.step] == step), hst.info
+        (step_table[hst.cycle_num] == cycle) & (step_table[hst.step_num] == step), "info"
     ].values[0]
     assert str(i) == expected_info
 
@@ -613,16 +613,16 @@ def test_from_raw_local(cellpy_data_instance, parameters):
     data_point = 1457
     step_time = 1500.05
     sum_discharge_time = 362198.12
-    hn = cellpy_data_instance.headers_normal
-    hs = cellpy_data_instance.headers_summary
+    hn = cellpy_data_instance.schema.raw
+    hs = cellpy_data_instance.schema.summary
     my_test = cellpy_data_instance.data
     summary = my_test.summary
     print(summary.head().T)
     # Polars Phase A (#457): keys live in columns, not indexes.
-    first_cycle = summary.loc[summary[hs.cycle_index] == 1]
-    assert int(first_cycle[hs.data_point].iloc[0]) == data_point
+    first_cycle = summary.loc[summary[hs.cycle_num] == 1]
+    assert int(first_cycle[hs.datapoint_num_last].iloc[0]) == data_point
     raw_row = my_test.raw.loc[
-        my_test.raw[hn.data_point_txt] == 5, hn.step_time_txt
+        my_test.raw[hn.datapoint_num] == 5, hn.step_time
     ]
     assert step_time == pytest.approx(raw_row.iloc[0], 0.1)
 
@@ -768,8 +768,8 @@ def test_make_summary_exclude_step_types(rate_dataset):
     import pandas as pd
 
     c = rate_dataset
-    hst = c.headers_step_table
-    hs = c.headers_summary
+    hst = c.schema.steps
+    hs = c.schema.summary
 
     # compute the step table first (normal workflow): exclude_step_types works on
     # the step table make_summary sees, so summary and the manual delta below must
@@ -779,21 +779,21 @@ def test_make_summary_exclude_step_types(rate_dataset):
     excl = c.make_summary(exclude_step_types=["cv_"], create_copy=True).data.summary
 
     steps = c.data.steps
-    cv = steps[steps[hst.type].str.startswith("cv_", na=False)]
+    cv = steps[steps[hst.step_type].str.startswith("cv_", na=False)]
     assert not cv.empty, "fixture must contain cv_ steps for this test"
     d_chg = (
-        (cv[f"{hst.charge}_last"] - cv[f"{hst.charge}_first"])
-        .groupby(cv[hst.cycle])
+        (cv[hst.charge_capacity_last] - cv[hst.charge_capacity_first])
+        .groupby(cv[hst.cycle_num])
         .sum()
     )
     d_dchg = (
-        (cv[f"{hst.discharge}_last"] - cv[f"{hst.discharge}_first"])
-        .groupby(cv[hst.cycle])
+        (cv[hst.discharge_capacity_last] - cv[hst.discharge_capacity_first])
+        .groupby(cv[hst.cycle_num])
         .sum()
     )
 
-    b = base.set_index(hs.cycle_index)
-    e = excl.set_index(hs.cycle_index)
+    b = base.set_index(hs.cycle_num)
+    e = excl.set_index(hs.cycle_num)
     assert list(b.index) == list(e.index)
     for cyc in b.index:
         assert e.loc[cyc, hs.charge_capacity] == pytest.approx(
@@ -854,20 +854,20 @@ def test_load_cellpyfile(cellpy_data_instance, parameters):
     data_point = 1457
     step_time = 1500.05
     sum_test_time = 9301719.457
-    hn = cellpy_data_instance.headers_normal
-    hs = cellpy_data_instance.headers_summary
-    hst = cellpy_data_instance.headers_step_table
+    hn = cellpy_data_instance.schema.raw
+    hs = cellpy_data_instance.schema.summary
+    hst = cellpy_data_instance.schema.steps
     my_test = cellpy_data_instance.data
     unique_cycles = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]
-    unique_cycles_read = my_test.steps.loc[:, hst.cycle].unique()
+    unique_cycles_read = my_test.steps.loc[:, hst.cycle_num].unique()
     assert any(map(lambda v: v in unique_cycles_read, unique_cycles))
     # Polars Phase A (#457): keys live in columns, not indexes.
-    first_cycle = my_test.summary.loc[my_test.summary[hs.cycle_index] == cycle_number]
-    assert int(first_cycle[hs.data_point].iloc[0]) == data_point
-    raw_row = my_test.raw.loc[my_test.raw[hn.data_point_txt] == 5, hn.step_time_txt]
+    first_cycle = my_test.summary.loc[my_test.summary[hs.cycle_num] == cycle_number]
+    assert int(first_cycle[hs.datapoint_num_last].iloc[0]) == data_point
+    raw_row = my_test.raw.loc[my_test.raw[hn.datapoint_num] == 5, hn.step_time]
     assert step_time == pytest.approx(raw_row.iloc[0], 0.1)
     assert sum_test_time == pytest.approx(
-        my_test.summary.loc[:, hs.test_time].sum(), 0.1
+        my_test.summary.loc[:, hs.last_test_time].sum(), 0.1
     )
 
 

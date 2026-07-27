@@ -94,16 +94,10 @@ def write_deprecations_md(path: str | Path) -> None:
 def _seed_known_deprecations() -> None:
     """Register deprecations that exist before any runtime call (for doc generation)."""
     # make_new_cell was removed in 2.1 (E3, #715) -- use CellpyCell.vacant.
-    # Legacy header attribute access (headers_normal.voltage_txt, hdr_steps.cycle,
-    # hdr_summary[...]) is shimmed to the native cellpycore schema names at the
-    # native-headers flip (D6). One summary row here; the shim warns per attribute
-    # at runtime (cellpy.parameters.legacy_header_shim).
-    _register(
-        "legacy header attribute access (headers_normal / _summary / _step_table)",
-        "c.schema.raw / c.schema.steps / c.schema.summary",
-        removal="2.1",
-        introduced="2.0",
-    )
+    # Legacy header attribute access (headers_normal / _summary / _step_table,
+    # the legacy_header_shim) was removed in 2.1 (E3, #715) -- use c.schema.raw /
+    # c.schema.steps / c.schema.summary. No longer registered here.
+
     # cellpy.utils.easyplot was removed in 2.0 (#544); it is no longer a
     # pending deprecation, so it is dropped from the registry / DEPRECATIONS.md.
 

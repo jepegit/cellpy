@@ -12,16 +12,12 @@ def test_get_ocv_rlx_for_fitting(dataset):
     import matplotlib.pyplot as plt
 
     raw = dataset.data.raw
-    for h, v in dataset.headers_normal.items():
-        print(f"{h}: {v}", end=" -> ")
-        if v in raw.columns:
-            print("Exists")
-        else:
-            print("MISSING")
+    for v in raw.columns:
+        print(f"{v}: Exists")
     steps = dataset.data.steps
-    hdr_s = dataset.headers_step_table
-    n = steps.loc[steps[hdr_s.cycle].isin([1]), :]
-    n = n.loc[n[hdr_s.type].str.startswith("ocvrlx_up"), :]
+    hdr_s = dataset.schema.steps
+    n = steps.loc[steps[hdr_s.cycle_num].isin([1]), :]
+    n = n.loc[n[hdr_s.step_type].str.startswith("ocvrlx_up"), :]
     print(n)
     rlx = dataset.get_ocv(direction="up", cycles=1)
     print(rlx)
