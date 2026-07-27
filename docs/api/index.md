@@ -18,7 +18,9 @@ you already know what you want and need the signature.
 | Load a file, get capacities, save | [cellpy](cellpy.md) — `get`, `CellpyCell` |
 | The cell object and its frames | [Readers](readers.md) |
 | Instrument loaders and the plugin contract | [Instruments](instruments.md) |
-| Batch, plotting, helpers, ICA | [Utils](utils.md) |
+| Run a set of cells as one job | [Batch](batch.md) |
+| Collect a batch into one tidy frame | [Collect](collect.md) |
+| Plotting, helpers, ICA | [Utils](utils.md) |
 | Configuration and column schemas | [Parameters and config](parameters.md) |
 
 ## Stability
