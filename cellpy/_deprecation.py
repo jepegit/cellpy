@@ -147,64 +147,8 @@ def _seed_known_deprecations() -> None:
         removal="2.1",
     )
 
-    # Plotting redesign (#567). The old implementation behind this name was
-    # unconditionally broken (its first statement unpacked a None); the name
-    # now delegates to summary_plot and goes away in 2.1.
-    _register(
-        "plotutils.summary_plot_legacy",
-        "cellpy.utils.plotutils.summary_plot (same figures, same options)",
-        removal="2.1",
-    )
-    # Stage 1 (#639): interactive= is a warn_once alias for backend=.
-    _register(
-        "summary_plot(interactive=...)",
-        'backend="plotly"|"matplotlib"',
-        removal="2.1",
-    )
-    # Stage 2 (#646): cycles_plot backend= + range spelling.
-    _register(
-        "cycles_plot(interactive=...)",
-        'backend="plotly"|"matplotlib"',
-        removal="2.1",
-    )
-    _register(
-        "cycles_plot(xlim=...)",
-        "cycles_plot(x_range=...)",
-        removal="2.1",
-    )
-    _register(
-        "cycles_plot(ylim=...)",
-        "cycles_plot(y_range=...)",
-        removal="2.1",
-    )
-    # Stage 2 (#647): raw_plot / cycle_info_plot backend=.
-    _register(
-        "raw_plot(interactive=...)",
-        'backend="plotly"|"matplotlib"',
-        removal="2.1",
-    )
-    _register(
-        "cycle_info_plot(interactive=...)",
-        'backend="plotly"|"matplotlib"',
-        removal="2.1",
-    )
-    # Stage 2 (#648): ica_plot / dva_plot backend=.
-    _register(
-        "ica_plot(interactive=...)",
-        'backend="plotly"|"matplotlib"',
-        removal="2.1",
-    )
-    _register(
-        "dva_plot(interactive=...)",
-        'backend="plotly"|"matplotlib"',
-        removal="2.1",
-    )
-    # Stage 3 (#658): Batch.plot backend triage — seaborn alias, bokeh removed.
-    _register(
-        'Batch.plot(backend="seaborn")',
-        'backend="matplotlib"',
-        removal="2.1",
-    )
+    # Plotting shims (interactive=, xlim/ylim, backend="seaborn", summary_plot_legacy)
+    # were removed in 2.1 (E1, #713) -- no longer registered here.
 
 
 if __name__ == "__main__":

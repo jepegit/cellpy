@@ -2,8 +2,7 @@
 
 Relocated from ``cellpy.utils.batch_tools.batch_plotters`` so ``Batch.plot``
 delegates into ``cellpy.plotting``. Public backends: ``plotly`` (primary) and
-``matplotlib``. ``seaborn`` is a deprecated alias for ``matplotlib``; ``bokeh``
-raises.
+``matplotlib``. ``seaborn`` and ``bokeh`` were removed in 2.1 and now raise.
 """
 
 from __future__ import annotations
@@ -34,22 +33,13 @@ SUPPORTED_BATCH_PLOT_BACKENDS = ("plotly", "matplotlib")
 
 
 def resolve_batch_plot_backend(backend: Optional[str]) -> str:
-    """Normalize Batch.plot backend names (triage for #658)."""
-    from cellpy._deprecation import warn_once
-
+    """Normalize Batch.plot backend names."""
     if backend is None:
         backend = getattr(config.batch, "backend", None) or "plotly"
     key = str(backend).strip().lower()
-    if key == "seaborn":
-        warn_once(
-            'Batch.plot(backend="seaborn")',
-            'backend="matplotlib"',
-            stacklevel=3,
-        )
-        key = "matplotlib"
-    if key == "bokeh":
+    if key in ("seaborn", "bokeh"):
         raise ValueError(
-            'Batch.plot backend "bokeh" was removed; use backend="plotly" '
+            f'Batch.plot backend "{key}" was removed; use backend="plotly" '
             'or backend="matplotlib".'
         )
     if key not in SUPPORTED_BATCH_PLOT_BACKENDS:

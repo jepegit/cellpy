@@ -178,7 +178,7 @@ def test_plotting_does_not_mutate_the_cell(cell):
     from cellpy.utils.plotutils import summary_plot
 
     summary_plot(
-        cell, y="capacities_gravimetric_split_constant_voltage", interactive=False
+        cell, y="capacities_gravimetric_split_constant_voltage", backend="matplotlib"
     )
 
     assert list(cell.data.summary.columns) == summary_before

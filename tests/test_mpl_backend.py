@@ -34,29 +34,18 @@ def test_seaborn_plot_builder_is_gone():
 
 
 @pytest.mark.essential
-def test_interactive_alias_warns_and_maps(cell):
-    from cellpy import _deprecation
+def test_interactive_kwarg_removed(cell):
+    # interactive= was removed in 2.1 (E1, #713); backend= is canonical.
+    import inspect
 
-    # warn_once is once-per-call-site across the whole process; reset so this
-    # test is order-independent in the essential suite.
-    _deprecation._WARNED_SITES.clear()
-    with warnings.catch_warnings(record=True) as caught:
-        warnings.simplefilter("always", DeprecationWarning)
-        fig = summary_plot(
-            cell,
-            y="capacities_gravimetric",
-            interactive=False,
-            show_formation=False,
-        )
+    assert "interactive" not in inspect.signature(summary_plot).parameters
+    fig = summary_plot(
+        cell,
+        y="capacities_gravimetric",
+        backend="matplotlib",
+        show_formation=False,
+    )
     assert fig is not None
-    messages = [
-        str(w.message)
-        for w in caught
-        if issubclass(w.category, DeprecationWarning)
-        and "interactive" in str(w.message)
-    ]
-    assert messages, "expected DeprecationWarning for interactive="
-    assert "backend=" in messages[0] or "matplotlib" in messages[0]
 
 
 @pytest.mark.essential

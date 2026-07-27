@@ -102,12 +102,12 @@ def test_normalized_cycle_index_is_dialect_invariant():
 
 
 @pytest.mark.essential
-@pytest.mark.parametrize("interactive", [False, True])
-def test_raw_plot_runs_on_a_native_cell(cell, interactive):
+@pytest.mark.parametrize("backend", ["matplotlib", "plotly"])
+def test_raw_plot_runs_on_a_native_cell(cell, backend):
     """`raw_plot` raised KeyError: 'voltage' on every cellpy 2 cell."""
-    if interactive and not plotly_available:
+    if backend == "plotly" and not plotly_available:
         pytest.skip("plotly not installed")
-    figure = plotutils.raw_plot(cell, interactive=interactive)
+    figure = plotutils.raw_plot(cell, backend=backend)
     assert figure is not None
 
 
@@ -115,17 +115,17 @@ def test_raw_plot_runs_on_a_native_cell(cell, interactive):
 @pytest.mark.parametrize("plot_type", ["voltage-current", "capacity", "raw"])
 def test_raw_plot_predefined_types_run(cell, plot_type):
     """Each plot_type reaches a different set of raw columns."""
-    figure = plotutils.raw_plot(cell, interactive=False, plot_type=plot_type)
+    figure = plotutils.raw_plot(cell, backend="matplotlib", plot_type=plot_type)
     assert figure is not None
 
 
 @pytest.mark.essential
-@pytest.mark.parametrize("interactive", [False, True])
-def test_cycle_info_plot_runs_on_a_native_cell(cell, interactive):
+@pytest.mark.parametrize("backend", ["matplotlib", "plotly"])
+def test_cycle_info_plot_runs_on_a_native_cell(cell, backend):
     """`cycle_info_plot` raised on both the raw and the step frame."""
-    if interactive and not plotly_available:
+    if backend == "plotly" and not plotly_available:
         pytest.skip("plotly not installed")
-    plotutils.cycle_info_plot(cell, cycle=3, interactive=interactive)
+    plotutils.cycle_info_plot(cell, cycle=3, backend=backend)
 
 
 # --- user-supplied column names ----------------------------------------------
@@ -136,7 +136,7 @@ def test_cycle_info_plot_runs_on_a_native_cell(cell, interactive):
 def test_summary_plot_accepts_the_legacy_x_spelling(cell):
     """`x="cycle_index"` is what this module's own docstring tells you to pass."""
     figure = plotutils.summary_plot(
-        cell, y="capacities_gravimetric", x="cycle_index", interactive=False
+        cell, y="capacities_gravimetric", x="cycle_index", backend="matplotlib"
     )
     assert figure is not None
 
@@ -145,7 +145,7 @@ def test_summary_plot_accepts_the_legacy_x_spelling(cell):
 @pytest.mark.skipif(not seaborn_available, reason="seaborn not installed")
 def test_summary_plot_accepts_the_native_x_spelling(cell):
     figure = plotutils.summary_plot(
-        cell, y="capacities_gravimetric", x="cycle_num", interactive=False
+        cell, y="capacities_gravimetric", x="cycle_num", backend="matplotlib"
     )
     assert figure is not None
 
@@ -175,50 +175,18 @@ def test_cv_split_plot_leaves_the_summary_frame_alone(cell):
     """
     before = list(cell.data.summary.columns)
     plotutils.summary_plot(
-        cell, y="capacities_gravimetric_split_constant_voltage", interactive=False
+        cell, y="capacities_gravimetric_split_constant_voltage", backend="matplotlib"
     )
     assert list(cell.data.summary.columns) == before
     assert cell.data.summary.index.name != "cycle_num"
 
 
-# --- summary_plot_legacy is a delegate now ------------------------------------
+# --- summary_plot_legacy was removed in 2.1 (E1, #713) ------------------------
 
 
 @pytest.mark.essential
-@pytest.mark.skipif(not seaborn_available, reason="seaborn not installed")
-def test_summary_plot_legacy_delegates_and_warns(cell):
-    """The old implementation could not draw anything at all.
-
-    Its first statement unpacked the return value of
-    `SummaryPlotInfo._create_col_info`, which stores its results as attributes
-    and returns None — so every call raised TypeError, on any cell, since the
-    refactor that introduced the class (#567). The name now delegates to
-    summary_plot, which is strictly better than the TypeError callers got.
-    """
-    import warnings as _warnings
-
-    from tests.figure_spec_support import describe_figure
-
-    with _warnings.catch_warnings(record=True) as caught:
-        _warnings.simplefilter("always")
-        via_legacy = plotutils.summary_plot_legacy(
-            cell, y="capacities_gravimetric", interactive=False
-        )
-    assert any(
-        issubclass(w.category, DeprecationWarning)
-        and "summary_plot_legacy" in str(w.message)
-        for w in caught
-    )
-
-    direct = plotutils.summary_plot(
-        cell, y="capacities_gravimetric", interactive=False
-    )
-    assert describe_figure(via_legacy) == describe_figure(direct)
-
-    import matplotlib.pyplot as plt
-
-    plt.close(via_legacy)
-    plt.close(direct)
+def test_summary_plot_legacy_removed():
+    assert not hasattr(plotutils, "summary_plot_legacy")
 
 
 @pytest.mark.essential

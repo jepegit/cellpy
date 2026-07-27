@@ -799,13 +799,13 @@ def test_batch_update(parameters, batch_instance):
 
 @pytest.mark.essential
 def test_batch_plot_backend_triage():
-    """seaborn → matplotlib (warn); bokeh → ValueError (#658)."""
+    """plotly/matplotlib supported; seaborn + bokeh removed in 2.1 (E1, #713)."""
     from cellpy.plotting.batch_summary import resolve_batch_plot_backend
 
     assert resolve_batch_plot_backend("plotly") == "plotly"
     assert resolve_batch_plot_backend("matplotlib") == "matplotlib"
-    with pytest.warns(DeprecationWarning, match="seaborn"):
-        assert resolve_batch_plot_backend("seaborn") == "matplotlib"
+    with pytest.raises(ValueError, match="seaborn"):
+        resolve_batch_plot_backend("seaborn")
     with pytest.raises(ValueError, match="bokeh"):
         resolve_batch_plot_backend("bokeh")
     with pytest.raises(ValueError, match="not supported"):
