@@ -49,22 +49,18 @@ def test_benchmark_single_cell_pipeline(benchmark):
     benchmark.pedantic(run, iterations=1, warmup_rounds=1)
 
 
-@pytest.mark.xfail(
-    reason="helpers.concat_summaries migrates onto polars in Epic C (#706); "
-    "benchmark re-baselines against cellpy.batch.combine_summaries then",
-    strict=False,
-)
 def test_benchmark_batch_summary_collection(benchmark, batch_twenty_cells):
-    """Batch summary collection on 20 cells (``concat_summaries``, same path as collector)."""
-    from cellpy.utils.helpers import concat_summaries
+    """Batch summary collection on 20 cells.
+
+    Exercises ``cellpy.batch.combine_summaries`` via ``Batch.combine_summaries``
+    -- the native polars collector path (Epic B/C), which replaced the pandas
+    ``helpers.concat_summaries`` this benchmark used before the flip.
+    """
 
     def run():
-        frame = concat_summaries(
-            batch_twenty_cells,
-            columns=["charge_capacity_gravimetric"],
-        )
+        frame = batch_twenty_cells.combine_summaries()
         assert frame is not None
-        assert not frame.empty
+        assert not frame.is_empty()
 
     benchmark.pedantic(run, iterations=1, warmup_rounds=0)
 
