@@ -2170,8 +2170,8 @@ class CellpyCell:
             return out
 
         out = dict()
-        # ustep is legacy-only (no native column) -> resolved via the D6 shim
-        step_hdr = self.headers_step_table.ustep if usteps else shdr.step_num
+        # ustep is legacy-only (no native column); kept as a literal name
+        step_hdr = "ustep" if usteps else shdr.step_num
         for cycle in cycle_numbers:
             steplist = []
             for s in steptypes:
@@ -2375,7 +2375,7 @@ class CellpyCell:
     def _select_usteps(self, cycle: int, steps: Union[list, np.ndarray]):
         # TODO: @jepe - insert sub_step here
         s_hdr = self.schema.steps.step_num
-        us_hdr = self.headers_step_table.ustep
+        us_hdr = "ustep"
         c_txt = self.schema.raw.cycle_num
         s_txt = self.schema.raw.step_num
         steps = self.data.steps.loc[self.data.steps[us_hdr].isin(steps), s_hdr].unique()
@@ -2778,7 +2778,7 @@ class CellpyCell:
             ``pandas.DataFrame`` (or list of ``pandas.Series`` if cycle=None and as_frame=False)
         """
 
-        y_header = self.headers_normal.datetime_txt
+        y_header = "date_time"
         return self.get_raw(
             y_header,
             cycle=cycle,
@@ -2902,7 +2902,7 @@ class CellpyCell:
         return self._sget(cycle, step, header)
 
     def _using_usteps(self):
-        if self.headers_step_table.ustep in self.data.steps.columns:
+        if "ustep" in self.data.steps.columns:
             return True
         return False
 
@@ -3227,7 +3227,7 @@ class CellpyCell:
                 f"seconds."
             )
 
-        date_time_hdr = self.headers_normal.datetime_txt
+        date_time_hdr = "date_time"
         cycle_index_hdr = self.schema.raw.cycle_num
         voltage_hdr = self.schema.raw.potential
         date_time_format = prms._date_time_format
@@ -3944,7 +3944,7 @@ class CellpyCell:
             else:
                 logging.debug("sorting columns")
                 new_first_col_list = [
-                    self.headers_normal.datetime_txt,
+                    "date_time",
                     self.schema.raw.test_time,
                     self.schema.raw.datapoint_num,
                     self.schema.raw.cycle_num,
