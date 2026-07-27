@@ -99,8 +99,6 @@ def prepare(
         **dict(config.option_overrides or {}),
     )
     frame = frame.copy()
-    if ICA_COLS.legacy_dqdv in frame.columns:
-        frame = frame.drop(columns=[ICA_COLS.legacy_dqdv])
 
     if config.derivative == "dvdq":
         x_col = ICA_COLS.capacity

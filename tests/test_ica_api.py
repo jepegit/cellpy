@@ -189,20 +189,12 @@ def test_dqdv_frame_has_the_specced_columns(dataset):
         "voltage",
         "capacity",
         "dqdv",
-        "dq",
     ]
 
 
 def test_dvdq_frame_has_the_specced_columns(dataset):
     frame = ica.dvdq(dataset, cycles=[1, 2])
     assert list(frame.columns) == ["cycle", "direction", "capacity", "voltage", "dvdq"]
-
-
-def test_the_deprecated_dq_column_duplicates_dqdv(dataset):
-    frame = ica.dqdv(dataset, cycles=1)
-    pd.testing.assert_series_equal(
-        frame["dq"], frame["dqdv"], check_names=False
-    )
 
 
 def test_frame_attrs_record_the_recipe(dataset):
