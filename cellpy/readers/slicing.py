@@ -42,8 +42,8 @@ def _mod_raw_split_cycle(cell: "CellpyCell", data_point: int) -> None:
     hdr_cycle = cell.schema.raw.cycle_num
     hdr_c_cap = cell.schema.raw.cumulative_charge_capacity
     hdr_d_cap = cell.schema.raw.cumulative_discharge_capacity
-    hdr_c_energy = cell.headers_normal.charge_energy_txt
-    hdr_d_energy = cell.headers_normal.discharge_energy_txt
+    hdr_c_energy = cell.schema.raw.cumulative_charge_energy
+    hdr_d_energy = cell.schema.raw.cumulative_discharge_energy
 
     # modifying cycle numbers
     c_mask = r[hdr_data_point] >= data_point

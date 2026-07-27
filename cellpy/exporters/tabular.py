@@ -446,9 +446,9 @@ def cap_mod_normal(cell: "CellpyCell", capacity_modifier="reset", allctypes=True
     cycle_index_header = cell.schema.raw.cycle_num
     step_index_header = cell.schema.raw.step_num
     discharge_index_header = cell.schema.raw.cumulative_discharge_capacity
-    discharge_energy_index_header = cell.headers_normal.discharge_energy_txt
+    discharge_energy_index_header = cell.schema.raw.cumulative_discharge_energy
     charge_index_header = cell.schema.raw.cumulative_charge_capacity
-    charge_energy_index_header = cell.headers_normal.charge_energy_txt
+    charge_energy_index_header = cell.schema.raw.cumulative_charge_energy
 
     raw = cell.data.raw
 
