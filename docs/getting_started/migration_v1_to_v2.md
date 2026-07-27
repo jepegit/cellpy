@@ -4,6 +4,9 @@ This guide maps **user-visible breaks** between the 1.x line and cellpy 2.0
 to a named fix or workaround. Keep the `v1.x` branch / 1.x PyPI releases if you
 need unchanged 1.x behaviour.
 
+**Already on 2.0?** See [Coming from cellpy 2.0](migration_v2.0_to_2.1.md) for
+the 2.0 → 2.1 shim removals (headers, ICA, plotting, batch, config).
+
 After **cellpy 2.0.0**, the `v1.x` line is **bugfix-only for 12 months** from
 the 2.0 release date (decision #438-6). Feature work lands only on 2.x.
 

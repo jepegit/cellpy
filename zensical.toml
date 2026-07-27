@@ -35,6 +35,7 @@ nav = [
         { "Basic usage" = "getting_started/basic_usage.md" },
         { "Using cellpy from an agent" = "getting_started/agents.md" },
         { "Coming from cellpy 1.x" = "getting_started/migration_v1_to_v2.md" },
+        { "Coming from cellpy 2.0" = "getting_started/migration_v2.0_to_2.1.md" },
     ] },
     { "Tutorials" = [
         "examples/index.md",
