@@ -33,15 +33,21 @@ Defining a simple utility-function to get a peek of the file in question:
 
 ```python
 def head(f, n=5):
-    """Print the first *n* lines of a text file as one block."""
-    lines = [f" {f.name} ".center(80, "-")]
+    """Print the first *n* lines of a text file as one block.
+
+    Uses ``builtins.print`` so ``from rich import print`` cannot wrap/chop
+    long file lines at the console width.
+    """
+    import builtins
+
+    lines = [f" {f.name} ".center(110, "-")]
     with open(f) as datafile:
         for j in range(n):
             line = datafile.readline()
             if not line:
                 break
             lines.append(f"[{j + 1:02}] {line.rstrip()}")
-    print(chr(10).join(lines))
+    builtins.print("\n".join(lines))
 
 ```
 
@@ -69,7 +75,7 @@ If the file you want to load is not similar to this, either a custom loader must
 head(p, 35)
 ```
 
-    ----------------------------------- pec.csv ------------------------------------
+    -------------------------------------------------- pec.csv ---------------------------------------------------
     [01] Request Year:,2019
     [02] Test:,187
     [03] Test Description:,
@@ -102,16 +108,9 @@ head(p, 35)
     [30] ReqYear,Test,CellNr,Type,Value,Reason,
     [31] 2019,187,1,1,3272,3,
     [32] #END RESULTS CHECK
-    [33] Test,Cell,Rack,Shelf,Position,Cell ID,Step,Cycle,Total Time (Seconds),Load On Time (Seconds),Step Time 
-    (Seconds),Cycle Charge Time (Seconds),Cycle Discharge Time (Seconds),Real Time,Position Start Time,Voltage 
-    (mV),Current (mA),Charge Capacity (mAh),Discharge Capacity (mAh),Charge Capacity (mWh),Discharge Capacity 
-    (mWh),ReasonCode,50% DoD (mV),PeakPower 1 (W),PeakPower 2 (W),Open Circuit Voltage 1 (V),Open Circuit Voltage 2 
-    (V),Internal Resistance 1 (mOhm),Internal Resistance 2 (mOhm),Ambient temperature (Â°C),Cell surface temperature 
-    (Â°C),DC Internal Resistance (mOhm),AC Internal Resistance (mOhm),Station Temperature (Â°C),
-    [34] 187,1,SBT0550,001,1,,0,0,1,0,1,0,0,02/22/2019 16:23:27,02/22/2019 
-    16:23:26,3272.632,0,0,0,0,0,30,0,0,0,0,0,0,0,25.83,24.9,,,,
-    [35] 187,1,SBT0550,001,1,,0,0,5,0,5,0,0,02/22/2019 16:23:31,02/22/2019 
-    16:23:26,3272.2776,0,0,0,0,0,30,0,0,0,0,0,0,0,25.83,24.9,,,,
+    [33] Test,Cell,Rack,Shelf,Position,Cell ID,Step,Cycle,Total Time (Seconds),Load On Time (Seconds),Step Time (Seconds),Cycle Charge Time (Seconds),Cycle Discharge Time (Seconds),Real Time,Position Start Time,Voltage (mV),Current (mA),Charge Capacity (mAh),Discharge Capacity (mAh),Charge Capacity (mWh),Discharge Capacity (mWh),ReasonCode,50% DoD (mV),PeakPower 1 (W),PeakPower 2 (W),Open Circuit Voltage 1 (V),Open Circuit Voltage 2 (V),Internal Resistance 1 (mOhm),Internal Resistance 2 (mOhm),Ambient temperature (Â°C),Cell surface temperature (Â°C),DC Internal Resistance (mOhm),AC Internal Resistance (mOhm),Station Temperature (Â°C),
+    [34] 187,1,SBT0550,001,1,,0,0,1,0,1,0,0,02/22/2019 16:23:27,02/22/2019 16:23:26,3272.632,0,0,0,0,0,30,0,0,0,0,0,0,0,25.83,24.9,,,,
+    [35] 187,1,SBT0550,001,1,,0,0,5,0,5,0,0,02/22/2019 16:23:31,02/22/2019 16:23:26,3272.2776,0,0,0,0,0,30,0,0,0,0,0,0,0,25.83,24.9,,,,
     
 
 ### Loading the file
@@ -271,23 +270,17 @@ print(f"{p.name=}")
 head(p, 10)
 ```
 
-    ------------------------------- maccor_three.txt -------------------------------
-    [01] Today''s Date      03/28/2022 12:50:27 PM
+    ---------------------------------------------- maccor_three.txt ----------------------------------------------
+    [01] Today''s Date	03/28/2022 12:50:27 PM
     [02] 
-    [03] Date of Test:      08/23/2021 6:04:18 PM
+    [03] Date of Test:	08/23/2021 6:04:18 PM
     [04] 
-    [05] Rec#       Cyc#    Step    TestTime        StepTime        mAmp-hr mWatt-hr        mAmps   Volts   State   ES 
-    DPt Time        Unnamed: 12
-    [06] 1  0       1         0d 00:00:00.00          0d 00:00:00.00        0.0     0.0     0.0     1853.8186       R  
-    0       08/23/2021 6:04:18 PM
-    [07] 2  0       1         0d 00:01:00.00          0d 00:01:00.00        0.0     0.0     0.0     1853.0556       R  
-    1       08/23/2021 6:05:18 PM
-    [08] 3  0       1         0d 00:02:00.00          0d 00:02:00.00        0.0     0.0     0.0     1853.0556       R  
-    1       08/23/2021 6:06:18 PM
-    [09] 4  0       1         0d 00:03:00.00          0d 00:03:00.00        0.0     0.0     0.0     1853.2082       R  
-    1       08/23/2021 6:07:18 PM
-    [10] 5  0       1         0d 00:04:00.00          0d 00:04:00.00        0.0     0.0     0.0     1853.0556       R  
-    1       08/23/2021 6:08:18 PM
+    [05] Rec#	Cyc#	Step	TestTime	StepTime	mAmp-hr	mWatt-hr	mAmps	Volts	State	ES	DPt Time	Unnamed: 12
+    [06] 1	0	1	  0d 00:00:00.00	  0d 00:00:00.00	0.0	0.0	0.0	1853.8186	R	0	08/23/2021 6:04:18 PM
+    [07] 2	0	1	  0d 00:01:00.00	  0d 00:01:00.00	0.0	0.0	0.0	1853.0556	R	1	08/23/2021 6:05:18 PM
+    [08] 3	0	1	  0d 00:02:00.00	  0d 00:02:00.00	0.0	0.0	0.0	1853.0556	R	1	08/23/2021 6:06:18 PM
+    [09] 4	0	1	  0d 00:03:00.00	  0d 00:03:00.00	0.0	0.0	0.0	1853.2082	R	1	08/23/2021 6:07:18 PM
+    [10] 5	0	1	  0d 00:04:00.00	  0d 00:04:00.00	0.0	0.0	0.0	1853.0556	R	1	08/23/2021 6:08:18 PM
     
 
 The file format for this file is handled by the model `THREE` in `cellpy`. Both, information on the instrument ("maccor_txt") and on the *model* ("THREE") has to be included when loading the data using the standard  `cellpy.get` method:

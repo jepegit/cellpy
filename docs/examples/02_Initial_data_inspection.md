@@ -41,30 +41,98 @@ c.data.raw.head(2)
 
 
 
-                test_id  data_point  test_time  step_time           date_time  \
-    data_point                                                                  
-    1                 1           1   5.008961   5.008961 2021-05-10 10:14:45   
-    2                 1           2  10.019319  10.019319 2021-05-10 10:14:50   
-    
-                step_index  cycle_index  is_fc_data  current   voltage  \
-    data_point                                                           
-    1                    1            1           0      0.0  3.051165   
-    2                    1            1           0      0.0  3.051165   
-    
-                charge_capacity  discharge_capacity  charge_energy  \
-    data_point                                                       
-    1                       0.0                 0.0            0.0   
-    2                       0.0                 0.0            0.0   
-    
-                discharge_energy     dv_dt  internal_resistance  ac_impedance  \
-    data_point                                                                  
-    1                        0.0 -0.000061                  0.0           0.0   
-    2                        0.0  0.000000                  0.0           0.0   
-    
-                aci_phase_angle  
-    data_point                   
-    1                       0.0  
-    2                       0.0  
+<div class="cellpy-dataframe">
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>test_id</th>
+      <th>data_point</th>
+      <th>test_time</th>
+      <th>step_time</th>
+      <th>date_time</th>
+      <th>step_index</th>
+      <th>cycle_index</th>
+      <th>is_fc_data</th>
+      <th>current</th>
+      <th>voltage</th>
+      <th>charge_capacity</th>
+      <th>discharge_capacity</th>
+      <th>charge_energy</th>
+      <th>discharge_energy</th>
+      <th>dv_dt</th>
+      <th>internal_resistance</th>
+      <th>ac_impedance</th>
+      <th>aci_phase_angle</th>
+    </tr>
+    <tr>
+      <th>data_point</th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>1</th>
+      <td>1</td>
+      <td>1</td>
+      <td>5.008961</td>
+      <td>5.008961</td>
+      <td>2021-05-10 10:14:45</td>
+      <td>1</td>
+      <td>1</td>
+      <td>0</td>
+      <td>0.0</td>
+      <td>3.051165</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>-0.000061</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>1</td>
+      <td>2</td>
+      <td>10.019319</td>
+      <td>10.019319</td>
+      <td>2021-05-10 10:14:50</td>
+      <td>1</td>
+      <td>1</td>
+      <td>0</td>
+      <td>0.0</td>
+      <td>3.051165</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.000000</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+    </tr>
+  </tbody>
+</table>
+</div>
 
 
 
@@ -76,62 +144,111 @@ c.data.summary.head(2)
 
 
 
-                 data_point      test_time           date_time  \
-    cycle_index                                                  
-    1                  5797  174328.601353 2021-05-12 10:40:11   
-    2                  7188  317161.773416 2021-05-14 02:20:47   
-    
-                 end_voltage_charge  end_voltage_discharge  charge_capacity  \
-    cycle_index                                                               
-    1                      4.200052               3.129170         0.003819   
-    2                      4.200052               3.188442         0.003422   
-    
-                 discharge_capacity  coulombic_efficiency  \
-    cycle_index                                             
-    1                      0.003324             87.049469   
-    2                      0.003234             94.510786   
-    
-                 cumulated_coulombic_efficiency  cumulated_charge_capacity  ...  \
-    cycle_index                                                             ...   
-    1                                 87.049469                   0.003819  ...   
-    2                                181.560255                   0.007241  ...   
-    
-                 cumulated_charge_capacity_areal  \
-    cycle_index                                    
-    1                                   3.818560   
-    2                                   7.240795   
-    
-                 cumulated_discharge_capacity_areal  coulombic_difference_areal  \
-    cycle_index                                                                   
-    1                                      3.324036                    0.494524   
-    2                                      6.558417                    0.187854   
-    
-                 cumulated_coulombic_difference_areal  \
-    cycle_index                                         
-    1                                        0.494524   
-    2                                        0.682378   
-    
-                 discharge_capacity_loss_areal  charge_capacity_loss_areal  \
-    cycle_index                                                              
-    1                                      NaN                         NaN   
-    2                                 0.089654                    0.396324   
-    
-                 cumulated_discharge_capacity_loss_areal  \
-    cycle_index                                            
-    1                                                NaN   
-    2                                           0.089654   
-    
-                 cumulated_charge_capacity_loss_areal  \
-    cycle_index                                         
-    1                                             NaN   
-    2                                        0.396324   
-    
-                 shifted_charge_capacity_areal  shifted_discharge_capacity_areal  
-    cycle_index                                                                   
-    1                                 0.494524                          4.313083  
-    2                                 0.682378                          4.104613  
-    
-    [2 rows x 49 columns]
+<div class="cellpy-dataframe">
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>data_point</th>
+      <th>test_time</th>
+      <th>date_time</th>
+      <th>end_voltage_charge</th>
+      <th>end_voltage_discharge</th>
+      <th>charge_capacity</th>
+      <th>discharge_capacity</th>
+      <th>coulombic_efficiency</th>
+      <th>cumulated_coulombic_efficiency</th>
+      <th>cumulated_charge_capacity</th>
+      <th>...</th>
+      <th>cumulated_charge_capacity_areal</th>
+      <th>cumulated_discharge_capacity_areal</th>
+      <th>coulombic_difference_areal</th>
+      <th>cumulated_coulombic_difference_areal</th>
+      <th>discharge_capacity_loss_areal</th>
+      <th>charge_capacity_loss_areal</th>
+      <th>cumulated_discharge_capacity_loss_areal</th>
+      <th>cumulated_charge_capacity_loss_areal</th>
+      <th>shifted_charge_capacity_areal</th>
+      <th>shifted_discharge_capacity_areal</th>
+    </tr>
+    <tr>
+      <th>cycle_index</th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>1</th>
+      <td>5797</td>
+      <td>174328.601353</td>
+      <td>2021-05-12 10:40:11</td>
+      <td>4.200052</td>
+      <td>3.129170</td>
+      <td>0.003819</td>
+      <td>0.003324</td>
+      <td>87.049469</td>
+      <td>87.049469</td>
+      <td>0.003819</td>
+      <td>...</td>
+      <td>3.818560</td>
+      <td>3.324036</td>
+      <td>0.494524</td>
+      <td>0.494524</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>0.494524</td>
+      <td>4.313083</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>7188</td>
+      <td>317161.773416</td>
+      <td>2021-05-14 02:20:47</td>
+      <td>4.200052</td>
+      <td>3.188442</td>
+      <td>0.003422</td>
+      <td>0.003234</td>
+      <td>94.510786</td>
+      <td>181.560255</td>
+      <td>0.007241</td>
+      <td>...</td>
+      <td>7.240795</td>
+      <td>6.558417</td>
+      <td>0.187854</td>
+      <td>0.682378</td>
+      <td>0.089654</td>
+      <td>0.396324</td>
+      <td>0.089654</td>
+      <td>0.396324</td>
+      <td>0.682378</td>
+      <td>4.104613</td>
+    </tr>
+  </tbody>
+</table>
+<p>2 rows × 49 columns</p>
+</div>
 
 
 
@@ -143,19 +260,87 @@ c.data.steps.head(2)
 
 
 
-       index  cycle  step  sub_step  point_avr   point_std  point_min  point_max  \
-    0      0      1     1         1     2157.5  1245.48886          1       4314   
-    1      1      1     2         1     4315.0         NaN       4315       4315   
-    
-       point_first  point_last  ...  ir_std    ir_min    ir_max  ir_first  \
-    0            1        4314  ...     0.0  0.000000  0.000000  0.000000   
-    1         4315        4315  ...     NaN  6.650723  6.650723  6.650723   
-    
-        ir_last  ir_delta  rate_avr  type  sub_type  info  
-    0  0.000000       0.0   0.00000  rest       NaN        
-    1  6.650723       0.0   1.75791    ir       NaN        
-    
-    [2 rows x 64 columns]
+<div class="cellpy-dataframe">
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>index</th>
+      <th>cycle</th>
+      <th>step</th>
+      <th>sub_step</th>
+      <th>point_avr</th>
+      <th>point_std</th>
+      <th>point_min</th>
+      <th>point_max</th>
+      <th>point_first</th>
+      <th>point_last</th>
+      <th>...</th>
+      <th>ir_std</th>
+      <th>ir_min</th>
+      <th>ir_max</th>
+      <th>ir_first</th>
+      <th>ir_last</th>
+      <th>ir_delta</th>
+      <th>rate_avr</th>
+      <th>type</th>
+      <th>sub_type</th>
+      <th>info</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>0</td>
+      <td>1</td>
+      <td>1</td>
+      <td>1</td>
+      <td>2157.5</td>
+      <td>1245.48886</td>
+      <td>1</td>
+      <td>4314</td>
+      <td>1</td>
+      <td>4314</td>
+      <td>...</td>
+      <td>0.0</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.0</td>
+      <td>0.00000</td>
+      <td>rest</td>
+      <td>NaN</td>
+      <td></td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>1</td>
+      <td>1</td>
+      <td>2</td>
+      <td>1</td>
+      <td>4315.0</td>
+      <td>NaN</td>
+      <td>4315</td>
+      <td>4315</td>
+      <td>4315</td>
+      <td>4315</td>
+      <td>...</td>
+      <td>NaN</td>
+      <td>6.650723</td>
+      <td>6.650723</td>
+      <td>6.650723</td>
+      <td>6.650723</td>
+      <td>0.0</td>
+      <td>1.75791</td>
+      <td>ir</td>
+      <td>NaN</td>
+      <td></td>
+    </tr>
+  </tbody>
+</table>
+<p>2 rows × 64 columns</p>
+</div>
 
 
 

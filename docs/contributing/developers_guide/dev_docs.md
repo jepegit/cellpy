@@ -84,7 +84,8 @@ uv run --group docs python dev/render_example_notebooks.py
 
 Re-run and commit the output whenever a notebook changes. The script strips
 plotly's embedded HTML before converting — leaving it in produces ~50 MB of
-generated markdown for nine notebooks — and keeps the static PNG renderings.
+generated markdown for nine notebooks — and keeps the static PNG renderings
+plus pandas HTML tables (wrapped for styling via `docs/stylesheets/extra.css`).
 The `.ipynb` files stay in the tree as the interactive source.
 
 It renders the outputs already stored in the notebooks; it does **not** execute

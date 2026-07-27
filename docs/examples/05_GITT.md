@@ -4,11 +4,13 @@ In this notebook we will use cellpy to extract the open circuit voltages (OCV) f
 
 ```python
 import pathlib
+
 import pandas as pd
-import matplotlib.pyplot as plt
+import plotly.graph_objects as go
 
 import cellpy
 from cellpy.utils import plotutils
+
 ```
 
 Set filepath and load the datafile:
@@ -34,17 +36,16 @@ plotutils.cycle_info_plot(c, cycle=list(range(2, 7)))
     
 
 
-### OCV extraction
 From the overview plot above, we can identify the GITT cycles to be cycle number 4 and 5. In the following, we will focus on cycle 5 only.
 
-For further analysis, we create the **step table**, called  ``steps``, a dataframe that contains a lot ofnformation on all the cycle steps for the cell.
+For further analysis, we create the **step table**, called  ``steps``, a dataframe that contains a lot of information on all the cycle steps for the cell.
 
 In the following, we apply several filters to ``steps``, to eventually extract OCV voltages and corresponding capacities:
 
 1. **``steps_cycle``**: Extract the rows specifically for the selected GITT cycle (here: cycle Nr 5).
 
+NB: For simplicity, ``steps_cycle`` only contains columns relevant for further analysis, i.e. ``cycle_num``, ``step_num``, ``charge_capacity_last``, ``discharge_capacity_last``, ``potential_first``, ``potential_last``, ``step_type``.
 
-NB: For simplicity, ``steps_cycle`` only contains rows relevant for further analysis, i.e. *"cycle", "step""charge_last", "discharge_last", "voltage_first" ,"voltage_last", "type"*."
 
 
 ```python
@@ -52,17 +53,18 @@ GITT_cycle = 5
 c.make_step_table(all_steps=True)
 steps = c.data.steps
 steps_cycle = steps.loc[
-    (steps.cycle == GITT_cycle),
+    steps.cycle_num == GITT_cycle,
     [
-        "cycle",
-        "step",
-        "charge_last",
-        "discharge_last",
-        "voltage_first",
-        "voltage_last",
-        "type",
+        "cycle_num",
+        "step_num",
+        "charge_capacity_last",
+        "discharge_capacity_last",
+        "potential_first",
+        "potential_last",
+        "step_type",
     ],
 ]
+
 ```
 
 Taking a closer look at the created ``steps_cycle`` dataframe:
@@ -78,41 +80,138 @@ steps_cycle.tail(10)
 
 
 
-         cycle  step  charge_last  discharge_last  voltage_first  voltage_last  \
-    755      5     8     0.003358        0.003258       3.212396      3.343531   
-    756      5     7     0.003358        0.003294       3.330632      3.139919   
-    757      5     8     0.003358        0.003294       3.162645      3.314970   
-    758      5     7     0.003358        0.003330       3.302993      3.080647   
-    759      5     8     0.003358        0.003330       3.102759      3.283338   
-    760      5     7     0.003358        0.003366       3.272282      3.008170   
-    761      5     8     0.003358        0.003366       3.029361      3.246485   
-    762      5     7     0.003358        0.003392       3.233587      2.999878   
-    763      5    10     0.003358        0.003392       3.010627      3.010627   
-    764      5    11     0.003358        0.003392       3.037038      3.228980   
-    
-              type  
-    755  ocvrlx_up  
-    756  discharge  
-    757  ocvrlx_up  
-    758  discharge  
-    759  ocvrlx_up  
-    760  discharge  
-    761  ocvrlx_up  
-    762  discharge  
-    763         ir  
-    764  ocvrlx_up  
+<div class="cellpy-dataframe">
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>cycle_num</th>
+      <th>step_num</th>
+      <th>charge_capacity_last</th>
+      <th>discharge_capacity_last</th>
+      <th>potential_first</th>
+      <th>potential_last</th>
+      <th>step_type</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>755</th>
+      <td>5</td>
+      <td>8</td>
+      <td>0.003358</td>
+      <td>0.003258</td>
+      <td>3.212396</td>
+      <td>3.343531</td>
+      <td>ocvrlx_up</td>
+    </tr>
+    <tr>
+      <th>756</th>
+      <td>5</td>
+      <td>7</td>
+      <td>0.003358</td>
+      <td>0.003294</td>
+      <td>3.330632</td>
+      <td>3.139919</td>
+      <td>discharge</td>
+    </tr>
+    <tr>
+      <th>757</th>
+      <td>5</td>
+      <td>8</td>
+      <td>0.003358</td>
+      <td>0.003294</td>
+      <td>3.162645</td>
+      <td>3.314970</td>
+      <td>ocvrlx_up</td>
+    </tr>
+    <tr>
+      <th>758</th>
+      <td>5</td>
+      <td>7</td>
+      <td>0.003358</td>
+      <td>0.003330</td>
+      <td>3.302993</td>
+      <td>3.080647</td>
+      <td>discharge</td>
+    </tr>
+    <tr>
+      <th>759</th>
+      <td>5</td>
+      <td>8</td>
+      <td>0.003358</td>
+      <td>0.003330</td>
+      <td>3.102759</td>
+      <td>3.283338</td>
+      <td>ocvrlx_up</td>
+    </tr>
+    <tr>
+      <th>760</th>
+      <td>5</td>
+      <td>7</td>
+      <td>0.003358</td>
+      <td>0.003366</td>
+      <td>3.272282</td>
+      <td>3.008170</td>
+      <td>discharge</td>
+    </tr>
+    <tr>
+      <th>761</th>
+      <td>5</td>
+      <td>8</td>
+      <td>0.003358</td>
+      <td>0.003366</td>
+      <td>3.029361</td>
+      <td>3.246485</td>
+      <td>ocvrlx_up</td>
+    </tr>
+    <tr>
+      <th>762</th>
+      <td>5</td>
+      <td>7</td>
+      <td>0.003358</td>
+      <td>0.003392</td>
+      <td>3.233587</td>
+      <td>2.999878</td>
+      <td>discharge</td>
+    </tr>
+    <tr>
+      <th>763</th>
+      <td>5</td>
+      <td>10</td>
+      <td>0.003358</td>
+      <td>0.003392</td>
+      <td>3.010627</td>
+      <td>3.010627</td>
+      <td>ir</td>
+    </tr>
+    <tr>
+      <th>764</th>
+      <td>5</td>
+      <td>11</td>
+      <td>0.003358</td>
+      <td>0.003392</td>
+      <td>3.037038</td>
+      <td>3.228980</td>
+      <td>ocvrlx_up</td>
+    </tr>
+  </tbody>
+</table>
+</div>
 
 
 
 2. To extract the OCV voltages, we then filter the `steps_cycle` dataframe for 
-    - the OCV relaxation steps on discharge, ``steps_ocv_dch``, of type *oxvrlx_up* (and *rest*), corresponding to ``step==3``, and
-    - the OCV relaxation steps on charge ``steps_ocv_cha``, of type *oxvrlx_down* (and *rest*), corresponding to ``step==8``.
+    - the OCV relaxation steps on charge, ``steps_ocv_cha``, of type *rest*, corresponding to ``step_num == 3``, and
+    - the OCV relaxation steps on discharge, ``steps_ocv_dch``, of type *rest*, corresponding to ``step_num == 8``.
 Thereby we obtain two new dataframes
 
 
+
 ```python
-steps_ocv_cha = steps_cycle.loc[steps_cycle.step == 3]
-steps_ocv_dch = steps_cycle.loc[steps_cycle.step == 8]
+steps_ocv_cha = steps_cycle.loc[steps_cycle.step_num == 3]
+steps_ocv_dch = steps_cycle.loc[steps_cycle.step_num == 8]
+
 ```
 
 
@@ -123,34 +222,91 @@ steps_ocv_cha.head(5)
 
 
 
-         cycle  step  charge_last  discharge_last  voltage_first  voltage_last  \
-    390      5     3     0.000036             0.0       3.512440      3.487564   
-    392      5     3     0.000072             0.0       3.518582      3.494320   
-    394      5     3     0.000109             0.0       3.524724      3.499848   
-    396      5     3     0.000145             0.0       3.530559      3.505991   
-    398      5     3     0.000181             0.0       3.537315      3.513054   
-    
-         type  
-    390  rest  
-    392  rest  
-    394  rest  
-    396  rest  
-    398  rest  
+<div class="cellpy-dataframe">
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>cycle_num</th>
+      <th>step_num</th>
+      <th>charge_capacity_last</th>
+      <th>discharge_capacity_last</th>
+      <th>potential_first</th>
+      <th>potential_last</th>
+      <th>step_type</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>390</th>
+      <td>5</td>
+      <td>3</td>
+      <td>0.000036</td>
+      <td>0.0</td>
+      <td>3.512440</td>
+      <td>3.487564</td>
+      <td>rest</td>
+    </tr>
+    <tr>
+      <th>392</th>
+      <td>5</td>
+      <td>3</td>
+      <td>0.000072</td>
+      <td>0.0</td>
+      <td>3.518582</td>
+      <td>3.494320</td>
+      <td>rest</td>
+    </tr>
+    <tr>
+      <th>394</th>
+      <td>5</td>
+      <td>3</td>
+      <td>0.000109</td>
+      <td>0.0</td>
+      <td>3.524724</td>
+      <td>3.499848</td>
+      <td>rest</td>
+    </tr>
+    <tr>
+      <th>396</th>
+      <td>5</td>
+      <td>3</td>
+      <td>0.000145</td>
+      <td>0.0</td>
+      <td>3.530559</td>
+      <td>3.505991</td>
+      <td>rest</td>
+    </tr>
+    <tr>
+      <th>398</th>
+      <td>5</td>
+      <td>3</td>
+      <td>0.000181</td>
+      <td>0.0</td>
+      <td>3.537315</td>
+      <td>3.513054</td>
+      <td>rest</td>
+    </tr>
+  </tbody>
+</table>
+</div>
 
 
 
-The voltages at the end of these steps (`voltage_last`), contain the (pseudo-) OCV voltages:
+The voltages at the end of these steps (`potential_last`) contain the (pseudo-) OCV voltages:
+
 
 
 ```python
-V_cha = steps_ocv_cha.voltage_last.reset_index(drop=True)
-V_dch = steps_ocv_dch.voltage_last.reset_index(drop=True)
+V_cha = steps_ocv_cha.potential_last.reset_index(drop=True)
+V_dch = steps_ocv_dch.potential_last.reset_index(drop=True)
 cap_cha = (
-    steps_ocv_cha.charge_last.reset_index(drop=True) * 1000
+    steps_ocv_cha.charge_capacity_last.reset_index(drop=True) * 1000
 )  # *1000 to convert to mAh
 cap_dch = (
-    steps_ocv_dch.discharge_last.reset_index(drop=True) * 1000
+    steps_ocv_dch.discharge_capacity_last.reset_index(drop=True) * 1000
 )  # *1000 to convert to mAh
+
 ```
 
 To plot our results, we additionally get the entire voltage vs capacity curves for the selected GITT cycle, employing the `.get_ccap` and `.get_dcap` methods. The cell mass is used to convert from gravimetric capacity (mAh/g) to capacity (mAh).
@@ -166,27 +322,54 @@ mass = c.get_mass()  # in mg
 
 
 ```python
-fig, ax = plt.subplots()
-ax.plot(
-    ccap["charge_capacity"] * mass / 1000, ccap["voltage"], color="blue", label="charge"
+fig = go.Figure()
+fig.add_trace(
+    go.Scatter(
+        x=ccap["cumulative_charge_capacity"] * mass / 1000,
+        y=ccap["potential"],
+        mode="lines",
+        name="charge",
+        line=dict(color="royalblue"),
+    )
 )
-ax.plot(cap_cha, V_cha, "bo", label="OCV charge")
-ax.plot(
-    dcap["discharge_capacity"] * mass / 1000,
-    dcap["voltage"],
-    color="green",
-    label="discharge",
+fig.add_trace(
+    go.Scatter(
+        x=cap_cha,
+        y=V_cha,
+        mode="markers",
+        name="OCV charge",
+        marker=dict(color="royalblue", size=9),
+    )
 )
-ax.plot(cap_dch, V_dch, "go", label="OCV discharge")
-plt.xlabel("Capacity [mAh]", fontsize=15)
-plt.ylabel("Voltage [V]", fontsize=15)
-plt.title("GITT OCV curve", fontsize=15)
-# plt.ylim(0, 0.91)
-# plt.xlim(0, 4.70)
-ax.legend(fontsize=15)
-fig.set_figheight(7)
-fig.set_figwidth(10)
-plt.show()
+fig.add_trace(
+    go.Scatter(
+        x=dcap["cumulative_discharge_capacity"] * mass / 1000,
+        y=dcap["potential"],
+        mode="lines",
+        name="discharge",
+        line=dict(color="seagreen"),
+    )
+)
+fig.add_trace(
+    go.Scatter(
+        x=cap_dch,
+        y=V_dch,
+        mode="markers",
+        name="OCV discharge",
+        marker=dict(color="seagreen", size=9),
+    )
+)
+fig.update_layout(
+    title="GITT OCV curve",
+    xaxis_title="Capacity [mAh]",
+    yaxis_title="Voltage [V]",
+    width=1000,
+    height=700,
+    template="plotly_white",
+    legend=dict(font=dict(size=14)),
+)
+fig.show()
+
 ```
 
 

@@ -52,9 +52,29 @@ cap.head(2)
 
 
 
-           voltage  capacity
-    5088  0.850685  0.002657
-    5089  0.845150  0.029224
+<div class="cellpy-dataframe">
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>voltage</th>
+      <th>capacity</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>5088</th>
+      <td>0.850685</td>
+      <td>0.002657</td>
+    </tr>
+    <tr>
+      <th>5089</th>
+      <td>0.845150</td>
+      <td>0.029224</td>
+    </tr>
+  </tbody>
+</table>
+</div>
 
 
 
@@ -95,9 +115,35 @@ cap1.head(2)
 
 
 
-       cycle   capacity   voltage  direction
-    0      1   0.000652  2.954229         -1
-    1      1  29.363975  1.056753         -1
+<div class="cellpy-dataframe">
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>cycle</th>
+      <th>capacity</th>
+      <th>voltage</th>
+      <th>direction</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>1</td>
+      <td>0.000652</td>
+      <td>2.954229</td>
+      <td>-1</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>1</td>
+      <td>29.363975</td>
+      <td>1.056753</td>
+      <td>-1</td>
+    </tr>
+  </tbody>
+</table>
+</div>
 
 
 

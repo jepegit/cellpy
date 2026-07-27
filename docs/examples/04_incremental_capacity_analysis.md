@@ -48,25 +48,61 @@ ica_df.head()
 
 
 
-       cycle   voltage           dq
-    0      1  0.051583 -6388.687162
-    1      1  0.054792 -6828.975477
-    2      1  0.058001 -7514.790533
-    3      1  0.061210 -8284.857174
-    4      1  0.064420 -9098.355196
+<div class="cellpy-dataframe">
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>cycle</th>
+      <th>voltage</th>
+      <th>dq</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>1</td>
+      <td>0.051583</td>
+      <td>-6388.687162</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>1</td>
+      <td>0.054792</td>
+      <td>-6828.975477</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>1</td>
+      <td>0.058001</td>
+      <td>-7514.790533</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>1</td>
+      <td>0.061210</td>
+      <td>-8284.857174</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>1</td>
+      <td>0.064420</td>
+      <td>-9098.355196</td>
+    </tr>
+  </tbody>
+</table>
+</div>
 
 
 
 
 ```python
-px.line(ica_df, x="voltage", y="dq", color="cycle")
+px.line(ica_df, x="voltage", y="dq", color="cycle", range_x=[0.001, 0.79])
 ```
 
 
-
-
     
-![png](04_incremental_capacity_analysis_files/04_incremental_capacity_analysis_9_1.png)
+![png](04_incremental_capacity_analysis_files/04_incremental_capacity_analysis_9_0.png)
     
 
 
@@ -86,10 +122,38 @@ charge_ica.head(3)
 
 
 
-        voltage cycle          dq
-    0  0.094257     2         NaN
-    1  0.103407     2  365.946074
-    2  0.112558     2  598.189449
+<div class="cellpy-dataframe">
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>voltage</th>
+      <th>cycle</th>
+      <th>dq</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>0.094257</td>
+      <td>2</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>0.103407</td>
+      <td>2</td>
+      <td>365.946074</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>0.112558</td>
+      <td>2</td>
+      <td>598.189449</td>
+    </tr>
+  </tbody>
+</table>
+</div>
 
 
 
@@ -101,10 +165,38 @@ discharge_ica.head(3)
 
 
 
-        voltage cycle           dq
-    0  0.049979     2          NaN
-    1  0.058489     2 -6538.113356
-    2  0.066999     2 -7797.598247
+<div class="cellpy-dataframe">
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>voltage</th>
+      <th>cycle</th>
+      <th>dq</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>0.049979</td>
+      <td>2</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>0.058489</td>
+      <td>2</td>
+      <td>-6538.113356</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>0.066999</td>
+      <td>2</td>
+      <td>-7797.598247</td>
+    </tr>
+  </tbody>
+</table>
+</div>
 
 
 
@@ -247,9 +339,35 @@ vcap.head(2)
 
 
 
-          cycle   voltage  capacity  direction
-    1525      2  0.892503  0.041180         -1
-    1526      2  0.887276  0.176045         -1
+<div class="cellpy-dataframe">
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>cycle</th>
+      <th>voltage</th>
+      <th>capacity</th>
+      <th>direction</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>1525</th>
+      <td>2</td>
+      <td>0.892503</td>
+      <td>0.041180</td>
+      <td>-1</td>
+    </tr>
+    <tr>
+      <th>1526</th>
+      <td>2</td>
+      <td>0.887276</td>
+      <td>0.176045</td>
+      <td>-1</td>
+    </tr>
+  </tbody>
+</table>
+</div>
 
 
 
@@ -282,12 +400,50 @@ ica_cycles.head()
 
 
 
-       cycle   voltage           dq
-    0      2  0.050879 -5707.834475
-    1      2  0.052679 -5816.236742
-    2      2  0.054479 -6004.101556
-    3      2  0.056279 -6234.129498
-    4      2  0.058080 -6480.747477
+<div class="cellpy-dataframe">
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>cycle</th>
+      <th>voltage</th>
+      <th>dq</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>2</td>
+      <td>0.050879</td>
+      <td>-5707.834475</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>2</td>
+      <td>0.052679</td>
+      <td>-5816.236742</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>2</td>
+      <td>0.054479</td>
+      <td>-6004.101556</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>2</td>
+      <td>0.056279</td>
+      <td>-6234.129498</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>2</td>
+      <td>0.058080</td>
+      <td>-6480.747477</td>
+    </tr>
+  </tbody>
+</table>
+</div>
 
 
 
@@ -313,8 +469,31 @@ ica_curves.head(2)
 
 
 
-       cycle   voltage           dq
-    0      2  0.050879 -5707.834475
-    1      2  0.052679 -5816.236742
+<div class="cellpy-dataframe">
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>cycle</th>
+      <th>voltage</th>
+      <th>dq</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>2</td>
+      <td>0.050879</td>
+      <td>-5707.834475</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>2</td>
+      <td>0.052679</td>
+      <td>-5816.236742</td>
+    </tr>
+  </tbody>
+</table>
+</div>
 
 
