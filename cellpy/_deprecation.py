@@ -108,6 +108,30 @@ def _seed_known_deprecations() -> None:
     # Plotting shims (interactive=, xlim/ylim, backend="seaborn", summary_plot_legacy)
     # were removed in 2.1 (E1, #713) -- no longer registered here.
 
+    # The prms.* global-mutation shim (prms.Paths/Reader/... -> cellpy.config.*)
+    # was removed in 2.1 (E5, #717) -- use cellpy.config (e.g. config.paths.x = y)
+    # or cellpy.config.override(...). Not a pending deprecation, so not listed.
+
+    # KEPT past 2.1 (E5, #717): the CellpyCell.mass / .nom_cap / .nom_cap_specifics
+    # property facades are beloved and cheap -- deliberately NOT deprecated, so
+    # they are intentionally absent from this table.
+
+    # ocv_rlx: MultiCycleOcvFit.data/set_data were renamed to cell/set_cell in
+    # 2.1 (#709); the old names stay as deprecated aliases until 2.2. Seeded so
+    # the table lists them without needing to trigger the runtime warning.
+    _register(
+        "MultiCycleOcvFit.data",
+        "MultiCycleOcvFit.cell",
+        removal="2.2",
+        introduced="2.1",
+    )
+    _register(
+        "MultiCycleOcvFit.set_data",
+        "MultiCycleOcvFit.set_cell",
+        removal="2.2",
+        introduced="2.1",
+    )
+
 
 if __name__ == "__main__":
     _seed_known_deprecations()
