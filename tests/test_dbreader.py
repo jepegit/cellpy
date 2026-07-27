@@ -43,33 +43,6 @@ def clean_db_reader():  # remove this?
     return dbreader.Reader()
 
 
-@pytest.mark.skip(reason="experimental - only run locally")
-def test_convert_from_excel_to_sqlite(parameters):
-    import cellpy.utils.batch_tools.sqlite_from_excel_db as sfe
-    import cellpy.readers.sql_dbreader as sr
-
-    db_exel_file = pathlib.Path(parameters.db_dir) / parameters.db_file_name
-    db_sqlite_file = pathlib.Path(parameters.db_dir) / sfe.DB_FILE_SQLITE
-    db_file = pathlib.Path(parameters.db_dir) / "cellpy.db"
-    db_uri = "sqlite:///" + str(db_file)
-
-    columns = sfe.create_column_names_from_prms()
-    df = sfe.load_xlsx(db_file=db_exel_file)
-    df = sfe.clean_up(df, columns=columns)
-    sfe.save_sqlite(df, out_file=db_sqlite_file)
-
-    assert pathlib.Path(db_sqlite_file).exists()
-
-    reader = sr.SQLReader()
-    reader.create_db(db_uri, echo=False)
-    reader.load_excel_sqlite(db_sqlite_file)
-    # 2023.04.06 missing in test excel file:
-    #   {'channel', 'cell_design', 'nominal_capacity', 'loading_active', 'experiment_type'}
-    reader.import_cells_from_excel_sqlite()
-
-    assert pathlib.Path(db_file).exists()
-
-
 def test_filter_select_col_numbers_true_false(db_reader):
     column_names = ["finished", "freeze"]
     assert db_reader.filter_by_col(column_names) == test_serial_number_one

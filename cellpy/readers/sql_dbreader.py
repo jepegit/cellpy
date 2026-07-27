@@ -397,12 +397,7 @@ class SQLReader(BaseSimpleDbReader):
         return getattr(result, name, None)
 
     def load_excel_sqlite(self, db_path: str, echo: bool = False) -> None:
-        """Load an old sqlite cellpy database created from an Excel file.
-
-        You can use the cellpy.utils.batch_tools.sqlite_from_excel.run() function to
-        convert an Excel file to a sqlite database.
-
-        """
+        """Load an old sqlite cellpy database created from an Excel file."""
         assert pathlib.Path(db_path).is_file()
         db_path = f"sqlite:///{db_path}"
         self.other_engine = create_engine(db_path, echo=echo)

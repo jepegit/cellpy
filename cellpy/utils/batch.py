@@ -4,9 +4,8 @@ The batch subsystem was redesigned and now lives in :mod:`cellpy.batch`
 (journal / policy / runner / store / aggregate / qc / outputs / facade). This
 module keeps the historical import path and entry points working -- returning
 the new :class:`cellpy.batch.Batch` -- and will remain permanently as a thin
-re-export. The legacy ``batch_tools`` internals live on until 2.1 removal (E4);
-``helpers`` / ``collectors`` still read the new Batch's backward-compat
-``.experiment`` view until they migrate (Epic B/C).
+re-export. The legacy ``batch_tools`` internals were removed in 2.1 (E4, #716);
+the DB-journal path they used to own is now native in :mod:`cellpy.batch`.
 """
 
 from __future__ import annotations
