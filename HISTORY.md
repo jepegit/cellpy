@@ -2,6 +2,32 @@
 
 ## [Unreleased]
 
+### cellpy 2.1 (Stage 4)
+
+* **Batch / collect redesign.** New top-level `cellpy.batch` (journal / policy /
+  runner / store / aggregate / outputs / facade) and `cellpy.collect`
+  (options / collection / summary / curves / ica) packages replace the
+  `utils/batch_tools` "farm/barn" machinery. `cellpy.utils.batch` and
+  `cellpy.utils.collectors` remain as permanent re-export shims. (#697–#708, #716)
+* **Bug fix (collectors):** cross-cell cycle collection no longer reassigns the
+  shared `cycles` list — a cell missing a requested cycle no longer drops that
+  cycle for every cell after it. (#705)
+* New `Batch.tests` / `aggregate.combine_tests`. (#711)
+* **Breaking — 2.0 deprecation shims removed (Epic E).** Every shim that warned
+  *"removed in 2.1"* is gone; see
+  [`docs/getting_started/migration_v2.0_to_2.1.md`](docs/getting_started/migration_v2.0_to_2.1.md):
+    * `CellpyCell.headers_normal` / `_summary` / `_step_table` → `c.schema.raw` /
+      `.summary` / `.steps`; `make_new_cell()` → `CellpyCell.vacant()`. (#715)
+    * ICA 1.x shims (`Converter`, `dqdv_cycle` / `dqdv_cycles` / `dqdv_np`, the
+      legacy `dqdv` kwargs, the duplicate `dq` column) → `ica.dqdv`. (#714)
+    * Plotting `interactive=`, `xlim=` / `ylim=`, `summary_plot_legacy`, and the
+      **seaborn + bokeh** backends removed (plotly + matplotlib remain). (#713)
+    * `cellpy/utils/batch_tools/` deleted; the DB-journal path is now native in
+      `cellpy.batch`. (#716)
+    * The `prms.*` global-mutation shim (`prms.Paths` / `prms.Reader` / …) →
+      `cellpy.config` (`config.paths.x = …` or `config.override(...)`). The
+      `CellpyCell.mass` / `.nom_cap` property facades are **kept**. (#717)
+
 * Tried shipping marimo notebooks in the docs (#724); withdrawn — Zensical
   embeds could not keep a real marimo table/plot experience without hanging
   Pyodide or replacing widgets with non-marimo UI.
