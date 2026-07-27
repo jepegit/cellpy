@@ -13,7 +13,6 @@ from cellpy.exceptions import (
     LoaderError,
     UnitsError,
 )
-from cellpy.utils.helpers import make_new_cell
 
 
 @pytest.mark.essential
@@ -52,17 +51,11 @@ def test_warn_once_registers_for_deprecations_md():
 
 
 @pytest.mark.essential
-def test_make_new_cell_uses_warn_once():
-    _deprecation._WARNED_SITES.clear()
+def test_make_new_cell_removed():
+    # make_new_cell was removed in 2.1 (E3, #715); use CellpyCell.vacant.
+    import cellpy.utils.helpers as helpers
 
-    with warnings.catch_warnings(record=True) as caught:
-        warnings.simplefilter("always", DeprecationWarning)
-        make_new_cell()
-        make_new_cell()
-
-    make_new_cell_warnings = [w for w in caught if "make_new_cell" in str(w.message)]
-    assert len(make_new_cell_warnings) == 1
-    assert "CellpyCell.vacant" in str(make_new_cell_warnings[0].message)
+    assert not hasattr(helpers, "make_new_cell")
 
 
 @pytest.mark.essential

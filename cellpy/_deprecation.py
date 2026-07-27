@@ -93,7 +93,7 @@ def write_deprecations_md(path: str | Path) -> None:
 
 def _seed_known_deprecations() -> None:
     """Register deprecations that exist before any runtime call (for doc generation)."""
-    _register("make_new_cell", "CellpyCell.vacant", removal="2.1")
+    # make_new_cell was removed in 2.1 (E3, #715) -- use CellpyCell.vacant.
     # Legacy header attribute access (headers_normal.voltage_txt, hdr_steps.cycle,
     # hdr_summary[...]) is shimmed to the native cellpycore schema names at the
     # native-headers flip (D6). One summary row here; the shim warns per attribute
