@@ -189,7 +189,7 @@ def _build_figure_spec(
 
     panels = tuple(
         PanelSpec(
-            columns=tuple(family.columns(c.headers_summary)) if i == 0 else (),
+            columns=tuple(family.columns(c.schema.summary)) if i == 0 else (),
             y_axis=AxisSpec(),
         )
         for i in range(max(number_of_rows, 1))
@@ -502,8 +502,8 @@ class SummaryPlotDataPreparer:
 
         if missing_columns and y == "capacities_absolute":
             # For absolute capacities, if _absolute columns don't exist, use base columns
-            hdr = c.headers_summary
-            base_columns = [hdr.charge_capacity_raw, hdr.discharge_capacity_raw]
+            hdr = c.schema.summary
+            base_columns = [hdr.charge_capacity, hdr.discharge_capacity]
             # Check if base columns exist
             if all(col in available_columns for col in base_columns):
                 column_set = base_columns
@@ -552,7 +552,7 @@ class SummaryPlotDataPreparer:
                 s.loc[s["variable"].str.contains("efficiency"), self.row] = 0
                 number_of_rows = 2
             elif y.endswith("_with_rate"):
-                hdr = c.headers_summary
+                hdr = c.schema.summary
                 rate_cols = {hdr.charge_c_rate, hdr.discharge_c_rate}
                 s[self.row] = 1
                 s.loc[s["variable"].isin(rate_cols), self.row] = 0
@@ -664,7 +664,7 @@ class SummaryPlotDataPreparer:
         * ``config.filters`` is forwarded to
           :func:`cellpy.filters.filter_summary`. The default
           ``rate_filter_columns`` resolves to both rate columns from
-          ``c.headers_summary`` (charge AND discharge).
+          ``c.schema.summary`` (charge AND discharge).
 
         Operates on a copy; the caller's ``summary`` argument is not
         mutated.
@@ -672,7 +672,7 @@ class SummaryPlotDataPreparer:
         out = summary.copy() if summary is not None else summary
 
         if config.nominal_capacity is not None:
-            hdr = c.headers_summary
+            hdr = c.schema.summary
             old_nom_cap = getattr(c.data, "nom_cap", None)
             if old_nom_cap in (None, 0):
                 logging.warning(
@@ -696,7 +696,7 @@ class SummaryPlotDataPreparer:
         if config.filters:
             from cellpy.filters import filter_summary
 
-            hdr = c.headers_summary
+            hdr = c.schema.summary
             filter_kwargs = dict(config.filters)
             if (
                 "rate" in filter_kwargs

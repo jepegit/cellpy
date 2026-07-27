@@ -2,7 +2,7 @@
 ``SummaryPlotInfo._create_col_info`` column table (#636 / epic #567).
 
 Column names for summary families are header-bound (they depend on
-``c.headers_summary``), so each family carries a small resolver rather than a
+``c.schema.summary``), so each family carries a small resolver rather than a
 frozen list of strings. Non-summary families (e.g. ``cycles`` for
 ``cycles_plot``, #646) register with ``extras["entry_point"]`` so
 ``families(entry_point=...)`` / the summary oracle stay scoped.
@@ -107,7 +107,7 @@ def _register_family(family: PlotFamily) -> None:
 
 
 def _cap_raw(hdr: Any) -> list[str]:
-    return [hdr.charge_capacity_raw, hdr.discharge_capacity_raw]
+    return [hdr.charge_capacity, hdr.discharge_capacity]
 
 
 def _caps(hdr: Any, mode: str) -> list[str]:
@@ -121,7 +121,7 @@ def _split(cols: list[str]) -> list[str]:
 def _cumloss_columns(hdr: Any, mode: str) -> list[str]:
     return [
         hdr.charge_capacity + f"_{mode}" + "_cv",
-        hdr.cumulated_discharge_capacity_loss + f"_{mode}",
+        hdr.test_cumulated_discharge_capacity_loss + f"_{mode}",
         hdr.discharge_capacity + f"_{mode}",
         hdr.coulombic_efficiency,
     ]
@@ -137,7 +137,7 @@ def _fullcell_columns(hdr: Any, mode: str) -> list[str]:
 
 
 def _cumloss_transforms(hdr: Any, normalize_col: Callable[..., Any], mode: str) -> dict[str, Any]:
-    key = hdr.cumulated_discharge_capacity_loss + f"_{mode}"
+    key = hdr.test_cumulated_discharge_capacity_loss + f"_{mode}"
     return {key: {(2, key): normalize_col}}
 
 
@@ -152,7 +152,7 @@ def _register_builtin_families() -> None:
         PlotFamily(
             name="voltages",
             description="End-of-charge and end-of-discharge voltages vs cycle",
-            column_builder=lambda hdr: [hdr.end_voltage_charge, hdr.end_voltage_discharge],
+            column_builder=lambda hdr: [hdr.potential_end_charge, hdr.potential_end_discharge],
             mode=None,
         ),
         PlotFamily(

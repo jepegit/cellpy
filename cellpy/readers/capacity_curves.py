@@ -640,10 +640,10 @@ def get_ocv(
     steps = cell.data.steps
     raw = cell.data.raw
 
-    hdr_steps = cell.headers_step_table
-    steps_cycle = hdr_steps.cycle
-    steps_step = hdr_steps.step
-    steps_type = hdr_steps.type
+    step_hdr = cell.schema.steps
+    steps_cycle = step_hdr.cycle_num
+    steps_step = step_hdr.step_num
+    steps_type = step_hdr.step_type
 
     ocv_steps = steps.loc[steps[steps_cycle].isin(cycles), :]
 

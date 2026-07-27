@@ -1528,10 +1528,10 @@ def select_summary_based_on_rate(
     Returns:
         filtered summary (Pandas.DataFrame).
     """
-    # use the cell's own headers (native names via the shim after the flip)
-    # rather than the module-level legacy singletons.
-    hdr_steps = cell.headers_step_table
-    hdr_summary = cell.headers_summary
+    # native header access (#715): use the cell's schema, not the deprecated
+    # headers_step_table / headers_summary property shims.
+    step_hdr = cell.schema.steps
+    summary_hdr = cell.schema.summary
 
     if on is None:
         on = [StepType.CHARGE.value]
@@ -1540,10 +1540,10 @@ def select_summary_based_on_rate(
             on = [on]
 
     if rate_column is None:
-        rate_column = hdr_steps.rate_avr
+        rate_column = step_hdr.c_rate
 
     if on:
-        on_column = hdr_steps.type
+        on_column = step_hdr.step_type
 
     if rate is None:
         rate = 0.05
@@ -1551,7 +1551,7 @@ def select_summary_based_on_rate(
     if rate_std is None:
         rate_std = 0.1 * rate
 
-    cycle_number_header = hdr_summary.cycle_index
+    cycle_number_header = summary_hdr.cycle_num
 
     step_table = cell.data.steps
 
@@ -1588,7 +1588,7 @@ def select_summary_based_on_rate(
         cycles_mask = ~cycles_mask
 
     filtered_step_table = step_table[cycles_mask]
-    filtered_cycles = filtered_step_table[hdr_steps.cycle].unique()
+    filtered_cycles = filtered_step_table[step_hdr.cycle_num].unique()
 
     if inverted:
         filtered_index = summary.index.difference(filtered_cycles)
