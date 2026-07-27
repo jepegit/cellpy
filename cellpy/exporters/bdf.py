@@ -4,7 +4,7 @@ in `Battery Data Format (BDF) <https://github.com/battery-data-alliance/battery-
 The BDF specifies a fixed column schema and unit set for cycler
 time-series. This module:
 
-1. Maps cellpy ``HeadersNormal`` column names to BDF preferred labels and
+1. Maps native cellpy raw column names to BDF preferred labels and
    machine-readable names.
 2. Converts unit-bearing columns (capacity in ``mAh`` -> ``Ah``,
    ``date_time`` -> Unix seconds, etc.) using the cell's
@@ -87,7 +87,7 @@ class _BdfColumn:
 
 _COLUMN_MAP: tuple[_BdfColumn, ...] = (
     _BdfColumn(
-        cellpy_field="test_time_txt",
+        cellpy_field="test_time",
         preferred="Test Time / s",
         machine="test_time_second",
         base_preferred="Test Time",
@@ -97,7 +97,7 @@ _COLUMN_MAP: tuple[_BdfColumn, ...] = (
         bdf_unit="s",
     ),
     _BdfColumn(
-        cellpy_field="voltage_txt",
+        cellpy_field="potential",
         preferred="Voltage / V",
         machine="voltage_volt",
         base_preferred="Voltage",
@@ -107,7 +107,7 @@ _COLUMN_MAP: tuple[_BdfColumn, ...] = (
         bdf_unit="V",
     ),
     _BdfColumn(
-        cellpy_field="current_txt",
+        cellpy_field="current",
         preferred="Current / A",
         machine="current_ampere",
         base_preferred="Current",
@@ -117,7 +117,7 @@ _COLUMN_MAP: tuple[_BdfColumn, ...] = (
         bdf_unit="A",
     ),
     _BdfColumn(
-        cellpy_field="datetime_txt",
+        cellpy_field="date_time",
         preferred="Unix Time / s",
         machine="unix_time_second",
         base_preferred="Unix Time",
@@ -127,7 +127,7 @@ _COLUMN_MAP: tuple[_BdfColumn, ...] = (
         bdf_unit=None,
     ),
     _BdfColumn(
-        cellpy_field="cycle_index_txt",
+        cellpy_field="cycle_num",
         preferred="Cycle Count / 1",
         machine="cycle_count",
         base_preferred="Cycle Count",
@@ -135,7 +135,7 @@ _COLUMN_MAP: tuple[_BdfColumn, ...] = (
         tier="recommended",
     ),
     _BdfColumn(
-        cellpy_field="step_index_txt",
+        cellpy_field="step_num",
         preferred="Step Index / 1",
         machine="step_index",
         base_preferred="Step Index",
@@ -143,7 +143,7 @@ _COLUMN_MAP: tuple[_BdfColumn, ...] = (
         tier="optional",
     ),
     _BdfColumn(
-        cellpy_field="charge_capacity_txt",
+        cellpy_field="cumulative_charge_capacity",
         preferred="Charging Capacity / Ah",
         machine="charging_capacity_ah",
         base_preferred="Charging Capacity",
@@ -153,7 +153,7 @@ _COLUMN_MAP: tuple[_BdfColumn, ...] = (
         bdf_unit="Ah",
     ),
     _BdfColumn(
-        cellpy_field="discharge_capacity_txt",
+        cellpy_field="cumulative_discharge_capacity",
         preferred="Discharging Capacity / Ah",
         machine="discharging_capacity_ah",
         base_preferred="Discharging Capacity",
@@ -163,7 +163,7 @@ _COLUMN_MAP: tuple[_BdfColumn, ...] = (
         bdf_unit="Ah",
     ),
     _BdfColumn(
-        cellpy_field="charge_energy_txt",
+        cellpy_field="cumulative_charge_energy",
         preferred="Charging Energy / Wh",
         machine="charging_energy_wh",
         base_preferred="Charging Energy",
@@ -173,7 +173,7 @@ _COLUMN_MAP: tuple[_BdfColumn, ...] = (
         bdf_unit="Wh",
     ),
     _BdfColumn(
-        cellpy_field="discharge_energy_txt",
+        cellpy_field="cumulative_discharge_energy",
         preferred="Discharging Energy / Wh",
         machine="discharging_energy_wh",
         base_preferred="Discharging Energy",
@@ -183,7 +183,7 @@ _COLUMN_MAP: tuple[_BdfColumn, ...] = (
         bdf_unit="Wh",
     ),
     _BdfColumn(
-        cellpy_field="power_txt",
+        cellpy_field="power",
         preferred="Power / W",
         machine="power_watt",
         base_preferred="Power",
@@ -193,7 +193,7 @@ _COLUMN_MAP: tuple[_BdfColumn, ...] = (
         bdf_unit="W",
     ),
     _BdfColumn(
-        cellpy_field="internal_resistance_txt",
+        cellpy_field="internal_resistance",
         preferred="Internal Resistance / Ohm",
         machine="internal_resistance_ohm",
         base_preferred="Internal Resistance",
@@ -433,12 +433,11 @@ def to_bdf(
         msg = "to_bdf: cell.data.raw is empty; nothing to export."
         raise ValueError(msg)
 
-    headers = cell.headers_normal
     source_units = cell.data.raw_units
     target_units = _resolve_target_units(bdf_units)
     strict_units = bdf_units is not None
 
-    cycle_col = headers.cycle_index_txt
+    cycle_col = cell.schema.raw.cycle_num
     if cycle_col in raw.columns and (cycles is not None or last_cycle is not None):
         raw = filter_cycles(raw, cycles=cycles, last_cycle=last_cycle, column=cycle_col)
         if raw.empty:
@@ -448,7 +447,7 @@ def to_bdf(
         raw = preprocess_fn(raw)
 
     out_df, missing_recommended, extras_added, non_default_units = _build_bdf_frame(
-        raw, headers, source_units, header_style, extras, target_units, strict_units
+        raw, source_units, header_style, extras, target_units, strict_units
     )
     for col_name in missing_recommended:
         logger.warning("to_bdf: BDF-recommended column %r is not present in data.raw; skipped.", col_name)
@@ -479,7 +478,6 @@ def to_bdf(
 
 def _build_bdf_frame(
     raw: pd.DataFrame,
-    headers,
     source_units,
     header_style: HeaderStyle,
     extras: ExtrasArg,
@@ -504,8 +502,8 @@ def _build_bdf_frame(
     seen_non_default: set[str] = set()
 
     for spec in _COLUMN_MAP:
-        src_col = getattr(headers, spec.cellpy_field, None)
-        if src_col is None or src_col not in raw.columns:
+        src_col = spec.cellpy_field
+        if src_col not in raw.columns:
             if spec.tier == "required":
                 missing_required.append(spec.preferred)
             elif spec.tier == "recommended":
