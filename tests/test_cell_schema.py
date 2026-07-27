@@ -104,46 +104,23 @@ def test_schema_does_not_warn(native_cell):
 
 @pytest.mark.essential
 @pytest.mark.parametrize(
-    "legacy_attr, schema_frame, native_attr",
-    [
-        ("headers_normal", "raw", "potential"),
-        ("headers_step_table", "steps", "cycle_num"),
-        ("headers_summary", "summary", "charge_capacity"),
-    ],
+    "legacy_attr", ["headers_normal", "headers_step_table", "headers_summary"]
 )
-def test_legacy_shim_and_schema_agree(
-    native_cell, legacy_attr, schema_frame, native_attr
-):
-    via_schema = getattr(getattr(native_cell.schema, schema_frame), native_attr)
-    via_shim = getattr(getattr(native_cell, legacy_attr), native_attr)
-    assert via_schema == via_shim
-
-
-@pytest.mark.essential
-def test_legacy_attribute_warns_and_names_the_schema_replacement(native_cell):
-    _deprecation._WARNED_SITES.clear()
-    with warnings.catch_warnings(record=True) as caught:
-        warnings.simplefilter("always")
-        value = native_cell.headers_normal.voltage_txt
-
-    assert value == native_cell.schema.raw.potential
-    messages = [
-        str(w.message) for w in caught if issubclass(w.category, DeprecationWarning)
-    ]
-    assert len(messages) == 1
-    # The warning must name the exact attribute to type, not the concept.
-    assert "c.schema.raw.potential" in messages[0]
+def test_legacy_header_attributes_are_removed(native_cell, legacy_attr):
+    """The 2.0 ``headers_*`` shim was removed in 2.1 (E3, #715); ``c.schema``
+    is the replacement, so the attributes no longer exist on the cell."""
+    assert not hasattr(native_cell, legacy_attr)
+    with pytest.raises(AttributeError):
+        getattr(native_cell, legacy_attr)
 
 
 @pytest.mark.essential
 def test_core_pipeline_does_not_trip_its_own_deprecation(dataset):
-    """cellpy's own code must be migrated off ``headers_*`` (#558).
+    """cellpy's own code is off ``headers_*`` (#558, shim removed in #715).
 
-    Guards the failure mode found while migrating: dropping a local
-    ``hdr = self.headers_step_table`` binding silently re-resolved a later use
-    to the module-level *legacy* singleton, which indexes a native frame with
-    legacy names. A warning from inside cellpy means a site is still on the
-    shim — or has fallen through to the legacy singleton.
+    Regression guard: the core pipeline must emit no ``headers_*`` deprecation
+    warning. The shim is gone, so any such warning would mean a reintroduced
+    legacy-header code path.
     """
     _deprecation._WARNED_SITES.clear()
     with warnings.catch_warnings(record=True) as caught:

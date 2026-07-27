@@ -217,15 +217,15 @@ def _check_loader_from_outside():
     steps.to_csv(r"C:\scripts\notebooks\Div\trash\steps.csv", sep=";")
     summary.to_csv(r"C:\scripts\notebooks\Div\trash\summary.csv", sep=";")
 
-    hdr = c.headers_normal
+    hdr = c.schema.raw
     fig_1, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(6, 10))
-    raw.plot(x=hdr.test_time_txt, y=hdr.voltage_txt, ax=ax1)
+    raw.plot(x=hdr.test_time, y=hdr.potential, ax=ax1)
     raw.plot(
-        x=hdr.test_time_txt,
-        y=[hdr.charge_capacity_txt, hdr.discharge_capacity_txt],
+        x=hdr.test_time,
+        y=[hdr.cumulative_charge_capacity, hdr.cumulative_discharge_capacity],
         ax=ax3,
     )
-    raw.plot(x=hdr.test_time_txt, y=hdr.current_txt, ax=ax2)
+    raw.plot(x=hdr.test_time, y=hdr.current, ax=ax2)
 
     n = c.get_number_of_cycles()
     print(f"number of cycles: {n}")
@@ -257,8 +257,8 @@ def _check_loader_from_outside():
     ax6.plot(t, steps, label="steps")
 
     fig_3, (ax7, ax8) = plt.subplots(2, sharex=True)
-    raw.plot(x=hdr.test_time_txt, y=hdr.voltage_txt, ax=ax7)
-    raw.plot(x=hdr.test_time_txt, y=hdr.step_index_txt, ax=ax8)
+    raw.plot(x=hdr.test_time, y=hdr.potential, ax=ax7)
+    raw.plot(x=hdr.test_time, y=hdr.step_num, ax=ax8)
 
     plt.legend()
     plt.show()
@@ -295,16 +295,16 @@ def _check_loader_from_outside_with_get():
     steps.to_csv(r"C:\scripting\trash\steps.csv", sep=";")
     summary.to_csv(r"C:\scripting\trash\summary.csv", sep=";")
 
-    hdr = c.headers_normal
+    hdr = c.schema.raw
     fig_1, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(6, 10))
-    raw.plot(x=hdr.test_time_txt, y=hdr.voltage_txt, ax=ax1, title="voltage")
+    raw.plot(x=hdr.test_time, y=hdr.potential, ax=ax1, title="voltage")
     raw.plot(
-        x=hdr.test_time_txt,
-        y=[hdr.charge_capacity_txt, hdr.discharge_capacity_txt],
+        x=hdr.test_time,
+        y=[hdr.cumulative_charge_capacity, hdr.cumulative_discharge_capacity],
         ax=ax3,
         title="caps",
     )
-    raw.plot(x=hdr.test_time_txt, y=hdr.current_txt, ax=ax2, title="current")
+    raw.plot(x=hdr.test_time, y=hdr.current, ax=ax2, title="current")
 
     n = c.get_number_of_cycles()
     print(f"number of cycles: {n}")
@@ -331,8 +331,8 @@ def _check_loader_from_outside_with_get():
     ax6.plot(t, steps, label="steps")
 
     fig_3, (ax7, ax8) = plt.subplots(2, sharex=True)
-    raw.plot(x=hdr.test_time_txt, y=hdr.voltage_txt, ax=ax7, title="voltage")
-    raw.plot(x=hdr.test_time_txt, y=hdr.step_index_txt, ax=ax8, title="step index")
+    raw.plot(x=hdr.test_time, y=hdr.potential, ax=ax7, title="voltage")
+    raw.plot(x=hdr.test_time, y=hdr.step_num, ax=ax8, title="step index")
 
     plt.legend()
     plt.show()
@@ -402,7 +402,7 @@ def _check_loader_from_outside_with_get2():
     )
     print(f"loaded the file - now lets see what we got")
     raw = c.data.raw
-    hdr = c.headers_normal
+    hdr = c.schema.raw
     print(raw.head())
     c.make_step_table()
 
@@ -420,15 +420,15 @@ def _check_loader_from_outside_with_get2():
         constrained_layout=True,
         sharex=True,
     )
-    raw.plot(x=hdr.test_time_txt, y=hdr.voltage_txt, ax=ax1, xlabel="")
-    raw.plot(x=hdr.test_time_txt, y=hdr.current_txt, ax=ax2, xlabel="")
+    raw.plot(x=hdr.test_time, y=hdr.potential, ax=ax1, xlabel="")
+    raw.plot(x=hdr.test_time, y=hdr.current, ax=ax2, xlabel="")
     raw.plot(
-        x=hdr.test_time_txt,
-        y=[hdr.charge_capacity_txt, hdr.discharge_capacity_txt],
+        x=hdr.test_time,
+        y=[hdr.cumulative_charge_capacity, hdr.cumulative_discharge_capacity],
         ax=ax3,
         xlabel="",
     )
-    raw.plot(x=hdr.test_time_txt, y=hdr.cycle_index_txt, ax=ax4)
+    raw.plot(x=hdr.test_time, y=hdr.cycle_num, ax=ax4)
     fig_1.suptitle(f"{name.name}", fontsize=16)
 
     n = c.get_number_of_cycles()
@@ -473,7 +473,7 @@ def _fix_bugs_now():
     )
     print(f"loaded the file - now lets see what we got")
     raw = c.data.raw
-    hdr = c.headers_normal
+    hdr = c.schema.raw
     print(raw.head())
     c.make_step_table()
     steps = c.data.steps
@@ -490,15 +490,15 @@ def _fix_bugs_now():
         constrained_layout=True,
         sharex=True,
     )
-    raw.plot(x=hdr.test_time_txt, y=hdr.voltage_txt, ax=ax1, xlabel="")
-    raw.plot(x=hdr.test_time_txt, y=hdr.current_txt, ax=ax2, xlabel="")
+    raw.plot(x=hdr.test_time, y=hdr.potential, ax=ax1, xlabel="")
+    raw.plot(x=hdr.test_time, y=hdr.current, ax=ax2, xlabel="")
     raw.plot(
-        x=hdr.test_time_txt,
-        y=[hdr.charge_capacity_txt, hdr.discharge_capacity_txt],
+        x=hdr.test_time,
+        y=[hdr.cumulative_charge_capacity, hdr.cumulative_discharge_capacity],
         ax=ax3,
         xlabel="",
     )
-    raw.plot(x=hdr.test_time_txt, y=hdr.cycle_index_txt, ax=ax4)
+    raw.plot(x=hdr.test_time, y=hdr.cycle_num, ax=ax4)
     fig_1.suptitle(f"{name.name}", fontsize=16)
 
     n = c.get_number_of_cycles()

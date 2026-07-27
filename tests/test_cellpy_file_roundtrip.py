@@ -116,11 +116,11 @@ def test_v8_load_selector_max_cycle_truncates_consistently():
     assert selected.limit_data_points == 3119
     assert len(selected.data.summary) == max_cycle
     # Polars Phase A (#457): summary keys live in columns, not the index.
-    hs = selected.headers_summary
-    assert selected.data.summary[hs.cycle_index].max() == max_cycle
+    hs = selected.schema.summary
+    assert selected.data.summary[hs.cycle_num].max() == max_cycle
 
-    hn = selected.headers_normal
-    cycle_col = hn.cycle_index_txt
+    hn = selected.schema.raw
+    cycle_col = hn.cycle_num
     assert selected.data.raw[cycle_col].max() <= max_cycle
     assert len(selected.data.raw) < len(full.data.raw)
     assert len(selected.data.steps) < len(full.data.steps)
@@ -134,17 +134,17 @@ def test_legacy_v4_v7_load_shapes_and_columns(label, filename, version):
         pytest.skip(f"missing legacy fixture: {path}")
 
     cell = load_cellpy_file(path, accept_old=True)
-    hn = cell.headers_normal
-    hs = cell.headers_summary
+    hn = cell.schema.raw
+    hs = cell.schema.summary
 
     assert cell.data.raw.shape[0] > 0
     assert cell.data.summary.shape[0] > 0
-    assert hn.data_point_txt in cell.data.raw.columns
-    assert hn.cycle_index_txt in cell.data.raw.columns
+    assert hn.datapoint_num in cell.data.raw.columns
+    assert hn.cycle_num in cell.data.raw.columns
     # Polars Phase A (#457): summary keys live in columns for every version.
-    assert hs.cycle_index in cell.data.summary.columns
+    assert hs.cycle_num in cell.data.summary.columns
     assert cell.data.summary.index.name is None
-    assert hs.data_point in cell.data.summary.columns
+    assert hs.datapoint_num_last in cell.data.summary.columns
     assert hs.discharge_capacity in cell.data.summary.columns
     assert cell.data.meta_common.cellpy_file_version == version
 

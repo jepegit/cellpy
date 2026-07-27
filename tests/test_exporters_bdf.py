@@ -11,7 +11,7 @@ import pytest
 from cellpy import log
 from cellpy.exporters import to_bdf
 from cellpy.exporters import bdf as bdf_module
-from cellpy.parameters.internal_settings import CellpyUnits, get_headers_normal
+from cellpy.parameters.internal_settings import CellpyUnits
 
 log.setup_logging(default_level=logging.DEBUG, testing=True)
 
@@ -24,26 +24,25 @@ def _make_synthetic_cell(*, with_capacity: bool = True, with_datetime: bool = Tr
     """
     from cellpy import cellreader
 
-    # Name the fabricated raw via the cell's own headers so the frame matches
-    # the runtime schema (native after the flip; the shim resolves the legacy
-    # *_txt attrs to the native column names).
+    # Name the fabricated raw via the cell's native schema so the frame matches
+    # the runtime column names the bdf exporter expects.
     cell = cellreader.CellpyCell(initialize=True)
-    headers = cell.headers_normal
+    headers = cell.schema.raw
     n = 6
     raw = pd.DataFrame(
         {
-            headers.test_time_txt: [0.0, 1.0, 2.0, 3.0, 4.0, 5.0],
-            headers.voltage_txt: [3.0, 3.1, 3.2, 3.3, 3.4, 3.5],
-            headers.current_txt: [0.1, 0.1, -0.1, -0.1, 0.0, 0.0],
-            headers.cycle_index_txt: [1, 1, 2, 2, 3, 3],
-            headers.step_index_txt: [1, 2, 1, 2, 1, 2],
+            headers.test_time: [0.0, 1.0, 2.0, 3.0, 4.0, 5.0],
+            headers.potential: [3.0, 3.1, 3.2, 3.3, 3.4, 3.5],
+            headers.current: [0.1, 0.1, -0.1, -0.1, 0.0, 0.0],
+            headers.cycle_num: [1, 1, 2, 2, 3, 3],
+            headers.step_num: [1, 2, 1, 2, 1, 2],
         }
     )
     if with_capacity:
-        raw[headers.charge_capacity_txt] = [0.0, 100.0, 100.0, 0.0, 0.0, 100.0]
-        raw[headers.discharge_capacity_txt] = [0.0, 0.0, 0.0, 100.0, 0.0, 0.0]
+        raw[headers.cumulative_charge_capacity] = [0.0, 100.0, 100.0, 0.0, 0.0, 100.0]
+        raw[headers.cumulative_discharge_capacity] = [0.0, 0.0, 0.0, 100.0, 0.0, 0.0]
     if with_datetime:
-        raw[headers.datetime_txt] = pd.to_datetime(
+        raw["date_time"] = pd.to_datetime(
             [
                 "2024-01-01 00:00:00",
                 "2024-01-01 00:00:01",
@@ -155,8 +154,8 @@ def test_last_cycle_filter(tmp_path: Path) -> None:
 
 def test_missing_required_raises(tmp_path: Path) -> None:
     cell = _make_synthetic_cell()
-    headers = cell.headers_normal
-    cell.data.raw = cell.data.raw.drop(columns=[headers.voltage_txt])
+    headers = cell.schema.raw
+    cell.data.raw = cell.data.raw.drop(columns=[headers.potential])
 
     with pytest.raises(ValueError, match="Voltage / V"):
         cell.to_bdf(tmp_path / "out.bdf.csv")
@@ -291,16 +290,16 @@ def test_extras_unknown_column_warns_and_skips(tmp_path: Path, caplog) -> None:
 def test_extras_skips_columns_already_in_bdf_map(tmp_path: Path) -> None:
     """Naming a mapped raw column under ``extras`` must not duplicate it."""
     cell = _make_synthetic_cell()
-    headers = cell.headers_normal
+    headers = cell.schema.raw
 
     out = cell.to_bdf(
         tmp_path / "out.bdf.csv",
         header_style="machine",
-        extras=[headers.voltage_txt],
+        extras=[headers.potential],
     )
     df = pd.read_csv(out)
 
-    assert headers.voltage_txt not in df.columns
+    assert headers.potential not in df.columns
     assert "voltage_volt" in df.columns
     assert (df.columns == "voltage_volt").sum() == 1
 

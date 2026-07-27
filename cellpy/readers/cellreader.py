@@ -240,9 +240,8 @@ class CellpyCell:
             native_schema (bool): the runtime column schema (native-headers
                 flip, Stage 5a). Defaults to True in cellpy 2: frames are kept
                 in native cellpy-core column names and the polars engine runs
-                directly (no legacy rename sandwich); legacy attribute access
-                (``headers_normal.voltage_txt``, ...) is carried by the D6 shim
-                (``legacy_header_shim``). Set False for the legacy bridge
+                directly (no legacy rename sandwich); use ``self.schema`` for
+                column names. Set False for the legacy bridge
                 (``OldCellpyCellCore``, legacy column names) — the path for v8
                 byte round-trips and ``merge`` until native merge lands (5b).
                 ``get_cap`` / exporters / plotting work on a native cell via the
@@ -320,24 +319,12 @@ class CellpyCell:
         self.cellpy_datadir = internals.OtherPath(config.paths.cellpydatadir)
         self.auto_dirs = config.reader.auto_dirs  # v2.0
 
-        # - headers and instruments
-        # Native-headers flip (Stage 5a): on the native runtime the Data frames
-        # carry native cellpycore column names, so substitute the legacy
-        # Headers* objects with the D6 shims that resolve legacy attribute access
-        # (headers_normal.voltage_txt, ...) to the native column name — with a
-        # DeprecationWarning for renamed columns, silently for columns the flip
-        # leaves unchanged. The legacy path keeps the plain Headers* singletons.
-        if self.native_schema:
-            from cellpy.parameters.legacy_header_shim import build_legacy_shims
-
-            _shims = build_legacy_shims(self.core.schema)
-            self.headers_normal = _shims["headers_normal"]
-            self.headers_summary = _shims["headers_summary"]
-            self.headers_step_table = _shims["headers_step_table"]
-        else:
-            self.headers_normal = headers_normal
-            self.headers_summary = headers_summary
-            self.headers_step_table = headers_step_table
+        # - instruments
+        # The per-instance ``headers_normal`` / ``headers_summary`` /
+        # ``headers_step_table`` attributes were a 2.0 deprecation shim mapping
+        # legacy attribute access (``headers_normal.voltage_txt``, ...) to native
+        # cellpycore column names. Removed in 2.1 — use ``self.schema`` (the
+        # ``CellSchema`` view over ``core.schema``) for column names instead.
         self.instrument_factory = instrument_factory  # injected (#520) or None
         self.register_instrument_readers()
         self.set_instrument()
@@ -4035,7 +4022,7 @@ class CellpyCell:
         """Return a filtered copy of the summary DataFrame.
 
         Thin wrapper around :func:`cellpy.filters.filter_summary` that
-        resolves the rate column names from ``self.headers_summary``.
+        resolves the rate column names from ``self.schema.summary``.
         See the underlying function for the full range semantics; in
         short ``(low, high)`` keeps rows where ``low < value <= high``
         and ``{"value": v, "delta": d}`` keeps rows where
