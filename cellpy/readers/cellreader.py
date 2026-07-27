@@ -1409,7 +1409,7 @@ class CellpyCell:
         Returns a native pandas raw frame on success, or ``None`` to signal
         the caller should keep the ``loader()+to_native`` path. Skips when the
         flip is off, the load is multi-file, or parse/declarations/harmonize
-        fail. Emergency off-switch: ``prms.Reader.use_harmonized_raw = False``.
+        fail. Emergency off-switch: ``config.reader.use_harmonized_raw = False``.
 
         Intended to run **before** ``loader()`` so instruments that cache their
         parse result can reuse it when building the Data shell (one vendor read).

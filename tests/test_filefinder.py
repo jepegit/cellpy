@@ -2,7 +2,7 @@ import pathlib
 
 import pytest
 
-from cellpy import filefinder, log
+from cellpy import config, filefinder, log
 
 log.setup_logging(default_level="DEBUG", testing=True)
 
@@ -11,11 +11,11 @@ log.setup_logging(default_level="DEBUG", testing=True)
 def env(parameters):
     from cellpy.parameters import prms
 
-    prms.Paths.outdatadir = parameters.output_dir
-    prms.Paths.rawdatadir = parameters.raw_data_dir
-    prms.Paths.cellpydatadir = parameters.cellpy_data_dir
-    prms.Paths.db_path = parameters.db_dir
-    prms.Paths.db_filename = parameters.db_file_name
+    config.paths.outdatadir = parameters.output_dir
+    config.paths.rawdatadir = parameters.raw_data_dir
+    config.paths.cellpydatadir = parameters.cellpy_data_dir
+    config.paths.db_path = parameters.db_dir
+    config.paths.db_filename = parameters.db_file_name
 
 
 def test_search_for_files_with_dirs(parameters):
@@ -54,8 +54,8 @@ def test_search_for_res_files(parameters):
 def test_search_for_files_using_prms(parameters):
     from cellpy import prms
 
-    prms.FileNames.reg_exp = ""
-    prms.FileNames.raw_extension = "txt"
+    config.file_names.reg_exp = ""
+    config.file_names.raw_extension = "txt"
     raw_files, cellpy_file = filefinder.search_for_files(
         parameters.run_name_maccor,
         raw_file_dir=parameters.raw_data_dir,

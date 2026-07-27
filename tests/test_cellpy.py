@@ -7,7 +7,7 @@ import pytest
 
 import cellpy.readers.data_structures
 import cellpy.utils.helpers
-from cellpy import log, prms
+from cellpy import config, log
 
 from . import fdv
 
@@ -35,7 +35,7 @@ def setup_module():
 
 def test_logger(clean_dir):
     test_logging_json = os.path.join(fdv.data_dir, "test_logging.json")
-    prms.Paths.filelogdir = fdv.log_dir
+    config.paths.filelogdir = fdv.log_dir
 
     log.setup_logging(testing=True)
     tmp_logger = logging.getLogger()
@@ -135,7 +135,7 @@ def test_load_arbin_res_file_diagnostics(clean_dir, benchmark):
 
     from cellpy import prms
 
-    prms.Reader.diagnostics = True
+    config.reader.diagnostics = True
     f_in = os.path.join(fdv.raw_data_dir, fdv.res_file_name)
     new_file = benchmark(
         cellpy.utils.helpers.load_and_save_resfile, f_in, None, clean_dir

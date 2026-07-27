@@ -452,10 +452,8 @@ def _set_arbin_res_subprocess_exporter(sub_process_path: str):
     Instruments.Arbin.sub_process_path = sub_process_path
 
 
-from cellpy.parameters._shim import _SHIM_SECTIONS, _get_shim_section
-
-
-def __getattr__(name: str):
-    if name in _SHIM_SECTIONS:
-        return _get_shim_section(name)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+# The legacy ``prms.Paths`` / ``prms.Reader`` / ... global-mutation shim
+# (forwarded capitalized section access to ``cellpy.config`` with a
+# DeprecationWarning) was removed in 2.1 (E5, #717). Use ``cellpy.config``
+# directly -- e.g. ``config.paths.rawdatadir = ...`` -- or the scoped
+# ``cellpy.config.override(...)`` context manager.

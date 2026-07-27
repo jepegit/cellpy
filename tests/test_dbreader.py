@@ -3,7 +3,7 @@ import pathlib
 
 import pytest
 
-from cellpy import log
+from cellpy import config, log
 
 log.setup_logging(default_level=logging.DEBUG, testing=True)
 
@@ -27,11 +27,11 @@ def db_reader(parameters):
     from cellpy.parameters import prms
     from cellpy.readers import dbreader
 
-    prms.Paths.outdatadir = parameters.output_dir
-    prms.Paths.rawdatadir = parameters.raw_data_dir
-    prms.Paths.cellpydatadir = parameters.cellpy_data_dir
-    prms.Paths.db_path = parameters.db_dir
-    prms.Paths.db_filename = parameters.db_file_name
+    config.paths.outdatadir = parameters.output_dir
+    config.paths.rawdatadir = parameters.raw_data_dir
+    config.paths.cellpydatadir = parameters.cellpy_data_dir
+    config.paths.db_path = parameters.db_dir
+    config.paths.db_filename = parameters.db_file_name
 
     return dbreader.Reader()
 

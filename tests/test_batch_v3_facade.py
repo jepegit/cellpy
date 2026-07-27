@@ -7,6 +7,7 @@ from cellpy.batch import Batch, combine_summaries, from_journal, load
 from cellpy.batch.journal import FILENAME, Journal
 from cellpy.batch.policy import LoadPolicy, SourcePreference
 from tests import fdv
+from cellpy import config
 
 # the surface the characterization net (#697) pinned on the old Batch
 FACADE_MUST_KEEP = (
@@ -95,13 +96,13 @@ def db_env(parameters, tmp_path, monkeypatch):
     from cellpy import prms
 
     monkeypatch.chdir(tmp_path)
-    prms.Paths.db_filename = parameters.db_file_name
-    prms.Paths.cellpydatadir = str(tmp_path)
-    prms.Paths.outdatadir = str(tmp_path)
-    prms.Paths.rawdatadir = parameters.raw_data_dir
-    prms.Paths.db_path = parameters.db_dir
-    prms.Paths.instrumentdir = parameters.instrument_dir
-    prms.Batch.auto_use_file_list = False
+    config.paths.db_filename = parameters.db_file_name
+    config.paths.cellpydatadir = str(tmp_path)
+    config.paths.outdatadir = str(tmp_path)
+    config.paths.rawdatadir = parameters.raw_data_dir
+    config.paths.db_path = parameters.db_dir
+    config.paths.instrumentdir = parameters.instrument_dir
+    config.batch.auto_use_file_list = False
     return parameters
 
 
