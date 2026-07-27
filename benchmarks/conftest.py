@@ -9,6 +9,7 @@ import sys
 import pytest
 
 from benchmarks.paths import COMMITTED_BASELINE, REPO_ROOT, RES_FILE, V8_FILE
+from cellpy import config
 
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
@@ -71,19 +72,19 @@ def batch_twenty_cells():
     """Batch with 20 cells loaded from the same v8 oracle (unique virtual file names)."""
     import cellpy
     import polars as pl
-    from cellpy import log, prms
+    from cellpy import log
     from cellpy.batch import Batch, Journal
     from cellpy.batch.journal import FILENAME
     from cellpy.batch.store import CellStore
     from tests import fdv
 
     log.setup_logging(testing=True)
-    prms.Paths.rawdatadir = fdv.raw_data_dir
-    prms.Paths.cellpydatadir = fdv.cellpy_data_dir
-    prms.Paths.db_path = fdv.db_dir
-    prms.Paths.db_filename = fdv.db_file_name
-    prms.Paths.outdatadir = fdv.output_dir
-    prms.Batch.auto_use_file_list = False
+    config.paths.rawdatadir = fdv.raw_data_dir
+    config.paths.cellpydatadir = fdv.cellpy_data_dir
+    config.paths.db_path = fdv.db_dir
+    config.paths.db_filename = fdv.db_file_name
+    config.paths.outdatadir = fdv.output_dir
+    config.batch.auto_use_file_list = False
 
     cells = {}
     for i in range(20):

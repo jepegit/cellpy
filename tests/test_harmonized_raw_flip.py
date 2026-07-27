@@ -1,6 +1,6 @@
 """The harmonized-raw flip (Phase B/C / #560).
 
-``prms.Reader.use_harmonized_raw`` (default **on** as of Phase C) routes
+``config.reader.use_harmonized_raw`` (default **on** as of Phase C) routes
 single-file raw loading through the two-stage ``harmonize(parse())`` pipeline.
 Set it to ``False`` for the emergency ``loader()+to_native`` fallback.
 

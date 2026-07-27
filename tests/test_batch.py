@@ -9,7 +9,7 @@ import time
 import pandas
 import pytest
 
-from cellpy import log, prms
+from cellpy import config, log
 from cellpy.utils import batch as batch
 from cellpy.utils import helpers
 from cellpy.batch import _dbengine
@@ -36,18 +36,18 @@ def batch_instance(clean_dir, parameters):
     os.chdir(clean_dir)
 
     try:
-        prms.Paths.db_filename = parameters.db_file_name
-        prms.Paths.cellpydatadir = clean_dir
-        prms.Paths.outdatadir = clean_dir
-        prms.Paths.rawdatadir = parameters.raw_data_dir
-        prms.Paths.db_path = parameters.db_dir
-        prms.Paths.filelogdir = clean_dir
-        prms.Paths.batchfiledir = clean_dir
-        prms.Paths.notebookdir = clean_dir
-        prms.Paths.instrumentdir = parameters.instrument_dir
-        prms.Paths.templatedir = parameters.template_dir
-        prms.Paths.examplesdir = parameters.examples_dir
-        prms.Batch.auto_use_file_list = False
+        config.paths.db_filename = parameters.db_file_name
+        config.paths.cellpydatadir = clean_dir
+        config.paths.outdatadir = clean_dir
+        config.paths.rawdatadir = parameters.raw_data_dir
+        config.paths.db_path = parameters.db_dir
+        config.paths.filelogdir = clean_dir
+        config.paths.batchfiledir = clean_dir
+        config.paths.notebookdir = clean_dir
+        config.paths.instrumentdir = parameters.instrument_dir
+        config.paths.templatedir = parameters.template_dir
+        config.paths.examplesdir = parameters.examples_dir
+        config.batch.auto_use_file_list = False
         yield batch
     finally:
         # Restore original working directory
@@ -666,5 +666,5 @@ def test_batch_figure_structure_matches_snapshot(populated_batch):
 
 # def test_iterate_folder(batch_instance):
 # # Since the batch-files contains full paths I need to figure out how to make a custom json-file for the test.
-#     folder_name = prms.Paths.batchfiledir
+#     folder_name = config.paths.batchfiledir
 #     batch.iterate_batches(folder_name, default_log_level="CRITICAL")

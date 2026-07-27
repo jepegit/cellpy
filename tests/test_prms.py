@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from cellpy import log, prmreader, prms
+from cellpy import config, log, prmreader
 from cellpy.internals.connections import OtherPath
 
 from .prms_support import (
@@ -287,14 +287,14 @@ def test_save_otherpath_prms_cellpy(clean_dir):
     with open(tmp_config_file_name, "w") as f:
         f.write(config_file2_txt)
     prmreader._read_prm_file(tmp_config_file_name)
-    assert isinstance(prms.Paths.rawdatadir, OtherPath)
-    assert isinstance(prms.Paths.cellpydatadir, OtherPath)
-    assert prms.Paths.rawdatadir.full_path == "scp://my@server.no/home/me/data/raw"
+    assert isinstance(config.paths.rawdatadir, OtherPath)
+    assert isinstance(config.paths.cellpydatadir, OtherPath)
+    assert config.paths.rawdatadir.full_path == "scp://my@server.no/home/me/data/raw"
     prmreader._write_prm_file(tmp_config_file_name)
     prmreader._read_prm_file(tmp_config_file_name)
-    assert isinstance(prms.Paths.rawdatadir, OtherPath)
-    assert isinstance(prms.Paths.cellpydatadir, OtherPath)
-    assert prms.Paths.rawdatadir.full_path == "scp://my@server.no/home/me/data/raw"
+    assert isinstance(config.paths.rawdatadir, OtherPath)
+    assert isinstance(config.paths.cellpydatadir, OtherPath)
+    assert config.paths.rawdatadir.full_path == "scp://my@server.no/home/me/data/raw"
 
 
 def test_save_prm_file(clean_dir):
@@ -304,35 +304,35 @@ def test_save_prm_file(clean_dir):
         f.write(config_file_txt)
 
     prmreader._read_prm_file(tmp_config_file_name)
-    prms.Instruments.tester = "biologics_mpr"
-    prms.Reader.cycle_mode = "cathode"
+    config.instruments.tester = "biologics_mpr"
+    config.reader.cycle_mode = "cathode"
     prmreader._write_prm_file(tmp_config_file_name)
     prmreader._read_prm_file(tmp_config_file_name)
-    assert prms.Instruments.tester == "biologics_mpr"
+    assert config.instruments.tester == "biologics_mpr"
 
 
 def test_dataclass_prms_type_hint():
     from cellpy.internals.connections import OtherPath
 
-    assert isinstance(prms.Paths.outdatadir, (os.PathLike, str))
-    prms.Paths.outdatadir = r"C:\my_data\processed"
-    assert isinstance(prms.Paths.outdatadir, (os.PathLike, str))
-    prms.Paths.outdatadir = Path(r"C:\my_data\processed")
-    assert isinstance(prms.Paths.outdatadir, (os.PathLike, str))
-    prms.Paths.rawdatadir = OtherPath(r"C:\my_data\processed")
-    assert isinstance(prms.Paths.rawdatadir, (os.PathLike, str))
+    assert isinstance(config.paths.outdatadir, (os.PathLike, str))
+    config.paths.outdatadir = r"C:\my_data\processed"
+    assert isinstance(config.paths.outdatadir, (os.PathLike, str))
+    config.paths.outdatadir = Path(r"C:\my_data\processed")
+    assert isinstance(config.paths.outdatadir, (os.PathLike, str))
+    config.paths.rawdatadir = OtherPath(r"C:\my_data\processed")
+    assert isinstance(config.paths.rawdatadir, (os.PathLike, str))
 
 
 def test_dataclass_otherpath_prms_instruments():
     from cellpy.internals.connections import OtherPath
 
-    assert isinstance(prms.Paths.rawdatadir, OtherPath)
-    assert isinstance(prms.Paths.cellpydatadir, OtherPath)
+    assert isinstance(config.paths.rawdatadir, OtherPath)
+    assert isinstance(config.paths.cellpydatadir, OtherPath)
 
 
 def test_dataclass_prms_instruments_subclass():
-    print(prms.Instruments.Arbin)
-    detect_subprocess_need = prms.Instruments.Arbin.detect_subprocess_need
+    print(config.instruments.Arbin)
+    detect_subprocess_need = config.instruments.Arbin.detect_subprocess_need
     print(detect_subprocess_need)
 
 
@@ -350,22 +350,22 @@ def test_prms_config_full_section_roundtrip(clean_dir):
     write_minimal_prm_file(Path(tmp_config), config_file_txt)
 
     prmreader._read_prm_file(tmp_config)
-    prms.Reader.cycle_mode = "cathode"
-    prms.Batch.backend = "bokeh"
-    prms.DbCols.project = "roundtrip_project"
-    prms.Materials.default_material = "graphite"
-    prms.Instruments.tester = "maccor"
-    prms.Paths.outdatadir = str(Path(clean_dir) / "custom_out")
+    config.reader.cycle_mode = "cathode"
+    config.batch.backend = "bokeh"
+    config.db_cols.project = "roundtrip_project"
+    config.defaults.materials.default_material = "graphite"
+    config.instruments.tester = "maccor"
+    config.paths.outdatadir = str(Path(clean_dir) / "custom_out")
 
     prmreader._write_prm_file(tmp_config)
     prmreader._read_prm_file(tmp_config)
 
-    assert prms.Reader.cycle_mode == "cathode"
-    assert prms.Batch.backend == "bokeh"
-    assert prms.DbCols.project == "roundtrip_project"
-    assert prms.Materials.default_material == "graphite"
-    assert prms.Instruments.tester == "maccor"
-    assert str(prms.Paths.outdatadir).endswith("custom_out")
+    assert config.reader.cycle_mode == "cathode"
+    assert config.batch.backend == "bokeh"
+    assert config.db_cols.project == "roundtrip_project"
+    assert config.defaults.materials.default_material == "graphite"
+    assert config.instruments.tester == "maccor"
+    assert str(config.paths.outdatadir).endswith("custom_out")
 
     reloaded = prmreader._read_prm_file_without_updating(tmp_config)
     for section in ("Paths", "Reader", "Batch", "DbCols", "Materials", "Instruments"):
@@ -378,16 +378,16 @@ def test_prms_precedence_file_runtime_write(clean_dir):
     write_minimal_prm_file(Path(tmp_config), config_file_txt)
 
     prmreader._read_prm_file(tmp_config)
-    prms.Reader.cycle_mode = "cathode"
-    assert prms.Reader.cycle_mode == "cathode"
+    config.reader.cycle_mode = "cathode"
+    assert config.reader.cycle_mode == "cathode"
 
     prmreader._read_prm_file(tmp_config)
-    assert prms.Reader.cycle_mode == "anode"
+    assert config.reader.cycle_mode == "anode"
 
-    prms.Reader.cycle_mode = "cathode"
+    config.reader.cycle_mode = "cathode"
     prmreader._write_prm_file(tmp_config)
     prmreader._read_prm_file(tmp_config)
-    assert prms.Reader.cycle_mode == "cathode"
+    assert config.reader.cycle_mode == "cathode"
 
     on_disk = prmreader._read_prm_file_without_updating(tmp_config)
     assert on_disk["Reader"]["cycle_mode"] == "cathode"
@@ -415,12 +415,12 @@ Paths:
     write_minimal_prm_file(Path(tmp_config), config_txt)
     prmreader._read_prm_file(tmp_config, resolve_paths=True)
 
-    assert isinstance(prms.Paths.rawdatadir, OtherPath)
-    assert isinstance(prms.Paths.cellpydatadir, OtherPath)
-    assert isinstance(prms.Paths.db_filename, str)
-    assert Path(prms.Paths.outdatadir).is_absolute()
+    assert isinstance(config.paths.rawdatadir, OtherPath)
+    assert isinstance(config.paths.cellpydatadir, OtherPath)
+    assert isinstance(config.paths.db_filename, str)
+    assert Path(config.paths.outdatadir).is_absolute()
 
-    paths_dict = prmreader._convert_paths_to_dict(prms.Paths)
+    paths_dict = prmreader._convert_paths_to_dict(config.paths)
     assert "rel_raw" in paths_dict["rawdatadir"]
 
 
@@ -445,7 +445,7 @@ Paths:
     tmp_config = os.path.join(clean_dir, "otherpath_resolve.yml")
     write_minimal_prm_file(Path(tmp_config), config_txt)
     prmreader._read_prm_file(tmp_config, resolve_paths=True)
-    assert Path(prms.Paths.rawdatadir.raw_path).is_absolute()
+    assert Path(config.paths.rawdatadir.raw_path).is_absolute()
 
 
 @pytest.mark.essential
@@ -464,7 +464,7 @@ def test_prms_env_file_loads_secrets(clean_dir, parameters, monkeypatch):
         ),
         encoding="utf-8",
     )
-    prms.Paths.env_file = env_path
+    config.paths.env_file = env_path
     prmreader._load_env_file()
 
     assert os.getenv("CELLPY_USER") == parameters.env_cellpy_user
@@ -481,7 +481,7 @@ def test_prms_env_reaches_otherpath_connection_info(clean_dir, parameters, monke
         f"CELLPY_PASSWORD={parameters.env_cellpy_password}\n",
         encoding="utf-8",
     )
-    prms.Paths.env_file = env_path
+    config.paths.env_file = env_path
     prmreader._load_env_file()
 
     remote = OtherPath(

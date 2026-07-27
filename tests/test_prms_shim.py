@@ -1,8 +1,7 @@
-"""Tests for the deprecated prms shim and legacy YAML fallback (issue #453)."""
+"""Tests for the removed prms shim (E5, #717) and legacy YAML fallback (#453)."""
 
 from __future__ import annotations
 
-import warnings
 from pathlib import Path
 
 import pytest
@@ -10,7 +9,6 @@ import pytest
 from cellpy.config import LoadOptions, reset_session
 from cellpy.config.loader import load_config
 from cellpy.config.sources import SourceLayer
-from cellpy import _deprecation
 from cellpy.parameters import prms
 from cellpy.parameters import prmreader
 from tests.prms_support import write_minimal_prm_file
@@ -24,15 +22,24 @@ def _reset_config_session():
 
 
 @pytest.mark.essential
-def test_prms_shim_forwards_and_warns():
-    _deprecation._WARNED_SITES.clear()
-    prmreader.initialize()
-    with warnings.catch_warnings(record=True) as caught:
-        warnings.simplefilter("always", DeprecationWarning)
-        prms.Reader.cycle_mode = "cathode"
-        assert prms.Reader.cycle_mode == "cathode"
+@pytest.mark.parametrize(
+    "section", ["Paths", "Reader", "Db", "Batch", "Instruments", "Materials"]
+)
+def test_prms_section_shim_removed(section):
+    """The ``prms.<Section>`` global-mutation shim was removed in 2.1 (E5, #717);
+    use ``cellpy.config`` (e.g. ``config.reader.cycle_mode = ...``) instead."""
+    with pytest.raises(AttributeError):
+        getattr(prms, section)
 
-    assert any("prms.Reader" in str(item.message) for item in caught)
+
+@pytest.mark.essential
+def test_config_is_the_replacement():
+    """``cellpy.config`` is the sanctioned way to read/mutate settings."""
+    from cellpy import config
+
+    prmreader.initialize()
+    config.reader.cycle_mode = "cathode"
+    assert config.reader.cycle_mode == "cathode"
 
 
 @pytest.mark.essential

@@ -4,7 +4,7 @@ import tempfile
 
 import pytest
 
-from cellpy import get, log, prms
+from cellpy import config, get, log
 
 log.setup_logging(default_level=logging.DEBUG, testing=True)
 
@@ -60,7 +60,7 @@ def test_cellpy_get_model_one_custom_instrument_file(parameters):
     # TODO: create defaults for missing parameters in the custom instrument file.
 
     instrument = parameters.custom_instrument
-    prms.Paths.instrumentdir = parameters.instrument_dir
+    config.paths.instrumentdir = parameters.instrument_dir
     logging.debug(f"directory: {parameters.instrument_dir}")
     logging.debug(f"instrument file: {parameters.custom_instrument}")
     c = get(
@@ -84,7 +84,7 @@ def test_cellpy_get(parameters):
 # def test_cellpy_get_2(parameters):
 #     from cellpy import prms
 #
-#     prms.Instruments.Maccor.format_params = "two"
+#     config.instruments.Maccor.format_params = "two"
 #     instrument = "maccor_txt"
 #     c = get(parameters.mcc_file_path2, instrument=instrument)
 #     assert len(c.data.raw) == 6704

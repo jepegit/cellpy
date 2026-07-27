@@ -26,7 +26,6 @@ from cellpy.config.loader import LoadOptions
 from cellpy.config.session import get_config, reload
 from cellpy.exceptions import ConfigFileNotRead, ConfigFileNotWritten
 from cellpy.parameters import prms
-from cellpy.parameters._shim import _SHIM_SECTIONS
 from cellpy.parameters.internal_settings import OTHERPATHS
 from cellpy.internals.connections import OtherPath
 
@@ -168,10 +167,7 @@ def _convert_to_dict(x):
 
 def _convert_paths_to_dict(x):
     from cellpy.config.models import PathsConfig
-    from cellpy.parameters._shim import _SectionProxy
 
-    if isinstance(x, _SectionProxy):
-        x = x._target()
     if isinstance(x, PathsConfig):
         dictionary = {}
         for key in PathsConfig.model_fields:
@@ -298,7 +294,7 @@ def info():
         "CellInfo": lambda: cfg.defaults.cell_info,
         "Materials": lambda: cfg.defaults.materials,
     }
-    for legacy_name in sorted(_SHIM_SECTIONS):
+    for legacy_name in sorted(section_getters):
         section = section_getters[legacy_name]()
         print(f" {legacy_name} ".center(80, "-"))
         print(section.model_dump(mode="json"))

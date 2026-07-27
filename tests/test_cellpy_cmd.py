@@ -7,7 +7,7 @@ import pytest
 from typer.testing import CliRunner
 
 import cellpy
-from cellpy import cli, prmreader
+from cellpy import config, cli, prmreader
 from cellpy import prms, log
 
 NUMBER_OF_DIRS = 11
@@ -289,7 +289,7 @@ def test_cli_setup_creates_dirs_and_files(tmp_path, monkeypatch):
     test_user = "inventory_user"
 
     monkeypatch.setattr(prmreader, "get_user_dir", lambda: tmp_path)
-    prms.Paths.env_file = tmp_path / ".env_cellpy"
+    config.paths.env_file = tmp_path / ".env_cellpy"
 
     result = runner.invoke(
         cli.cli,
@@ -342,7 +342,7 @@ def test_cli_new(tmp_path):
     runner = CliRunner()
     notebookdir = tmp_path / "NOTEBOOKS"
     notebookdir.mkdir(parents=True, exist_ok=True)
-    prms.Paths.notebookdir = notebookdir
+    config.paths.notebookdir = notebookdir
 
     interactive_prms = ["1", "another_project", "yes"]
     with isolated_filesystem():
@@ -467,7 +467,7 @@ def test_convert_cli_rejects_an_unknown_target(tmp_path):
 def test_cli_new_different_and_missing_default(tmp_path):
     logging.debug("\nSTARTING TEST")
     runner = CliRunner()
-    prms.Batch.template = "missing_template"
+    config.batch.template = "missing_template"
     with isolated_filesystem():
         result = runner.invoke(
             cli.cli,

@@ -9,7 +9,7 @@ import tempfile
 import pytest
 
 import cellpy.readers.data_structures
-from cellpy import log, prms
+from cellpy import config, log, prms
 from cellpy.exceptions import DeprecatedFeature, WrongFileVersion
 from cellpy.parameters.internal_settings import get_headers_normal, get_headers_summary
 from cellpy.internals.connections import OtherPath
@@ -86,11 +86,11 @@ def test_raw_data_data_point(cellpy_data_instance, parameters):
 
 def test_raw_limited_loaded_cycles_prm(cellpy_data_instance, parameters):
     try:
-        prms.Reader.limit_loaded_cycles = [2, 6]
+        config.reader.limit_loaded_cycles = [2, 6]
         cellpy_data_instance.from_raw(parameters.res_file_path)
         cycles = cellpy_data_instance.get_cycle_numbers()
     finally:
-        prms.Reader.limit_loaded_cycles = None
+        config.reader.limit_loaded_cycles = None
 
     assert all(cycles == [3, 4, 5])
 
@@ -1001,7 +1001,7 @@ def test_load_custom_default(cellpy_data_instance, parameters):
     file_name = parameters.custom_file_paths
     instrument_file = parameters.custom_instrument_definitions_file
     # implement this also:
-    # prms.Instruments.custom_instrument_definitions_file = instrument_file
+    # config.instruments.custom_instrument_definitions_file = instrument_file
     cellpy_data_instance.set_instrument("custom", instrument_file=instrument_file)
     cellpy_data_instance.from_raw(file_name)
     cellpy_data_instance.make_step_table()
@@ -1113,14 +1113,14 @@ def test_get_advanced(parameters):
 def test_get_arbin_res_mdbtools(parameters):
     from cellpy import prms
 
-    prms.Instruments.Arbin.use_subprocess = True
-    prms.Instruments.Arbin.sub_process_path = (
+    config.instruments.Arbin.use_subprocess = True
+    config.instruments.Arbin.sub_process_path = (
         r"C:\scripting\cellpy_utilities\cellpy_utils\mdbtools-win\mdb-export.exe"
     )
     c = cellpy.get(
         parameters.res_file_path, instrument="arbin_res", testing=True, mass=0.035
     )
-    prms.Instruments.Arbin.use_subprocess = False
+    config.instruments.Arbin.use_subprocess = False
 
 
 @pytest.mark.skip(reason="only run locally")
@@ -1134,7 +1134,7 @@ def test_get_arbin_res_mdbtools_short_cut(parameters):
     c = cellpy.get(
         parameters.res_file_path, instrument="arbin_res", testing=True, mass=0.035
     )
-    prms.Instruments.Arbin.use_subprocess = False
+    config.instruments.Arbin.use_subprocess = False
     assert c.data.summary.shape == (18, 61)
 
 
