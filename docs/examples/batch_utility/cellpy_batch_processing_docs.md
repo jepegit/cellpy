@@ -106,55 +106,185 @@ b.pages
 
 
 
-                        argument      mass  total_mass   loading      nom_cap  \
-    filename                                                                    
-    20180418_sf033_2_cc     None  0.337149        0.56  0.190787  3118.817466   
-    20180418_sf033_3_cc     None  0.343169        0.57  0.194194  3118.817466   
-    20180418_sf033_4_cc     None  0.288984        0.48  0.163532  3118.817466   
-    20180418_sf033_5_cc     None  0.295005        0.49  0.166939  3118.817466   
-    20180420_sf036_2_cc     None  0.572383        0.95  0.323902  3122.348698   
-    20180420_sf036_3_cc     None  0.716985        1.19  0.405730  3122.348698   
-    20180420_sf036_4_cc     None  0.584433        0.97  0.330721  3122.348698   
-    
-                             area experiment  fixed    label cell_type instrument  \
-    filename                                                                        
-    20180418_sf033_2_cc  1.767146    cycling      0  sf033_2     anode  arbin_res   
-    20180418_sf033_3_cc  1.767146    cycling      0  sf033_3     anode  arbin_res   
-    20180418_sf033_4_cc  1.767146    cycling      0  sf033_4     anode  arbin_res   
-    20180418_sf033_5_cc  1.767146    cycling      0  sf033_5     anode  arbin_res   
-    20180420_sf036_2_cc  1.767146    cycling      0  sf036_2     anode  arbin_res   
-    20180420_sf036_3_cc  1.767146    cycling      0  sf036_3     anode  arbin_res   
-    20180420_sf036_4_cc  1.767146    cycling      0  sf036_4     anode  arbin_res   
-    
-                                                raw_file_names  \
-    filename                                                     
-    20180418_sf033_2_cc  [data/raw\20180418_sf033_2_cc_01.res]   
-    20180418_sf033_3_cc  [data/raw\20180418_sf033_3_cc_01.res]   
-    20180418_sf033_4_cc  [data/raw\20180418_sf033_4_cc_01.res]   
-    20180418_sf033_5_cc  [data/raw\20180418_sf033_5_cc_01.res]   
-    20180420_sf036_2_cc  [data/raw\20180420_sf036_2_cc_01.res]   
-    20180420_sf036_3_cc  [data/raw\20180420_sf036_3_cc_01.res]   
-    20180420_sf036_4_cc  [data/raw\20180420_sf036_4_cc_01.res]   
-    
-                                                cellpy_file_name  \
-    filename                                                       
-    20180418_sf033_2_cc  data/cellpyfiles/20180418_sf033_2_cc.h5   
-    20180418_sf033_3_cc  data/cellpyfiles/20180418_sf033_3_cc.h5   
-    20180418_sf033_4_cc  data/cellpyfiles/20180418_sf033_4_cc.h5   
-    20180418_sf033_5_cc  data/cellpyfiles/20180418_sf033_5_cc.h5   
-    20180420_sf036_2_cc  data/cellpyfiles/20180420_sf036_2_cc.h5   
-    20180420_sf036_3_cc  data/cellpyfiles/20180420_sf036_3_cc.h5   
-    20180420_sf036_4_cc  data/cellpyfiles/20180420_sf036_4_cc.h5   
-    
-                                            comment  group  sub_group  
-    filename                                                           
-    20180418_sf033_2_cc  SF12 Filter D micro-slurry      1          1  
-    20180418_sf033_3_cc  SF12 Filter D micro-slurry      1          2  
-    20180418_sf033_4_cc  SF12 Filter D micro-slurry      1          3  
-    20180418_sf033_5_cc  SF12 Filter D micro-slurry      1          4  
-    20180420_sf036_2_cc  SF12 Filter 1 micro-slurry      2          1  
-    20180420_sf036_3_cc  SF12 Filter 1 micro-slurry      2          2  
-    20180420_sf036_4_cc  SF12 Filter 1 micro-slurry      2          3  
+<div class="cellpy-dataframe">
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>argument</th>
+      <th>mass</th>
+      <th>total_mass</th>
+      <th>loading</th>
+      <th>nom_cap</th>
+      <th>area</th>
+      <th>experiment</th>
+      <th>fixed</th>
+      <th>label</th>
+      <th>cell_type</th>
+      <th>instrument</th>
+      <th>raw_file_names</th>
+      <th>cellpy_file_name</th>
+      <th>comment</th>
+      <th>group</th>
+      <th>sub_group</th>
+    </tr>
+    <tr>
+      <th>filename</th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>20180418_sf033_2_cc</th>
+      <td>None</td>
+      <td>0.337149</td>
+      <td>0.56</td>
+      <td>0.190787</td>
+      <td>3118.817466</td>
+      <td>1.767146</td>
+      <td>cycling</td>
+      <td>0</td>
+      <td>sf033_2</td>
+      <td>anode</td>
+      <td>arbin_res</td>
+      <td>[data/raw\20180418_sf033_2_cc_01.res]</td>
+      <td>data/cellpyfiles/20180418_sf033_2_cc.h5</td>
+      <td>SF12 Filter D micro-slurry</td>
+      <td>1</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>20180418_sf033_3_cc</th>
+      <td>None</td>
+      <td>0.343169</td>
+      <td>0.57</td>
+      <td>0.194194</td>
+      <td>3118.817466</td>
+      <td>1.767146</td>
+      <td>cycling</td>
+      <td>0</td>
+      <td>sf033_3</td>
+      <td>anode</td>
+      <td>arbin_res</td>
+      <td>[data/raw\20180418_sf033_3_cc_01.res]</td>
+      <td>data/cellpyfiles/20180418_sf033_3_cc.h5</td>
+      <td>SF12 Filter D micro-slurry</td>
+      <td>1</td>
+      <td>2</td>
+    </tr>
+    <tr>
+      <th>20180418_sf033_4_cc</th>
+      <td>None</td>
+      <td>0.288984</td>
+      <td>0.48</td>
+      <td>0.163532</td>
+      <td>3118.817466</td>
+      <td>1.767146</td>
+      <td>cycling</td>
+      <td>0</td>
+      <td>sf033_4</td>
+      <td>anode</td>
+      <td>arbin_res</td>
+      <td>[data/raw\20180418_sf033_4_cc_01.res]</td>
+      <td>data/cellpyfiles/20180418_sf033_4_cc.h5</td>
+      <td>SF12 Filter D micro-slurry</td>
+      <td>1</td>
+      <td>3</td>
+    </tr>
+    <tr>
+      <th>20180418_sf033_5_cc</th>
+      <td>None</td>
+      <td>0.295005</td>
+      <td>0.49</td>
+      <td>0.166939</td>
+      <td>3118.817466</td>
+      <td>1.767146</td>
+      <td>cycling</td>
+      <td>0</td>
+      <td>sf033_5</td>
+      <td>anode</td>
+      <td>arbin_res</td>
+      <td>[data/raw\20180418_sf033_5_cc_01.res]</td>
+      <td>data/cellpyfiles/20180418_sf033_5_cc.h5</td>
+      <td>SF12 Filter D micro-slurry</td>
+      <td>1</td>
+      <td>4</td>
+    </tr>
+    <tr>
+      <th>20180420_sf036_2_cc</th>
+      <td>None</td>
+      <td>0.572383</td>
+      <td>0.95</td>
+      <td>0.323902</td>
+      <td>3122.348698</td>
+      <td>1.767146</td>
+      <td>cycling</td>
+      <td>0</td>
+      <td>sf036_2</td>
+      <td>anode</td>
+      <td>arbin_res</td>
+      <td>[data/raw\20180420_sf036_2_cc_01.res]</td>
+      <td>data/cellpyfiles/20180420_sf036_2_cc.h5</td>
+      <td>SF12 Filter 1 micro-slurry</td>
+      <td>2</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>20180420_sf036_3_cc</th>
+      <td>None</td>
+      <td>0.716985</td>
+      <td>1.19</td>
+      <td>0.405730</td>
+      <td>3122.348698</td>
+      <td>1.767146</td>
+      <td>cycling</td>
+      <td>0</td>
+      <td>sf036_3</td>
+      <td>anode</td>
+      <td>arbin_res</td>
+      <td>[data/raw\20180420_sf036_3_cc_01.res]</td>
+      <td>data/cellpyfiles/20180420_sf036_3_cc.h5</td>
+      <td>SF12 Filter 1 micro-slurry</td>
+      <td>2</td>
+      <td>2</td>
+    </tr>
+    <tr>
+      <th>20180420_sf036_4_cc</th>
+      <td>None</td>
+      <td>0.584433</td>
+      <td>0.97</td>
+      <td>0.330721</td>
+      <td>3122.348698</td>
+      <td>1.767146</td>
+      <td>cycling</td>
+      <td>0</td>
+      <td>sf036_4</td>
+      <td>anode</td>
+      <td>arbin_res</td>
+      <td>[data/raw\20180420_sf036_4_cc_01.res]</td>
+      <td>data/cellpyfiles/20180420_sf036_4_cc.h5</td>
+      <td>SF12 Filter 1 micro-slurry</td>
+      <td>2</td>
+      <td>3</td>
+    </tr>
+  </tbody>
+</table>
+</div>
 
 
 
@@ -184,7 +314,158 @@ b.report()
 
 
 
-    <pandas.io.formats.style.Styler at 0x20ad7673ed0>
+<div class="cellpy-dataframe">
+<table id="T_7d5d5">
+  <thead>
+    <tr>
+      <th class="blank level0" >&nbsp;</th>
+      <th id="T_7d5d5_level0_col0" class="col_heading level0 col0" >mass</th>
+      <th id="T_7d5d5_level0_col1" class="col_heading level0 col1" >total_mass</th>
+      <th id="T_7d5d5_level0_col2" class="col_heading level0 col2" >loading</th>
+      <th id="T_7d5d5_level0_col3" class="col_heading level0 col3" >nom_cap</th>
+      <th id="T_7d5d5_level0_col4" class="col_heading level0 col4" >empty</th>
+      <th id="T_7d5d5_level0_col5" class="col_heading level0 col5" >raw_rows</th>
+      <th id="T_7d5d5_level0_col6" class="col_heading level0 col6" >steps_rows</th>
+      <th id="T_7d5d5_level0_col7" class="col_heading level0 col7" >summary_rows</th>
+      <th id="T_7d5d5_level0_col8" class="col_heading level0 col8" >last_cycle</th>
+      <th id="T_7d5d5_level0_col9" class="col_heading level0 col9" >average_capacity</th>
+      <th id="T_7d5d5_level0_col10" class="col_heading level0 col10" >max_capacity</th>
+      <th id="T_7d5d5_level0_col11" class="col_heading level0 col11" >min_capacity</th>
+      <th id="T_7d5d5_level0_col12" class="col_heading level0 col12" >std_capacity</th>
+    </tr>
+    <tr>
+      <th class="index_name level0" >filename</th>
+      <th class="blank col0" >&nbsp;</th>
+      <th class="blank col1" >&nbsp;</th>
+      <th class="blank col2" >&nbsp;</th>
+      <th class="blank col3" >&nbsp;</th>
+      <th class="blank col4" >&nbsp;</th>
+      <th class="blank col5" >&nbsp;</th>
+      <th class="blank col6" >&nbsp;</th>
+      <th class="blank col7" >&nbsp;</th>
+      <th class="blank col8" >&nbsp;</th>
+      <th class="blank col9" >&nbsp;</th>
+      <th class="blank col10" >&nbsp;</th>
+      <th class="blank col11" >&nbsp;</th>
+      <th class="blank col12" >&nbsp;</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th id="T_7d5d5_level0_row0" class="row_heading level0 row0" >20180418_sf033_2_cc</th>
+      <td id="T_7d5d5_row0_col0" class="data row0 col0" >0.337149</td>
+      <td id="T_7d5d5_row0_col1" class="data row0 col1" >0.560000</td>
+      <td id="T_7d5d5_row0_col2" class="data row0 col2" >0.190787</td>
+      <td id="T_7d5d5_row0_col3" class="data row0 col3" >3118.817466</td>
+      <td id="T_7d5d5_row0_col4" class="data row0 col4" >False</td>
+      <td id="T_7d5d5_row0_col5" class="data row0 col5" >160059</td>
+      <td id="T_7d5d5_row0_col6" class="data row0 col6" >1578</td>
+      <td id="T_7d5d5_row0_col7" class="data row0 col7" >304</td>
+      <td id="T_7d5d5_row0_col8" class="data row0 col8" >304</td>
+      <td id="T_7d5d5_row0_col9" class="data row0 col9" >1567.198001</td>
+      <td id="T_7d5d5_row0_col10" class="data row0 col10" >2079.481739</td>
+      <td id="T_7d5d5_row0_col11" class="data row0 col11" >0.000000</td>
+      <td id="T_7d5d5_row0_col12" class="data row0 col12" >209.150717</td>
+    </tr>
+    <tr>
+      <th id="T_7d5d5_level0_row1" class="row_heading level0 row1" >20180418_sf033_3_cc</th>
+      <td id="T_7d5d5_row1_col0" class="data row1 col0" >0.343169</td>
+      <td id="T_7d5d5_row1_col1" class="data row1 col1" >0.570000</td>
+      <td id="T_7d5d5_row1_col2" class="data row1 col2" >0.194194</td>
+      <td id="T_7d5d5_row1_col3" class="data row1 col3" >3118.817466</td>
+      <td id="T_7d5d5_row1_col4" class="data row1 col4" >False</td>
+      <td id="T_7d5d5_row1_col5" class="data row1 col5" >160980</td>
+      <td id="T_7d5d5_row1_col6" class="data row1 col6" >1587</td>
+      <td id="T_7d5d5_row1_col7" class="data row1 col7" >304</td>
+      <td id="T_7d5d5_row1_col8" class="data row1 col8" >304</td>
+      <td id="T_7d5d5_row1_col9" class="data row1 col9" >1597.665927</td>
+      <td id="T_7d5d5_row1_col10" class="data row1 col10" >2103.339517</td>
+      <td id="T_7d5d5_row1_col11" class="data row1 col11" >0.000000</td>
+      <td id="T_7d5d5_row1_col12" class="data row1 col12" >205.046181</td>
+    </tr>
+    <tr>
+      <th id="T_7d5d5_level0_row2" class="row_heading level0 row2" >20180418_sf033_4_cc</th>
+      <td id="T_7d5d5_row2_col0" class="data row2 col0" >0.288984</td>
+      <td id="T_7d5d5_row2_col1" class="data row2 col1" >0.480000</td>
+      <td id="T_7d5d5_row2_col2" class="data row2 col2" >0.163532</td>
+      <td id="T_7d5d5_row2_col3" class="data row2 col3" >3118.817466</td>
+      <td id="T_7d5d5_row2_col4" class="data row2 col4" >False</td>
+      <td id="T_7d5d5_row2_col5" class="data row2 col5" >155754</td>
+      <td id="T_7d5d5_row2_col6" class="data row2 col6" >1567</td>
+      <td id="T_7d5d5_row2_col7" class="data row2 col7" >304</td>
+      <td id="T_7d5d5_row2_col8" class="data row2 col8" >304</td>
+      <td id="T_7d5d5_row2_col9" class="data row2 col9" >1493.788287</td>
+      <td id="T_7d5d5_row2_col10" class="data row2 col10" >1952.530597</td>
+      <td id="T_7d5d5_row2_col11" class="data row2 col11" >0.000000</td>
+      <td id="T_7d5d5_row2_col12" class="data row2 col12" >189.297846</td>
+    </tr>
+    <tr>
+      <th id="T_7d5d5_level0_row3" class="row_heading level0 row3" >20180418_sf033_5_cc</th>
+      <td id="T_7d5d5_row3_col0" class="data row3 col0" >0.295005</td>
+      <td id="T_7d5d5_row3_col1" class="data row3 col1" >0.490000</td>
+      <td id="T_7d5d5_row3_col2" class="data row3 col2" >0.166939</td>
+      <td id="T_7d5d5_row3_col3" class="data row3 col3" >3118.817466</td>
+      <td id="T_7d5d5_row3_col4" class="data row3 col4" >False</td>
+      <td id="T_7d5d5_row3_col5" class="data row3 col5" >169567</td>
+      <td id="T_7d5d5_row3_col6" class="data row3 col6" >1588</td>
+      <td id="T_7d5d5_row3_col7" class="data row3 col7" >304</td>
+      <td id="T_7d5d5_row3_col8" class="data row3 col8" >304</td>
+      <td id="T_7d5d5_row3_col9" class="data row3 col9" >1741.579324</td>
+      <td id="T_7d5d5_row3_col10" class="data row3 col10" >2302.442797</td>
+      <td id="T_7d5d5_row3_col11" class="data row3 col11" >0.000000</td>
+      <td id="T_7d5d5_row3_col12" class="data row3 col12" >227.149486</td>
+    </tr>
+    <tr>
+      <th id="T_7d5d5_level0_row4" class="row_heading level0 row4" >20180420_sf036_2_cc</th>
+      <td id="T_7d5d5_row4_col0" class="data row4 col0" >0.572383</td>
+      <td id="T_7d5d5_row4_col1" class="data row4 col1" >0.950000</td>
+      <td id="T_7d5d5_row4_col2" class="data row4 col2" >0.323902</td>
+      <td id="T_7d5d5_row4_col3" class="data row4 col3" >3122.348698</td>
+      <td id="T_7d5d5_row4_col4" class="data row4 col4" >False</td>
+      <td id="T_7d5d5_row4_col5" class="data row4 col5" >157750</td>
+      <td id="T_7d5d5_row4_col6" class="data row4 col6" >1586</td>
+      <td id="T_7d5d5_row4_col7" class="data row4 col7" >304</td>
+      <td id="T_7d5d5_row4_col8" class="data row4 col8" >304</td>
+      <td id="T_7d5d5_row4_col9" class="data row4 col9" >1479.043916</td>
+      <td id="T_7d5d5_row4_col10" class="data row4 col10" >2319.709751</td>
+      <td id="T_7d5d5_row4_col11" class="data row4 col11" >0.000000</td>
+      <td id="T_7d5d5_row4_col12" class="data row4 col12" >474.421220</td>
+    </tr>
+    <tr>
+      <th id="T_7d5d5_level0_row5" class="row_heading level0 row5" >20180420_sf036_3_cc</th>
+      <td id="T_7d5d5_row5_col0" class="data row5 col0" >0.716985</td>
+      <td id="T_7d5d5_row5_col1" class="data row5 col1" >1.190000</td>
+      <td id="T_7d5d5_row5_col2" class="data row5 col2" >0.405730</td>
+      <td id="T_7d5d5_row5_col3" class="data row5 col3" >3122.348698</td>
+      <td id="T_7d5d5_row5_col4" class="data row5 col4" >False</td>
+      <td id="T_7d5d5_row5_col5" class="data row5 col5" >134496</td>
+      <td id="T_7d5d5_row5_col6" class="data row5 col6" >1571</td>
+      <td id="T_7d5d5_row5_col7" class="data row5 col7" >304</td>
+      <td id="T_7d5d5_row5_col8" class="data row5 col8" >304</td>
+      <td id="T_7d5d5_row5_col9" class="data row5 col9" >1062.506245</td>
+      <td id="T_7d5d5_row5_col10" class="data row5 col10" >2323.285459</td>
+      <td id="T_7d5d5_row5_col11" class="data row5 col11" >0.000000</td>
+      <td id="T_7d5d5_row5_col12" class="data row5 col12" >622.550951</td>
+    </tr>
+    <tr>
+      <th id="T_7d5d5_level0_row6" class="row_heading level0 row6" >20180420_sf036_4_cc</th>
+      <td id="T_7d5d5_row6_col0" class="data row6 col0" >0.584433</td>
+      <td id="T_7d5d5_row6_col1" class="data row6 col1" >0.970000</td>
+      <td id="T_7d5d5_row6_col2" class="data row6 col2" >0.330721</td>
+      <td id="T_7d5d5_row6_col3" class="data row6 col3" >3122.348698</td>
+      <td id="T_7d5d5_row6_col4" class="data row6 col4" >False</td>
+      <td id="T_7d5d5_row6_col5" class="data row6 col5" >128547</td>
+      <td id="T_7d5d5_row6_col6" class="data row6 col6" >1561</td>
+      <td id="T_7d5d5_row6_col7" class="data row6 col7" >304</td>
+      <td id="T_7d5d5_row6_col8" class="data row6 col8" >304</td>
+      <td id="T_7d5d5_row6_col9" class="data row6 col9" >880.014288</td>
+      <td id="T_7d5d5_row6_col10" class="data row6 col10" >2608.773865</td>
+      <td id="T_7d5d5_row6_col11" class="data row6 col11" >0.000000</td>
+      <td id="T_7d5d5_row6_col12" class="data row6 col12" >889.235451</td>
+    </tr>
+  </tbody>
+</table>
+</div>
 
 
 
@@ -379,9 +660,32 @@ cap.head(2)
 
 
 
-          voltage  capacity  direction
-    267  2.721604  0.000054         -1
-    268  2.708690  0.002016         -1
+<div class="cellpy-dataframe">
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>voltage</th>
+      <th>capacity</th>
+      <th>direction</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>267</th>
+      <td>2.721604</td>
+      <td>0.000054</td>
+      <td>-1</td>
+    </tr>
+    <tr>
+      <th>268</th>
+      <td>2.708690</td>
+      <td>0.002016</td>
+      <td>-1</td>
+    </tr>
+  </tbody>
+</table>
+</div>
 
 
 

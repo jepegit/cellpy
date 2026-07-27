@@ -1,0 +1,74 @@
+/* Pandas DataFrame outputs from rendered example notebooks.
+   Wide frames scroll horizontally instead of clipping under the TOC. */
+
+.cellpy-dataframe {
+  overflow-x: auto;
+  max-width: 100%;
+  margin: 0.75em 0 1.25em;
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: 0.3rem;
+  background: var(--md-default-bg-color);
+}
+
+.cellpy-dataframe > p {
+  margin: 0;
+  padding: 0.35em 0.75em;
+  font-size: 0.7rem;
+  color: var(--md-default-fg-color--light);
+  border-top: 1px solid var(--md-default-fg-color--lightest);
+}
+
+/* Fallback when a table was kept without the wrapper. */
+div:has(> table.dataframe):not(.cellpy-dataframe) {
+  overflow-x: auto;
+  max-width: 100%;
+  margin: 0.75em 0 1.25em;
+}
+
+table.dataframe {
+  display: table;
+  width: max-content;
+  max-width: none;
+  margin: 0;
+  border-collapse: collapse;
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
+table.dataframe th,
+table.dataframe td {
+  white-space: nowrap;
+  padding: 0.35em 0.7em;
+  border: none;
+  border-bottom: 1px solid var(--md-default-fg-color--lightest);
+  vertical-align: middle;
+}
+
+table.dataframe thead th {
+  position: sticky;
+  top: 0;
+  background: var(--md-code-bg-color);
+  color: var(--md-default-fg-color);
+  font-weight: 600;
+  text-align: right;
+  border-bottom: 2px solid var(--md-default-fg-color--lighter);
+}
+
+table.dataframe tbody tr:nth-child(even) {
+  background: color-mix(in srgb, var(--md-code-bg-color) 70%, transparent);
+}
+
+table.dataframe tbody tr:hover {
+  background: color-mix(in srgb, var(--md-accent-fg-color) 12%, transparent);
+}
+
+table.dataframe tbody th {
+  font-weight: 600;
+  text-align: right;
+  background: color-mix(in srgb, var(--md-code-bg-color) 40%, transparent);
+}
+
+/* Styler / id-based tables from notebook outputs. */
+.cellpy-dataframe table {
+  font-size: 0.72rem;
+}

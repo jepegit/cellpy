@@ -73,7 +73,7 @@ source statically — the docs build never imports cellpy. Pages live in
 `docs/api/` and are a list of `::: module.path` directives; add a directive to
 document something new.
 
-### Example notebooks
+### Example notebooks (Jupyter)
 
 Zensical does not render `.ipynb`, so the notebooks under `docs/examples/` are
 converted to committed markdown:
@@ -84,8 +84,16 @@ uv run --group docs python dev/render_example_notebooks.py
 
 Re-run and commit the output whenever a notebook changes. The script strips
 plotly's embedded HTML before converting — leaving it in produces ~50 MB of
-generated markdown for nine notebooks — and keeps the static PNG renderings.
+generated markdown for nine notebooks — and keeps the static PNG renderings
+plus pandas HTML tables (wrapped for styling via `docs/stylesheets/extra.css`).
 The `.ipynb` files stay in the tree as the interactive source.
+
+If a notebook was saved with Plotly outputs but no PNG (so the rendered page
+shows code with no figure), backfill static images from the Plotly JSON first:
+
+```shell
+uv run --extra batch --group docs python dev/backfill_notebook_plotly_pngs.py
+```
 
 It renders the outputs already stored in the notebooks; it does **not** execute
 them.

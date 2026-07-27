@@ -16,6 +16,18 @@ get 50 MB of base64. Notebooks that only ever produced interactive figures will
 show their code and text without a figure — the ``.ipynb`` stays in the docs
 tree, linked as a download, for anyone who wants the interactive version.
 
+If a notebook has Plotly MIME data but no ``image/png``, backfill static
+renderings first (needs the ``batch`` extra for kaleido):
+
+```shell
+uv run --extra batch --group docs python dev/backfill_notebook_plotly_pngs.py
+```
+
+Pandas DataFrame ``text/html`` tables are kept (markdown allows embedded HTML
+and Zensical renders them as real tables). Only scripty / plotly / oversized
+HTML is dropped — stripping *all* ``text/html`` left only the ugly
+``text/plain`` dataframe dumps.
+
 Usage:
 
 ```shell
@@ -41,12 +53,56 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 EXAMPLES = REPO_ROOT / "docs" / "examples"
 
 #: Output types that embed an entire JS runtime per figure.
+#: ``text/html`` is handled separately — pandas tables are kept.
 HEAVY_MIMETYPES = (
-    "text/html",
     "application/vnd.plotly.v1+json",
     "application/javascript",
     "application/vnd.jupyter.widget-view+json",
 )
+
+#: Drop ``text/html`` larger than this (bytes); plotly blobs are multi-MB.
+_HEAVY_HTML_BYTES = 100_000
+
+
+def _html_as_str(value: str | list[str]) -> str:
+    """Join a notebook HTML payload into one string."""
+    if isinstance(value, list):
+        return "".join(value)
+    return value
+
+
+def _is_keepable_html(html: str) -> bool:
+    """Return True for lightweight table HTML worth embedding in markdown.
+
+    Keeps pandas / Styler tables. Drops plotly widgets, script tags, and
+    oversized blobs. Other small HTML (e.g. rich ``<pre>``) is also dropped so
+    the existing text/plain coalescing path still applies.
+    """
+    lower = html.lower()
+    if "<script" in lower or "plotly" in lower:
+        return False
+    if len(html) > _HEAVY_HTML_BYTES:
+        return False
+    return 'class="dataframe"' in html or "<table" in lower
+
+
+_STYLE_TAG_RE = re.compile(r"<style\b[^>]*>.*?</style>", re.DOTALL | re.IGNORECASE)
+
+
+def prepare_dataframe_html(html: str) -> str:
+    """Strip pandas scoped CSS and wrap the table for docs styling.
+
+    The wrapper (``.cellpy-dataframe``) is styled in
+    ``docs/stylesheets/extra.css`` for horizontal scroll and readable striping.
+    """
+    cleaned = _STYLE_TAG_RE.sub("", html).strip()
+    if 'class="cellpy-dataframe"' in cleaned:
+        return cleaned
+    # Pandas wraps tables in a bare ``<div>`` — reuse that node as our wrapper.
+    if cleaned.startswith("<div>") and cleaned.endswith("</div>"):
+        cleaned = cleaned[len("<div>") : -len("</div>")].strip()
+    return f'<div class="cellpy-dataframe">\n{cleaned}\n</div>'
+
 
 # CSI / OSC / other common terminal escape sequences from rich, click, etc.
 _ANSI_RE = re.compile(
@@ -83,7 +139,11 @@ def _strip_ansi_in_value(value: str | list[str]) -> tuple[str | list[str], int]:
 
 
 def strip_heavy_outputs(notebook: dict) -> tuple[dict, int]:
-    """Drop interactive output blobs, keeping static images and text."""
+    """Drop interactive output blobs, keeping static images, text, and tables.
+
+    Pandas DataFrame HTML is retained so nbconvert can emit real ``<table>``
+    markup instead of monospace ``text/plain`` dumps.
+    """
     stripped = 0
     for cell in notebook.get("cells", []):
         for output in cell.get("outputs", []) or []:
@@ -94,6 +154,13 @@ def strip_heavy_outputs(notebook: dict) -> tuple[dict, int]:
                 if mimetype in data:
                     del data[mimetype]
                     stripped += 1
+            if "text/html" in data:
+                html = _html_as_str(data["text/html"])
+                if not _is_keepable_html(html):
+                    del data["text/html"]
+                    stripped += 1
+                else:
+                    data["text/html"] = prepare_dataframe_html(html)
     return notebook, stripped
 
 
@@ -235,7 +302,11 @@ def render(notebook_path: Path) -> None:
 
 
 def main() -> None:
-    notebooks = sorted(EXAMPLES.rglob("*.ipynb"))
+    notebooks = sorted(
+        p
+        for p in EXAMPLES.rglob("*.ipynb")
+        if ".ipynb_checkpoints" not in p.parts
+    )
     if not notebooks:
         raise SystemExit(f"no notebooks under {EXAMPLES}")
 
