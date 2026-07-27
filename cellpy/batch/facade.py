@@ -122,6 +122,16 @@ class Batch:
         self._summaries = aggregate.combine_summaries(self._store, self.journal)
         return self._summaries
 
+    @property
+    def tests(self) -> pl.DataFrame:
+        """Per-test metadata across the batch (tidy long-format, #506/F6-D2).
+
+        One row per (cell, ``test_id``) with the native ``TestMeta`` fields plus
+        ``cell``/``group``/``sub_group`` keys -- the per-test records a merged
+        (campaign) cell carries. Empty frame if no cell exposes test metadata.
+        """
+        return aggregate.combine_tests(self._store, self.journal)
+
     def make_summaries(self) -> pl.DataFrame:
         return self.combine_summaries()
 

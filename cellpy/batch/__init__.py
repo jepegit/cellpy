@@ -39,7 +39,7 @@ from cellpy.batch.result import (
 from cellpy.batch.runner import load_cell, run
 from cellpy.batch.store import CellStore
 from cellpy.batch import aggregate, outputs, qc
-from cellpy.batch.aggregate import combine_summaries
+from cellpy.batch.aggregate import combine_summaries, combine_tests
 from cellpy.batch.db import journal_from_db
 from cellpy.batch.facade import Batch, from_journal, load
 
@@ -51,6 +51,7 @@ __all__ = [
     "qc",
     "outputs",
     "combine_summaries",
+    "combine_tests",
     "Journal",
     "read_journal",
     "write_journal",

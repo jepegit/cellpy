@@ -221,6 +221,47 @@ def test_normalize_column_long():
     assert norm["mean"].to_list() == [50.0, 100.0]
 
 
+# ---- Batch.tests: per-test metadata surface (F6 D2, #711) ---------------
+
+
+class _TestRecord:
+    def __init__(self, test_id, cell_name, cycle_mode="anode"):
+        self.test_id = test_id
+        self.cell_name = cell_name
+        self.cycle_mode = cycle_mode
+        self.raw_file_names = [f"{cell_name}.res"]
+
+
+class _MultiTestCell:
+    """A cell whose ``data.tests`` yields several per-test metadata records."""
+
+    def __init__(self, records):
+        self.data = SimpleNamespace(tests=records)
+
+
+def test_batch_tests_surfaces_per_test_metadata():
+    pages = pl.DataFrame({FILENAME: ["m"], "group": [1], "sub_group": [1]})
+    cell = _MultiTestCell(
+        [_TestRecord(0, "cell_A"), _TestRecord(1, "cell_B", cycle_mode="full")]
+    )
+    b = _batch_with_cells({"m": cell}, pages)
+
+    frame = b.tests
+    assert frame.height == 2  # one row per test_id
+    for key in ("cell", "group", "sub_group", "test_id", "cell_name", "cycle_mode"):
+        assert key in frame.columns
+    assert set(frame["test_id"].to_list()) == {0, 1}
+    assert frame.filter(pl.col("test_id") == 1)["cycle_mode"].item() == "full"
+    # list field flattened to a string
+    assert frame["raw_file_names"].dtype == pl.Utf8
+
+
+def test_batch_tests_empty_without_metadata():
+    pages = pl.DataFrame({FILENAME: ["x"]})
+    b = _batch_with_cells({"x": _SummaryCell([1.0])}, pages)  # no .data.tests
+    assert b.tests.height == 0
+
+
 def test_standard_gravimetric_recipe():
     pages = pl.DataFrame(
         {FILENAME: ["x", "y"], "group": [1, 1], "sub_group": [1, 2]}
