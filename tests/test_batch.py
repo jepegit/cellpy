@@ -12,14 +12,8 @@ import pytest
 from cellpy import log, prms
 from cellpy.utils import batch as batch
 from cellpy.utils import helpers
-from cellpy.utils.batch_tools import (
-    batch_experiments,
-    batch_exporters,
-    batch_journals,
-    dumpers,
-    engines,
-)
-from cellpy.utils.batch_tools.batch_core import get_headers_journal
+from cellpy.batch import _dbengine
+from cellpy.parameters.internal_settings import get_headers_journal
 
 log.setup_logging(default_level="DEBUG", testing=True)
 
@@ -70,28 +64,6 @@ def populated_batch(batch_instance):
     b.paginate()
     b.update(testing=True)
     return b
-
-
-@pytest.fixture
-def cycling_experiment(batch_instance):
-    experiment = batch_experiments.CyclingExperiment()
-    experiment.journal.project = "ProjectOfRun"
-    experiment.journal.name = "test"
-    experiment.export_raw = True
-    experiment.export_cycles = True
-    experiment.export_ica = True
-    experiment.journal.from_db()
-    return experiment
-
-
-@pytest.fixture
-def updated_cycling_experiment(cycling_experiment):
-    # warning: this test uses the same cellpy file that some of the other
-    # tests updates from time to time. so if one of those tests fails and corrupts
-    # the cellpy file, this test might also fail
-    logging.info(f"using pandas {pandas.__version__}")
-    cycling_experiment.update(testing=True)
-    return cycling_experiment
 
 
 def test_reading_db(batch_instance):
@@ -255,7 +227,7 @@ def test_reading_json_db(batch_instance, parameters):
 
     number_of_cells = len(reader.pages_dict[hdr_journal["filename"]])
 
-    pages = engines.simple_db_engine(
+    pages = _dbengine.simple_db_engine(
         reader=reader,
         raw_file_dir=parameters.raw_data_dir,
         cellpy_file_dir=parameters.cellpy_data_dir,
@@ -300,7 +272,7 @@ def test_custom_json_reader_pages_dict_and_engine(batch_instance, parameters):
     assert hdr_journal["filename"] in reader.pages_dict
     assert reader.pages_dict[hdr_journal["filename"]][0] == "20160805_test001_45_cc"
 
-    pages = engines.simple_db_engine(
+    pages = _dbengine.simple_db_engine(
         reader=reader,
         raw_file_dir=parameters.raw_data_dir,
         cellpy_file_dir=parameters.cellpy_data_dir,
@@ -313,38 +285,8 @@ def test_custom_json_reader_pages_dict_and_engine(batch_instance, parameters):
     assert not isinstance(raw_names, list) or len(raw_names) >= 1
 
 
-def test_labjournal_custom_json_reader_by_name(parameters):
-    """Test LabJournal accepts db_reader='custom_json_reader' with db_file and column_map."""
-    from pathlib import Path
-    from cellpy.utils.batch_tools.batch_journals import LabJournal
-
-    fixture_dir = Path(__file__).parent / "fixtures"
-    json_file = fixture_dir / "custom_json_batch_like.json"
-    assert json_file.exists()
-
-    column_map = {
-        "cell_id": "filename",
-        "mass_mg": "mass",
-        "instrument_name": "instrument",
-    }
-    journal = LabJournal(
-        db_reader="custom_json_reader",
-        db_file=str(json_file),
-        column_map=column_map,
-    )
-    journal.from_db(
-        name="test_batch",
-        project="test_project",
-        raw_file_dir=parameters.raw_data_dir,
-        cellpy_file_dir=parameters.cellpy_data_dir,
-    )
-    assert journal.pages is not None and len(journal.pages) == 1
-    assert journal.pages.index[0] == "20160805_test001_45_cc"
-
-
 def test_find_files_skip_file_search():
     """Test that find_files(skip_file_search=True) leaves existing paths unchanged."""
-    from cellpy.utils.batch_tools import batch_helpers
 
     info_dict = {
         hdr_journal["filename"]: ["cell_a"],
@@ -353,7 +295,7 @@ def test_find_files_skip_file_search():
         hdr_journal["cellpy_file_name"]: ["/path/to/cell_a.h5"],
         hdr_journal["instrument"]: [None],
     }
-    out = batch_helpers.find_files(info_dict, skip_file_search=True)
+    out = _dbengine.find_files(info_dict, skip_file_search=True)
     assert out[hdr_journal["raw_file_names"]] == [["/path/to/raw.res"]]
     assert out[hdr_journal["cellpy_file_name"]] == ["/path/to/cell_a.h5"]
 
@@ -403,22 +345,6 @@ def test_load_full_journal_excel_and_check_headers_generated(
     assert len(b.pages) == 2
     # batch v3: polars pages, keys-in-columns (no pandas index)
     assert hdr_journal["filename"] in b.pages.columns
-
-
-def test_load_full_journal_excel_from_labjournal_class(parameters):
-    from cellpy.utils.batch_tools.batch_journals import LabJournal
-
-    journal = LabJournal(db_reader="off")
-    journal.from_file(parameters.journal_file_full_xlsx_path, paginate=False)
-    assert len(journal.pages) == 2
-
-
-def test_load_journal_json_from_labjournal_class(parameters):
-    from cellpy.utils.batch_tools.batch_journals import LabJournal
-
-    journal = LabJournal(db_reader="off")
-    journal.from_file(parameters.journal_file_json_path, paginate=False)
-    assert len(journal.pages) == 5
 
 
 def test_load_with_explicit_cellpy_journal_file(parameters, batch_instance):
@@ -582,70 +508,9 @@ def test_issue668_batch_plot_variants(populated_batch):
     assert fig is not None
 
 
-def test_load_journal_dataframe(batch_instance):
-    import pandas as pd
-    from cellpy.utils.batch_tools.batch_journals import LabJournal
-    from cellpy.internals.connections import OtherPath
-
-    _frame = {
-        "filename": ["a", "b", "c"],
-        "argument": ["recalc=True", "recalc=False", "recalc=False"],
-        "keep": ["True", "False", "True"],
-        "mass": ["1.0", "2.0", "3.0"],
-        "area": ["1.0", "2.0", "3.0"],
-        "total_mass": ["1.0", "2.0", "3.0"],
-        "loading": ["1.0", "2.0", "3.0"],
-        "nom_cap": ["1.0", "2.0", "3.0"],
-        "experiment": ["cycling", "cycling", "cycling"],
-        "cell_type": ["anode", "anode", "anode"],
-        "instrument": ["arbin_res", "neware_txt", "maccor_txt::1"],
-        "comment": ["", "", ""],
-        "fixed": [0, 0, False],
-        "label": ["", "cell2", ""],
-        "cellpy_file_name": [
-            pathlib.Path("data/cellpyfiles/20160805_test001_45_cc.cellpy"),
-            OtherPath(
-                "data/cellpyfiles/20160805_test001_46_cc.cellpy"
-            ),  # This will be dropped since keep=False
-            "data/cellpyfiles/20160805_test001_47_cc.cellpy",
-        ],
-        "raw_file_names": [
-            [
-                "data/raw/20160805_test001_45_cc_01.res",
-                "data/raw/20160805_test001_45_cc_02.res",
-            ],
-            "data/raw/20160805_test001_46_cc_01.txt",  # This will be dropped since keep=False
-            OtherPath("ssh://user@server.in.no/data/raw/20160805_test001_47_cc_01.txt"),
-        ],
-        "group": [1, 1, 1],
-        "sub_group": [1, 2, 3],
-    }
-    frame = pd.DataFrame(_frame)
-    journal = LabJournal(db_reader="off")
-    journal.from_frame(frame, paginate=False)
-    assert isinstance(journal.pages.raw_file_names.iloc[0], list)
-    assert isinstance(journal.pages.raw_file_names.iloc[1], OtherPath)
-    assert journal.pages.group.iloc[0] == 1
-    assert len(journal.pages) == 2  # one row will be dropped since keep=False
-
-
 # TODO: make this test
 def test_load_journal_custom_db_reader(batch_instance):
     pass
-
-
-def test_csv_exporter(updated_cycling_experiment):
-    logging.info(f"using pandas {pandas.__version__}")
-    exporter = batch_exporters.CSVExporter()
-    exporter.assign(updated_cycling_experiment)
-    exporter.do()
-
-
-def test_csv_exporter_modified(updated_cycling_experiment):
-    exporter = batch_exporters.CSVExporter()
-    exporter.assign(updated_cycling_experiment)
-    exporter._assign_engine(engines.dq_dv_engine)
-    exporter._assign_dumper(dumpers.screen_dumper)
 
 
 def test_query():
@@ -656,85 +521,10 @@ def test_query():
         }
         return spec[cell_id]
 
-    from cellpy.utils.batch_tools import engines
-
     cell_ids = [1, 2]
-    out = engines._query(mock_reader_method, cell_ids)
+    out = _dbengine._query(mock_reader_method, cell_ids)
     assert "=" in out[0]
     assert ";" in out[1]
-
-
-# TODO: fix me
-@pytest.mark.slowtest
-def test_update_time(cycling_experiment):
-    t0 = time.time()
-    cycling_experiment.update(all_in_memory=True)
-    cycling_experiment.status()
-    names = cycling_experiment.cell_names
-    for name in names:
-        # print(name)
-        cell = cycling_experiment.data[name]
-        cycles = cell.get_cycle_numbers()
-
-        for cycle in cycles:
-            capacity, _ = cell.get_cap(cycle=cycle)
-            try:
-                len(capacity)
-            except TypeError as e:
-                print(e)
-    t1 = time.time()
-    dt = t1 - t0
-    print(f"This took {dt} seconds")
-
-
-@pytest.mark.slowtest
-def test_link_time(cycling_experiment):
-    t0 = time.time()
-    cycling_experiment.link()
-    cycling_experiment.status()
-    names = cycling_experiment.cell_names
-    for name in names:
-        cell = cycling_experiment.data[name]
-        cycles = cell.get_cycle_numbers()
-
-        for cycle in cycles:
-            capacity, _ = cell.get_cap(cycle=cycle)
-            try:
-                len(capacity)
-            except TypeError as e:
-                print(e)
-    t1 = time.time()
-    dt = t1 - t0
-    print(f"This took {dt} seconds")
-
-
-def test_link(cycling_experiment):
-    cycling_experiment.link()
-    print(cycling_experiment)
-    cycling_experiment.status()
-    names = cycling_experiment.cell_names
-    print(names)
-
-
-def test_load_from_file(batch_instance, parameters):
-    experiment = batch_experiments.CyclingExperiment()
-    pages = parameters.pages
-    experiment.journal.from_file(pages)
-
-
-def test_lab_journal(batch_instance):
-    lab_journal = batch_journals.LabJournal()
-    print(lab_journal)
-
-
-def test_cycling_experiment_to_file(cycling_experiment):
-    cycling_experiment.journal.to_file(duplicate_to_project_folder=False)
-
-
-def test_interact_with_cellpydata_get_cap(updated_cycling_experiment, parameters):
-    name = parameters.run_name_2
-    capacity_voltage_df = updated_cycling_experiment.data[name].get_cap(cycle=1)
-    assert len(capacity_voltage_df) == 1105
 
 
 @pytest.mark.skip(reason="shaky test - fails intermittently in CI")
@@ -810,16 +600,6 @@ def test_batch_plot_backend_triage():
         resolve_batch_plot_backend("bokeh")
     with pytest.raises(ValueError, match="not supported"):
         resolve_batch_plot_backend("not-a-backend")
-
-
-@pytest.mark.essential
-def test_batch_plotters_removed():
-    """``batch_plotters`` was removed in 2.0 (#658)."""
-    import cellpy.utils.batch_tools as batch_tools_pkg
-
-    assert not hasattr(batch_tools_pkg, "batch_plotters")
-    with pytest.raises(ModuleNotFoundError):
-        import cellpy.utils.batch_tools.batch_plotters  # noqa: F401
 
 
 @pytest.mark.essential
