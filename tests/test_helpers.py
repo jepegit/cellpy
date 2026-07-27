@@ -139,7 +139,7 @@ def test_select_summary_based_on_rate(cell):
 
 def test_remove_outliers_on_index(cell):
     # Polars Phase A (#457): cycle numbers live in the cycle-number column.
-    hdr_cycle = cell.headers_summary.cycle_index
+    hdr_cycle = cell.schema.summary.cycle_num
     last = cell.get_cycle_numbers()[-1]
     s1 = helpers.remove_outliers_from_summary_on_index(cell.data.summary, indexes=[15])
     s2 = helpers.remove_outliers_from_summary_on_index(

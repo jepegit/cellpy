@@ -1,9 +1,9 @@
 """The public column-name API for a cell (native-headers Phase 4, issue #558).
 
 ``CellpyCell.schema`` answers one question: *what is this column called on the
-frames this cell is carrying?* It is the sanctioned replacement for the legacy
+frames this cell is carrying?* It is the replacement for the legacy
 ``headers_normal`` / ``headers_step_table`` / ``headers_summary`` attributes,
-which are now a deprecation shim (``legacy_header_shim``, D6).
+which were a deprecation shim in 2.0 and were removed in 2.1 (E3, #715).
 
     >>> c = cellpy.get(...)                                    # doctest: +SKIP
     >>> c.data.raw[c.schema.raw.potential]                     # doctest: +SKIP

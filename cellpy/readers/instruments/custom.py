@@ -271,7 +271,7 @@ def _process_cellpy_object(name, c, out):
 
     print(f"loaded the file - now lets see what we got")
     raw = c.data.raw
-    hdr = c.headers_normal
+    hdr = c.schema.raw
     print(raw.head())
     c.make_step_table()
 
@@ -289,14 +289,14 @@ def _process_cellpy_object(name, c, out):
         constrained_layout=True,
         sharex=True,
     )
-    raw.plot(x=hdr.test_time_txt, y=hdr.voltage_txt, ax=ax1)
-    raw.plot(x=hdr.test_time_txt, y=hdr.current_txt, ax=ax2)
+    raw.plot(x=hdr.test_time, y=hdr.potential, ax=ax1)
+    raw.plot(x=hdr.test_time, y=hdr.current, ax=ax2)
     raw.plot(
-        x=hdr.test_time_txt,
-        y=[hdr.charge_capacity_txt, hdr.discharge_capacity_txt],
+        x=hdr.test_time,
+        y=[hdr.cumulative_charge_capacity, hdr.cumulative_discharge_capacity],
         ax=ax3,
     )
-    raw.plot(x=hdr.test_time_txt, y=hdr.cycle_index_txt, ax=ax4)
+    raw.plot(x=hdr.test_time, y=hdr.cycle_num, ax=ax4)
     fig_1.suptitle(f"{name.name}", fontsize=16)
 
     n = c.get_number_of_cycles()

@@ -82,4 +82,4 @@ def test_with_cycles(cell):
     picked = [2, 4, 6]
     c1 = cell.with_cycles(picked)
     assert list(c1.get_cycle_numbers()) == picked
-    assert set(c1.data.steps[cell.headers_step_table.cycle].unique()) == set(picked)
+    assert set(c1.data.steps[cell.schema.steps.cycle_num].unique()) == set(picked)

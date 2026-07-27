@@ -31,8 +31,8 @@ def test_core_seam_wired(cpi):
     """CellpyCell exposes a cellpy-core OldCellpyCellCore as ``self.core``."""
     assert isinstance(cpi.core, OldCellpyCellCore)
     # legacy headers/units are restored by the bridge
-    assert cpi.core.raw_cols.charge_capacity_txt == cpi.headers_normal.charge_capacity_txt
-    assert cpi.core.cycle_cols.charge_capacity == cpi.headers_summary.charge_capacity
+    assert cpi.core.raw_cols.charge_capacity_txt == cpi.schema.raw.cumulative_charge_capacity
+    assert cpi.core.cycle_cols.charge_capacity == cpi.schema.summary.charge_capacity
 
 
 def test_data_ownership_in_core(cpi):
@@ -53,7 +53,7 @@ def test_make_summary_through_core(cpi, parameters):
     cpi.make_summary(find_ir=True, find_end_voltage=True)
 
     summary = cpi.data.summary
-    h = cpi.headers_summary
+    h = cpi.schema.summary
 
     assert summary is not None
     assert not summary.empty
@@ -67,8 +67,8 @@ def test_make_summary_through_core(cpi, parameters):
         assert col in summary.columns
     # golden value (matches the legacy/pre-seam summary; see test_from_raw_local)
     # Polars Phase A (#457): look up by the cycle_index column, not the index.
-    first_cycle = summary.loc[summary[h.cycle_index] == 1]
-    assert int(first_cycle[h.data_point].iloc[0]) == 1457
+    first_cycle = summary.loc[summary[h.cycle_num] == 1]
+    assert int(first_cycle[h.datapoint_num_last].iloc[0]) == 1457
 
 
 def test_make_summary_save_roundtrip(cpi, parameters, tmp_path):
@@ -93,7 +93,7 @@ def test_direct_core_make_core_summary(cpi, parameters):
     data = cpi.data
     data = cpi.core.make_core_summary(data, find_ir=True, find_end_voltage=True)
 
-    h = cpi.headers_summary
+    h = cpi.schema.summary
     assert data.summary is not None
     assert not data.summary.empty
     assert h.charge_capacity in data.summary.columns
