@@ -88,6 +88,13 @@ generated markdown for nine notebooks — and keeps the static PNG renderings
 plus pandas HTML tables (wrapped for styling via `docs/stylesheets/extra.css`).
 The `.ipynb` files stay in the tree as the interactive source.
 
+If a notebook was saved with Plotly outputs but no PNG (so the rendered page
+shows code with no figure), backfill static images from the Plotly JSON first:
+
+```shell
+uv run --extra batch --group docs python dev/backfill_notebook_plotly_pngs.py
+```
+
 It renders the outputs already stored in the notebooks; it does **not** execute
 them.
 

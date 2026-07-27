@@ -16,6 +16,13 @@ get 50 MB of base64. Notebooks that only ever produced interactive figures will
 show their code and text without a figure — the ``.ipynb`` stays in the docs
 tree, linked as a download, for anyone who wants the interactive version.
 
+If a notebook has Plotly MIME data but no ``image/png``, backfill static
+renderings first (needs the ``batch`` extra for kaleido):
+
+```shell
+uv run --extra batch --group docs python dev/backfill_notebook_plotly_pngs.py
+```
+
 Pandas DataFrame ``text/html`` tables are kept (markdown allows embedded HTML
 and Zensical renders them as real tables). Only scripty / plotly / oversized
 HTML is dropped — stripping *all* ``text/html`` left only the ugly

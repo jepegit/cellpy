@@ -126,6 +126,10 @@ plotutils.raw_plot(c, width=1200, height=400)
 
 
 
+    
+![png](06_loading_different_formats_files/06_loading_different_formats_15_1.png)
+    
+
 
 Once you have loaded the files, you can use all the common functionalities of `cellpy` (as described in other example notebooks), such as, e.g., looking at a summary plot:
 
@@ -134,6 +138,10 @@ Once you have loaded the files, you can use all the common functionalities of `c
 plotutils.summary_plot(c, y="capacities", width=1200, height=400)
 ```
 
+
+    
+![png](06_loading_different_formats_files/06_loading_different_formats_17_0.png)
+    
 
 
 ## MACCOR
@@ -318,12 +326,20 @@ plotutils.raw_plot(c, width=1200, height=400)
     
 
 
+    
+![png](06_loading_different_formats_files/06_loading_different_formats_36_1.png)
+    
+
 
 
 ```python
 plotutils.summary_plot(c, y="capacities", width=1200, height=400, y_range=[0, 1000])
 ```
 
+
+    
+![png](06_loading_different_formats_files/06_loading_different_formats_37_0.png)
+    
 
 
 ## NEWARE
@@ -481,6 +497,10 @@ plotutils.raw_plot(c, width=1200, height=400)
 ```
 
 
+    
+![png](06_loading_different_formats_files/06_loading_different_formats_46_0.png)
+    
+
 
 
 ```python
@@ -489,6 +509,10 @@ plotutils.summary_plot(
 )
 ```
 
+
+    
+![png](06_loading_different_formats_files/06_loading_different_formats_47_0.png)
+    
 
 
 ## Other

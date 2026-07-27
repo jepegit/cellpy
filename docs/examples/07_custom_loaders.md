@@ -346,10 +346,18 @@ plotutils.raw_plot(c, width=1200, height=400)
 ```
 
 
+    
+![png](07_custom_loaders_files/07_custom_loaders_17_0.png)
+    
+
 
 
 ```python
 plotutils.summary_plot(c, width=1200, height=400)
 ```
 
+
+    
+![png](07_custom_loaders_files/07_custom_loaders_18_0.png)
+    
 
