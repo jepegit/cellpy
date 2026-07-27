@@ -40,7 +40,7 @@ def test_prepare_ica_returns_ica_spec(cell):
     assert not frame.empty
     assert spec.extras.get("kind") == "ica"
     assert ICA_COLS.dqdv in frame.columns
-    assert ICA_COLS.legacy_dqdv not in frame.columns
+    assert "dq" not in frame.columns  # legacy dq column removed in 2.1 (#714)
     assert {CHARGE, DISCHARGE} <= set(frame[ICA_COLS.direction].unique())
 
 
