@@ -8,3 +8,5 @@ uv run python -m cellpy._deprecation
 
 | Name | Replacement | Introduced | Removal |
 | --- | --- | --- | --- |
+| `MultiCycleOcvFit.data` | `MultiCycleOcvFit.cell` | 2.1 | 2.2 |
+| `MultiCycleOcvFit.set_data` | `MultiCycleOcvFit.set_cell` | 2.1 | 2.2 |
