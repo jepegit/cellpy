@@ -1,4 +1,4 @@
-"""Parked NDA loader (tier-3 decision, #561).
+"""Parked NDA loader.
 
 Neware NDA files are supported through ``instrument="neware_nda"``, which uses
 the bundled ``fastnda`` reader (``cellpy.libs.local_fastnda``). This module was

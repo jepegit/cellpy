@@ -911,7 +911,7 @@ def add_cv_step_columns(columns: list) -> list:
 def _cv_partition_summary_frames(c):
     """Build full / non-CV / CV-delta summary frames for CV partitioning.
 
-    Non-CV uses ``make_summary(exclude_step_types=["cv_"])`` (#509). With-CV is
+    Non-CV uses ``make_summary(exclude_step_types=["cv_"])``. With-CV is
     the numeric difference ``full - non_cv`` on overlapping columns (meaningful
     for additive capacity metrics; not a true CV-only efficiency/voltage summary).
 

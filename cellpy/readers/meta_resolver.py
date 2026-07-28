@@ -1,4 +1,4 @@
-"""Layered metadata resolution with provenance (metadata plan Step 3, #562).
+"""Layered metadata resolution with provenance.
 
 Metadata about a cell arrives from four places at once — what the user passed
 in, what the batch journal or database says, what the instrument wrote into the

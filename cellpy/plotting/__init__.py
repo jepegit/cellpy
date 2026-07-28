@@ -1,4 +1,4 @@
-"""The single home for cellpy's plotting machinery (#567).
+"""The single home for cellpy's plotting machinery.
 
 Four generations of plotting code grew up in three modules
 (``utils/plotutils.py``, ``utils/collectors.py``, and the retired
@@ -14,15 +14,15 @@ live; the plan is `architecture-plan/cellpy2-plotting-redesign-plan.md`.
 | [`cycle_legend`][cellpy.plotting.cycle_legend] | shared legend-vs-colorbar policy for cycle colouring |
 | [`spec`][cellpy.plotting.spec] | ``FigureSpec`` / ``PanelSpec`` / ``AxisSpec`` |
 | [`registry`][cellpy.plotting.registry] | named ``PlotFamily`` records for ``summary_plot`` |
-| [`backends`][cellpy.plotting.backends] | render protocol + plotly formation layout (#637) |
-| [`prepare`][cellpy.plotting.prepare] | summary tidy-frame + ``FigureSpec`` (#638) |
-| [`context`][cellpy.plotting.context] | ``CellContext`` / ``FrameContext`` (#638 / #657) |
-| [`collected`][cellpy.plotting.collected] | multi-cell ``collected_plot`` (``layout=`` / ``kind=``) (#657) |
-| [`batch_summary`][cellpy.plotting.batch_summary] | ``Batch.plot`` cycle-life summary (#658) |
+| [`backends`][cellpy.plotting.backends] | render protocol + plotly formation layout |
+| [`prepare`][cellpy.plotting.prepare] | summary tidy-frame + ``FigureSpec`` |
+| [`context`][cellpy.plotting.context] | ``CellContext`` / ``FrameContext`` |
+| [`collected`][cellpy.plotting.collected] | multi-cell ``collected_plot`` (``layout=`` / ``kind=``) |
+| [`batch_summary`][cellpy.plotting.batch_summary] | ``Batch.plot`` cycle-life summary |
 
 The old locations re-export from here, so nothing that imported them breaks.
 Public ``summary_plot`` still lives in ``plotutils`` but runs
-prepare → spec → ``get_backend(...).render`` (#638 / #639).
+prepare → spec → ``get_backend(...).render``.
 """
 
 from __future__ import annotations

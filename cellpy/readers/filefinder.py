@@ -70,8 +70,7 @@ def find_in_raw_file_directory(
 
     Notes:
         Uses ``OtherPath.rglob(..., files_only=True)`` so remote dumps can use
-        listing ``type`` / ``find -L`` without a per-path ``is_file()`` STAT
-        (issues #688 / #690).
+        listing ``type`` / ``find -L`` without a per-path ``is_file()`` STAT.
     """
 
     file_list = []

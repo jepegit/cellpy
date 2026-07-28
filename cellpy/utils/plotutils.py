@@ -881,7 +881,7 @@ class SummaryPlotInfo:
     def _create_col_info(self, c: Any) -> tuple[tuple, dict, dict, dict]:
         """Create column information for summary plots.
 
-        Thin adapter over :mod:`cellpy.plotting.registry` (#636). Column-set
+        Thin adapter over :mod:`cellpy.plotting.registry`. Column-set
         selection for named ``y`` values lives in ``PlotFamily`` records; this
         method only materialises them against ``c.schema.summary``. Keep in
         sync with :meth:`_create_label_dict`.
@@ -1266,7 +1266,7 @@ def raw_plot(
 ):
     """Plot raw data.
 
-    Draws through prepare → spec → render (#647).
+    Draws through prepare → spec → render.
 
     Args:
         cell: cellpy object
@@ -1329,7 +1329,7 @@ def cycle_info_plot(
 ):
     """Show raw data together with step and cycle information.
 
-    Draws through prepare → spec → render (#647).
+    Draws through prepare → spec → render.
 
     Args:
         cell: cellpy object
@@ -1424,7 +1424,7 @@ def cycles_plot(
     cycles are plotted with different colors, and the formation cycles are highlighted with a different colormap.
     It is not intended to provide you with high quality plots, but rather to give you a quick overview of the data.
 
-    Draws through prepare → spec → render (#646).
+    Draws through prepare → spec → render.
 
     Args:
         c: cellpy object containing the data to plot.
@@ -1572,7 +1572,7 @@ def ica_plot(
 ):
     """Plot incremental capacity (dQ/dV vs voltage).
 
-    Draws through prepare → spec → render (#648). Data come from
+    Draws through prepare → spec → render. Data come from
     [`cellpy.ica.dqdv`][cellpy.ica.dqdv]; both half-cycles are overlaid when
     ``direction="both"`` (plotly hover shows charge/discharge).
 
@@ -1673,7 +1673,7 @@ def dva_plot(
 ):
     """Plot differential voltage analysis (dV/dQ vs capacity).
 
-    Draws through prepare → spec → render (#648). Data come from
+    Draws through prepare → spec → render. Data come from
     [`cellpy.ica.dvdq`][cellpy.ica.dvdq]; both half-cycles are overlaid when
     ``direction="both"`` (plotly hover shows charge/discharge).
 

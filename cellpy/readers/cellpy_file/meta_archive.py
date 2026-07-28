@@ -1,4 +1,4 @@
-"""Cellpy-owned metadata archive helpers (issue #510, V2-14).
+"""Cellpy-owned metadata archive helpers.
 
 ``cellpycore.metadata.io.save_archive`` / ``load_archive`` stay deliberate
 stubs — real persistence lives here. Use these helpers (or the v9 ``.cellpy``

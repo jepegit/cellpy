@@ -1,4 +1,4 @@
-"""Derive loader declarations from the existing configurations (issue #560).
+"""Derive loader declarations from the existing configurations.
 
 Every ``configurations/*`` module already says how its vendor columns map to
 the *legacy* header attributes, and cellpy-core already says how legacy
@@ -15,7 +15,7 @@ place for silent typos, and a wrong column mapping produces plausible numbers
 rather than an error. It also makes the port self-updating: a legacy attribute
 with no native counterpart lands in ``passthrough`` today and moves into
 ``column_map`` by itself the moment cellpy-core adds the entry (the live case
-is the energy columns, cellpy-core#139).
+is the energy columns).
 
 This module does **not** change how anything loads. It builds declarations so
 they can be compared against the legacy path (see

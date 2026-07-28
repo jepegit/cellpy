@@ -1,4 +1,4 @@
-"""Per-cell iteration for collection (collectors redesign, #705).
+"""Per-cell iteration for collection.
 
 Successor of ``pick_named_cell`` with **per-cell isolation**: one cell's filter
 results never leak into the next (fixes the cross-cell ``cycles`` narrowing bug

@@ -1,6 +1,6 @@
 """arbin res-type data files.
 
-Vendor metadata mapping (issue #508, V2-08 — "no silent drops"): the Arbin
+Vendor metadata mapping ("no silent drops"): the Arbin
 ``Global_Table`` columns and what cellpy does with them:
 
 ===============================  ==============================================
@@ -818,7 +818,7 @@ class DataLoader(BaseLoader):
         return True
 
     def parse(self, source, **kwargs):
-        """Vendor stage (#560): read the .res into a frame with **Arbin** names.
+        """Vendor stage: read the .res into a frame with **Arbin** names.
 
         The two-stage counterpart to :meth:`loader`, and the point where the
         vendor part of arbin ends: reading the Access database (ODBC on Windows,
@@ -862,7 +862,7 @@ class DataLoader(BaseLoader):
         return frame
 
     def declarations(self):
-        """Declarations for arbin's normal table (#560).
+        """Declarations for arbin's normal table.
 
         Derived, not hand-written: ``get_headers_normal()`` is already a
         ``{cellpy attr → Arbin column}`` map — the same shape the configuration
@@ -875,7 +875,7 @@ class DataLoader(BaseLoader):
         frame after the Access read; they are declared via ``aux_map`` so
         ``harmonize()`` keeps them under the native
         ``aux_<quantity>_<name>`` scheme instead of warn-and-dropping them
-        (#560 Phase C / #621).
+        (Phase C).
         """
         from cellpycore.units import CellpyUnits
 

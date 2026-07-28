@@ -1,13 +1,13 @@
-"""Convenience collector + recipes (collectors redesign, #707).
+"""Convenience collector + recipes.
 
 :class:`BatchCollector` is the thin successor of the legacy
 ``utils.collectors.BatchCollector`` family: run a collect function, hold the
 resulting :class:`~cellpy.collect.collection.Collection`, and offer
 ``save`` / ``plot`` on top. It replaces the "elevated arguments" machinery --
 ~20 parameters redeclared per subclass and merged through three priority
-layers (collectors.py:969/1202/1316) -- with a single options object plus a
-collect callable. The ``utils.collectors`` compatibility shim and the plotting
-handover land in B4 (#708).
+layers -- with a single options object plus a collect callable. The
+``utils.collectors`` compatibility shim and the handover of ``plot`` to
+``cellpy.plotting`` both live here.
 """
 
 from __future__ import annotations
@@ -79,12 +79,12 @@ class BatchCollector:
         return self.collection.save(directory, **kwargs)
 
     def plot(self, **kwargs) -> Any:
-        """Draw the collection. Wired to ``cellpy.plotting`` in B4 (#708)."""
+        """Draw the collection via ``cellpy.plotting``."""
         plot = getattr(self.collection, "plot", None)
         if plot is None:
             raise NotImplementedError(
-                "Collection plotting is handed over to cellpy.plotting in B4 "
-                "(#708). Use `.data` for the collected frame in the meantime."
+                "Collection plotting is handed over to cellpy.plotting. "
+                "Use `.data` for the collected frame in the meantime."
             )
         return plot(**kwargs)
 
@@ -170,7 +170,7 @@ def standard_gravimetric(
     group, and add a normalized discharge-capacity-retention series
     (``100 * discharge / norm_factor``). Uses native cellpycore column names
     (the legacy ``*_gravimetric`` suffix is not part of the native schema).
-    The figure itself lands with the plotting handover in B4 (#708).
+    The figure itself lands with the plotting handover.
     """
     options = SummaryOptions(
         columns=columns,

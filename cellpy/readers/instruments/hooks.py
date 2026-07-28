@@ -1,4 +1,4 @@
-"""Reusable vendor post hooks for ``harmonize()`` (issue #560).
+"""Reusable vendor post hooks for ``harmonize()``.
 
 Post hooks are the escape valve for quirks no declaration can express. Most are
 one vendor's problem, but *state splitting* is not: several testers write one
@@ -134,7 +134,7 @@ def cycle_number_not_zero(
     already starting at 1 is untouched, and a file starting at 2 is *not*
     rebased to 1.
 
-    **Decision (2026-07-20, #560): 2.0 keeps 1-based cycle numbering.** Whether
+    **Decision: cellpy keeps 1-based cycle numbering.** Whether
     cycles start at 0 or 1 is a user-visible contract — it reaches summary
     indices, plot axes and ``get_cap(cycle=N)`` — so the port reproduces 1.x
     rather than adopting the vendor's numbering. Unlike the frame schemas this

@@ -171,7 +171,7 @@ class DataLoader(BaseLoader):
         raise NotImplementedError
 
     def parse(self, source, bad_steps=None, **kwargs):
-        """Vendor stage (#560): read the mpr file into a cellpy-named frame.
+        """Vendor stage: read the mpr file into a cellpy-named frame.
 
         The two-stage counterpart to :meth:`loader`, tapping the same
         ``_load_mpr_data`` + ``_rename_headers`` the legacy path uses, and
@@ -199,7 +199,7 @@ class DataLoader(BaseLoader):
         return pl.from_pandas(self.mpr_data.reset_index(drop=True))
 
     def declarations(self):
-        """Declarations for Bio-Logic mpr (#560).
+        """Declarations for Bio-Logic mpr.
 
         The parsed frame already uses cellpy header names, so the map is
         ``derive_column_maps`` over the identity ``{legacy_attr -> its own header

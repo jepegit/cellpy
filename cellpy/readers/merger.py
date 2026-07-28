@@ -1,10 +1,10 @@
 """Campaign merge: fold several tests into one multi-test ``Data`` object.
 
-Implements the v2 "campaign" merge (issue #507, epic #402 themes V2-03/V2-07):
+Implements the v2 "campaign" merge:
 each source keeps its identity via a distinct compact ``test_id`` stamped on the
 raw frame, and its metadata becomes a record in the per-test collection
-(``Data.tests``, issue #506). Cycle numbers are renumbered to be globally
-unique by default; with ``renumber_cycles=False`` (#529, unblocked by
+(``Data.tests``). Cycle numbers are renumbered to be globally
+unique by default; with ``renumber_cycles=False`` (unblocked by
 cellpycore 0.2.2 carrying ``test_id`` through the bridge) the sources keep
 their original cycle numbers and the identifying key becomes
 ``(test_id, cycle)`` — cycle-keyed consumers then see the union of matching

@@ -1,7 +1,7 @@
 """Compatibility re-export of [`cellpy.ica`][].
 
 Incremental capacity analysis moved from ``cellpy.utils.ica`` to ``cellpy.ica``
-in 2.0 (#566): it is a first-class analysis, not a utility, and it now has a
+in 2.0: it is a first-class analysis, not a utility, and it now has a
 sibling in ``dvdq`` (differential voltage analysis).
 
 ```python

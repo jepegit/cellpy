@@ -1,4 +1,4 @@
-"""ICA/DVA prepare path: long frames from ``cellpy.ica`` + FigureSpec (#648).
+"""ICA/DVA prepare path: long frames from ``cellpy.ica`` + FigureSpec.
 
 Public ``ica_plot`` / ``dva_plot`` call :func:`prepare` then hand
 ``(frame, FigureSpec)`` to a backend renderer (``spec.extras['kind']`` is

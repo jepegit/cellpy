@@ -1,8 +1,8 @@
-"""Plotly backend: formation/facet layout + summary ``render`` (#637 / #638).
+"""Plotly backend: formation/facet layout + summary ``render``.
 
 Formation axis grids live in :func:`configure_formation_layout`. Public
 ``summary_plot`` draws through :class:`PlotlyBackend.render` from a tidy
-frame + :class:`~cellpy.plotting.spec.FigureSpec` (#638).
+frame + :class:`~cellpy.plotting.spec.FigureSpec`.
 """
 
 from __future__ import annotations
@@ -281,8 +281,8 @@ def configure_fullcell_standard_domains(
 class PlotlyBackend:
     """Plotly implementation of the :class:`~cellpy.plotting.backends.base.Backend` protocol.
 
-    ``render(frame, spec)`` is the interactive path for public ``summary_plot``
-    (#638). Layout knobs are expected on ``spec.extras['render']`` as produced
+    ``render(frame, spec)`` is the interactive path for public ``summary_plot``.
+    Layout knobs are expected on ``spec.extras['render']`` as produced
     by :mod:`cellpy.plotting.prepare.summary`.
     """
 
@@ -575,7 +575,7 @@ class PlotlyBackend:
             trace.update(name=name, hovertemplate=hover_template)
 
     def _render_cycles(self, frame: Any, spec: FigureSpec) -> Any:
-        """Render voltage–capacity cycles figures (#646).
+        """Render voltage–capacity cycles figures.
 
         Mechanical port of ``plotutils._cycles_plotter_plotly``.
         """
@@ -724,7 +724,7 @@ class PlotlyBackend:
         return fig
 
     def _render_raw(self, frame: Any, spec: FigureSpec) -> Any:
-        """Render raw time-series figures (#647)."""
+        """Render raw time-series figures."""
         import plotly.express as px
         import plotly.graph_objects as go
         from plotly.subplots import make_subplots
@@ -783,7 +783,7 @@ class PlotlyBackend:
         return fig
 
     def _render_cycle_info(self, frame: Any, spec: FigureSpec) -> Any:
-        """Render cycle-info overlay figures (#647)."""
+        """Render cycle-info overlay figures."""
         import numpy as np
         import plotly.graph_objects as go
 
@@ -858,7 +858,7 @@ class PlotlyBackend:
         return fig
 
     def _render_ica_dva(self, frame: Any, spec: FigureSpec) -> Any:
-        """Render ICA (dQ/dV) or DVA (dV/dQ) figures (#648).
+        """Render ICA (dQ/dV) or DVA (dV/dQ) figures.
 
         One trace per ``(cycle, direction)`` so half-cycles are not connected;
         color is keyed by cycle. Hover includes direction. Line style is shared

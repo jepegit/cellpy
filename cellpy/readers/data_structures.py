@@ -362,7 +362,7 @@ class Data:
             boxes above (mutating it does not persist — use ``set_test_meta`` /
             ``set_cycle_mode`` or the legacy attributes); records for other
             ``test_id`` values are stored and survive in memory, but are not
-            written to cellpy files in format v8 (full persistence: #510).
+            written to cellpy files in format v8 (full persistence).
         active_test_id (int): compact grouping key of the active test (0 for a
             single, unmerged test; matches the engine's ``test_id`` column).
         custom_info (Any): custom meta-data.
@@ -687,7 +687,7 @@ class Data:
         The active test's record is written back onto the legacy meta boxes
         (fields without a legacy home, e.g. ``uuid`` / ``source_*``, are
         skipped); records for other ``test_id`` values are kept in memory but
-        are not persisted in cellpy-file format v8 (see #510).
+        are not persisted in cellpy-file format v8.
         """
         if meta.test_id == self.active_test_id:
             test_meta_helpers.apply_test_meta_to_legacy(

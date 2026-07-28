@@ -1,4 +1,4 @@
-"""Legacy ``.cellpy_prms_*.conf`` discovery and YAML ingest (issue #453)."""
+"""Legacy ``.cellpy_prms_*.conf`` discovery and YAML ingest."""
 
 from __future__ import annotations
 

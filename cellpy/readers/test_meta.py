@@ -1,7 +1,6 @@
 """Per-test metadata helpers: legacy meta boxes <-> cellpycore TestMeta.
 
-Pure translation helpers behind ``Data.tests`` (issue #506, epic #402 themes
-V2-01/02/04). The legacy boxes (``Data.meta_common`` /
+Pure translation helpers behind ``Data.tests``. The legacy boxes (``Data.meta_common`` /
 ``Data.meta_test_dependent``) stay authoritative for the *active* test — the
 core engine reads ``data.meta_test_dependent.cycle_mode`` live at compute time
 — so the active ``TestMeta`` record is derived on access, and writes are
@@ -164,8 +163,7 @@ def cycle_modes_in_data(data) -> Set[str]:
 def cycle_ranges_per_test(data) -> dict:
     """Per-test cycle ranges ``{test_id: (cycle_min, cycle_max)}``.
 
-    Derived from the raw frame's ``test_id`` column (campaign-merged objects,
-    issue #507), so it survives save/load of raw without extra state. A raw
+    Derived from the raw frame's ``test_id`` column (campaign-merged objects), so it survives save/load of raw without extra state. A raw
     frame without the column reports the active test spanning all cycles.
     """
     from cellpy.parameters.internal_settings import get_headers_normal

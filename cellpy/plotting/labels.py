@@ -1,4 +1,4 @@
-"""Legend, marker, and axis-label helpers for plotting (#567 / #647).
+"""Legend, marker, and axis-label helpers for plotting.
 
 Legend/marker helpers existed in **three** places, under two naming conventions
 (plotutils / collectors / the retired batch_plotters). The marker helpers were
@@ -8,7 +8,7 @@ with ``inverted_mode=False`` as the default.
 
 Axis labels for ``raw_plot`` / ``cycle_info_plot`` go through
 :func:`quantity_label` / :func:`units_quantity_label` so those paths do not
-hand-compose ``f"{name} ({unit})"`` strings (#647).
+hand-compose ``f"{name} ({unit})"`` strings.
 """
 
 from __future__ import annotations

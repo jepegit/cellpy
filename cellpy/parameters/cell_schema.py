@@ -1,9 +1,8 @@
-"""The public column-name API for a cell (native-headers Phase 4, issue #558).
+"""The public column-name API for a cell.
 
 ``CellpyCell.schema`` answers one question: *what is this column called on the
 frames this cell is carrying?* It is the replacement for the legacy
-``headers_normal`` / ``headers_step_table`` / ``headers_summary`` attributes,
-which were a deprecation shim in 2.0 and were removed in 2.1 (E3, #715).
+``headers_normal`` / ``headers_step_table`` / ``headers_summary`` attributes.
 
     >>> c = cellpy.get(...)                                    # doctest: +SKIP
     >>> c.data.raw[c.schema.raw.potential]                     # doctest: +SKIP

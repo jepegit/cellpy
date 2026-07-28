@@ -1,4 +1,4 @@
-"""Plotting backends (prepare → spec → render) — epic #567 / #637–#639."""
+"""Plotting backends (prepare → spec → render)."""
 
 from __future__ import annotations
 

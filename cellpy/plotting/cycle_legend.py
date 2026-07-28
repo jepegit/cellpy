@@ -1,4 +1,4 @@
-"""Shared cycle legend vs colorbar policy for multi-cycle plots (#648).
+"""Shared cycle legend vs colorbar policy for multi-cycle plots.
 
 Several figure families colour traces by cycle number. A discrete legend
 works for a handful of cycles and overflows once the list grows. This

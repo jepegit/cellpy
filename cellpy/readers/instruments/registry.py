@@ -1,4 +1,4 @@
-"""Loader discovery and routing via entry points (cellpy 2, issue #210).
+"""Loader discovery and routing via entry points.
 
 Third-party loaders install themselves by declaring an entry point; cellpy
 finds them without any registration call and without a shared base class::
@@ -18,8 +18,8 @@ load with something obscure.
 
 Scope note (2026-07-19): the built-in loaders do **not** route through this
 registry yet — they still go through the module-globbing
-``InstrumentFactory``. Moving them over is part of the loader port (#560),
-after they emit ``LoaderResult`` (#559). Until then this registry is the path
+``InstrumentFactory``. Moving them over is part of the loader port,
+after they emit ``LoaderResult``. Until then this registry is the path
 for out-of-tree loaders, and the query API below reports both populations.
 """
 

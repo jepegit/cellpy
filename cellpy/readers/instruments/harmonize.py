@@ -1,4 +1,4 @@
-"""The shared normalization stage: vendor frame → harmonized native raw (#559).
+"""The shared normalization stage: vendor frame → harmonized native raw.
 
 Every loader used to do its own renaming, casting, timestamp conversion and
 capacity fiddling. ``harmonize()`` does it once, for all of them, driven by the
@@ -341,10 +341,10 @@ def _cast_to_schema(raw: pl.DataFrame) -> pl.DataFrame:
     making those fatal would refuse files 1.x loaded happily.
 
     But a cast that empties a column **completely** is not a stray value, it is
-    the wrong dtype assumption, and that raises. Observed while porting #560:
+    the wrong dtype assumption, and that raises. For example:
     neware writes ``Time`` as ``"00:01:00"``, and casting that to the schema's
     Float64 nulled all 9065 rows without a word — the same silent-data-loss
-    shape as #580. Partial losses warn, so they are visible without being
+    shape. Partial losses warn, so they are visible without being
     fatal.
     """
     dtype_map = default_schema().raw.dtype_map()

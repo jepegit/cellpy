@@ -1,8 +1,8 @@
-"""Pilot loader for the two-stage design: Maccor txt (issue #559).
+"""Pilot loader for the two-stage design: Maccor txt.
 
 The first loader written as ``harmonize(parse(source), declarations)``. It runs
 alongside the legacy ``maccor_txt`` loader and changes no existing behaviour —
-the legacy path stays the default until the port (#560) switches over. What it
+the legacy path stays the default until the port switches over. What it
 proves is that the vendor-specific part really is just parsing, and everything
 after it can be declared.
 

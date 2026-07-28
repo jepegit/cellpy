@@ -1,4 +1,4 @@
-"""Loader declarations — normalization described, not coded (issue #559).
+"""Loader declarations — normalization described, not coded.
 
 A loader keeps the part that is genuinely hard and vendor-specific (parsing the
 file) and *declares* everything after it: which vendor column is which native
@@ -61,7 +61,7 @@ class LoaderDeclarations:
             columns not mentioned here are dropped; native names must exist.
         raw_units: the units the *file* is in, as a validated ``CellpyUnits``.
         timezone: IANA zone for naive vendor timestamps. ``None`` means "treat
-            naive timestamps as **UTC**" (decision 2026-07-21, #560, aligning
+            naive timestamps as **UTC**" (aligning
             with ``cellpycore.timestamps``) — recorded on ``TestMeta.time_zone``
             so the assumption is visible later. Set it when the cycler's local
             zone is known, so absolute times are correct rather than assumed.
@@ -77,8 +77,8 @@ class LoaderDeclarations:
 
     **On ``passthrough``.** ``harmonize()`` drops undeclared columns, which is
     what stops vendor junk leaking into native frames. But some real
-    measurements have no native column *yet* — energies are the live example
-    (cellpy-core#139), and ``date_time`` may never get one. Dropping those
+    measurements have no native column *yet* — energies are the live
+    example, and ``date_time`` may never get one. Dropping those
     would lose data that the current ``to_native()`` path preserves, so they
     are carried through under a stated name instead.
 

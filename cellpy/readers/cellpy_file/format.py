@@ -127,7 +127,7 @@ def require_hdf5_support(context: str) -> None:
     """Raise a typed error when PyTables is missing and *context* needs it.
 
     ``tables`` moved from a required dependency to the ``legacy-files`` extra
-    in 2.0 (#570): the default on-disk format is v9 (zip-of-parquet), so a
+    in 2.0: the default on-disk format is v9 (zip-of-parquet), so a
     plain install no longer pays for the HDF5 stack. Without this guard, a
     v4-v8 file on such an install would die inside pandas with
     ``ImportError: Missing optional dependency 'tables'`` - accurate, but

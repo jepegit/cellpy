@@ -1,4 +1,4 @@
-"""Summary-plot prepare path: tidy frame + FigureSpec (#638).
+"""Summary-plot prepare path: tidy frame + FigureSpec.
 
 Extracted from ``cellpy.utils.plotutils.SummaryPlotDataPreparer``. Public
 ``summary_plot`` calls :func:`prepare` then hands ``(frame, spec)`` to a
@@ -277,7 +277,7 @@ def prepare(
         plot_info: optional ``SummaryPlotInfo``; built from the cell when omitted.
 
     Returns:
-        ``(frame, spec)`` — frame shape matches the pre-#638 preparer output.
+        ``(frame, spec)`` — frame shape matches the preparer output.
     """
     ctx = from_source(source)
     c = ctx.cell

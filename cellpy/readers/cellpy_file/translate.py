@@ -1,13 +1,13 @@
 """Dormant native ⇄ legacy frame translation for the cellpy-file boundary.
 
-Native-headers plan Phase 1 (issue #458, Stage 1.15): the translation layer
+Native-headers plan Phase 1: the translation layer
 that the cellpy 2 flip will run **once at I/O** instead of today's per-call
 rename sandwich. On the v1.x line this module is *dormant* — nothing in the
 runtime calls it yet; the round-trip and totality tests keep it honest until
 the flip (native-headers plan Phase 3) wires it into ``cellpy_file.load``.
 
 All header knowledge comes from ``cellpycore.legacy.mapping`` (the authoritative
-lossless/total mapping, extended in core #116 with ``expand_specific_columns``);
+lossless/total mapping, extended with ``expand_specific_columns``);
 no column names are declared here.
 
 Import policies implemented (native-headers plan D3):

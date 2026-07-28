@@ -1,4 +1,4 @@
-"""The one place that resolves cellpy credentials (config plan Step 6, #565).
+"""The one place that resolves cellpy credentials.
 
 Before this module four call sites — ``internals/otherpath.py``,
 ``internals/connections.py``, ``readers/filefinder.py`` and

@@ -1,4 +1,4 @@
-"""Provenance stamping — the framework's half of metadata (#562).
+"""Provenance stamping — the framework's half of metadata.
 
 A loader knows what the file *says*. Only the framework knows where the file
 came from, when it was read and what identity the resulting cell was given, so

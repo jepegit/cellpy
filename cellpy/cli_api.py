@@ -6,7 +6,7 @@ the CLI could do was unreachable from a script: you either shelled out to
 
 The logic lives here as ordinary typed functions, and ``cellpy.cli`` becomes
 argument parsing that calls them. Nothing about the command line changes — this
-is a move, not a redesign (#568 for ``convert``/``run``; #651 for the rest).
+is a move, not a redesign.
 
 **Output.** These functions are quiet by default, as a library should be. Each
 public entry takes an ``echo`` callable; the CLI passes ``typer.echo``. Larger
@@ -549,7 +549,7 @@ def echo_missing_modules():
 
 # -- write toml --
 def _write_toml_config_file(dst_file, dry_run, test_user=None):
-    """Write the ``cellpy.toml`` twin generated from the config models (#454).
+    """Write the ``cellpy.toml`` twin generated from the config models.
 
     The TOML is the single source of truth going forward (config plan Step 5):
     it is *generated* from the resolved ``CellpyConfig`` models (secrets
@@ -1177,7 +1177,7 @@ def _get_default_editor():
 
 # -- dump_config_resolved --
 def _dump_config_resolved():
-    """Print resolved config values with per-field provenance (#454)."""
+    """Print resolved config values with per-field provenance."""
     from cellpy import config as cellpy_config
 
     data = cellpy_config.get_config().model_dump_for_file()

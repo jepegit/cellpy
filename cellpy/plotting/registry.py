@@ -1,10 +1,10 @@
 """Named plot families — the declarative replacement for the old
-``SummaryPlotInfo._create_col_info`` column table (#636 / epic #567).
+``SummaryPlotInfo._create_col_info`` column table.
 
 Column names for summary families are header-bound (they depend on
 ``c.schema.summary``), so each family carries a small resolver rather than a
 frozen list of strings. Non-summary families (e.g. ``cycles`` for
-``cycles_plot``, #646) register with ``extras["entry_point"]`` so
+``cycles_plot``) register with ``extras["entry_point"]`` so
 ``families(entry_point=...)`` / the summary oracle stay scoped.
 """
 
@@ -86,7 +86,7 @@ def families(*, entry_point: Optional[str] = None) -> list[tuple[str, str]]:
 def iter_families(*, entry_point: Optional[str] = None) -> list[PlotFamily]:
     """Return registered families in registration order.
 
-    See :func:`families` for the optional ``entry_point`` filter (#646).
+    See :func:`families` for the optional ``entry_point`` filter.
     """
     if entry_point is None:
         return list(_FAMILIES.values())
@@ -96,7 +96,7 @@ def iter_families(*, entry_point: Optional[str] = None) -> list[PlotFamily]:
 def _register_family(family: PlotFamily) -> None:
     """Provisionally register (or overwrite) a :class:`PlotFamily`.
 
-    Public promotion of this hook waits for a release of in-tree use (#567).
+    Public promotion of this hook waits for a release of in-tree use.
     """
     if family.name in _FAMILIES:
         logger.warning("plotting.registry: overwriting registered family %r", family.name)

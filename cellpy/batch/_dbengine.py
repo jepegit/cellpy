@@ -1,4 +1,4 @@
-"""Native DB-journal engine for batch v3 (E4, #716).
+"""Native DB-journal engine for batch v3.
 
 Reads a batch selection from a cellpy database (the simple Excel reader or the
 JSON readers) into a pandas ``pages`` frame, then hands it to

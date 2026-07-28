@@ -236,7 +236,7 @@ class DataLoader(BaseLoader):
         return raw_limits
 
     def parse(self, source, **kwargs):
-        """Vendor stage (#560): query MITS 7.0 SQL Server into an Arbin frame.
+        """Vendor stage: query MITS 7.0 SQL Server into an Arbin frame.
 
         Taps the same ``_query_sql`` read as :meth:`loader`. Note this loader is
         still under development upstream — ``_query_sql`` pivots the raw table to
@@ -254,7 +254,7 @@ class DataLoader(BaseLoader):
         return pl.from_pandas(data_df.reset_index(drop=True))
 
     def declarations(self):
-        """Declarations for Arbin MITS 7.0 SQL Server (#560).
+        """Declarations for Arbin MITS 7.0 SQL Server.
 
         ``datetime_kind="arbin_epoch"`` — the vendor ``Date_Time`` is integer
         100 ns ticks since the Unix epoch, as in the other Arbin variants.

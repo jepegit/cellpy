@@ -1,4 +1,4 @@
-"""Batch journal model + JSON IO (batch v3, #698).
+"""Batch journal model + JSON IO.
 
 A journal is a *document*, not an actor: reading one never touches the
 filesystem layout, and the data model is separated from serialisation. This is
@@ -182,7 +182,7 @@ def _read_journal_excel(path: Path) -> Journal:
 
 
 def read_custom_json(path: Path | str, column_map: Mapping[str, str]) -> pl.DataFrame:
-    """Read an arbitrary JSON file into journal pages via a column map (#345).
+    """Read an arbitrary JSON file into journal pages via a column map.
 
     ``column_map`` maps *source* JSON keys to cellpy journal keys, e.g.
     ``{"cell_id": "filename", "mass_mg": "mass", "instrument_name": "instrument"}``.
@@ -215,7 +215,7 @@ def journal_from_custom_json(
     name: str | None = None,
     project: str | None = None,
 ) -> Journal:
-    """Build a :class:`Journal` from an arbitrary JSON file (#345)."""
+    """Build a :class:`Journal` from an arbitrary JSON file."""
     return Journal(
         name=name, project=project, pages=read_custom_json(path, column_map)
     )

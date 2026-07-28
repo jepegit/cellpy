@@ -1,9 +1,9 @@
-"""Batch facade (batch v3, #702).
+"""Batch facade.
 
 The thin, notebook-friendly ``Batch`` class that ties the pieces together:
-journal (#698) + policy/resolve_specs (#699) + runner/result/store (#700) +
-aggregate/qc/outputs (#701). Keeps the beloved surface the characterization net
-pinned (#697) -- ``pages``, ``cells``, ``summaries``, ``update``, ``report``,
+journal + policy/resolve_specs + runner/result/store +
+aggregate/qc/outputs. Keeps the beloved surface the characterization net
+pinned -- ``pages``, ``cells``, ``summaries``, ``update``, ``report``,
 ``save``, ``mark_as_bad``, ``drop`` -- while everything underneath is the new
 package.
 
@@ -124,7 +124,7 @@ class Batch:
 
     @property
     def tests(self) -> pl.DataFrame:
-        """Per-test metadata across the batch (tidy long-format, #506/F6-D2).
+        """Per-test metadata across the batch (tidy long-format).
 
         One row per (cell, ``test_id``) with the native ``TestMeta`` fields plus
         ``cell``/``group``/``sub_group`` keys -- the per-test records a merged

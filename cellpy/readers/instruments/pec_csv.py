@@ -263,7 +263,7 @@ class DataLoader(BaseLoader):
     _CANONICAL = {semantic: semantic for semantic in _COLUMN_KEY_TO_CELLPY_HEADER}
 
     def parse(self, source, **kwargs):
-        """Vendor stage (#560): read PEC csv into a canonical, unit-normalised frame.
+        """Vendor stage: read PEC csv into a canonical, unit-normalised frame.
 
         The two-stage counterpart to :meth:`loader`. Unlike the
         configuration-driven loaders, PEC identifies columns by *alias set* and
@@ -306,7 +306,7 @@ class DataLoader(BaseLoader):
         return pl.from_pandas(df)
 
     def declarations(self):
-        """The declarations for the file most recently parsed (#560).
+        """The declarations for the file most recently parsed.
 
         Static where it can be, discovered where it must be. The canonical →
         native mapping is derived exactly as the configuration loaders' is — by

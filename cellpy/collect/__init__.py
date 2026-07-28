@@ -1,14 +1,14 @@
-"""cellpy.collect -- collection as a first-class product (collectors redesign, #705).
+"""cellpy.collect -- collection as a first-class product.
 
 A collection is a product, not a side effect: :class:`Collection` = a tidy frame
 plus provenance. Built on ``cellpy.batch.aggregate`` (Epic A), replacing the
 ``utils/collectors`` "elevated arguments" machinery and fixing the cross-cell
 cycle-narrowing bug by design. ``cellpy.utils.collectors`` is now a thin shim
-whose legacy ``Batch*Collector`` family is removed in 2.1 (#708).
+whose legacy ``Batch*Collector`` family is removed in 2.1.
 
-Arcs: options/collection/collect_summaries + per-cell curves (#705); rate/group
-pipeline (#706); convenience class + recipes (#707); ICA collection + plotting
-handover (Collection.plot -> cellpy.plotting) + collectors shim (#708).
+Arcs: options/collection/collect_summaries + per-cell curves; rate/group
+pipeline; convenience class + recipes; ICA collection + plotting
+handover (Collection.plot -> cellpy.plotting) + collectors shim.
 """
 
 from __future__ import annotations

@@ -1,4 +1,4 @@
-"""Batch runner (batch v3, #700, #704).
+"""Batch runner.
 
 Per-cell work is a pure function -- one cell in, one result out, no shared
 mutable state. Serial vs parallel execution is then a choice of executor, not a

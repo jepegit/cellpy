@@ -1,4 +1,4 @@
-"""Deprecated shim: ``cellpy.utils.collectors`` -> :mod:`cellpy.collect` (collectors redesign, #708).
+"""Deprecated shim: ``cellpy.utils.collectors`` -> :mod:`cellpy.collect`.
 
 The collector subsystem was redesigned and now lives in :mod:`cellpy.collect`
 (options / collection / summary / curves / ica / collector). The legacy

@@ -1,4 +1,4 @@
-"""Loading and saving figures — one implementation (#567).
+"""Loading and saving figures — one implementation.
 
 ``load_figure``, ``load_plotly_figure``, ``load_matplotlib_figure``,
 ``save_matplotlib_figure`` and ``make_matplotlib_manager`` existed as full

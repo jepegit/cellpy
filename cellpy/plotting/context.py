@@ -1,4 +1,4 @@
-"""Source adapters for prepare → spec → render (#638 / #657).
+"""Source adapters for prepare → spec → render.
 
 The only code in ``cellpy.plotting`` that should reach into ``CellpyCell`` /
 ``Batch`` objects — or wrap an already-collected tidy frame.
@@ -38,7 +38,7 @@ class CellContext:
 
 @dataclass
 class FrameContext:
-    """Already-collected tidy multi-cell frame for collected plotting (#657).
+    """Already-collected tidy multi-cell frame for collected plotting.
 
     Collectors own collection; plotting only needs the frame plus light metadata
     (units / journal / family kind).
@@ -69,7 +69,7 @@ def from_source(source: Any) -> CellContext:
     """Adapt *source* to a plotting context.
 
     Single-cell inputs become :class:`CellContext`. Collected frames should use
-    :func:`from_frame` / :func:`collected_plot` instead (#657).
+    :func:`from_frame` / :func:`collected_plot` instead.
     """
     if isinstance(source, CellContext):
         return source

@@ -1,4 +1,4 @@
-"""The Collection product (collectors redesign, #705).
+"""The Collection product.
 
 A collection is a *product, not a side effect*: a tidy frame plus provenance
 (what was collected, from which batch, with which options, by which cellpy
@@ -64,7 +64,7 @@ class Collection:
     def plot(self, *, family_kind: str | None = None, **kwargs):
         """Draw the collection via :func:`cellpy.plotting.collected_plot`.
 
-        The drawing lives in ``cellpy.plotting`` (#657); a collection just hands
+        The drawing lives in ``cellpy.plotting``; a collection just hands
         it the tidy frame and the family. The only reconciliation needed is the
         summary family's cycle column, which the summary plotter spells
         ``cycle`` (capacity/ICA curves keep ``cycle_num`` / ``cycle``).

@@ -1,14 +1,13 @@
-"""cellpy.batch -- the batch v3 subsystem (#696).
+"""cellpy.batch -- the batch subsystem.
 
-A boring, standard architecture for batch processing, which replaced the
-``utils/batch_tools`` "farm/barn" machinery (removed in 2.1, E4 #716);
-``cellpy.utils.batch`` is a thin re-export/shim.
+A boring, standard architecture for batch processing. ``cellpy.utils.batch``
+is a thin re-export/shim.
 
-Modules land incrementally (plan sections 4 & 6):
-    journal  -- Journal model + json readers/writers  (#698, this arc)
-    layout   -- BatchPaths: pure path computation + ensure_dirs  (#698)
-    policy   -- LoadPolicy / CellSpec typed options  (#699)
-    runner   -- load_cell / run -> BatchResult  (#700)
+Modules:
+    journal  -- Journal model + json readers/writers
+    layout   -- BatchPaths: pure path computation + ensure_dirs
+    policy   -- LoadPolicy / CellSpec typed options
+    runner   -- load_cell / run -> BatchResult
     ...
 """
 

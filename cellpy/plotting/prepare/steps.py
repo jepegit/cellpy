@@ -1,4 +1,4 @@
-"""Cycle-info prepare path: scaled raw+steps frame + FigureSpec (#647).
+"""Cycle-info prepare path: scaled raw+steps frame + FigureSpec.
 
 Public ``cycle_info_plot`` calls :func:`prepare` then hands ``(frame, FigureSpec)``
 to a backend renderer (``spec.extras['kind'] == 'cycle_info'``).

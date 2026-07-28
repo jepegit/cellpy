@@ -37,14 +37,14 @@ class DataLoader(TxtLoader):
     supported_models = SUPPORTED_MODELS  # Required
 
     def parse(self, source, **kwargs):
-        """Vendor stage (#560 Phase C): BDF decode into a cellpy-named frame.
+        """Vendor stage: BDF decode into a cellpy-named frame.
 
         BatMo's inherited ``TxtLoader.parse()`` only reads the CSV. The real
         decoding — hours→seconds, signed current from ``Step Type``, continuous
         step indices, step_time, synthetic ``data_point`` / ``date_time`` —
         lives in :meth:`_post_rename_headers` and used to run only on the
         legacy ``loader()`` path. Under ``harmonize(parse())`` that left
-        ``test_time`` in hours (#621). Mirror the biologics pattern: ``parse()``
+        ``test_time`` in hours. Mirror the biologics pattern: ``parse()``
         performs the decode, ``declarations()`` maps the resulting cellpy
         headers to native.
         """
@@ -67,7 +67,7 @@ class DataLoader(TxtLoader):
         return pl.from_pandas(data.raw.reset_index(drop=True))
 
     def declarations(self):
-        """Declarations for BatMo BDF (#560 Phase C).
+        """Declarations for BatMo BDF.
 
         The parsed frame already uses cellpy header names (see :meth:`parse`),
         so the map is ``derive_column_maps`` over the identity

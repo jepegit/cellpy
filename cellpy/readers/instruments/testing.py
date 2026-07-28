@@ -1,4 +1,4 @@
-"""Conformance kit for instrument loaders (cellpy 2, issue #210).
+"""Conformance kit for instrument loaders.
 
 Ships with cellpy so a third-party loader can prove it satisfies the contract
 without reverse-engineering it from cellpy's internals::

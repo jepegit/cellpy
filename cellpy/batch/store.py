@@ -1,4 +1,4 @@
-"""Lazy cell store (batch v3, #700).
+"""Lazy cell store.
 
 Replaces ``batch_core.Data`` + ``experiment.cell_data_frames`` + the ``x_``
 prefixed accessor dict. A standard ``Mapping`` with lazy loading; tab completion

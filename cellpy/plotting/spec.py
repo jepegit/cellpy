@@ -1,6 +1,6 @@
-"""Declarative figure specs for the prepare → spec → render pipeline (#636).
+"""Declarative figure specs for the prepare → spec → render pipeline.
 
-These dataclasses are the contract later Stage-1 issues (#637–#639) will render.
+These dataclasses are the contract later Stage-1 issues will render.
 This PR only lands the types; today's builders do not consume them yet.
 """
 

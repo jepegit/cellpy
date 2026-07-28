@@ -1,4 +1,4 @@
-"""Summary collection (collectors redesign, #705/#706).
+"""Summary collection.
 
 Assembles per-cell summaries into one tidy :class:`Collection`, carrying the
 full rate-filtering / grouping / CV-partition feature set of the legacy

@@ -1,4 +1,4 @@
-"""Per-cell frame header resolution for plotting (#567 / #647).
+"""Per-cell frame header resolution for plotting.
 
 Replaces module-level ``get_headers_*()`` singletons that always answered with
 legacy names after the native-headers flip.

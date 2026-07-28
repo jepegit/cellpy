@@ -1,4 +1,4 @@
-"""Per-cell summary operations for the collect pipeline (collectors redesign, #706).
+"""Per-cell summary operations for the collect pipeline.
 
 Polars-native ports of the meaty ``helpers.concat_summaries`` internals --
 rate-based cycle selection, CV partitioning, and group averaging -- that
