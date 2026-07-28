@@ -70,9 +70,9 @@ if _EXAMPLE_DATA_IN_EXAMPLE_FOLDER_IF_AVAILABLE:
 class ExampleData(Enum):
     """Enum for example data files"""
 
-    CELLPY = "20180418_sf033_4_cc.h5"
-    OLD_CELLPY = "20160805_test001_45_cc.h5"
-    RATE = "20231115_rate_cc.h5"
+    CELLPY = "20180418_sf033_4_cc.cellpy"
+    OLD_CELLPY = "20160805_test001_45_cc.cellpy"
+    RATE = "20231115_rate_cc.cellpy"
     # GITT = "gitt.h5"
     # COMMERCIAL = "commercial.h5"
     # CV = "cv.h5"
