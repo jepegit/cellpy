@@ -47,6 +47,15 @@ See also [testing-and-coverage.md](testing-and-coverage.md) and [ci-tiers.md](ci
 - v2 epic: [cellpy-v2-epic.md](cellpy-v2-epic.md).
 - cellpy-core integration: `../cellpy-core/.issueflows/04-designs-and-guides/`.
 
+## Documentation
+
+- Edit docs on **`master`** (same PRs as code). Do **not** use `v2-docs-stable`
+  — that branch is retired (#768). See [docs-on-master.md](docs-on-master.md).
+- Local preview: `uv run --group docs zensical serve` (more in
+  `docs/contributing/developers_guide/dev_docs.md`).
+- Read the Docs: **latest** ← `master`; **stable** ← latest release tag
+  (e.g. `v2.1.0`).
+
 ## Release & version bump
 
 **Strategy: git-tag derived** via `uv-dynamic-versioning` (see

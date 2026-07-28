@@ -127,6 +127,8 @@ gh run watch <run-id>
 - [ ] Tests green (`-m essential` min; full suite before stable).
 - [ ] **`HISTORY.md`** updated.
 - [ ] Tag is **`vX.Y.Z`** (or `aN` / `bN` / `rcN` / `.postN` as appropriate).
+- [ ] Read the Docs **stable** can build that tag (no separate docs branch —
+      see [`docs-on-master.md`](docs-on-master.md)).
 
 ### Extra gates — final legacy 1.x ship
 
