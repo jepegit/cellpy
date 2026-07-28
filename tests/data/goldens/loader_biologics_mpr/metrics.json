@@ -1,0 +1,7 @@
+{
+  "instrument": "biologics_mpr",
+  "n_columns": 47,
+  "n_rows": 23561,
+  "source": "testdata/data/biol.mpr",
+  "suite": "loader_biologics_mpr"
+}

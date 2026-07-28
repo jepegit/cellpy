@@ -129,6 +129,25 @@ LOADER_GOLDEN_SPECS: tuple[LoaderGoldenSpec, ...] = (
         source="testdata/data/custom_data_001.csv",
         instrument_file="testdata/data/custom_instrument_001.yml",
     ),
+    LoaderGoldenSpec(
+        suite="loader_biologics_mpr",
+        instrument="biologics_mpr",
+        source="testdata/data/biol.mpr",
+    ),
+    LoaderGoldenSpec(
+        suite="loader_batmo_bdf",
+        instrument="batmo_bdf",
+        source="testdata/data/batmo_bdf.csv",
+    ),
+    LoaderGoldenSpec(
+        suite="loader_arbin_sql_h5",
+        instrument="arbin_sql_h5",
+        source="testdata/data/20200624_test001_cc_01.h5",
+    ),
+    # NOTE: loader_neware_nda is intentionally absent — the fastnda-based
+    # Neware loader needs the optional `fastnda` backend to produce a snapshot,
+    # which isn't in the test env, so its golden can't be generated here.
+    # Deferred to #655 Phase 2 (generate where fastnda is installed).
 )
 
 

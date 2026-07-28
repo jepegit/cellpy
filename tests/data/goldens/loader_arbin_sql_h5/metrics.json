@@ -1,0 +1,7 @@
+{
+  "instrument": "arbin_sql_h5",
+  "n_columns": 16,
+  "n_rows": 47,
+  "source": "testdata/data/20200624_test001_cc_01.h5",
+  "suite": "loader_arbin_sql_h5"
+}
