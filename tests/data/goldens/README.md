@@ -22,7 +22,7 @@ Full convention, naming rules, and how to add suites: [`../../README.md`](../../
 | `loader_custom` | `testdata/data/custom_data_001.csv` + `custom_instrument_001.yml` | `raw.parquet`, `raw_units.json`, `meta.json`, `metrics.json` |
 | `loader_biologics_mpr` | `testdata/data/biol.mpr` | `raw.parquet`, `raw_units.json`, `meta.json`, `metrics.json` |
 | `loader_batmo_bdf` | `testdata/data/batmo_bdf.csv` | `raw.parquet`, `raw_units.json`, `meta.json`, `metrics.json` |
-| `loader_arbin_sql_h5` | `testdata/data/20200624_test001_cc_01.h5` | `raw.parquet`, `raw_units.json`, `meta.json`, `metrics.json` |
+| `loader_arbin_sql_h5` | `testdata/data/20200624_test001_cc_01.h5` | `raw.parquet`, `raw_units.json`, `meta.json`, `metrics.json` (host-local `date_time` / `start_datetime`: pytest compares relative offsets / omits start wall-clock) |
 | `curve_get_cap_*`, `curve_get_ccap_*`, `curve_get_dcap_*`, `curve_get_ocv_*` | `testdata/data/20160805_test001_45_cc_01.res` (via cellpy pipeline) | `curve.parquet`, `metrics.json`; `null_data.json` for NullData cases |
 | `ica_dqdv_*` | `testdata/data/20160805_test001_45_cc_01.res` (via cellpy pipeline) | `ica.parquet`, `metrics.json` |
 
