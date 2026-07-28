@@ -35,7 +35,6 @@ output_dir = os.path.join(data_dir, "out")
 cellpy_data_dir = os.path.join(data_dir, "hdf5")
 db_dir = os.path.join(data_dir, "db")
 journal_dir = os.path.join(data_dir, "journal")
-batch_file_dir = os.path.join(data_dir, "batchfiles")
 log_dir = os.path.join(data_dir, "log")
 instrument_dir = os.path.join(data_dir, "instruments")
 template_dir = os.path.join(data_dir, "templates")
@@ -94,18 +93,6 @@ run_name_maccor = "maccor_001"
 
 # -------- experiment specific files ----------------
 
-full_cell_name = "full_cell.res"
-full_cell_path = os.path.join(raw_data_dir, full_cell_name)
-
-constant_voltage_cell_name = "constant_voltage_cell.res"
-constant_voltage_cell_path = os.path.join(raw_data_dir, constant_voltage_cell_name)
-
-taper_cell_name = "taper_cell.res"
-taper_cell_path = os.path.join(raw_data_dir, taper_cell_name)
-
-gitt_cell_name = "gitt_cell.res"
-gitt_cell_path = os.path.join(raw_data_dir, gitt_cell_name)
-
 rate_cell_name = "20231115_rate_cc.h5"
 rate_cell_path = os.path.join(raw_data_dir, rate_cell_name)
 
@@ -152,9 +139,6 @@ mcc_cellpy_file_path = os.path.join(cellpy_data_dir, mcc_cellpy_file_name)
 mcc_file_name2 = "maccor_002.txt"
 mcc_file_path2 = os.path.join(raw_data_dir, mcc_file_name2)
 
-mcc_cellpy_file_name2 = "maccor_002.h5"
-mcc_cellpy_file_path2 = os.path.join(cellpy_data_dir, mcc_cellpy_file_name2)
-
 # -------- neware specific files --------------------
 nw_file_name = "neware_uio.csv"
 nw_file_path = os.path.join(raw_data_dir, nw_file_name)
@@ -163,15 +147,10 @@ nw_cellpy_file_name = "neware_uio.h5"
 nw_cellpy_file_path = os.path.join(cellpy_data_dir, nw_cellpy_file_name)
 
 nw_nda_file_path = os.path.join(raw_data_dir, "20260302_IFE_BTS85_2_9_8_1.ndax")
-nw_nda_cellpy_file_name = "20260302_IFE_BTS85_2_9_8_1.h5"
-nw_nda_cellpy_file_path = os.path.join(cellpy_data_dir, nw_nda_cellpy_file_name)
 
 # -------- pec specific files -----------------------
 pec_file_name = "pec.csv"
 pec_file_path = os.path.join(raw_data_dir, pec_file_name)
-
-pec_cellpy_file_name = "pec.h5"
-pec_cellpy_file_path = os.path.join(cellpy_data_dir, pec_cellpy_file_name)
 
 
 # -------- batmo specific files --------------------
@@ -202,12 +181,6 @@ custom_file_paths = os.path.join(raw_data_dir, custom_file_name)
 custom_instrument_1 = "custom_instrument_001.yml"
 custom_instrument_definitions_file = os.path.join(raw_data_dir, custom_instrument_1)
 
-custom_instrument_2 = "custom_instrument_002.yml"
-custom_file_paths_2 = os.path.join(raw_data_dir, "custom_data_002.csv")
-
-custom_instrument_3 = "custom_instrument_003.yml"
-custom_file_paths_3 = os.path.join(raw_data_dir, "custom_data_002.csv")
-
 
 # -------- custom new file format -------------------
 custom_instrument = "maccor_one.yml"
@@ -215,6 +188,9 @@ custom_instrument_path = os.path.join(instrument_dir, custom_instrument)
 
 
 # ---------- gitt data -------------------------------
+# NOTE: this is a GITT-*shaped* proxy (charge/discharge/rest/ir/ocv usteps),
+# not a real GITT-typed protocol. A real GITT raw fixture is deferred to #655
+# Phase 2.
 gitt_file_name = "20210210_FC.h5"
 gitt_file_path = os.path.join(raw_data_dir, gitt_file_name)
 
