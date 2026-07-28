@@ -12,3 +12,6 @@ testdata/** linguist-documentation
 
 # Lockfiles: LF gives stable cross-platform diffs
 *.lock       text eol=lf
+
+# Deliberately-broken byte-exact fixtures (#655) — never normalize.
+testdata/bad/** -text
