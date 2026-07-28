@@ -33,3 +33,16 @@ Note the two different standards at work. `--verify` regenerates twice on the
 against goldens recorded on someone else's machine, so it uses a tolerance:
 scipy's interpolation and filtering differ across platforms by 1e-7 to 5e-7
 relative here, and a check tighter than that tests the BLAS rather than cellpy.
+
+## Related: deliberately-broken fixtures
+
+Not goldens, but generated the same way. `testdata/bad/` holds a small set of
+malformed files (NaN/Inf, missing cycle, truncated, missing column), each
+isolating one defect, regenerated with:
+
+```bash
+uv run python dev/make_bad_fixtures.py            # (re)write
+uv run python dev/make_bad_fixtures.py --verify   # assert byte-identical
+```
+
+`tests/test_bad_fixtures.py` pins how cellpy currently behaves on each.
