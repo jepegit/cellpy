@@ -28,6 +28,12 @@
       `cellpy.config` (`config.paths.x = …` or `config.override(...)`). The
       `CellpyCell.mass` / `.nom_cap` property facades are **kept**. (#717)
 
+* **Example data regenerated as v9.** The downloadable example cells served via
+  `cellpy.utils.example_data` (`CELLPY`, `OLD_CELLPY`, `RATE`) are now v9
+  `.cellpy` (zip-of-parquet) files instead of v8 HDF5 `.h5`; same data, ~45%
+  smaller. `example_data.cellpy_file_path()` / `old_cellpy_file_path()` /
+  `rate_file()` now resolve `.cellpy` assets. (#718)
+
 * Tried shipping marimo notebooks in the docs (#724); withdrawn — Zensical
   embeds could not keep a real marimo table/plot experience without hanging
   Pyodide or replacing widgets with non-marimo UI.
