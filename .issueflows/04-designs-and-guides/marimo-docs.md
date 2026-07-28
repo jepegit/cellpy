@@ -14,4 +14,5 @@ Plotly iframes) work but are no longer “marimo”.
 **Revisit when:** Zensical (or a host plugin) supports marimo islands cleanly,
 or marimo ships a reliable Python-free static reactive export that fits docs.
 
-**Landing:** docs work continues on `v2-docs-stable`.
+**Landing:** docs work continues on **`master`**. The old `v2-docs-stable`
+branch is retired — see [`docs-on-master.md`](docs-on-master.md).

@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+* Retire `v2-docs-stable`: docs land on `master`; RTD stable tracks release
+  tags (e.g. `v2.1.0`). (#768)
+
 ## [2.1.0] - 2026-07-28
 
 ### cellpy 2.1 (Stage 4)

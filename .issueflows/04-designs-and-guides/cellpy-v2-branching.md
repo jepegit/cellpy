@@ -48,7 +48,7 @@ v1.x   ──► 503-v1-only-fix          ──► v1.x     (only when the fix 
 |------|--------|-----------|
 | V2 themes (metadata, merge, API, file format) | **`master`** | The active line |
 | Bugfixes in shared modules | **`master` first**, cherry-pick to `v1.x` if 1.x users are affected | One source of truth |
-| Docs, CI, tests | **`master`**; backport only if the `v1.x` release process needs them | Keep `v1.x` quiet |
+| Docs, CI, tests | **`master`**; backport only if the `v1.x` release process needs them. Do **not** use `v2-docs-stable` (retired — [`docs-on-master.md`](docs-on-master.md)) | Keep `v1.x` quiet |
 | Fix that only makes sense pre-v2 (removed/rewritten code on master) | **`v1.x` directly** | Nothing to cherry-pick from |
 | `cellpycore` pin bump | **`master`** freely as v2 needs; **`v1.x`** stays on the conservative exact pin (`cellpycore==0.2.1`) unless a fix demands a patch bump | Protect the stable line |
 
