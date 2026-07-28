@@ -47,6 +47,7 @@
 * Loader golden oracles for host-local Arbin SQL datetime (`arbin_sql_h5`)
   compare relative offsets / omit `start_datetime`, so CEST regenerators and
   UTC CI agree (#768).
+* Shipped to PyPI and conda-forge; docs synced to `v2-docs-stable` (#768).
 
 ## [2.0.0] - 2026-07-26
 
