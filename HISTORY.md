@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-07-28
+
 ### cellpy 2.1 (Stage 4)
 
 * **Batch / collect redesign.** New top-level `cellpy.batch` (journal / policy /
@@ -41,6 +43,10 @@
 * Clarify Neware docs: binary `.nda`/`.ndax` via `neware_nda` (bundled fastnda) vs exported `neware_txt` models.
 
 * Iterative docs fixes: example notebook typos/hedges, GITT intro quote, and batch config note for 1.x vs `cellpy.toml`. (#695).
+
+* Loader golden oracles for host-local Arbin SQL datetime (`arbin_sql_h5`)
+  compare relative offsets / omit `start_datetime`, so CEST regenerators and
+  UTC CI agree (#768).
 
 ## [2.0.0] - 2026-07-26
 

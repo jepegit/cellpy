@@ -19,6 +19,16 @@ DATETIME_LIKE_COLUMNS = frozenset({"date_time"})
 TIMEDELTA_LIKE_COLUMNS = frozenset({"step_time", "test_time"})
 TEMPORAL_ABS_NS = 1_000
 
+# Instruments whose legacy ``date_time`` / ``start_datetime`` decode via
+# ``datetime.fromtimestamp`` (host-local). Absolute wall-clock values differ by
+# the host UTC offset (e.g. CEST laptop vs Linux CI); see
+# ``tests/test_loader_port_parity.py`` (``_LEGACY_DATETIME_IS_HOST_LOCAL``).
+# Goldens still record the regenerator's local values; comparisons use relative
+# offsets / omit ``start_datetime`` so the oracle is host-independent.
+HOST_LOCAL_DATETIME_INSTRUMENTS = frozenset(
+    {"arbin_sql_h5", "arbin_sql", "arbin_sql_7"}
+)
+
 # Raw columns that stay integer; all other int64 loader columns are coerced to
 # float64 so all-zero measurements (e.g. ac_impedance) match across platforms.
 INTEGER_RAW_COLUMNS = frozenset(
@@ -63,6 +73,11 @@ class LoaderGoldenSpec:
         self.from_raw_kwargs = from_raw_kwargs or {}
         self.instrument_file = instrument_file
         self.set_instrument_kwargs = set_instrument_kwargs or {}
+
+    @property
+    def legacy_datetime_is_host_local(self) -> bool:
+        """True when absolute ``date_time`` / ``start_datetime`` are host-local."""
+        return self.instrument in HOST_LOCAL_DATETIME_INSTRUMENTS
 
     @property
     def source_path(self) -> Path:
@@ -273,7 +288,23 @@ def assert_temporal_series_equal(
     assert act == pytest.approx(exp, abs=abs_ns)
 
 
-def assert_raw_matches_golden(actual: pd.DataFrame, expected: pd.DataFrame) -> None:
+def assert_host_local_datetime_series_equal(
+    actual: pd.Series, expected: pd.Series, *, abs_ns: int
+) -> None:
+    """Compare host-local datetime columns by offset from the first sample."""
+    act = pd.to_datetime(actual).astype("datetime64[ns]").astype("int64")
+    exp = pd.to_datetime(expected).astype("datetime64[ns]").astype("int64")
+    assert (act - act.iloc[0]).tolist() == pytest.approx(
+        (exp - exp.iloc[0]).tolist(), abs=abs_ns
+    )
+
+
+def assert_raw_matches_golden(
+    actual: pd.DataFrame,
+    expected: pd.DataFrame,
+    *,
+    host_local_datetime: bool = False,
+) -> None:
     """Compare loader raw frames with temporal column tolerance."""
     from tests.golden_support import sort_summary_columns
     from pandas.testing import assert_frame_equal
@@ -288,7 +319,41 @@ def assert_raw_matches_golden(actual: pd.DataFrame, expected: pd.DataFrame) -> N
         assert_frame_equal(actual[exact_cols], expected[exact_cols])
 
     for col in sorted(temporal_cols):
-        if col in actual.columns:
+        if col not in actual.columns:
+            continue
+        if host_local_datetime and col in DATETIME_LIKE_COLUMNS:
+            assert_host_local_datetime_series_equal(
+                actual[col], expected[col], abs_ns=TEMPORAL_ABS_NS
+            )
+        else:
             assert_temporal_series_equal(
                 actual[col], expected[col], abs_ns=TEMPORAL_ABS_NS
             )
+
+
+def assert_loader_meta_matches_golden(
+    actual: dict[str, Any],
+    expected: dict[str, Any],
+    *,
+    host_local_datetime: bool = False,
+) -> None:
+    """Compare loader meta payloads; omit host-local ``start_datetime`` when needed."""
+    if host_local_datetime:
+        actual = {
+            key: (
+                {k: v for k, v in value.items() if k != "start_datetime"}
+                if key == "meta_common" and isinstance(value, dict)
+                else value
+            )
+            for key, value in actual.items()
+        }
+        expected = {
+            key: (
+                {k: v for k, v in value.items() if k != "start_datetime"}
+                if key == "meta_common" and isinstance(value, dict)
+                else value
+            )
+            for key, value in expected.items()
+        }
+    assert actual == expected
+

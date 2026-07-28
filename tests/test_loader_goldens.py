@@ -11,6 +11,7 @@ import pytest
 from tests.loader_golden_support import (
     LOADER_GOLDEN_SPECS,
     LoaderGoldenSpec,
+    assert_loader_meta_matches_golden,
     assert_raw_matches_golden,
     load_loader_snapshot,
 )
@@ -31,7 +32,11 @@ def test_loader_raw_matches_golden_parquet(spec: LoaderGoldenSpec):
 
     expected = pd.read_parquet(spec.golden_dir / "raw.parquet")
     raw, _, _ = load_loader_snapshot(spec)
-    assert_raw_matches_golden(raw, expected)
+    assert_raw_matches_golden(
+        raw,
+        expected,
+        host_local_datetime=spec.legacy_datetime_is_host_local,
+    )
 
 
 @pytest.mark.essential
@@ -64,7 +69,11 @@ def test_loader_meta_matches_golden(spec: LoaderGoldenSpec):
     }
     if "custom_info" in meta:
         actual["custom_info"] = meta["custom_info"]
-    assert actual == expected
+    assert_loader_meta_matches_golden(
+        actual,
+        expected,
+        host_local_datetime=spec.legacy_datetime_is_host_local,
+    )
 
 
 @pytest.mark.essential
