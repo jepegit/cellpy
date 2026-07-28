@@ -1,0 +1,7 @@
+{
+  "instrument": "batmo_bdf",
+  "n_columns": 13,
+  "n_rows": 21206,
+  "source": "testdata/data/batmo_bdf.csv",
+  "suite": "loader_batmo_bdf"
+}
