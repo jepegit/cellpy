@@ -1,4 +1,4 @@
-"""The batch journal as a metadata source (metadata plan Step 6, #563).
+"""The batch journal as a metadata source.
 
 The journal has always been write-only as far as metadata is concerned: batch
 builds its pages *from* loaded cells (``batch.py``), and nothing ever read a row

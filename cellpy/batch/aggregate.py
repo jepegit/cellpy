@@ -1,4 +1,4 @@
-"""Batch aggregation (batch v3, #701).
+"""Batch aggregation.
 
 Turns a set of loaded cells into one tidy, long-format frame with ``cell`` /
 ``group`` / ``sub_group`` key columns -- replacing the legacy wide/multiindex
@@ -89,7 +89,7 @@ def combine_tests(
 
     One row per (cell, ``test_id``) carrying the native ``TestMeta`` fields plus
     ``cell``/``group``/``sub_group`` keys. Surfaces the per-test records that a
-    merged (campaign) cell holds in ``Data.tests`` (#506) at the batch level.
+    merged (campaign) cell holds in ``Data.tests`` at the batch level.
     Returns an empty frame when no cell exposes test metadata.
     """
     lookup = _group_lookup(journal)

@@ -1,4 +1,4 @@
-"""The instrument-loader contract (cellpy 2, issue #210).
+"""The instrument-loader contract.
 
 One formal contract every loader satisfies — built-in or third-party — so the
 framework can discover, validate and route loaders without knowing anything

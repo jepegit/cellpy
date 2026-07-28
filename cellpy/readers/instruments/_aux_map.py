@@ -4,8 +4,7 @@ The native scheme is ``aux_<quantity>_<name>`` with quantity one of
 temperature / potential / pressure / resistance (see
 ``LoaderDeclarations.aux_map``). Arbin's wide-aux path still emits the older
 ``aux_<nick>_u_<unit>`` (and ``aux_d_<nick>_dt_u_d<unit>_dt``) names on the
-vendor frame — those must be declared or ``harmonize()`` warn-and-drops them
-(#560 Phase C / #621).
+vendor frame — those must be declared or ``harmonize()`` warn-and-drops them.
 """
 
 from __future__ import annotations

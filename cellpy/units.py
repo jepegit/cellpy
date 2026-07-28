@@ -1,4 +1,4 @@
-"""Unit presentation helpers (unit plan Phase 4, issue #564).
+"""Unit presentation helpers.
 
 Plots and reports need to *say* what a number is measured in. Before this
 module every caller composed that string by hand::

@@ -1,4 +1,4 @@
-"""YAML → TOML migration helper (CLI wiring is issue #454)."""
+"""YAML → TOML migration helper."""
 
 from __future__ import annotations
 

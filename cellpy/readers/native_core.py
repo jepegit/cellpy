@@ -1,4 +1,4 @@
-"""Native-schema core adapter for the V2-11 opt-in (issue #511).
+"""Native-schema core adapter for the V2-11 opt-in.
 
 ``CellpyCell(native_schema=True)`` keeps the ``Data`` frames in **native**
 cellpy-core column names (pandas containers) and runs the polars engine
@@ -44,7 +44,7 @@ def _summary_extras_block(s, cc_col, dc_col, ce_col):
     """Compute the legacy cruft columns on one (already per-test) summary block.
 
     Mirrors cellpycore's ``OldCellpyCellCore._legacy_summary_cruft_block`` so the
-    native pipeline reproduces the same values (issue #552).
+    native pipeline reproduces the same values.
     """
     cc = s[cc_col]
     dc = s[dc_col]
@@ -58,13 +58,13 @@ def _summary_extras_block(s, cc_col, dc_col, ce_col):
 
 
 def _add_summary_extras(summary, schema):
-    """Add the legacy-only cumulated-CE / shifted-capacity / RIC columns (#552).
+    """Add the legacy-only cumulated-CE / shifted-capacity / RIC columns.
 
     These have no native ``CycleCols`` equivalent; they are pure cumsums over the
     native summary's own ``charge_capacity`` / ``discharge_capacity`` /
     ``coulombic_efficiency`` columns. When ``test_id`` is present the cumsums are
     windowed per test so multi-test (campaign-merged) objects do not leak across
-    tests (mirrors cellpycore #136).
+    tests.
     """
     cyc = schema.cycle
     cc_col, dc_col, ce_col = (
@@ -94,7 +94,7 @@ def _apply_spec_info(steps, step_specifications, schema, short):
     the specifications but ignores the optional free-text ``info`` column; this
     fills it in (matched by step, or by (cycle, step) when not ``short``) under the
     legacy-only ``"info"`` name the D6 shim resolves ``headers_step_table.info``
-    to. No-op when there are no specifications or no ``info`` column (#554).
+    to. No-op when there are no specifications or no ``info`` column.
     """
     if step_specifications is None:
         return steps

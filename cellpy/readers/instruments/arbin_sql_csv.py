@@ -142,7 +142,7 @@ class DataLoader(BaseLoader):
         return raw_limits
 
     def parse(self, source, **kwargs):
-        """Vendor stage (#560): read the CSV export into an Arbin-named frame.
+        """Vendor stage: read the CSV export into an Arbin-named frame.
 
         Taps the same ``_query_csv`` read as :meth:`loader`, stopping before the
         rename. The vendor ``Date_Time`` here is a wall-clock **string** (the
@@ -161,10 +161,10 @@ class DataLoader(BaseLoader):
         return pl.from_pandas(data_df.reset_index(drop=True))
 
     def declarations(self):
-        """Declarations for the Arbin SQL Server CSV export (#560).
+        """Declarations for the Arbin SQL Server CSV export.
 
         ``datetime_kind="string"``: the CSV ``Date_Time`` is a wall-clock string,
-        read as UTC by ``harmonize()`` (the naive-timestamp rule, #560).
+        read as UTC by ``harmonize()`` (the naive-timestamp rule).
         """
         from cellpy.readers.instruments.config_declarations import (
             declarations_from_renaming,

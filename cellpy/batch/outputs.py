@@ -1,4 +1,4 @@
-"""Pure output writers (batch v3, #701).
+"""Pure output writers.
 
 Each writer takes a frame and an explicit path and writes it -- nothing more.
 Exporting never creates directory trees implicitly (that is

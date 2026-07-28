@@ -27,7 +27,7 @@ tunnelled through four entry points.
 - Half-cycles that fail are reported, not silently replaced by empty arrays.
 - The 1.x surface (`Converter`, `dqdv_cycle`, `dqdv_cycles`, `dqdv_np`,
   `dqdv(split=/tidy=/cycle=/label_direction=)`, the duplicate `dq` column) was
-  removed in 2.1 (#714). Use `dqdv(cell, cycles=, direction=)` + `to_wide()`.
+  removed in 2.1. Use `dqdv(cell, cycles=, direction=)` + `to_wide()`.
 
 scipy stays on this side of the cellpy/cellpycore boundary: cellpycore is
 scipy-free, and the ICA math is interpolation and filtering, not frame algebra.
@@ -160,7 +160,7 @@ class IcaOptions:
             whole series to one nominal capacity.
         increment_method: Only ``"diff"``. The half-finished ``"hist"`` binning
             method from 1.x is reachable through the deprecated
-            [`Converter`][cellpy.ica.Converter] only; see cellpy#566.
+            [`Converter`][cellpy.ica.Converter] only.
     """
 
     # interpolation

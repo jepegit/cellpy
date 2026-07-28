@@ -1,4 +1,4 @@
-"""Prepare stages for the prepare → spec → render pipeline (#638–#648)."""
+"""Prepare stages for the prepare → spec → render pipeline."""
 
 from __future__ import annotations
 

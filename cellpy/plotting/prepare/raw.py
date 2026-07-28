@@ -1,4 +1,4 @@
-"""Raw-plot prepare path: raw frame + FigureSpec (#647).
+"""Raw-plot prepare path: raw frame + FigureSpec.
 
 Public ``raw_plot`` calls :func:`prepare` then hands ``(frame, FigureSpec)``
 to a backend renderer (``spec.extras['kind'] == 'raw'``).

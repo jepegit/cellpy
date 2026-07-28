@@ -1,4 +1,4 @@
-"""Pydantic models mirroring legacy prms sections (issue #452)."""
+"""Pydantic models mirroring legacy prms sections."""
 
 from __future__ import annotations
 

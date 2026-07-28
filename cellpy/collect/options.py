@@ -1,4 +1,4 @@
-"""Collection options (collectors redesign, #705).
+"""Collection options.
 
 One source of truth per option set: dataclasses shared by the pipeline
 functions and the convenience class. This replaces the legacy "elevated

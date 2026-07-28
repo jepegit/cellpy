@@ -1,4 +1,4 @@
-"""Batch cycle-life summary plots (#658).
+"""Batch cycle-life summary plots.
 
 Relocated from ``cellpy.utils.batch_tools.batch_plotters`` so ``Batch.plot``
 delegates into ``cellpy.plotting``. Public backends: ``plotly`` (primary) and

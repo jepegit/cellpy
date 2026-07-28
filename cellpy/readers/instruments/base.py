@@ -595,7 +595,7 @@ class AutoLoader(BaseLoader):
     def parse(self, source: Union[str, pathlib.Path], **kwargs) -> pd.DataFrame:
         """Vendor stage: read the file into a frame with **vendor** column names.
 
-        The first half of the two-stage design (#559): everything after this is
+        The first half of the two-stage design: everything after this is
         declared rather than coded, and handled by ``harmonize()``. This is the
         same work ``loader()`` does before it starts building a ``Data`` — the
         pre-processors, the formatter parameters, and ``query_file`` — exposed

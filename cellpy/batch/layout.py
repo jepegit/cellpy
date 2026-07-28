@@ -1,4 +1,4 @@
-"""Batch folder layout (batch v3, #698).
+"""Batch folder layout.
 
 Pure path computation, separated from filesystem side effects. In the legacy
 ``LabJournal`` code, exporting a batch created directories as a side effect of

@@ -1,4 +1,4 @@
-"""Batch run results (batch v3, #700).
+"""Batch run results.
 
 "Errors are data": a batch run returns a :class:`BatchResult` with a per-cell
 outcome, timing and captured exception, instead of the legacy mix of printing,

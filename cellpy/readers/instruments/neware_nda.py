@@ -170,7 +170,7 @@ class DataLoader(BaseLoader):
         return raw_limits
 
     def parse(self, source, **kwargs):
-        """Vendor stage (#560): read the nda/ndax file into a fastnda-named frame.
+        """Vendor stage: read the nda/ndax file into a fastnda-named frame.
 
         Taps the same ``_run_fastnda`` read as :meth:`loader` — including its
         charge/discharge split of the signed capacity/energy/power columns, which
@@ -194,7 +194,7 @@ class DataLoader(BaseLoader):
         return pl.from_pandas(raw_data.reset_index(drop=True))
 
     def declarations(self):
-        """Declarations for Neware nda/ndax via fastnda (#560).
+        """Declarations for Neware nda/ndax via fastnda.
 
         ``datetime_kind="epoch_seconds"`` — the vendor ``unix_time_s`` is float
         seconds since the Unix epoch.

@@ -1,4 +1,4 @@
-"""Plotly templates — one implementation (#567).
+"""Plotly templates — one implementation.
 
 ``_make_plotly_template`` existed in both ``utils/plotutils.py`` and the
 retired ``utils/batch_tools/batch_plotters.py``. The bodies were identical; the

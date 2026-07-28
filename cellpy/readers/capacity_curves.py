@@ -1,4 +1,4 @@
-"""Capacity/voltage curve extraction for CellpyCell (issue #509, V2-09).
+"""Capacity/voltage curve extraction for CellpyCell.
 
 Moved verbatim from ``cellreader.py`` (the capacity getters "deserve their own
 module" per the long-standing TODO). Functions take the ``CellpyCell``

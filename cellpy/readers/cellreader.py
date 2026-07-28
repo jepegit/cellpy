@@ -230,12 +230,12 @@ class CellpyCell:
             cellpy_units (dict): sent to cellpy.parameters.internal_settings.get_cellpy_units
             output_units (dict): sent to cellpy.parameters.internal_settings.get_default_output_units
             debug (bool): set to True if you want to see debug messages.
-            core (CellpyCellCore): injected core seam (issue #520, DI). When
+            core (CellpyCellCore): injected core seam (DI). When
                 given it is used as-is (it owns the ``Data`` object and runs
                 the step/summary engine); when None the default is built from
                 the ``native_schema`` flag.
             instrument_factory (InstrumentFactory): injected loader registry
-                (issue #520, DI). When None,
+                (DI). When None,
                 ``register_instrument_readers()`` builds the default factory.
             native_schema (bool): the runtime column schema (native-headers
                 flip, Stage 5a). Defaults to True in cellpy 2: frames are kept
@@ -263,7 +263,7 @@ class CellpyCell:
         # initialize() creates the cellpy ``ds.Data`` it expects (the data
         # property reads/writes ``self.core._data``). Under the ``native_schema``
         # opt-in (#511) the legacy bridge is replaced by the rename-free
-        # pandas<->polars adapter. An injected ``core`` (#520, DI) wins over
+        # pandas<->polars adapter. An injected ``core`` (DI) wins over
         # both defaults.
         self.native_schema = bool(native_schema)
         if core is not None:
@@ -626,7 +626,7 @@ class CellpyCell:
         """Register instrument readers.
 
         Builds the default factory only when none is set — an injected
-        ``instrument_factory`` (#520, DI) is kept as-is. Set
+        ``instrument_factory`` (DI) is kept as-is. Set
         ``self.instrument_factory = None`` first to force a rebuild.
         """
         if self.instrument_factory is None:
@@ -640,7 +640,7 @@ class CellpyCell:
 
     @staticmethod
     def _route_loader_meta_to_boxes(data):
-        """Route loader-set orphan attributes into the meta boxes (issue #508).
+        """Route loader-set orphan attributes into the meta boxes.
 
         Loaders historically parked parsed metadata as plain attributes on
         ``Data`` (never serialized, invisible to ``Data.tests``). Copy them
@@ -791,7 +791,7 @@ class CellpyCell:
 
         For per-test access on multi-test objects, use
         ``self.data.get_cycle_mode(test_id)`` / ``set_cycle_mode`` and the
-        ``self.data.tests`` collection (issue #506).
+        ``self.data.tests`` collection.
         """
         try:
             data = self.data
@@ -821,8 +821,8 @@ class CellpyCell:
 
         The engine applies one global charge/discharge convention; running it
         on a merged object mixing e.g. anode and cathode tests would silently
-        apply the wrong convention to some tests (issue #506; per-test engine
-        polarity is future work, #507).
+        apply the wrong convention to some tests (per-test engine
+        polarity is future work).
         """
         try:
             modes = test_meta.cycle_modes_in_data(self.data)
@@ -1404,7 +1404,7 @@ class CellpyCell:
         return self
 
     def _try_harmonized_raw_frame(self, **parse_kwargs):
-        """Phase C (#560): try ``harmonize(parse())`` for single-file raw.
+        """Phase C: try ``harmonize(parse())`` for single-file raw.
 
         Returns a native pandas raw frame on success, or ``None`` to signal
         the caller should keep the ``loader()+to_native`` path. Skips when the
@@ -1729,7 +1729,7 @@ class CellpyCell:
     def merge(self, cells, mode="campaign", renumber_cycles=True, **kwargs):
         """Merge other cells/datasets into this one.
 
-        Two distinct semantics (issue #507, epic #402 V2-03/V2-07):
+        Two distinct semantics:
 
         - ``mode="campaign"`` (default): the sources are *different tests*
           (possibly different cells or programs). Each source keeps its
@@ -1755,7 +1755,7 @@ class CellpyCell:
             mode (str): "campaign" (default) or "continuation".
             renumber_cycles (bool): campaign mode only. If True (default),
                 cycle numbers are renumbered to be globally unique. If False
-                (#529, needs cellpycore >= 0.2.2), sources keep their original
+                (needs cellpycore >= 0.2.2), sources keep their original
                 cycle numbers: the identifying key becomes
                 ``(test_id, cycle)`` and cycle numbers repeat across tests —
                 cycle-keyed consumers (``get_cap(cycle=...)``, ``split`` /
@@ -3276,7 +3276,7 @@ class CellpyCell:
         """Get the nominal capacity as absolute value.
 
         Delegated to ``cellpycore.units.nominal_capacity_as_absolute``
-        (#451, unit plan Phase 2). A ``DimensionalityError`` here usually
+        (unit plan Phase 2). A ``DimensionalityError`` here usually
         means the nominal capacity is given in a different unit than the
         chosen ``nom_cap_specifics`` — e.g. ``nom_cap='1.2 mAh/cm**2'`` with
         gravimetric specifics; pass ``nom_cap_specifics='areal'`` (or set it
@@ -3392,7 +3392,7 @@ class CellpyCell:
         """
         # TODO @jepe: implement handling of edge-cases
         # TODO @jepe: fix all the instrument readers (replace floats in raw_units with strings)
-        # Delegated to cellpycore.units (#451, unit plan Phase 2); the core
+        # Delegated to cellpycore.units (unit plan Phase 2); the core
         # port is the extended verbatim copy, guarded by converter-parity
         # fixtures on both sides.
         if mode is None:
@@ -3679,7 +3679,7 @@ class CellpyCell:
             selector_type (str): deprecated, has no effect.
             selector (callable): deprecated, has no effect.
             exclude_step_types (list of str): step-type *prefixes* whose capacity
-                contributions are excluded from the summary (issue #509, core #54).
+                contributions are excluded from the summary.
                 E.g. ``["cv_"]`` matches ``cv_charge`` and ``cv_discharge``; the
                 capacity gained during the excluded steps is subtracted per cycle
                 from the cycle-end charge/discharge capacities before derived
@@ -4099,7 +4099,7 @@ class CellpyCell:
 def merge_cells(cells, mode="campaign", **kwargs) -> "CellpyCell":
     """Merge several cells into a new CellpyCell without mutating any of them.
 
-    Convenience wrapper around :meth:`CellpyCell.merge` (issue #507): the
+    Convenience wrapper around :meth:`CellpyCell.merge`: the
     first cell is deep-copied and the rest are folded in. See the method
     docstring for the "campaign" vs "continuation" semantics.
 

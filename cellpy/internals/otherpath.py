@@ -511,12 +511,12 @@ class OtherPath:
         """Recursive remote listing that follows directory symlinks.
 
         fsspec SFTP ``rglob`` / ``find`` treat symlink directories as leaves, which
-        breaks shared ``rawdatadir`` layouts where project folders are links
-        (issue #688). Walk with ``ls(detail=True)`` and recurse into links that
+        breaks shared ``rawdatadir`` layouts where project folders are links.
+        Walk with ``ls(detail=True)`` and recurse into links that
         resolve to directories, with a visited-set cycle guard.
 
         When ``files_only`` is True, prefer a single remote ``find -L … -type f``
-        (issue #690) and fall back to this walk, filtering with listing ``type``
+        and fall back to this walk, filtering with listing ``type``
         so callers do not need a per-path ``is_file()`` STAT.
         """
         upath = self._upath_with_credentials(testing=testing)

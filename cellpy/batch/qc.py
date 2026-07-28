@@ -1,4 +1,4 @@
-"""Batch quality control (batch v3, #701).
+"""Batch quality control.
 
 The legacy ``_check_cell_*`` family (batch.py:367-456) as one function that
 returns a tidy per-cell pass/fail frame, instead of ten methods feeding a

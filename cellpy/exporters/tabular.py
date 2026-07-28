@@ -1,16 +1,13 @@
-"""Tabular exporters for CellpyCell (issue #518, V2-09 follow-up).
+"""Tabular exporters for CellpyCell.
 
-Moved verbatim from ``cellreader.py`` (the ``# TODO @jepe: move this to its
-own module (e.g. as a cellpy-exporters?)`` cluster), following the #509
-``capacity_curves`` pattern: functions take the ``CellpyCell`` instance as
-their first argument; ``CellpyCell`` keeps thin delegate methods with
-identical signatures, so the public API is unchanged. Cross-calls go through
-the instance (``cell.get_cap(...)``, ``cell._export_normal(...)`` ...) to
-preserve subclass dispatch exactly as before the move.
+Functions take the ``CellpyCell`` instance as their first argument;
+``CellpyCell`` keeps thin delegate methods with identical signatures, so the
+public API is unchanged. Cross-calls go through the instance
+(``cell.get_cap(...)``, ``cell._export_normal(...)`` ...) to preserve subclass
+dispatch.
 
-``cap_mod_summary`` / ``cap_mod_normal`` are not exporters but rode along in
-the same cellreader cluster; they are near-dead (test-pinned only) and their
-removal is deferred to the DI restructuring pass (#520).
+``cap_mod_summary`` / ``cap_mod_normal`` are not exporters but live in the
+same module; they are near-dead (test-pinned only).
 """
 
 import csv

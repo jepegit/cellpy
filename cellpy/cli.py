@@ -1,4 +1,4 @@
-"""Typer CLI adapters — thin wrappers around ``cellpy.cli_api`` (#568, #651)."""
+"""Typer CLI adapters — thin wrappers around ``cellpy.cli_api``."""
 
 from __future__ import annotations
 

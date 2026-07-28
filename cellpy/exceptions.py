@@ -76,7 +76,7 @@ class LoaderError(CellpyError):
 class MixedCycleModesError(CellpyError):
     """Raised when engine compute is requested on a multi-test object whose
     tests carry different ``cycle_mode`` values (per-test engine polarity is
-    not implemented yet; see issues #506/#507)."""
+    not implemented yet)."""
 
     pass
 

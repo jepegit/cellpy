@@ -1,4 +1,4 @@
-"""Collected-frame plotting: multi-cell layout/kind render (#657).
+"""Collected-frame plotting: multi-cell layout/kind render.
 
 Collectors own collection; this module owns drawing for already-tidy frames
 with ``cell`` / ``group`` / ``sub_group`` columns. Public entry:
@@ -270,8 +270,8 @@ def _select_direction(curves, direction, direction_col="direction"):
 
     Handles both direction encodings that reach the plotters:
 
-    - The specced ICA frame (#566) spells direction out ("charge" /
-      "discharge"), **cell-centric** per decision #591.
+    - The specced ICA frame spells direction out ("charge" /
+      "discharge"), **cell-centric**.
     - Frames straight from ``get_cap(categorical_column=True)`` still carry
       the raw ±1 half-cycle code. For those the historical mapping is kept
       (-1 selected as "charge") so non-ICA film plots are unchanged; the code
@@ -1415,7 +1415,7 @@ def collected_plot(
     spread: bool = False,
     **opts: Any,
 ) -> Any:
-    """Plot an already-collected tidy multi-cell frame (#657).
+    """Plot an already-collected tidy multi-cell frame.
 
     Args:
         frame: long/tidy frame with ``cell`` / ``group`` / ``sub_group`` as needed.

@@ -111,7 +111,7 @@ class DataLoader(BaseLoader):
         return raw_limits
 
     def parse(self, source, **kwargs):
-        """Vendor stage (#560): read the h5 export into a frame with Arbin names.
+        """Vendor stage: read the h5 export into a frame with Arbin names.
 
         The two-stage counterpart to :meth:`loader`, tapping the same
         ``_parse_h5_data`` read so the two cannot drift. It stops before
@@ -131,7 +131,7 @@ class DataLoader(BaseLoader):
         return pl.from_pandas(data_df.reset_index(drop=True))
 
     def declarations(self):
-        """Declarations for the Arbin SQL h5 export (#560).
+        """Declarations for the Arbin SQL h5 export.
 
         Derived from the module ``normal_headers_renaming_dict`` — the same
         ``{cellpy attr → Arbin column}`` shape the other Arbin loaders carry —

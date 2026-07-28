@@ -1,8 +1,7 @@
-"""Split / drop-cycle helpers for CellpyCell (issue #519, V2-09 follow-up).
+"""Split / drop-cycle helpers for CellpyCell.
 
 Moved verbatim from ``cellreader.py`` (the twice-flagged ``# TODO: consider
-moving splitting etc outside of CellpyCell``), following the #509
-``capacity_curves`` pattern: functions take the ``CellpyCell`` instance as
+moving splitting etc outside of CellpyCell``), following the ``capacity_curves`` pattern: functions take the ``CellpyCell`` instance as
 their first argument; ``CellpyCell`` keeps thin delegate methods with
 identical signatures, so the public API is unchanged. Cross-calls go through
 the instance (``cell.split_many(...)``, ``cell.vacant(...)`` ...) to preserve

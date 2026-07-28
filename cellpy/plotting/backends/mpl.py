@@ -1,4 +1,4 @@
-"""Matplotlib backend for prepare → spec → render (#639).
+"""Matplotlib backend for prepare → spec → render.
 
 Seaborn provides palette/style/faceting helpers only; the public backend name
 is ``matplotlib``.
@@ -46,7 +46,7 @@ def _has_special_top_row(y: str) -> bool:
 
 
 class MatplotlibBackend:
-    """Matplotlib backend for summary ``render(frame, spec)`` (#639).
+    """Matplotlib backend for summary ``render(frame, spec)``.
 
     Seaborn is used only for palette/style/faceting helpers (``relplot``),
     not as a public backend name. Ported from ``SeabornPlotBuilder``.
@@ -930,7 +930,7 @@ class MatplotlibBackend:
             sns_fig.legend.set_title(None)
 
     def _render_cycles(self, frame: Any, spec: FigureSpec) -> Any:
-        """Render voltage–capacity cycles figures (#646).
+        """Render voltage–capacity cycles figures.
 
         Mechanical port of ``plotutils._cycles_plotter_matplotlib``.
         """
@@ -1070,7 +1070,7 @@ class MatplotlibBackend:
         return fig
 
     def _render_raw(self, frame: Any, spec: FigureSpec) -> Any:
-        """Render raw time-series figures (#647)."""
+        """Render raw time-series figures."""
         import matplotlib.pyplot as plt
 
         extras = dict(spec.extras or {})
@@ -1135,7 +1135,7 @@ class MatplotlibBackend:
         return fig
 
     def _render_cycle_info(self, frame: Any, spec: FigureSpec) -> Any:
-        """Render cycle-info overlay figures (#647)."""
+        """Render cycle-info overlay figures."""
         import itertools
 
         import matplotlib.pyplot as plt
@@ -1227,7 +1227,7 @@ class MatplotlibBackend:
         return fig
 
     def _render_ica_dva(self, frame: Any, spec: FigureSpec) -> Any:
-        """Render ICA (dQ/dV) or DVA (dV/dQ) figures (#648).
+        """Render ICA (dQ/dV) or DVA (dV/dQ) figures.
 
         One series per ``(cycle, direction)``; shared line style for charge and
         discharge. Cycle legend vs colorbar via
@@ -1303,7 +1303,7 @@ class MatplotlibBackend:
 
 
 def _get_step_info(table, cycle, step, step_hdr):
-    """Step-table annotation values for cycle-info matplotlib render (#647)."""
+    """Step-table annotation values for cycle-info matplotlib render."""
     m_table = (table[step_hdr.cycle] == cycle) & (table[step_hdr.step] == step)
     c1, c2 = (
         table.loc[

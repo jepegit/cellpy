@@ -3,7 +3,7 @@
 On-disk frames use **native** column names (``cellpycore`` schema). The current
 runtime still speaks legacy names, so ``save`` translates legacy → native before
 writing and ``load`` translates native → legacy after reading (I/O boundary
-adapter; full native runtime is #511).
+adapter).
 
 Metadata document shape is owned by ``meta_archive`` (cellpy policy; core
 ``save_archive`` / ``load_archive`` stubs stay stubs).

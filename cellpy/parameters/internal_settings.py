@@ -642,8 +642,7 @@ def get_cellpy_units(units=None, *args, **kwargs) -> CellpyUnits:
     """Return a fresh ``CellpyUnits`` instance, optionally seeded from ``units``.
 
     Every call returns a **new** instance: mutating one cell's units must
-    never leak into other cells in the same session (issue #427 — this used
-    to hand out a shared module-level singleton and ignore ``units``).
+    never leak into other cells in the same session.
 
     Args:
         units: optional mapping (or ``CellpyUnits``) whose entries override
@@ -677,7 +676,7 @@ def get_default_raw_units(*args, **kwargs) -> CellpyUnits:
 
 
 def merge_raw_units(loader_units) -> CellpyUnits:
-    """Overlay instrument-declared raw units onto the defaults (issue #508).
+    """Overlay instrument-declared raw units onto the defaults.
 
     Single source for the merge used both by loaders (stamping
     ``data.raw_units`` at load time) and by ``CellpyCell._set_raw_units``.

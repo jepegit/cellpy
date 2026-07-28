@@ -1,4 +1,4 @@
-"""Cycle/capacity-curve collection (collectors redesign, #705).
+"""Cycle/capacity-curve collection.
 
 Per-cell rate/cycle selection is computed **per cell from the originally
 requested cycles** -- the fix for the cross-cell narrowing bug where the legacy

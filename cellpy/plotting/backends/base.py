@@ -1,4 +1,4 @@
-"""Backend protocol for prepare → spec → render (#637)."""
+"""Backend protocol for prepare → spec → render."""
 
 from __future__ import annotations
 

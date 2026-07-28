@@ -1,4 +1,4 @@
-"""Typed batch loading options + spec resolution (batch v3, #699).
+"""Typed batch loading options + spec resolution.
 
 Replaces the kwargs tunnels of the legacy ``CyclingExperiment.update`` (79
 ``kwargs.pop/get`` calls, precedence documented in a single docstring) with two

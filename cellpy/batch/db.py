@@ -1,8 +1,8 @@
-"""Journal-from-database (batch v3, #703).
+"""Journal-from-database.
 
 Reads a batch selection from a cellpy database (the simple Excel reader or the
 JSON readers) into a new :class:`~cellpy.batch.journal.Journal`. The database
-parsing is done natively by :mod:`cellpy.batch._dbengine` (E4, #716); the db
+parsing is done natively by :mod:`cellpy.batch._dbengine`; the db
 readers themselves live in :mod:`cellpy.readers.dbreader` /
 :mod:`cellpy.readers.json_dbreader`.
 """

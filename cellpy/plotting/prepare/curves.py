@@ -1,4 +1,4 @@
-"""Cycles-plot prepare path: voltage–capacity frame + FigureSpec (#646).
+"""Cycles-plot prepare path: voltage–capacity frame + FigureSpec.
 
 Public ``cycles_plot`` calls :func:`prepare` then hands ``(frame, FigureSpec)``
 to a backend renderer (``spec.extras['kind'] == 'cycles'``).
@@ -73,9 +73,8 @@ def _range_tuple(value: Any) -> Optional[tuple[float, float]]:
 def _load_curve_frame(ctx: Any, cycles: Any, **get_cap_kwargs: Any) -> pd.DataFrame:
     """Load a tidy capacity–voltage frame.
 
-    Seam for a future ``cellpycore.curves.get_cap_curve`` preferred path
-    (architecture-plan risk table / epic #567). For #646 the working path is
-    ``c.get_cap``, which already returns native ``CurveCols`` frames and
+    Seam for a future ``cellpycore.curves.get_cap_curve`` preferred path.
+    The working path is ``c.get_cap``, which already returns native ``CurveCols`` frames and
     matches the committed figure-spec oracle.
     """
     return ctx.cell.get_cap(cycles=cycles, **get_cap_kwargs)

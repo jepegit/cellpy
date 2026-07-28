@@ -314,7 +314,7 @@ class MaterialsClass(CellPyDataConfig):
 class AttrDict(dict):
     """A dict whose keys are also attributes.
 
-    Replaces ``python-box`` (#570): the four instrument-settings objects below
+    Replaces ``python-box``: the four instrument-settings objects below
     were the package's only remaining use, and the only Box features they
     leaned on were attribute access and ``.to_dict()``.
     """

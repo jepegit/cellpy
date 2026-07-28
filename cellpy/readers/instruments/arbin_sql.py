@@ -235,7 +235,7 @@ class DataLoader(BaseLoader):
         return raw_limits
 
     def parse(self, source, **kwargs):
-        """Vendor stage (#560): query the SQL Server into an Arbin-named frame.
+        """Vendor stage: query the SQL Server into an Arbin-named frame.
 
         The two-stage counterpart to :meth:`loader`, tapping the same
         ``_query_sql`` read. It stops before ``_post_process`` — the rename, the
@@ -254,7 +254,7 @@ class DataLoader(BaseLoader):
         return pl.from_pandas(data_df.reset_index(drop=True))
 
     def declarations(self):
-        """Declarations for Arbin SQL Server (#560).
+        """Declarations for Arbin SQL Server.
 
         Derived from the module ``normal_headers_renaming_dict`` restricted to
         real cellpy headers — the same set the legacy ``_post_process`` renames

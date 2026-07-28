@@ -1,4 +1,4 @@
-"""Parallel pydantic-settings configuration stack (issues #452, #453).
+"""Parallel pydantic-settings configuration stack.
 
 Production code should use ``cellpy.config`` directly. Legacy ``cellpy.parameters.prms``
 forwards here via a deprecated shim.
