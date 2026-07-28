@@ -36,6 +36,16 @@ The docs are hosted on Read the Docs
 Material for MkDocs). cellpy-core uses the same stack, so the two projects'
 docs behave the same way.
 
+!!! note "The header release badge always shows the *latest* release"
+
+    The repository card in the top-right of every page (stars, forks, and a
+    release tag) is populated from the live GitHub API when the page is viewed,
+    independent of which tag Read the Docs built. So an older docs version
+    (e.g. `v2.0.0`, selected via the RTD switcher) still shows the newest
+    GitHub release in that badge. This is expected: the **bottom-right RTD
+    version switcher is the source of truth** for which docs you are reading.
+    The page *content* is always correct for the selected version.
+
 ### Building locally
 
 ```shell
