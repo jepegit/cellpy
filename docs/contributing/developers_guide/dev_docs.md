@@ -26,10 +26,14 @@ Another contribution could be to add example data.
 
 ## Working on the main documentation
 
-The docs are hosted on Read the Docs
+Edit documentation on **`master`** (same branch as the code). There is no
+separate docs integration branch — `v2-docs-stable` is retired.
 
-- Stable: <https://cellpy.readthedocs.io/en/stable/>
-- Latest: <https://cellpy.readthedocs.io/en/latest/>
+The docs are hosted on Read the Docs:
+
+- Stable: <https://cellpy.readthedocs.io/en/stable/> (built from the latest
+  **release tag**, e.g. `v2.1.0`)
+- Latest: <https://cellpy.readthedocs.io/en/latest/> (built from **`master`**)
 - Admin: <https://readthedocs.org/projects/cellpy/>
 
 [Zensical](https://zensical.org) renders the documentation (the successor to
