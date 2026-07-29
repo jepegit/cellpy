@@ -14,3 +14,7 @@
 
 - `/iflow-close` (HISTORY bullet for #802 itself; PR finalize).
 - After merge (out of band): optionally cut `v2.1.1.post1` docs-only release.
+
+## Notes
+
+- PR: https://github.com/jepegit/cellpy/pull/803 (#803, draft)
