@@ -14,6 +14,7 @@ adapter; the full tidy-frame plot path lands with the collectors redesign
 
 from __future__ import annotations
 
+from collections.abc import Mapping, Sequence
 from dataclasses import fields, replace
 from pathlib import Path
 from typing import Any
@@ -59,6 +60,72 @@ class Batch:
         from cellpy.batch.db import journal_from_db
 
         return cls(journal_from_db(name, project, **db_kwargs), policy=policy)
+
+    @classmethod
+    def from_cells(
+        cls,
+        cells: Mapping[str, Any] | Sequence[Any],
+        *,
+        groups: Mapping[str, Any] | None = None,
+        sub_groups: Mapping[str, Any] | None = None,
+        group_labels: Mapping[Any, str] | None = None,
+        selected: Mapping[str, bool] | None = None,
+        name: str = "in_memory",
+        project: str = "in_memory",
+        policy: LoadPolicy | None = None,
+    ) -> "Batch":
+        """Build a batch from already-loaded ``CellpyCell`` objects.
+
+        The pieces a batch needs -- a journal ``pages`` frame (polars, keyed by
+        ``filename``) plus a populated cell store -- are constructed here, so a
+        GUI/notebook holding cells in memory can feed them straight to
+        :func:`cellpy.collect.collect_summaries` / ``collect_cycles`` or
+        ``batch.plot()`` without writing a journal to disk.
+
+        Args:
+            cells: ``{label: CellpyCell}`` or a sequence of cells (labels are
+                taken from ``cell.cell_name``, falling back to ``cell_001`` ...,
+                de-duplicated).
+            groups / sub_groups: optional ``{label: value}`` maps (defaults:
+                group 1 for all; sub_group 1..N).
+            group_labels: optional ``{group: display label}`` map.
+            selected: optional ``{label: bool}`` (defaults True) for the journal
+                ``selected`` column.
+            name / project: journal name/project.
+        """
+        if isinstance(cells, Mapping):
+            cell_map: dict[str, Any] = dict(cells)
+        else:
+            cell_map = {}
+            for i, cell in enumerate(cells, start=1):
+                label = getattr(cell, "cell_name", None) or f"cell_{i:03d}"
+                base, n = label, 1
+                while label in cell_map:
+                    n += 1
+                    label = f"{base}_{n}"
+                cell_map[label] = cell
+
+        labels = list(cell_map)
+        groups = dict(groups or {})
+        sub_groups = dict(sub_groups or {})
+        selected = dict(selected or {})
+
+        group_col = [groups.get(lbl, 1) for lbl in labels]
+        pages_data: dict[str, list] = {
+            FILENAME: labels,
+            "group": group_col,
+            "sub_group": [sub_groups.get(lbl, i) for i, lbl in enumerate(labels, 1)],
+            "label": labels,
+            "selected": [bool(selected.get(lbl, True)) for lbl in labels],
+        }
+        if group_labels:
+            gl = dict(group_labels)
+            pages_data["group_label"] = [gl.get(g) for g in group_col]
+
+        pages = pl.DataFrame(pages_data)
+        batch = cls(Journal(name=name, project=project, pages=pages), policy=policy)
+        batch._store = CellStore.from_cells(cell_map)
+        return batch
 
     # -- data surface ----------------------------------------------------
     @property
@@ -257,6 +324,13 @@ def from_journal(
 ) -> Batch:
     """Build a :class:`Batch` from a journal file (.json or .xlsx)."""
     return Batch(read_journal(journal_file), policy=policy)
+
+
+def from_cells(cells, **kwargs) -> Batch:
+    """Build a :class:`Batch` from already-loaded cells (see
+    :meth:`Batch.from_cells`) -- feed it to ``collect_summaries`` /
+    ``collect_cycles`` or call ``batch.plot()``."""
+    return Batch.from_cells(cells, **kwargs)
 
 
 def load(
