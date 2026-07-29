@@ -1026,6 +1026,91 @@ def instrument_configurations(search_text: str = "") -> Dict[str, Any]:
     return instruments
 
 
+# Vendor / file-format tokens used to build a human label from a loader id
+# (e.g. "arbin_sql_csv" -> "Arbin SQL (CSV)"). Low-maintenance: unknown vendors
+# fall back to a capitalised id, unknown format tokens to upper/title case.
+_INSTRUMENT_VENDOR_LABELS = {
+    "arbin": "Arbin",
+    "maccor": "Maccor",
+    "neware": "Neware",
+    "pec": "PEC",
+    "batmo": "BatMo",
+    "biologics": "Bio-Logic",
+}
+_INSTRUMENT_FORMAT_TOKENS = {
+    "txt": "(text)",
+    "csv": "(CSV)",
+    "xlsx": "(Excel)",
+    "h5": "(HDF5)",
+    "res": "(res)",
+    "nda": "(nda)",
+    "mpr": "(mpr)",
+    "bdf": "BDF",
+    "sql": "SQL",
+}
+
+
+def _instrument_label(loader_id: str) -> str:
+    """A display label derived from a loader id (no per-instrument table)."""
+    parts = loader_id.split("_")
+    vendor = _INSTRUMENT_VENDOR_LABELS.get(parts[0], parts[0].capitalize())
+    rest = [
+        _INSTRUMENT_FORMAT_TOKENS.get(
+            p, p.upper() if len(p) <= 2 else p.capitalize()
+        )
+        for p in parts[1:]
+    ]
+    return " ".join([vendor, *rest]).strip()
+
+
+def list_instruments() -> List[Dict[str, Any]]:
+    """Quiet, app-facing instrument listing.
+
+    Returns one dict per loader -- ``{"id", "label", "models", "suffixes"}`` --
+    suitable for building an instrument picker / ingestion form. Unlike
+    :func:`instrument_configurations`, it does **not** log a warning for each
+    skipped non-loader module, and it includes a human ``label`` and the raw
+    file ``suffixes``.
+
+    Example::
+
+        [{"id": "maccor_txt", "label": "Maccor (text)",
+          "models": ["default", "ZERO", ...], "suffixes": [".txt"]}, ...]
+    """
+    cellpy_logger = logging.getLogger("cellpy")
+    previous_level = cellpy_logger.level
+    cellpy_logger.setLevel(logging.ERROR)
+    try:
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            factory = InstrumentFactory()
+            for instrument, settings in find_all_instruments().items():
+                if instrument not in LOADERS_NOT_READY_FOR_PROD:
+                    factory.register_builder(instrument, settings)
+            loaders = factory.create_all()
+    finally:
+        cellpy_logger.setLevel(previous_level)
+
+    listing: List[Dict[str, Any]] = []
+    for loader_id, models in loaders.items():
+        suffixes = sorted(
+            {
+                f".{str(ext).lstrip('.')}"
+                for inst in models.values()
+                if (ext := getattr(inst, "raw_ext", None))
+            }
+        )
+        listing.append(
+            {
+                "id": loader_id,
+                "label": _instrument_label(loader_id),
+                "models": list(models.keys()),
+                "suffixes": suffixes,
+            }
+        )
+    return sorted(listing, key=lambda entry: entry["id"])
+
+
 def generate_default_factory():
     """This function searches for all available instrument readers
     and registers them in an InstrumentFactory instance.
