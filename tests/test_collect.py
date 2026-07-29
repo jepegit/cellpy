@@ -170,6 +170,42 @@ def test_collect_summaries_group_average_needs_group_column():
     assert "variable" not in col.data.columns
 
 
+# ---- is_grouped flag (#790) ---------------------------------------------
+
+
+def test_is_grouped_true_when_averaged():
+    pages = pl.DataFrame({FILENAME: ["x", "y"], "group": [1, 1], "sub_group": [1, 2]})
+    b = _batch_with_cells(
+        {"x": _SummaryCell([10.0, 20.0]), "y": _SummaryCell([20.0, 40.0])}, pages
+    )
+    col = collect_summaries(b, group_it=True, columns=("charge_capacity",))
+    assert col.is_grouped is True
+    assert col.meta.grouped is True
+
+
+def test_is_grouped_false_on_single_cell_group_fallback():
+    # group_it=True but the (single-cell) group can't average -> wide fallback
+    pages = pl.DataFrame({FILENAME: ["x"], "group": [1], "sub_group": [1]})
+    b = _batch_with_cells({"x": _SummaryCell([1.0, 2.0])}, pages)
+    col = collect_summaries(b, group_it=True)
+    assert col.is_grouped is False
+
+
+def test_is_grouped_false_by_default(real_batch):
+    assert collect_summaries(real_batch).is_grouped is False
+
+
+def test_grouped_flag_survives_save_load(tmp_path):
+    pages = pl.DataFrame({FILENAME: ["x", "y"], "group": [1, 1], "sub_group": [1, 2]})
+    b = _batch_with_cells(
+        {"x": _SummaryCell([10.0, 20.0]), "y": _SummaryCell([20.0, 40.0])}, pages
+    )
+    col = collect_summaries(b, group_it=True, columns=("charge_capacity",))
+    col.save(tmp_path, formats=("parquet",))
+    loaded = load_collection(tmp_path / f"{col.name}.parquet")
+    assert loaded.is_grouped is True
+
+
 # ---- BatchCollector convenience + recipes (#707) ------------------------
 
 
