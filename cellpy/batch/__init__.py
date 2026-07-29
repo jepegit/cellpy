@@ -40,12 +40,13 @@ from cellpy.batch.store import CellStore
 from cellpy.batch import aggregate, outputs, qc
 from cellpy.batch.aggregate import combine_summaries, combine_tests
 from cellpy.batch.db import journal_from_db
-from cellpy.batch.facade import Batch, from_journal, load
+from cellpy.batch.facade import Batch, from_cells, from_journal, load
 
 __all__ = [
     "Batch",
     "load",
     "from_journal",
+    "from_cells",
     "aggregate",
     "qc",
     "outputs",

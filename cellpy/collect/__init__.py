@@ -13,6 +13,10 @@ handover (Collection.plot -> cellpy.plotting) + collectors shim.
 
 from __future__ import annotations
 
+# Re-exported for discoverability: build a Batch from in-memory cells, then feed
+# it to collect_summaries / collect_cycles (#787). The canonical home is
+# ``cellpy.batch.from_cells`` / ``Batch.from_cells``.
+from cellpy.batch.facade import from_cells
 from cellpy.collect.cells import CellItem, iter_cells
 from cellpy.collect.collection import Collection, CollectionMeta, load_collection
 from cellpy.collect.collector import (
@@ -40,6 +44,7 @@ __all__ = [
     "collect_summaries",
     "collect_cycles",
     "collect_ica",
+    "from_cells",
     "iter_cells",
     "CellItem",
     "SummaryOptions",
