@@ -177,7 +177,10 @@ def spread_plot(curves, plotly_arguments=None, y_label_mapper=None, **kwargs):
     else:
         mode = "lines"
 
-    g = curves.groupby("cell")
+    # Series key: per-cell frames use "cell"; group-averaged frames are keyed by
+    # "group" and have no "cell" column (#785).
+    series_col = "cell" if "cell" in curves.columns else "group"
+    g = curves.groupby(series_col)
     fig = make_subplots(
         rows=number_of_rows,
         cols=1,
@@ -1017,7 +1020,11 @@ def summary_plotter(collected_curves, cycles_to_plot=None, backend="plotly", **k
         )
 
     normalize_cycles = True if "equivalent_cycle" in id_vars else False
-    group_it = False if hdr_journal.group in id_vars else True
+    # A group-averaged frame is tidy long with ``mean``/``std`` and is keyed by
+    # ``group`` (no ``cell`` column) -- detect it by the ``mean`` column, NOT by
+    # the presence of ``group`` (a non-averaged wide frame also carries ``group``
+    # as a key, #785).
+    group_it = "mean" in id_vars
 
     cols = kwargs.pop("cols", 1)
 
@@ -1037,6 +1044,9 @@ def summary_plotter(collected_curves, cycles_to_plot=None, backend="plotly", **k
         group_cells = False
         y = "mean"
         standard_deviation = "std"
+        # the series is the group, not the (absent) per-cell column
+        if hdr_journal.group in id_vars:
+            z = hdr_journal.group
 
     else:
         y = "value"

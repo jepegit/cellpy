@@ -206,3 +206,31 @@ def test_shim_still_reexports_the_shared_plotting_helpers():
         "collected_plot",
     ):
         assert hasattr(collectors_mod, name), name
+
+
+# ---- group-averaged summary renders (#785) ------------------------------
+
+
+def test_group_averaged_summary_renders():
+    """A group-averaged summary (keyed by ``group``, no ``cell`` column) must
+    plot -- previously KeyError 'cell' in spread_plot / y='value' in px.line."""
+    import polars as pl
+
+    from cellpy.batch.journal import FILENAME
+    from cellpy.collect import collect_summaries
+    from tests.test_collect import _batch_with_cells, _SummaryCell
+
+    pages = pl.DataFrame({FILENAME: ["x", "y"], "group": [1, 1], "sub_group": [1, 2]})
+    b = _batch_with_cells(
+        {"x": _SummaryCell([10.0, 20.0, 30.0]), "y": _SummaryCell([20.0, 40.0, 60.0])},
+        pages,
+    )
+    col = collect_summaries(b, group_it=True, columns=("charge_capacity",))
+    # genuinely averaged: long frame keyed by group, no per-cell column
+    assert "mean" in col.data.columns and "cell" not in col.data.columns
+
+    fig = col.plot()
+    assert fig is not None and len(fig.data) > 0, "grouped summary plot() produced nothing"
+
+    fig_spread = col.plot(spread=True)
+    assert fig_spread is not None and len(fig_spread.data) > 0, "spread plot produced nothing"
