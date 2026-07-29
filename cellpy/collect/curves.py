@@ -39,6 +39,12 @@ def collect_cycles(
     if overrides:
         opts = opts.replace(**overrides)
     requested = tuple(opts.cycles) if opts.cycles is not None else None
+    # forward mode/method to get_cap only when set, so None keeps its defaults
+    cap_kwargs: dict[str, Any] = {}
+    if opts.mode is not None:
+        cap_kwargs["mode"] = opts.mode
+    if opts.method is not None:
+        cap_kwargs["method"] = opts.method
 
     frames: list[pl.DataFrame] = []
     for item in iter_cells(batch):
@@ -52,7 +58,7 @@ def collect_cycles(
             cell_cycles = [cyc for cyc in requested if cyc in available]
 
         for cyc in cell_cycles:
-            curve = _as_polars(cell.get_cap(cycle=cyc))
+            curve = _as_polars(cell.get_cap(cycle=cyc, **cap_kwargs))
             if curve is None or curve.height == 0:
                 continue
             frames.append(
@@ -71,7 +77,12 @@ def collect_cycles(
     meta = CollectionMeta(
         kind="cycles",
         batch_name=batch.journal.name,
-        options={"cycles": list(requested) if requested else None, "rate": opts.rate},
+        options={
+            "cycles": list(requested) if requested else None,
+            "rate": opts.rate,
+            "mode": opts.mode,
+            "method": opts.method,
+        },
         cells_included=list(batch.cells),
     )
     return Collection(
