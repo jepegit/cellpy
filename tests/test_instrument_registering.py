@@ -183,3 +183,39 @@ def test_factory_loader_is_package_path_class(parameters, instrument):
     assert type(loader).__module__ == f"cellpy.readers.instruments.{instrument}"
     assert type(loader) is module.DataLoader
     assert isinstance(loader, module.DataLoader)
+
+
+# ---- app-facing list_instruments (#786) ---------------------------------
+
+
+def test_list_instruments_shape_and_known_entry():
+    import cellpy
+
+    rows = cellpy.list_instruments()
+    assert isinstance(rows, list) and rows
+    for row in rows:
+        assert set(row) == {"id", "label", "models", "suffixes"}
+        assert isinstance(row["models"], list)
+        assert isinstance(row["suffixes"], list)
+
+    by_id = {row["id"]: row for row in rows}
+    assert "maccor_txt" in by_id
+    maccor = by_id["maccor_txt"]
+    assert maccor["label"] == "Maccor (text)"
+    assert maccor["suffixes"] == [".txt"]
+    assert maccor["models"]  # non-empty
+    # derived labels for a couple more (no per-instrument table)
+    assert by_id["arbin_sql_csv"]["label"] == "Arbin SQL (CSV)"
+    assert by_id["pec_csv"]["label"] == "PEC (CSV)"
+
+
+def test_list_instruments_is_quiet():
+    """No per-non-loader-module warnings escape (the whole point, #786)."""
+    import warnings
+
+    import cellpy
+
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        cellpy.list_instruments()
+    assert not caught, [str(w.message) for w in caught]
