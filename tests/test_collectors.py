@@ -58,6 +58,46 @@ def test_cycles_collector_runs_native_curve_cols(populated_batch):
     assert "voltage" not in cols, f"legacy curve name in {cols}"
 
 
+def test_collect_cycles_forwards_mode_and_method(populated_batch, monkeypatch):
+    """CurveOptions.mode/method reach the per-cell get_cap call (#788)."""
+    from cellpy.collect import collect_cycles
+
+    captured: dict = {}
+    cell0 = next(iter(populated_batch.cells.values()))
+    original = cell0.get_cap
+
+    def spy(*args, **kwargs):
+        captured.update(kwargs)
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(cell0, "get_cap", spy)
+    col = collect_cycles(populated_batch, cycles=(1,), mode="areal", method="forth")
+
+    assert captured.get("mode") == "areal"
+    assert captured.get("method") == "forth"
+    assert col.meta.options["mode"] == "areal"
+    assert col.meta.options["method"] == "forth"
+
+
+def test_collect_cycles_mode_method_default_to_none(populated_batch, monkeypatch):
+    """Unset mode/method are NOT forwarded, so get_cap keeps its own defaults (#788)."""
+    from cellpy.collect import collect_cycles
+
+    captured: dict = {}
+    cell0 = next(iter(populated_batch.cells.values()))
+    original = cell0.get_cap
+
+    def spy(*args, **kwargs):
+        captured.update(kwargs)
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(cell0, "get_cap", spy)
+    collect_cycles(populated_batch, cycles=(1,))
+
+    assert "mode" not in captured
+    assert "method" not in captured
+
+
 def test_ica_collector_uses_the_specced_frame(populated_batch):
     """The ICA frame is the specced frame (#566/#591): cycle/direction/voltage/
     capacity/dqdv, direction spelled out (cell-centric charge/discharge)."""
