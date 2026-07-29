@@ -138,6 +138,7 @@ def collect_summaries(
             "max_cycle": opts.max_cycle,
         },
         cells_included=included,
+        grouped=grouped,
     )
     return Collection(
         data=frame,

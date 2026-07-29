@@ -41,6 +41,10 @@ class CollectionMeta:
     created_utc: str = field(default_factory=_now_utc)
     cells_included: list[str] = field(default_factory=list)
     cells_skipped: list[str] = field(default_factory=list)
+    #: True only when group-averaging actually ran (a group had >= 2 cells and
+    #: emitted the long ``mean``/``std`` frame). ``group_it=True`` that fell back
+    #: to a wide, non-averaged frame stays False.
+    grouped: bool = False
 
 
 @dataclass
@@ -54,6 +58,14 @@ class Collection:
 
     #: collection kind -> ``collected_plot`` family (#657).
     _FAMILY = {"summary": "summary", "cycles": "cycles", "ica": "ica"}
+
+    @property
+    def is_grouped(self) -> bool:
+        """True when group-averaging actually happened (long ``mean``/``std``
+        frame). ``group_it=True`` that fell back to wide (a group with < 2 cells)
+        stays False -- so callers can adapt labels/plotting without sniffing for
+        a ``mean`` column."""
+        return self.meta.grouped
 
     def to_wide(
         self, values: str, index: str = "cycle_num", columns: str = "cell"
