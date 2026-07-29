@@ -2,8 +2,37 @@
 
 ## [Unreleased]
 
+## [2.1.1] - 2026-07-29
+
+Patch release — app-builder fixes and conveniences (gathered while building
+on 2.1.0.post1). Additive, no breaking changes.
+
+* **Bug fix (collect):** group-averaged collected summaries plot again —
+  `Collection.plot()` / `plot(spread=True)` render group-keyed `mean`±`std`
+  frames instead of raising `KeyError 'cell'`. (#785)
+* `cellpy.collect.from_cells()` (+ `Batch.from_cells`): build a batch from
+  already-loaded in-memory `CellpyCell` objects. (#787)
+* `Collection.is_grouped` / `meta.grouped`: whether group-averaging actually
+  happened. (#790)
+* `Collection.save()` supports `xlsx` and `json` (was parquet/csv only). (#789)
+* `CurveOptions` gains `mode` / `method`, forwarded per cell to `get_cap`
+  (parity with the single-cell call). (#788)
+* `cellpy.list_instruments()`: quiet app-facing listing →
+  `[{"id", "label", "models", "suffixes"}]`, no per-module warnings. (#786)
+* App/agents guide: note on the polars/pandas frame boundary and quieting
+  cellpy's logger/warnings. (#791)
+
+## [2.1.0.post1] - 2026-07-28
+
+Docs-only post-release of 2.1.0 — no API, schema, or runtime changes.
+
 * Retire `v2-docs-stable`: docs land on `master`; RTD stable tracks release
-  tags (e.g. `v2.1.0`). (#768)
+  tags. (#775)
+* Strip issue-tracker references and migration narrative from package
+  docstrings so the API reference reads cleanly. (#771)
+* Document Read the Docs header release-badge behaviour (badge shows the live
+  GitHub latest release; the RTD version switcher is the source of truth).
+  (#776)
 
 ## [2.1.0] - 2026-07-28
 
