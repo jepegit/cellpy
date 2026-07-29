@@ -1,6 +1,6 @@
 # Issue #802 — Status
 
-- [x] Done
+- [ ] Done
 
 ## What's done
 
@@ -9,14 +9,12 @@
   (2026-07-28) from GitHub release notes; moved Unreleased `v2-docs-stable`
   retirement into post1 (#775); left `[2.1.0]` intact; Dependabot omitted.
 - Stale-docs skim of `README.md` / `docs/`: no clear public falsehoods to fix.
-- Close: promoted Unreleased → `[2.1.1.post1]`; planned tag `v2.1.1.post1`.
-- Essential tests green (`uv run pytest -m essential`: 606 passed).
 
 ## Remaining work
 
-- None (release tag created after merge).
+- `/iflow-close` (HISTORY bullet for #802 itself; PR finalize).
+- After merge (out of band): optionally cut `v2.1.1.post1` docs-only release.
 
 ## Notes
 
-- PR: https://github.com/jepegit/cellpy/pull/803 (#803)
-- Planned tag: `v2.1.1.post1` (git-tag derived; create on `master` after merge)
+- PR: https://github.com/jepegit/cellpy/pull/803 (#803, draft)

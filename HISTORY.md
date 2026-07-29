@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+## [2.1.1.post1] - 2026-07-29
+
+Docs-only post-release of 2.1.1 — no API, schema, or runtime changes.
+
+* Backfill `HISTORY.md` for the already-shipped 2.1.1 and 2.1.0.post1
+  releases. (#802)
+
 ## [2.1.1] - 2026-07-29
 
 Patch release — app-builder fixes and conveniences (gathered while building
