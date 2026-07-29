@@ -84,6 +84,11 @@ class CurveOptions:
     rate_on: str | None = None
     rate_std: float | None = None
     inverse: bool = False
+    # capacity mode/method, forwarded per cell to ``CellpyCell.get_cap`` for
+    # parity with the single-cell call. ``None`` keeps ``get_cap``'s defaults
+    # (mode="gravimetric", method="back-and-forth").
+    mode: str | None = None  # "gravimetric" / "areal" / "absolute"
+    method: str | None = None  # "forth-and-forth" / "back-and-forth" / "forth"
     transforms: tuple[Transform, ...] = ()
 
     def replace(self, **changes) -> "CurveOptions":
