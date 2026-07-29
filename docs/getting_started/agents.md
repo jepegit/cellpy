@@ -121,6 +121,23 @@ Suggested layering:
    (`summary` for cycle tables; slices of `raw` for plots).
 4. **Export** — offer `.cellpy` (canonical) plus CSV/Excel for the user.
 
+!!! tip "DataFrame types & quiet startup (building GUIs)"
+
+    - **polars vs pandas — know the boundary.** A cell's frames
+      (`c.data.raw` / `.steps` / `.summary`) are **pandas**; a
+      `cellpy.collect.Collection.data` is **polars**, and `Collection.plot()`
+      converts to pandas internally. Convert explicitly at the seam
+      (`collection.data.to_pandas()` / `pl.from_pandas(df)`) rather than mixing
+      the two in UI code.
+    - **Instrument picker for free.** `cellpy.list_instruments()` returns
+      `[{"id", "label", "models", "suffixes"}, ...]` (quiet — no per-module
+      warnings), ready to drive an import form.
+    - **Keep the console quiet.** cellpy logs through the `cellpy` logger; raise
+      its level in an app you want silent:
+      `logging.getLogger("cellpy").setLevel(logging.ERROR)`. Suppress one-off
+      deprecation notices (e.g. `get_summary()` → `c.data.summary`) with
+      `warnings.filterwarnings("ignore", category=DeprecationWarning, module="cellpy")`.
+
 Skeleton (UI-agnostic):
 
 ```python
