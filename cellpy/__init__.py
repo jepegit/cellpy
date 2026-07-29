@@ -26,7 +26,7 @@ from cellpy.parameters import prmreader
 
 __version__ = cellpy._version.__version__
 
-from cellpy.readers import cellreader, dbreader, filefinder, do
+from cellpy.readers import cellreader, dbreader, filefinder, do, data_structures
 
 # from cellpy.readers.data_structures import Q, ureg
 
@@ -42,6 +42,7 @@ logging.getLogger(__name__).addHandler(logging.NullHandler())
 get = cellreader.get
 merge_cells = cellreader.merge_cells
 print_instruments = readers.cellreader.print_instruments
+list_instruments = readers.data_structures.list_instruments
 
 __all__ = [
     "cellreader",
@@ -52,6 +53,7 @@ __all__ = [
     "get",
     "merge_cells",
     "print_instruments",
+    "list_instruments",
     "do",
     # "ureg",
     # "Q",
