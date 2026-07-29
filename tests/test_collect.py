@@ -348,3 +348,42 @@ def test_collect_cycles_per_cell_isolation():
     assert a_cycles == {1, 2}
     # the bug: after cell_a narrowed the shared list, cell_b lost cycle 3
     assert b_cycles == {1, 2, 3}
+
+
+# ---- save formats (#789) ------------------------------------------------
+
+
+def _small_collection() -> Collection:
+    frame = pl.DataFrame(
+        {"cell": ["a", "b"], "cycle_num": [1, 1], "value": [1.5, 2.5]}
+    )
+    return Collection(
+        data=frame, kind="summary", name="c", meta=CollectionMeta(kind="summary")
+    )
+
+
+def test_collection_save_json_round_trips(tmp_path):
+    col = _small_collection()
+    written = col.save(tmp_path, formats=("json",))
+    json_path = tmp_path / "c.json"
+    assert json_path in written
+    assert json_path.is_file() and json_path.stat().st_size > 0
+    back = pl.read_json(json_path)
+    assert back.shape == col.data.shape
+    assert set(back.columns) == set(col.data.columns)
+
+
+def test_collection_save_xlsx(tmp_path):
+    col = _small_collection()
+    try:
+        col.save(tmp_path, formats=("xlsx",))
+    except RuntimeError:
+        pytest.skip("no Excel writer (xlsxwriter/openpyxl) installed")
+    xlsx_path = tmp_path / "c.xlsx"
+    assert xlsx_path.is_file() and xlsx_path.stat().st_size > 0
+
+
+def test_collection_save_rejects_unknown_format(tmp_path):
+    col = _small_collection()
+    with pytest.raises(ValueError, match="unsupported collection format"):
+        col.save(tmp_path, formats=("bogus",))

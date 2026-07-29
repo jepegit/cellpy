@@ -107,14 +107,35 @@ class Collection:
                 self.data.write_parquet(path)
             elif fmt == "csv":
                 self.data.write_csv(path)
+            elif fmt == "json":
+                self.data.write_json(path)
+            elif fmt == "xlsx":
+                self._write_xlsx(path)
             else:
-                raise ValueError(f"unsupported collection format {fmt!r}")
+                raise ValueError(
+                    f"unsupported collection format {fmt!r} "
+                    "(supported: parquet, csv, json, xlsx)"
+                )
             written.append(path)
 
         meta_path = directory / f"{self.name}.meta.json"
         meta_path.write_text(json.dumps(asdict(self.meta), indent=2), encoding="utf-8")
         written.append(meta_path)
         return written
+
+    def _write_xlsx(self, path: Path) -> None:
+        """Write the frame as xlsx via polars (xlsxwriter), falling back to
+        pandas (openpyxl); raise a clear error if no Excel engine is installed."""
+        try:
+            self.data.write_excel(path)
+        except (ModuleNotFoundError, ImportError):
+            try:
+                self.data.to_pandas().to_excel(path, index=False)
+            except (ModuleNotFoundError, ImportError) as exc:
+                raise RuntimeError(
+                    "saving a collection as xlsx needs an Excel writer -- install "
+                    "'xlsxwriter' or 'openpyxl'"
+                ) from exc
 
 
 def load_collection(path: Path | str) -> Collection:
