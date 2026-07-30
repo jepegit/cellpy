@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+## [2.1.1.post3] - 2026-07-30
+
+Post-release of 2.1.1 — silence loader-discovery WARNING spam for apps.
+
+* `list_instruments()` is quiet by contract: expected loader-probe skips
+  (no `DataLoader` / missing custom def) log at DEBUG on the module logger;
+  the scan uses `create_all(quiet=True)` so apps no longer see
+  `WARNING:root: Could not create loader …` on every call. (#786)
+
 ## [2.1.1.post2] - 2026-07-30
 
 Post-release of 2.1.1 — collected summary facet y-axis controls for apps.
