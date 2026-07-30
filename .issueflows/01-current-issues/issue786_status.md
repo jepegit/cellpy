@@ -4,11 +4,12 @@
 
 ## What's done
 
-- Plan accepted; build started on `cursor/786-list-instruments-warnings-5e1f`.
+- Plan accepted; build on `cursor/786-list-instruments-warnings-5e1f`.
+- `InstrumentFactory.create_all(quiet=...)`: expected discovery skips → DEBUG on module logger; unexpected failures → WARNING on module logger (not root).
+- `list_instruments()` uses `create_all(quiet=True)` (removed ineffective `cellpy` logger bump).
+- Caplog quiet regression + `@pytest.mark.essential`; agents.md quiet-contract note.
+- Verified: `list_instruments()` emits 0 "Could not create loader" WARNINGs; `instrument_configurations()` only warns for real env failures (e.g. missing ODBC).
 
 ## Remaining work
 
-- Downgrade expected discovery skips in `create_all`; add `quiet=` for `list_instruments`.
-- Caplog-based quiet regression test (+ essential marker).
-- Verify repro is silent; commit / push / PR.
-- Close: HISTORY bullet via `/iflow-close`.
+- HISTORY Unreleased bullet + `/iflow-close`.
