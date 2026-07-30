@@ -851,10 +851,24 @@ class InstrumentFactory:
     def get_registered_builder(self, key):
         return self._builders.get(key, None)
 
-    def create_all(self, **kwargs):
+    @staticmethod
+    def _is_expected_discovery_skip(key: str, exc: BaseException) -> bool:
+        """True for probe failures that are normal during module discovery."""
+        if key == "local_instrument":
+            return True
+        msg = str(exc)
+        if "has no attribute 'DataLoader'" in msg or 'has no attribute "DataLoader"' in msg:
+            return True
+        if "Missing instrument definition file" in msg:
+            return True
+        return False
+
+    def create_all(self, quiet: bool = False, **kwargs):
         """Create all the instrument loader modules.
 
         Args:
+            quiet: if True, log every create failure at DEBUG (used by
+                :func:`list_instruments` so apps get a silent listing).
             **kwargs: sent to the initializer of the loader class.
 
         Returns:
@@ -876,10 +890,11 @@ class InstrumentFactory:
 
                 loaders[key] = models
             except Exception as e:
-                if key == "local_instrument":
-                    logging.debug(f"Could not create loader for {key}: {e}")
+                message = f"Could not create loader for {key}: {e}"
+                if quiet or self._is_expected_discovery_skip(key, e):
+                    logger.debug(message)
                 else:
-                    logging.warning(f"Could not create loader for {key}: {e}")
+                    logger.warning(message)
         return loaders
 
     @staticmethod
@@ -1077,19 +1092,13 @@ def list_instruments() -> List[Dict[str, Any]]:
         [{"id": "maccor_txt", "label": "Maccor (text)",
           "models": ["default", "ZERO", ...], "suffixes": [".txt"]}, ...]
     """
-    cellpy_logger = logging.getLogger("cellpy")
-    previous_level = cellpy_logger.level
-    cellpy_logger.setLevel(logging.ERROR)
-    try:
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            factory = InstrumentFactory()
-            for instrument, settings in find_all_instruments().items():
-                if instrument not in LOADERS_NOT_READY_FOR_PROD:
-                    factory.register_builder(instrument, settings)
-            loaders = factory.create_all()
-    finally:
-        cellpy_logger.setLevel(previous_level)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        factory = InstrumentFactory()
+        for instrument, settings in find_all_instruments().items():
+            if instrument not in LOADERS_NOT_READY_FOR_PROD:
+                factory.register_builder(instrument, settings)
+        loaders = factory.create_all(quiet=True)
 
     listing: List[Dict[str, Any]] = []
     for loader_id, models in loaders.items():
