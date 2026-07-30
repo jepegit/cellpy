@@ -129,6 +129,10 @@ Suggested layering:
       converts to pandas internally. Convert explicitly at the seam
       (`collection.data.to_pandas()` / `pl.from_pandas(df)`) rather than mixing
       the two in UI code.
+    - **Summary facet y-scales.** Collected summary plots default to
+      independent y-axes (`share_y=False`). For Capacity+CE, pin CE with
+      `collection.plot(y_ranges={"coulombic_efficiency": [0, 110]})`
+      (Plotly). `share_y=True` / `match_axes=True` restores a shared scale.
     - **Instrument picker for free.** `cellpy.list_instruments()` returns
       `[{"id", "label", "models", "suffixes"}, ...]` (quiet — no per-module
       warnings), ready to drive an import form.

@@ -853,6 +853,92 @@ def sequence_plotter(
         print(f"{backend} not implemented yet")
 
 
+def _resolve_share_y(
+    *,
+    share_y: Optional[bool],
+    match_axes: Optional[bool],
+    default: bool,
+) -> bool:
+    """Resolve shared-y preference; ``share_y`` wins over ``match_axes``."""
+    if share_y is not None:
+        return bool(share_y)
+    if match_axes is not None:
+        return bool(match_axes)
+    return bool(default)
+
+
+def _yaxis_key_for_facet_label(fig: Any, label: str) -> Optional[str]:
+    """Map a Plotly facet annotation text to its ``yaxis`` / ``yaxisN`` key."""
+    annotations = getattr(fig.layout, "annotations", None) or ()
+    target = None
+    for ann in annotations:
+        if getattr(ann, "text", None) == label:
+            target = ann
+            break
+    if target is None or target.y is None:
+        return None
+    mid = float(target.y)
+    best_key = None
+    best_dist = None
+    for key in fig.layout:
+        key_s = str(key)
+        if not key_s.startswith("yaxis"):
+            continue
+        domain = fig.layout[key].domain
+        if not domain:
+            continue
+        lo, hi = float(domain[0]), float(domain[1])
+        if lo <= mid <= hi:
+            return key_s
+        dist = abs((lo + hi) / 2.0 - mid)
+        if best_dist is None or dist < best_dist:
+            best_dist = dist
+            best_key = key_s
+    return best_key
+
+
+_warned_unknown_y_range_keys: set[str] = set()
+
+
+def _apply_summary_y_ranges(
+    fig: Any,
+    y_ranges: dict[str, Any],
+    *,
+    facet: str = "variable",
+) -> None:
+    """Apply per-facet-row y-limits on a Plotly collected summary figure.
+
+    Unknown variable keys warn once and are ignored. Axes are unmatched first
+    so per-panel ranges are not overwritten by a shared scale.
+    """
+    if not y_ranges:
+        return
+    fig.update_yaxes(matches=None)
+    for variable, y_range in y_ranges.items():
+        if y_range is None:
+            continue
+        try:
+            lo, hi = float(y_range[0]), float(y_range[1])
+        except (TypeError, ValueError, IndexError) as exc:
+            warnings.warn(
+                f"y_ranges[{variable!r}] must be a two-item [lo, hi] sequence "
+                f"({exc}); ignoring",
+                stacklevel=3,
+            )
+            continue
+        axis_key = _yaxis_key_for_facet_label(fig, f"{facet}={variable}")
+        if axis_key is None:
+            if variable not in _warned_unknown_y_range_keys:
+                _warned_unknown_y_range_keys.add(variable)
+                warnings.warn(
+                    f"y_ranges key {variable!r} did not match a summary facet "
+                    f"row; ignoring",
+                    stacklevel=3,
+                )
+            continue
+        fig.layout[axis_key].update(range=[lo, hi], autorange=False)
+
+
 def _cycles_plotter(
     collected_curves,
     cycles=None,
@@ -873,15 +959,21 @@ def _cycles_plotter(
         collected_curves(pd.DataFrame): collected data in long format.
         backend (str): what backend to use.
         match_axes (bool): if True, all subplots will have the same axes.
+            Prefer ``share_y`` (same meaning) when calling from public APIs;
+            if both are given, ``share_y`` wins.
         method (str): 'fig_pr_cell' or 'fig_pr_cycle'.
 
         **kwargs: consumed first in current function, rest sent to backend in sequence_plotter.
+            ``share_y`` is accepted as an alias of ``match_axes``.
 
     Returns:
         styled figure object
     """
     # --- pre-processing ---
     logging.debug("picking kwargs for current level - rest goes to sequence_plotter")
+    share_y = kwargs.pop("share_y", None)
+    if share_y is not None:
+        match_axes = bool(share_y)
     title = kwargs.pop("fig_title", default_title)
     width = kwargs.pop("width", 900)
     height = kwargs.pop("height", None)
@@ -985,10 +1077,41 @@ def summary_plotter(collected_curves, cycles_to_plot=None, backend="plotly", **k
     Assuming data as pandas.DataFrame with either
     1) long format (where variables, for example charge capacity, are in the column "variable") or
     2) mixed long and wide format where the variables are own columns.
+
+    Axis sharing / limits (Plotly):
+
+    - ``share_y`` (preferred) or ``match_axes``: when True, facet rows share one
+      y-scale; when False (the default for summary), each row auto-scales.
+      If both are given, ``share_y`` wins.
+    - ``y_ranges``: mapping of ``variable`` name → ``[lo, hi]`` for per-panel
+      fixed limits. Omitted variables keep autorange. A non-empty ``y_ranges``
+      forces independent axes. Supported for ``backend="plotly"`` only.
     """
 
     # start_cell is used to determine the starting cell for the subplots (plotly)
     start_cell = kwargs.pop("start_cell", "bottom-left")
+    share_y = kwargs.pop("share_y", None)
+    match_axes = kwargs.pop("match_axes", None)
+    y_ranges = kwargs.pop("y_ranges", None) or {}
+    if not isinstance(y_ranges, dict):
+        raise TypeError("y_ranges must be a dict mapping variable name -> [lo, hi]")
+    share_y_resolved = _resolve_share_y(
+        share_y=share_y, match_axes=match_axes, default=False
+    )
+    if y_ranges:
+        if share_y_resolved:
+            logging.info(
+                "summary_plotter: y_ranges is set; forcing independent y-axes "
+                "(share_y=False)"
+            )
+        share_y_resolved = False
+        if backend != "plotly":
+            warnings.warn(
+                "y_ranges is only applied for backend='plotly'; "
+                f"ignoring for backend={backend!r}",
+                stacklevel=2,
+            )
+            y_ranges = {}
 
     col_headers = collected_curves.columns.to_list()
 
@@ -1127,6 +1250,7 @@ def summary_plotter(collected_curves, cycles_to_plot=None, backend="plotly", **k
         method="summary",
         cycles=cycles_to_plot,
         cols=cols,
+        match_axes=share_y_resolved,
         **kwargs,
     )
 
@@ -1189,6 +1313,8 @@ def summary_plotter(collected_curves, cycles_to_plot=None, backend="plotly", **k
                 # for i in range(1, len(height_fractions)):
                 #     fig.update_xaxes(showticklabels=False, row=i, col=1)
 
+        if y_ranges and fig is not None:
+            _apply_summary_y_ranges(fig, y_ranges, facet=g)
         return fig
     if backend == "seaborn":
         print("using seaborn (experimental feature)")
@@ -1436,6 +1562,9 @@ def collected_plot(
         method / plot_type: legacy collector knobs (mapped to layout/kind).
         spread: legacy flag → ``kind="spread"``.
         **opts: forwarded to the collected renderers (cycles, labels, sizes, …).
+            For ``family_kind="summary"`` (Plotly): ``share_y`` / ``match_axes``
+            control shared vs independent facet y-scales (default independent);
+            ``y_ranges`` maps variable name → ``[lo, hi]`` for per-panel limits.
 
     Returns:
         Backend-native figure object.
