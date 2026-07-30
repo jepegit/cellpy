@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [2.1.1.post2] - 2026-07-30
+
+Post-release of 2.1.1 — collected summary facet y-axis controls for apps.
+
 * Per-panel y-limits (and clearer `share_y`) for collected summary facet
   plots. (#804)
 
