@@ -5,12 +5,7 @@ from __future__ import annotations
 import pandas as pd
 import pytest
 
-from cellpy.plotting import theme
-from cellpy.plotting.collected import (
-    _yaxis_key_for_facet_label,
-    collected_plot,
-    summary_plotter,
-)
+from cellpy.plotting.collected import _resolve_share_y
 
 
 def _summary_frame() -> pd.DataFrame:
@@ -41,29 +36,49 @@ def _summary_frame() -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
-@pytest.fixture(autouse=True)
-def _collector_templates():
-    theme.make_collector_templates()
+@pytest.mark.essential
+def test_resolve_share_y_prefers_share_y_over_match_axes():
+    assert _resolve_share_y(share_y=False, match_axes=True, default=True) is False
+    assert _resolve_share_y(share_y=True, match_axes=False, default=False) is True
+    assert _resolve_share_y(share_y=None, match_axes=None, default=False) is False
+    assert _resolve_share_y(share_y=None, match_axes=True, default=False) is True
 
 
 @pytest.mark.essential
 def test_summary_default_independent_y_axes():
+    pytest.importorskip("plotly", reason="plotting extras (batch) not installed")
+    from cellpy.plotting import theme
+    from cellpy.plotting.collected import summary_plotter
+
+    theme.make_collector_templates()
     fig = summary_plotter(_summary_frame(), backend="plotly", group_cells=False)
+    assert fig is not None
     assert fig.layout.yaxis.matches in (None, False)
     assert fig.layout.yaxis2.matches in (None, False)
 
 
 @pytest.mark.essential
 def test_summary_share_y_true_matches_axes():
+    pytest.importorskip("plotly", reason="plotting extras (batch) not installed")
+    from cellpy.plotting import theme
+    from cellpy.plotting.collected import summary_plotter
+
+    theme.make_collector_templates()
     fig = summary_plotter(
         _summary_frame(), backend="plotly", group_cells=False, share_y=True
     )
+    assert fig is not None
     # Plotly links secondary facet rows to the primary y-axis.
     assert fig.layout.yaxis2.matches == "y"
 
 
 @pytest.mark.essential
 def test_summary_match_axes_alias_and_share_y_wins():
+    pytest.importorskip("plotly", reason="plotting extras (batch) not installed")
+    from cellpy.plotting import theme
+    from cellpy.plotting.collected import summary_plotter
+
+    theme.make_collector_templates()
     fig = summary_plotter(
         _summary_frame(),
         backend="plotly",
@@ -71,17 +86,27 @@ def test_summary_match_axes_alias_and_share_y_wins():
         match_axes=True,
         share_y=False,
     )
+    assert fig is not None
     assert fig.layout.yaxis2.matches in (None, False)
 
 
 @pytest.mark.essential
 def test_summary_y_ranges_per_panel():
+    pytest.importorskip("plotly", reason="plotting extras (batch) not installed")
+    from cellpy.plotting import theme
+    from cellpy.plotting.collected import (
+        _yaxis_key_for_facet_label,
+        summary_plotter,
+    )
+
+    theme.make_collector_templates()
     fig = summary_plotter(
         _summary_frame(),
         backend="plotly",
         group_cells=False,
         y_ranges={"coulombic_efficiency": [0, 110]},
     )
+    assert fig is not None
     ce_key = _yaxis_key_for_facet_label(fig, "variable=coulombic_efficiency")
     cap_key = _yaxis_key_for_facet_label(fig, "variable=charge_capacity_gravimetric")
     assert ce_key is not None
@@ -94,6 +119,14 @@ def test_summary_y_ranges_per_panel():
 
 @pytest.mark.essential
 def test_summary_y_ranges_forces_independent_when_share_y_true():
+    pytest.importorskip("plotly", reason="plotting extras (batch) not installed")
+    from cellpy.plotting import theme
+    from cellpy.plotting.collected import (
+        _yaxis_key_for_facet_label,
+        summary_plotter,
+    )
+
+    theme.make_collector_templates()
     fig = summary_plotter(
         _summary_frame(),
         backend="plotly",
@@ -101,6 +134,7 @@ def test_summary_y_ranges_forces_independent_when_share_y_true():
         share_y=True,
         y_ranges={"coulombic_efficiency": [0, 110]},
     )
+    assert fig is not None
     assert fig.layout.yaxis2.matches in (None, False)
     ce_key = _yaxis_key_for_facet_label(fig, "variable=coulombic_efficiency")
     assert list(fig.layout[ce_key].range) == [0.0, 110.0]
@@ -108,6 +142,14 @@ def test_summary_y_ranges_forces_independent_when_share_y_true():
 
 @pytest.mark.essential
 def test_collected_plot_forwards_y_ranges():
+    pytest.importorskip("plotly", reason="plotting extras (batch) not installed")
+    from cellpy.plotting import theme
+    from cellpy.plotting.collected import (
+        _yaxis_key_for_facet_label,
+        collected_plot,
+    )
+
+    theme.make_collector_templates()
     fig = collected_plot(
         _summary_frame(),
         family_kind="summary",
@@ -115,5 +157,6 @@ def test_collected_plot_forwards_y_ranges():
         group_cells=False,
         y_ranges={"coulombic_efficiency": [0.0, 110.0]},
     )
+    assert fig is not None
     ce_key = _yaxis_key_for_facet_label(fig, "variable=coulombic_efficiency")
     assert list(fig.layout[ce_key].range) == [0.0, 110.0]
