@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+* Per-panel y-limits (and clearer `share_y`) for collected summary facet
+  plots. (#804)
+
 ## [2.1.1.post1] - 2026-07-29
 
 Docs-only post-release of 2.1.1 — no API, schema, or runtime changes.

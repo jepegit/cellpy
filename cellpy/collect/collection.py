@@ -80,6 +80,10 @@ class Collection:
         it the tidy frame and the family. The only reconciliation needed is the
         summary family's cycle column, which the summary plotter spells
         ``cycle`` (capacity/ICA curves keep ``cycle_num`` / ``cycle``).
+
+        For summary collections (Plotly), pass ``share_y`` / ``match_axes`` and
+        optional ``y_ranges={variable: [lo, hi], ...}`` for per-facet y-limits
+        (see :func:`cellpy.plotting.collected.summary_plotter`).
         """
         from cellpy.plotting import collected_plot
 
