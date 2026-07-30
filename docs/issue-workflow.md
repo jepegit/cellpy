@@ -89,13 +89,13 @@ All workflows that touch git also run a short **branch-status preflight**: `git 
 
 **When:** You are on the default branch with nothing in progress and want help deciding what to work on next.
 
-**What you pass:** Nothing (survey + ask), `fix` (create a new general-fixes issue every time), or a hint (`milestone v0.4`, a topic) to bias ranking.
+**What you pass:** Nothing (survey + ask), `fix` (create a new general-fixes issue every time), `label:<L>` (hard-filter the shortlist to open issues with that GitHub label), or a hint (`milestone v0.4`, a topic) to soft-bias ranking when `label:` is absent. Free-form text that names a label is not a hard filter — use the `label:` token. Empty filter → stop. Batch the same filter with `/iflow-cycle label:<L>` (or `/iflow-cycle yolo`).
 
 **What the assistant does (three phases):**
 
-1. **Choose.** Prefers parked work in `.issueflows/02-partly-solved-issues/`; otherwise lists open GitHub issues (`gh issue list`) ranked by **milestone**, **labels**, and **topical similarity** to recently solved issues, then asks you to confirm a pick from a short shortlist. `fix` skips the survey and creates a new `chore: general fixes` issue.
-2. **Branch.** Requires a clean tree, branches off the default with the GitHub numeric convention `git switch -c <N>-<short-slug>`, then runs the `/iflow-init` flow automatically for `<N>`.
-3. **Hand off.** Asks whether to continue with `/iflow-plan` (never auto-runs it).
+1. **Choose.** Prefers parked work in `.issueflows/02-partly-solved-issues/`; otherwise lists open GitHub issues (`gh issue list`) ranked by **milestone**, **labels**, and **topical similarity** to recently solved issues, then asks you to confirm a pick from a short shortlist. With `label:<L>`, hard-filters that shortlist (`--label <L>` on GitHub; parked/epic only if they carry `<L>`). `fix` skips the survey and creates a new `chore: general fixes` issue.
+2. **Branch.** Requires a clean tree (or, when the only dirt is under `.issueflows/`, offers a default housekeeping commit first — typical after `/iflow-doctor`), then branches off the default with the GitHub numeric convention `git switch -c <N>-<short-slug>`, then runs the `/iflow-init` flow automatically for `<N>`.
+3. **Hand off.** When `auto_plan` is true (default), chains into `/iflow-plan` after init; otherwise asks first. Trailing `noplan` skips the chain once.
 
 **Out of scope (Phase B follow-up):** automated breakdown of an over-large issue into sub-issues created on GitHub and parked under `02-partly-solved-issues/`. `/iflow-pick` only *mentions* the option for now.
 
@@ -159,7 +159,7 @@ All workflows that touch git also run a short **branch-status preflight**: `git 
 4. **Prior-art discovery** — skim `.issueflows/00-tools/` for an existing helper; if `graphify-out/GRAPH_REPORT.md` exists, skim God Nodes / Communities / Suggested Questions for the affected area; grep for adjacent helpers; record findings under **`### Prior art`** in **`## Constraints`** (or `- None found (toolbox + grep + graph checked).`). Strong overlaps become **Open questions**.
 5. Explores read-only, then writes **`issue<N>_plan.md`** with sections: **Goal**, **Constraints** (including **Prior art**), **Approach**, **Files to touch**, **Test strategy**, **Open questions**.
 6. Runs a scope check — if the change is broad, proposes splitting into smaller issues or phases.
-7. **Stops and asks for explicit confirmation**: accept, revise, or abort. `/iflow-plan` never implements code itself.
+7. **Stops and asks for explicit confirmation**: accept, revise, or abort. When `auto_build` is true (default), **Accept** chains into `/iflow-build`; trailing `nobuild` skips once. Planning itself still writes no code before Accept.
 
 **Result:** A confirmed `issue<N>_plan.md` ready for `/iflow-build` to execute.
 
@@ -225,7 +225,7 @@ The bump runs **after** tests and **before** issue-folder moves and **before** c
 4. **Issue folders** — update status markdown; use `- [x] Done` only when fully resolved. Move completed issue files from `.issueflows/01-current-issues/` to `.issueflows/03-solved-issues/`, or partly done work to `.issueflows/02-partly-solved-issues/`.
 5. **Commit** — focused staging and a clear message (include `pyproject.toml` / `uv.lock` if the bump changed them, and `HISTORY.md` when step 3 updated it). Sync with the default branch using `git pull --ff-only`.
 6. **Push** — to your usual remote (e.g. `origin`).
-7. **Pull request** — `gh pr list --head <branch>` first (reuse an open PR, including an early draft); else `gh pr create` (with `--draft` when the `draft` token was passed). Mark ready from draft when not keeping `draft`. Afterward, snapshot CI with `gh pr checks`. Link the GitHub issue (`Closes #n` / `Refs #n`).
+7. **Pull request** — `gh pr list --head <branch>` first (reuse an open PR, including an early draft); else `gh pr create` (with `--draft` when the `draft` token was passed). Mark ready from draft when not keeping `draft`. Afterward, snapshot CI with `gh pr checks` (see the `gh-ci` skill for `gh run list` / `gh run watch` fallback). Link the GitHub issue (`Closes #n` / `Refs #n`).
 8. **Switch back when safe** — unless `stay` / `don't switch` was passed, run `git status --porcelain`; if clean, `git switch <default>` and `git pull --ff-only`; if dirty, stay put and report why switching is unsafe.
 9. **After review** — if switched back, return to the PR branch before review fixes; merge when approved and `gh pr checks` is green; once the PR merges, run `/iflow-cleanup` for the post-merge tidy-up. With `yolo`, close may `gh pr checks --watch` (budget: `checks_watch_minutes`, default 15) before merge, falling back to `--auto` only when the cap elapses.
 

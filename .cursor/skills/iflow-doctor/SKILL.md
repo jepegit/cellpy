@@ -81,6 +81,22 @@ When `.issueflows/04-designs-and-guides/multi-repo-workspaces.md` exists, read i
 
 4. **Re-audit** after repair and report what changed.
 
+5. **Housekeeping commit (default when issueflows-only dirty)** — Doctor repair
+   is filesystem-only; it never runs `git commit`. After a successful repair,
+   check the working tree (`issue-flow agent preflight --json` when available,
+   else `git status --porcelain`):
+   - If **clean** — done.
+   - If dirty and **every** path is under `.issueflows/`
+     (`issueflows_only: true` in preflight JSON, or the same rule by hand) —
+     list the paths, propose
+     `chore: doctor housekeeping — archive/sweep .issueflows groups`,
+     and ask for **one confirm** with **yes as the recommended default**.
+     On yes: `git add` **only** those paths and commit (no push). On no: leave
+     dirty and note that `/iflow-pick` will offer the same commit again.
+   - If dirty with any path **outside** `.issueflows/` — report mixed
+     dirt; do **not** offer the housekeeping default (user must sort code
+     changes separately).
+
 ## Constraints
 
 - **Off-path** — never auto-dispatch from `/iflow` or other lifecycle steps.
@@ -88,4 +104,7 @@ When `.issueflows/04-designs-and-guides/multi-repo-workspaces.md` exists, read i
   from `01-current-issues/` to `02-partly-solved-issues/` or
   `03-solved-issues/` by Done status. No deletes, no duplicate merges.
 - **Gated moves** — nothing moves without a consolidated user confirm.
+- **No CLI auto-commit** — `doctor --fix` never commits; the agent commits
+  only after the step-5 confirm, and never stages paths outside
+  `.issueflows/`.
 - Degrade gracefully when the CLI is absent (manual checklist + sweep steps).

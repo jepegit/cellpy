@@ -52,6 +52,11 @@ After resolution, treat the result as `<project_root>` and `<owner/repo>`:
 
 When `.issueflows/04-designs-and-guides/multi-repo-workspaces.md` exists, read it for layout and cross-repo guidance.
 
+
+## Optional tokens (command input)
+
+- **`nobuild`** — skip the `auto_build` chain for this run (after Accept, ask / tell the user to run `/iflow-build` even when `auto_build` is true).
+
 ## Instructions
 
 > **CLI fast path (optional).** If the `issue-flow` CLI is on `PATH`, run
@@ -93,11 +98,16 @@ When `.issueflows/04-designs-and-guides/multi-repo-workspaces.md` exists, read i
 
 8. **Confirm with the user.** Present the plan and **stop**. Accept one of: **Accept** (ready for `/iflow-build`), **Revise** (update `issue<N>_plan.md` in place and re-confirm), or **Abort**.
 
+   On **Accept** (and no trailing **`nobuild`**), follow the `iflow-build` skill immediately — briefly note that `auto_build` chained the handoff. Still write no code *before* Accept. With **`nobuild`**, or when the user only wants to park the accepted plan, tell them to run `/iflow-build` later instead of chaining.
+
+
 9. **Conflict on existing `issue<N>_plan.md`.** Do not overwrite silently. Offer: update in place (after review), keep both (`issue<N>_plan.v2.md`), or leave as is.
 
 ## Constraints
 
-- `/iflow-plan` is **read-only on source code**. The only file it writes is `.issueflows/01-current-issues/issue<N>_plan.md`.
+- `/iflow-plan` is **read-only on source code** until Accept. The only file it writes before Accept is `.issueflows/01-current-issues/issue<N>_plan.md`.
 - Do not move files between `01-` / `02-` / `03-` folders from `/iflow-plan`.
-- Do not run tests or package managers; that belongs to `/iflow-build` and `/iflow-close`.
-- Do not proceed to implementation from this skill. Hand off to `/iflow-build` once the user confirms.
+- Do not run tests or package managers from planning itself; that belongs to `/iflow-build` and `/iflow-close`.
+
+- `auto_build` only skips the post-Accept pause; Accept / Revise / Abort stay gated. Trailing `nobuild` skips the chain once.
+

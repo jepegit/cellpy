@@ -17,7 +17,9 @@ Do **not** use this skill from `/iflow`, `/iflow-build`, or `/iflow-close`. `/if
 
 - **(nothing)** — survey candidates and ask which to pick.
 - **`fix`** — create a **new** general-fixes GitHub issue (a fresh one every time) and use it.
-- **a hint** (milestone / label / topic) — bias the candidate ranking.
+- **`label:<L>`** — **hard filter**: shortlist only open issues that carry GitHub label `<L>` (case-insensitive; strip whitespace after the colon). Compatible with `noplan` / `root:` / `repo:`. Empty after filter → stop (“no open issues with label `<L>`”). Never auto-pick even when only one match. For batch processing the same filter, use `/iflow-cycle label:<L>` (or `/iflow-cycle yolo` for the configured yolo trigger).
+- **a hint** (milestone / topic) — soft-bias the candidate ranking when `label:<L>` is **absent**. Free-form text that happens to name a label is **not** a hard filter — use the `label:` token.
+- **`noplan`** — skip the `auto_plan` chain for this run (ask before `/iflow-plan` even when `auto_plan` is true).
 
 
 **Invoke:** type `iflow pick` in chat, or `/iflow-pick` from the slash menu (`iflow-pick` also works).
@@ -67,10 +69,11 @@ When `.issueflows/04-designs-and-guides/multi-repo-workspaces.md` exists, read i
 1. **Preflight.** Detect the default branch (`gh repo view --json defaultBranchRef -q .defaultBranchRef.name`; fall back to `git symbolic-ref --quiet --short refs/remotes/origin/HEAD`, else `main`). Run `git fetch --prune`. Report current branch + clean/dirty tree (`git status --porcelain`).
 2. **`fix` shortcut.** If the user passed `fix`, skip selection and go to step 5 (create a new general-fixes issue), then Phase 2.
 3. **Source candidates** (precedence):
-   - **Parked work first** — list `issue<n>_*` groups in `.issueflows/02-partly-solved-issues/` as the primary candidates (already-started work to finish first).
-   - **Active epic next** — if an epic plan under `.issueflows/05-epics/` has open issues (or the user named one, e.g. `epic 144`), prefer its **current stage's unblocked issues**. Use the fast path `issue-flow agent epic-status <N> --json` when the CLI is on `PATH` — its `next_candidates` are exactly the open, dependency-satisfied issues of the current stage. Surface those at the top of the shortlist so an epic advances stage by stage instead of stalling.
-   - **Else GitHub** — `gh issue list --state open --json number,title,labels,milestone,updatedAt` (add `--repo owner/repo` if ambiguous). Drop issues already captured under `01-current-issues/`, `02-partly-solved-issues/`, or `03-solved-issues/`.
-4. **Rank and present.** Rank by **epic membership** (an active epic's current-stage `next_candidates` first) + **milestone** (nearest/active, honour any hint) + **labels** (match recent work / hint) + **topical similarity** to recently solved issues (skim `.issueflows/03-solved-issues/` and recent branch names). Show a numbered shortlist (~3–7) with number, title, labels, milestone, and (for epic issues) the epic + stage, and **ask the user to confirm** the pick or override. Never pick silently.
+   - **Parse `label:<L>`** when present (case-insensitive label name after the colon). Announce the active filter in the shortlist header.
+   - **Parked work first** — list `issue<n>_*` groups in `.issueflows/02-partly-solved-issues/` as the primary candidates (already-started work to finish first). When `label:<L>` is active, keep only parked issues that carry `<L>` (`gh issue view <n> --json labels` when unclear).
+   - **Active epic next** — if an epic plan under `.issueflows/05-epics/` has open issues (or the user named one, e.g. `epic 144`), prefer its **current stage's unblocked issues**. Use the fast path `issue-flow agent epic-status <N> --json` when the CLI is on `PATH` — its `next_candidates` are exactly the open, dependency-satisfied issues of the current stage. Surface those at the top of the shortlist so an epic advances stage by stage instead of stalling. When `label:<L>` is active, keep only epic candidates that carry `<L>`.
+   - **Else GitHub** — `gh issue list --state open --json number,title,labels,milestone,updatedAt` (add `--repo owner/repo` if ambiguous). When `label:<L>` is active, add `--label <L>` (hard filter). Drop issues already captured under `01-current-issues/`, `02-partly-solved-issues/`, or `03-solved-issues/`. If the filtered set is empty, **stop** with “no open issues with label `<L>`.”
+4. **Rank and present.** Rank by **epic membership** (an active epic's current-stage `next_candidates` first) + **milestone** (nearest/active, honour any hint) + **labels** (match recent work / soft hint when no `label:` filter) + **topical similarity** to recently solved issues (skim `.issueflows/03-solved-issues/` and recent branch names). Show a numbered shortlist (~3–7) with number, title, labels, milestone, and (for epic issues) the epic + stage, and **ask the user to confirm** the pick or override. Never pick silently — even when the filtered shortlist has a single entry.
 5. **Create a `fix` issue (only when requested).** Use `gh issue create` (e.g. `chore: general fixes`), confirm title/body first, capture the new number. A fresh issue is created each time — never reuse an existing open general-fixes issue.
 6. **Over-large issue (note only).** If the chosen issue is too big for one PR, **mention** that breaking it into sub-issues is possible and tracked as a follow-up (Phase B of issue #63). Do **not** auto-create sub-issues here.
 
@@ -80,13 +83,28 @@ When `.issueflows/04-designs-and-guides/multi-repo-workspaces.md` exists, read i
 
 ### Phase 2 — create the branch
 
-1. **Require a clean tree** (`git status --porcelain`). If dirty, **stop** and ask the user to commit/stash.
+1. **Working-tree gate** — Prefer `issue-flow agent preflight --json` (fields
+   `clean`, `dirty_paths`, `issueflows_only`); else `git status --porcelain`
+   and treat paths as issueflows-only when every path is under
+   `.issueflows/`.
+   - **Clean** — continue.
+   - **Issueflows-only dirty** (typical after `/iflow-doctor` repair) — one
+     consolidated prompt with **commit housekeeping on the current branch** as
+     the **recommended default** (message pattern:
+     `chore: doctor housekeeping — archive/sweep .issueflows groups`,
+     or a short edit). Alternatives: stash / abort. On commit: stage **only**
+     those paths, commit, **no push**, then continue. Do not branch on top of
+     the dirty tree.
+   - **Mixed / code dirty** — **stop**; list non-`.issueflows/` paths;
+     ask commit / stash / abort. Do **not** auto-offer “commit everything”.
 2. **Branch off the default** — switch to default, fast-forward, then `git switch -c <N>-<short-slug>` (GitHub numeric convention). Confirm a non-obvious slug.
 3. **Run `/iflow-init`** for the now-known `<N>` by following the `iflow-init` skill. Do not duplicate its fetch/archive logic.
 
 ### Phase 3 — hand off
 
-1. **Ask** whether to continue with `/iflow-plan`. Do not auto-run it.
+
+1. **Chain into `/iflow-plan`** (this project has `auto_plan = true`). After Phase 2, follow the `iflow-plan` skill immediately — briefly note that `auto_plan` chained the handoff. Trailing **`noplan`** (or the user declining on confirm) skips the chain once and falls back to asking.
+
 
 2. **Exception:** when the `yolo`-label routing was confirmed in Phase 1, skip this handoff — the `iflow-yolo` chain (which includes `/iflow-init`) takes over after the branch is created.
 
@@ -98,3 +116,4 @@ When `.issueflows/04-designs-and-guides/multi-repo-workspaces.md` exists, read i
 - Branch off the detected default; never force-push or delete branches from this skill.
 - **Phase B is out of scope**: no automated sub-issue creation or sibling parking under `02-partly-solved-issues/`. Only mention the option.
 - Delegate issue capture to `/iflow-init` rather than re-implementing it.
+- `auto_plan` only skips the post-init pause; pick confirm and yolo routing stay gated.
