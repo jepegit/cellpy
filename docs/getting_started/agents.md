@@ -134,8 +134,9 @@ Suggested layering:
       `collection.plot(y_ranges={"coulombic_efficiency": [0, 110]})`
       (Plotly). `share_y=True` / `match_axes=True` restores a shared scale.
     - **Instrument picker for free.** `cellpy.list_instruments()` returns
-      `[{"id", "label", "models", "suffixes"}, ...]` (quiet — no per-module
-      warnings), ready to drive an import form.
+      `[{"id", "label", "models", "suffixes"}, ...]` and is quiet by contract
+      (probe/discovery skips stay at DEBUG — no `WARNING` spam on the root
+      logger), ready to drive an import form.
     - **Keep the console quiet.** cellpy logs through the `cellpy` logger; raise
       its level in an app you want silent:
       `logging.getLogger("cellpy").setLevel(logging.ERROR)`. Suppress one-off

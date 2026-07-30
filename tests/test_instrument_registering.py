@@ -209,13 +209,26 @@ def test_list_instruments_shape_and_known_entry():
     assert by_id["pec_csv"]["label"] == "PEC (CSV)"
 
 
-def test_list_instruments_is_quiet():
-    """No per-non-loader-module warnings escape (the whole point, #786)."""
+@pytest.mark.essential
+def test_list_instruments_is_quiet(caplog):
+    """No per-non-loader-module warnings escape (the whole point, #786).
+
+    Probe failures historically used bare ``logging.warning`` (root logger);
+    silencing only ``logging.getLogger("cellpy")`` was not enough. Assert on
+    logging WARNING records, not just Python ``warnings``.
+    """
     import warnings
 
     import cellpy
 
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
-        cellpy.list_instruments()
+        with caplog.at_level(logging.WARNING):
+            cellpy.list_instruments()
     assert not caught, [str(w.message) for w in caught]
+    probe_noise = [
+        r
+        for r in caplog.records
+        if r.levelno >= logging.WARNING and "Could not create loader" in r.getMessage()
+    ]
+    assert not probe_noise, [r.getMessage() for r in probe_noise]
