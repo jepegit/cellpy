@@ -1,19 +1,25 @@
 # Shared aliases
-alias inv="uv run --no-project inv"
 
-case "$OSTYPE" in
-    msys*|cygwin*)
-        # Git Bash on Windows
-        alias conda="C:/Users/jepe/AppData/Local/miniconda3/Scripts/conda.exe"
-        eval "$(conda shell.bash hook)"
-        ;;
-    linux-gnu*)
-        if [ -n "$WSL_DISTRO_NAME" ]; then
-            # Source conda.sh so `conda activate` works (defines the conda shell function).
-            [ -f "$HOME/miniconda3/etc/profile.d/conda.sh" ] && . "$HOME/miniconda3/etc/profile.d/conda.sh"
-        fi
-        ;;
-esac
+# Opt-in: `conda_shell` — wire conda into this shell (not run on source).
+conda_shell() {
+    case "$OSTYPE" in
+        msys*|cygwin*)
+            # Git Bash on Windows
+            alias conda="C:/Users/jepe/AppData/Local/miniconda3/Scripts/conda.exe"
+            eval "$(conda shell.bash hook)"
+            ;;
+        linux-gnu*)
+            if [ -n "$WSL_DISTRO_NAME" ]; then
+                # Source conda.sh so `conda activate` works (defines the conda shell function).
+                [ -f "$HOME/miniconda3/etc/profile.d/conda.sh" ] && . "$HOME/miniconda3/etc/profile.d/conda.sh"
+            fi
+            ;;
+        *)
+            echo "conda_shell: unsupported OSTYPE='$OSTYPE'"
+            return 1
+            ;;
+    esac
+}
 
 # `release [post|patch|minor|major|alpha|beta|rc|stable|<explicit-tag>]`
 #
