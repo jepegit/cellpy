@@ -34,4 +34,4 @@ moves selection into `cellpy.plotting.registry`.
 ## Links
 
 - Issue #636, epic #567
-- Plan of record: `architecture-plan/cellpy2-plotting-redesign-plan.md` §3.2
+- Plan of record: `cellpy-design-and-development/archive/redesigns/cellpy2-plotting-redesign-plan.md` §3.2

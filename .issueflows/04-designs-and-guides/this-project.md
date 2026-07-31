@@ -43,7 +43,7 @@ See also [testing-and-coverage.md](testing-and-coverage.md) and [ci-tiers.md](ci
 
 - Main package: `cellpy/` (Python library).
 - Issue-flow: `.issueflows/` (current issue under `01-current-issues/`).
-- **cellpy 2 plans:** sibling repo `../architecture-plan/` (not `code-reviews/`).
+- **cellpy 2 plans:** sibling repo `../cellpy-design-and-development/` (start at `CURRENT.md`; not `code-reviews/`).
 - v2 epic: [cellpy-v2-epic.md](cellpy-v2-epic.md).
 - cellpy-core integration: `../cellpy-core/.issueflows/04-designs-and-guides/`.
 

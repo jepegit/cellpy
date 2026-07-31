@@ -9,7 +9,7 @@ PyPI trusted publishing.
 | Doc | Owns |
 |-----|------|
 | [`cellpy-v2-branching.md`](cellpy-v2-branching.md) | Branch layout after the 2026-07-16 flip |
-| `architecture-plan/cellpy2-release-and-branching-plan.md` (sibling repo) | Support matrix, cross-repo merge order (F9), final-legacy gates |
+| `cellpy-design-and-development/archive/foundations/cellpy2-release-and-branching-plan.md` (sibling repo) | Support matrix, cross-repo merge order (F9), final-legacy gates |
 | [`build-and-versioning.md`](build-and-versioning.md) | Tag-derived versioning (`uv-dynamic-versioning`) |
 
 > **Scheme (post-v1.1):** **`master` = v2 development**; **`v1.x` = 1.x
@@ -133,10 +133,10 @@ gh run watch <run-id>
 ### Extra gates — final legacy 1.x ship
 
 Architecture plan §1 / §6.1 and
-`architecture-plan/cellpy-v103-vs-v104a3-observations.md`: CE /
+`cellpy-design-and-development/research/migration-notes/cellpy-v103-vs-v104a3-observations.md`: CE /
 coulombic-difference, dropped columns, step classification must be intended
 **and** release-noted (or fixed). User notes:
-`architecture-plan/cellpy-v104-migration-notes.md`.
+`cellpy-design-and-development/research/migration-notes/cellpy-v104-migration-notes.md`.
 
 ### Extra gates — `v2.0.0rc1` / `v2.0.0` stable
 
@@ -181,5 +181,5 @@ See `cellpy-core` migration guide §2.
 - Workflow: `.github/workflows/release.yml`
 - Branching: [`cellpy-v2-branching.md`](cellpy-v2-branching.md)
 - Build/versioning: [`build-and-versioning.md`](build-and-versioning.md)
-- Architecture: `architecture-plan/cellpy2-release-and-branching-plan.md`
+- Architecture: `cellpy-design-and-development/archive/foundations/cellpy2-release-and-branching-plan.md`
 - Epic: [#402](https://github.com/jepegit/cellpy/issues/402)

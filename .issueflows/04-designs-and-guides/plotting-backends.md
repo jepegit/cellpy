@@ -37,4 +37,4 @@ adds further render branches for `cycles_plot` (#646), `raw_plot` /
 ## Links
 
 - Issues #648, #647, #646, #639, #638, #637, #636; epic #567
-- Plan of record: `architecture-plan/cellpy2-plotting-redesign-plan.md` §3.1
+- Plan of record: `cellpy-design-and-development/archive/redesigns/cellpy2-plotting-redesign-plan.md` §3.1

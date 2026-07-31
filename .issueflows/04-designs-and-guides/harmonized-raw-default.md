@@ -33,4 +33,4 @@ on the single-cell Arbin benchmark (CI gate fail at +100%).
   its Data shell (summary/meta/FID). Parse-first + cache is enough for the
   double-read.
 
-**Refs.** jepegit/cellpy#560; PR #623; loader plan in `architecture-plan/`.
+**Refs.** jepegit/cellpy#560; PR #623; loader plan in `cellpy-design-and-development/archive/foundations/cellpy2-loader-port-and-extraction-plan.md`.

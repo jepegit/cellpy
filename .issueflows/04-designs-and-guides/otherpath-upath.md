@@ -5,7 +5,7 @@ compatibility wrapper around `upath.UPath` (fsspec backends). Remote raw/cellpy
 *reads* still go through a single external → local temp copy seam; loaders never
 speak SSH/SFTP.
 
-**Supersedes:** architecture-plan “keep Fabric OtherPath, revisit fsspec later”
+**Supersedes:** cellpy-design-and-development “keep Fabric OtherPath, revisit fsspec later”
 (configuration plan §5b, 2026-07-09). Fabric is removed once the wrapper is green.
 
 **Supported product schemes:** `ssh://`, `sftp://`, `scp://` (`scp` aliased to

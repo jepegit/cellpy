@@ -5,13 +5,27 @@ alwaysApply: true
 
 # cellpy workspace — plan documents
 
-The **`architecture-plan`** repository (`../architecture-plan/` from this checkout) is
-the **authoritative home for cellpy 2 plan documents** (gap analysis, Stage 0 plans,
-loader/config/unit migration plans, etc.).
+The **`cellpy-design-and-development`** repository
+(`../cellpy-design-and-development/` from this checkout) is the **authoritative
+home for cellpy 2 plan documents** (gap analysis, Stage plans, loader/config/unit
+migration plans, etc.). Formerly named `architecture-plan`.
 
 **Do not use `code-reviews/`** for these plans — that location is obsolete.
 
-When issues or older text reference `code-reviews/cellpy2-*.md`, open the same filename
-under `../architecture-plan/` instead.
+**Start at** `../cellpy-design-and-development/CURRENT.md`. Layout:
+
+| Path | Role |
+|------|------|
+| `CURRENT.md` | Active stage / open plans |
+| `PATHS.md` | Old basename → current path |
+| `ecosystem/` | Durable architecture primer |
+| `roadmap/` | Coordinator + stage issue sets |
+| `active/` | Plans still guiding open work |
+| `archive/` | Executed topic plans |
+| `research/` | Scans / evidence |
+
+When issues or older text reference `code-reviews/cellpy2-*.md`,
+`architecture-plan/<basename>.md`, or a flat plan basename, look it up in
+`../cellpy-design-and-development/PATHS.md`.
 
 Durable detail: `.issueflows/04-designs-and-guides/cellpy-workspace-repos.md`

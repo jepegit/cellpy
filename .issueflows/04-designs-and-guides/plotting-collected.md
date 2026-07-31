@@ -67,7 +67,7 @@ collection.plot(
 ## Links
 
 - Issue #657; epic #567; plan
-  `architecture-plan/cellpy2-plotting-redesign-plan.md` §3.3 / Phase 4
+  `cellpy-design-and-development/archive/redesigns/cellpy2-plotting-redesign-plan.md` §3.3 / Phase 4
 - Related: `plotting-prepare.md`, `plotting-backends.md`
 - Issue #804 (per-panel y-limits / `share_y`)
 - Issue #801 (theme / label / height hooks)
