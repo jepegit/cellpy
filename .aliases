@@ -5,7 +5,7 @@
 # Path of this file (set when sourced).
 _CELLPY_ALIASES_FILE="${BASH_SOURCE[0]:-}"
 
-# `aliases` — list functions (and leftover shell aliases) from this file.
+# `aliases` — list functions and shell aliases from this file.
 aliases() {
     local src="${_CELLPY_ALIASES_FILE:-}"
     if [ -z "$src" ] || [ ! -f "$src" ]; then
