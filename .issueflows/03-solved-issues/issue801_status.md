@@ -1,6 +1,6 @@
 # Issue #801 — Status
 
-- [ ] Done
+- [x] Done
 
 ## What's done
 
@@ -12,9 +12,10 @@
   - `height_per_panel=` alias of `sub_fig_min_height`
   - `y_ranges` applied before label cleanup (keeps #804 working with pretty labels)
 - Docs: `plotting-collected.md`, docstrings on `collected_plot` / `Collection.plot` / `summary_plotter`.
-- Tests: `tests/test_collected_app_hooks.py` + updated `tests/test_collected_summary_axes.py` (14 passed).
-- Draft PR: https://github.com/jepegit/cellpy/pull/808 (#808, draft)
+- Tests: `tests/test_collected_app_hooks.py` + updated `tests/test_collected_summary_axes.py`.
+- `HISTORY.md` Unreleased bullet added.
+- Essential suite green (`635 passed`); PR https://github.com/jepegit/cellpy/pull/808
 
 ## Remaining work
 
-- `/iflow-close` (HISTORY, finalize PR, mark Done).
+- None — ready for merge / `/iflow-cleanup` after merge.
