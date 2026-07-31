@@ -37,12 +37,24 @@ logging.getLogger(__name__).addHandler(logging.NullHandler())
 
 # Sanctioned top-level API (v2, issue #509): ``cellpy.get`` is the primary
 # entry point; ``cellpy.merge_cells`` and ``cellpy.print_instruments`` are the
-# supporting conveniences. Everything else is reached via explicit module
-# paths (``cellpy.cellreader``, ``cellpy.config`` / ``cellpy.config.session``).
+# supporting conveniences. ``cellpy.read_meta`` peeks cellpy-file metadata
+# without loading frames (issue #799). Everything else is reached via explicit
+# module paths (``cellpy.cellreader``, ``cellpy.config`` / ``cellpy.config.session``).
 get = cellreader.get
 merge_cells = cellreader.merge_cells
 print_instruments = readers.cellreader.print_instruments
 list_instruments = readers.data_structures.list_instruments
+
+
+def read_meta(path):
+    """Read cellpy-file metadata without loading raw/steps/summary frames.
+
+    See ``cellpy.readers.cellpy_file.read_meta`` for details.
+    """
+    from cellpy.readers.cellpy_file import read_meta as _read_meta
+
+    return _read_meta(path)
+
 
 __all__ = [
     "cellreader",
@@ -54,6 +66,7 @@ __all__ = [
     "merge_cells",
     "print_instruments",
     "list_instruments",
+    "read_meta",
     "do",
     # "ureg",
     # "Q",

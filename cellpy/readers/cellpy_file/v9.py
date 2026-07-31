@@ -224,11 +224,44 @@ def load(filename: PathLike, *, selector=None) -> LoadResult:
     return LoadResult.from_limits(data, CELLPY_FILE_VERSION, limits)
 
 
+def read_meta(path: PathLike) -> dict:
+    """Read the v9 ``meta.json`` document without loading parquet frames.
+
+    Args:
+        path: Path to a v9 ``.cellpy`` zip archive.
+
+    Returns:
+        The metadata archive document (same shape as written by ``save``).
+
+    Raises:
+        IOError: If ``path`` is missing.
+        CorruptCellpyFile: If the zip has no ``meta.json`` member.
+        WrongFileVersion: If ``cellpy_file_version`` is not the current v9.
+    """
+    path = Path(path)
+    if not path.is_file():
+        raise IOError(f"File does not exist: {path}")
+
+    with zipfile.ZipFile(path, mode="r") as zf:
+        try:
+            meta_raw = zf.read(META_JSON_NAME)
+        except KeyError as e:
+            raise CorruptCellpyFile(
+                f"{path} is a zip but missing {META_JSON_NAME}"
+            ) from e
+        meta_doc = json.loads(meta_raw.decode("utf-8"))
+
+    version = int(meta_doc.get("cellpy_file_version", 0))
+    if version != CELLPY_FILE_VERSION:
+        raise WrongFileVersion(
+            f"Unsupported zip cellpy version {version} in {path}"
+        )
+    return meta_doc
+
+
 def get_version_from_zip(path: PathLike) -> int:
     """Read ``cellpy_file_version`` from a v9 zip's ``meta.json``."""
-    with zipfile.ZipFile(path, mode="r") as zf:
-        meta_doc = json.loads(zf.read(META_JSON_NAME).decode("utf-8"))
-    return int(meta_doc.get("cellpy_file_version", 0))
+    return int(read_meta(path).get("cellpy_file_version", 0))
 
 
 def suggest_extension() -> str:

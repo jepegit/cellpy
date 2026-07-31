@@ -255,3 +255,90 @@ def load_meta_archive(path: PathLike) -> dict:
             f"Unsupported meta archive version {version} in {path}"
         )
     return doc
+
+
+def _scalarize_hdf5_meta_row(meta_dict: Mapping[str, Any]) -> dict[str, Any]:
+    """Collapse single-row HDF5 meta columns (list-of-one) to scalars."""
+    out: dict[str, Any] = {}
+    for key, value in meta_dict.items():
+        if isinstance(value, list):
+            out[key] = value[0] if len(value) == 1 else value
+        else:
+            out[key] = value
+    return out
+
+
+def _read_meta_hdf5(path: Path) -> dict:
+    """Read HDF5 ``/info`` metadata without loading raw/steps/summary."""
+    from cellpy.parameters import prms
+    from cellpy.readers import externals
+    from cellpy.readers.cellpy_file.format import require_hdf5_support
+
+    require_hdf5_support(f"reading metadata from the HDF5 cellpy-file {path}")
+    parent = prms._cellpyfile_root
+    common_dir = prms._cellpyfile_common_meta
+    test_dir = prms._cellpyfile_test_dependent_meta
+
+    with externals.pandas.HDFStore(path) as store:
+        try:
+            meta_table = store.select(parent + common_dir)
+        except KeyError as e:
+            raise WrongFileVersion(
+                f"No common metadata table in HDF5 cellpy-file {path}"
+            ) from e
+        cell = _scalarize_hdf5_meta_row(meta_table.to_dict(orient="list"))
+        tests: dict[str, Any] = {}
+        try:
+            test_table = store.select(parent + test_dir)
+        except KeyError:
+            test_table = None
+        if test_table is not None and not test_table.empty:
+            # One row per test in typical files; expose row 0 under "0".
+            row = test_table.iloc[0].to_dict()
+            tests["0"] = row
+
+    return {
+        "cellpy_file_version": cell.get("cellpy_file_version", 0),
+        "cell": cell,
+        "tests": tests,
+        "loaded_from": str(path),
+    }
+
+
+def read_meta(path: PathLike) -> dict:
+    """Read cellpy-file metadata without materialising raw/steps/summary.
+
+    Supports v9 ``.cellpy`` zips (``meta.json`` member), standalone
+    ``*.meta.json`` archives, and legacy HDF5 cellpy files (``/info`` only).
+
+    Cycle counts are **not** in the metadata document — use a full
+    ``cellpy.get`` (or a summary peek) when a browser needs ``#cycles``.
+
+    Args:
+        path: Path to a ``.cellpy`` / ``.h5`` / ``.hdf5`` file or a
+            ``*.meta.json`` archive.
+
+    Returns:
+        A metadata document. For v9 / ``*.meta.json`` this is the archive
+        shape (``cell``, ``tests``, units, …). For HDF5 it is a reduced
+        dict with at least ``cellpy_file_version``, ``cell``, and ``tests``.
+
+    Raises:
+        IOError: If ``path`` does not exist.
+        WrongFileVersion: If the file is an unsupported cellpy version.
+        CorruptCellpyFile: If a v9 zip is missing ``meta.json``.
+    """
+    path = Path(path)
+    if not path.is_file():
+        raise IOError(f"File does not exist: {path}")
+
+    name = path.name.lower()
+    if name.endswith(".meta.json"):
+        return load_meta_archive(path)
+
+    from cellpy.readers.cellpy_file import v9 as cellpy_file_v9
+
+    if cellpy_file_v9.is_zip_cellpy(path):
+        return cellpy_file_v9.read_meta(path)
+
+    return _read_meta_hdf5(path)

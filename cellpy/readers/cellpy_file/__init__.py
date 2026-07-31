@@ -31,6 +31,7 @@ __all__ = [
     "load",
     "load_meta_archive",
     "read_fid_table",
+    "read_meta",
     "read_table",
     "save",
     "save_meta_archive",
@@ -62,4 +63,8 @@ def __getattr__(name: str):
         from cellpy.readers.cellpy_file.meta_archive import load_meta_archive
 
         return load_meta_archive
+    if name == "read_meta":
+        from cellpy.readers.cellpy_file.meta_archive import read_meta
+
+        return read_meta
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
