@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+* Add issue-flow as a uv `dev` dependency so agents get the CLI from
+  `uv sync` / `uv run issue-flow`. (#809)
+
 * App-friendly collected figures: theme / label / height hook (or pass a
   FigureSpec). (#801)
 
