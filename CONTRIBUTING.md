@@ -98,6 +98,7 @@ Ready to contribute? Here's how to set up ``cellpy`` for local development.
 
     ```shell
     uv run pytest
+    uv run issue-flow --help   # issue-flow CLI (dev group; for agents / issue tracking)
     ```
 
 5. Create a branch for local development:

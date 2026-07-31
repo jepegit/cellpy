@@ -93,6 +93,7 @@ dev = [
     "pytest",
     "pytest-benchmark",
     "pytest-timeout",
+    "issue-flow>=0.4.2",
 ]
 docs = [
     "ipykernel>=7.3.0",
