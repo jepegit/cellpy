@@ -1,5 +1,7 @@
 """Tests for the batch v3 facade (#702)."""
 
+from pathlib import Path
+
 import polars as pl
 import pytest
 
@@ -125,3 +127,88 @@ def test_create_journal_reads_db(db_env):
     assert b.cell_names == []
     b.create_journal()
     assert set(b.cell_names) == _DB_CELLS
+
+
+# ---- custom / BatBase JSON + file search (#345) -------------------------
+
+_FIXTURES = Path(__file__).parent / "fixtures"
+
+_CUSTOM_COLUMN_MAP = {
+    "cell_id": "filename",
+    "mass_mg": "mass",
+    "total_mass_mg": "total_mass",
+    "instrument_name": "instrument",
+}
+
+
+def test_load_custom_json_with_file_search(parameters):
+    """Blessed cellpy.batch.load routes custom JSON through from_db + find_files."""
+    fixture = _FIXTURES / "custom_json_batch_like.json"
+    assert fixture.is_file()
+
+    b = load(
+        name="test_batch",
+        project="test_project",
+        journal_file=str(fixture),
+        db_reader="custom_json_reader",
+        column_map=_CUSTOM_COLUMN_MAP,
+        raw_file_dir=parameters.raw_data_dir,
+        cellpy_file_dir=parameters.cellpy_data_dir,
+    )
+    assert isinstance(b, Batch)
+    assert b.cell_names == ["20160805_test001_45_cc"]
+    assert "raw_file_names" in b.pages.columns
+    assert "cellpy_file_name" in b.pages.columns
+
+
+def test_load_custom_json_reader_alias(parameters):
+    """reader= is accepted as an alias for db_reader=."""
+    fixture = _FIXTURES / "custom_json_batch_like.json"
+    b = load(
+        name="test_batch",
+        project="test_project",
+        journal_file=str(fixture),
+        reader="custom_json_reader",
+        column_map=_CUSTOM_COLUMN_MAP,
+        raw_file_dir=parameters.raw_data_dir,
+        cellpy_file_dir=parameters.cellpy_data_dir,
+    )
+    assert b.cell_names == ["20160805_test001_45_cc"]
+
+
+def test_load_batbase_json_with_file_search(parameters):
+    fixture = _FIXTURES / "cellpy_batbase_like.json"
+    assert fixture.is_file()
+
+    b = load(
+        name="test_batch",
+        project="test_project",
+        journal_file=str(fixture),
+        db_reader="batbase_json_reader",
+        raw_file_dir=parameters.raw_data_dir,
+        cellpy_file_dir=parameters.cellpy_data_dir,
+    )
+    assert isinstance(b, Batch)
+    assert b.cell_names == ["20160805_test001_45_cc"]
+    assert "raw_file_names" in b.pages.columns
+
+
+def test_load_json_db_requires_name_and_project():
+    fixture = _FIXTURES / "custom_json_batch_like.json"
+    with pytest.raises(ValueError, match="name and project"):
+        load(
+            journal_file=str(fixture),
+            db_reader="custom_json_reader",
+            column_map=_CUSTOM_COLUMN_MAP,
+        )
+
+
+def test_load_conflicting_db_reader_and_reader_alias():
+    with pytest.raises(ValueError, match="conflicting"):
+        load(
+            name="n",
+            project="p",
+            journal_file="x.json",
+            db_reader="custom_json_reader",
+            reader="batbase_json_reader",
+        )

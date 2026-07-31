@@ -33,6 +33,12 @@ def journal_from_db(
     ``db_reader`` selects the reader (``"default"``/``"simple_excel_reader"``,
     ``"batbase_json_reader"``, ``"custom_json_reader"``); ``db_file`` and
     ``column_map`` are forwarded for the JSON readers.
+
+    Extra kwargs (e.g. ``skip_file_search``, ``file_list``, ``pre_path``,
+    ``sub_folders``) are forwarded to
+    :func:`cellpy.batch._dbengine.simple_db_engine` /
+    :func:`cellpy.batch._dbengine.find_files`. Pass ``skip_file_search=True``
+    when the JSON already carries ``raw_file_names`` / ``cellpy_file_name``.
     """
     column_map = kwargs.pop("column_map", None)
     dbreader_kwargs = kwargs.pop("dbreader_kwargs", None) or {}

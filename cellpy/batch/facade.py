@@ -318,11 +318,18 @@ class _LegacyExperimentAdapter:
 
 # -- module-level constructors -------------------------------------------
 
+_JSON_DB_READERS = frozenset({"custom_json_reader", "batbase_json_reader"})
+
 
 def from_journal(
     journal_file: Path | str, policy: LoadPolicy | None = None, **_kwargs
 ) -> Batch:
-    """Build a :class:`Batch` from a journal file (.json or .xlsx)."""
+    """Build a :class:`Batch` from a cellpy journal file (.json or .xlsx).
+
+    For BatBase / custom JSON downloads that need post-read file search, use
+    :func:`load` with ``db_reader="batbase_json_reader"`` or
+    ``"custom_json_reader"`` (and ``column_map`` for custom JSON).
+    """
     return Batch(read_journal(journal_file), policy=policy)
 
 
@@ -341,22 +348,56 @@ def load(
     journal_file: Path | str | None = None,
     frame: Any | None = None,
     db: str | bool | None = None,
+    db_reader: str | None = None,
+    reader: str | None = None,
     policy: LoadPolicy | None = None,
     **kwargs,
 ) -> Batch:
     """Build a :class:`Batch` from a journal source.
 
     Source precedence: explicit ``journal`` model, ``journal_file``, ``frame``,
-    then a database read (``db`` reader name, or when only ``name``/``project``
-    are given). Falls back to an empty named journal.
+    then a database read (``db`` / ``db_reader`` reader name, or when only
+    ``name``/``project`` are given). Falls back to an empty named journal.
+
+    When ``journal_file`` points at a **BatBase or custom JSON** download (not a
+    cellpy journal), pass ``db_reader="batbase_json_reader"`` or
+    ``"custom_json_reader"`` (``reader=`` is accepted as an alias). That path
+    runs file search after read via :meth:`Batch.from_db`. Custom JSON also
+    needs ``column_map`` (source column → journal key; must map to
+    ``filename``). Native cellpy journal JSON does not re-search.
     """
+    # Canonical name is db_reader=; reader= matches the utils.batch shim.
+    if db_reader is None and reader is not None:
+        db_reader = reader
+    elif db_reader is not None and reader is not None and db_reader != reader:
+        raise ValueError(
+            f"conflicting db_reader={db_reader!r} and reader={reader!r}; "
+            "pass only db_reader= (canonical) or only reader= (alias)"
+        )
+
     if journal is not None:
         return Batch(journal, policy=policy)
     if journal_file is not None:
+        if db_reader in _JSON_DB_READERS:
+            if not name or not project:
+                raise ValueError(
+                    "name and project are required when loading a JSON db file "
+                    f"with db_reader={db_reader!r}"
+                )
+            return Batch.from_db(
+                name,
+                project,
+                db_reader=db_reader,
+                db_file=str(journal_file),
+                policy=policy,
+                **kwargs,
+            )
         return Batch(read_journal(journal_file), policy=policy)
     if frame is not None:
         return Batch(journal_from_frame(frame, name=name, project=project), policy=policy)
-    if db is not None or (name and project):
-        reader = db if isinstance(db, str) else "default"
-        return Batch.from_db(name, project, db_reader=reader, policy=policy, **kwargs)
+    if db is not None or db_reader is not None or (name and project):
+        chosen = db_reader
+        if chosen is None:
+            chosen = db if isinstance(db, str) else "default"
+        return Batch.from_db(name, project, db_reader=chosen, policy=policy, **kwargs)
     return Batch(Journal(name=name, project=project), policy=policy)
