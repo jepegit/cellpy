@@ -65,13 +65,16 @@ See also [testing-and-coverage.md](testing-and-coverage.md) and [ci-tiers.md](ci
 - Do **not** edit a version into `pyproject.toml`.
 - Latest tag → next pre-release on the same channel by default
   (e.g. after alphas, plan `v2.0.0rc1`; after soak, `v2.0.0`).
-- Create the tag **after** the PR is squash-merged onto `master`:
+- Day-to-day cutter: source `.aliases`, then `release` (prints **last tag** +
+  planned next post) or `release post` / `release patch` / `release vX.Y.Z…`.
+- Create the tag **after** HISTORY is promoted and the tree is clean on
+  `master` (prefer a PR for HISTORY; then cut the release):
 
 ```bash
 git switch master && git pull --ff-only
-git tag v2.0.0rc1
-git push origin v2.0.0rc1
-# or: gh release create v2.0.0rc1 --generate-notes
+# after HISTORY.md is merged:
+gh release create v2.1.1.post4 --target master --generate-notes
+# or: source .aliases && release post
 ```
 
 - `/iflow-close bump` only **plans** the tag (records it in the status file);

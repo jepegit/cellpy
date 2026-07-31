@@ -15,61 +15,137 @@ case "$OSTYPE" in
         ;;
 esac
 
-# `release [patch|minor|major]`
+# `release [post|patch|minor|major|alpha|beta|rc|stable|<explicit-tag>]`
 #
-# Cuts a GitHub release whose tag matches the *committed* project version, so
-# the git history and the published tags can never drift apart.
+# Tag-derived releases (uv-dynamic-versioning). Version comes from the git tag;
+# there is no `uv version --bump` / pyproject version edit.
 #
-#   release              # tag the already-committed version (e.g. after `/issue-close patch`)
-#   release patch        # bump -> commit -> push -> tag, all in one consistent step
-#   release minor|major  # same, for the other bump levels
+#   release              # show last tag + planned next (default: post) — dry
+#   release post         # cut vX.Y.Z.postN (or .post1 on a stable tag)
+#   release patch        # cut next patch (strips post/pre → X.Y.(Z+1))
+#   release minor|major  # same idea for minor/major
+#   release alpha|beta|rc|stable
+#   release v2.1.1.post4 # cut an explicit tag (must start with v)
 #
-# Guards:
-#   - refuses to tag while a version bump is still uncommitted (the old alias
-#     silently dropped uncommitted bumps from history -> tag/repo drift);
-#   - refuses if the target tag already exists locally or on origin
-#     (this is what produced the confusing "tag already exists" error after a
-#     double bump from `/issue-close` + the release ritual).
+# Always prints the latest existing release tag first. Creates a GitHub
+# release with `--target` set from the current branch (`master` for v2.*,
+# `v1.x` for v1.*). See `.issueflows/04-designs-and-guides/release-procedure.md`.
 release() {
     local level="${1:-}"
 
-    if [ -n "$level" ]; then
-        case "$level" in
-            patch|minor|major) ;;
-            *) echo "release: unknown bump level '$level' (use patch|minor|major)"; return 1 ;;
-        esac
-        if [ -n "$(git status --porcelain)" ]; then
-            echo "release: working tree is not clean; commit or stash before bumping."; return 1
-        fi
-        uv version --bump "$level" || return 1
+    git fetch --tags --prune --quiet 2>/dev/null || true
+
+    local last
+    last="$(git tag --sort=-v:refname | head -n1)"
+    if [ -z "$last" ]; then
+        echo "release: no tags found in this repo."; return 1
+    fi
+    echo "release: last tag = $last"
+
+    local planned=""
+    # Shared next-tag arithmetic (stdout = vX.Y.Z…).
+    _release_plan_tag() {
+        # Prefer uv's env (has packaging); fall back to bare python.
+        local py=(uv run --no-project python)
+        command -v uv >/dev/null 2>&1 || py=(python)
+        "${py[@]}" - "$1" "$2" <<'PY'
+import sys
+from packaging.version import Version
+
+last, level = sys.argv[1], sys.argv[2]
+v = Version(last.lstrip("v"))
+epoch = f"{v.epoch}!" if v.epoch else ""
+base = list(v.release) + [0, 0, 0]
+major, minor, patch = base[0], base[1], base[2]
+
+def out(s: str) -> None:
+    print("v" + s)
+
+if level == "major":
+    out(f"{epoch}{major + 1}.0.0")
+elif level == "minor":
+    out(f"{epoch}{major}.{minor + 1}.0")
+elif level == "patch":
+    out(f"{epoch}{major}.{minor}.{patch + 1}")
+elif level == "stable":
+    out(f"{epoch}{major}.{minor}.{patch}")
+elif level == "post":
+    n = (v.post or 0) + 1
+    out(f"{epoch}{major}.{minor}.{patch}.post{n}")
+elif level == "alpha":
+    n = (v.pre[1] + 1) if v.pre and v.pre[0] == "a" else 1
+    out(f"{epoch}{major}.{minor}.{patch}a{n}")
+elif level == "beta":
+    n = (v.pre[1] + 1) if v.pre and v.pre[0] == "b" else 1
+    out(f"{epoch}{major}.{minor}.{patch}b{n}")
+elif level == "rc":
+    n = (v.pre[1] + 1) if v.pre and v.pre[0] == "rc" else 1
+    out(f"{epoch}{major}.{minor}.{patch}rc{n}")
+else:
+    raise SystemExit(f"unknown level {level!r}")
+PY
+    }
+
+    if [ -z "$level" ]; then
+        planned="$(_release_plan_tag "$last" post)" || return 1
+        echo "release: dry-run — next default (post) would be $planned"
+        echo "release: usage: release post|patch|minor|major|alpha|beta|rc|stable|vX.Y.Z[.postN]"
+        echo "release: ensure HISTORY.md is promoted and git status is clean first."
+        return 0
     fi
 
-    # Derive the version from pyproject AFTER any bump.
-    local ver
-    ver="$(python -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")" || return 1
-    local tag="v$ver"
-
-    # Commit the bump (if we made one) so the tag points at committed history.
-    if [ -n "$(git status --porcelain -- pyproject.toml uv.lock)" ]; then
-        if [ -n "$level" ]; then
-            git add pyproject.toml uv.lock || return 1
-            git commit -m "$tag" || return 1
-        else
-            echo "release: pyproject.toml/uv.lock has an uncommitted version change."
-            echo "         commit it first, or run: release patch|minor|major"
+    case "$level" in
+        v*)
+            planned="$level"
+            ;;
+        post|patch|minor|major|stable|alpha|beta|rc)
+            planned="$(_release_plan_tag "$last" "$level")" || return 1
+            ;;
+        *)
+            echo "release: unknown level '$level' (use post|patch|minor|major|alpha|beta|rc|stable|v…)"
             return 1
-        fi
-    fi
+            ;;
+    esac
 
-    # Never re-create an existing tag.
-    if git rev-parse -q --verify "refs/tags/$tag" >/dev/null 2>&1 \
-       || git ls-remote --exit-code --tags origin "refs/tags/$tag" >/dev/null 2>&1; then
-        echo "release: tag $tag already exists. Bump the version first (release patch|minor|major)."
+    echo "release: planned tag = $planned"
+
+    if [ -n "$(git status --porcelain)" ]; then
+        echo "release: working tree is not clean (including untracked)."
+        echo "         Promote HISTORY.md / commit release prep first; then re-run."
+        git status --short
         return 1
     fi
 
-    git push || return 1
-    gh release create "$tag" --generate-notes
+    if git rev-parse -q --verify "refs/tags/$planned" >/dev/null 2>&1 \
+       || git ls-remote --exit-code --tags origin "refs/tags/$planned" >/dev/null 2>&1; then
+        echo "release: tag $planned already exists. Pick another level or an explicit tag."
+        return 1
+    fi
+
+    local branch target
+    branch="$(git branch --show-current)"
+    case "$planned" in
+        v1.*) target="v1.x" ;;
+        v2.*) target="master" ;;
+        *)
+            echo "release: cannot infer --target from $planned (expected v1.* or v2.*)."
+            return 1
+            ;;
+    esac
+
+    if [ "$branch" != "$target" ]; then
+        echo "release: current branch is '$branch' but $planned must be cut from '$target'."
+        echo "         git switch $target && git pull --ff-only"
+        return 1
+    fi
+
+    local prerelease_flag=()
+    case "$planned" in
+        *a[0-9]*|*b[0-9]*|*rc[0-9]*) prerelease_flag=(--prerelease) ;;
+    esac
+
+    echo "release: creating GitHub release $planned --target $target ${prerelease_flag[*]}"
+    gh release create "$planned" --target "$target" --generate-notes "${prerelease_flag[@]}"
 }
 
 # `acp "commit message"` — stage all, commit, push

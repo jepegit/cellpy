@@ -63,6 +63,20 @@ with the release (and pollute `master` / `v1.x` history).
 
 ---
 
+## Shell helper (`.aliases`)
+
+Source `.aliases` in the repo, then:
+
+```bash
+release              # prints last tag + planned next post (dry-run)
+release post         # cut next .postN on the correct --target branch
+release patch        # next patch (e.g. v2.1.1.post3 → v2.1.2)
+release v2.1.1.post4 # explicit tag
+```
+
+Version is **tag-derived** — the helper never edits `pyproject.toml`. Always
+promote `HISTORY.md` and keep `git status` clean before `release post`.
+
 ## Cutting a release (happy path)
 
 ### A. 1.x maintenance (`v1.x`)

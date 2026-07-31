@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [2.1.1.post4] - 2026-07-31
+
+Post-release of 2.1.1 — batch JSON load path, metadata peek, ingestion-form schema.
+
 * `cellpy.instrument_meta_schema(instrument)` describes `cellpy.get` metadata
   knobs for building per-instrument ingestion forms. (#800)
 
