@@ -95,7 +95,7 @@ def test_summary_y_ranges_per_panel():
     pytest.importorskip("plotly", reason="plotting extras (batch) not installed")
     from cellpy.plotting import theme
     from cellpy.plotting.collected import (
-        _yaxis_key_for_facet_label,
+        _yaxis_key_for_variable,
         summary_plotter,
     )
 
@@ -107,8 +107,8 @@ def test_summary_y_ranges_per_panel():
         y_ranges={"coulombic_efficiency": [0, 110]},
     )
     assert fig is not None
-    ce_key = _yaxis_key_for_facet_label(fig, "variable=coulombic_efficiency")
-    cap_key = _yaxis_key_for_facet_label(fig, "variable=charge_capacity_gravimetric")
+    ce_key = _yaxis_key_for_variable(fig, "coulombic_efficiency")
+    cap_key = _yaxis_key_for_variable(fig, "charge_capacity_gravimetric")
     assert ce_key is not None
     assert cap_key is not None
     assert list(fig.layout[ce_key].range) == [0.0, 110.0]
@@ -122,7 +122,7 @@ def test_summary_y_ranges_forces_independent_when_share_y_true():
     pytest.importorskip("plotly", reason="plotting extras (batch) not installed")
     from cellpy.plotting import theme
     from cellpy.plotting.collected import (
-        _yaxis_key_for_facet_label,
+        _yaxis_key_for_variable,
         summary_plotter,
     )
 
@@ -136,7 +136,7 @@ def test_summary_y_ranges_forces_independent_when_share_y_true():
     )
     assert fig is not None
     assert fig.layout.yaxis2.matches in (None, False)
-    ce_key = _yaxis_key_for_facet_label(fig, "variable=coulombic_efficiency")
+    ce_key = _yaxis_key_for_variable(fig, "coulombic_efficiency")
     assert list(fig.layout[ce_key].range) == [0.0, 110.0]
 
 
@@ -145,7 +145,7 @@ def test_collected_plot_forwards_y_ranges():
     pytest.importorskip("plotly", reason="plotting extras (batch) not installed")
     from cellpy.plotting import theme
     from cellpy.plotting.collected import (
-        _yaxis_key_for_facet_label,
+        _yaxis_key_for_variable,
         collected_plot,
     )
 
@@ -158,5 +158,5 @@ def test_collected_plot_forwards_y_ranges():
         y_ranges={"coulombic_efficiency": [0.0, 110.0]},
     )
     assert fig is not None
-    ce_key = _yaxis_key_for_facet_label(fig, "variable=coulombic_efficiency")
+    ce_key = _yaxis_key_for_variable(fig, "coulombic_efficiency")
     assert list(fig.layout[ce_key].range) == [0.0, 110.0]

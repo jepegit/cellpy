@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+* App-friendly collected figures: theme / label / height hook (or pass a
+  FigureSpec). (#801)
+
 ## [2.1.1.post3] - 2026-07-30
 
 Post-release of 2.1.1 — silence loader-discovery WARNING spam for apps.

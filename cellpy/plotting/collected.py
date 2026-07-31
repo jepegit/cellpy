@@ -540,6 +540,9 @@ def sequence_plotter(
         elif method == "summary":
             logging.info("sequence-plotter - summary plotly")
 
+        # Must not reach px.line / spread_plot (unknown kwarg).
+        y_ranges = kwargs.pop("y_ranges", None) or {}
+
         abs_facet_row_spacing = kwargs.pop("abs_facet_row_spacing", 20)
         abs_facet_col_spacing = kwargs.pop("abs_facet_col_spacing", 20)
         facet_row_spacing = kwargs.pop(
@@ -629,6 +632,11 @@ def sequence_plotter(
                         fig.for_each_trace(remove_markers)
                 except Exception as e:
                     print(f"sequence_plotter - summary - failed {e} [{group}]")
+
+            # Apply per-panel y-limits while facet annotations still spell
+            # ``variable=…`` (#804 / #801). Pretty-label cleanup clears them.
+            if y_ranges and not spread:
+                _apply_summary_y_ranges(fig, y_ranges, facet=g)
 
             if y_label_mapper and not spread:
                 y_label_mapper = _plotly_y_label_cleaner(y_label_mapper)
@@ -867,6 +875,61 @@ def _resolve_share_y(
     return bool(default)
 
 
+def _pretty_variable_label(variable: str, units: Any = None) -> str:
+    """Humanize a summary ``variable`` column name for facet / y-axis titles.
+
+    Strips specific-mode suffixes (``_gravimetric`` / ``_areal`` / …). When
+    ``units`` is the Batch-style dict used by :func:`summary_plotter`, appends
+    a parenthetical unit; otherwise returns the title-cased name alone.
+    """
+    v = str(variable)
+    u_sub = None
+    if units:
+        cellpy_units = units["cellpy_units"]
+        if v.endswith("_areal") or v.endswith("_areal_cv"):
+            u_sub = cellpy_units.specific_areal
+        elif v.endswith("_gravimetric") or v.endswith("_gravimetric_cv"):
+            u_sub = cellpy_units.specific_gravimetric
+        elif v.endswith("_volumetric") or v.endswith("_volumetric_cv"):
+            u_sub = cellpy_units.specific_volumetric
+
+    u_top = None
+    if units:
+        cellpy_units = units["cellpy_units"]
+        if "_capacity" in v:
+            u_top = cellpy_units.charge
+        if "_norm" in v:
+            u_top = "normalized"
+        if v == "coulombic_efficiency":
+            u_top = "%"
+
+    parts = v.split("_")
+    mode_suffixes = {"gravimetric", "areal", "volumetric"}
+    if parts and parts[-1] == "cv" and len(parts) >= 2 and parts[-2] in mode_suffixes:
+        parts = parts[:-2] + ["cv"]
+    elif parts and parts[-1] in mode_suffixes:
+        parts = parts[:-1]
+    label = " ".join(parts).title()
+    if label.endswith("Cv"):
+        label = label.replace("Cv", "CV")
+
+    if not units:
+        return label
+
+    u = u_top or "Value"
+    if u_sub:
+        u_sub = str(u_sub).replace("**", "")
+        u = f"{u}/{u_sub}"
+    return f"{label} ({u})"
+
+
+def _default_summary_y_label_mapper(
+    variables: list[str], units: Any = None
+) -> dict[str, str]:
+    """Build ``variable → pretty label`` for collected summary facets (#801)."""
+    return {v: _pretty_variable_label(v, units=units) for v in variables}
+
+
 def _yaxis_key_for_facet_label(fig: Any, label: str) -> Optional[str]:
     """Map a Plotly facet annotation text to its ``yaxis`` / ``yaxisN`` key."""
     annotations = getattr(fig.layout, "annotations", None) or ()
@@ -895,6 +958,32 @@ def _yaxis_key_for_facet_label(fig: Any, label: str) -> Optional[str]:
             best_dist = dist
             best_key = key_s
     return best_key
+
+
+def _yaxis_key_for_variable(
+    fig: Any, variable: str, *, facet: str = "variable"
+) -> Optional[str]:
+    """Resolve a summary facet row's y-axis key by annotation or axis title.
+
+    Prefer the Plotly ``variable=…`` facet strip (present before pretty-label
+    cleanup). After labels move onto y-axis titles, match the pretty title.
+    """
+    key = _yaxis_key_for_facet_label(fig, f"{facet}={variable}")
+    if key is not None:
+        return key
+    pretty = _pretty_variable_label(variable)
+    for layout_key in fig.layout:
+        key_s = str(layout_key)
+        if not key_s.startswith("yaxis"):
+            continue
+        title = getattr(fig.layout[layout_key].title, "text", None)
+        if not title:
+            continue
+        if title == pretty or title.startswith(f"{pretty} ") or title.startswith(
+            f"{pretty} ("
+        ):
+            return key_s
+    return None
 
 
 _warned_unknown_y_range_keys: set[str] = set()
@@ -926,7 +1015,7 @@ def _apply_summary_y_ranges(
                 stacklevel=3,
             )
             continue
-        axis_key = _yaxis_key_for_facet_label(fig, f"{facet}={variable}")
+        axis_key = _yaxis_key_for_variable(fig, variable, facet=facet)
         if axis_key is None:
             if variable not in _warned_unknown_y_range_keys:
                 _warned_unknown_y_range_keys.add(variable)
@@ -982,8 +1071,16 @@ def _cycles_plotter(
     legend_title = kwargs.pop("legend_title", None)
     show_legend = kwargs.pop("show_legend", None)
     cols = kwargs.pop("cols", 3)
+    height_per_panel = kwargs.pop("height_per_panel", None)
+    sub_fig_min_height_explicit = "sub_fig_min_height" in kwargs
     sub_fig_min_height = kwargs.pop("sub_fig_min_height", 200)
+    if height_per_panel is not None:
+        sub_fig_min_height = height_per_panel
     figure_border_height = kwargs.pop("figure_border_height", 100)
+    plotly_template = kwargs.pop("plotly_template", None)
+    layout_updates = kwargs.pop("layout_updates", None) or {}
+    if layout_updates and not isinstance(layout_updates, dict):
+        raise TypeError("layout_updates must be a dict of Plotly layout kwargs")
     # kwargs from default `BatchCollector.render` method not used by `sequence_plotter`:
     journal = kwargs.pop("journal", None)
     units = kwargs.pop("units", None)
@@ -1012,7 +1109,10 @@ def _cycles_plotter(
             number_of_figs = len(collected_curves[z].unique())
     elif method == "summary":
         number_of_figs = len(collected_curves["variable"].unique())
-        sub_fig_min_height = 300
+        # Default 300 px/panel unless the caller set height_per_panel or
+        # sub_fig_min_height explicitly (#801).
+        if height_per_panel is None and not sub_fig_min_height_explicit:
+            sub_fig_min_height = 300
     else:
         number_of_figs = 1
 
@@ -1042,7 +1142,11 @@ def _cycles_plotter(
 
     # Rendering:
     if backend == "plotly":
-        template = f"{PLOTLY_BASE_TEMPLATE}+{method}"
+        template = (
+            plotly_template
+            if plotly_template is not None
+            else f"{PLOTLY_BASE_TEMPLATE}+{method}"
+        )
 
         legend_orientation = "v"
         if legend_position == "bottom":
@@ -1064,6 +1168,8 @@ def _cycles_plotter(
             height=height,
             width=width,
         )
+        if layout_updates:
+            fig.update_layout(**layout_updates)
         if not match_axes:
             fig.update_yaxes(matches=None)
             fig.update_xaxes(matches=None)
@@ -1086,6 +1192,15 @@ def summary_plotter(collected_curves, cycles_to_plot=None, backend="plotly", **k
     - ``y_ranges``: mapping of ``variable`` name → ``[lo, hi]`` for per-panel
       fixed limits. Omitted variables keep autorange. A non-empty ``y_ranges``
       forces independent axes. Supported for ``backend="plotly"`` only.
+
+    App-facing chrome (Plotly, #801):
+
+    - ``plotly_template``: override the default ``plotly+summary`` template.
+    - ``layout_updates``: dict passed to ``fig.update_layout`` after collector styling.
+    - ``y_label_mapper``: ``variable → label``; when omitted, pretty labels are
+      built automatically (facet ``variable=…`` strip cleared).
+    - ``height`` / ``height_per_panel`` (alias of ``sub_fig_min_height``) /
+      ``figure_border_height``: absolute or per-panel height control.
     """
 
     # start_cell is used to determine the starting cell for the subplots (plotly)
@@ -1177,9 +1292,7 @@ def summary_plotter(collected_curves, cycles_to_plot=None, backend="plotly", **k
         group_cells = kwargs.pop("group_cells", True)
 
     units = kwargs.pop("units", None)
-    label_mapper = {
-        f"{y}": None,
-    }
+    explicit_y_label_mapper = kwargs.pop("y_label_mapper", None)
     # order the variables by a given order:
     order_variables = kwargs.pop("order_variables", None)
     if order_variables:
@@ -1188,45 +1301,12 @@ def summary_plotter(collected_curves, cycles_to_plot=None, backend="plotly", **k
         )
         collected_curves = collected_curves.sort_values(by=[g, z, x])
 
-    if units:
-        label_mapper[y] = {}
-        variables = list(collected_curves[g].unique())
-        for v in variables:
-            # unit label
-            u_sub = None
-            if v.endswith("_areal") or v.endswith("_areal_cv"):
-                u_sub = units["cellpy_units"].specific_areal
-            elif v.endswith("_gravimetric") or v.endswith("_gravimetric_cv"):
-                u_sub = units["cellpy_units"].specific_gravimetric
-            elif v.endswith("_volumetric") or v.endswith("_volumetric_cv"):
-                u_sub = units["cellpy_units"].specific_volumetric
-
-            u_top = None
-            if "_capacity" in v:
-                u_top = units["cellpy_units"].charge
-            if "_norm" in v:
-                u_top = "normalized"
-            if v == "coulombic_efficiency":
-                u_top = "%"
-
-            u = u_top or "Value"
-
-            # variable label
-            v2 = v.split("_")
-            if u_sub:
-                u_sub = u_sub.replace("**", "")
-                u = f"{u}/{u_sub}"
-                if v2[-1] == "cv":
-                    v2 = v2[:-2]
-                    v2.append("cv")
-                else:
-                    v2 = v2[:-1]
-            v2 = " ".join(v2).title()
-
-            if v2.endswith("Cv"):
-                v2 = v2.replace("Cv", "CV")
-
-            label_mapper[y][v] = f"{v2} ({u})"
+    variables = list(collected_curves[g].unique())
+    if explicit_y_label_mapper is not None:
+        y_label_mapper = explicit_y_label_mapper
+    else:
+        # Default pretty labels so apps are not stuck with ``variable=…`` (#801).
+        y_label_mapper = _default_summary_y_label_mapper(variables, units=units)
 
     # TODO: need to refactor and fix how the classes are created so that leftover kwargs are not sent to the backend
     #  (for example if another collector is used and registers a kwarg without popping it)
@@ -1243,7 +1323,7 @@ def summary_plotter(collected_curves, cycles_to_plot=None, backend="plotly", **k
         standard_deviation=standard_deviation,
         x_label=x_label,
         x_unit=x_unit,
-        y_label_mapper=label_mapper[y],
+        y_label_mapper=y_label_mapper,
         group_cells=group_cells,
         default_title="Summary Plot",
         backend=backend,
@@ -1251,6 +1331,7 @@ def summary_plotter(collected_curves, cycles_to_plot=None, backend="plotly", **k
         cycles=cycles_to_plot,
         cols=cols,
         match_axes=share_y_resolved,
+        y_ranges=y_ranges,
         **kwargs,
     )
 
@@ -1565,6 +1646,9 @@ def collected_plot(
             For ``family_kind="summary"`` (Plotly): ``share_y`` / ``match_axes``
             control shared vs independent facet y-scales (default independent);
             ``y_ranges`` maps variable name → ``[lo, hi]`` for per-panel limits.
+            App chrome (#801): ``plotly_template``, ``layout_updates``,
+            ``y_label_mapper`` (pretty labels by default), ``height`` /
+            ``height_per_panel`` / ``figure_border_height``.
 
     Returns:
         Backend-native figure object.
