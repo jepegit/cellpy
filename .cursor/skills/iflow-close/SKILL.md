@@ -83,7 +83,29 @@ When `.issueflows/04-designs-and-guides/multi-repo-workspaces.md` exists, read i
 
 ## Instructions
 
-1. **Sanity check** — Run the project test suite (e.g. `uv run pytest`) and any checks the repo relies on. **Ruff (when present):** if the project uses ruff (`[tool.ruff]` in `pyproject.toml`, ruff in dev dependencies, or `.issueflows/04-designs-and-guides/python-quality-tools.md` exists), run auto-fix lint through the documented Python runner before committing — e.g. `uv run ruff check --fix …` then `uv run ruff format …` (match paths to what the project documents). Skim the diff; avoid bundling unrelated changes. Confirm that any design decisions or good practices that emerged from this issue are captured under `.issueflows/04-designs-and-guides/` before committing. If this change touched project structure (new modules, big refactor, removed files) and `graphify-out/` exists, *suggest* `/iflow-graphify` (AST-only default) — do not run it automatically.
+1. **Sanity check** — Run the project test suite (e.g. `uv run pytest`) and any checks the repo relies on.
+ **Essential tests:** run `pytest -m essential` (via the project's
+ documented runner) as the required local sanity gate; *remind* that the full
+ suite belongs on schedule/release CI when dual workflows exist (see
+ `.issueflows/04-designs-and-guides/essential-tests.md`). If the project
+ has no essential CI yet, still run essential locally and note the gap. Never
+ skip a failing essential suite without explicit user agreement. **Ruff (when present):** if the project uses ruff (`[tool.ruff]` in `pyproject.toml`, ruff in dev dependencies, or `.issueflows/04-designs-and-guides/python-quality-tools.md` exists), run auto-fix lint through the documented Python runner before committing — e.g. `uv run ruff check --fix …` then `uv run ruff format …` (match paths to what the project documents). Skim the diff; avoid bundling unrelated changes. Confirm that any design decisions or good practices that emerged from this issue are captured under `.issueflows/04-designs-and-guides/` before committing. If this change touched project structure (new modules, big refactor, removed files) and `graphify-out/` exists, *suggest* `/iflow-graphify` (AST-only default) — do not run it automatically.
+
+1a. **Essential tests review** — This project has `essential_tests = true` and `essential_review = close`.
+
+### Essential tests review (`essential_tests = true`)
+
+Marker: `@pytest.mark.essential`. Contract:
+`.issueflows/04-designs-and-guides/essential-tests.md`. Registry:
+`.issueflows/04-designs-and-guides/test-registry.md`.
+
+1. Confirm `[tool.pytest.ini_options]` (or `pytest.ini`) registers marker
+   `essential`; if missing, add it (or ask) before marking tests.
+2. List tests **added or changed by this issue** only (diff / status). For each:
+   recommend mark vs leave unmarked; update the registry row; get confirm before
+   editing many files.
+3. Do **not** reclassify the whole suite here — that is `/iflow-doctor`.
+
 
 2. **Optional version bump** — If the user asked for a bump (see above), follow `.cursor/skills/iflow-version-bump/SKILL.md` — it resolves the project's **release strategy** first (the "Release & version bump" section of `.issueflows/04-designs-and-guides/this-project.md`, else `pyproject.toml` detection, else the uv default). **Static version:** run `uv version --bump <level>`. **Git-tag derived:** edit nothing — compute and report the **planned tag** (e.g. `v1.0.4a3`), record it in the status file, and defer creating it until after the merge (step 9 with `yolo`, else `/iflow-cleanup`). If neither strategy applies, skip and continue.
 
@@ -116,9 +138,9 @@ When `.issueflows/04-designs-and-guides/multi-repo-workspaces.md` exists, read i
    - Never delete the issue branch here. With the `yolo` token this step runs **after** the merge from step 8a so the pull brings the merged commit into the local default branch (a queued auto-merge arrives later; note that).
    - **Planned release tag (`yolo` + tag-derived strategy only):** if step 2 planned a tag, create it now — after the pull, standing on the merge commit — with `git tag <planned>` then `git push origin <planned>` (covered by the yolo consolidated confirm). If the merge was only queued via `--auto`, leave the tag to `/iflow-cleanup` and say so.
 
-10. **After review** — With the `yolo` token the PR was already merged in step 8a; skip to the `/iflow-cleanup` reminder. Otherwise address feedback, push updates, and merge when approved and `gh pr checks <number> --repo <owner/repo>` is green (exit 0). If step 9 switched back to the default branch, switch to the PR branch again before making review fixes. Tell the user to run **`/iflow-cleanup`** once the PR is merged so the standard post-merge cleanup runs (`git fetch --prune`, `git branch -d` on merged local branches under a single consolidated confirm — and, for tag-derived projects, the offer to create the release tag planned in step 2).
+10. **After review** — With the `yolo` token the PR was already merged in step 8a; skip further merge work. Otherwise address feedback, push updates, and merge when approved and `gh pr checks <number> --repo <owner/repo>` is green (exit 0). If step 9 switched back to the default branch, switch to the PR branch again before making review fixes.
 
-11. **Output** — Summarize commit, push result, PR URL, whether the working copy switched back to the default branch or stayed on the issue branch, the merge result when `yolo` applied (merged, or queued via `--auto`), and next step (`/iflow-cleanup` after merge, or "blocked on …" if stuck).
+11. **Output** — Summarize commit, push result, PR URL, whether the working copy switched back to the default branch or stayed on the issue branch, the merge result when `yolo` applied (merged, or queued via `--auto`), and next step ("blocked on …" if stuck).
 
 ## Constraints
 

@@ -15,3 +15,20 @@ testdata/** linguist-documentation
 
 # Deliberately-broken byte-exact fixtures (#655) — never normalize.
 testdata/bad/** -text
+
+# BEGIN issue-flow linguist (generated; do not edit)
+# GitHub Linguist: keep language stats focused on library source.
+# Without this, graphify-out/graph.html might dominate as HTML.
+
+graphify-out/** linguist-generated
+docs/** linguist-documentation
+tests/** linguist-documentation
+.issueflows/** linguist-documentation
+dev/** linguist-documentation
+scripts/** linguist-documentation
+
+# Cross-platform line endings for shell helpers
+.aliases     text eol=lf
+*.sh         text eol=lf
+*.lock       text eol=lf
+# END issue-flow linguist

@@ -76,7 +76,7 @@ Once preflight has passed and the user confirmed:
 
 ## Post-run
 
-Report the PR URL, the merge result (merged, or queued via `--auto`), and the final branch. By default `/iflow-close yolo` merges the PR and switches back to the default branch with a pull; forwarded `stay` text leaves the user on the issue branch instead. Remind them that `/iflow-cleanup` will delete the now-merged local branch when they are ready.
+Report the PR URL, the merge result (merged, or queued via `--auto`), and the final branch. By default `/iflow-close yolo` merges the PR and switches back to the default branch with a pull; forwarded `stay` text leaves the user on the issue branch instead.
 
 ## Constraints
 

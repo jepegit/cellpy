@@ -101,7 +101,7 @@ When `.issueflows/04-designs-and-guides/multi-repo-workspaces.md` exists, read i
 
 8. **Finish.** When the queue is exhausted (or halted), finalize `cycle_status.md` (mark it `- [x] Done`) and move it to `.issueflows/03-solved-issues/cycle_status_<YYYY-MM-DD>.md` so it is archived, not re-detected as in-flight.
 
-9. **Batch report.** Summarize the whole run: per issue — number, title, PR URL, merge result (merged / queued via `--auto` / failed-and-skipped / not reached), and duration if tracked; then the queue items **skipped** (closed), **blocked** (with blockers), and — on a halt — the **stop reason** and which issues were **not reached**. End by reminding the user to run `/iflow-cleanup` once to prune the merged local branches.
+9. **Batch report.** Summarize the whole run: per issue — number, title, PR URL, merge result (merged / queued via `--auto` / failed-and-skipped / not reached), and duration if tracked; then the queue items **skipped** (closed), **blocked** (with blockers), and — on a halt — the **stop reason** and which issues were **not reached**.
 
 ## Resuming
 

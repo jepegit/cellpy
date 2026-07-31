@@ -86,7 +86,6 @@ When `.issueflows/04-designs-and-guides/multi-repo-workspaces.md` exists, read i
 4. **Respect downstream checkpoints.** Never suppress the downstream command's own prompts (plan confirmation, unrelated-changes prompt, etc.). `/iflow` adds no new confirmation layer of its own.
 
 5. **Report.** Summarize: focus issue `N` and how it was resolved, which command was dispatched and why, the downstream output, and a one-line hint when an off-path command is the natural next step:
-   - state **D** + PR likely merged → "after the PR merges, run `/iflow-cleanup`"
    - mid-stream context switch needed → "to park this work, run `/iflow-pause`"
    - tiny fix that would benefit from a single-shot chain → "consider `/iflow-yolo` next time"
    - `graphify-out/GRAPH_REPORT.md` looks stale (large refactor, new modules) → "consider `/iflow-graphify` to refresh the graph"

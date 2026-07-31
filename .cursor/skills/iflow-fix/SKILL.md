@@ -86,7 +86,7 @@ If a "fix" is really a substantial feature or sprawls across unrelated areas, sa
 
 ### Phase 3 — finish
 
-Tell the user to run **`/iflow-close`** to land the session (tests, optional bump, status update, commit, push, PR). Do not auto-run it. Remind them to run `/iflow-cleanup` after the PR merges.
+When the user is done fixing, follow `.cursor/skills/iflow-close/SKILL.md` to land the session (close keeps its own confirms).
 
 ## Constraints
 

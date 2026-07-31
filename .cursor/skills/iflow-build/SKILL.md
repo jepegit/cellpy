@@ -99,7 +99,7 @@ When `.issueflows/04-designs-and-guides/multi-repo-workspaces.md` exists, read i
    - Record `PR: <url> (#<n>, draft)` in `issue<N>_status.md`.
    - Do **not** write `HISTORY.md` here — `/iflow-close` owns the changelog bullet (even while a draft PR exists).
 
-9. **Hand off** — When the implementation is ready to ship: tell the user to run `/iflow-close` (optionally with `bump`/`patch`/`minor`/`major`). Parking work mid-stream goes through `/iflow-pause`.
+9. **Hand off** — When the implementation is ready to ship: follow `.cursor/skills/iflow-close/SKILL.md` immediately (forward any trailing `bump`/`patch`/`minor`/`major` / `stay` / `nohistory` / `draft` tokens). Close keeps its own confirms — this flag only skips the "please run `/iflow-close`" pause. If work is **not** ready (failing tests, open remaining work, user asked to park), do **not** chain — use `/iflow-pause` or stop and report. Parking work mid-stream goes through `/iflow-pause`.
 
 10. **Reporting** — Summarize what changed, what remains, and where the issue docs live. Include any branch warnings from step 2, any group moves from step 3, whether an early PR was opened/reused, and whether the plan was followed or explicitly skipped.
 

@@ -80,6 +80,8 @@ When `.issueflows/04-designs-and-guides/multi-repo-workspaces.md` exists, read i
 7. **Label-driven yolo flow.** If the chosen issue carries the **`yolo`** label (case-insensitive), announce it and fold `/iflow-yolo`'s consolidated confirm into the pick confirmation (one prompt: branch + full `init → plan → build → close yolo` chain). On yes, run Phase 2 then follow the `iflow-yolo` skill **instead of** the Phase 3 handoff — its preflight still applies, but do not re-ask its confirm. Configurable via `label_flows` / `yolo_label` under `[issueflow]` in `.issueflows/config.toml` (re-run `issue-flow update` after changing).
 
 
+8. **Label-driven model profile.** If the chosen issue carries the **`deep`** label (case-insensitive), announce that the session should use the **reasoning** profile for all steps. If it carries **`fast`**, announce **economy**. When both match, **reasoning** wins. Configurable via `model_label_flows`, `deep_model_label`, and `fast_model_label` under `[issueflow]` in `.issueflows/config.toml` (re-run `issue-flow update` after changing).
+
 
 ### Phase 2 — create the branch
 

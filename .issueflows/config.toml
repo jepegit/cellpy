@@ -1,0 +1,73 @@
+# issue-flow project config. Created by 'issue-flow config add'.
+# Only these keys are read from config.toml; other ISSUEFLOW_* settings are environment-only (see 'issue-flow config add --help').
+
+[issueflow]
+# Scaffolding mode: 'standard' (full workflow) or 'simple' (markdown-only). Switch by re-running 'issue-flow init --mode <id>'.
+mode = "standard"
+
+# Skill level: 'basic' (minimal), 'standard', 'advanced' (opinionated quality tooling). Switch by re-running 'issue-flow init --skill-level <id>'.
+skill_level = "standard"
+
+# Reply in the terse caveman style by default (true/false). Re-run 'issue-flow update' after changing so the rule re-renders.
+caveman_default = true
+
+# Run the grill-me planning interview by default (true/false). Re-run 'issue-flow update' after changing so the rule re-renders.
+grill_me_default = false
+
+# Let issue labels select the flow (true/false): an issue carrying the yolo label is run through /iflow-yolo when picked. Re-run 'issue-flow update' after changing so the commands re-render.
+label_flows = true
+# The GitHub label that triggers the yolo flow.
+yolo_label = "yolo"
+
+# Hard wall-clock budget (minutes) for `gh pr checks --watch` during /iflow-close yolo when checks are pending. Re-run 'issue-flow update' after changing so close/yolo skills re-render with the new budget.
+checks_watch_minutes = 15
+
+# Bake MODEL & EXECUTION DIRECTIVE sections into lifecycle skills (true/false). Re-run 'issue-flow update' after changing.
+step_directives = true
+
+# Let issue labels hint the session profile during /iflow-pick (true/false). Uses deep_model_label / fast_model_label below.
+model_label_flows = true
+# GitHub labels that bump the session toward reasoning or economy.
+deep_model_label = "deep"
+fast_model_label = "fast"
+
+# Write a managed .gitattributes block that keeps GitHub Linguist focused on library source (true/false; default false / opt-in). Re-run 'issue-flow update' after enabling.
+linguist_attributes = true
+
+# Remind the user to run /iflow-cleanup after close / cycle (true/false). Re-run 'issue-flow update' after changing.
+remind_cleanup = false
+# Soft-suggest skimming GRAPH_REPORT.md / rebuilding graphify (true/false). Never auto-runs graphify. Re-run 'issue-flow update'.
+suggest_graphify = true
+# When true, /iflow-plan runs 'issue-flow graphify' (AST update) before prior-art discovery (true/false; default false). Missing graphify → note and continue. Re-run 'issue-flow update'.
+auto_graphify_on_plan = false
+# After /iflow-close opens a PR, switch back to the default branch when the tree is clean (true/false). false ≈ always 'stay'.
+auto_switchback = true
+# gh pr merge method for yolo close: 'squash', 'merge', or 'rebase'.
+pr_merge_method = "squash"
+# Default /iflow-cycle queue safety cap (raise per run with max:<n>).
+cycle_max_issues = 10
+# Default /iflow-auto inter-epoch adversarial loop budget (override per run with loops:<n>). Re-run 'issue-flow update'.
+auto_adversarial_loops = 2
+# When true, /iflow-build (and /iflow-fix end) chain into /iflow-close automatically once work is ready to ship (default false). Close keeps its own confirms.
+auto_close = true
+# When true, /iflow-pick chains into /iflow-plan after pick confirm + branch/init (default true). Trailing noplan skips once. Re-run 'issue-flow update' after changing.
+auto_plan = true
+# When true, /iflow-plan chains into /iflow-build on plan Accept (default true). Trailing nobuild skips once. Re-run 'issue-flow update' after changing.
+auto_build = true
+# When true, /iflow-build opens a draft PR after the first push (default false). Trailing early/pr force on; noearly forces off. Re-run 'issue-flow update' after changing.
+early_pr = false
+# When true, non-yolo /iflow-close confirms once about a version bump if the user did not pass a bump token (default false).
+confirm_version_bump = false
+# When true, /iflow-close shows the changelog diff and confirms once before writing (default false). false = write without asking so the bullet lands in the PR (same as yolo's history behaviour). nohistory still skips.
+confirm_changelog_update = false
+# When ruff is present, run ruff check --fix + ruff format from /iflow-build and /iflow-close (true/false).
+ruff_autofix = true
+
+# Opt-in essential-tests paradigm for pytest (true/false; default false). When true, close/build/doctor skills triage @pytest.mark.<essential_marker>. Re-run 'issue-flow update'.
+essential_tests = true
+# Test runner for essential-tests (v1: only 'pytest' supported).
+test_runner = "pytest"
+# pytest mark name for the essential suite (default 'essential').
+essential_marker = "essential"
+# When to triage issue-touched tests: 'close', 'build', 'both', or 'never' (default 'close'). Full-suite audit stays in doctor.
+essential_review = "close"

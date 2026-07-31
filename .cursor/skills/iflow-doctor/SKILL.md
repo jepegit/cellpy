@@ -97,6 +97,19 @@ When `.issueflows/04-designs-and-guides/multi-repo-workspaces.md` exists, read i
      dirt; do **not** offer the housekeeping default (user must sort code
      changes separately).
 
+4. **Essential tests audit** (optional; this project has `essential_tests = true`) —
+   Only when the user asks for a full-suite essential review (or after folder
+   repair if they opt in). Do **not** run this on every doctor call by default.
+   - Read `.issueflows/04-designs-and-guides/essential-tests.md` and
+     `.issueflows/04-designs-and-guides/test-registry.md`.
+   - Scan the pytest suite vs the registry: missing rows, marked-but-not-listed,
+     listed-but-unmarked, candidates to demote (suite growing too large), tests
+     created outside issue-flow.
+   - Present a consolidated proposal (mark / unmark / registry edits). Apply
+     only after one confirm. Prefer graphify when available to name code under
+     test; never silently rewrite unrelated tests.
+   - Marker name: `essential`.
+
 ## Constraints
 
 - **Off-path** — never auto-dispatch from `/iflow` or other lifecycle steps.
