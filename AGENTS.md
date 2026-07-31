@@ -325,8 +325,10 @@ resolves from PyPI). No manual install is normally needed.
   data (no web/GUI server; `cellpy serve` only launches Jupyter). There is nothing
   long-running to "start" — you exercise it via the CLI or by importing the library.
 - **Run everything through `uv run`** (e.g. `uv run cellpy ...`, `uv run pytest`,
-  `uv run python ...`) so the `.venv` interpreter and deps are used. Standard
-  commands are in `CONTRIBUTING.md`, `.github/workflows/ci.yml`, and `pyproject.toml`.
+  `uv run python ...`, `uv run issue-flow …`) so the `.venv` interpreter and deps
+  are used. The `issue-flow` CLI is in the `dev` dependency group (no separate
+  `uv tool install` needed after `uv sync`). Standard commands are in
+  `CONTRIBUTING.md`, `.github/workflows/ci.yml`, and `pyproject.toml`.
 - **Tests:** `uv run pytest -m essential` is the fast CI merge gate. Plotting tests
   run under `MPLBACKEND=Agg` (no file `--ignore` in Tier 1 / scheduled / release).
   Full suite is `uv run pytest` (default `addopts` deselects slow/local/unfinished
