@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+* Batch: load BatBase / custom JSON journals via `cellpy.batch.load(..., db_reader=...)`
+  with file search after read (`reader=` alias). (#345)
+
 * Add issue-flow as a uv `dev` dependency so agents get the CLI from
   `uv sync` / `uv run issue-flow`. (#809)
 
