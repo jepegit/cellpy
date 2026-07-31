@@ -11,7 +11,7 @@ working on cellpy v2 or Stage issues should know where each kind of document liv
 | `cellpy-core/` | Compute engine (step/summary, schemas, legacy bridge). Integration guides under `.issueflows/04-designs-and-guides/`. |
 | `cellpy-design-and-development/` | **Authoritative home for cellpy 2 plan documents** (Stage 0–N sequencing, gap analysis, topic plans). Canonical remote: `cellpy/cellpy-design-and-development`. Formerly `architecture-plan`. |
 | `cellpy-examples/` | Example notebooks/scripts. Canonical remote: `cellpy/cellpy-examples`. Formerly `Examples`. |
-| `cellpy-simple-gui/` | Desktop explorer app (FastAPI + pywebview) on cellpy ≥ 2.1. Canonical remote: `cellpy/cellpy-simple-gui`. |
+| `cellpy-simple-gui/` | Desktop explorer (FastAPI + pywebview) on cellpy ≥ 2.1 — also a **dogfood / discovery** app: real workflows used to find API pain points and feature inspiration for cellpy. Canonical remote: `cellpy/cellpy-simple-gui`. |
 
 ## `cellpy-design-and-development` fork mirror (cloud agents)
 
