@@ -34,6 +34,13 @@ Epic #567 Stage 3 / issue #657 re-bases collectors' drawing half onto
   `y_ranges={"coulombic_efficiency": [0, 110], ...}` (variable → `[lo, hi]`).
   Non-empty `y_ranges` forces independent axes. Plotly is the supported
   backend for `y_ranges`; seaborn/matplotlib are best-effort and ignore it.
+- **App chrome (#801):** `plotly_template=` overrides the default
+  `plotly+{method}` combo; `layout_updates=` is a shallow
+  `fig.update_layout(**…)` after collector styling. Summary facet strips no
+  longer keep raw `variable=…` text by default — pretty y-axis titles are
+  built automatically (`y_label_mapper=` overrides). Height:
+  `height=` (absolute) or `height_per_panel=` (alias of `sub_fig_min_height`;
+  summary default 300 px/panel) plus optional `figure_border_height=`.
 
 ### Example — Capacity + CE without crushing panels
 
@@ -45,9 +52,22 @@ collection.plot(
 )
 ```
 
+### Example — drop into an app shell
+
+```python
+collection.plot(
+    family_kind="summary",
+    plotly_template="plotly_white",
+    layout_updates={"paper_bgcolor": "#f7f7f7", "margin": dict(l=60, r=20, t=40, b=40)},
+    height_per_panel=220,
+    y_ranges={"coulombic_efficiency": [0, 110]},
+)
+```
+
 ## Links
 
 - Issue #657; epic #567; plan
   `architecture-plan/cellpy2-plotting-redesign-plan.md` §3.3 / Phase 4
 - Related: `plotting-prepare.md`, `plotting-backends.md`
 - Issue #804 (per-panel y-limits / `share_y`)
+- Issue #801 (theme / label / height hooks)

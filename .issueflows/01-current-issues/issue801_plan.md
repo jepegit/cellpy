@@ -1,6 +1,7 @@
 # Issue #801 — Plan: App-friendly collected figures (theme / label / height)
 
-Status: **draft** — awaiting Accept / Revise / Abort.
+Status: **confirmed** (2026-07-31) — open questions resolved as recommended:
+pretty labels default; no `spec=` this PR; include `layout_updates`.
 
 ## Goal
 

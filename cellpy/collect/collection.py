@@ -83,7 +83,9 @@ class Collection:
 
         For summary collections (Plotly), pass ``share_y`` / ``match_axes`` and
         optional ``y_ranges={variable: [lo, hi], ...}`` for per-facet y-limits
-        (see :func:`cellpy.plotting.collected.summary_plotter`).
+        (see :func:`cellpy.plotting.collected.summary_plotter`). App chrome:
+        ``plotly_template``, ``layout_updates``, ``y_label_mapper``,
+        ``height`` / ``height_per_panel``.
         """
         from cellpy.plotting import collected_plot
 
