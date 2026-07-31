@@ -1,4 +1,91 @@
-# Shared aliases
+# Shared shell helpers for the cellpy repo.
+# Source from the repo root:  source .aliases
+# List what's here:           aliases
+
+# Path of this file (set when sourced).
+_CELLPY_ALIASES_FILE="${BASH_SOURCE[0]:-}"
+
+# `aliases` — list functions (and leftover shell aliases) from this file.
+aliases() {
+    local src="${_CELLPY_ALIASES_FILE:-}"
+    if [ -z "$src" ] || [ ! -f "$src" ]; then
+        # Fall back: repo-root .aliases when cwd is the project.
+        if [ -f .aliases ]; then
+            src=".aliases"
+        else
+            echo "aliases: cannot find .aliases (source it once from the repo)."
+            return 1
+        fi
+    fi
+
+    echo "From $src:"
+    echo
+
+    # Public top-level functions: name() { … } not starting with _.
+    # Prefer the `# \`name …\`` / `# Opt-in: \`…\`` usage comment above each def.
+    # Records: NAME<TAB>blurb
+    local records
+    records="$(
+        awk '
+            # Keep the *first* usage blurb in a comment block (do not overwrite
+            # with later `# \`…\`` lines in the same doc paragraph).
+            /^# `[^`]+`/ {
+                if (comment == "") {
+                    comment = $0
+                    sub(/^# /, "", comment)
+                }
+                next
+            }
+            /^# Opt-in: `/ {
+                if (comment == "") {
+                    comment = $0
+                    sub(/^# Opt-in: /, "", comment)
+                }
+                next
+            }
+            /^[a-zA-Z][a-zA-Z0-9_]*\(\)[ \t]*\{/ {
+                name = $0
+                sub(/\(\).*/, "", name)
+                if (name !~ /^_/)
+                    printf "%s\t%s\n", name, comment
+                comment = ""
+                next
+            }
+            /^[^#]/ {
+                if ($0 !~ /^[ \t]*$/)
+                    comment = ""
+            }
+        ' "$src"
+    )"
+
+    local name blurb
+    while IFS=$'\t' read -r name blurb; do
+        [ -z "$name" ] && continue
+        if [ -n "$blurb" ]; then
+            printf "  %-14s  %s\n" "$name" "$blurb"
+        else
+            printf "  %s\n" "$name"
+        fi
+    done <<< "$records"
+
+    # Top-level `alias …` lines only (skip aliases nested inside functions).
+    if grep -E '^alias[[:space:]]' "$src" >/dev/null 2>&1; then
+        echo
+        echo "Shell aliases defined in file:"
+        grep -E '^alias[[:space:]]' "$src" | sed 's/^/  /'
+    fi
+
+    echo
+    echo "Loaded in this shell:"
+    while IFS=$'\t' read -r name blurb; do
+        [ -z "$name" ] && continue
+        if declare -F "$name" >/dev/null 2>&1; then
+            echo "  $name"
+        else
+            echo "  $name  (not loaded — source .aliases)"
+        fi
+    done <<< "$records"
+}
 
 # Opt-in: `conda_shell` — wire conda into this shell (not run on source).
 conda_shell() {
