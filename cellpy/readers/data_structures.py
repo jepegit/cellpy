@@ -1120,6 +1120,112 @@ def list_instruments() -> List[Dict[str, Any]]:
     return sorted(listing, key=lambda entry: entry["id"])
 
 
+def instrument_meta_schema(instrument: Optional[str] = None) -> Dict[str, Any]:
+    """Describe ``cellpy.get`` metadata knobs for building an ingestion form.
+
+    Today every loader shares the same framework-owned cell-meta catalog
+    (mass / area / loading / nominal capacity / cycle mode). The
+    ``instrument`` argument is accepted so apps can key forms per picker
+    selection; per-loader overrides can be added later without changing
+    the call shape.
+
+    Args:
+        instrument: Loader id from :func:`list_instruments` (e.g.
+            ``"maccor_txt"``). Optional; echoed in the return value.
+
+    Returns:
+        A dict with ``instrument``, ``fields`` (list of field descriptors),
+        and ``units`` (session default unit strings for numeric knobs).
+    """
+    # Session units (config stack); fall back if config is not initialised.
+    try:
+        from cellpy import config as cellpy_config
+
+        unit_cfg = cellpy_config.units
+        units = {
+            "mass": getattr(unit_cfg, "mass", "mg"),
+            "area": getattr(unit_cfg, "area", "cm**2"),
+            "nominal_capacity": getattr(unit_cfg, "nominal_capacity", "mAh/g"),
+            "loading": "mg/cm**2",
+        }
+    except Exception:
+        units = {
+            "mass": "mg",
+            "area": "cm**2",
+            "nominal_capacity": "mAh/g",
+            "loading": "mg/cm**2",
+        }
+    fields = [
+        {
+            "name": "mass",
+            "required": True,
+            "type": "number_or_quantity",
+            "unit": units["mass"],
+            "default": None,
+            "maps_to": "mass",
+            "help": "Active-material mass (recommended for specific capacities).",
+        },
+        {
+            "name": "area",
+            "required": False,
+            "type": "number_or_quantity",
+            "unit": units["area"],
+            "default": None,
+            "maps_to": "active_electrode_area",
+            "help": "Active electrode area.",
+        },
+        {
+            "name": "loading",
+            "required": False,
+            "type": "number_or_quantity",
+            "unit": units["loading"],
+            "default": None,
+            "maps_to": "loading",
+            "help": "Active-material loading.",
+        },
+        {
+            "name": "nominal_capacity",
+            "required": False,
+            "type": "number_or_quantity",
+            "unit": units["nominal_capacity"],
+            "default": None,
+            "maps_to": "nom_cap",
+            "help": "Nominal capacity (used for C-rate and related summaries).",
+        },
+        {
+            "name": "nom_cap_specifics",
+            "required": False,
+            "type": "enum",
+            "choices": ["gravimetric", "areal", "absolute"],
+            "default": "gravimetric",
+            "maps_to": "nom_cap_specifics",
+            "help": "How nominal_capacity is interpreted.",
+        },
+        {
+            "name": "cycle_mode",
+            "required": False,
+            "type": "enum",
+            "choices": ["anode", "cathode", "full"],
+            "default": None,
+            "maps_to": "cycle_mode",
+            "help": "Cycle polarity / cell type hint for summaries.",
+        },
+        {
+            "name": "estimate_area",
+            "required": False,
+            "type": "bool",
+            "default": True,
+            "maps_to": None,
+            "help": "Estimate area from mass and loading when area is omitted.",
+        },
+    ]
+    return {
+        "instrument": instrument,
+        "fields": fields,
+        "units": units,
+    }
+
+
 def generate_default_factory():
     """This function searches for all available instrument readers
     and registers them in an InstrumentFactory instance.

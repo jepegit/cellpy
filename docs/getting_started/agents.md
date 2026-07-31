@@ -85,6 +85,14 @@ meta = cellpy.read_meta("out/my_cell.cellpy")
 mass = meta["cell"]["mass"]  # also under tests["0"]["cell"] on v9 archives
 ```
 
+Build an ingestion form for a picked instrument (shared `cellpy.get` meta knobs today):
+
+```python
+schema = cellpy.instrument_meta_schema("maccor_txt")
+for field in schema["fields"]:
+    print(field["name"], field["required"], field.get("unit"))
+```
+
 Reload a `.cellpy` file the same way:
 
 ```python

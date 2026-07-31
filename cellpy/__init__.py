@@ -44,6 +44,7 @@ get = cellreader.get
 merge_cells = cellreader.merge_cells
 print_instruments = readers.cellreader.print_instruments
 list_instruments = readers.data_structures.list_instruments
+instrument_meta_schema = readers.data_structures.instrument_meta_schema
 
 
 def read_meta(path):
@@ -66,6 +67,7 @@ __all__ = [
     "merge_cells",
     "print_instruments",
     "list_instruments",
+    "instrument_meta_schema",
     "read_meta",
     "do",
     # "ureg",

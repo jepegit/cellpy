@@ -308,6 +308,7 @@ Quick facts:
 - Product: Python library + `cellpy` CLI — not a hosted GUI server.
 - Entry: `import cellpy` then `c = cellpy.get(path, mass=..., instrument=...)`.
 - Metadata peek (no frames): `cellpy.read_meta(path)` → dict with `cell` / `tests`.
+- Ingestion form fields: `cellpy.instrument_meta_schema(instrument)` → `fields` / `units`.
 - Frames: `c.data.raw` / `.steps` / `.summary`; columns via `c.schema.*`.
 - Example data: `from cellpy.utils import example_data` → `example_data.raw_file()`.
 - Persist: `c.save("out.cellpy")`, `c.to_csv("out_dir")`.
