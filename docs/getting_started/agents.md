@@ -74,8 +74,15 @@ c = cellpy.get(
     mass=0.85,  # active material mass in mg (instrument-dependent context)
     instrument="arbin_res",  # omit to use config default / extension guess
 )
-c.save("out/my_cell.cellpy")  # HDF5 cellpy file — fast reload later
+c.save("out/my_cell.cellpy")  # cellpy file — fast reload later
 c.to_csv("out/csv_export")
+```
+
+Peek metadata only (no raw/steps/summary — good for file browsers):
+
+```python
+meta = cellpy.read_meta("out/my_cell.cellpy")
+mass = meta["cell"]["mass"]  # also under tests["0"]["cell"] on v9 archives
 ```
 
 Reload a `.cellpy` file the same way:

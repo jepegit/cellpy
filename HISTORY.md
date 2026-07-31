@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+* Lightweight `cellpy.read_meta(path)` peeks v9 / HDF5 cellpy-file metadata
+  without loading raw/steps/summary frames. (#799)
+
 * Batch: load BatBase / custom JSON journals via `cellpy.batch.load(..., db_reader=...)`
   with file search after read (`reader=` alias). (#345)
 
