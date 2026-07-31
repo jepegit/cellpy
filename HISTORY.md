@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+* `cellpy.instrument_meta_schema(instrument)` describes `cellpy.get` metadata
+  knobs for building per-instrument ingestion forms. (#800)
+
 * Lightweight `cellpy.read_meta(path)` peeks v9 / HDF5 cellpy-file metadata
   without loading raw/steps/summary frames. (#799)
 
