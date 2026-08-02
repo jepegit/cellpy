@@ -249,3 +249,5 @@ acp() {
     fi
     git add -A && git commit -m "$1" && git push
 }
+
+alias uve="uv sync --extra batch --reinstall-package cellpy"
