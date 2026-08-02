@@ -390,7 +390,7 @@ def search_for_files(
                 _run_files = [str(_f.resolve()) for _f in _run_files]
                 _run_files.sort()
             run_files.extend(_run_files)
-
+    logging.debug(f"run_files: {run_files}")
     return run_files, cellpy_file
 
 
