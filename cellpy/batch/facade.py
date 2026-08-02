@@ -454,11 +454,36 @@ def _default_cellpy_path(label: str) -> Path:
     return Path(config.paths.cellpydatadir) / f"{label}.cellpy"
 
 
+def _should_rewrite_cellpy(batch: Batch, label: str, dest: Path) -> bool:
+    """Whether to rewrite ``dest`` after a load.
+
+    Skip when the cell was already loaded from an existing ``.cellpy`` file
+    (``AUTO`` / ``CELLPY_ONLY``). Always rewrite after raw loads, ``NEWEST``,
+    or ``recalc``.
+    """
+    if label not in batch.cells or not batch.cells.is_loaded(label):
+        return False
+    policy = batch.policy or LoadPolicy()
+    if policy.recalc or policy.source is SourcePreference.NEWEST:
+        return True
+    result = batch.result[label] if batch.result is not None else None
+    if (
+        result is not None
+        and result.source == "cellpy"
+        and dest.is_file()
+    ):
+        return False
+    return True
+
+
 def _persist_cells(batch: Batch, journal_path: Path) -> Path:
     """Save loaded cells as ``.cellpy`` and write the journal JSON.
 
     When ``cellpy_file_name`` is missing or null (e.g. ``load(frame=...)``),
     paths default to ``{cellpydatadir}/{label}.cellpy``.
+
+    Cells already loaded from an on-disk ``.cellpy`` are not rewritten unless
+    ``policy.source`` is ``NEWEST`` or ``policy.recalc`` is set.
     """
     if _CELLPY_FILE_COL not in batch.pages.columns:
         defaults = [str(_default_cellpy_path(lbl)) for lbl in batch.cell_names]
@@ -476,11 +501,11 @@ def _persist_cells(batch: Batch, journal_path: Path) -> Path:
             else _default_cellpy_path(label)
         )
         dest.parent.mkdir(parents=True, exist_ok=True)
-        if label in batch.cells and batch.cells.is_loaded(label):
+        if _should_rewrite_cellpy(batch, label, dest):
             _log.info("saving %s -> %s", label, dest)
             batch.cells[label].save(dest, overwrite=True)
         else:
-            _log.debug("skip save (not loaded): %s", label)
+            _log.debug("skip save (already from cellpy or not loaded): %s", label)
         saved.append(str(dest))
 
     batch.journal.pages = batch.journal.pages.with_columns(
@@ -563,10 +588,13 @@ def load(
         policy: explicit :class:`LoadPolicy` (conflicts with force_* raise).
         allow_from_journal: autoload ``cellpy_batch_{name}.json`` when present.
         force_reload: kept for API parity; journal hits always ``update()``.
-        force_raw_file / force_cellpy: map to ``SourcePreference``.
-        force_recalc: set ``policy.recalc``.
+        force_raw_file / force_cellpy: map to ``RAW_ONLY`` / ``CELLPY_ONLY``.
+            Default source is ``AUTO`` (existing local ``.cellpy``, else raw).
+            Use ``policy=LoadPolicy(source=SourcePreference.NEWEST)`` for the
+            raw-vs-cellpy freshness check.
+        force_recalc: remake step table + summary after load (needed when journal meta like ``nom_cap`` changed).
         drop_bad_cells: drop ``session["bad_cells"]`` before update.
-        save_cellpy: write ``.cellpy`` files and journal JSON (default True).
+        save_cellpy: write journal JSON and any newly-needed ``.cellpy`` files (default True). Skips rewriting cells already loaded from disk.
         accept_errors / max_cycle: forwarded into the load policy.
         **kwargs: DB engine knobs (``column_map``, ``raw_file_dir``, …) and
             loader extras (``testing``, …). ``export_cycles`` / ``export_raw`` /

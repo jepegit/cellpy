@@ -1,6 +1,6 @@
 # Status — #822
 
-- [ ] Done
+- [x] Done
 
 ## Notes
 
@@ -15,3 +15,6 @@ Implemented orchestrated `cellpy.batch.load` per confirmed grill plan.
 ## Remaining
 
 Close via `/iflow-close` (HISTORY/PR merge) when ready.
+
+
+Follow-up dogfooding fixes landed in #825.

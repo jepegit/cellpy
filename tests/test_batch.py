@@ -779,6 +779,103 @@ def test_load_autoloads_journal_from_journal_dir(parameters, batch_instance, tmp
 
 
 @pytest.mark.essential
+
+@pytest.mark.essential
+def test_persist_skips_rewrite_when_loaded_from_cellpy(tmp_path):
+    """Cells loaded from an existing .cellpy are not rewritten on persist."""
+    from pathlib import Path
+
+    import polars as pl
+
+    from cellpy.batch import Batch, LoadPolicy, SourcePreference
+    from cellpy.batch import facade as facade_mod
+    from cellpy.batch.journal import FILENAME, Journal
+    from cellpy.batch.result import BatchResult, CellOutcome, CellResult
+
+    dest = tmp_path / "cell_a.cellpy"
+    dest.write_bytes(b"original")
+    pages = pl.DataFrame(
+        {
+            FILENAME: ["cell_a"],
+            "group": [1],
+            "sub_group": [1],
+            hdr_journal["cellpy_file_name"]: [str(dest)],
+        }
+    )
+    batch = Batch(Journal(name="t", project="p", pages=pages))
+    batch.policy = LoadPolicy(source=SourcePreference.AUTO)
+
+    class _Cell:
+        def __init__(self):
+            self.saved = False
+
+        def save(self, path, overwrite=True):
+            self.saved = True
+            Path(path).write_bytes(b"rewritten")
+
+    cell = _Cell()
+    batch._store = batch.cells.__class__.from_cells({"cell_a": cell})
+    batch._result = BatchResult(
+        [
+            CellResult(
+                "cell_a",
+                CellOutcome.LOADED,
+                cell=cell,
+                source="cellpy",
+                seconds=0.1,
+            )
+        ]
+    )
+    facade_mod._persist_cells(batch, tmp_path / "cellpy_batch_t.json")
+    assert cell.saved is False
+    assert dest.read_bytes() == b"original"
+
+
+@pytest.mark.essential
+def test_persist_rewrites_when_loaded_from_raw(tmp_path):
+    """Cells loaded from raw are written to .cellpy on persist."""
+    from pathlib import Path
+
+    import polars as pl
+
+    from cellpy.batch import Batch, LoadPolicy, SourcePreference
+    from cellpy.batch import facade as facade_mod
+    from cellpy.batch.journal import FILENAME, Journal
+    from cellpy.batch.result import BatchResult, CellOutcome, CellResult
+
+    dest = tmp_path / "cell_a.cellpy"
+    pages = pl.DataFrame(
+        {
+            FILENAME: ["cell_a"],
+            "group": [1],
+            "sub_group": [1],
+            hdr_journal["cellpy_file_name"]: [str(dest)],
+        }
+    )
+    batch = Batch(Journal(name="t", project="p", pages=pages))
+    batch.policy = LoadPolicy(source=SourcePreference.AUTO)
+
+    class _Cell:
+        def save(self, path, overwrite=True):
+            Path(path).write_bytes(b"from-raw")
+
+    cell = _Cell()
+    batch._store = batch.cells.__class__.from_cells({"cell_a": cell})
+    batch._result = BatchResult(
+        [
+            CellResult(
+                "cell_a",
+                CellOutcome.LOADED,
+                cell=cell,
+                source="raw",
+                seconds=0.1,
+            )
+        ]
+    )
+    facade_mod._persist_cells(batch, tmp_path / "cellpy_batch_t.json")
+    assert dest.read_bytes() == b"from-raw"
+
+
 def test_load_save_cellpy_writes_journal(parameters, batch_instance, tmp_path, monkeypatch):
     """save_cellpy=True writes journal JSON under journal_dir (cells may be empty)."""
     import polars as pl

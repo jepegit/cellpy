@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import time
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
+from pathlib import Path
 from typing import Any, Callable
 
 from cellpy import get as _cellpy_get
@@ -20,14 +21,28 @@ from cellpy.batch.result import BatchResult, CellOutcome, CellResult
 ProgressHook = Callable[[int, int, CellResult], None]
 
 
+def _cellpy_file_exists(path: Any) -> bool:
+    """True when ``path`` points at an existing local cellpy file."""
+    if path is None:
+        return False
+    try:
+        return Path(path).expanduser().is_file()
+    except (OSError, TypeError, ValueError):
+        return False
+
+
 def _get_kwargs(spec: CellSpec, policy: LoadPolicy) -> tuple[dict, str | None]:
     """Map a resolved :class:`CellSpec` + policy onto ``cellpy.get`` kwargs.
 
     Returns the kwargs and the source label ("cellpy"/"raw"/None) we expect.
+
+    ``AUTO`` loads an existing local ``.cellpy`` without a raw freshness check;
+    use ``NEWEST`` to pass both paths into ``cellpy.get`` (remote/raw stats).
     """
     kwargs: dict[str, Any] = {
         "mass": spec.mass,
         "nominal_capacity": spec.nom_cap,
+        "nom_cap_specifics": spec.nom_cap_specifics,
         "area": spec.area,
         "cycle_mode": spec.cycle_mode,
         "instrument": spec.instrument,
@@ -42,10 +57,17 @@ def _get_kwargs(spec: CellSpec, policy: LoadPolicy) -> tuple[dict, str | None]:
     elif policy.source is SourcePreference.CELLPY_ONLY:
         kwargs["cellpy_file"] = spec.cellpy_file
         source = "cellpy" if spec.cellpy_file else None
-    else:  # AUTO
+    elif policy.source is SourcePreference.NEWEST:
         kwargs["cellpy_file"] = spec.cellpy_file
         kwargs["filename"] = raw
         source = "cellpy" if spec.cellpy_file else ("raw" if raw else None)
+    else:  # AUTO: prefer existing local cellpy; no remote FID check
+        if _cellpy_file_exists(spec.cellpy_file):
+            kwargs["cellpy_file"] = spec.cellpy_file
+            source = "cellpy"
+        else:
+            kwargs["filename"] = raw
+            source = "raw" if raw else None
 
     kwargs = {key: val for key, val in kwargs.items() if val is not None}
     kwargs.update(policy.loader_kwargs)
@@ -64,6 +86,10 @@ def load_cell(spec: CellSpec, policy: LoadPolicy | None = None) -> CellResult:
     started = time.perf_counter()
     try:
         cell = _cellpy_get(**kwargs)
+        if policy.recalc and cell is not None:
+            # Summary C-rates are derived from the step table; remake both.
+            cell.make_step_table()
+            cell.make_summary()
     except Exception as error:  # noqa: BLE001 - errors are data (accept_errors)
         if not policy.accept_errors:
             raise

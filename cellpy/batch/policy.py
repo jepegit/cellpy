@@ -30,7 +30,8 @@ from cellpy.batch.journal import FILENAME, Journal
 class SourcePreference(str, Enum):
     """Which source a cell is loaded from."""
 
-    AUTO = "auto"  # cellpy file if fresh, else raw (today's default)
+    AUTO = "auto"  # local .cellpy if present, else raw (no freshness check)
+    NEWEST = "newest"  # compare raw vs cellpy via cellpy.get check_file_ids
     CELLPY_ONLY = "cellpy_only"  # replaces force_cellpy=True
     RAW_ONLY = "raw_only"  # replaces force_raw_file=True
 
@@ -62,6 +63,7 @@ class CellSpec:
     model: str | None = None
     mass: float | None = None
     nom_cap: float | None = None
+    nom_cap_specifics: str | None = None
     area: float | None = None
     cycle_mode: str | None = None
     #: leftover per-cell knobs (recalc, data_points, ...) not mapped to a field.
@@ -69,7 +71,7 @@ class CellSpec:
 
 
 #: Journal columns that map directly to a typed :class:`CellSpec` field.
-_SPEC_FIELDS = ("instrument", "model", "mass", "nom_cap", "area", "cycle_mode")
+_SPEC_FIELDS = ("instrument", "model", "mass", "nom_cap", "nom_cap_specifics", "area", "cycle_mode")
 
 
 def _is_nan(value: Any) -> bool:
@@ -172,6 +174,7 @@ def resolve_specs(
                 model=merged.get("model"),
                 mass=merged.get("mass"),
                 nom_cap=merged.get("nom_cap"),
+                nom_cap_specifics=merged.get("nom_cap_specifics"),
                 area=merged.get("area"),
                 cycle_mode=merged.get("cycle_mode"),
                 overrides={
