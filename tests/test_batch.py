@@ -5,6 +5,7 @@ import os
 import pathlib
 import tempfile
 import time
+import warnings
 
 import pandas
 import pytest
@@ -355,6 +356,7 @@ def test_load_with_explicit_cellpy_journal_file(parameters, batch_instance):
         journal_file=parameters.journal_file_json_path,
         allow_from_journal=False,
         drop_bad_cells=False,
+        save_cellpy=False,
         testing=True,
     )
     assert b is not None
@@ -380,6 +382,7 @@ def test_load_with_explicit_custom_json(parameters, batch_instance):
         reader="custom_json_reader",
         column_map=column_map,
         allow_from_journal=False,
+        save_cellpy=False,
         testing=True,
         raw_file_dir=parameters.raw_data_dir,
         cellpy_file_dir=parameters.cellpy_data_dir,
@@ -402,6 +405,7 @@ def test_load_with_explicit_batbase_json(parameters, batch_instance):
         journal_file=str(fixture_path),
         reader="batbase_json_reader",
         allow_from_journal=False,
+        save_cellpy=False,
         testing=True,
         raw_file_dir=parameters.raw_data_dir,
         cellpy_file_dir=parameters.cellpy_data_dir,
@@ -668,3 +672,152 @@ def test_batch_figure_structure_matches_snapshot(populated_batch):
 # # Since the batch-files contains full paths I need to figure out how to make a custom json-file for the test.
 #     folder_name = config.paths.batchfiledir
 #     batch.iterate_batches(folder_name, default_log_level="CRITICAL")
+
+
+@pytest.mark.essential
+def test_resolve_policy_force_flags_and_conflict():
+    """force_raw_file / force_cellpy map to LoadPolicy; conflict with policy raises."""
+    from cellpy.batch.facade import _resolve_policy
+    from cellpy.batch import LoadPolicy, SourcePreference
+
+    raw = _resolve_policy(
+        policy=None,
+        force_raw_file=True,
+        force_cellpy=False,
+        force_recalc=False,
+        accept_errors=None,
+        max_cycle=None,
+    )
+    assert raw.source is SourcePreference.RAW_ONLY
+
+    cellpy_only = _resolve_policy(
+        policy=None,
+        force_raw_file=False,
+        force_cellpy=True,
+        force_recalc=True,
+        accept_errors=False,
+        max_cycle=3,
+    )
+    assert cellpy_only.source is SourcePreference.CELLPY_ONLY
+    assert cellpy_only.recalc is True
+    assert cellpy_only.accept_errors is False
+    assert cellpy_only.max_cycle == 3
+
+    with pytest.raises(ValueError, match="conflicting load source"):
+        _resolve_policy(
+            policy=LoadPolicy(source=SourcePreference.AUTO),
+            force_raw_file=True,
+            force_cellpy=False,
+            force_recalc=False,
+            accept_errors=None,
+            max_cycle=None,
+        )
+
+    with pytest.raises(ValueError, match="cannot both be True"):
+        _resolve_policy(
+            policy=None,
+            force_raw_file=True,
+            force_cellpy=True,
+            force_recalc=False,
+            accept_errors=None,
+            max_cycle=None,
+        )
+
+
+@pytest.mark.essential
+def test_load_export_kwargs_warn_once():
+    """export_* kwargs are accepted but ignored with a single UserWarning."""
+    from cellpy.batch import facade as facade_mod
+    from cellpy.batch.facade import _warn_ignored_export_kwargs
+
+    facade_mod._EXPORT_KWARGS_WARNED = False
+    with pytest.warns(UserWarning, match="ignores"):
+        _warn_ignored_export_kwargs({"export_cycles": True, "export_raw": False})
+    # second call should not warn again
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", UserWarning)
+        _warn_ignored_export_kwargs({"export_ica": True})
+
+
+@pytest.mark.essential
+def test_drop_cells_marked_bad():
+    from cellpy.batch import Batch
+    from cellpy.batch.journal import Journal, FILENAME
+    import polars as pl
+
+    pages = pl.DataFrame(
+        {
+            FILENAME: ["a", "b", "c"],
+            "group": [1, 1, 2],
+            "sub_group": [1, 2, 1],
+        }
+    )
+    b = Batch(Journal(name="t", project="p", pages=pages, session={"bad_cells": ["b"]}))
+    b.drop_cells_marked_bad()
+    assert b.cell_names == ["a", "c"]
+
+
+@pytest.mark.essential
+def test_load_autoloads_journal_from_journal_dir(parameters, batch_instance, tmp_path):
+    """allow_from_journal picks up cellpy_batch_{name}.json under journal_dir."""
+    import shutil
+
+    journal_src = pathlib.Path(parameters.journal_file_json_path)
+    dest = tmp_path / "cellpy_batch_test_batch.json"
+    shutil.copy(journal_src, dest)
+
+    b = batch_instance.load(
+        "test_batch",
+        "test_project",
+        journal_dir=tmp_path,
+        allow_from_journal=True,
+        save_cellpy=False,
+        drop_bad_cells=False,
+        testing=True,
+    )
+    assert len(b.pages) == 5
+
+
+@pytest.mark.essential
+def test_load_save_cellpy_writes_journal(parameters, batch_instance, tmp_path, monkeypatch):
+    """save_cellpy=True writes journal JSON under journal_dir (cells may be empty)."""
+    import polars as pl
+    from cellpy.batch import Batch
+    from cellpy.batch.journal import Journal, FILENAME
+    from cellpy.batch import facade as facade_mod
+
+    cellpy_dir = tmp_path / "cellpyfiles"
+    cellpy_dir.mkdir()
+    pages = pl.DataFrame(
+        {
+            FILENAME: ["cell_a"],
+            "group": [1],
+            "sub_group": [1],
+            hdr_journal["cellpy_file_name"]: [str(cellpy_dir / "cell_a.h5")],
+        }
+    )
+    journal = Journal(name="persist_me", project="p", pages=pages)
+
+    # Avoid real file IO from update: empty store after no-op update.
+    def _fake_update(self, **kwargs):
+        from cellpy.batch.result import BatchResult
+
+        self._result = BatchResult(results=[])
+        self._store = self._store.__class__()
+        return self._result
+
+    monkeypatch.setattr(Batch, "update", _fake_update)
+
+    b = facade_mod.load(
+        name="persist_me",
+        project="p",
+        journal=journal,
+        journal_dir=tmp_path,
+        save_cellpy=True,
+        drop_bad_cells=False,
+        allow_from_journal=False,
+    )
+    out = tmp_path / "cellpy_batch_persist_me.json"
+    assert out.is_file()
+    # path suffix normalized to .cellpy even when nothing loaded
+    assert str(b.pages[hdr_journal["cellpy_file_name"]][0]).endswith(".cellpy")
