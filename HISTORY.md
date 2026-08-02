@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Batch load: ``AUTO`` prefers existing ``.cellpy`` (new ``NEWEST`` for freshness checks), ``force_recalc`` remakes steps/summary, and skip rewriting cellpy files already loaded from disk. (#825)
+
 ## [2.1.1.post4] - 2026-07-31
 
 Post-release of 2.1.1 — batch JSON load path, metadata peek, ingestion-form schema.

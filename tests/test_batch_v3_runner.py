@@ -85,6 +85,60 @@ def test_cellstore_no_label_mangling():
     assert set(store._ipython_key_completions_()) == {"xenon_cell", "x_ray"}
 
 
+# ---- runner.py source selection -----------------------------------------
+
+
+@pytest.mark.essential
+def test_auto_uses_existing_cellpy_without_raw(tmp_path):
+    from cellpy.batch.runner import _get_kwargs
+
+    cellpy_path = tmp_path / "cell.cellpy"
+    cellpy_path.write_bytes(b"x")
+    spec = CellSpec(
+        label="a",
+        cellpy_file=str(cellpy_path),
+        raw_files=["scp://host/raw.h5"],
+    )
+    kwargs, source = _get_kwargs(spec, LoadPolicy(source=SourcePreference.AUTO))
+    assert source == "cellpy"
+    assert kwargs["cellpy_file"] == str(cellpy_path)
+    assert "filename" not in kwargs
+
+
+@pytest.mark.essential
+def test_auto_falls_back_to_raw_when_cellpy_missing(tmp_path):
+    from cellpy.batch.runner import _get_kwargs
+
+    raw = ["scp://host/raw.h5"]
+    spec = CellSpec(
+        label="a",
+        cellpy_file=str(tmp_path / "missing.cellpy"),
+        raw_files=raw,
+    )
+    kwargs, source = _get_kwargs(spec, LoadPolicy(source=SourcePreference.AUTO))
+    assert source == "raw"
+    assert kwargs["filename"] == raw
+    assert "cellpy_file" not in kwargs
+
+
+@pytest.mark.essential
+def test_newest_passes_both_paths(tmp_path):
+    from cellpy.batch.runner import _get_kwargs
+
+    cellpy_path = tmp_path / "cell.cellpy"
+    cellpy_path.write_bytes(b"x")
+    raw = ["scp://host/raw.h5"]
+    spec = CellSpec(
+        label="a",
+        cellpy_file=str(cellpy_path),
+        raw_files=raw,
+    )
+    kwargs, source = _get_kwargs(spec, LoadPolicy(source=SourcePreference.NEWEST))
+    assert source == "cellpy"
+    assert kwargs["cellpy_file"] == str(cellpy_path)
+    assert kwargs["filename"] == raw
+
+
 # ---- runner.py (integration with cellpy.get) ----------------------------
 
 
@@ -140,6 +194,50 @@ def test_run_skips_bad_cells(parameters):
     br = run(j, LoadPolicy(source=SourcePreference.CELLPY_ONLY, skip_bad_cells=True))
     assert br["c45"].outcome == CellOutcome.SKIPPED
 
+
+
+
+@pytest.mark.essential
+def test_recalc_remakes_steps_and_summary(monkeypatch):
+    """force_recalc / policy.recalc must remake steps then summary after get."""
+    calls = []
+
+    class _Cell:
+        def make_step_table(self):
+            calls.append("steps")
+
+        def make_summary(self):
+            calls.append("summary")
+
+    monkeypatch.setattr(
+        "cellpy.batch.runner._cellpy_get",
+        lambda **kwargs: _Cell(),
+    )
+    spec = CellSpec(label="a", cellpy_file="x.cellpy", nom_cap=120.0)
+    result = load_cell(spec, LoadPolicy(source=SourcePreference.CELLPY_ONLY, recalc=True))
+    assert result.ok
+    assert calls == ["steps", "summary"]
+
+
+@pytest.mark.essential
+def test_no_recalc_skips_remake(monkeypatch):
+    calls = []
+
+    class _Cell:
+        def make_step_table(self):
+            calls.append("steps")
+
+        def make_summary(self):
+            calls.append("summary")
+
+    monkeypatch.setattr(
+        "cellpy.batch.runner._cellpy_get",
+        lambda **kwargs: _Cell(),
+    )
+    spec = CellSpec(label="a", cellpy_file="x.cellpy", nom_cap=120.0)
+    result = load_cell(spec, LoadPolicy(source=SourcePreference.CELLPY_ONLY, recalc=False))
+    assert result.ok
+    assert calls == []
 
 # ---- executors (#704) ---------------------------------------------------
 

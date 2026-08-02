@@ -13,7 +13,7 @@ Notebooks expected the v1 flow: resolve journal → load cells → persist.
    `cellpy_batch_{name}.json` from `journal_dir` (default **cwd**), else DB.
 2. `drop_bad_cells` (default True) removes `session["bad_cells"]`.
 3. Always `Batch.update()` (legacy `link` is a no-op in v3).
-4. Persist `.cellpy` files + journal JSON when `save_cellpy=True` (default).
+4. Persist journal JSON when `save_cellpy=True` (default). Rewrite `.cellpy` only for cells loaded from raw (or `NEWEST` / `recalc`); skip rewrite when already loaded from an on-disk `.cellpy`.
 
 ### Journal location
 
@@ -22,15 +22,18 @@ Notebooks expected the v1 flow: resolve journal → load cells → persist.
 - No IPython notebook-path sniffing: start the kernel with the notebook folder
   as cwd, or pass `journal_dir=` explicitly.
 
-### Force flags
+### Force flags / source preference
 
-| Legacy | `LoadPolicy.source` |
-|--------|---------------------|
-| (default) | `AUTO` |
-| `force_raw_file=True` | `RAW_ONLY` |
-| `force_cellpy=True` | `CELLPY_ONLY` |
+| Legacy / policy | `LoadPolicy.source` | Behavior |
+|-----------------|---------------------|----------|
+| (default) | `AUTO` | Use local `.cellpy` if the path exists; else raw. **No** freshness/FID check. |
+| `policy=LoadPolicy(source=SourcePreference.NEWEST)` | `NEWEST` | Pass both paths to `cellpy.get` (raw vs cellpy FID/mtime check). |
+| `force_raw_file=True` | `RAW_ONLY` | Raw only. |
+| `force_cellpy=True` | `CELLPY_ONLY` | Cellpy path only (no existence short-circuit). |
 
 Explicit `policy=` that conflicts with force flags raises `ValueError`.
+
+`force_recalc=True` remakes the step table and summary after each successful load (summary C-rates come from steps; meta-only updates are not enough).
 
 ### Ignored kwargs
 
