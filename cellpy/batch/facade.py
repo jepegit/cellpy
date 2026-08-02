@@ -447,20 +447,34 @@ def _resolve_policy(
     return replace(base, **updates) if updates else base
 
 
+def _default_cellpy_path(label: str) -> Path:
+    """Fallback ``.cellpy`` path under ``config.paths.cellpydatadir``."""
+    import cellpy.config as config
+
+    return Path(config.paths.cellpydatadir) / f"{label}.cellpy"
+
+
 def _persist_cells(batch: Batch, journal_path: Path) -> Path:
-    """Save loaded cells as ``.cellpy`` and write the journal JSON."""
+    """Save loaded cells as ``.cellpy`` and write the journal JSON.
+
+    When ``cellpy_file_name`` is missing or null (e.g. ``load(frame=...)``),
+    paths default to ``{cellpydatadir}/{label}.cellpy``.
+    """
     if _CELLPY_FILE_COL not in batch.pages.columns:
-        raise ValueError(
-            f"journal pages missing {_CELLPY_FILE_COL!r}; cannot persist cellpy files"
+        defaults = [str(_default_cellpy_path(lbl)) for lbl in batch.cell_names]
+        batch.journal.pages = batch.pages.with_columns(
+            pl.Series(_CELLPY_FILE_COL, defaults)
         )
 
     saved: list[str] = []
     for row in batch.pages.iter_rows(named=True):
         label = row[FILENAME]
         dest_raw = row.get(_CELLPY_FILE_COL)
-        if not dest_raw:
-            raise ValueError(f"no {_CELLPY_FILE_COL} for cell {label!r}")
-        dest = Path(dest_raw).with_suffix(".cellpy")
+        dest = (
+            Path(dest_raw).with_suffix(".cellpy")
+            if dest_raw
+            else _default_cellpy_path(label)
+        )
         dest.parent.mkdir(parents=True, exist_ok=True)
         if label in batch.cells and batch.cells.is_loaded(label):
             _log.info("saving %s -> %s", label, dest)

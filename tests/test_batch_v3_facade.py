@@ -82,12 +82,15 @@ def test_save_roundtrip(tmp_path):
     assert reloaded.cell_names == b.cell_names
 
 
-def test_load_from_frame():
+def test_load_from_frame(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
     frame = pl.DataFrame({FILENAME: ["a", "b"], "mass": [1.0, 2.0]})
-    b = load(name="n", project="p", frame=frame)
+    # No cellpy paths on the frame; persist fills defaults under cellpydatadir.
+    b = load(name="n", project="p", frame=frame, journal_dir=tmp_path)
     assert isinstance(b, Batch)
     assert b.cell_names == ["a", "b"]
     assert b.journal.name == "n" and b.journal.project == "p"
+    assert (tmp_path / "cellpy_batch_n.json").is_file()
 
 
 # ---- db path (#703) -----------------------------------------------------
