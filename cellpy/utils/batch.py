@@ -116,34 +116,27 @@ def load(
     policy=None,
     **kwargs,
 ) -> Batch:
-    """Load a batch from a journal source (shim -> :mod:`cellpy.batch`)."""
+    """Load a batch (shim -> orchestrated :func:`cellpy.batch.load`)."""
     _setup_logging(kwargs.pop("default_log_level", None), testing)
 
-    if journal_file is not None and reader in _JSON_DB_READERS:
-        return Batch.from_db(
-            name,
-            project,
-            db_reader=reader,
-            db_file=str(journal_file),
-            column_map=column_map,
-            batch_col=batch_col,
-            raw_file_dir=raw_file_dir,
-            cellpy_file_dir=cellpy_file_dir,
-            policy=policy,
-        )
-    if journal_file is not None:
-        return _new_from_journal(journal_file, policy=policy)
-    if frame is not None:
-        return _new_load(name, project, frame=frame, policy=policy)
+    if column_map is not None:
+        kwargs["column_map"] = column_map
+    if raw_file_dir is not None:
+        kwargs["raw_file_dir"] = raw_file_dir
+    if cellpy_file_dir is not None:
+        kwargs["cellpy_file_dir"] = cellpy_file_dir
+    if testing:
+        kwargs["testing"] = testing
 
-    return Batch.from_db(
+    return _new_load(
         name,
         project,
-        db_reader=reader or "simple_excel_reader",
+        journal_file=journal_file,
+        reader=reader,
         batch_col=batch_col,
-        raw_file_dir=raw_file_dir,
-        cellpy_file_dir=cellpy_file_dir,
+        frame=frame,
         policy=policy,
+        **kwargs,
     )
 
 
@@ -173,11 +166,9 @@ def load_pages(file_name) -> Any:
 def process_batch(*args, **kwargs) -> Batch:
     warn_once(
         "cellpy.utils.batch.process_batch",
-        "cellpy.batch.load(...).update() (see the migration guide recipe)",
+        "cellpy.batch.load(...)",
     )
-    b = load(*args, **kwargs)
-    b.update()
-    return b
+    return load(*args, **kwargs)
 
 
 def iterate_batches(*args, **kwargs) -> None:
