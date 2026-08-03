@@ -683,6 +683,11 @@ def sequence_plotter(
         else:
             print(f"method '{method}' is not supported by plotly")
 
+        # Cycles / film / ICA: pretty facet strips (keep strip; #820).
+        # Summary keeps its own clear-strip + y-title path above (#801).
+        if fig is not None and method in ("fig_pr_cell", "fig_pr_cycle", "film"):
+            _pretty_print_facet_strips(fig)
+
         return fig
 
     if backend == "seaborn":
@@ -873,6 +878,37 @@ def _resolve_share_y(
     if match_axes is not None:
         return bool(match_axes)
     return bool(default)
+
+
+def _pretty_facet_annotation(text: str) -> str:
+    """Humanize a Plotly Express facet-strip annotation (#820).
+
+    Cycles / ICA / film keep the strip visible (panel identity). Summary uses a
+    different path (#801): clear ``variable=…`` and put the pretty name on the
+    y-axis title.
+    """
+    if not text or "=" not in text:
+        return text
+    key, _, val = text.partition("=")
+    if key in ("cycle_num", "cycle"):
+        return f"Cycle {val}"
+    if key == "cell":
+        return val
+    return text
+
+
+def _pretty_print_facet_strips(fig: Any) -> None:
+    """Rewrite Plotly facet-strip annotation texts in place (#820)."""
+    annotations = getattr(fig.layout, "annotations", None) or ()
+    if not annotations:
+        return
+    for i, ann in enumerate(annotations):
+        text = getattr(ann, "text", None)
+        if not text:
+            continue
+        pretty = _pretty_facet_annotation(text)
+        if pretty != text:
+            fig.layout.annotations[i].text = pretty
 
 
 def _pretty_variable_label(variable: str, units: Any = None) -> str:
@@ -1419,15 +1455,22 @@ def cycles_plotter(
 ):
     """Plot charge-discharge curves.
 
+    Prefer :func:`collected_plot` with ``layout="per_cell"`` / ``"per_cycle"``
+    over the legacy ``method="fig_pr_cell"`` / ``"fig_pr_cycle"`` knobs.
+
     Args:
         collected_curves(pd.DataFrame): collected data in long format.
         cycles_to_plot (list): cycles to plot
         backend (str): what backend to use.
-        method (str): 'fig_pr_cell' or 'fig_pr_cycle'.
+        method (str): 'fig_pr_cell' or 'fig_pr_cycle' (legacy; prefer ``layout=``
+            via :func:`collected_plot`).
         x_unit (str): unit for x-axis.
         y_unit (str): unit for y-axis.
 
         **kwargs: consumed first in current function, rest sent to backend in sequence_plotter.
+
+    Plotly facet strips are pretty-printed by default (#820): ``Cycle N`` /
+    cell label instead of ``cycle_num=…`` / ``cell=…``.
 
     Returns:
         styled figure object
@@ -1649,6 +1692,8 @@ def collected_plot(
             App chrome (#801): ``plotly_template``, ``layout_updates``,
             ``y_label_mapper`` (pretty labels by default), ``height`` /
             ``height_per_panel`` / ``figure_border_height``.
+            Cycles / ICA (#820): Plotly facet strips default to ``Cycle N`` /
+            cell label (prefer ``layout=`` over legacy ``method="fig_pr_*"``).
 
     Returns:
         Backend-native figure object.

@@ -41,6 +41,10 @@ Epic #567 Stage 3 / issue #657 re-bases collectors' drawing half onto
   built automatically (`y_label_mapper=` overrides). Height:
   `height=` (absolute) or `height_per_panel=` (alias of `sub_fig_min_height`;
   summary default 300 px/panel) plus optional `figure_border_height=`.
+- **Cycles / ICA facet chrome (#820):** Plotly `layout="per_cell"` /
+  `"per_cycle"` (and legacy `fig_pr_*` / `film`) rewrite facet strips to
+  `Cycle N` / cell label by default — strips stay visible (unlike summary's
+  clear→y-title path). Prefer `layout=` over `method="fig_pr_*"`.
 
 ### Example — Capacity + CE without crushing panels
 
@@ -64,6 +68,16 @@ collection.plot(
 )
 ```
 
+### Example — cycles facets without `cycle_num=` / `cell=` chrome
+
+```python
+collection.plot(
+    family_kind="cycles",
+    layout="per_cell",  # prefer over method="fig_pr_cell"
+)
+# Facet strips: cell labels only. layout="per_cycle" → "Cycle 1", "Cycle 2", …
+```
+
 ## Links
 
 - Issue #657; epic #567; plan
@@ -71,3 +85,4 @@ collection.plot(
 - Related: `plotting-prepare.md`, `plotting-backends.md`
 - Issue #804 (per-panel y-limits / `share_y`)
 - Issue #801 (theme / label / height hooks)
+- Issue #820 (cycles / ICA pretty facet strips)

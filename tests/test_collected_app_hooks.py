@@ -1,14 +1,18 @@
-"""Collected summary app chrome: template / labels / height (#801)."""
+"""Collected app chrome: summary labels/height (#801); cycles facets (#820)."""
 
 from __future__ import annotations
 
 import pandas as pd
 import pytest
+from cellpycore.config import CurveCols
 
 from cellpy.plotting.collected import (
     _default_summary_y_label_mapper,
+    _pretty_facet_annotation,
     _pretty_variable_label,
 )
+
+_CCOLS = CurveCols()
 
 
 def _summary_frame() -> pd.DataFrame:
@@ -163,3 +167,70 @@ def test_collected_plot_forwards_app_hooks():
     assert fig is not None
     assert fig.layout.height == 50 + 2 * 150
     assert fig.layout.margin.l == 10
+
+
+def _cycles_frame() -> pd.DataFrame:
+    rows = []
+    for cell in ("demo", "other"):
+        for cycle in (1, 2):
+            for i, cap in enumerate((0.0, 0.5, 1.0)):
+                rows.append(
+                    {
+                        "cell": cell,
+                        "cycle_num": cycle,
+                        _CCOLS.capacity: cap,
+                        _CCOLS.potential: 3.5 - 0.1 * i,
+                        "group": 1,
+                        "sub_group": 1,
+                    }
+                )
+    return pd.DataFrame(rows)
+
+
+@pytest.mark.essential
+def test_pretty_facet_annotation_cycles_and_cells():
+    assert _pretty_facet_annotation("cycle_num=1") == "Cycle 1"
+    assert _pretty_facet_annotation("cycle=10") == "Cycle 10"
+    assert _pretty_facet_annotation("cell=demo") == "demo"
+    assert _pretty_facet_annotation("variable=charge_capacity") == "variable=charge_capacity"
+    assert _pretty_facet_annotation("nope") == "nope"
+
+
+@pytest.mark.essential
+def test_cycles_per_cell_facet_strips_are_pretty():
+    pytest.importorskip("plotly", reason="plotting extras (batch) not installed")
+    from cellpy.plotting import theme
+    from cellpy.plotting.collected import collected_plot
+
+    theme.make_collector_templates()
+    fig = collected_plot(
+        _cycles_frame(),
+        family_kind="cycles",
+        layout="per_cell",
+        backend="plotly",
+    )
+    texts = [getattr(a, "text", None) or "" for a in (fig.layout.annotations or ())]
+    assert texts
+    assert not any("cell=" in t for t in texts)
+    assert "demo" in texts
+    assert "other" in texts
+
+
+@pytest.mark.essential
+def test_cycles_per_cycle_facet_strips_are_pretty():
+    pytest.importorskip("plotly", reason="plotting extras (batch) not installed")
+    from cellpy.plotting import theme
+    from cellpy.plotting.collected import collected_plot
+
+    theme.make_collector_templates()
+    fig = collected_plot(
+        _cycles_frame(),
+        family_kind="cycles",
+        layout="per_cycle",
+        backend="plotly",
+    )
+    texts = [getattr(a, "text", None) or "" for a in (fig.layout.annotations or ())]
+    assert texts
+    assert not any(t.startswith("cycle_num=") or t.startswith("cycle=") for t in texts)
+    assert "Cycle 1" in texts
+    assert "Cycle 2" in texts
