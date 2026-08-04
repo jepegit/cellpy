@@ -160,3 +160,108 @@ def test_collected_plot_forwards_y_ranges():
     assert fig is not None
     ce_key = _yaxis_key_for_variable(fig, "coulombic_efficiency")
     assert list(fig.layout[ce_key].range) == [0.0, 110.0]
+
+
+def _group_avg_summary_frame() -> pd.DataFrame:
+    """Long group-averaged summary frame (mean/std, no cell) for spread path."""
+    rows = []
+    for group in (1, 2):
+        for cycle in (1, 2, 3):
+            rows.append(
+                {
+                    "cycle": cycle,
+                    "group": group,
+                    "sub_group": 1,
+                    "variable": "charge_capacity_gravimetric",
+                    "mean": 100.0 + cycle + group,
+                    "std": 2.0,
+                }
+            )
+            rows.append(
+                {
+                    "cycle": cycle,
+                    "group": group,
+                    "sub_group": 1,
+                    "variable": "coulombic_efficiency",
+                    "mean": 1.0e6 if cycle == 2 else 98.0,
+                    "std": 0.5,
+                }
+            )
+    return pd.DataFrame(rows)
+
+
+@pytest.mark.essential
+def test_spread_share_y_true_matches_axes():
+    """Group avg + Spread + share_y links secondary facet y-axes (#817)."""
+    pytest.importorskip("plotly", reason="plotting extras (batch) not installed")
+    from cellpy.plotting import theme
+    from cellpy.plotting.collected import summary_plotter
+
+    theme.make_collector_templates()
+    fig = summary_plotter(
+        _group_avg_summary_frame(),
+        backend="plotly",
+        spread=True,
+        share_y=True,
+    )
+    assert fig is not None
+    assert fig.layout.yaxis2.matches == "y"
+
+
+@pytest.mark.essential
+def test_spread_default_independent_y_axes():
+    pytest.importorskip("plotly", reason="plotting extras (batch) not installed")
+    from cellpy.plotting import theme
+    from cellpy.plotting.collected import summary_plotter
+
+    theme.make_collector_templates()
+    fig = summary_plotter(
+        _group_avg_summary_frame(),
+        backend="plotly",
+        spread=True,
+    )
+    assert fig is not None
+    assert fig.layout.yaxis.matches in (None, False)
+    assert fig.layout.yaxis2.matches in (None, False)
+
+
+@pytest.mark.essential
+def test_spread_y_ranges_forces_independent_when_share_y_true():
+    pytest.importorskip("plotly", reason="plotting extras (batch) not installed")
+    from cellpy.plotting import theme
+    from cellpy.plotting.collected import (
+        _yaxis_key_for_variable,
+        summary_plotter,
+    )
+
+    theme.make_collector_templates()
+    fig = summary_plotter(
+        _group_avg_summary_frame(),
+        backend="plotly",
+        spread=True,
+        share_y=True,
+        y_ranges={"coulombic_efficiency": [0, 110]},
+    )
+    assert fig is not None
+    assert fig.layout.yaxis2.matches in (None, False)
+    ce_key = _yaxis_key_for_variable(fig, "coulombic_efficiency")
+    assert ce_key is not None
+    assert list(fig.layout[ce_key].range) == [0.0, 110.0]
+
+
+@pytest.mark.essential
+def test_collected_plot_spread_share_y():
+    pytest.importorskip("plotly", reason="plotting extras (batch) not installed")
+    from cellpy.plotting import theme
+    from cellpy.plotting.collected import collected_plot
+
+    theme.make_collector_templates()
+    fig = collected_plot(
+        _group_avg_summary_frame(),
+        family_kind="summary",
+        backend="plotly",
+        spread=True,
+        share_y=True,
+    )
+    assert fig is not None
+    assert fig.layout.yaxis2.matches == "y"

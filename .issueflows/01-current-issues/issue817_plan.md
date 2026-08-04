@@ -1,6 +1,6 @@
 # Issue #817 — Plan: honour `share_y` / `match_axes` on `spread_plot`
 
-Status: **draft** — awaiting Accept / Revise / Abort.
+Status: **confirmed** (2026-08-04) — Accept; implement as written.
 
 ## Goal
 
