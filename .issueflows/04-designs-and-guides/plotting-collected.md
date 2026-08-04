@@ -47,6 +47,11 @@ Epic #567 Stage 3 / issue #657 re-bases collectors' drawing half onto
   `"per_cycle"` (and legacy `fig_pr_*` / `film`) rewrite facet strips to
   `Cycle N` / cell label by default — strips stay visible (unlike summary's
   clear→y-title path). Prefer `layout=` over `method="fig_pr_*"`.
+- **ICA `direction=` (#821):** `charge` / `discharge` / `both` on line layouts
+  (`layout="per_cell"|"per_cycle"`) and `kind="film"`, not only film. Default
+  for collected ICA remains `charge`. `both` overlays half-cycles; on Plotly
+  line plots, `line_dash` separates directions so lobes do not join. Invalid
+  values warn and coerce to `charge`.
 
 ### Example — Capacity + CE without crushing panels
 

@@ -179,6 +179,10 @@ def test_select_direction_handles_both_encodings():
     without = pd.DataFrame({"v": [1, 2]})
     assert len(_select_direction(without, "charge")) == 2
 
+    # direction="both" leaves half-cycles in place (#821)
+    assert len(_select_direction(specced, "both")) == 3
+    assert len(_select_direction(legacy, "both")) == 3
+
 
 def test_drawing_bodies_live_in_plotting_not_collectors():
     """Collectors never define sequence/summary/cycles/ica/spread plotters (#657)."""

@@ -1,6 +1,6 @@
 # Issue #821 — Plan: ICA collected plot direction (line + `both`)
 
-Status: **draft** — awaiting Accept / Revise / Abort.
+Status: **confirmed** (2026-08-04) — Accept; defaults: collected `direction="charge"`; Plotly `both` via `line_dash`.
 
 ## Goal
 
