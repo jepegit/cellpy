@@ -635,7 +635,9 @@ def sequence_plotter(
 
             # Apply per-panel y-limits while facet annotations still spell
             # ``variable=…`` (#804 / #801). Pretty-label cleanup clears them.
-            if y_ranges and not spread:
+            # Spread figures have no facet strips; lookup falls back to y-axis
+            # titles set by spread_plot (#817).
+            if y_ranges:
                 _apply_summary_y_ranges(fig, y_ranges, facet=g)
 
             if y_label_mapper and not spread:
@@ -1206,7 +1208,11 @@ def _cycles_plotter(
         )
         if layout_updates:
             fig.update_layout(**layout_updates)
-        if not match_axes:
+        # Affirmative link when sharing: px.line facets usually already set
+        # matches, but spread_plot (make_subplots) never does (#817 / #804).
+        if match_axes:
+            fig.update_yaxes(matches="y")
+        else:
             fig.update_yaxes(matches=None)
             fig.update_xaxes(matches=None)
 
