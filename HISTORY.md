@@ -3,6 +3,8 @@
 ## [Unreleased]
 
 - Pretty-print cycles collector facet strips (Cycle N / cell label, not cycle_num=). (#820)
+- Honour share_y / match_axes on collected summary spread_plot. (#817)
+- ICA plotter: honour direction for line layouts; support direction='both'. (#821)
 
 ## [2.1.1.post6] - 2026-08-02
 

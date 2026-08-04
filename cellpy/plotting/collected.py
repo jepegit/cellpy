@@ -268,6 +268,13 @@ def spread_plot(curves, plotly_arguments=None, y_label_mapper=None, **kwargs):
     return fig
 
 
+def _normalize_direction(direction: Optional[str]) -> str:
+    """Normalize a direction kwarg to lowercase ``charge`` / ``discharge`` / ``both``."""
+    if direction is None:
+        return "charge"
+    return str(direction).strip().lower()
+
+
 def _select_direction(curves, direction, direction_col="direction"):
     """Select one direction from a collected curve frame.
 
@@ -280,7 +287,13 @@ def _select_direction(curves, direction, direction_col="direction"):
       (-1 selected as "charge") so non-ICA film plots are unchanged; the code
       is positional, and relabelling it needs the cell's cycle_mode, which a
       collected frame no longer knows.
+
+    ``direction="both"`` leaves the frame unchanged (#821).
     """
+    direction = _normalize_direction(direction)
+    if direction == "both":
+        return curves
+
     if direction_col not in curves.columns:
         logging.debug(
             "no %r column in the collected frame - direction filter skipped",
@@ -455,10 +468,11 @@ def sequence_plotter(
             curves = collected_curves.loc[collected_curves[z].isin(cycles), :]
         else:
             curves = collected_curves
+        # Line + film honour direction (#821); film used to be the only path.
+        curves = _select_direction(curves, direction, direction_col)
         logging.debug(f"filtered_curves:\n{curves}")
 
         if method == "film":
-            curves = _select_direction(curves, direction, direction_col)
             # scaling (assuming 'y' is the "value" axis):
             if histscale == "abs-log":
                 curves[y] = curves[y].apply(np.abs).apply(np.log)
@@ -473,6 +487,7 @@ def sequence_plotter(
             curves = collected_curves.loc[collected_curves[z].isin(cycles), :]
         else:
             curves = collected_curves
+        curves = _select_direction(curves, direction, direction_col)
 
         z, g = g, z
         plotly_arguments["facet_col"] = g
@@ -555,6 +570,15 @@ def sequence_plotter(
         plotly_arguments["facet_row_spacing"] = facet_row_spacing
         plotly_arguments["facet_col_spacing"] = facet_col_spacing
 
+        # direction="both": separate traces per half-cycle so Plotly does not
+        # join charge→discharge within a cycle (#821).
+        if (
+            method in ("fig_pr_cell", "fig_pr_cycle")
+            and _normalize_direction(direction) == "both"
+            and direction_col in curves.columns
+        ):
+            plotly_arguments["line_dash"] = direction_col
+
         logging.debug(f"{plotly_arguments=}")
         logging.debug(f"{kwargs=}")
 
@@ -635,7 +659,9 @@ def sequence_plotter(
 
             # Apply per-panel y-limits while facet annotations still spell
             # ``variable=…`` (#804 / #801). Pretty-label cleanup clears them.
-            if y_ranges and not spread:
+            # Spread figures have no facet strips; lookup falls back to y-axis
+            # titles set by spread_plot (#817).
+            if y_ranges:
                 _apply_summary_y_ranges(fig, y_ranges, facet=g)
 
             if y_label_mapper and not spread:
@@ -1206,7 +1232,11 @@ def _cycles_plotter(
         )
         if layout_updates:
             fig.update_layout(**layout_updates)
-        if not match_axes:
+        # Affirmative link when sharing: px.line facets usually already set
+        # matches, but spread_plot (make_subplots) never does (#817 / #804).
+        if match_axes:
+            fig.update_yaxes(matches="y")
+        else:
             fig.update_yaxes(matches=None)
             fig.update_xaxes(matches=None)
 
@@ -1506,20 +1536,28 @@ def ica_plotter(
     direction="charge",
     **kwargs,
 ):
-    """Plot charge-discharge curves.
+    """Plot collected ICA (dQ/dV) curves.
 
     Args:
         collected_curves(pd.DataFrame): collected data in long format.
         cycles_to_plot (list): cycles to plot
         backend (str): what backend to use.
         method (str): 'fig_pr_cell' or 'fig_pr_cycle' or 'film'.
-        direction (str): 'charge' or 'discharge'.
+        direction (str): ``"charge"``, ``"discharge"``, or ``"both"``
+            (overlay both half-cycles; Plotly uses ``line_dash`` so lobes
+            do not join — #821). Default ``"charge"``.
 
         **kwargs: consumed first in current function, rest sent to backend in sequence_plotter.
 
     Returns:
         styled figure object
     """
+
+    # collected_plot / Collection.plot may forward ``cycles=`` in kwargs.
+    if cycles_to_plot is None and "cycles" in kwargs:
+        cycles_to_plot = kwargs.pop("cycles")
+    else:
+        kwargs.pop("cycles", None)
 
     if cycles_to_plot is None:
         unique_cycles = list(collected_curves.cycle.unique())
@@ -1530,8 +1568,13 @@ def ica_plotter(
     else:
         max_cycle = max(cycles_to_plot)
 
-    if direction not in ["charge", "discharge"]:
-        print(f"direction='{direction}' not allowed - setting it to 'charge'")
+    direction = _normalize_direction(direction)
+    if direction not in ("charge", "discharge", "both"):
+        logger.warning(
+            "direction=%r not allowed; coercing to 'charge' "
+            "(allowed: 'charge', 'discharge', 'both')",
+            direction,
+        )
         direction = "charge"
     if method == "film":
         kwargs["range_y"] = kwargs.pop("range_y", None) or (1, max_cycle)

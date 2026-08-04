@@ -28,12 +28,14 @@ Epic #567 Stage 3 / issue #657 re-bases collectors' drawing half onto
 - **Cycle column:** capacity-curve frames use native `cycle_num`; ICA frames
   use `cycle`. Plotters must use the `z` (cycle-column) argument for counts and
   filters — never hardcode `cycle_num` or `.cycle` on the curve/ICA paths (#679).
-- **Summary facet y-axes (#804):** prefer `share_y=` (alias `match_axes=`).
+- **Summary facet y-axes (#804 / #817):** prefer `share_y=` (alias `match_axes=`).
   Shared (`True`) = one y-scale across facet rows; independent (`False`, the
-  **default for summary**) = per-row autorange. Per-panel fixed limits:
-  `y_ranges={"coulombic_efficiency": [0, 110], ...}` (variable → `[lo, hi]`).
-  Non-empty `y_ranges` forces independent axes. Plotly is the supported
-  backend for `y_ranges`; seaborn/matplotlib are best-effort and ignore it.
+  **default for summary**) = per-row autorange. Same rules apply to
+  `kind="spread"` / `spread=True` (group-avg mean±std bands). Per-panel fixed
+  limits: `y_ranges={"coulombic_efficiency": [0, 110], ...}` (variable →
+  `[lo, hi]`). Non-empty `y_ranges` forces independent axes. Plotly is the
+  supported backend for `y_ranges`; seaborn/matplotlib are best-effort and
+  ignore it.
 - **App chrome (#801):** `plotly_template=` overrides the default
   `plotly+{method}` combo; `layout_updates=` is a shallow
   `fig.update_layout(**…)` after collector styling. Summary facet strips no
@@ -45,6 +47,11 @@ Epic #567 Stage 3 / issue #657 re-bases collectors' drawing half onto
   `"per_cycle"` (and legacy `fig_pr_*` / `film`) rewrite facet strips to
   `Cycle N` / cell label by default — strips stay visible (unlike summary's
   clear→y-title path). Prefer `layout=` over `method="fig_pr_*"`.
+- **ICA `direction=` (#821):** `charge` / `discharge` / `both` on line layouts
+  (`layout="per_cell"|"per_cycle"`) and `kind="film"`, not only film. Default
+  for collected ICA remains `charge`. `both` overlays half-cycles; on Plotly
+  line plots, `line_dash` separates directions so lobes do not join. Invalid
+  values warn and coerce to `charge`.
 
 ### Example — Capacity + CE without crushing panels
 
