@@ -22,6 +22,7 @@ commands bind that echo with ``_using_echo`` so private helpers can call
 from __future__ import annotations
 
 import getpass
+import importlib
 import logging
 import os
 import pathlib
@@ -32,24 +33,104 @@ from contextlib import contextmanager
 from contextvars import ContextVar
 from typing import Any, Callable, Optional, Union
 
-import cellpy
-import cellpy._version
-import cellpy.config as config
-from cellpy.exceptions import ConfigFileNotWritten
-from cellpy.internals.otherpath import OtherPath
-from cellpy.parameters import prmreader
-from cellpy.parameters.internal_settings import OTHERPATHS
+from cellpy._version import __version__ as VERSION
 from cellpy.utils.template_registry import REGISTERED_TEMPLATES
 
 PathLike = Union[str, pathlib.Path]
 Echo = Callable[[str], None]
 
-VERSION = cellpy._version.__version__
 REPO = "jepegit/cellpy"
 USER = "jepegit"
 GITHUB_PWD_VAR_NAME = "GD_PWD"
 DEFAULT_EDITOR = "vim"
 EDITORS = {"Windows": "notepad"}
+
+
+class _LazyModule:
+    """Attribute proxy that imports ``qualname`` on first use (#837)."""
+
+    def __init__(self, qualname: str):
+        self._qualname = qualname
+        self._mod: Any = None
+
+    def _load(self):
+        if self._mod is None:
+            self._mod = importlib.import_module(self._qualname)
+        return self._mod
+
+    def __getattr__(self, name: str):
+        return getattr(self._load(), name)
+
+
+# Keep call sites as ``config.*`` / ``prmreader.*`` without paying import cost
+# for ``cellpy info --version``.
+config = _LazyModule("cellpy.config")
+prmreader = _LazyModule("cellpy.parameters.prmreader")
+
+# Optional deps — probed on demand (see ``_probe_optional_deps``), not at import.
+DIFFICULT_MISSING_MODULES: dict[str, str] = {}
+cookiecutter = None  # type: ignore
+github = None  # type: ignore
+Github = None  # type: ignore
+_optional_deps_probed = False
+
+
+def _probe_optional_deps() -> None:
+    """Import optional CLI extras once; record missing ones for setup messaging."""
+    global cookiecutter, github, Github, _optional_deps_probed
+    if _optional_deps_probed:
+        return
+    _optional_deps_probed = True
+    try:
+        import cookiecutter.exceptions  # noqa: F401
+        import cookiecutter.main  # noqa: F401
+        import cookiecutter.prompt  # noqa: F401
+        import cookiecutter as _cookiecutter
+
+        cookiecutter = _cookiecutter
+    except ModuleNotFoundError:
+        cookiecutter = None
+        DIFFICULT_MISSING_MODULES["cookiecutter"] = (
+            "Could not import cookiecutter (used by cellpy new). Try installing it, "
+            "for example by writing:\n\n         python -m pip install cookiecutter\n"
+        )
+    try:
+        import github as _github
+        from github import Github as _Github
+
+        github = _github
+        Github = _Github
+    except ModuleNotFoundError:
+        github = None
+        Github = None
+        DIFFICULT_MISSING_MODULES["github"] = (
+            "Could not import the github library (used by cellpy pull). Try installing "
+            "it, for example by writing:\n\n         python -m pip install github\n"
+        )
+    try:
+        import sqlalchemy_access  # noqa: F401
+    except ModuleNotFoundError:
+        DIFFICULT_MISSING_MODULES["sqlalchemy-access"] = (
+            "Could not import the sqlalchemy_access library (usually used when reading "
+            "arbin .res files on windows). If you need it, try installing it by writing:"
+            "\n\n         python -m pip install sqlalchemy-access\n"
+        )
+    try:
+        import lmfit  # noqa: F401
+    except ModuleNotFoundError:
+        DIFFICULT_MISSING_MODULES["lmfit"] = (
+            "Could not import the lmfit library (used when fitting ocv rlx data)."
+            " If you think you will need it, try installing it for example by writing:"
+            "\n\n         python -m pip install lmfit\n"
+        )
+    try:
+        import jinja2_time  # noqa: F401
+    except ModuleNotFoundError:
+        DIFFICULT_MISSING_MODULES["jinja2_time"] = (
+            "Could not import the jinja2_time library (used by cellpy new)."
+            " Try installing it, for example by writing:"
+            "\n\n         python -m pip install jinja2_time\n"
+        )
 
 
 def _silent(_message: str) -> None:
@@ -419,59 +500,9 @@ def _using_echo(echo: Optional[Echo] = None):
         _echo_var.reset(token)
 
 
-DIFFICULT_MISSING_MODULES: dict[str, str] = {}
-
-try:
-    import cookiecutter.exceptions
-    import cookiecutter.main
-    import cookiecutter.prompt
-except ModuleNotFoundError:
-    cookiecutter = None  # type: ignore
-    DIFFICULT_MISSING_MODULES["cookiecutter"] = (
-        "Could not import cookiecutter (used by cellpy new). Try installing it, "
-        "for example by writing:\n\n         python -m pip install cookiecutter\n"
-    )
-
-try:
-    import github
-    from github import Github
-except ModuleNotFoundError:
-    github = None  # type: ignore
-    Github = None  # type: ignore
-    DIFFICULT_MISSING_MODULES["github"] = (
-        "Could not import the github library (used by cellpy pull). Try installing "
-        "it, for example by writing:\n\n         python -m pip install github\n"
-    )
-
-try:
-    import sqlalchemy_access  # noqa: F401
-except ModuleNotFoundError:
-    DIFFICULT_MISSING_MODULES["sqlalchemy-access"] = (
-        "Could not import the sqlalchemy_access library (usually used when reading "
-        "arbin .res files on windows). If you need it, try installing it by writing:"
-        "\n\n         python -m pip install sqlalchemy-access\n"
-    )
-
-try:
-    import lmfit  # noqa: F401
-except ModuleNotFoundError:
-    DIFFICULT_MISSING_MODULES["lmfit"] = (
-        "Could not import the lmfit library (used when fitting ocv rlx data)."
-        " If you think you will need it, try installing it for example by writing:"
-        "\n\n         python -m pip install lmfit\n"
-    )
-
-try:
-    import jinja2_time  # noqa: F401
-except ModuleNotFoundError:
-    DIFFICULT_MISSING_MODULES["jinja2_time"] = (
-        "Could not import the jinja2_time library (used by cellpy new)."
-        " Try installing it, for example by writing:"
-        "\n\n         python -m pip install jinja2_time\n"
-    )
-
-
 def _create_dir(path, confirm=True, parents=True, exist_ok=True):
+    from cellpy.internals.otherpath import OtherPath
+
     if isinstance(path, OtherPath):
         if path.is_external:
             return path
@@ -521,6 +552,8 @@ def dump_env_file(env_filename):
 
 def get_package_prm_dir():
     """gets the folder where the cellpy package lives"""
+    import cellpy.parameters
+
     return pathlib.Path(cellpy.parameters.__file__).parent
 
 
@@ -542,6 +575,7 @@ def get_dst_file(user_dir, init_filename):
 
 def echo_missing_modules():
     """prints out the missing modules"""
+    _probe_optional_deps()
     for m in DIFFICULT_MISSING_MODULES:
         print(f"missing module: {m}")
         print(f"message: {DIFFICULT_MISSING_MODULES[m]}")
@@ -656,6 +690,8 @@ def _update_paths(
         if not custom_dir.parts[-1] == default_dir:
             h = h / default_dir
 
+    from cellpy.internals.otherpath import OtherPath
+
     if not reset:
         outdatadir = pathlib.Path(config.paths.outdatadir)
         rawdatadir = OtherPath(config.paths.rawdatadir)
@@ -756,6 +792,8 @@ def _ask_about_path(q, p):
 
 
 def _ask_about_otherpath(q, p):
+    from cellpy.internals.otherpath import OtherPath
+
     _say(f"\n[cellpy] (setup) input {q}")
     _say(f"[cellpy] (setup) current: {p}")
     new_path = input("[cellpy] (setup) new value (press enter to keep) >>> ").strip()
@@ -984,6 +1022,8 @@ def _check_config_file():
             "templatedir",
             "db_path",
         ]
+        from cellpy.parameters.internal_settings import OTHERPATHS
+
         missing = 0
         for k in required_dirs:
             value = prm_paths.get(k, None)
@@ -1079,6 +1119,8 @@ def _check(dry_run=False, full_check=True):
 
 
 def _write_config_file(user_dir, dst_file, init_filename, dry_run):
+    from cellpy.exceptions import ConfigFileNotWritten
+
     _say(" update configuration ".center(80, "-"))
     _say("[cellpy] (setup) Writing configurations to user directory:")
     _say(f"\n         {user_dir}\n")
@@ -1130,6 +1172,8 @@ def _write_config_file(user_dir, dst_file, init_filename, dry_run):
 
 
 def _write_env_file(user_dir, dst_file, dry_run):
+    from cellpy.exceptions import ConfigFileNotWritten
+
     _say(" update configuration ".center(80, "-"))
     _say("[cellpy] (setup) Writing environment file:")
     _say(f"\n         {dst_file}\n")
@@ -1319,6 +1363,7 @@ def _pull(gdirpath="examples", rootpath=None, u=None, pw=None):
                 _say("   - only None")
                 u = None
 
+    _probe_optional_deps()
     g = Github(u, pw)
     try:
         repo = g.get_repo(REPO)
@@ -1531,7 +1576,9 @@ def _new(
     existing_projects = os.listdir(selected_project_dir)
 
     os.chdir(selected_project_dir)
-    cellpy_version = cellpy.__version__
+    import cellpy as _cellpy
+
+    cellpy_version = _cellpy.__version__
 
     try:
         selected_template, cookie_dir = templates[template.lower()]
@@ -1635,6 +1682,7 @@ def setup_config(
 
         # notify of missing 'difficult' or optional modules
         if not no_deps:
+            _probe_optional_deps()
             _say("[cellpy] checking dependencies")
             for m in DIFFICULT_MISSING_MODULES:
                 _say(" [cellpy] WARNING! ".center(80, "-"))
