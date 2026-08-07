@@ -4,11 +4,9 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
-from typing import Annotated, Optional
+from typing import Annotated, Any, Optional
 
 import typer
-
-from cellpy import cli_api
 
 cli = typer.Typer(
     name="cellpy",
@@ -18,6 +16,25 @@ cli = typer.Typer(
 )
 
 setup_app = typer.Typer()
+
+
+class _CliApiProxy:
+    """Defer ``cellpy.cli_api`` import until a command actually runs (#837)."""
+
+    _mod: Any = None
+
+    def _load(self):
+        if self._mod is None:
+            from cellpy import cli_api as _cli_api
+
+            self._mod = _cli_api
+        return self._mod
+
+    def __getattr__(self, name: str):
+        return getattr(self._load(), name)
+
+
+cli_api = _CliApiProxy()
 
 
 # ----------------------- setup --------------------------------------
@@ -150,7 +167,8 @@ def setup_migrate(
 
 
 # Re-exports used by tests / callers that imported helpers from cellpy.cli
-get_package_prm_dir = cli_api.get_package_prm_dir
+def get_package_prm_dir():
+    return cli_api.get_package_prm_dir()
 
 
 def _write_toml_config_file(dst_file, dry_run, test_user=None):

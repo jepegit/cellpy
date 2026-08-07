@@ -30,6 +30,7 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_batch_v3_runner.py::test_no_recalc_skips_remake | yes | yes | batch.runner.load_cell | #825 | |
 | tests/test_batch.py::test_persist_skips_rewrite_when_loaded_from_cellpy | yes | yes | batch.facade._persist_cells | #825 | skip redundant save |
 | tests/test_batch.py::test_persist_rewrites_when_loaded_from_raw | yes | yes | batch.facade._persist_cells | #825 | |
+| tests/test_cli_light_import.py::test_info_version_avoids_cellreader_import | yes | yes | cellpy.__init__ / cli / cli_api light path | #837 | subprocess; cellreader must stay out of sys.modules |
 
 **Columns**
 
