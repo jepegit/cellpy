@@ -4179,6 +4179,8 @@ def get(
             (e.g. "2.12 cm**2") to override cellpy_units.
         estimate_area (bool): calculate area from loading if given (defaults to True).
         auto_pick_cellpy_format (bool): decide if it is a cellpy-file based on suffix.
+            For ``.h5`` / ``.hdf5``, a set ``instrument=`` wins over suffix auto-pick
+            (raw loader path). ``.cellpy`` / ``.cpy`` still auto-pick when enabled.
         auto_summary (bool): (re-) create summary.
         units (dict): update cellpy units (used after the file is loaded, e.g. when creating summary).
         step_kwargs (dict): sent to make_steps.
@@ -4250,7 +4252,6 @@ def get(
     from cellpy import log
 
     db_readers = list(DB_READER_INSTRUMENTS)
-    instruments_with_colliding_file_suffix = ["arbin_sql_h5"]
 
     step_kwargs = step_kwargs or {}
     summary_kwargs = summary_kwargs or {}
@@ -4298,12 +4299,14 @@ def get(
         logging.debug("got a single name")
         logging.debug(f"{filename=}")
         filename = internals.OtherPath(filename)
-        if (
-            auto_pick_cellpy_format
-            and instrument not in instruments_with_colliding_file_suffix
-            and filename.suffix in [".h5", ".hdf5", ".cellpy", ".cpy"]
-        ):
-            load_cellpy_file = True
+        # .cellpy/.cpy are unambiguous. .h5/.hdf5 collide with raw loaders
+        # (e.g. arbin_sql_h5): a set instrument= wins over suffix auto-pick.
+        if auto_pick_cellpy_format:
+            suffix = filename.suffix
+            if suffix in [".cellpy", ".cpy"]:
+                load_cellpy_file = True
+            elif suffix in [".h5", ".hdf5"] and not instrument:
+                load_cellpy_file = True
 
     if filename and cellpy_file and not load_cellpy_file:
         try:

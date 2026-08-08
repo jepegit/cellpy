@@ -162,6 +162,55 @@ def test_get_cellpy():
     cellpy.get(filename=fdv.cellpy_file_path, testing=True)
 
 
+@pytest.mark.essential
+def test_get_h5_instrument_skips_native_autopick(monkeypatch, tmp_path):
+    """instrument= on .h5 must not route through CellpyCell.load (#819)."""
+    from cellpy.readers.cellreader import CellpyCell
+
+    h5_path = tmp_path / "raw_sample.h5"
+    h5_path.write_bytes(b"not-a-cellpy-file")
+    cellpy_path = tmp_path / "native_sample.cellpy"
+    cellpy_path.write_bytes(b"not-a-cellpy-file")
+    routes = {"load": 0, "from_raw": 0}
+
+    def fake_load(self, *args, **kwargs):
+        routes["load"] += 1
+
+    def fake_from_raw(self, *args, **kwargs):
+        routes["from_raw"] += 1
+
+    monkeypatch.setattr(CellpyCell, "load", fake_load)
+    monkeypatch.setattr(CellpyCell, "from_raw", fake_from_raw)
+    monkeypatch.setattr(CellpyCell, "set_instrument", lambda self, **kwargs: None)
+    monkeypatch.setattr(CellpyCell, "__bool__", lambda self: True)
+
+    import cellpy
+
+    cellpy.get(
+        filename=str(h5_path),
+        instrument="arbin_sql_h5",
+        auto_summary=False,
+        testing=True,
+    )
+    assert routes["from_raw"] == 1
+    assert routes["load"] == 0
+
+    routes["load"] = routes["from_raw"] = 0
+    cellpy.get(filename=str(h5_path), auto_summary=False, testing=True)
+    assert routes["load"] == 1
+    assert routes["from_raw"] == 0
+
+    routes["load"] = routes["from_raw"] = 0
+    cellpy.get(
+        filename=str(cellpy_path),
+        instrument="arbin_res",
+        auto_summary=False,
+        testing=True,
+    )
+    assert routes["load"] == 1
+    assert routes["from_raw"] == 0
+
+
 def test_get_empty():
     cellpy.get(testing=True)
 

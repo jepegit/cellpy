@@ -307,6 +307,7 @@ Quick facts:
 
 - Product: Python library + `cellpy` CLI — not a hosted GUI server.
 - Entry: `import cellpy` then `c = cellpy.get(path, mass=..., instrument=...)`.
+  For raw `.h5`/`.hdf5`, a set `instrument=` wins over native suffix auto-pick.
 - Metadata peek (no frames): `cellpy.read_meta(path)` → dict with `cell` / `tests`.
 - Ingestion form fields: `cellpy.instrument_meta_schema(instrument)` → `fields` / `units`.
 - Frames: `c.data.raw` / `.steps` / `.summary`; columns via `c.schema.*`.

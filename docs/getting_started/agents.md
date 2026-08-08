@@ -73,6 +73,7 @@ c = cellpy.get(
     r"C:\data\my_cell_01.res",
     mass=0.85,  # active material mass in mg (instrument-dependent context)
     instrument="arbin_res",  # omit to use config default / extension guess
+    # For raw .h5/.hdf5, a set instrument= wins over native suffix auto-pick.
 )
 c.save("out/my_cell.cellpy")  # cellpy file — fast reload later
 c.to_csv("out/csv_export")
