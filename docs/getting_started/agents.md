@@ -136,6 +136,15 @@ Suggested layering:
 3. **Present** — pass pandas frames or simple dicts to the UI
    (`summary` for cycle tables; slices of `raw` for plots).
 4. **Export** — offer `.cellpy` (canonical) plus CSV/Excel for the user.
+   For a Plotly download response from a collected figure:
+
+   ```python
+   from cellpy.plotting import image_media_type
+
+   png = collection.to_image("png")  # needs cellpy[batch] (plotly + kaleido)
+   # FastAPI: Response(content=png, media_type=image_media_type("png"))
+   # Or: cellpy.plotting.write_image(collection.plot(...), "svg")
+   ```
 
 !!! tip "DataFrame types & quiet startup (building GUIs)"
 

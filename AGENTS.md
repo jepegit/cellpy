@@ -313,6 +313,7 @@ Quick facts:
 - Frames: `c.data.raw` / `.steps` / `.summary`; columns via `c.schema.*`.
 - Example data: `from cellpy.utils import example_data` → `example_data.raw_file()`.
 - Persist: `c.save("out.cellpy")`, `c.to_csv("out_dir")`.
+  Collected figure bytes: `collection.to_image("png")` / `cellpy.plotting.write_image(fig, "svg")` (needs `cellpy[batch]` / kaleido).
 - Prefer schema-resolved names over hard-coded 1.x header strings.
 - When changing public get/save/schema/CLI surface, update
   `docs/getting_started/agents.md` and this section in the same PR.
