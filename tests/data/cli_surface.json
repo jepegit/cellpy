@@ -471,6 +471,25 @@
           "kind": "option",
           "multiple": false,
           "opts": [
+            "--check",
+            "-c"
+          ],
+          "required": false
+        },
+        {
+          "is_flag": true,
+          "kind": "option",
+          "multiple": false,
+          "opts": [
+            "--deps"
+          ],
+          "required": false
+        },
+        {
+          "is_flag": true,
+          "kind": "option",
+          "multiple": false,
+          "opts": [
             "--dry-run",
             "-dr"
           ],

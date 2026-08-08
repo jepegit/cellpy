@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+- Keep default ``cellpy setup`` off the reader stack: ``--check`` / ``--deps`` are opt-in; ``--no-deps`` deprecated. (#839)
 - Speed up CLI cold start: lazy package/CLI imports so ``cellpy info --version`` no longer loads the full reader stack. (#837)
 - Pretty-print cycles collector facet strips (Cycle N / cell label, not cycle_num=). (#820)
 - Honour share_y / match_axes on collected summary spread_plot. (#817)
