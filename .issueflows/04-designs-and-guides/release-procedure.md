@@ -71,6 +71,7 @@ Source `.aliases` in the repo, then:
 release              # prints last tag + planned next post (dry-run)
 release post         # cut next .postN on the correct --target branch
 release patch        # next patch (e.g. v2.1.1.post3 → v2.1.2)
+release alpha        # next pre that sorts after last (post7 → v2.1.2a1, not a1 on same Z)
 release v2.1.1.post4 # explicit tag
 ```
 

@@ -117,7 +117,9 @@ conda_shell() {
 #   release post         # cut vX.Y.Z.postN (or .post1 on a stable tag)
 #   release patch        # cut next patch (strips post/pre → X.Y.(Z+1))
 #   release minor|major  # same idea for minor/major
-#   release alpha|beta|rc|stable
+#   release alpha|beta|rc  # next pre that sorts AFTER last tag
+#                          # (post/stable → X.Y.(Z+1)a1; aN → a(N+1); …)
+#   release stable       # finalize current pre, or next patch if already final/post
 #   release v2.1.1.post4 # cut an explicit tag (must start with v)
 #
 # Always prints the latest existing release tag first. Creates a GitHub
@@ -154,6 +156,30 @@ major, minor, patch = base[0], base[1], base[2]
 def out(s: str) -> None:
     print("v" + s)
 
+_PRE_ORDER = {"a": 0, "b": 1, "rc": 2}
+
+def plan_pre(tag: str) -> None:
+    """Plan a pre-release that sorts after *last* (PEP 440).
+
+    After a final or ``.postN`` tag, ``X.Y.Za1`` is *older* than the last
+    tag — bump the patch first. Same-stage pre increments N; advancing
+    a→b→rc keeps the base; going backwards bumps the patch.
+    """
+    if v.pre and v.pre[0] == tag:
+        n = v.pre[1] + 1
+        out(f"{epoch}{major}.{minor}.{patch}{tag}{n}")
+        return
+    if v.is_prerelease:
+        cur = _PRE_ORDER.get(v.pre[0], -1)
+        nxt = _PRE_ORDER[tag]
+        if nxt > cur:
+            out(f"{epoch}{major}.{minor}.{patch}{tag}1")
+        else:
+            out(f"{epoch}{major}.{minor}.{patch + 1}{tag}1")
+        return
+    # final or post — next pre must be on the following patch
+    out(f"{epoch}{major}.{minor}.{patch + 1}{tag}1")
+
 if level == "major":
     out(f"{epoch}{major + 1}.0.0")
 elif level == "minor":
@@ -161,19 +187,20 @@ elif level == "minor":
 elif level == "patch":
     out(f"{epoch}{major}.{minor}.{patch + 1}")
 elif level == "stable":
-    out(f"{epoch}{major}.{minor}.{patch}")
+    # Finalize current pre, or next patch if already final/post.
+    if v.is_prerelease:
+        out(f"{epoch}{major}.{minor}.{patch}")
+    else:
+        out(f"{epoch}{major}.{minor}.{patch + 1}")
 elif level == "post":
     n = (v.post or 0) + 1
     out(f"{epoch}{major}.{minor}.{patch}.post{n}")
 elif level == "alpha":
-    n = (v.pre[1] + 1) if v.pre and v.pre[0] == "a" else 1
-    out(f"{epoch}{major}.{minor}.{patch}a{n}")
+    plan_pre("a")
 elif level == "beta":
-    n = (v.pre[1] + 1) if v.pre and v.pre[0] == "b" else 1
-    out(f"{epoch}{major}.{minor}.{patch}b{n}")
+    plan_pre("b")
 elif level == "rc":
-    n = (v.pre[1] + 1) if v.pre and v.pre[0] == "rc" else 1
-    out(f"{epoch}{major}.{minor}.{patch}rc{n}")
+    plan_pre("rc")
 else:
     raise SystemExit(f"unknown level {level!r}")
 PY
