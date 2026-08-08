@@ -113,7 +113,7 @@ conda_shell() {
 # Tag-derived releases (uv-dynamic-versioning). Version comes from the git tag;
 # there is no `uv version --bump` / pyproject version edit.
 #
-#   release              # show last tag + planned next (default: post) — dry
+#   release              # dry-run: next same-stage bump (aN→a(N+1), else post)
 #   release post         # cut vX.Y.Z.postN (or .post1 on a stable tag)
 #   release patch        # cut next patch (strips post/pre → X.Y.(Z+1))
 #   release minor|major  # same idea for minor/major
@@ -207,8 +207,16 @@ PY
     }
 
     if [ -z "$level" ]; then
-        planned="$(_release_plan_tag "$last" post)" || return 1
-        echo "release: dry-run — next default (post) would be $planned"
+        # Default follows the last tag's stage: aN→alpha, bN→beta, rcN→rc,
+        # otherwise post (final or .postN).
+        local default_level=post
+        case "$last" in
+            *rc[0-9]*) default_level=rc ;;
+            *b[0-9]*)  default_level=beta ;;
+            *a[0-9]*)  default_level=alpha ;;
+        esac
+        planned="$(_release_plan_tag "$last" "$default_level")" || return 1
+        echo "release: dry-run — next default ($default_level) would be $planned"
         echo "release: usage: release post|patch|minor|major|alpha|beta|rc|stable|vX.Y.Z[.postN]"
         echo "release: ensure HISTORY.md is promoted and git status is clean first."
         return 0

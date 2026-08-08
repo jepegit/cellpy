@@ -68,7 +68,7 @@ with the release (and pollute `master` / `v1.x` history).
 Source `.aliases` in the repo, then:
 
 ```bash
-release              # prints last tag + planned next post (dry-run)
+release              # dry-run: next same-stage bump (aN→a(N+1), else next post)
 release post         # cut next .postN on the correct --target branch
 release patch        # next patch (e.g. v2.1.1.post3 → v2.1.2)
 release alpha        # next pre that sorts after last (post7 → v2.1.2a1, not a1 on same Z)
