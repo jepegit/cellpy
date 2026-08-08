@@ -154,7 +154,7 @@ def write_image(figure, fmt: str = "png", *, scale: float = 1.0, **kwargs) -> by
         Encoded image bytes.
 
     Raises:
-        OptionalDependencyError: If plotly or kaleido is not installed.
+        OptionalDependencyError: If kaleido is not installed.
         ValueError: If ``fmt`` is not supported.
         TypeError: If ``figure`` has no ``to_image`` method.
     """
@@ -167,22 +167,19 @@ def write_image(figure, fmt: str = "png", *, scale: float = 1.0, **kwargs) -> by
             f"supported: {', '.join(sorted(IMAGE_FORMATS))}"
         )
 
-    if importlib.util.find_spec("plotly") is None:
-        raise OptionalDependencyError(
-            "write_image needs plotly, which is not installed. "
-            "Install the plotting extra with:  pip install cellpy[batch]"
-        )
-    if importlib.util.find_spec("kaleido") is None:
-        raise OptionalDependencyError(
-            "write_image needs kaleido for static PNG/SVG/PDF export. "
-            "Install the plotting extra with:  pip install cellpy[batch]"
-        )
-
     to_image = getattr(figure, "to_image", None)
     if not callable(to_image):
         raise TypeError(
             "write_image expects a Plotly figure with a to_image() method; "
             f"got {type(figure)!r}"
+        )
+
+    # Kaleido only — plotly is implied by a real figure; checking plotly here
+    # breaks essential CI (no batch extra) and monkeypatched unit tests.
+    if importlib.util.find_spec("kaleido") is None:
+        raise OptionalDependencyError(
+            "write_image needs kaleido for static PNG/SVG/PDF export. "
+            "Install the plotting extra with:  pip install cellpy[batch]"
         )
 
     return to_image(format=key, scale=scale, **kwargs)
