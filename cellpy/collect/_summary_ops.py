@@ -232,3 +232,37 @@ def group_average(
 
     sort_cols = [c for c in ("group", CYCLE, "variable") if c in out.columns]
     return out.sort(sort_cols)
+
+
+def singletons_as_long(
+    frame: pl.DataFrame,
+    *,
+    keys: tuple[str, ...],
+    group_labels: dict[Any, Any] | None = None,
+) -> pl.DataFrame:
+    """Unpivot singleton-group rows into the ``group_average`` long schema.
+
+    ``mean`` is the cell value; ``std`` is null (no peers to spread). Used when
+    ``group_it=True`` mixes multi-member and singleton groups (#816).
+    """
+    if frame.height == 0 or "group" not in frame.columns:
+        return frame
+
+    id_cols = ["group"] + ([CYCLE] if CYCLE in frame.columns else [])
+    value_cols = _numeric_value_columns(frame, keys)
+    if not value_cols:
+        return frame
+
+    out = frame.unpivot(
+        index=id_cols, on=value_cols, variable_name="variable", value_name="mean"
+    ).with_columns(pl.lit(None).cast(pl.Float64).alias("std"))
+
+    if group_labels:
+        mapping = {k: v for k, v in group_labels.items() if v is not None}
+        if mapping:
+            out = out.with_columns(
+                pl.col("group").replace(mapping, default=None).alias("group_label")
+            )
+
+    sort_cols = [c for c in ("group", CYCLE, "variable") if c in out.columns]
+    return out.sort(sort_cols)

@@ -41,9 +41,9 @@ class CollectionMeta:
     created_utc: str = field(default_factory=_now_utc)
     cells_included: list[str] = field(default_factory=list)
     cells_skipped: list[str] = field(default_factory=list)
-    #: True only when group-averaging actually ran (a group had >= 2 cells and
-    #: emitted the long ``mean``/``std`` frame). ``group_it=True`` that fell back
-    #: to a wide, non-averaged frame stays False.
+    #: True when at least one multi-member group was averaged (long
+    #: ``mean``/``std`` frame; singletons may share that schema with null
+    #: ``std``). ``group_it=True`` with only singletons stays wide / False.
     grouped: bool = False
 
 
@@ -61,10 +61,12 @@ class Collection:
 
     @property
     def is_grouped(self) -> bool:
-        """True when group-averaging actually happened (long ``mean``/``std``
-        frame). ``group_it=True`` that fell back to wide (a group with < 2 cells)
-        stays False -- so callers can adapt labels/plotting without sniffing for
-        a ``mean`` column."""
+        """True when at least one multi-member group was averaged.
+
+        Mixed multi+singleton selections stay True (long frame). All-singleton
+        ``group_it=True`` stays wide / False so callers can adapt without
+        sniffing for a ``mean`` column.
+        """
         return self.meta.grouped
 
     def to_wide(

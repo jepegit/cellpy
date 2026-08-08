@@ -184,11 +184,48 @@ def test_is_grouped_true_when_averaged():
 
 
 def test_is_grouped_false_on_single_cell_group_fallback():
-    # group_it=True but the (single-cell) group can't average -> wide fallback
+    # group_it=True but only a singleton group -> wide fallback
     pages = pl.DataFrame({FILENAME: ["x"], "group": [1], "sub_group": [1]})
     b = _batch_with_cells({"x": _SummaryCell([1.0, 2.0])}, pages)
     col = collect_summaries(b, group_it=True)
     assert col.is_grouped is False
+
+
+@pytest.mark.essential
+def test_group_it_averages_multi_when_mixed_with_singleton():
+    """Multi-member groups average even if another group is a singleton (#816)."""
+    pages = pl.DataFrame(
+        {
+            FILENAME: ["a", "b", "c"],
+            "group": [1, 1, 2],
+            "sub_group": [1, 2, 1],
+        }
+    )
+    b = _batch_with_cells(
+        {
+            "a": _SummaryCell([10.0, 20.0]),
+            "b": _SummaryCell([20.0, 40.0]),
+            "c": _SummaryCell([5.0, 7.0]),
+        },
+        pages,
+    )
+    col = collect_summaries(b, group_it=True, columns=("charge_capacity",))
+    assert col.is_grouped is True
+    data = col.data
+    for key in ("group", "cycle_num", "variable", "mean", "std"):
+        assert key in data.columns
+
+    g1 = data.filter(
+        (pl.col("group") == 1) & (pl.col("variable") == "charge_capacity")
+    ).sort("cycle_num")
+    assert g1["mean"].to_list() == [15.0, 30.0]
+    assert g1["std"].to_list() == pytest.approx([7.0710678, 14.1421356])
+
+    g2 = data.filter(
+        (pl.col("group") == 2) & (pl.col("variable") == "charge_capacity")
+    ).sort("cycle_num")
+    assert g2["mean"].to_list() == [5.0, 7.0]
+    assert g2["std"].to_list() == [None, None]
 
 
 def test_is_grouped_false_by_default(real_batch):
