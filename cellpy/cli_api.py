@@ -1672,16 +1672,33 @@ def setup_config(
     folder_name=None,
     test_user=None,
     silent: bool = False,
+    deps: bool = False,
     no_deps: bool = False,
+    check: bool = False,
     echo: Optional[Echo] = None,
 ):
-    """Write / refresh the user cellpy configuration (library form of ``cellpy setup``)."""
+    """Write / refresh the user cellpy configuration (library form of ``cellpy setup``).
+
+    Args:
+        deps: When True, probe optional CLI extras (cookiecutter, lmfit, …)
+            and print tips for any that are missing. Default False (#839).
+        no_deps: Deprecated no-op kept for old scripts (#839). Ignored.
+        check: When True, run the import/config sanity checks (may load
+            ``cellreader``). Default False; use ``cellpy info --check`` or
+            ``cellpy setup --check`` (#839).
+    """
     with _using_echo(echo):
         _say("[cellpy] (setup)")
         _say(f"[cellpy] root-dir: {root_dir}")
 
-        # notify of missing 'difficult' or optional modules
-        if not no_deps:
+        if no_deps and not deps:
+            _say(
+                "[cellpy] (setup) note: --no-deps is deprecated; "
+                "optional dependency probing is off by default (use --deps to enable)"
+            )
+
+        # Optional extras — opt-in only so default setup stays off the heavy stack (#839).
+        if deps:
             _probe_optional_deps()
             _say("[cellpy] checking dependencies")
             for m in DIFFICULT_MISSING_MODULES:
@@ -1690,7 +1707,7 @@ def setup_config(
                 _say(f"[cellpy] - {m}")
                 _say(f"[cellpy] {DIFFICULT_MISSING_MODULES[m]}")
                 _say(
-                    "[cellpy] (you can skip this check by using the --no-deps option)"
+                    "[cellpy] (dependency probing is opt-in; omit --deps to skip)"
                 )
                 _say(80 * "-")
 
@@ -1750,8 +1767,6 @@ def setup_config(
             _write_config_file(user_dir, dst_file, init_filename, dry_run)
             _write_toml_config_file(dst_file, dry_run, test_user=test_user)
             _write_env_file(user_dir, env_file, dry_run)
-            _check(dry_run=dry_run)
-
         else:
             if reset:
                 _update_paths(
@@ -1766,7 +1781,9 @@ def setup_config(
             _write_config_file(user_dir, dst_file, init_filename, dry_run)
             _write_toml_config_file(dst_file, dry_run, test_user=test_user)
             _write_env_file(user_dir, env_file, dry_run)
-            _check(dry_run=dry_run, full_check=False)
+
+        if check:
+            _check(dry_run=dry_run, full_check=interactive)
 
 
 # -- public facades (#651) ------------------------------------------------------

@@ -106,9 +106,28 @@ def setup(
         bool,
         typer.Option("--silent", "-s", help="Silent mode (no questions asked)"),
     ] = False,
+    deps: Annotated[
+        bool,
+        typer.Option(
+            "--deps",
+            help="Probe optional extras (cookiecutter, lmfit, …) and report missing ones.",
+        ),
+    ] = False,
     no_deps: Annotated[
         bool,
-        typer.Option("--no-deps", help="Don't install missing dependencies"),
+        typer.Option(
+            "--no-deps",
+            help="Deprecated no-op: optional dependency probing is off by default.",
+            hidden=True,
+        ),
+    ] = False,
+    check: Annotated[
+        bool,
+        typer.Option(
+            "--check",
+            "-c",
+            help="Run import/config sanity checks after setup (may load the reader stack).",
+        ),
     ] = False,
 ):
     """This will help you to set up cellpy."""
@@ -123,7 +142,9 @@ def setup(
         folder_name=folder_name,
         test_user=test_user,
         silent=silent,
+        deps=deps,
         no_deps=no_deps,
+        check=check,
         echo=typer.echo,
     )
 
