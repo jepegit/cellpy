@@ -19,6 +19,12 @@ class _FakeFig:
         return self.payload
 
 
+class _FakePlotlyFig(_FakeFig):
+    """Stub whose type module looks like Plotly (triggers kaleido gate)."""
+
+    __module__ = "plotly.graph_objs._figure"
+
+
 @pytest.mark.essential
 def test_write_image_returns_bytes():
     fig = _FakeFig(b"abc")
@@ -44,7 +50,7 @@ def test_write_image_missing_kaleido(monkeypatch):
 
     monkeypatch.setattr(figures_mod.importlib.util, "find_spec", fake_find)
     with pytest.raises(OptionalDependencyError, match="kaleido"):
-        write_image(_FakeFig(), "png")
+        write_image(_FakePlotlyFig(), "png")
 
 
 @pytest.mark.essential

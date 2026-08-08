@@ -174,9 +174,11 @@ def write_image(figure, fmt: str = "png", *, scale: float = 1.0, **kwargs) -> by
             f"got {type(figure)!r}"
         )
 
-    # Kaleido only — plotly is implied by a real figure; checking plotly here
-    # breaks essential CI (no batch extra) and monkeypatched unit tests.
-    if importlib.util.find_spec("kaleido") is None:
+    # Require kaleido only for real Plotly figures. Test stubs (and other
+    # callables with to_image) must keep working on essential CI, which does
+    # not install the batch extra / kaleido.
+    fig_module = getattr(type(figure), "__module__", "") or ""
+    if fig_module.startswith("plotly") and importlib.util.find_spec("kaleido") is None:
         raise OptionalDependencyError(
             "write_image needs kaleido for static PNG/SVG/PDF export. "
             "Install the plotting extra with:  pip install cellpy[batch]"
