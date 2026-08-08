@@ -19,6 +19,12 @@ called `_check()` (reader import) and probed optional extras unless `--no-deps`.
   - `--no-deps` is a deprecated no-op (probing is already off by default).
 - Guard with `tests/test_cli_light_import.py` (subprocess + `sys.modules`).
 
+## Docs / mkdocstrings
+
+API pages must use the **defining** module path (e.g.
+`::: cellpy.readers.cellreader.get`), not `::: cellpy.get`. Griffe reads source
+statically and does not resolve PEP 562 `__getattr__` aliases (#837 / #842).
+
 ## Still heavy (by design)
 
 - `convert`, `run` (batch/readers)
