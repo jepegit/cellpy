@@ -75,6 +75,10 @@ release alpha        # next pre that sorts after last (post7 → v2.1.2a1, not a
 release v2.1.1.post4 # explicit tag
 ```
 
+After printing the planned tag (and passing clean-tree / branch / uniqueness
+checks), the helper prompts `create this GitHub release? [y/N]` before calling
+`gh release create`.
+
 Version is **tag-derived** — the helper never edits `pyproject.toml`. Always
 promote `HISTORY.md` and keep `git status` clean before `release post`.
 
