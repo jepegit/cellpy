@@ -31,6 +31,10 @@ c = cellpy.get(
 `cellpy.get` loads the file, builds the step table, and creates the per-cycle
 summary (unless you opt out with keyword arguments).
 
+When you pass `instrument=` for a raw `.h5` / `.hdf5` file, that loader wins
+over suffix auto-pick of the native cellpy format. Omit `instrument` (or use a
+`.cellpy` / `.cpy` path) when you want the native reader.
+
 ## Inspect frames and schema
 
 Measurement tables live on `c.data`. Prefer **`c.schema`** for column names
