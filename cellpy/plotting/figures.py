@@ -110,3 +110,79 @@ def load_plotly_figure(filename):
     except Exception as exc:  # noqa: BLE001 - any read failure is reported the same
         logging.warning("could not load a figure from %s: %s", filename, exc)
         return None
+
+
+#: Formats accepted by :func:`write_image` / ``Collection.to_image``.
+IMAGE_FORMATS = frozenset({"png", "svg", "pdf", "jpg", "jpeg", "webp"})
+
+_IMAGE_MEDIA_TYPES = {
+    "png": "image/png",
+    "svg": "image/svg+xml",
+    "pdf": "application/pdf",
+    "jpg": "image/jpeg",
+    "jpeg": "image/jpeg",
+    "webp": "image/webp",
+}
+
+
+def image_media_type(fmt: str) -> str:
+    """Return a MIME type for an image format string (e.g. ``\"png\"``)."""
+    key = fmt.lstrip(".").lower()
+    try:
+        return _IMAGE_MEDIA_TYPES[key]
+    except KeyError as exc:
+        raise ValueError(
+            f"unsupported image format {fmt!r}; "
+            f"supported: {', '.join(sorted(IMAGE_FORMATS))}"
+        ) from exc
+
+
+def write_image(figure, fmt: str = "png", *, scale: float = 1.0, **kwargs) -> bytes:
+    """Export a Plotly figure to static image **bytes** (needs kaleido).
+
+    In-process via ``figure.to_image`` — no temp files, no subprocess wrapper,
+    no stdout status. For notebook/disk export see
+    :func:`cellpy.utils.plotutils.save_image_files`.
+
+    Args:
+        figure: A Plotly figure (must implement ``to_image``).
+        fmt: ``png``, ``svg``, ``pdf``, ``jpg``/``jpeg``, or ``webp``.
+        scale: Pixel scale factor passed to kaleido (Plotly default 1.0).
+        **kwargs: Forwarded to ``figure.to_image`` (e.g. ``width``, ``height``).
+
+    Returns:
+        Encoded image bytes.
+
+    Raises:
+        OptionalDependencyError: If plotly or kaleido is not installed.
+        ValueError: If ``fmt`` is not supported.
+        TypeError: If ``figure`` has no ``to_image`` method.
+    """
+    from cellpy.exceptions import OptionalDependencyError
+
+    key = fmt.lstrip(".").lower()
+    if key not in IMAGE_FORMATS:
+        raise ValueError(
+            f"unsupported image format {fmt!r}; "
+            f"supported: {', '.join(sorted(IMAGE_FORMATS))}"
+        )
+
+    if importlib.util.find_spec("plotly") is None:
+        raise OptionalDependencyError(
+            "write_image needs plotly, which is not installed. "
+            "Install the plotting extra with:  pip install cellpy[batch]"
+        )
+    if importlib.util.find_spec("kaleido") is None:
+        raise OptionalDependencyError(
+            "write_image needs kaleido for static PNG/SVG/PDF export. "
+            "Install the plotting extra with:  pip install cellpy[batch]"
+        )
+
+    to_image = getattr(figure, "to_image", None)
+    if not callable(to_image):
+        raise TypeError(
+            "write_image expects a Plotly figure with a to_image() method; "
+            f"got {type(figure)!r}"
+        )
+
+    return to_image(format=key, scale=scale, **kwargs)

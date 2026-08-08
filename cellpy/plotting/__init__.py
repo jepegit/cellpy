@@ -41,11 +41,14 @@ from cellpy.plotting.cycle_legend import (
     resolve_cycle_legend_mode,
 )
 from cellpy.plotting.figures import (
+    IMAGE_FORMATS,
+    image_media_type,
     load_figure,
     load_matplotlib_figure,
     load_plotly_figure,
     make_matplotlib_manager,
     save_matplotlib_figure,
+    write_image,
 )
 from cellpy.plotting.labels import (
     legend_replacer,
@@ -82,6 +85,8 @@ __all__ = [
     "from_source",
     "get_backend",
     "get_family",
+    "IMAGE_FORMATS",
+    "image_media_type",
     "legend_replacer",
     "load_figure",
     "load_matplotlib_figure",
@@ -94,4 +99,5 @@ __all__ = [
     "resolve_cycle_legend_mode",
     "save_matplotlib_figure",
     "units_quantity_label",
+    "write_image",
 ]

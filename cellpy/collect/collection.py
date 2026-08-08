@@ -99,6 +99,25 @@ class Collection:
             frame = frame.rename(columns={"cycle_num": "cycle"})
         return collected_plot(frame, family_kind=family, **kwargs)
 
+    def to_image(self, fmt: str = "png", *, scale: float = 1.0, **plot_kwargs) -> bytes:
+        """Render via :meth:`plot` and return static image bytes (needs kaleido).
+
+        Args:
+            fmt: ``png``, ``svg``, ``pdf``, ``jpg``/``jpeg``, or ``webp``.
+            scale: Pixel scale factor for kaleido.
+            **plot_kwargs: Forwarded to :meth:`plot`.
+
+        Returns:
+            Encoded image bytes. Use
+            :func:`cellpy.plotting.image_media_type` for a download MIME type.
+
+        Raises:
+            OptionalDependencyError: If plotly or kaleido is not installed.
+        """
+        from cellpy.plotting import write_image
+
+        return write_image(self.plot(**plot_kwargs), fmt, scale=scale)
+
     def save(
         self,
         directory: Path | str | None = None,

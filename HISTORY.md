@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+- In-memory static figure export: ``collection.to_image`` / ``cellpy.plotting.write_image`` (PNG/SVG/PDF bytes). (#818)
 - ``group_it=True``: average multi-member groups even when some groups are singletons. (#816)
 - ``cellpy.get``: when ``instrument=`` is set, do not auto-pick native ``.h5``/``.hdf5`` format. (#819)
 - Keep default ``cellpy setup`` off the reader stack: ``--check`` / ``--deps`` are opt-in; ``--no-deps`` deprecated. (#839)
