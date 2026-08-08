@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+- ``group_it=True``: average multi-member groups even when some groups are singletons. (#816)
 - ``cellpy.get``: when ``instrument=`` is set, do not auto-pick native ``.h5``/``.hdf5`` format. (#819)
 - Keep default ``cellpy setup`` off the reader stack: ``--check`` / ``--deps`` are opt-in; ``--no-deps`` deprecated. (#839)
 - Speed up CLI cold start: lazy package/CLI imports so ``cellpy info --version`` no longer loads the full reader stack. (#837)

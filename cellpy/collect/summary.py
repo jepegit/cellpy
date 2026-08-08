@@ -93,11 +93,14 @@ def collect_summaries(
         frame = frame.select(keep)
 
     grouped = False
-    if opts.group_it and frame.height:
-        # legacy guard: std needs >= 2 cells per group; disable if any group is
-        # short (a single-cell group -- or no group column -- keeps it wide).
+    if opts.group_it and frame.height and "group" in frame.columns:
+        # Average multi-member groups; keep singletons in the same long schema
+        # (mean = cell value, std = null). All-singleton (or no group ids) stays
+        # wide with grouped=False (#816; was all-or-nothing before).
         sizes = Counter(lookup.get(lbl, {}).get("group") for lbl in included)
-        if sizes and min(sizes.values()) >= 2:
+        multi = {g for g, n in sizes.items() if g is not None and n >= 2}
+        singles = {g for g, n in sizes.items() if g is not None and n == 1}
+        if multi:
             group_labels = {
                 m.get("group"): m.get("group_label")
                 for m in lookup.values()
@@ -105,9 +108,29 @@ def collect_summaries(
             }
             if opts.custom_group_labels:
                 group_labels = {**group_labels, **dict(opts.custom_group_labels)}
-            frame = ops.group_average(
-                frame, opts, keys=_KEYS, group_labels=group_labels or None
-            )
+            labels = group_labels or None
+            parts = [
+                ops.group_average(
+                    frame.filter(pl.col("group").is_in(list(multi))),
+                    opts,
+                    keys=_KEYS,
+                    group_labels=labels,
+                )
+            ]
+            if singles:
+                parts.append(
+                    ops.singletons_as_long(
+                        frame.filter(pl.col("group").is_in(list(singles))),
+                        keys=_KEYS,
+                        group_labels=labels,
+                    )
+                )
+            frame = pl.concat(parts, how="diagonal_relaxed")
+            sort_cols = [
+                c for c in ("group", ops.CYCLE, "variable") if c in frame.columns
+            ]
+            if sort_cols:
+                frame = frame.sort(sort_cols)
             grouped = True
 
     if frame.height and (opts.replace_inf_with_nan or opts.replace_extremes_with_nan):
