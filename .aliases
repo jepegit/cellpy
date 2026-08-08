@@ -113,7 +113,7 @@ conda_shell() {
 # Tag-derived releases (uv-dynamic-versioning). Version comes from the git tag;
 # there is no `uv version --bump` / pyproject version edit.
 #
-#   release              # dry-run: next same-stage bump (aN→a(N+1), else post)
+#   release              # cut next same-stage bump (aN→a(N+1), else post)
 #   release post         # cut vX.Y.Z.postN (or .post1 on a stable tag)
 #   release patch        # cut next patch (strips post/pre → X.Y.(Z+1))
 #   release minor|major  # same idea for minor/major
@@ -122,8 +122,8 @@ conda_shell() {
 #   release stable       # finalize current pre, or next patch if already final/post
 #   release v2.1.1.post4 # cut an explicit tag (must start with v)
 #
-# Always prints the latest existing release tag first, then asks before
-# creating a GitHub release (`--target` = `master` for v2.*, `v1.x` for v1.*).
+# Prints last tag + planned tag, runs guards, then asks before
+# ``gh release create`` (`--target` = `master` for v2.*, `v1.x` for v1.*).
 # See `.issueflows/04-designs-and-guides/release-procedure.md`.
 release() {
     local level="${1:-}"
@@ -136,6 +136,17 @@ release() {
         echo "release: no tags found in this repo."; return 1
     fi
     echo "release: last tag = $last"
+
+    # No args: follow last tag's stage (aN→alpha, bN→beta, rcN→rc, else post).
+    if [ -z "$level" ]; then
+        level=post
+        case "$last" in
+            *rc[0-9]*) level=rc ;;
+            *b[0-9]*)  level=beta ;;
+            *a[0-9]*)  level=alpha ;;
+        esac
+        echo "release: no level given — using same-stage default ($level)"
+    fi
 
     local planned=""
     # Shared next-tag arithmetic (stdout = vX.Y.Z…).
@@ -205,22 +216,6 @@ else:
     raise SystemExit(f"unknown level {level!r}")
 PY
     }
-
-    if [ -z "$level" ]; then
-        # Default follows the last tag's stage: aN→alpha, bN→beta, rcN→rc,
-        # otherwise post (final or .postN).
-        local default_level=post
-        case "$last" in
-            *rc[0-9]*) default_level=rc ;;
-            *b[0-9]*)  default_level=beta ;;
-            *a[0-9]*)  default_level=alpha ;;
-        esac
-        planned="$(_release_plan_tag "$last" "$default_level")" || return 1
-        echo "release: dry-run — next default ($default_level) would be $planned"
-        echo "release: usage: release post|patch|minor|major|alpha|beta|rc|stable|vX.Y.Z[.postN]"
-        echo "release: ensure HISTORY.md is promoted and git status is clean first."
-        return 0
-    fi
 
     case "$level" in
         v*)

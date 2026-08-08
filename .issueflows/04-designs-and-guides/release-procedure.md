@@ -68,7 +68,7 @@ with the release (and pollute `master` / `v1.x` history).
 Source `.aliases` in the repo, then:
 
 ```bash
-release              # dry-run: next same-stage bump (aN→a(N+1), else next post)
+release              # cut next same-stage bump (aN→a(N+1), else next post)
 release post         # cut next .postN on the correct --target branch
 release patch        # next patch (e.g. v2.1.1.post3 → v2.1.2)
 release alpha        # next pre that sorts after last (post7 → v2.1.2a1, not a1 on same Z)
@@ -77,7 +77,7 @@ release v2.1.1.post4 # explicit tag
 
 After printing the planned tag (and passing clean-tree / branch / uniqueness
 checks), the helper prompts `create this GitHub release? [y/N]` before calling
-`gh release create`.
+`gh release create` — that confirm is the dry-run / abort path.
 
 Version is **tag-derived** — the helper never edits `pyproject.toml`. Always
 promote `HISTORY.md` and keep `git status` clean before `release post`.
