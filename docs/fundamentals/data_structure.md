@@ -210,4 +210,4 @@ than 1.x (durations, energies, per-direction stats); see the migration map.
 
 Batch journal page column names (filename, mass, loading, group, …) are part of
 the batch workflow, not the per-cell frames above. See
-[Batch processing](../examples/batch_utility/cellpy_batch_processing_docs.md).
+[Batch processing](../examples/batch_utility/cellpy_batch_processing.md).

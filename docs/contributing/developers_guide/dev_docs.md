@@ -89,8 +89,10 @@ document something new.
 
 ### Example notebooks (Jupyter)
 
-Zensical does not render `.ipynb`, so the notebooks under `docs/examples/` are
-converted to committed markdown:
+The notebooks live in the top-level `examples/` folder — one maintained copy,
+which is also what the docs point readers at as a download. Zensical does not
+render `.ipynb`, so they are converted to committed markdown under
+`docs/examples/`, which holds nothing that is not generated:
 
 ```shell
 uv run --group docs python dev/render_example_notebooks.py
@@ -100,7 +102,6 @@ Re-run and commit the output whenever a notebook changes. The script strips
 plotly's embedded HTML before converting — leaving it in produces ~50 MB of
 generated markdown for nine notebooks — and keeps the static PNG renderings
 plus pandas HTML tables (wrapped for styling via `docs/stylesheets/extra.css`).
-The `.ipynb` files stay in the tree as the interactive source.
 
 If a notebook was saved with Plotly outputs but no PNG (so the rendered page
 shows code with no figure), backfill static images from the Plotly JSON first:
