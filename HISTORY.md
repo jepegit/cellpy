@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+- ``cellpy info``, ``cellpy edit config`` and ``cellpy info --check`` now act on the config file that is actually loaded (``cellpy.toml`` before a legacy ``.conf``), and name a shadowed legacy file instead of pointing at it. (#851)
 - Atomic ``.cellpy`` / ``.h5`` writes: ``save`` stages next to the destination and replaces it only when complete, so an interrupted save no longer corrupts or destroys the file. (#845)
 - In-memory static figure export: ``collection.to_image`` / ``cellpy.plotting.write_image`` (PNG/SVG/PDF bytes). (#818)
 - ``group_it=True``: average multi-member groups even when some groups are singletons. (#816)

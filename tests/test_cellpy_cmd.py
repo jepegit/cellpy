@@ -81,7 +81,49 @@ def test_info_configloc():
     print()
     print(result.output)
     assert result.exit_code == 0
-    assert "conf" in result.output
+    # Format-agnostic: the reported file may be cellpy.toml or a legacy .conf,
+    # depending on what the machine running the tests has (#851).
+    assert "[cellpy] ->" in result.output
+
+
+def _fake_active_config_file(monkeypatch, active):
+    from cellpy.config import loader
+
+    monkeypatch.setattr(loader, "active_config_file", lambda *a, **kw: active)
+
+
+@pytest.mark.essential
+def test_info_configloc_reports_the_toml(monkeypatch, tmp_path):
+    from cellpy.config.loader import ActiveConfigFile
+
+    toml_file = tmp_path / "cellpy.toml"
+    toml_file.write_text("", encoding="utf-8")
+    _fake_active_config_file(monkeypatch, ActiveConfigFile(path=toml_file, kind="toml"))
+    result = CliRunner().invoke(cli.cli, ["info", "--configloc"])
+    assert result.exit_code == 0
+    assert str(toml_file) in result.output
+    assert "is ignored" not in result.output
+
+
+@pytest.mark.essential
+def test_info_configloc_flags_shadowed_legacy_file(monkeypatch, tmp_path):
+    """After migration, `cellpy info` must not name the dead .conf (#851)."""
+    from cellpy.config.loader import ActiveConfigFile
+
+    toml_file = tmp_path / "cellpy.toml"
+    toml_file.write_text("", encoding="utf-8")
+    legacy = tmp_path / ".cellpy_prms_tester.conf"
+    legacy.write_text("", encoding="utf-8")
+    _fake_active_config_file(
+        monkeypatch,
+        ActiveConfigFile(path=toml_file, kind="toml", shadowed_legacy=legacy),
+    )
+    result = CliRunner().invoke(cli.cli, ["info", "--configloc"])
+    assert result.exit_code == 0
+    assert f"[cellpy] -> {toml_file}" in result.output
+    assert str(legacy) in result.output
+    assert "is ignored" in result.output
+    assert "cellpy.toml takes precedence" in result.output
 
 
 def test_info_no_option():

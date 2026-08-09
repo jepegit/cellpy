@@ -1008,9 +1008,13 @@ def _check_config_file():
         _say(" You can create one by running 'cellpy setup'")
         return False
 
-    prm_dict = prmreader._read_prm_file_without_updating(prm_file_name)
+    # Check the *resolved* paths rather than re-parsing the file: those are the
+    # ones cellpy will use, and it works for both cellpy.toml and legacy YAML
+    # (the YAML reader cannot read TOML at all) -- see #851.
+    from cellpy import config as cellpy_config
+
     try:
-        prm_paths = prm_dict["Paths"]
+        prm_paths = cellpy_config.get_config().paths.model_dump()
         required_dirs = [
             "cellpydatadir",
             "examplesdir",
@@ -1274,12 +1278,20 @@ def _version():
 
 
 def _configloc():
-    _, config_file_name = prmreader.get_user_dir_and_dst()
-    _say(f"[cellpy] -> {config_file_name}")
-    if not os.path.isfile(config_file_name):
+    """Report the config file cellpy actually reads (``None`` when there is none)."""
+    from cellpy.config.loader import CONFIG_FILENAME, active_config_file
+
+    active = active_config_file()
+    if active.path is None:
+        _, config_file_name = prmreader.get_user_dir_and_dst()
+        _say(f"[cellpy] -> {config_file_name}")
         _say("[cellpy] File does not exist!")
-    else:
-        return config_file_name
+        return None
+
+    _say(f"[cellpy] -> {active.path}")
+    if active.shadowed_legacy is not None:
+        _say(f"[cellpy] (legacy {active.shadowed_legacy} is ignored - {CONFIG_FILENAME} takes precedence)")
+    return active.path
 
 
 def _envloc():

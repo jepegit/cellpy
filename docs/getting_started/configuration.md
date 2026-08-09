@@ -56,6 +56,15 @@ cellpy info --config
 `--configloc` / `-l` prints the path; `--config` / `-C` dumps resolved values
 with provenance (which layer each setting came from).
 
+`--configloc` names the file cellpy actually reads. If you migrated from cellpy 1
+and kept the old `.cellpy_prms_<user>.conf`, it says so explicitly — the legacy
+file is still on disk but no longer has any effect:
+
+```text
+[cellpy] -> C:\Users\you\AppData\Local\cellpy\cellpy\cellpy.toml
+[cellpy] (legacy C:\Users\you\.cellpy_prms_you.conf is ignored - cellpy.toml takes precedence)
+```
+
 ## Configuration layers
 
 Settings resolve later-over-earlier:
