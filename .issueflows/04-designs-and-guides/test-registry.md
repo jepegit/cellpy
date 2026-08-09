@@ -38,6 +38,7 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_cli_light_import.py::test_info_version_avoids_cellreader_import | yes | yes | cellpy.__init__ / cli / cli_api light path | #837 | subprocess; cellreader must stay out of sys.modules |
 | tests/test_cli_light_import.py::test_setup_default_avoids_cellreader_and_optional_deps | yes | yes | cli_api.setup_config default light | #839 | no cellreader / lmfit |
 | tests/test_cli_light_import.py::test_setup_check_imports_cellreader | yes | yes | cli_api.setup_config --check | #839 | opt-in check loads readers |
+| tests/test_refresh_after_meta.py::test_refresh_after_mass_updates_gravimetric | yes | yes | CellpyCell.refresh_after / SUMMARY_META_DEPENDENCIES | #846 | mass → gravimetric rescale |
 | tests/test_cli_light_import.py::test_setup_deps_probes_optional_modules | yes | yes | cli_api.setup_config --deps | #839 | opt-in optional probe |
 | tests/test_cellpy_file_v9.py::test_failed_resave_keeps_the_old_file | yes | yes | cellpy_file.atomic.atomic_write / v9.save / CellpyCell.save | #845 | data-loss guard: interrupted re-save must not destroy the old file |
 | tests/test_cellpy_file_v9.py::test_failed_first_save_leaves_no_file | yes | yes | cellpy_file.atomic.atomic_write / v9.save | #845 | no half-written archive on a fresh path |

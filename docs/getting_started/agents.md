@@ -120,6 +120,11 @@ Useful methods on `CellpyCell` (non-exhaustive):
 - `get_cycle_numbers()` — list of cycle indices
 - `get_cap(...)` / capacity–voltage style extracts (see API / examples)
 - `make_step_table()` / `make_summary()` — usually already run by `get`
+- `refresh_after(("mass",))` — after editing mass / area / `nominal_capacity` /
+  `cycle_mode` on a cell that already has a summary, rebuild only the
+  meta-dependent columns (cheaper than a full `make_summary()`). See
+  `cellpy.readers.cellreader.SUMMARY_META_DEPENDENCIES` for the map GUIs
+  can use for messaging.
 - `save` / `to_csv` / Excel helpers — persist for the user's workflow
 
 Deeper shape docs: [Data structure](../fundamentals/data_structure.md).
