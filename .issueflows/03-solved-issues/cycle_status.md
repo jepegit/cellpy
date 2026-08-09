@@ -27,9 +27,19 @@
 
 - [x] #867 — raw_plot has no way to limit points (or select cycles) — merged https://github.com/jepegit/cellpy/pull/871
 - [x] #868 — fullcell_standard_* families can't be collected — merged https://github.com/jepegit/cellpy/pull/872
-- [ ] #869 — Top-level examples/ notebooks still use removed 1.x API — in-progress
+- [x] #869 — Top-level examples/ notebooks still use removed 1.x API — merged https://github.com/jepegit/cellpy/pull/873
 
 blocked: none
 skipped (closed): none
 
-- [ ] Done
+## Result
+
+All three queued issues went through the full yolo chain and merged. No issue
+had to be skipped, and the cycle never had to stop for input beyond the
+maintainer's own mid-cycle refinement of the #869 direction (recorded above).
+
+- #867 → https://github.com/jepegit/cellpy/pull/871
+- #868 → https://github.com/jepegit/cellpy/pull/872
+- #869 → https://github.com/jepegit/cellpy/pull/873
+
+- [x] Done
