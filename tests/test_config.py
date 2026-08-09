@@ -69,6 +69,26 @@ def test_config_override_nested_stack():
         assert reader_outer.cycle_mode == "cathode"
 
 
+@pytest.mark.essential
+def test_config_override_is_thread_isolated():
+    """Concurrent override() blocks must not cross-talk (#850)."""
+
+    import time
+    from concurrent.futures import ThreadPoolExecutor
+
+    from cellpy import config
+
+    def worker(mode: str) -> tuple[str, str]:
+        with config.override(reader={"cycle_mode": mode}):
+            time.sleep(0.05)
+            return mode, config.get_config().reader.cycle_mode
+
+    with ThreadPoolExecutor(max_workers=2) as ex:
+        results = list(ex.map(worker, ["anode", "cathode"]))
+
+    assert sorted(results) == [("anode", "anode"), ("cathode", "cathode")]
+
+
 def test_loader_user_file_overrides_default(tmp_path, monkeypatch):
     user_file = tmp_path / "cellpy.toml"
     write_toml(user_file, {"reader": {"cycle_mode": "cathode"}})
