@@ -97,10 +97,19 @@ class CurveOptions:
 
 @dataclass(frozen=True)
 class IcaOptions:
-    """Options for dQ/dV (ICA) collection."""
+    """Options for dQ/dV (ICA) and dV/dQ (DVA) collection.
+
+    Shared by :func:`cellpy.collect.collect_ica` and
+    :func:`cellpy.collect.collect_dva` -- each forwards only the resolution
+    knob its own transform actually uses: ``dqdv`` differentiates along
+    voltage (needs ``voltage_resolution`` for the q(V) interpolation);
+    ``dvdq`` differentiates along capacity (needs ``capacity_resolution`` for
+    the V(q) interpolation).
+    """
 
     cycles: tuple[int, ...] | None = None
     voltage_resolution: float | None = None
+    capacity_resolution: float | None = None
     transforms: tuple[Transform, ...] = ()
 
     def replace(self, **changes) -> "IcaOptions":

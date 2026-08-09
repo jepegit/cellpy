@@ -56,8 +56,8 @@ class Collection:
     name: str
     meta: CollectionMeta
 
-    #: collection kind -> ``collected_plot`` family (#657).
-    _FAMILY = {"summary": "summary", "cycles": "cycles", "ica": "ica"}
+    #: collection kind -> ``collected_plot`` family (#657, #863).
+    _FAMILY = {"summary": "summary", "cycles": "cycles", "ica": "ica", "dva": "dva"}
 
     @property
     def is_grouped(self) -> bool:

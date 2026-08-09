@@ -18,6 +18,7 @@
 - Honour share_y / match_axes on collected summary spread_plot. (#817)
 - ICA plotter: honour direction for line layouts; support direction='both'. (#821)
 - ``ica_plot`` / ``dva_plot``: dash discharge (dotted) vs charge (solid) when ``direction='both'`` so the two half-cycles stay distinguishable on a static export. (#862)
+- ``cellpy.collect.collect_dva``: multi-cell DVA collection (mirrors ``collect_ica``), returning a ``Collection`` with the same ``Collection.plot()`` / grouping / save entry points; ``dva_collector`` convenience wrapper. (#863)
 
 ## [2.1.1.post6] - 2026-08-02
 

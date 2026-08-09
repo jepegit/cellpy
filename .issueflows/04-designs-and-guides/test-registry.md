@@ -50,6 +50,11 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_ica_plot_prepare.py::test_ica_dva_plotly_both_direction_dash_differs | yes | yes | plotting.backends.plotly._render_ica_dva | #862 | charge solid / discharge dot |
 | tests/test_ica_plot_prepare.py::test_ica_dva_plotly_single_direction_stays_solid | yes | yes | plotting.backends.plotly._render_ica_dva | #862 | single direction stays solid |
 | tests/test_ica_plot_prepare.py::test_ica_dva_matplotlib_both_direction_linestyle_differs | yes | yes | plotting.backends.mpl._render_ica_dva | #862 | "-" / ":" linestyle |
+| tests/test_collect_dva.py::test_dva_collector_uses_the_specced_frame | yes | yes | collect.dva.collect_dva | #863 | specced frame cols |
+| tests/test_collect_dva.py::test_collect_dva_returns_a_dva_collection | yes | yes | collect.dva.collect_dva | #863 | kind="dva" |
+| tests/test_collect_dva.py::test_collect_dva_forwards_capacity_resolution_not_voltage_resolution | yes | yes | collect.dva.collect_dva / ica.dvdq | #863 | resolution-knob guard |
+| tests/test_collect_dva.py::test_dva_collection_plot_uses_the_dva_family_not_cycles | yes | yes | collect.collection.Collection._FAMILY | #863 | family wiring guard |
+| tests/test_collect_dva.py::test_dva_collector_fig_pr_cycle | yes | yes | plotting.collected.dva_plotter | #863 | per-cycle layout |
 | tests/test_cellpy_file_v9.py::test_incomplete_archive_is_rejected_before_replace | yes | yes | v9._verify_members | #845 | missing zip member never replaces a good file |
 | tests/test_cellpy_file_v9.py::test_failed_hdf5_resave_keeps_the_old_file | no | no | cellpy_file.write.save (v8/HDF5) | #845 | same guard for the legacy writer; unmarked to keep Tier 1 fast |
 | tests/test_config.py::test_active_config_file_prefers_toml | yes | yes | config.loader.active_config_file | #851 | "which config am I using" must stay honest |

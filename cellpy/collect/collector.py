@@ -18,6 +18,7 @@ from typing import Any, Callable
 import polars as pl
 
 from cellpy.collect.curves import collect_cycles
+from cellpy.collect.dva import collect_dva
 from cellpy.collect.ica import collect_ica
 from cellpy.collect.options import CurveOptions, IcaOptions, SummaryOptions
 from cellpy.collect.summary import collect_summaries
@@ -115,6 +116,13 @@ def ica_collector(
 ) -> BatchCollector:
     """Convenience :class:`BatchCollector` bound to :func:`collect_ica`."""
     return BatchCollector(batch, collect_ica, options, autorun=autorun, **overrides)
+
+
+def dva_collector(
+    batch: Any, options: IcaOptions | None = None, *, autorun: bool = True, **overrides
+) -> BatchCollector:
+    """Convenience :class:`BatchCollector` bound to :func:`collect_dva`."""
+    return BatchCollector(batch, collect_dva, options, autorun=autorun, **overrides)
 
 
 def normalize_column(
