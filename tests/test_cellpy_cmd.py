@@ -126,6 +126,27 @@ def test_info_configloc_flags_shadowed_legacy_file(monkeypatch, tmp_path):
     assert "cellpy.toml takes precedence" in result.output
 
 
+@pytest.mark.essential
+def test_info_configloc_reports_project_toml(monkeypatch, tmp_path):
+    """Project cellpy.toml is disclosed by --configloc (#853)."""
+    from cellpy.config.loader import ActiveConfigFile
+
+    user = tmp_path / "user.toml"
+    user.write_text("", encoding="utf-8")
+    project = tmp_path / "proj" / "cellpy.toml"
+    project.parent.mkdir()
+    project.write_text("", encoding="utf-8")
+    _fake_active_config_file(
+        monkeypatch,
+        ActiveConfigFile(path=user, kind="toml", project_path=project),
+    )
+    result = CliRunner().invoke(cli.cli, ["info", "--configloc"])
+    assert result.exit_code == 0
+    assert f"[cellpy] -> {user}" in result.output
+    assert str(project) in result.output
+    assert "also applies and takes precedence" in result.output
+
+
 def test_info_no_option():
     runner = CliRunner()
     result = runner.invoke(cli.cli, ["info"])

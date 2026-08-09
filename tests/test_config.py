@@ -233,6 +233,50 @@ def test_active_config_file_without_any_file(tmp_path):
     )
     assert active.kind == "none"
     assert active.path is None
+    assert active.project_path is None
+
+
+@pytest.mark.essential
+def test_active_config_file_reports_project_toml(tmp_path):
+    """Project cellpy.toml is named alongside the user file (#853)."""
+
+    user = tmp_path / "user" / "cellpy.toml"
+    user.parent.mkdir()
+    write_toml(user, {"reader": {"cycle_mode": "anode"}})
+    project = tmp_path / "proj" / "cellpy.toml"
+    project.parent.mkdir()
+    write_toml(project, {"reader": {"cycle_mode": "cathode"}})
+    active = active_config_file(
+        LoadOptions(user_config_file=user, project_config_file=project, cwd=tmp_path)
+    )
+    assert active.path == user
+    assert active.project_path == project
+
+
+def test_active_config_file_no_project_when_absent(tmp_path):
+    user = tmp_path / "cellpy.toml"
+    write_toml(user, {"reader": {"cycle_mode": "anode"}})
+    active = active_config_file(
+        LoadOptions(
+            user_config_file=user,
+            project_config_file=tmp_path / "missing.toml",
+            cwd=tmp_path,
+        )
+    )
+    assert active.path == user
+    assert active.project_path is None
+
+
+def test_active_config_file_skips_duplicate_project_path(tmp_path):
+    """Do not report the same path twice when user == project (#853)."""
+
+    user = tmp_path / "cellpy.toml"
+    write_toml(user, {"reader": {"cycle_mode": "anode"}})
+    active = active_config_file(
+        LoadOptions(user_config_file=user, project_config_file=user, cwd=tmp_path)
+    )
+    assert active.path == user
+    assert active.project_path is None
 
 
 def test_active_config_file_agrees_with_load_config(tmp_path):

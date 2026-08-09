@@ -55,18 +55,23 @@ def user_config_path() -> Path:
 
 @dataclass(frozen=True)
 class ActiveConfigFile:
-    """Which user-level config file wins, and what it shadows.
+    """Which user-level config file wins, and what else applies.
 
     Attributes:
         path: The file ``load_config`` reads for the user layer, or ``None``.
         kind: ``"toml"``, ``"legacy"`` or ``"none"``.
         shadowed_legacy: A legacy ``.conf`` that exists but is outranked by a
             ``cellpy.toml``. ``None`` when nothing is shadowed.
+        project_path: A project ``cellpy.toml`` discovered from the cwd (or
+            ``LoadOptions.project_config_file``) that ``load_config`` merges
+            after the user layer. ``None`` when absent or identical to
+            ``path``.
     """
 
     path: Path | None
     kind: str
     shadowed_legacy: Path | None = None
+    project_path: Path | None = None
 
 
 def active_config_file(options: LoadOptions | None = None) -> ActiveConfigFile:
@@ -74,14 +79,16 @@ def active_config_file(options: LoadOptions | None = None) -> ActiveConfigFile:
 
     ``load_config`` calls this for its own user layer, so anything that reports a
     config location (``cellpy info``, ``cellpy edit config``) can ask here and
-    stay in step with what is actually loaded (#851).
+    stay in step with what is actually loaded (#851). Also reports a project
+    ``cellpy.toml`` when one would be merged (#853).
 
     Args:
         options: Same hooks ``load_config`` takes; only the file overrides and
             ``skip_files`` are consulted.
 
     Returns:
-        ActiveConfigFile: The winning file, plus any shadowed legacy file.
+        ActiveConfigFile: The winning user file, any shadowed legacy file, and
+        any project file that also applies.
     """
 
     from cellpy.config.legacy import find_legacy_yaml_file
@@ -94,14 +101,29 @@ def active_config_file(options: LoadOptions | None = None) -> ActiveConfigFile:
     if legacy is not None and not legacy.is_file():
         legacy = None
 
+    project = opts.project_config_file
+    if project is None:
+        project = find_project_config_file(opts.cwd)
+    if project is not None and not project.is_file():
+        project = None
+
     user_file = opts.user_config_file or user_config_path()
     if user_file.is_file():
-        return ActiveConfigFile(path=user_file, kind="toml", shadowed_legacy=legacy)
+        project_path = project if project is not None and project != user_file else None
+        return ActiveConfigFile(
+            path=user_file,
+            kind="toml",
+            shadowed_legacy=legacy,
+            project_path=project_path,
+        )
 
     if legacy is not None:
-        return ActiveConfigFile(path=legacy, kind="legacy")
+        project_path = project if project is not None and project != legacy else None
+        return ActiveConfigFile(
+            path=legacy, kind="legacy", project_path=project_path
+        )
 
-    return ActiveConfigFile(path=None, kind="none")
+    return ActiveConfigFile(path=None, kind="none", project_path=project)
 
 
 def find_project_config_file(start: Path | None = None) -> Path | None:
