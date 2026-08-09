@@ -4,6 +4,18 @@
 
 ### Plotting
 
+* `PlotFamily.summary_options(hdr)` returns ready `SummaryOptions`, so
+  `collect_summaries(batch, options=family.summary_options(hdr))` produces the
+  columns a family declares. Families now carry the CV partition they need
+  (`*_split_constant_voltage` and the full-cell families no longer depend on the
+  caller knowing to pass `partition_by_cv=True`), and the synthetic `mod_01_*`
+  retention column is materialised by a real transform. On the demo cell the
+  number of registered summary families an app can actually plot goes from 8/20
+  (defaults) to 15/20 — the rest lack `*_absolute` source data. `transforms()`
+  is documented as the `summary_plot` normalization spec, not a collect
+  transform. (#868)
+* New `cellpy.collect.normalize_column_on_max`, the counterpart of
+  `normalize_column` for normalising against a column's own maximum. (#868)
 * `raw_plot` can now be bounded: `cycles=` selects cycles (as the other plot
   families already allow) and `max_points=` thins the traces with min/max
   decimation per bucket, so spikes survive where plain striding would drop

@@ -1,5 +1,6 @@
 """Tests for the cellpy.collect foundation (collectors redesign, #705/#706)."""
 
+import re
 from types import SimpleNamespace
 
 import polars as pl
@@ -18,9 +19,11 @@ from cellpy.collect import (
     collect_summaries,
     load_collection,
     normalize_column,
+    normalize_column_on_max,
     standard_gravimetric,
     summary_collector,
 )
+from cellpy.plotting import registry
 from tests import fdv
 
 
@@ -71,10 +74,15 @@ def test_collection_save_requires_directory():
 
 
 @pytest.fixture(scope="module")
-def real_batch():
-    cell = cellpy.get(cellpy_file=fdv.cellpy_file_path, testing=True)
+def real_cell():
+    return cellpy.get(cellpy_file=fdv.cellpy_file_path, testing=True)
+
+
+@pytest.fixture(scope="module")
+def real_batch(real_cell):
     return _batch_with_cells(
-        {"c45": cell}, pl.DataFrame({FILENAME: ["c45"], "group": [1], "sub_group": [1]})
+        {"c45": real_cell},
+        pl.DataFrame({FILENAME: ["c45"], "group": [1], "sub_group": [1]}),
     )
 
 
@@ -424,3 +432,106 @@ def test_collection_save_rejects_unknown_format(tmp_path):
     col = _small_collection()
     with pytest.raises(ValueError, match="unsupported collection format"):
         col.save(tmp_path, formats=("bogus",))
+
+
+# ---- family-declared collect options (#868) -----------------------------
+
+
+def _source_column(name: str) -> str:
+    """The summary column a declared family column is derived from."""
+    for suffix in ("_non_cv", "_cv"):
+        if name.endswith(suffix):
+            return name[: -len(suffix)]
+    return re.sub(r"^mod_\d{2}_", "", name)
+
+
+@pytest.mark.essential
+def test_every_summary_family_is_collectable_with_its_own_options(
+    real_batch, real_cell
+):
+    """A family's own options must satisfy the columns the family declares.
+
+    The only columns allowed to stay missing are those whose source is absent
+    from the cell's summary in the first place (this cell has no ``*_absolute``
+    metrics) — that is a data limit, not a menu the app cannot reach.
+    """
+    hdr = real_cell.schema.summary
+    available = set(real_cell.data.summary.columns)
+
+    for family in registry.iter_families(entry_point="summary_plot"):
+        options = family.summary_options(hdr)
+        collected = set(collect_summaries(real_batch, options=options).data.columns)
+        declared = family.columns(hdr)
+        missing = {name for name in declared if name not in collected}
+        unavailable = {
+            name for name in declared if _source_column(name) not in available
+        }
+        assert missing == unavailable, family.name
+
+
+@pytest.mark.essential
+def test_fullcell_standard_family_materialises_its_retention_column(
+    real_batch, real_cell
+):
+    hdr = real_cell.schema.summary
+    family = registry.get("fullcell_standard_gravimetric")
+    data = collect_summaries(real_batch, options=family.summary_options(hdr)).data
+
+    source = "discharge_capacity_gravimetric"
+    target = "mod_01_" + source
+    assert target in data.columns
+    assert data[target].max() == pytest.approx(100.0)
+    expected = (100 * data[source] / data[source].max()).to_list()
+    assert data[target].to_list() == pytest.approx(expected)
+
+
+@pytest.mark.essential
+def test_summary_options_declares_the_cv_partition_it_needs(real_cell):
+    hdr = real_cell.schema.summary
+    split = registry.get("capacities_gravimetric_split_constant_voltage")
+    fullcell = registry.get("fullcell_standard_gravimetric")
+    plain = registry.get("capacities_gravimetric")
+
+    assert split.summary_options(hdr).partition_by_cv
+    assert fullcell.summary_options(hdr).partition_by_cv
+    assert not plain.summary_options(hdr).partition_by_cv
+
+
+@pytest.mark.essential
+def test_summary_options_transforms_are_callables(real_cell):
+    """The shape mismatch from #868: transforms must be frame -> frame."""
+    hdr = real_cell.schema.summary
+    options = registry.get("fullcell_standard_gravimetric").summary_options(hdr)
+    assert options.transforms
+    assert all(callable(transform) for transform in options.transforms)
+
+
+@pytest.mark.essential
+def test_summary_options_honours_an_explicit_norm_factor(real_cell):
+    hdr = real_cell.schema.summary
+    family = registry.get("fullcell_standard_gravimetric")
+    frame = pl.DataFrame({"discharge_capacity_gravimetric": [50.0, 100.0]})
+    for transform in family.summary_options(hdr, norm_factor=200.0).transforms:
+        frame = transform(frame)
+    assert frame["mod_01_discharge_capacity_gravimetric"].to_list() == [25.0, 50.0]
+
+
+@pytest.mark.essential
+def test_normalize_column_on_max_wide_and_grouped():
+    wide = pl.DataFrame({"charge_capacity": [1.0, 2.0, 4.0]})
+    normalized = normalize_column_on_max("charge_capacity", out="norm")(wide)
+    assert normalized["norm"].to_list() == [25.0, 50.0, 100.0]
+
+    long = pl.DataFrame(
+        {
+            "variable": ["charge_capacity", "charge_capacity"],
+            "mean": [1.0, 2.0],
+            "std": [0.1, 0.2],
+        }
+    )
+    normalized = normalize_column_on_max("charge_capacity", out="norm")(long)
+    added = normalized.filter(pl.col("variable") == "norm")
+    assert added["mean"].to_list() == [50.0, 100.0]
+    assert added["std"].to_list() == pytest.approx([5.0, 10.0])
+
+    assert normalize_column_on_max("nope")(wide).equals(wide)

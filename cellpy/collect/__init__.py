@@ -25,6 +25,7 @@ from cellpy.collect.collector import (
     dva_collector,
     ica_collector,
     normalize_column,
+    normalize_column_on_max,
     standard_gravimetric,
     summary_collector,
 )
@@ -61,4 +62,5 @@ __all__ = [
     "dva_collector",
     "standard_gravimetric",
     "normalize_column",
+    "normalize_column_on_max",
 ]

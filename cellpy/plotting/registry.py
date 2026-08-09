@@ -11,6 +11,7 @@ frozen list of strings. Non-summary families (e.g. ``cycles`` for
 from __future__ import annotations
 
 import logging
+import re
 from dataclasses import dataclass, field
 from typing import Any, Callable, Optional
 
@@ -20,6 +21,9 @@ logger = logging.getLogger(__name__)
 
 ColumnsFn = Callable[[Any], list[str]]
 TransformsFn = Callable[[Any, Callable[..., Any]], dict[str, Any]]
+
+#: ``mod_01_<column>`` marks a derived series, not a real summary column.
+_MOD_MARKER = re.compile(r"^mod_\d{2}_")
 
 
 @dataclass(frozen=True)
@@ -40,9 +44,73 @@ class PlotFamily:
         return list(self.column_builder(hdr))
 
     def transforms(self, hdr: Any, normalize_col: Callable[..., Any]) -> dict[str, Any]:
+        """Return the ``summary_plot`` normalization spec for this family.
+
+        The shape is ``{column: {(row, new_column): fn}}`` and it is consumed by
+        the single-cell prepare path
+        (``cellpy.plotting.prepare.summary``), which uses ``row`` to place the
+        derived series on a subplot. It is **not** a collect transform — use
+        :meth:`summary_options` for the ``cellpy.collect`` path.
+        """
         if self.transforms_builder is None:
             return {}
         return dict(self.transforms_builder(hdr, normalize_col))
+
+    def summary_options(self, hdr: Any, *, norm_factor: Optional[float] = None) -> Any:
+        """Return ready :class:`~cellpy.collect.options.SummaryOptions` for this family.
+
+        Makes the registry self-describing for the collect path: every option a
+        family needs to produce its own :meth:`columns` is derived here, so an
+        app building a plot menu never needs out-of-band knowledge.
+
+        * ``*_cv`` / ``*_non_cv`` columns are requested by their base name and
+          turn on ``partition_by_cv`` (as does ``supports_cv_split``).
+        * A declared ``mod_01_*`` column is a marker, not a summary column — it
+          becomes a transform that writes exactly that column from its
+          prefix-stripped source, normalized on the source maximum (matching
+          ``summary_plot``'s default) or by *norm_factor* when one is given.
+
+        Args:
+            hdr: the summary header set, i.e. ``c.schema.summary``.
+            norm_factor (float, optional): divide by this instead of
+                normalizing on the source column's maximum.
+
+        Returns:
+            ``SummaryOptions``: pass straight to
+            :func:`cellpy.collect.collect_summaries`.
+        """
+        from cellpy.collect.collector import normalize_column, normalize_column_on_max
+        from cellpy.collect.options import SummaryOptions
+
+        declared = self.columns(hdr)
+        columns: list[str] = []
+        transforms: list[Callable[..., Any]] = []
+        partition_by_cv = self.supports_cv_split
+
+        for name in declared:
+            base = name
+            for suffix in ("_non_cv", "_cv"):
+                if base.endswith(suffix):
+                    base = base[: -len(suffix)]
+                    partition_by_cv = True
+                    break
+            if _MOD_MARKER.match(base):
+                source = _MOD_MARKER.sub("", base)
+                if source not in columns:
+                    columns.append(source)
+                transforms.append(
+                    normalize_column(source, norm_factor, out=base)
+                    if norm_factor is not None
+                    else normalize_column_on_max(source, out=base)
+                )
+            elif base not in columns:
+                columns.append(base)
+
+        return SummaryOptions(
+            columns=tuple(columns),
+            partition_by_cv=partition_by_cv,
+            transforms=tuple(transforms),
+        )
 
 
 _FAMILIES: dict[str, PlotFamily] = {}
