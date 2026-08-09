@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+### Plotting
+
+* `raw_plot` can now be bounded: `cycles=` selects cycles (as the other plot
+  families already allow) and `max_points=` thins the traces with min/max
+  decimation per bucket, so spikes survive where plain striding would drop
+  them. Both are plumbed through `RawPrepareConfig`, and the cycle filter runs
+  before the frame is copied. On the bundled demo cell `plot_type="full"` drops
+  from 18 MiB of figure JSON to 0.33 MiB at `max_points=5000`. (#867)
+
 ## [2.1.2] - 2026-08-09
 
 Patch release — plotting and collect improvements for app builders, config and
