@@ -8,8 +8,9 @@ from __future__ import annotations
 
 import warnings
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Any, Optional, Sequence
 
+import numpy as np
 import pandas as pd
 
 from cellpy.plotting.headers import LiveHeaders
@@ -29,7 +30,65 @@ class RawPrepareConfig:
     plot_type: str = "voltage-current"
     double_y: bool = True
     backend: str = "plotly"
+    cycles: Optional[Any] = None
+    max_points: Optional[int] = None
     additional_kwargs: dict = field(default_factory=dict)
+
+
+def _as_cycle_list(cycles: Any) -> list:
+    """Normalise a cycle selector to a list of cycle numbers."""
+    if isinstance(cycles, (int, np.integer)):
+        return [int(cycles)]
+    if isinstance(cycles, (Sequence, set, frozenset, range, np.ndarray, pd.Series)):
+        return list(cycles)
+    return [cycles]
+
+
+def decimate(
+    frame: pd.DataFrame,
+    columns: Sequence[str],
+    max_points: int,
+) -> pd.DataFrame:
+    """Thin *frame* to roughly *max_points* rows, keeping per-bucket extremes.
+
+    The frame is split into positional buckets and, for every column in
+    *columns*, the rows holding that bucket's minimum and maximum are kept. The
+    union of those rows (plus the first and last row, so the x range is
+    preserved) is the result — spikes survive, which is what separates this from
+    plain striding. Because each trace contributes up to two rows per bucket,
+    the bucket count is scaled by the number of columns to land near the budget
+    instead of overshooting by a factor of the trace count.
+
+    Args:
+        frame (pandas.DataFrame): frame to thin, in plotting order.
+        columns: the y columns whose extremes must survive.
+        max_points (int): approximate row budget for the result.
+
+    Returns:
+        ``pandas.DataFrame``: the thinned frame, or *frame* itself when it is
+        already within budget.
+    """
+    n_rows = len(frame)
+    numeric = [
+        col
+        for col in columns
+        if col in frame.columns and pd.api.types.is_numeric_dtype(frame[col])
+    ]
+    if max_points < 2 or n_rows <= max_points or not numeric:
+        return frame
+
+    n_buckets = max(1, max_points // (2 * len(numeric)))
+    if n_buckets >= n_rows:
+        return frame
+
+    positions = np.arange(n_rows)
+    bucket = pd.Series((positions * n_buckets) // n_rows)
+    keep = {0, n_rows - 1}
+    for col in numeric:
+        values = pd.Series(frame[col].to_numpy(), copy=False).groupby(bucket)
+        keep.update(int(i) for i in values.idxmin().dropna())
+        keep.update(int(i) for i in values.idxmax().dropna())
+    return frame.iloc[sorted(keep)]
 
 
 def prepare(
@@ -51,7 +110,12 @@ def prepare(
 
     c = ctx.cell
     hdr_raw = LiveHeaders(c, "raw")
-    raw = c.data.raw.copy()
+    raw = c.data.raw
+    # Select before copying — a cycle subset should not pay for the full frame.
+    if config.cycles is not None:
+        cycle_col = hdr_raw["cycle_index_txt"]
+        raw = raw.loc[raw[cycle_col].isin(_as_cycle_list(config.cycles))]
+    raw = raw.copy()
     raw_units = c.data.raw_units
 
     y = config.y
@@ -159,6 +223,9 @@ def prepare(
 
     y = list(y)
     y_label = list(y_label)
+
+    if config.max_points is not None:
+        raw = decimate(raw, y, config.max_points)
     panels = tuple(
         PanelSpec(
             columns=(col,),

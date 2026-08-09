@@ -1262,6 +1262,8 @@ def raw_plot(
     backend: Optional[str] = None,
     plot_type="voltage-current",
     double_y=True,
+    cycles=None,
+    max_points: Optional[int] = None,
     **kwargs,
 ):
     """Plot raw data.
@@ -1279,6 +1281,10 @@ def raw_plot(
         plot_type (str): type of plot (defaults to "voltage-current") (overrides given y if y is not None),
           currently only "voltage-current", "raw", "capacity", "capacity-current", and "full" is supported.
         double_y (bool): use double y-axis (only for matplotlib and when plot_type with 2 rows is used)
+        cycles (int or list): only plot these cycle numbers (defaults to all).
+        max_points (int, optional): thin the data to roughly this many points,
+          keeping the minimum and maximum of every trace within each bucket so
+          spikes survive. Defaults to no thinning.
         **kwargs: additional parameters for the plotting backend
 
     Returns:
@@ -1304,6 +1310,8 @@ def raw_plot(
         plot_type=plot_type,
         double_y=double_y,
         backend=resolved_backend,
+        cycles=cycles,
+        max_points=max_points,
         additional_kwargs=dict(kwargs),
     )
     ctx = from_source(cell)
