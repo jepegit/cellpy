@@ -2,20 +2,14 @@
 
 ## [Unreleased]
 
-### Documentation
+## [2.1.2] - 2026-08-09
 
-* Tutorial notebooks are no longer duplicated. The top-level `examples/` folder
-  holds the single maintained copy — the one the docs link to as a download —
-  and `docs/examples/` now contains only generated markdown, figure directories
-  and screenshots. `dev/render_example_notebooks.py` renders from `examples/`
-  into `docs/examples/`, covering every tutorial, so `08_batmo_bdf` and
-  `09_loading_pec_data` gain documentation pages. The batch tutorial moves to
-  `examples/batch_utility/cellpy_batch_processing.ipynb` (page:
-  `examples/batch_utility/cellpy_batch_processing.md`), and committed run
-  artifacts under `docs/examples/` (cellpy files, dumps, output CSVs) are gone.
-  `09_loading_pec_data` no longer sets the removed `prms.Reader`. (#869)
+Patch release — plotting and collect improvements for app builders, config and
+CLI correctness fixes, and safer cellpy-file writes. Additive, no breaking
+changes. The interim `v2.1.1.post7` / `v2.1.1.post8` tags and the `v2.1.2a1`–
+`v2.1.2a4` pre-releases are folded into this section.
 
-### Plotting
+### Plotting and collect
 
 * `PlotFamily.summary_options(hdr)` returns ready `SummaryOptions`, so
   `collect_summaries(batch, options=family.summary_options(hdr))` produces the
@@ -35,16 +29,6 @@
   them. Both are plumbed through `RawPrepareConfig`, and the cycle filter runs
   before the frame is copied. On the bundled demo cell `plot_type="full"` drops
   from 18 MiB of figure JSON to 0.33 MiB at `max_points=5000`. (#867)
-
-## [2.1.2] - 2026-08-09
-
-Patch release — plotting and collect improvements for app builders, config and
-CLI correctness fixes, and safer cellpy-file writes. Additive, no breaking
-changes. The interim `v2.1.1.post7` / `v2.1.1.post8` tags and the `v2.1.2a1`–
-`v2.1.2a4` pre-releases are folded into this section.
-
-### Plotting and collect
-
 * `cellpy.collect.collect_dva`: multi-cell DVA collection (mirrors
   `collect_ica`), returning a `Collection` with the same `Collection.plot()` /
   grouping / save entry points; `dva_collector` convenience wrapper. (#863)
@@ -89,6 +73,17 @@ changes. The interim `v2.1.1.post7` / `v2.1.1.post8` tags and the `v2.1.2a1`–
   `.hdf5` format. (#819)
 
 ### Documentation
+
+* Tutorial notebooks are no longer duplicated. The top-level `examples/` folder
+  holds the single maintained copy — the one the docs link to as a download —
+  and `docs/examples/` now contains only generated markdown, figure directories
+  and screenshots. `dev/render_example_notebooks.py` renders from `examples/`
+  into `docs/examples/`, covering every tutorial, so `08_batmo_bdf` and
+  `09_loading_pec_data` gain documentation pages. The batch tutorial moves to
+  `examples/batch_utility/cellpy_batch_processing.ipynb` (page:
+  `examples/batch_utility/cellpy_batch_processing.md`), and committed run
+  artifacts under `docs/examples/` (cellpy files, dumps, output CSVs) are gone.
+  `09_loading_pec_data` no longer sets the removed `prms.Reader`. (#869)
 
 * Release-prep documentation sweep. The **Incremental capacity analysis** and
   **Batch processing** tutorials taught API that was removed in 2.1 and could no
