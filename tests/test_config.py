@@ -9,7 +9,7 @@ import tomllib
 from cellpycore.units import CellpyUnits
 
 from cellpy.config import LoadOptions, override, reload, reset_session, set_load_options, sources
-from cellpy.config.loader import load_config, write_toml
+from cellpy.config.loader import active_config_file, load_config, write_toml
 from cellpy.config.migrate import convert_yaml_to_toml_dict
 from cellpy.config.models import UnitsConfig
 from cellpy.config.sources import SourceLayer
@@ -148,6 +148,88 @@ def test_toml_roundtrip_smoke(tmp_path):
     data = tomllib.loads(path.read_text(encoding="utf-8"))
     assert data["reader"]["cycle_mode"] == "cathode"
     assert data["reader"]["auto_dirs"] is False
+
+
+LEGACY_YAML = """
+Reader:
+  cycle_mode: cathode
+"""
+
+
+def _legacy_file(tmp_path: Path) -> Path:
+    path = tmp_path / ".cellpy_prms_tester.conf"
+    path.write_text(LEGACY_YAML, encoding="utf-8")
+    return path
+
+
+@pytest.mark.essential
+def test_active_config_file_prefers_toml(tmp_path):
+    user_file = tmp_path / "cellpy.toml"
+    write_toml(user_file, {"reader": {"cycle_mode": "lithium"}})
+    active = active_config_file(
+        LoadOptions(
+            user_config_file=user_file,
+            legacy_yaml_file=tmp_path / "nothing-here.conf",
+        )
+    )
+    assert active.kind == "toml"
+    assert active.path == user_file
+    assert active.shadowed_legacy is None
+
+
+@pytest.mark.essential
+def test_active_config_file_falls_back_to_legacy(tmp_path):
+    legacy = _legacy_file(tmp_path)
+    active = active_config_file(
+        LoadOptions(
+            user_config_file=tmp_path / "cellpy.toml",
+            legacy_yaml_file=legacy,
+        )
+    )
+    assert active.kind == "legacy"
+    assert active.path == legacy
+    assert active.shadowed_legacy is None
+
+
+@pytest.mark.essential
+def test_active_config_file_flags_shadowed_legacy(tmp_path):
+    """A migrated user keeps the old .conf; it must be named as ignored (#851)."""
+
+    user_file = tmp_path / "cellpy.toml"
+    write_toml(user_file, {"reader": {"cycle_mode": "lithium"}})
+    legacy = _legacy_file(tmp_path)
+    active = active_config_file(LoadOptions(user_config_file=user_file, legacy_yaml_file=legacy))
+    assert active.kind == "toml"
+    assert active.path == user_file
+    assert active.shadowed_legacy == legacy
+
+
+def test_active_config_file_without_any_file(tmp_path):
+    active = active_config_file(
+        LoadOptions(
+            user_config_file=tmp_path / "cellpy.toml",
+            legacy_yaml_file=tmp_path / "nothing-here.conf",
+        )
+    )
+    assert active.kind == "none"
+    assert active.path is None
+
+
+def test_active_config_file_agrees_with_load_config(tmp_path):
+    """Guard against the helper and the loader drifting apart again (#851)."""
+
+    user_file = tmp_path / "cellpy.toml"
+    write_toml(user_file, {"reader": {"cycle_mode": "lithium"}})
+    legacy = _legacy_file(tmp_path)
+    options = LoadOptions(
+        user_config_file=user_file,
+        legacy_yaml_file=legacy,
+        cwd=tmp_path,
+        skip_env=True,
+    )
+    assert active_config_file(options).path == user_file
+    # ``lithium`` lives only in the TOML, ``cathode`` only in the legacy YAML.
+    assert load_config(options=options).config.reader.cycle_mode == "lithium"
 
 
 def test_yaml_to_toml_converter_minimal():

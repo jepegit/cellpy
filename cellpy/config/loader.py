@@ -53,6 +53,57 @@ def user_config_path() -> Path:
     return Path(platformdirs.user_config_dir("cellpy")) / CONFIG_FILENAME
 
 
+@dataclass(frozen=True)
+class ActiveConfigFile:
+    """Which user-level config file wins, and what it shadows.
+
+    Attributes:
+        path: The file ``load_config`` reads for the user layer, or ``None``.
+        kind: ``"toml"``, ``"legacy"`` or ``"none"``.
+        shadowed_legacy: A legacy ``.conf`` that exists but is outranked by a
+            ``cellpy.toml``. ``None`` when nothing is shadowed.
+    """
+
+    path: Path | None
+    kind: str
+    shadowed_legacy: Path | None = None
+
+
+def active_config_file(options: LoadOptions | None = None) -> ActiveConfigFile:
+    """Resolve the user-level config file, ``cellpy.toml`` before legacy YAML.
+
+    ``load_config`` calls this for its own user layer, so anything that reports a
+    config location (``cellpy info``, ``cellpy edit config``) can ask here and
+    stay in step with what is actually loaded (#851).
+
+    Args:
+        options: Same hooks ``load_config`` takes; only the file overrides and
+            ``skip_files`` are consulted.
+
+    Returns:
+        ActiveConfigFile: The winning file, plus any shadowed legacy file.
+    """
+
+    from cellpy.config.legacy import find_legacy_yaml_file
+
+    opts = options or LoadOptions()
+    if opts.skip_files:
+        return ActiveConfigFile(path=None, kind="none")
+
+    legacy = opts.legacy_yaml_file or find_legacy_yaml_file()
+    if legacy is not None and not legacy.is_file():
+        legacy = None
+
+    user_file = opts.user_config_file or user_config_path()
+    if user_file.is_file():
+        return ActiveConfigFile(path=user_file, kind="toml", shadowed_legacy=legacy)
+
+    if legacy is not None:
+        return ActiveConfigFile(path=legacy, kind="legacy")
+
+    return ActiveConfigFile(path=None, kind="none")
+
+
 def find_project_config_file(start: Path | None = None) -> Path | None:
     """Walk up from ``start`` (default cwd) looking for ``cellpy.toml``."""
 
@@ -196,28 +247,23 @@ def load_config(
 
     user_file_path: Path | None = None
     if not opts.skip_files:
-        from cellpy.config.legacy import find_legacy_yaml_file, load_legacy_yaml_dict
+        from cellpy.config.legacy import load_legacy_yaml_dict
 
-        user_file = opts.user_config_file or user_config_path()
-        user_toml_loaded = False
-        if user_file.is_file():
-            user_file_path = user_file
-            user_toml_loaded = True
-            user_data = _read_toml(user_file)
-            _reject_secrets_from_file(user_data, user_file)
+        active = active_config_file(opts)
+        if active.kind == "toml":
+            user_file_path = active.path
+            user_data = _read_toml(user_file_path)
+            _reject_secrets_from_file(user_data, user_file_path)
             merged = _deep_merge(merged, user_data)
             _record_layer(registry, SourceLayer.USER_FILE, user_data)
-
-        if not user_toml_loaded:
-            legacy_path = opts.legacy_yaml_file or find_legacy_yaml_file()
-            if legacy_path is not None and legacy_path.is_file():
-                legacy_data = load_legacy_yaml_dict(legacy_path)
-                # A legacy YAML may legitimately carry the old plain-text
-                # SQL_PWD; drop it with a warning rather than refusing to load
-                # a file the user did not write in this format.
-                _drop_legacy_secrets(legacy_data, legacy_path)
-                merged = _deep_merge(merged, legacy_data)
-                _record_layer(registry, SourceLayer.USER_FILE, legacy_data)
+        elif active.kind == "legacy":
+            legacy_data = load_legacy_yaml_dict(active.path)
+            # A legacy YAML may legitimately carry the old plain-text
+            # SQL_PWD; drop it with a warning rather than refusing to load
+            # a file the user did not write in this format.
+            _drop_legacy_secrets(legacy_data, active.path)
+            merged = _deep_merge(merged, legacy_data)
+            _record_layer(registry, SourceLayer.USER_FILE, legacy_data)
 
         project_file = opts.project_config_file
         if project_file is None and not opts.skip_files:

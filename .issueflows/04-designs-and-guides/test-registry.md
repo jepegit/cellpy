@@ -43,6 +43,12 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_cellpy_file_v9.py::test_failed_first_save_leaves_no_file | yes | yes | cellpy_file.atomic.atomic_write / v9.save | #845 | no half-written archive on a fresh path |
 | tests/test_cellpy_file_v9.py::test_incomplete_archive_is_rejected_before_replace | yes | yes | v9._verify_members | #845 | missing zip member never replaces a good file |
 | tests/test_cellpy_file_v9.py::test_failed_hdf5_resave_keeps_the_old_file | no | no | cellpy_file.write.save (v8/HDF5) | #845 | same guard for the legacy writer; unmarked to keep Tier 1 fast |
+| tests/test_config.py::test_active_config_file_prefers_toml | yes | yes | config.loader.active_config_file | #851 | "which config am I using" must stay honest |
+| tests/test_config.py::test_active_config_file_falls_back_to_legacy | yes | yes | config.loader.active_config_file | #851 | legacy-only setups unchanged |
+| tests/test_config.py::test_active_config_file_flags_shadowed_legacy | yes | yes | config.loader.active_config_file | #851 | migrated user: .conf on disk but ignored |
+| tests/test_config.py::test_active_config_file_agrees_with_load_config | no | yes | config.loader.active_config_file / load_config | #851 | anti-drift: helper and loader pick the same file |
+| tests/test_cellpy_cmd.py::test_info_configloc_reports_the_toml | yes | yes | cli_api._configloc | #851 | CLI reports the winning file |
+| tests/test_cellpy_cmd.py::test_info_configloc_flags_shadowed_legacy_file | yes | yes | cli_api._configloc | #851 | never point at the dead .conf |
 
 **Columns**
 

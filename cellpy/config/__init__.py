@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from cellpy.config.loader import LoadOptions
+from cellpy.config.loader import ActiveConfigFile, LoadOptions, active_config_file
 from cellpy.config.models import CellpyConfig
 from cellpy.config.session import (
     get_config,
@@ -35,8 +35,10 @@ _SECTION_NAMES = frozenset(
 )
 
 __all__ = [
+    "ActiveConfigFile",
     "CellpyConfig",
     "LoadOptions",
+    "active_config_file",
     "get_config",
     "override",
     "reload",
