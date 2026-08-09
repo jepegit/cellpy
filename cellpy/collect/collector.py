@@ -157,6 +157,54 @@ def normalize_column(
     return _transform
 
 
+def normalize_column_on_max(
+    column: str, out: str | None = None, scaler: float = 100.0
+) -> Callable[[pl.DataFrame], pl.DataFrame]:
+    """Build a transform that adds ``scaler * column / max(column)`` as a new series.
+
+    The counterpart of :func:`normalize_column` for the case where the reference
+    value is not known up front — retention against the cell's own best cycle,
+    which is what ``summary_plot`` does by default
+    (``fullcell_standard_normalization_type="max"``).
+
+    Works on both the wide (non-grouped) frame and the grouped long frame, and
+    leaves the frame untouched when *column* is missing.
+
+    Args:
+        column (str): source column (wide) or ``variable`` value (long).
+        out (str, optional): name of the series to add. Defaults to
+            ``"<column>_norm"``.
+        scaler (float): factor applied after dividing by the maximum.
+
+    Returns:
+        A ``polars.DataFrame -> polars.DataFrame`` transform.
+    """
+    target = out or f"{column}_norm"
+
+    def _transform(frame: pl.DataFrame) -> pl.DataFrame:
+        if "variable" in frame.columns and "mean" in frame.columns:
+            sub = frame.filter(pl.col("variable") == column)
+            if sub.height == 0:
+                return frame
+            reference = sub.select(pl.col("mean").max()).item()
+            if reference in (None, 0):
+                return frame
+            exprs = [
+                pl.lit(target).alias("variable"),
+                (scaler * pl.col("mean") / reference).alias("mean"),
+            ]
+            if "std" in sub.columns:
+                exprs.append((scaler * pl.col("std") / reference).alias("std"))
+            return pl.concat([frame, sub.with_columns(exprs)], how="diagonal_relaxed")
+        if column in frame.columns:
+            return frame.with_columns(
+                (scaler * pl.col(column) / pl.col(column).max()).alias(target)
+            )
+        return frame
+
+    return _transform
+
+
 def standard_gravimetric(
     batch: Any,
     norm_factor: float = 120.0,
