@@ -24,6 +24,10 @@ tmp/
 #testdata/hdf5/20160306_snx001_10_cc_01.h5
 # testdata/batchfiles/cellpy_batch_test.json
 
+# Stray local leftovers (not essential-suite tmp_path output; do not commit) (#855)
+/cellpy_batch_test_batch.json
+/testdata/hdf5/20160805_test001_45_cc.cellpy
+
 dev_data/
 dev_data/tmp
 dev_data/bugfixing
