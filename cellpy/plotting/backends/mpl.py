@@ -1229,14 +1229,18 @@ class MatplotlibBackend:
     def _render_ica_dva(self, frame: Any, spec: FigureSpec) -> Any:
         """Render ICA (dQ/dV) or DVA (dV/dQ) figures.
 
-        One series per ``(cycle, direction)``; shared line style for charge and
-        discharge. Cycle legend vs colorbar via
+        One series per ``(cycle, direction)``; color keyed by cycle. When both
+        directions are overlaid (e.g. ``direction="both"``), linestyle is
+        keyed by direction (``charge`` solid, ``discharge`` dotted — same
+        convention as the collected ICA line plots, #821) so the two
+        half-cycles stay distinguishable on a static export; a
+        single-direction plot stays solid. Cycle legend vs colorbar via
         :mod:`cellpy.plotting.cycle_legend`.
         """
         import matplotlib.pyplot as plt
         from matplotlib.colors import Normalize
 
-        from cellpy.ica import ICA_COLS
+        from cellpy.ica import DISCHARGE, ICA_COLS
         from cellpy.plotting.cycle_legend import (
             add_matplotlib_cycle_colorbar,
             pop_cycle_legend_options,
@@ -1270,19 +1274,24 @@ class MatplotlibBackend:
         use_legend = mode == "legend"
 
         shown_cycles: set[Any] = set()
-        for (cycle, _direction), group in frame.groupby(
+        # Only dash when both directions are actually overlaid (#862) — a
+        # single-direction plot has nothing to disambiguate from.
+        both_directions = frame[ICA_COLS.direction].nunique() > 1
+        for (cycle, direction), group in frame.groupby(
             [ICA_COLS.cycle, ICA_COLS.direction], sort=True
         ):
             label = None
             if use_legend and cycle not in shown_cycles:
                 label = str(cycle)
                 shown_cycles.add(cycle)
+            linestyle = ":" if both_directions and direction == DISCHARGE else "-"
             ax.plot(
                 group[x_col],
                 group[y_col],
                 color=cycle_to_color[cycle],
                 label=label,
                 linewidth=1.5,
+                linestyle=linestyle,
             )
 
         ax.set_xlabel(x_label)

@@ -47,6 +47,9 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_cli_light_import.py::test_setup_deps_probes_optional_modules | yes | yes | cli_api.setup_config --deps | #839 | opt-in optional probe |
 | tests/test_cellpy_file_v9.py::test_failed_resave_keeps_the_old_file | yes | yes | cellpy_file.atomic.atomic_write / v9.save / CellpyCell.save | #845 | data-loss guard: interrupted re-save must not destroy the old file |
 | tests/test_cellpy_file_v9.py::test_failed_first_save_leaves_no_file | yes | yes | cellpy_file.atomic.atomic_write / v9.save | #845 | no half-written archive on a fresh path |
+| tests/test_ica_plot_prepare.py::test_ica_dva_plotly_both_direction_dash_differs | yes | yes | plotting.backends.plotly._render_ica_dva | #862 | charge solid / discharge dot |
+| tests/test_ica_plot_prepare.py::test_ica_dva_plotly_single_direction_stays_solid | yes | yes | plotting.backends.plotly._render_ica_dva | #862 | single direction stays solid |
+| tests/test_ica_plot_prepare.py::test_ica_dva_matplotlib_both_direction_linestyle_differs | yes | yes | plotting.backends.mpl._render_ica_dva | #862 | "-" / ":" linestyle |
 | tests/test_cellpy_file_v9.py::test_incomplete_archive_is_rejected_before_replace | yes | yes | v9._verify_members | #845 | missing zip member never replaces a good file |
 | tests/test_cellpy_file_v9.py::test_failed_hdf5_resave_keeps_the_old_file | no | no | cellpy_file.write.save (v8/HDF5) | #845 | same guard for the legacy writer; unmarked to keep Tier 1 fast |
 | tests/test_config.py::test_active_config_file_prefers_toml | yes | yes | config.loader.active_config_file | #851 | "which config am I using" must stay honest |
