@@ -68,6 +68,89 @@ from cellpy.readers.cellpy_file import write as cellpy_file_write
 
 DIGITS_C_RATE = 5
 
+# Meta fields that drive scaled / equivalent-cycle summary columns (not the
+# base cycle-end summary from ``make_core_summary``). Used by apps after
+# post-load edits (mass / area / nom-cap / cycle mode) — see ``refresh_after``.
+# C-rate columns come from the step table and are independent of nom_cap.
+SUMMARY_META_DEPENDENCIES = {
+    "mass": {
+        "affects": ("*_gravimetric",),
+        "notes": (
+            "Gravimetric specific columns are absolute × (mass conversion factor). "
+            "Call refresh_after(('mass',)) after changing mass."
+        ),
+    },
+    "active_electrode_area": {
+        "affects": ("*_areal",),
+        "notes": (
+            "Areal specific columns are absolute × (area conversion factor). "
+            "Call refresh_after(('active_electrode_area',)) after changing area."
+        ),
+    },
+    "nominal_capacity": {
+        "affects": (
+            "normalized_cycle_index",
+            "equivalent_full_cycles",
+            "test_cumulated_capacity_throughput",
+        ),
+        "notes": (
+            "Absolute nominal capacity rescales equivalent-cycle / EFC columns. "
+            "charge_c_rate / discharge_c_rate come from the step table and are "
+            "not derived from nominal_capacity."
+        ),
+    },
+    "cycle_mode": {
+        "affects": (
+            "normalized_cycle_index",
+            "equivalent_full_cycles",
+        ),
+        "notes": (
+            "Inverted (anode) cycle_mode selects discharge vs charge capacity "
+            "when deriving equivalent-cycle columns. Plot charge/discharge "
+            "interpretation also depends on cycle_mode."
+        ),
+    },
+}
+
+_SUMMARY_META_FIELD_ALIASES = {
+    "mass": "mass",
+    "active_mass": "mass",
+    "active_electrode_area": "active_electrode_area",
+    "area": "active_electrode_area",
+    "nominal_capacity": "nominal_capacity",
+    "nom_cap": "nominal_capacity",
+    "cycle_mode": "cycle_mode",
+}
+
+
+def normalize_summary_meta_fields(fields=None):
+    """Normalize meta field names for ``SUMMARY_META_DEPENDENCIES`` / ``refresh_after``.
+
+    Args:
+        fields: One field name, an iterable of names, or ``None`` (all keys).
+
+    Returns:
+        tuple: Canonical field names in stable order.
+
+    Raises:
+        ValueError: If a name is not a known meta field / alias.
+    """
+    if fields is None:
+        return tuple(SUMMARY_META_DEPENDENCIES.keys())
+    if isinstance(fields, str):
+        fields = (fields,)
+    seen = []
+    for raw in fields:
+        key = _SUMMARY_META_FIELD_ALIASES.get(str(raw).strip().lower())
+        if key is None:
+            known = ", ".join(sorted(_SUMMARY_META_FIELD_ALIASES))
+            raise ValueError(
+                f"Unknown summary meta field {raw!r}. Expected one of: {known}"
+            )
+        if key not in seen:
+            seen.append(key)
+    return tuple(seen)
+
 
 # TODO: @jepe - new feature - method for assigning new cycle numbers and step numbers
 #   - Sometimes the user forgets to increment the cycle number and it would be good
@@ -409,7 +492,12 @@ class CellpyCell:
 
     @property
     def mass(self):
-        """Returns the mass"""
+        """Active-material mass.
+
+        After changing this on a cell that already has a summary, call
+        ``refresh_after(("mass",))`` (or full ``make_summary()``) so
+        gravimetric summary columns update. See ``SUMMARY_META_DEPENDENCIES``.
+        """
         return self.data.mass
 
     @mass.setter
@@ -418,7 +506,7 @@ class CellpyCell:
 
     @property
     def active_mass(self):
-        """Returns the active mass (same as mass)"""
+        """Active mass (same as ``mass``)."""
         return self.data.mass
 
     @active_mass.setter
@@ -436,7 +524,12 @@ class CellpyCell:
 
     @property
     def active_electrode_area(self):
-        """Returns the area"""
+        """Active electrode area.
+
+        After changing this on a cell that already has a summary, call
+        ``refresh_after(("active_electrode_area",))`` so areal summary
+        columns update. See ``SUMMARY_META_DEPENDENCIES``.
+        """
         return self.data.active_electrode_area
 
     @active_electrode_area.setter
@@ -445,7 +538,7 @@ class CellpyCell:
 
     @property
     def nom_cap(self):
-        """Returns the nominal capacity"""
+        """Nominal capacity (alias of ``nominal_capacity``)."""
         return self.data.nom_cap
 
     @nom_cap.setter
@@ -454,7 +547,13 @@ class CellpyCell:
 
     @property
     def nominal_capacity(self):
-        """Returns the nominal capacity"""
+        """Nominal capacity.
+
+        After changing this on a cell that already has a summary, call
+        ``refresh_after(("nominal_capacity",))`` so equivalent-cycle / EFC
+        columns update. C-rates are not derived from nom_cap — see
+        ``SUMMARY_META_DEPENDENCIES``.
+        """
         return self.data.nom_cap
 
     @nominal_capacity.setter
@@ -788,6 +887,11 @@ class CellpyCell:
     @property
     def cycle_mode(self):
         """The active test's ``cycle_mode`` (scalar).
+
+        After changing this on a cell that already has a summary, call
+        ``refresh_after(("cycle_mode",))`` so equivalent-cycle columns that
+        pick charge vs discharge capacity stay consistent. See
+        ``SUMMARY_META_DEPENDENCIES``.
 
         For per-test access on multi-test objects, use
         ``self.data.get_cycle_mode(test_id)`` / ``set_cycle_mode`` and the
@@ -3644,6 +3748,102 @@ class CellpyCell:
         return last_items
 
     # ----------making-summary------------------------------------------------------
+    def refresh_after(self, fields=None, **kwargs):
+        """Rebuild meta-dependent summary columns after editing cell metadata.
+
+        Prefer this over a full ``make_summary()`` when only mass, electrode
+        area, nominal capacity, or cycle mode changed and a summary already
+        exists. Re-runs the scaled / equivalent-cycle half of the summary
+        pipeline (``core.add_scaled_summary_columns``) without rebuilding the
+        base cycle-end table. Falls back to ``make_summary`` when no summary
+        is present.
+
+        See ``SUMMARY_META_DEPENDENCIES`` for the meta → column map apps can
+        use for messaging / UI scope.
+
+        Args:
+            fields: Meta field name(s) that changed. Accepted names and
+                aliases: ``mass`` / ``active_mass``, ``active_electrode_area``
+                / ``area``, ``nominal_capacity`` / ``nom_cap``, ``cycle_mode``.
+                If omitted, all meta-dependent scaled columns are refreshed.
+            **kwargs: Forwarded to ``make_summary`` when no summary exists yet.
+                ``normalization_cycles``, ``nom_cap``, and ``nom_cap_specifics``
+                are also honoured on the selective path.
+
+        Returns:
+            self (chainable).
+
+        Raises:
+            ValueError: If ``fields`` contains an unknown name.
+        """
+        normalize_summary_meta_fields(fields)  # validate early
+        try:
+            data = self.data
+        except NoDataFound:
+            logging.info("Empty test (no data found)")
+            return self
+
+        summary = getattr(data, "summary", None)
+        if summary is None or getattr(summary, "empty", False):
+            return self.make_summary(**kwargs)
+
+        self._refresh_scaled_summary_columns(
+            normalization_cycles=kwargs.get("normalization_cycles"),
+            nom_cap=kwargs.get("nom_cap"),
+            nom_cap_specifics=kwargs.get("nom_cap_specifics"),
+        )
+        return self
+
+    def _resolve_nom_cap_abs(self, data, nom_cap=None, nom_cap_specifics=None):
+        """Resolve absolute nominal capacity from cell meta / overrides."""
+        if nom_cap_specifics is None:
+            nom_cap_specifics = self.nom_cap_specifics
+        if nom_cap is None:
+            nom_cap = data.nom_cap
+        mass = data.mass or 1.0
+        if nom_cap_specifics == "gravimetric":
+            return self.nominal_capacity_as_absolute(nom_cap, mass, nom_cap_specifics)
+        if nom_cap_specifics == "areal":
+            return self.nominal_capacity_as_absolute(
+                nom_cap, data.active_electrode_area, nom_cap_specifics
+            )
+        if nom_cap_specifics == "absolute":
+            return self.nominal_capacity_as_absolute(nom_cap, 1.0, nom_cap_specifics)
+        if nom_cap_specifics == "volumetric":
+            return self.nominal_capacity_as_absolute(
+                nom_cap, data.volume, nom_cap_specifics
+            )
+        raise ValueError(f"Unknown nom_cap_specifics: {nom_cap_specifics!r}")
+
+    def _refresh_scaled_summary_columns(
+        self,
+        normalization_cycles=None,
+        nom_cap=None,
+        nom_cap_specifics=None,
+    ):
+        """Recompute meta-dependent summary columns in place."""
+        self._guard_mixed_cycle_modes()
+        data = self.data
+        specifics = ["gravimetric", "areal", "absolute"]
+        nom_cap_abs = self._resolve_nom_cap_abs(
+            data, nom_cap=nom_cap, nom_cap_specifics=nom_cap_specifics
+        )
+        specific_conversion_factors = {
+            mode: self.get_converter_to_specific(
+                dataset=data, mode=mode, to_units=self.cellpy_units
+            )
+            for mode in specifics
+        }
+        data = self.core.add_scaled_summary_columns(
+            data,
+            nom_cap_abs=nom_cap_abs,
+            normalization_cycles=normalization_cycles,
+            specifics=specifics,
+            specific_conversion_factors=specific_conversion_factors,
+        )
+        self.data = data
+        return data
+
     def make_summary(
         self,
         find_ir=False,
@@ -3663,6 +3863,10 @@ class CellpyCell:
         **kwargs,
     ):
         """Convenience function that makes a summary of the cycling data.
+
+        After editing mass / area / nominal capacity / cycle mode on a cell
+        that already has a summary, prefer ``refresh_after(...)`` over a full
+        rebuild when only those meta-dependent columns need updating.
 
         Args:
             find_ir (bool): if True, the internal resistance will be calculated.
