@@ -89,7 +89,9 @@ Runner: `uv run pytest` (the documented conda env `cellpy_dev_313` has a broken
 
 ## Remaining work
 
-None for this issue. Deliberately out of scope, worth a follow-up if it bites:
-a **project-level** `cellpy.toml` (`find_project_config_file`) also outranks the
-user file, and `--configloc` still does not mention it. `--config` / `-C` already
-shows per-field provenance, so the information is reachable today.
+None for this issue. Merged as PR #852 (squash `7d432004`).
+
+Deliberately out of scope, now tracked as **#853** (`yolo`, milestone v.2.1.2): a
+**project-level** `cellpy.toml` (`find_project_config_file`) also outranks the user
+file, and `--configloc` still does not mention it. `--config` / `-C` already shows
+per-field provenance, so the information is reachable today.
