@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+- ``cellpy info --configloc`` names a project ``cellpy.toml`` when one applies (and outranks the user file). (#853)
 - ``config.override()`` is thread-/task-local via ``contextvars`` (no cross-talk between concurrent jobs). (#850)
 - Config file dump/load no longer persist or accept legacy Arbin ``SQL_PWD`` / ``SQL_UID`` under ``[instruments]`` (env-only credentials). (#849)
 - ``refresh_after`` + ``SUMMARY_META_DEPENDENCIES``: rebuild meta-dependent summary columns after mass / area / nom-cap / cycle-mode edits without a full ``make_summary()``. (#846)

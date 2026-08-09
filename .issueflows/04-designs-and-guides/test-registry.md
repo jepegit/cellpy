@@ -42,6 +42,8 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_config_secrets.py::test_legacy_arbin_sql_credentials_are_not_in_the_file_dump | yes | yes | CellpyConfig.model_dump_for_file scrub | #849 | SQL_PWD/UID stripped |
 | tests/test_config_secrets.py::test_instrument_credentials_in_a_user_toml_are_rejected | yes | yes | loader instrument credential reject | #849 | TOML load guard |
 | tests/test_config.py::test_config_override_is_thread_isolated | yes | yes | config.session.override ContextVar | #850 | ThreadPoolExecutor isolation |
+| tests/test_config.py::test_active_config_file_reports_project_toml | yes | yes | config.loader.active_config_file project_path | #853 | |
+| tests/test_cellpy_cmd.py::test_info_configloc_reports_project_toml | yes | yes | cli_api._configloc project notice | #853 | |
 | tests/test_cli_light_import.py::test_setup_deps_probes_optional_modules | yes | yes | cli_api.setup_config --deps | #839 | opt-in optional probe |
 | tests/test_cellpy_file_v9.py::test_failed_resave_keeps_the_old_file | yes | yes | cellpy_file.atomic.atomic_write / v9.save / CellpyCell.save | #845 | data-loss guard: interrupted re-save must not destroy the old file |
 | tests/test_cellpy_file_v9.py::test_failed_first_save_leaves_no_file | yes | yes | cellpy_file.atomic.atomic_write / v9.save | #845 | no half-written archive on a fresh path |

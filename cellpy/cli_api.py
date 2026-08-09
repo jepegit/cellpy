@@ -1286,11 +1286,19 @@ def _configloc():
         _, config_file_name = prmreader.get_user_dir_and_dst()
         _say(f"[cellpy] -> {config_file_name}")
         _say("[cellpy] File does not exist!")
+        if active.project_path is not None:
+            _say(
+                f"[cellpy] (project {active.project_path} also applies and takes precedence)"
+            )
         return None
 
     _say(f"[cellpy] -> {active.path}")
     if active.shadowed_legacy is not None:
         _say(f"[cellpy] (legacy {active.shadowed_legacy} is ignored - {CONFIG_FILENAME} takes precedence)")
+    if active.project_path is not None:
+        _say(
+            f"[cellpy] (project {active.project_path} also applies and takes precedence)"
+        )
     return active.path
 
 

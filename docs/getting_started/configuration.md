@@ -65,6 +65,15 @@ file is still on disk but no longer has any effect:
 [cellpy] (legacy C:\Users\you\.cellpy_prms_you.conf is ignored - cellpy.toml takes precedence)
 ```
 
+When a **project** `cellpy.toml` is found by walking up from the current
+directory, `--configloc` names it too. That file is merged after the user file
+and wins on conflicts (`cellpy edit config` still opens the user file):
+
+```text
+[cellpy] -> C:\Users\you\AppData\Local\cellpy\cellpy\cellpy.toml
+[cellpy] (project C:\work\proj\cellpy.toml also applies and takes precedence)
+```
+
 ## Configuration layers
 
 Settings resolve later-over-earlier:
