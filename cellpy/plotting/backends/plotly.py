@@ -861,14 +861,18 @@ class PlotlyBackend:
         """Render ICA (dQ/dV) or DVA (dV/dQ) figures.
 
         One trace per ``(cycle, direction)`` so half-cycles are not connected;
-        color is keyed by cycle. Hover includes direction. Line style is shared
-        across charge and discharge. Cycle legend vs colorbar via
+        color is keyed by cycle. When both directions are overlaid (e.g.
+        ``direction="both"``), line dash is keyed by direction (``charge``
+        solid, ``discharge`` dotted — same convention as the collected ICA
+        line plots, #821) so the two half-cycles stay distinguishable on a
+        static export; a single-direction plot stays solid. Hover also
+        includes direction. Cycle legend vs colorbar via
         :mod:`cellpy.plotting.cycle_legend`.
         """
         import plotly.express as px
         import plotly.graph_objects as go
 
-        from cellpy.ica import ICA_COLS
+        from cellpy.ica import DISCHARGE, ICA_COLS
         from cellpy.plotting.cycle_legend import (
             add_plotly_cycle_colorbar,
             pop_cycle_legend_options,
@@ -911,11 +915,15 @@ class PlotlyBackend:
         fig = go.Figure()
         shown_cycles: set[Any] = set()
         group_cols = [ICA_COLS.cycle, ICA_COLS.direction]
+        # Only dash when both directions are actually overlaid (#862) — a
+        # single-direction plot has nothing to disambiguate from.
+        both_directions = frame[ICA_COLS.direction].nunique() > 1
         for (cycle, direction), group in frame.groupby(group_cols, sort=True):
             color = cycle_to_color[cycle]
             show_legend = use_legend and cycle not in shown_cycles
             if show_legend:
                 shown_cycles.add(cycle)
+            dash = "dot" if both_directions and direction == DISCHARGE else "solid"
             fig.add_trace(
                 go.Scatter(
                     x=group[x_col],
@@ -924,7 +932,7 @@ class PlotlyBackend:
                     name=str(cycle),
                     legendgroup=str(cycle),
                     showlegend=show_legend,
-                    line=dict(color=color, width=1.5),
+                    line=dict(color=color, width=1.5, dash=dash),
                     customdata=group[[ICA_COLS.cycle, ICA_COLS.direction]],
                     hovertemplate=(
                         f"{x_label}: %{{x}}<br>"

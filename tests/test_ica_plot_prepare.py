@@ -78,3 +78,34 @@ def test_ica_dva_interactive_removed(cell):
     assert "interactive" not in inspect.signature(dva_plot).parameters
     assert ica_plot(cell, cycles=1, backend="matplotlib") is not None
     assert dva_plot(cell, cycles=1, backend="matplotlib") is not None
+
+
+@pytest.mark.essential
+@pytest.mark.parametrize("plot_fn", [ica_plot, dva_plot])
+def test_ica_dva_plotly_both_direction_dash_differs(cell, plot_fn):
+    """direction='both' must be visually distinguishable, not just via hover (#862)."""
+    pytest.importorskip("plotly", reason="plotting extras (batch) not installed")
+    fig = plot_fn(cell, cycles=[1], direction="both", backend="plotly")
+    dashes = {trace.line.dash for trace in fig.data}
+    assert dashes == {"solid", "dot"}
+
+
+@pytest.mark.essential
+@pytest.mark.parametrize("plot_fn", [ica_plot, dva_plot])
+@pytest.mark.parametrize("direction", [CHARGE, DISCHARGE])
+def test_ica_dva_plotly_single_direction_stays_solid(cell, plot_fn, direction):
+    """A single direction has nothing to disambiguate, so it stays solid."""
+    pytest.importorskip("plotly", reason="plotting extras (batch) not installed")
+    fig = plot_fn(cell, cycles=[1], direction=direction, backend="plotly")
+    dashes = {trace.line.dash for trace in fig.data}
+    assert dashes == {"solid"}
+
+
+@pytest.mark.essential
+@pytest.mark.parametrize("plot_fn", [ica_plot, dva_plot])
+def test_ica_dva_matplotlib_both_direction_linestyle_differs(cell, plot_fn):
+    """Matplotlib backend gets the same charge/discharge distinction (#862)."""
+    fig = plot_fn(cell, cycles=[1], direction="both", backend="matplotlib")
+    lines = fig.get_axes()[0].get_lines()
+    linestyles = {line.get_linestyle() for line in lines}
+    assert linestyles == {"-", ":"}
