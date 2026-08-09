@@ -1598,6 +1598,80 @@ def ica_plotter(
     )
 
 
+def dva_plotter(
+    collected_curves,
+    cycles_to_plot=None,
+    backend="plotly",
+    method="fig_pr_cell",
+    direction="charge",
+    **kwargs,
+):
+    """Plot collected DVA (dV/dQ) curves.
+
+    Mirrors :func:`ica_plotter` (#863) -- same direction handling (including
+    ``"both"`` overlay with ``line_dash`` so the half-cycles do not join) --
+    but along the DVA axes (capacity vs dV/dQ) rather than ICA's (voltage vs
+    dQ/dV).
+
+    Args:
+        collected_curves(pd.DataFrame): collected data in long format.
+        cycles_to_plot (list): cycles to plot
+        backend (str): what backend to use.
+        method (str): 'fig_pr_cell' or 'fig_pr_cycle' or 'film'.
+        direction (str): ``"charge"``, ``"discharge"``, or ``"both"``.
+            Default ``"charge"``.
+
+        **kwargs: consumed first in current function, rest sent to backend in sequence_plotter.
+
+    Returns:
+        styled figure object
+    """
+
+    # collected_plot / Collection.plot may forward ``cycles=`` in kwargs.
+    if cycles_to_plot is None and "cycles" in kwargs:
+        cycles_to_plot = kwargs.pop("cycles")
+    else:
+        kwargs.pop("cycles", None)
+
+    if cycles_to_plot is None:
+        unique_cycles = list(collected_curves.cycle.unique())
+        max_cycle = max(unique_cycles)
+        if len(unique_cycles) > 50:
+            cycles_to_plot = DEFAULT_CYCLES
+            max_cycle = max(cycles_to_plot)
+    else:
+        max_cycle = max(cycles_to_plot)
+
+    direction = _normalize_direction(direction)
+    if direction not in ("charge", "discharge", "both"):
+        logger.warning(
+            "direction=%r not allowed; coercing to 'charge' "
+            "(allowed: 'charge', 'discharge', 'both')",
+            direction,
+        )
+        direction = "charge"
+    if method == "film":
+        kwargs["range_y"] = kwargs.pop("range_y", None) or (1, max_cycle)
+
+    return _cycles_plotter(
+        collected_curves,
+        x="capacity",
+        y="dvdq",
+        z="cycle",
+        g="cell",
+        x_label="Capacity",
+        x_unit="mAh/g",
+        y_label="dV/dQ",
+        y_unit="V/(mAh/g)",
+        default_title="Differential Voltage Analysis Plots",
+        direction=direction,
+        backend=backend,
+        method=method,
+        cycles=cycles_to_plot,
+        **kwargs,
+    )
+
+
 def histogram_equalization(image: np.array) -> np.array:
     """Perform histogram equalization on a numpy array."""
     # from http://www.janeriksolem.net/histogram-equalization-with-python-and.html
@@ -1701,6 +1775,8 @@ def render_collected(frame: Any, spec: FigureSpec, *, backend_override: Optional
         return summary_plotter(frame, backend=backend, **opts)
     if family_kind == "ica":
         return ica_plotter(frame, backend=backend, method=method, **opts)
+    if family_kind == "dva":
+        return dva_plotter(frame, backend=backend, method=method, **opts)
     if family_kind == "cycles":
         return cycles_plotter(frame, backend=backend, method=method, **opts)
     return sequence_plotter(frame, backend=backend, method=method, **opts)
@@ -1722,7 +1798,7 @@ def collected_plot(
 
     Args:
         frame: long/tidy frame with ``cell`` / ``group`` / ``sub_group`` as needed.
-        family_kind: ``summary`` | ``cycles`` | ``ica`` (selects column defaults).
+        family_kind: ``summary`` | ``cycles`` | ``ica`` | ``dva`` (selects column defaults).
         layout: ``per_cell`` | ``per_cycle`` | ``summary``.
         kind: ``line`` | ``film`` | ``spread``.
         backend: ``plotly`` (primary) or ``seaborn`` / ``matplotlib`` (best-effort).

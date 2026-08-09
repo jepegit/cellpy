@@ -22,12 +22,14 @@ from cellpy.collect.collection import Collection, CollectionMeta, load_collectio
 from cellpy.collect.collector import (
     BatchCollector,
     cycles_collector,
+    dva_collector,
     ica_collector,
     normalize_column,
     standard_gravimetric,
     summary_collector,
 )
 from cellpy.collect.curves import collect_cycles
+from cellpy.collect.dva import collect_dva
 from cellpy.collect.ica import collect_ica
 from cellpy.collect.options import (
     CurveOptions,
@@ -44,6 +46,7 @@ __all__ = [
     "collect_summaries",
     "collect_cycles",
     "collect_ica",
+    "collect_dva",
     "from_cells",
     "iter_cells",
     "CellItem",
@@ -55,6 +58,7 @@ __all__ = [
     "summary_collector",
     "cycles_collector",
     "ica_collector",
+    "dva_collector",
     "standard_gravimetric",
     "normalize_column",
 ]
