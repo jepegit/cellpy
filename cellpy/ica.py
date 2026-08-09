@@ -9,25 +9,18 @@ frame = ica.dqdv(c)                       # cycle, direction, voltage, capacity,
 frame = ica.dvdq(c, direction="charge")   # cycle, direction, capacity, voltage, dvdq
 ```
 
-The recipe is unchanged from cellpy 1.x — interpolate V(q), optionally smooth,
-invert to q(V), differentiate, optionally smooth again, optionally normalize —
-but it now lives in stateless functions ([`transform_half_cycle`][]) configured
-by a single frozen [`IcaOptions`][] object rather than ~20 keyword arguments
-tunnelled through four entry points.
-
-**What changed in 2.0** (see `DEPRECATIONS.md` and the migration guide):
+Both are thin wrappers over stateless transform functions
+([`transform_half_cycle`][]) configured by a single frozen [`IcaOptions`][]
+object: interpolate V(q), optionally smooth, invert to q(V), differentiate,
+optionally smooth again, optionally normalize.
 
 - The output frame is *specced*: always long format, always the same columns,
-  with `direction` spelled `"charge"`/`"discharge"` instead of the old ±1 code
-  whose meaning depended on `cycle_mode`.
+  with `direction` spelled `"charge"`/`"discharge"`.
 - The incremental-capacity column is named `dqdv`.
-- `dvdq()` is new. cellpy could not compute differential voltage analysis at
-  all before, even though the pipeline already built the smoothed V(q)
-  representation it needs.
 - Half-cycles that fail are reported, not silently replaced by empty arrays.
-- The 1.x surface (`Converter`, `dqdv_cycle`, `dqdv_cycles`, `dqdv_np`,
-  `dqdv(split=/tidy=/cycle=/label_direction=)`, the duplicate `dq` column) was
-  removed in 2.1. Use `dqdv(cell, cycles=, direction=)` + `to_wide()`.
+- `ica.Converter` and the other pre-2.1 entry points are removed; use
+  `dqdv(cell, cycles=, direction=)` + `to_wide()` (see the migration guide and
+  `DEPRECATIONS.md`).
 
 scipy stays on this side of the cellpy/cellpycore boundary: cellpycore is
 scipy-free, and the ICA math is interpolation and filtering, not frame algebra.
@@ -120,11 +113,10 @@ class GaussianOptions:
 class IcaOptions:
     """The complete recipe for one dQ/dV or dV/dQ transform.
 
-    One definition, one docstring. In 1.x these ~20 parameters could arrive as
-    ``Converter`` constructor arguments, as ``**kwargs`` tunnelled through any
-    of four entry points, or as ``dqdv_np``'s 17 explicit parameters — with the
-    same option spelled `smoothing` in one place and `diff_smoothing` in
-    another. Now there is one object.
+    All options for a transform live on one frozen object, passed to
+    [`transform_half_cycle`][cellpy.ica.transform_half_cycle] or built
+    implicitly from the `**overrides` on [`dqdv`][cellpy.ica.dqdv] /
+    [`dvdq`][cellpy.ica.dvdq].
 
     Attributes:
         voltage_resolution: Voltage step for the q(V) interpolation, e.g.
@@ -136,8 +128,6 @@ class IcaOptions:
         interpolation_method: Any ``kind`` accepted by ``scipy.interpolate.interp1d``.
         pre_smoothing: Savitzky-Golay smoothing of V(q) before inversion.
         diff_smoothing: Savitzky-Golay smoothing of q(V) before differentiating.
-            (1.x called this ``smoothing`` on ``Converter`` and
-            ``diff_smoothing`` on ``dqdv_np``.)
         post_smoothing: Gaussian smoothing of the finished derivative.
         savgol_window_divisor: Window length divisor for both Savitzky-Golay
             passes; the window is clamped to at least 3 points and forced odd.
@@ -151,16 +141,16 @@ class IcaOptions:
             typical ~1 V window.
         gaussian: Remaining ``gaussian_filter1d`` parameters.
         normalize: ``"area"`` scales the curve so its integral equals the
-            normalizing factor; ``False`` leaves it in physical units. 1.x
-            spelled ``"area"`` as ``True``, which is still accepted.
+            normalizing factor; ``False`` leaves it in physical units. The
+            legacy ``True`` spelling of ``"area"`` is also accepted.
         normalizing_factor: Target for ``normalize="area"``. ``None`` uses the
             half-cycle's own end capacity.
         normalizing_roof: Rescales the normalizing factor by
             ``end_capacity / normalizing_roof`` — the hook for normalizing a
             whole series to one nominal capacity.
-        increment_method: Only ``"diff"``. The half-finished ``"hist"`` binning
-            method from 1.x is reachable through the deprecated
-            [`Converter`][cellpy.ica.Converter] only.
+        increment_method: Only ``"diff"`` is implemented on this path; the
+            unfinished ``"hist"`` binning method is reachable through the
+            deprecated [`Converter`][cellpy.ica.Converter] only.
     """
 
     # interpolation
@@ -258,7 +248,7 @@ ICA_COLS = IcaCols()
 
 
 # ---------------------------------------------------------------------------
-# small helpers (public since 1.x)
+# small helpers
 # ---------------------------------------------------------------------------
 
 
@@ -276,11 +266,7 @@ def index_bounds(x) -> tuple[float, float]:
 
 
 def _savgol_window(n_points: int, divisor: int) -> int:
-    """Odd Savitzky-Golay window of at least 3 points.
-
-    Extracted from the two copies in 1.x's ``pre_process_data`` and
-    ``increment_data``, which computed it identically.
-    """
+    """Odd Savitzky-Golay window of at least 3 points."""
     effective_divisor = np.amin((divisor, n_points / 5))
     window = int(n_points / effective_divisor)
     if window % 2 == 0:
@@ -303,10 +289,9 @@ class HalfCycleResult:
         partner: The other coordinate at the same points, so ICA and DVA curves
             can be cross-plotted. Capacity for ``dqdv``, voltage for ``dvdq``.
         derivative: ``"dqdv"`` or ``"dvdq"``.
-        normalizing_factor: The factor actually used. In 1.x this was written
-            back onto the ``Converter``, so a reused converter silently carried
-            one cycle's normalization into the next; it is returned here
-            instead.
+        normalizing_factor: The factor actually used, returned rather than
+            mutated onto shared state, so processing one half-cycle can never
+            leak its normalization into the next.
         post_smoothing_applied: Whether gaussian post-smoothing survived — it is
             dropped when it raises (see ``notes``).
         notes: Human-readable record of anything the transform had to work
@@ -463,8 +448,8 @@ def transform_half_cycle(
     """Transform one half-cycle into dQ/dV or dV/dQ.
 
     This is the pure core: same inputs, same outputs, no shared state. It is
-    public because it is the honest replacement for 1.x's ``dqdv_np`` — the
-    "I already have two arrays" case.
+    public for the "I already have two arrays" case, where extracting a
+    half-cycle from a `CellpyCell` first would be pure overhead.
 
     Args:
         voltage: Voltage samples.
@@ -582,13 +567,7 @@ def _is_cell(source: Any) -> bool:
 
 
 def _curves_from_cell(source, cycles, number_of_points) -> pd.DataFrame:
-    """The single extraction route (design principle 5).
-
-    1.x had two: the combined path used ``get_cap(method="forth-and-forth")``
-    while the split path went through ``collect_capacity_curves`` in the
-    *readers* package with its own options. Same public function, different
-    extraction semantics depending on ``split=``.
-    """
+    """The single extraction route for capacity/voltage curves from a cell."""
     return source.get_cap(
         cycle=cycles,
         method="forth-and-forth",
@@ -808,8 +787,7 @@ def dqdv(
             ``get_cap(categorical_column=True, label_cycle_number=True)``, or a
             ``(voltage, capacity)`` pair of arrays.
         cycles: Cycle number or list of cycle numbers. ``None`` processes all.
-        direction: ``"charge"``, ``"discharge"`` or ``"both"``. Replaces 1.x's
-            ``split=True``, which returned two frames of a different shape.
+        direction: ``"charge"``, ``"discharge"`` or ``"both"``.
         options: An [`IcaOptions`][cellpy.ica.IcaOptions]. Defaults to
             ``IcaOptions()``.
         strict: Raise instead of warning when a half-cycle fails.
@@ -855,10 +833,8 @@ def dvdq(
 ) -> pd.DataFrame:
     """Differential voltage analysis (DVA): dV/dQ against capacity.
 
-    New in cellpy 2.0. DVA is the standard technique for electrode balancing
-    and degradation-mode analysis, and cellpy could not compute it - some
-    loaders *ingested* a ``dv_dq`` column when the cycler happened to export
-    one, but there was no way to derive it from the curves.
+    DVA is the standard technique for electrode balancing and degradation-mode
+    analysis.
 
     It rides the same pipeline as [`dqdv`][cellpy.ica.dqdv] and is in fact the
     simpler of the two: dQ/dV needs the V(q) curve inverted to q(V) before
@@ -891,9 +867,8 @@ def dvdq(
 def to_wide(frame: pd.DataFrame) -> pd.DataFrame:
     """Convert a specced long frame to the wide, cycle-per-column layout.
 
-    Wide format is an explicit conversion, not an entry-point mode: in 1.x
-    whether you got long or wide depended on ``tidy=`` *and* ``split=``, whose
-    defaults disagreed between functions.
+    Wide format is always an explicit conversion, never an implicit mode of
+    [`dqdv`][cellpy.ica.dqdv] / [`dvdq`][cellpy.ica.dvdq].
 
     Args:
         frame: A frame from [`dqdv`][cellpy.ica.dqdv] or

@@ -38,6 +38,94 @@ Two rules catch most mistakes:
 Failures are exceptions, never partial results: raise `LoaderError` (wrapping
 whatever the vendor parser threw) rather than returning an empty tuple.
 
+## A worked example
+
+Say "AwesomeCycler" exports a semicolon-separated `.awe` file:
+
+```text
+Rec;Time_s;Timestamp;Voltage_V;Current_A;Cycle
+1;0.0;2024-01-01 10:00:00;3.400;0.500;1
+2;5.0;2024-01-01 10:00:05;3.412;0.500;1
+3;10.0;2024-01-01 10:00:10;3.424;0.500;1
+4;15.0;2024-01-01 10:00:15;3.436;-0.500;2
+```
+
+A conforming loader for it — no cellpy base class, just the vendor-column
+mapping onto the native `RawCols` names:
+
+```python
+from __future__ import annotations
+
+from pathlib import Path
+
+import polars as pl
+from cellpycore.config import default_schema
+from cellpycore.metadata.models import TestMeta
+from cellpycore.units import CellpyUnits
+
+from cellpy.exceptions import LoaderError
+from cellpy.readers.instruments.contract import LoaderResult
+
+_SCHEMA = default_schema().raw
+
+
+class AwesomeCyclerLoader:
+    name = "awesomecycler"
+    instrument = "awesomecycler"
+    supported_suffixes = (".awe",)
+
+    def can_load(self, source: Path) -> bool:
+        return Path(source).suffix.lower() in self.supported_suffixes
+
+    def load(self, source: Path, *, instrument_config=None, **kwargs):
+        try:
+            frame = pl.read_csv(source, separator=";")
+        except Exception as exc:
+            raise LoaderError(f"could not parse {source}: {exc}") from exc
+
+        raw = frame.rename(
+            {
+                "Rec": _SCHEMA.datapoint_num,
+                "Time_s": _SCHEMA.test_time,
+                "Cycle": _SCHEMA.cycle_num,
+                "Voltage_V": _SCHEMA.potential,
+                "Current_A": _SCHEMA.current,
+            }
+        ).with_columns(
+            pl.col(_SCHEMA.datapoint_num).cast(pl.Int64),
+            pl.col(_SCHEMA.test_time).cast(pl.Float64),
+            pl.col(_SCHEMA.cycle_num).cast(pl.Int64),
+            pl.col(_SCHEMA.potential).cast(pl.Float64),
+            pl.col(_SCHEMA.current).cast(pl.Float64),
+            pl.col("Timestamp")
+            .str.strptime(pl.Datetime, "%Y-%m-%d %H:%M:%S")
+            .dt.replace_time_zone("UTC")
+            .dt.epoch(time_unit="ns")
+            .alias(_SCHEMA.epoch_time_utc),
+        ).drop("Timestamp")
+
+        raw_units = CellpyUnits(current="A", voltage="V", time="sec")
+        test_meta = TestMeta(cell_name=source.stem, test_type="cycling")
+        return (LoaderResult(raw=raw, raw_units=raw_units, test_meta=test_meta),)
+```
+
+Points worth calling out:
+
+- Only the vendor columns that map onto a `RawCols` name get renamed and kept;
+  anything else in the file is simply not selected. Cast every mapped column to
+  the dtype the schema expects (`RawCols.dtype_map()` if you want to look it
+  up rather than hard-code it) — `harmonize()` and the conformance kit are both
+  strict about this.
+- `epoch_time_utc` is int64 nanoseconds since the Unix epoch, UTC — not the raw
+  `Timestamp` string and not a naive local time. Vendors that report local time
+  need a timezone before `.dt.epoch(time_unit="ns")`.
+- `raw_units` describes the units this loader actually emits (here plain SI:
+  amperes, volts, seconds); cellpy converts from there, so get this right
+  rather than pre-converting inside the loader.
+- `test_meta` carries only what the file told you (a name, a type). No
+  `source_uri`, no `loaded_datetime` — the framework fills those in once the
+  file is on its way into a `CellpyCell`.
+
 ## Registering it
 
 Declare an entry point; there is no registration call and no plugin API to
@@ -46,7 +134,7 @@ call into:
 ```toml
 # your package's pyproject.toml
 [project.entry-points."cellpy.loaders"]
-mycycler = "my_package.loader:MyCyclerLoader"
+awesomecycler = "my_package.loader:AwesomeCyclerLoader"
 ```
 
 Install your package and cellpy finds it. Check with:
@@ -71,7 +159,7 @@ from pathlib import Path
 from cellpy.readers.instruments.testing import check_loader
 
 def test_my_loader_conforms():
-    check_loader(MyCyclerLoader, Path("tests/data/sample.mcx"))
+    check_loader(AwesomeCyclerLoader, Path("tests/data/sample.awe"))
 ```
 
 It checks the return shape, the frame schema and dtypes, the units, that your

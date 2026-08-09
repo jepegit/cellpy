@@ -355,14 +355,14 @@ def _state_splitting(
         charge_target = schema_raw["charge_capacity_txt"]
         discharge_target = schema_raw["discharge_capacity_txt"]
 
-        # Any *other* vendor column claiming those targets loses. This mirrors
-        # 1.x rather than inventing a rule: `split_capacity` is not in
-        # ORDERED_POST_PROCESSING_STEPS, so it runs after `rename_headers` and
-        # overwrites whatever the rename produced. `maccor_txt_one` is the live
-        # case — it declares a `Discharge_Capacity(Ah)` column under a "not
-        # observed yet" comment, which the split would have overwritten had the
-        # file carried it. Without this, the declarations fail validation for
-        # mapping two vendor columns onto one native column.
+        # Any *other* vendor column claiming those targets loses:
+        # `split_capacity` is not in ORDERED_POST_PROCESSING_STEPS, so it runs
+        # after `rename_headers` and overwrites whatever the rename produced.
+        # `maccor_txt_one` is the live case — it declares a
+        # `Discharge_Capacity(Ah)` column under a "not observed yet" comment,
+        # which the split would have overwritten had the file carried it.
+        # Without this, the declarations fail validation for mapping two
+        # vendor columns onto one native column.
         for vendor, target in list(column_map.items()):
             if target in (charge_target, discharge_target):
                 logging.debug(

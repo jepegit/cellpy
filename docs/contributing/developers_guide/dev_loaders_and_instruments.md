@@ -1,6 +1,17 @@
 # About loaders
 
 Instrument loaders are used by `CellpyCell` to load data from a file into a `Data` object.
+
+This page covers the **built-in** loaders shipped in `cellpy.readers.instruments` — the
+module-scanning factory below is how they are discovered and instantiated internally.
+If you are adding support for a cycler from *outside* cellpy (your own package, no
+cellpy base class), that goes through the newer entry-point contract instead — see
+[Write an instrument loader plugin](../../other/writing_a_loader_plugin.md) and the
+[Instruments API reference](../../api/instruments.md). The two coexist: built-in
+loaders have not been ported to the contract yet (`cellpy.readers.instruments.registry`
+documents the current scope), so this factory remains the way to add or change one of
+them.
+
 The instrument loaders are all located in the `cellpy.readers.instruments` package (*i.e.* in
 the folder `cellpy/readers/instruments`).
 They are Python modules (.py files) and are automatically registered when `CellpyCell` is
@@ -31,7 +42,7 @@ at least the following methods: `get_raw_units`, `get_raw_limits`, and `loader`.
 The instrument loaders must all have a class named `DataLoader` which is a subclasses of `BaseLoader`
 (in `cellpy/readers/instruments/base.py`) or one of its available subclasses (see below).
 
-The following subclasses of `BaseLoader` are available (v.1.0): `AutoLoader` and `TxtLoader`.
+The following subclasses of `BaseLoader` are available: `AutoLoader` and `TxtLoader`.
 
 ### Subclassing `BaseLoader`
 
