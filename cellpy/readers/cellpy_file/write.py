@@ -12,6 +12,7 @@ from cellpy.readers import data_structures as ds
 from cellpy.readers import externals
 from cellpy.readers.cellpy_file import dtype as cellpy_file_dtype
 from cellpy.readers.cellpy_file import fids as cellpy_file_fids
+from cellpy.readers.cellpy_file.atomic import atomic_write
 
 _module_logger = logging.getLogger(__name__)
 
@@ -69,9 +70,10 @@ def save(data, path, *, format_spec: CellpyFileFormat = FORMAT_V8) -> None:
 
     warnings.simplefilter("ignore", externals.pandas.errors.PerformanceWarning)
     try:
-        with ds.pickle_protocol(PICKLE_PROTOCOL):
+        with ds.pickle_protocol(PICKLE_PROTOCOL), atomic_write(path) as staged:
             with externals.pandas.HDFStore(
-                path,
+                staged,
+                mode="w",
                 complib=fmt.complib,
                 complevel=fmt.complevel,
             ) as store:
