@@ -1,5 +1,10 @@
 """Render the example notebooks to committed markdown pages (#571).
 
+The notebooks live in the top-level ``examples/`` folder — one maintained copy,
+which is also what readers download. ``docs/examples/`` holds only what this
+script generates: a markdown page per notebook, its figure directory, and any
+``images/`` assets a notebook links to (#869).
+
 Zensical does not render ``.ipynb`` — it copies them verbatim — so the example
 notebooks are converted to markdown and the result is committed, following the
 same approach as cellpy-core.
@@ -13,8 +18,8 @@ git repository, and not something a reader wants to download either.
 So heavy interactive output is stripped before conversion and the static
 ``image/png`` rendering is kept. Readers get the plots; the repository does not
 get 50 MB of base64. Notebooks that only ever produced interactive figures will
-show their code and text without a figure — the ``.ipynb`` stays in the docs
-tree, linked as a download, for anyone who wants the interactive version.
+show their code and text without a figure — readers who want the interactive
+version download the ``.ipynb`` from ``examples/``.
 
 If a notebook has Plotly MIME data but no ``image/png``, backfill static
 renderings first (needs the ``batch`` extra for kaleido):
@@ -50,7 +55,18 @@ import tempfile
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-EXAMPLES = REPO_ROOT / "docs" / "examples"
+
+#: The notebooks (single maintained copy, and the download readers are pointed at).
+SOURCE = REPO_ROOT / "examples"
+
+#: Where the rendered pages land; contains nothing that is not generated.
+OUTPUT = REPO_ROOT / "docs" / "examples"
+
+#: Cookiecutter templates are Jinja sources, not tutorials — never rendered.
+SKIP_DIRS = (".ipynb_checkpoints", "cellpy project template")
+
+#: Author-supplied assets (screenshots) a notebook links to by relative path.
+ASSET_DIR = "images"
 
 #: Output types that embed an entire JS runtime per figure.
 #: ``text/html`` is handled separately — pandas tables are kept.
@@ -260,8 +276,9 @@ def convert_myst_admonitions(markdown: str) -> tuple[str, int]:
     return _MYST_ADMONITION_RE.sub(_repl, markdown), converted
 
 
-def render(notebook_path: Path) -> None:
+def render(notebook_path: Path, output_dir: Path) -> None:
     notebook_path = notebook_path.resolve()
+    output_dir.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory() as tmp:
         staged = Path(tmp) / notebook_path.name
         notebook = json.loads(notebook_path.read_text(encoding="utf-8"))
@@ -278,7 +295,7 @@ def render(notebook_path: Path) -> None:
                 "--to",
                 "markdown",
                 "--output-dir",
-                str(notebook_path.parent),
+                str(output_dir),
                 "--output",
                 notebook_path.stem,
                 str(staged),
@@ -287,37 +304,49 @@ def render(notebook_path: Path) -> None:
             capture_output=True,
         )
 
-    rendered = notebook_path.with_suffix(".md")
+    rendered = output_dir / f"{notebook_path.stem}.md"
     md = rendered.read_text(encoding="utf-8")
     md, myst = convert_myst_admonitions(md)
     if myst:
         rendered.write_text(md, encoding="utf-8")
+
+    # Screenshots the notebook links to relatively must sit beside the page too.
+    assets = notebook_path.parent / ASSET_DIR
+    if assets.is_dir():
+        shutil.copytree(assets, output_dir / ASSET_DIR, dirs_exist_ok=True)
+
     size_kb = rendered.stat().st_size / 1024 if rendered.exists() else 0
     print(
-        f"{notebook_path.relative_to(REPO_ROOT)}: "
+        f"{notebook_path.relative_to(REPO_ROOT)} -> "
+        f"{rendered.relative_to(REPO_ROOT)}: "
         f"{size_kb:.0f} KB (stripped {stripped} interactive outputs, "
         f"coalesced {coalesced} text groups, {ansi} ANSI escapes, "
         f"{myst} MyST admonitions)"
     )
 
 
-def main() -> None:
-    notebooks = sorted(
-        p
-        for p in EXAMPLES.rglob("*.ipynb")
-        if ".ipynb_checkpoints" not in p.parts
+def notebooks() -> list[Path]:
+    """Every tutorial notebook under :data:`SOURCE`, in a stable order."""
+    return sorted(
+        path
+        for path in SOURCE.rglob("*.ipynb")
+        if not any(part in SKIP_DIRS for part in path.parts)
     )
-    if not notebooks:
-        raise SystemExit(f"no notebooks under {EXAMPLES}")
+
+
+def main() -> None:
+    found = notebooks()
+    if not found:
+        raise SystemExit(f"no notebooks under {SOURCE}")
 
     # Remove previously rendered support directories so deleted figures do not
     # linger as orphans in the repository.
-    for support in EXAMPLES.rglob("*_files"):
+    for support in OUTPUT.rglob("*_files"):
         if support.is_dir():
             shutil.rmtree(support)
 
-    for notebook in notebooks:
-        render(notebook)
+    for notebook in found:
+        render(notebook, OUTPUT / notebook.parent.relative_to(SOURCE))
 
 
 if __name__ == "__main__":

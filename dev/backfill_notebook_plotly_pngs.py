@@ -9,7 +9,7 @@ Usage:
 
 ```shell
 uv run --extra batch --group docs python dev/backfill_notebook_plotly_pngs.py
-uv run --extra batch --group docs python dev/backfill_notebook_plotly_pngs.py docs/examples/06_loading_different_formats.ipynb
+uv run --extra batch --group docs python dev/backfill_notebook_plotly_pngs.py examples/06_loading_different_formats.ipynb
 ```
 
 Then re-render markdown:
@@ -28,7 +28,9 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-EXAMPLES = REPO_ROOT / "docs" / "examples"
+EXAMPLES = REPO_ROOT / "examples"
+#: Mirrors ``dev/render_example_notebooks.py`` — the cookiecutter tree is Jinja.
+SKIP_DIRS = (".ipynb_checkpoints", "cellpy project template")
 PLOTLY_MIME = "application/vnd.plotly.v1+json"
 PNG_MIME = "image/png"
 
@@ -89,7 +91,7 @@ def _iter_notebooks(paths: list[Path]) -> list[Path]:
     return sorted(
         p
         for p in EXAMPLES.rglob("*.ipynb")
-        if ".ipynb_checkpoints" not in p.parts
+        if not any(part in SKIP_DIRS for part in p.parts)
     )
 
 
@@ -99,7 +101,7 @@ def main(argv: list[str] | None = None) -> None:
         "notebooks",
         nargs="*",
         type=Path,
-        help="Notebook paths (default: all under docs/examples/)",
+        help="Notebook paths (default: all under examples/)",
     )
     parser.add_argument(
         "--dry-run",

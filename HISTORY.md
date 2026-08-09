@@ -2,6 +2,19 @@
 
 ## [Unreleased]
 
+### Documentation
+
+* Tutorial notebooks are no longer duplicated. The top-level `examples/` folder
+  holds the single maintained copy — the one the docs link to as a download —
+  and `docs/examples/` now contains only generated markdown, figure directories
+  and screenshots. `dev/render_example_notebooks.py` renders from `examples/`
+  into `docs/examples/`, covering every tutorial, so `08_batmo_bdf` and
+  `09_loading_pec_data` gain documentation pages. The batch tutorial moves to
+  `examples/batch_utility/cellpy_batch_processing.ipynb` (page:
+  `examples/batch_utility/cellpy_batch_processing.md`), and committed run
+  artifacts under `docs/examples/` (cellpy files, dumps, output CSVs) are gone.
+  `09_loading_pec_data` no longer sets the removed `prms.Reader`. (#869)
+
 ### Plotting
 
 * `PlotFamily.summary_options(hdr)` returns ready `SummaryOptions`, so

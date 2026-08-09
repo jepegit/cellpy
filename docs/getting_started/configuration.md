@@ -137,7 +137,7 @@ Legacy `from cellpy.parameters import prms` still forwards with a
 cellpy can use a simple Excel “database” for cell metadata (name, mass,
 type, …) when running batch workflows. The first row is headers, the second
 row types, then one row per cell. A sample file ships with the
-[batch tutorial](../examples/batch_utility/cellpy_batch_processing_docs.md).
+[batch tutorial](../examples/batch_utility/cellpy_batch_processing.md).
 
 ## Credentials
 

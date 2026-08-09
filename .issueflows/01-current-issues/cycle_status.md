@@ -26,8 +26,8 @@
 ## Queue
 
 - [x] #867 — raw_plot has no way to limit points (or select cycles) — merged https://github.com/jepegit/cellpy/pull/871
-- [ ] #868 — fullcell_standard_* families can't be collected: family.transforms() shape doesn't match SummaryOptions.transforms — in-progress
-- [ ] #869 — Top-level examples/ notebooks still use removed 1.x API — pending
+- [x] #868 — fullcell_standard_* families can't be collected — merged https://github.com/jepegit/cellpy/pull/872
+- [ ] #869 — Top-level examples/ notebooks still use removed 1.x API — in-progress
 
 blocked: none
 skipped (closed): none
