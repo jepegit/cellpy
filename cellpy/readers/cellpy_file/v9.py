@@ -24,6 +24,7 @@ from cellpy.readers import externals
 from cellpy.readers.cellpy_file import fids as cellpy_file_fids
 from cellpy.readers.cellpy_file import meta_archive
 from cellpy.readers.cellpy_file import translate as cellpy_file_translate
+from cellpy.readers.cellpy_file.atomic import atomic_write
 from cellpy.readers.cellpy_file.format import (
     CELLPY_FILE_VERSION,
     META_JSON_NAME,
@@ -103,6 +104,21 @@ def _frame_to_parquet_bytes(frame) -> bytes:
     return buf.getvalue()
 
 
+def _verify_members(path: Path, required: list[str]) -> None:
+    """Reject a staged v9 zip that does not hold every expected member.
+
+    Only the central directory is read, so this stays cheap even for a large
+    ``raw.parquet``.
+    """
+    with zipfile.ZipFile(path, mode="r") as zf:
+        names = set(zf.namelist())
+    missing = [name for name in required if name not in names]
+    if missing:
+        raise CorruptCellpyFile(
+            f"staged cellpy-file {path} is incomplete - missing zip member(s) {missing}"
+        )
+
+
 def _read_parquet_member(zf: zipfile.ZipFile, name: str):
     try:
         raw = zf.read(name)
@@ -159,17 +175,26 @@ def save(
     fid_table = cellpy_file_fids.convert2fid_table(data)
     fid_df = externals.pandas.DataFrame(fid_table)
 
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with zipfile.ZipFile(path, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
-        zf.writestr(
-            META_JSON_NAME,
-            json.dumps(meta_doc, indent=2, default=meta_archive._json_default),
-        )
-        zf.writestr(V9_RAW_PARQUET, _frame_to_parquet_bytes(scratch.raw))
-        zf.writestr(V9_STEPS_PARQUET, _frame_to_parquet_bytes(scratch.steps))
-        zf.writestr(V9_SUMMARY_PARQUET, _frame_to_parquet_bytes(scratch.summary))
-        if not fid_df.empty:
-            zf.writestr(V9_FID_PARQUET, _frame_to_parquet_bytes(fid_df))
+    required = [META_JSON_NAME, V9_RAW_PARQUET, V9_STEPS_PARQUET, V9_SUMMARY_PARQUET]
+    if not fid_df.empty:
+        required.append(V9_FID_PARQUET)
+
+    def verify(staged: Path) -> None:
+        _verify_members(staged, required)
+
+    with atomic_write(path, verify=verify) as staged:
+        with zipfile.ZipFile(
+            staged, mode="w", compression=zipfile.ZIP_DEFLATED
+        ) as zf:
+            zf.writestr(
+                META_JSON_NAME,
+                json.dumps(meta_doc, indent=2, default=meta_archive._json_default),
+            )
+            zf.writestr(V9_RAW_PARQUET, _frame_to_parquet_bytes(scratch.raw))
+            zf.writestr(V9_STEPS_PARQUET, _frame_to_parquet_bytes(scratch.steps))
+            zf.writestr(V9_SUMMARY_PARQUET, _frame_to_parquet_bytes(scratch.summary))
+            if not fid_df.empty:
+                zf.writestr(V9_FID_PARQUET, _frame_to_parquet_bytes(fid_df))
 
     _module_logger.debug("wrote v9 cellpy-file %s", path)
 

@@ -79,6 +79,11 @@ c.save("out/my_cell.cellpy")  # cellpy file — fast reload later
 c.to_csv("out/csv_export")
 ```
 
+`save` is atomic: it writes a staged file next to the destination and replaces it
+only once complete, so an interrupted save leaves any previous file intact and
+never produces a half-written archive. No app-side staging needed for a single
+file.
+
 Peek metadata only (no raw/steps/summary — good for file browsers):
 
 ```python

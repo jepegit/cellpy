@@ -1582,6 +1582,10 @@ class CellpyCell:
         ``.cellpy``). Pass ``cellpy_file_format="hdf5"`` / ``"v8"`` or a
         ``.h5`` / ``.hdf5`` path to write the legacy HDF5 layout.
 
+        The write is atomic: a staged file next to the destination replaces it
+        only once complete, so an interrupted save leaves an existing file
+        intact instead of truncating it (#845).
+
         Args:
             filename: (str or pathlib.Path) the name you want to give the file
             force: (bool) save a file even if the summary is not made yet
@@ -1660,20 +1664,10 @@ class CellpyCell:
             )
             fmt = "v9"
 
-        if outfile_all.is_file():
-            logging.debug("Outfile exists")
-            if overwrite:
-                logging.debug("overwrite = True")
-                try:
-                    os.remove(outfile_all)
-                except PermissionError as e:
-                    logging.critical("Could not over write old file")
-                    logging.info(e)
-                    return
-            else:
-                logging.critical("File exists - did not save")
-                logging.info(outfile_all)
-                return
+        if outfile_all.is_file() and not overwrite:
+            logging.critical("File exists - did not save")
+            logging.info(outfile_all)
+            return
 
         if ensure_step_table:
             logging.debug("ensure_step_table is on")
@@ -1688,31 +1682,38 @@ class CellpyCell:
                 self.make_summary()
 
         logging.debug(f"trying to save to file: {outfile_all} (format={fmt})")
-        if fmt == "hdf5":
-            data_to_write = my_data
-            if self.native_schema:
-                # the legacy HDF5 (v8) writer expects legacy column names;
-                # translate a shallow copy back to legacy (to_legacy replaces
-                # frames, so self.data stays native).
-                import copy as _copy
+        # The writers stage into a temp file and replace the destination only on
+        # success, so a failure here leaves any existing file untouched (#845).
+        try:
+            if fmt == "hdf5":
+                data_to_write = my_data
+                if self.native_schema:
+                    # the legacy HDF5 (v8) writer expects legacy column names;
+                    # translate a shallow copy back to legacy (to_legacy replaces
+                    # frames, so self.data stays native).
+                    import copy as _copy
 
-                from cellpy.readers.cellpy_file import (
-                    translate as cellpy_file_translate,
-                )
+                    from cellpy.readers.cellpy_file import (
+                        translate as cellpy_file_translate,
+                    )
 
-                data_to_write = cellpy_file_translate.to_legacy(_copy.copy(my_data))
-            cellpy_file_write.save(data_to_write, outfile_all)
-            logging.debug(" all -> hdf5 OK")
-        else:
-            units = None
-            try:
-                units = self.cellpy_units.to_frame()["value"].to_dict()
-            except Exception:
-                logging.debug(
-                    "could not serialize cellpy_units for v9 meta", exc_info=True
-                )
-            cellpy_file_v9.save(my_data, outfile_all, cellpy_units=units)
-            logging.debug(" all -> v9 .cellpy OK")
+                    data_to_write = cellpy_file_translate.to_legacy(_copy.copy(my_data))
+                cellpy_file_write.save(data_to_write, outfile_all)
+                logging.debug(" all -> hdf5 OK")
+            else:
+                units = None
+                try:
+                    units = self.cellpy_units.to_frame()["value"].to_dict()
+                except Exception:
+                    logging.debug(
+                        "could not serialize cellpy_units for v9 meta", exc_info=True
+                    )
+                cellpy_file_v9.save(my_data, outfile_all, cellpy_units=units)
+                logging.debug(" all -> v9 .cellpy OK")
+        except PermissionError as e:
+            logging.critical(f"Could not write to {outfile_all} - old file kept")
+            logging.info(e)
+            return
 
     # TODO @jepe: move this to its own module (e.g. as a cellpy-exporters?):
     @staticmethod

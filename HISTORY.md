@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+- Atomic ``.cellpy`` / ``.h5`` writes: ``save`` stages next to the destination and replaces it only when complete, so an interrupted save no longer corrupts or destroys the file. (#845)
 - In-memory static figure export: ``collection.to_image`` / ``cellpy.plotting.write_image`` (PNG/SVG/PDF bytes). (#818)
 - ``group_it=True``: average multi-member groups even when some groups are singletons. (#816)
 - ``cellpy.get``: when ``instrument=`` is set, do not auto-pick native ``.h5``/``.hdf5`` format. (#819)

@@ -10,6 +10,7 @@ import pytest
 from cellpycore.metadata import io as core_meta_io
 from cellpycore.metadata.models import TestMeta
 
+from cellpy.exceptions import CorruptCellpyFile
 from cellpy.readers.cellpy_file import CELLPY_FILE_VERSION, v9 as cellpy_file_v9
 from cellpy.readers.cellpy_file.format import (
     META_JSON_NAME,
@@ -112,3 +113,112 @@ def test_h5_suffix_still_writes_hdf5(tmp_path):
     assert not cellpy_file_v9.is_zip_cellpy(outfile)
     with pd.HDFStore(outfile) as store:
         assert "/CellpyData/raw" in store.keys()
+
+
+# --- atomic writes (#845) -------------------------------------------------
+
+
+def _staged_leftovers(directory: Path) -> list[Path]:
+    """Staged temp files `atomic_write` should never leave behind."""
+    return [p for p in directory.iterdir() if ".tmp" in p.name]
+
+
+def _break_summary_write(monkeypatch, boom: Exception) -> None:
+    """Make the writer fail on the summary frame, after raw is already staged."""
+    real = cellpy_file_v9._frame_to_parquet_bytes
+    seen = {"n": 0}
+
+    def failing(frame):
+        seen["n"] += 1
+        if seen["n"] == 3:  # raw, steps, then summary
+            raise boom
+        return real(frame)
+
+    monkeypatch.setattr(cellpy_file_v9, "_frame_to_parquet_bytes", failing)
+
+
+@pytest.mark.essential
+def test_failed_resave_keeps_the_old_file(tmp_path, monkeypatch):
+    """An interrupted re-save must not destroy the previously-good file."""
+    source = _require_v8_with_fids()
+    cell = load_cellpy_file(source)
+    outfile = tmp_path / "keepme.cellpy"
+    cell.save(outfile)
+    expected = snapshot_cell_state(load_cellpy_file(outfile))
+    good_bytes = outfile.read_bytes()
+
+    _break_summary_write(monkeypatch, RuntimeError("interrupted mid-write"))
+    with pytest.raises(RuntimeError):
+        cell.save(outfile, overwrite=True)
+
+    assert outfile.read_bytes() == good_bytes
+    assert not _staged_leftovers(tmp_path)
+
+    reloaded = load_cellpy_file(outfile)
+    assert_data_frames_equal(reloaded.data.raw, expected["raw"])
+    assert_data_frames_equal(reloaded.data.steps, expected["steps"])
+    assert_data_frames_equal(reloaded.data.summary, expected["summary"])
+
+
+@pytest.mark.essential
+def test_failed_first_save_leaves_no_file(tmp_path, monkeypatch):
+    """A failed save on a fresh path leaves no half-written archive."""
+    source = _require_v8_with_fids()
+    cell = load_cellpy_file(source)
+    outfile = tmp_path / "never.cellpy"
+
+    _break_summary_write(monkeypatch, RuntimeError("interrupted mid-write"))
+    with pytest.raises(RuntimeError):
+        cell.save(outfile)
+
+    assert not outfile.exists()
+    assert not _staged_leftovers(tmp_path)
+
+
+@pytest.mark.essential
+def test_incomplete_archive_is_rejected_before_replace(tmp_path, monkeypatch):
+    """A zip that misses a required member never replaces the destination."""
+    source = _require_v8_with_fids()
+    cell = load_cellpy_file(source)
+    outfile = tmp_path / "verified.cellpy"
+    cell.save(outfile)
+    good_bytes = outfile.read_bytes()
+
+    real_writestr = zipfile.ZipFile.writestr
+
+    def skip_summary(self, zinfo_or_arcname, data, *args, **kwargs):
+        if zinfo_or_arcname == V9_SUMMARY_PARQUET:
+            return None
+        return real_writestr(self, zinfo_or_arcname, data, *args, **kwargs)
+
+    monkeypatch.setattr(zipfile.ZipFile, "writestr", skip_summary)
+    with pytest.raises(CorruptCellpyFile):
+        cell.save(outfile, overwrite=True)
+
+    assert outfile.read_bytes() == good_bytes
+    assert not _staged_leftovers(tmp_path)
+
+
+def test_failed_hdf5_resave_keeps_the_old_file(tmp_path, monkeypatch):
+    """The v8/HDF5 writer stages too, so a failed re-save keeps the old file."""
+    import pandas as pd
+
+    source = _require_v8_with_fids()
+    cell = load_cellpy_file(source)
+    outfile = tmp_path / "legacy.h5"
+    cell.save(outfile)
+    good_bytes = outfile.read_bytes()
+
+    real_put = pd.HDFStore.put
+
+    def failing_put(self, key, value, *args, **kwargs):
+        if key.endswith("/summary"):
+            raise RuntimeError("interrupted mid-write")
+        return real_put(self, key, value, *args, **kwargs)
+
+    monkeypatch.setattr(pd.HDFStore, "put", failing_put)
+    with pytest.raises(RuntimeError):
+        cell.save(outfile, overwrite=True)
+
+    assert outfile.read_bytes() == good_bytes
+    assert not _staged_leftovers(tmp_path)
