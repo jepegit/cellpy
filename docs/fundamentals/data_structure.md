@@ -134,9 +134,10 @@ c.schema.steps.step_type               # -> "step_type"
 c.schema.summary.charge_capacity
 ```
 
-Legacy `headers_normal` / `headers_step_table` / `headers_summary` still resolve
-via a shim (one-shot deprecation warning per attribute; removal **2.1**). Full
-1.x → 2.x rename table:
+The legacy `headers_normal` / `headers_step_table` / `headers_summary` attributes
+were **removed in 2.1** — they now raise `AttributeError`. See the
+[2.0 → 2.1 migration guide](../getting_started/migration_v2.0_to_2.1.md) for the
+replacement table. Full 1.x → 2.x rename table:
 [header migration map](../other/header_migration_map.md). Coming from 1.x:
 [migration guide](../getting_started/migration_v1_to_v2.md).
 

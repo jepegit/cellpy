@@ -2,23 +2,77 @@
 
 ## [Unreleased]
 
-- Ignore stray local leftovers ``cellpy_batch_test_batch.json`` and ``testdata/hdf5/20160805_test001_45_cc.cellpy``. (#855)
-- ``cellpy info --configloc`` names a project ``cellpy.toml`` when one applies (and outranks the user file). (#853)
-- ``config.override()`` is thread-/task-local via ``contextvars`` (no cross-talk between concurrent jobs). (#850)
-- Config file dump/load no longer persist or accept legacy Arbin ``SQL_PWD`` / ``SQL_UID`` under ``[instruments]`` (env-only credentials). (#849)
-- ``refresh_after`` + ``SUMMARY_META_DEPENDENCIES``: rebuild meta-dependent summary columns after mass / area / nom-cap / cycle-mode edits without a full ``make_summary()``. (#846)
-- ``cellpy info``, ``cellpy edit config`` and ``cellpy info --check`` now act on the config file that is actually loaded (``cellpy.toml`` before a legacy ``.conf``), and name a shadowed legacy file instead of pointing at it. (#851)
-- Atomic ``.cellpy`` / ``.h5`` writes: ``save`` stages next to the destination and replaces it only when complete, so an interrupted save no longer corrupts or destroys the file. (#845)
-- In-memory static figure export: ``collection.to_image`` / ``cellpy.plotting.write_image`` (PNG/SVG/PDF bytes). (#818)
-- ``group_it=True``: average multi-member groups even when some groups are singletons. (#816)
-- ``cellpy.get``: when ``instrument=`` is set, do not auto-pick native ``.h5``/``.hdf5`` format. (#819)
-- Keep default ``cellpy setup`` off the reader stack: ``--check`` / ``--deps`` are opt-in; ``--no-deps`` deprecated. (#839)
-- Speed up CLI cold start: lazy package/CLI imports so ``cellpy info --version`` no longer loads the full reader stack. (#837)
-- Pretty-print cycles collector facet strips (Cycle N / cell label, not cycle_num=). (#820)
-- Honour share_y / match_axes on collected summary spread_plot. (#817)
-- ICA plotter: honour direction for line layouts; support direction='both'. (#821)
-- ``ica_plot`` / ``dva_plot``: dash discharge (dotted) vs charge (solid) when ``direction='both'`` so the two half-cycles stay distinguishable on a static export. (#862)
-- ``cellpy.collect.collect_dva``: multi-cell DVA collection (mirrors ``collect_ica``), returning a ``Collection`` with the same ``Collection.plot()`` / grouping / save entry points; ``dva_collector`` convenience wrapper. (#863)
+## [2.1.2] - 2026-08-09
+
+Patch release — plotting and collect improvements for app builders, config and
+CLI correctness fixes, and safer cellpy-file writes. Additive, no breaking
+changes. The interim `v2.1.1.post7` / `v2.1.1.post8` tags and the `v2.1.2a1`–
+`v2.1.2a4` pre-releases are folded into this section.
+
+### Plotting and collect
+
+* `cellpy.collect.collect_dva`: multi-cell DVA collection (mirrors
+  `collect_ica`), returning a `Collection` with the same `Collection.plot()` /
+  grouping / save entry points; `dva_collector` convenience wrapper. (#863)
+* In-memory static figure export: `collection.to_image` /
+  `cellpy.plotting.write_image` (PNG/SVG/PDF bytes). (#818)
+* ICA plotter: honour `direction` for line layouts, including
+  `direction='both'`. (#821)
+* `ica_plot` / `dva_plot`: dash discharge (dotted) vs charge (solid) when
+  `direction='both'` so the two half-cycles stay distinguishable on a static
+  export. (#862)
+* Pretty-print cycles collector facet strips (`Cycle N` / cell label, not
+  `cycle_num=`). (#820)
+* Honour `share_y` / `match_axes` on collected summary `spread_plot`. (#817)
+* **Bug fix (collect):** `group_it=True` averages multi-member groups even when
+  some groups are singletons. (#816)
+
+### Configuration and CLI
+
+* `cellpy info`, `cellpy edit config` and `cellpy info --check` now act on the
+  config file that is actually loaded (`cellpy.toml` before a legacy `.conf`),
+  and name a shadowed legacy file instead of pointing at it. (#851)
+* `cellpy info --configloc` names a project `cellpy.toml` when one applies (and
+  outranks the user file). (#853)
+* `config.override()` is thread-/task-local via `contextvars` (no cross-talk
+  between concurrent jobs). (#850)
+* **Security:** config file dump/load no longer persist or accept legacy Arbin
+  `SQL_PWD` / `SQL_UID` under `[instruments]` (env-only credentials). (#849)
+* Keep default `cellpy setup` off the reader stack: `--check` / `--deps` are
+  opt-in; `--no-deps` deprecated. (#839)
+* Speed up CLI cold start: lazy package/CLI imports so `cellpy info --version`
+  no longer loads the full reader stack. (#837)
+
+### Data and files
+
+* Atomic `.cellpy` / `.h5` writes: `save` stages next to the destination and
+  replaces it only when complete, so an interrupted save no longer corrupts or
+  destroys the file. (#845)
+* `refresh_after` + `SUMMARY_META_DEPENDENCIES`: rebuild meta-dependent summary
+  columns after mass / area / nominal-capacity / cycle-mode edits without a
+  full `make_summary()`. (#846)
+* `cellpy.get`: when `instrument=` is set, do not auto-pick the native `.h5` /
+  `.hdf5` format. (#819)
+
+### Documentation
+
+* Release-prep documentation sweep. The **Incremental capacity analysis** and
+  **Batch processing** tutorials taught API that was removed in 2.1 and could no
+  longer be run as written; both notebooks were rewritten onto the current API,
+  re-executed, and re-rendered, so their code, tables and figures are real again
+  (`prms.Paths` -> `cellpy.config.paths`, `collectors.Batch*Collector` ->
+  `cellpy.collect` with `.show()` -> `.plot()`, `ica.dqdv_cycle` / `dqdv_cycles` /
+  `dqdv_np` -> `ica.dqdv`, `y="dq"` -> `y="dqdv"`, `get_cap().voltage` ->
+  `.potential`, and polars-aware access to `b.summaries`). Also corrected the
+  frame-type claim in *The fundamentals of cellpy* (pandas per-cell, polars in
+  `cellpy.collect`, parquet on disk), nine factual errors in the *About loaders*
+  developers-guide section, and "deprecated, removal in 2.1" wording in the
+  migration guides for API that has since been removed. (#866)
+
+### Chores
+
+* Ignore stray local leftovers `cellpy_batch_test_batch.json` and
+  `testdata/hdf5/20160805_test001_45_cc.cellpy`. (#855)
 
 ## [2.1.1.post6] - 2026-08-02
 

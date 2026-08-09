@@ -14,13 +14,16 @@ them.
 
 The instrument loaders are all located in the `cellpy.readers.instruments` package (*i.e.* in
 the folder `cellpy/readers/instruments`).
-They are Python modules (.py files) and are automatically registered when `CellpyCell` is
-initialized:
+They are Python modules (.py files), discovered by scanning that package:
 
-`CellpyCell.register_instrument_readers` -> `core.generate_default_factory` -> `core.find_all_instruments`
+`CellpyCell.register_instrument_readers` -> `data_structures.generate_default_factory` -> `data_structures.find_all_instruments`
+
+`register_instrument_readers` builds the default factory only when the `CellpyCell` does not
+already have one — an injected `instrument_factory` is kept as-is. Set
+`self.instrument_factory = None` first if you need to force a rebuild.
 
 (Note that there are some naming conventions for the instrument loaders,
-see `find_all_instruments` in `cellpy/core.py`)
+see `find_all_instruments` in `cellpy/readers/data_structures.py`)
 
 The specific instrument loader is selected in `CellpyCell` through `CellpyCell._set_instrument`:
 
@@ -28,21 +31,24 @@ The specific instrument loader is selected in `CellpyCell` through `CellpyCell._
 
 The instrument class is instantiated and bound to the `CellpyCell` instance (`CellpyCell.loader_class`).
 The actual method (`loader_executor`) that will be executed when loading the data (through `CellpyCell.from_raw`)
-is bound to the attribute `CellpyCell.loader_method`.
+is bound to the attribute `CellpyCell.loader`.
 
 When `CellpyCell.from_raw` is called, the `AtomicLoad.loader_executor` is in charge of executing the instrument
-loaders `DataLoader.loader` method. One implication of this, since the `DataLoader` is a subclass of
-`AtomicLoad`, is that it is very "dangerous" to override `loader_executor` in the `DataLoader`.
+loader's `loader` method. One implication of this, since `BaseLoader` is a subclass of
+`AtomicLoad`, is that it is very "dangerous" to override `loader_executor` in a loader.
 
 ## Structure of instrument loaders
 
-Each reader is a subclass of `DataLoader` (in `base.py`). It must implement
-at least the following methods: `get_raw_units`, `get_raw_limits`, and `loader`.
+Each instrument module must define a class named `DataLoader`, subclassing `BaseLoader`
+(in `cellpy/readers/instruments/base.py`) or one of its subclasses (see below). Note that
+`DataLoader` is the required *name* of the class in each module — it is not itself defined
+in `base.py`.
 
-The instrument loaders must all have a class named `DataLoader` which is a subclasses of `BaseLoader`
-(in `cellpy/readers/instruments/base.py`) or one of its available subclasses (see below).
+It must implement at least the following methods: `get_raw_units`, `get_raw_limits`,
+and `loader`.
 
-The following subclasses of `BaseLoader` are available: `AutoLoader` and `TxtLoader`.
+Two subclasses of `BaseLoader` are available to build on: `AutoLoader`, and `TxtLoader`
+(which is in turn a subclass of `AutoLoader`).
 
 ### Subclassing `BaseLoader`
 
@@ -72,19 +78,21 @@ def query_file(self, name):
     return pd.read_csv(name)
 ```
 
-You can´t provide additional arguments to the `query_file` method, but instead
-promote them to instance variables using the `parse_formatter_parameter` method:
+You can't provide additional arguments to the `query_file` method, but instead
+promote them to instance variables using the `parse_loader_parameters` method
+(use `parse_formatter_parameters` for the file-format knobs such as separator,
+decimal marker and encoding):
 
 ```python
 def parse_loader_parameters(self, **kwargs):
-    self.warn_bad_lines = kwargs.get("warn_bad_lines", None)
+    self.on_bad_lines = kwargs.get("on_bad_lines", "error")
 ```
 
 and then use the instance variables in the `query_file` method:
 
 ```python
 def query_file(self, name):
-    return pd.read_csv(name, warn_bad_lines=self.warn_bad_lines)
+    return pd.read_csv(name, on_bad_lines=self.on_bad_lines)
 ```
 
 ### Subclassing `TxtLoader`
@@ -95,7 +103,7 @@ its respective module(`cellpy.readers.instruments.configurations.<module>`) or
 configuration file (yaml).
 
 The `TxtLoader` class uses `pandas.read_csv` as its query method,
-and reads configurations from modules in `cellpy.readers.instruments.configuration` (or config file).
+and reads configurations from modules in `cellpy.readers.instruments.configurations` (or config file).
 It also implements the `model` keyword.
 
 Examples of modules where the loader is subclassing `TxtLoader` are `maccor_txt`,
