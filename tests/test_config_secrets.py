@@ -63,6 +63,34 @@ def test_password_is_not_in_the_file_dump():
 
 
 @pytest.mark.essential
+def test_legacy_arbin_sql_credentials_are_not_in_the_file_dump():
+    """extra=allow must not let SQL_PWD / SQL_UID round-trip into TOML (#849)."""
+    cfg = CellpyConfig.model_validate(
+        {"instruments": {"Arbin": {"SQL_PWD": "hunter2", "SQL_UID": "jepe", "SQL_server": "localhost"}}}
+    )
+    dumped = cfg.model_dump_for_file()
+    arbin = dumped["instruments"]["Arbin"]
+    assert "SQL_PWD" not in arbin
+    assert "SQL_UID" not in arbin
+    assert arbin.get("SQL_server") == "localhost"
+    assert "hunter2" not in str(dumped)
+
+
+@pytest.mark.essential
+def test_instrument_credentials_in_a_user_toml_are_rejected(tmp_path):
+    path = tmp_path / "cellpy.toml"
+    write_toml(path, {"instruments": {"Arbin": {"SQL_PWD": "hunter2"}}})
+
+    with pytest.raises(ConfigurationError) as excinfo:
+        load_config(options=LoadOptions(user_config_file=path, skip_env=True))
+
+    message = str(excinfo.value)
+    assert "SQL_PWD" in message
+    assert "CELLPY_PASSWORD" in message
+    assert "hunter2" not in message
+
+
+@pytest.mark.essential
 def test_password_comes_out_on_request():
     secrets = SecretsConfig(password="hunter2")
     assert secrets.get_password() == "hunter2"
