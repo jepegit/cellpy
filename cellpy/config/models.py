@@ -10,6 +10,45 @@ from pydantic import BaseModel, ConfigDict, Field, SecretStr
 
 from cellpy.config.types import LimitLoadedCycles, OtherPathField, PathField
 
+
+def is_instrument_credential_key(key: str) -> bool:
+    """Return True for credential-ish keys under ``instruments.*``.
+
+    Legacy Arbin SQL settings (``SQL_PWD``, ``SQL_UID``) and generic password
+    keys must never persist in TOML. Host / driver / server names are not
+    credentials.
+    """
+    upper = str(key).upper()
+    if upper in {"SQL_PWD", "SQL_UID"}:
+        return True
+    if "PASSWORD" in upper:
+        return True
+    if upper.endswith("_PWD") or upper.endswith("PWD"):
+        return True
+    return False
+
+
+def scrub_instrument_credentials(data: dict[str, Any]) -> dict[str, Any]:
+    """Remove credential-ish keys from ``instruments`` sections in place.
+
+    Args:
+        data: A config dict (typically a ``model_dump`` result).
+
+    Returns:
+        The same dict, mutated.
+    """
+    instruments = data.get("instruments")
+    if not isinstance(instruments, dict):
+        return data
+    for section in instruments.values():
+        if not isinstance(section, dict):
+            continue
+        for key in list(section):
+            if is_instrument_credential_key(key):
+                section.pop(key, None)
+    return data
+
+
 class PathsConfig(BaseModel):
     """Paths used in cellpy."""
 
@@ -295,10 +334,16 @@ class CellpyConfig(BaseModel):
     secrets: SecretsConfig = Field(default_factory=SecretsConfig)
 
     def model_dump_for_file(self) -> dict[str, Any]:
-        """Dump config suitable for TOML persistence (secrets excluded)."""
+        """Dump config suitable for TOML persistence (secrets excluded).
+
+        Drops the ``[secrets]`` section and strips credential-ish keys from
+        ``instruments.*`` (legacy Arbin ``SQL_PWD`` / ``SQL_UID``, etc.) so a
+        Settings → Save path cannot write plaintext database credentials.
+        """
 
         data = self.model_dump(mode="json")
         data.pop("secrets", None)
+        scrub_instrument_credentials(data)
         return data
 
 

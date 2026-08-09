@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+- Config file dump/load no longer persist or accept legacy Arbin ``SQL_PWD`` / ``SQL_UID`` under ``[instruments]`` (env-only credentials). (#849)
 - ``refresh_after`` + ``SUMMARY_META_DEPENDENCIES``: rebuild meta-dependent summary columns after mass / area / nom-cap / cycle-mode edits without a full ``make_summary()``. (#846)
 - ``cellpy info``, ``cellpy edit config`` and ``cellpy info --check`` now act on the config file that is actually loaded (``cellpy.toml`` before a legacy ``.conf``), and name a shadowed legacy file instead of pointing at it. (#851)
 - Atomic ``.cellpy`` / ``.h5`` writes: ``save`` stages next to the destination and replaces it only when complete, so an interrupted save no longer corrupts or destroys the file. (#845)

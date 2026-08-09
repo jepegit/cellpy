@@ -16,7 +16,7 @@ import platformdirs
 # signal to re-declare it in pyproject.toml.
 from dotenv import dotenv_values
 
-from cellpy.config.models import CellpyConfig
+from cellpy.config.models import CellpyConfig, is_instrument_credential_key
 from cellpy.config.sources import ProvenanceRegistry, SourceLayer
 from cellpy.exceptions import ConfigurationError
 
@@ -214,6 +214,33 @@ def _reject_secrets_from_file(data: dict[str, Any], path: Path) -> None:
     )
 
 
+def _reject_instrument_credentials_from_file(data: dict[str, Any], path: Path) -> None:
+    """Refuse credential-ish keys under ``[instruments.*]`` in a TOML file.
+
+    Legacy Arbin ``SQL_PWD`` / ``SQL_UID`` used to ride in on ``extra=\"allow\"``
+    and round-trip through ``model_dump_for_file``. Reject them on load the
+    same way ``[secrets]`` is rejected — use ``CELLPY_PASSWORD`` / ``CELLPY_USER``.
+    """
+    instruments = data.get("instruments")
+    if not isinstance(instruments, dict):
+        return
+    found: list[str] = []
+    for name, section in instruments.items():
+        if not isinstance(section, dict):
+            continue
+        for key in section:
+            if is_instrument_credential_key(key):
+                found.append(f"instruments.{name}.{key}")
+    if not found:
+        return
+    raise ConfigurationError(
+        f"{path} contains credential keys under [instruments] "
+        f"({', '.join(sorted(found))}). Credentials are read from the "
+        f"environment only — set CELLPY_PASSWORD / CELLPY_USER (and related "
+        f"CELLPY_* vars) instead, and remove those keys from the file."
+    )
+
+
 def _drop_legacy_secrets(data: dict[str, Any], path: Path) -> None:
     """Strip credentials from a *legacy YAML* layer, in place, with a warning.
 
@@ -230,6 +257,24 @@ def _drop_legacy_secrets(data: dict[str, Any], path: Path) -> None:
             ", ".join(sorted(secrets)) if isinstance(secrets, dict) else "secrets",
             ", ".join(sorted(_LEGACY_SECRET_ENV.values())),
         )
+    instruments = data.get("instruments")
+    if isinstance(instruments, dict):
+        dropped: list[str] = []
+        for name, section in instruments.items():
+            if not isinstance(section, dict):
+                continue
+            for key in list(section):
+                if is_instrument_credential_key(key):
+                    section.pop(key, None)
+                    dropped.append(f"instruments.{name}.{key}")
+        if dropped:
+            logging.warning(
+                "%s carries instrument credentials (%s); these are ignored — "
+                "cellpy 2 reads them from the environment only (%s).",
+                path,
+                ", ".join(sorted(dropped)),
+                ", ".join(sorted(_LEGACY_SECRET_ENV.values())),
+            )
 
 
 def load_config(
@@ -254,6 +299,7 @@ def load_config(
             user_file_path = active.path
             user_data = _read_toml(user_file_path)
             _reject_secrets_from_file(user_data, user_file_path)
+            _reject_instrument_credentials_from_file(user_data, user_file_path)
             merged = _deep_merge(merged, user_data)
             _record_layer(registry, SourceLayer.USER_FILE, user_data)
         elif active.kind == "legacy":
@@ -275,6 +321,7 @@ def load_config(
         ):
             project_data = _read_toml(project_file)
             _reject_secrets_from_file(project_data, project_file)
+            _reject_instrument_credentials_from_file(project_data, project_file)
             merged = _deep_merge(merged, project_data)
             _record_layer(registry, SourceLayer.PROJECT_FILE, project_data)
 
