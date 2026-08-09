@@ -4,7 +4,12 @@ The batch processing routines allow for convenient processing and comparison of 
 ## Setting up things properly
 
 ### Make sure you have a properly working config file
-For `cellpy` to find stuff, it needs to know where to look. Older installs used a `.cellpy_prms_username.conf` in the home directory and the `prms.Paths` API shown below. Prefer `cellpy.toml` and the 2.x config API — see [Setup and configuration](../../getting_started/configuration.md). The legacy names still work via the compatibility layer.
+For `cellpy` to find stuff, it needs to know where to look. Settings live in `cellpy.toml` and are reached at runtime through `cellpy.config` — see [Setup and configuration](../../getting_started/configuration.md).
+
+!!! note "Coming from cellpy 1.x"
+
+    The old `prms.Paths.<name>` API was removed in 2.x; use `cellpy.config.paths.<name>`
+    instead, as shown below.
 
 For more details on the config file, have a look at [Setup and configuration](../../getting_started/configuration.md).
 
@@ -35,23 +40,23 @@ import plotly.express as px
 from rich import print
 
 import cellpy
-from cellpy import prms
-from cellpy import prmreader
-from cellpy.utils import batch, collectors
+import cellpy.config as config
+from cellpy.utils import batch
+from cellpy.collect import summary_collector, cycles_collector, ica_collector
 ```
 
 Check and (if necessary) override some of the configuration parameters:
 
 
 ```python
-prms.Paths.db_path = "."
-prms.Paths.db_filename = "cellpy_db.xlsx"
-prms.Paths.rawdatadir = "data/raw"
-prms.Paths.cellpydatadir = "data/cellpyfiles"
-prms.Paths.filelogdir = "out"
-prms.Paths.notebookdir = "out"
-prms.Paths.batchfiledir = "out"
-prms.Paths.outdatadir = "out"
+config.paths.db_path = "."
+config.paths.db_filename = "cellpy_db.xlsx"
+config.paths.rawdatadir = "data/raw"
+config.paths.cellpydatadir = "data/cellpyfiles"
+config.paths.filelogdir = "out"
+config.paths.notebookdir = "out"
+config.paths.batchfiledir = "out"
+config.paths.outdatadir = "out"
 ```
 
 ### Initialising the cellpy batch object
@@ -89,12 +94,63 @@ Load info from your database and write the corresponding journal pages:
 b.create_journal()
 ```
 
+
+
+
+    Journal(name='paper01', project='cool_project', pages=shape: (7, 19)
+    ┌─────────────┬──────────┬──────────┬────────────┬───┬───────┬────────────┬────────────┬───────────┐
+    │ filename    ┆ argument ┆ mass     ┆ total_mass ┆ … ┆ group ┆ raw_file_n ┆ cellpy_fil ┆ sub_group │
+    │ ---         ┆ ---      ┆ ---      ┆ ---        ┆   ┆ ---   ┆ ames       ┆ e_name     ┆ ---       │
+    │ str         ┆ null     ┆ f64      ┆ f64        ┆   ┆ i64   ┆ ---        ┆ ---        ┆ i64       │
+    │             ┆          ┆          ┆            ┆   ┆       ┆ list[str]  ┆ str        ┆           │
+    ╞═════════════╪══════════╪══════════╪════════════╪═══╪═══════╪════════════╪════════════╪═══════════╡
+    │ 20180418_sf ┆ null     ┆ 0.337149 ┆ 0.56       ┆ … ┆ 1     ┆ ["C:\scrip ┆ data\cellp ┆ 1         │
+    │ 033_2_cc    ┆          ┆          ┆            ┆   ┆       ┆ ting\cellp ┆ yfiles\201 ┆           │
+    │             ┆          ┆          ┆            ┆   ┆       ┆ y-workspac ┆ 80418_sf03 ┆           │
+    │             ┆          ┆          ┆            ┆   ┆       ┆ …          ┆ …          ┆           │
+    │ 20180418_sf ┆ null     ┆ 0.343169 ┆ 0.57       ┆ … ┆ 1     ┆ ["C:\scrip ┆ data\cellp ┆ 2         │
+    │ 033_3_cc    ┆          ┆          ┆            ┆   ┆       ┆ ting\cellp ┆ yfiles\201 ┆           │
+    │             ┆          ┆          ┆            ┆   ┆       ┆ y-workspac ┆ 80418_sf03 ┆           │
+    │             ┆          ┆          ┆            ┆   ┆       ┆ …          ┆ …          ┆           │
+    │ 20180418_sf ┆ null     ┆ 0.288984 ┆ 0.48       ┆ … ┆ 1     ┆ ["C:\scrip ┆ data\cellp ┆ 3         │
+    │ 033_4_cc    ┆          ┆          ┆            ┆   ┆       ┆ ting\cellp ┆ yfiles\201 ┆           │
+    │             ┆          ┆          ┆            ┆   ┆       ┆ y-workspac ┆ 80418_sf03 ┆           │
+    │             ┆          ┆          ┆            ┆   ┆       ┆ …          ┆ …          ┆           │
+    │ 20180418_sf ┆ null     ┆ 0.295005 ┆ 0.49       ┆ … ┆ 1     ┆ ["C:\scrip ┆ data\cellp ┆ 4         │
+    │ 033_5_cc    ┆          ┆          ┆            ┆   ┆       ┆ ting\cellp ┆ yfiles\201 ┆           │
+    │             ┆          ┆          ┆            ┆   ┆       ┆ y-workspac ┆ 80418_sf03 ┆           │
+    │             ┆          ┆          ┆            ┆   ┆       ┆ …          ┆ …          ┆           │
+    │ 20180420_sf ┆ null     ┆ 0.572383 ┆ 0.95       ┆ … ┆ 2     ┆ ["C:\scrip ┆ data\cellp ┆ 1         │
+    │ 036_2_cc    ┆          ┆          ┆            ┆   ┆       ┆ ting\cellp ┆ yfiles\201 ┆           │
+    │             ┆          ┆          ┆            ┆   ┆       ┆ y-workspac ┆ 80420_sf03 ┆           │
+    │             ┆          ┆          ┆            ┆   ┆       ┆ …          ┆ …          ┆           │
+    │ 20180420_sf ┆ null     ┆ 0.716985 ┆ 1.19       ┆ … ┆ 2     ┆ ["C:\scrip ┆ data\cellp ┆ 2         │
+    │ 036_3_cc    ┆          ┆          ┆            ┆   ┆       ┆ ting\cellp ┆ yfiles\201 ┆           │
+    │             ┆          ┆          ┆            ┆   ┆       ┆ y-workspac ┆ 80420_sf03 ┆           │
+    │             ┆          ┆          ┆            ┆   ┆       ┆ …          ┆ …          ┆           │
+    │ 20180420_sf ┆ null     ┆ 0.584433 ┆ 0.97       ┆ … ┆ 2     ┆ ["C:\scrip ┆ data\cellp ┆ 3         │
+    │ 036_4_cc    ┆          ┆          ┆            ┆   ┆       ┆ ting\cellp ┆ yfiles\201 ┆           │
+    │             ┆          ┆          ┆            ┆   ┆       ┆ y-workspac ┆ 80420_sf03 ┆           │
+    │             ┆          ┆          ┆            ┆   ┆       ┆ …          ┆ …          ┆           │
+    └─────────────┴──────────┴──────────┴────────────┴───┴───────┴────────────┴────────────┴───────────┘, session={'starred': None, 'bad_cells': None, 'bad_cycles': None, 'notes': None}, meta={'name': 'paper01', 'project': 'cool_project'})
+
+
+
 Create the appropriate folders where cellpy will place the output files:
 
 
 ```python
 b.paginate()
 ```
+
+
+
+
+    (WindowsPath('C:/scripting/cellpy-workspace/cellpy/docs/examples/batch_utility'),
+     WindowsPath('C:/scripting/cellpy-workspace/cellpy/docs/examples/batch_utility/dump'),
+     WindowsPath('C:/scripting/cellpy-workspace/cellpy/docs/examples/batch_utility/dump/raw_data'))
+
+
 
 Have a look at the resulting dataframe:
 
@@ -107,183 +163,7 @@ b.pages
 
 
 <div class="cellpy-dataframe">
-<table border="1" class="dataframe">
-  <thead>
-    <tr style="text-align: right;">
-      <th></th>
-      <th>argument</th>
-      <th>mass</th>
-      <th>total_mass</th>
-      <th>loading</th>
-      <th>nom_cap</th>
-      <th>area</th>
-      <th>experiment</th>
-      <th>fixed</th>
-      <th>label</th>
-      <th>cell_type</th>
-      <th>instrument</th>
-      <th>raw_file_names</th>
-      <th>cellpy_file_name</th>
-      <th>comment</th>
-      <th>group</th>
-      <th>sub_group</th>
-    </tr>
-    <tr>
-      <th>filename</th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <th>20180418_sf033_2_cc</th>
-      <td>None</td>
-      <td>0.337149</td>
-      <td>0.56</td>
-      <td>0.190787</td>
-      <td>3118.817466</td>
-      <td>1.767146</td>
-      <td>cycling</td>
-      <td>0</td>
-      <td>sf033_2</td>
-      <td>anode</td>
-      <td>arbin_res</td>
-      <td>[data/raw\20180418_sf033_2_cc_01.res]</td>
-      <td>data/cellpyfiles/20180418_sf033_2_cc.h5</td>
-      <td>SF12 Filter D micro-slurry</td>
-      <td>1</td>
-      <td>1</td>
-    </tr>
-    <tr>
-      <th>20180418_sf033_3_cc</th>
-      <td>None</td>
-      <td>0.343169</td>
-      <td>0.57</td>
-      <td>0.194194</td>
-      <td>3118.817466</td>
-      <td>1.767146</td>
-      <td>cycling</td>
-      <td>0</td>
-      <td>sf033_3</td>
-      <td>anode</td>
-      <td>arbin_res</td>
-      <td>[data/raw\20180418_sf033_3_cc_01.res]</td>
-      <td>data/cellpyfiles/20180418_sf033_3_cc.h5</td>
-      <td>SF12 Filter D micro-slurry</td>
-      <td>1</td>
-      <td>2</td>
-    </tr>
-    <tr>
-      <th>20180418_sf033_4_cc</th>
-      <td>None</td>
-      <td>0.288984</td>
-      <td>0.48</td>
-      <td>0.163532</td>
-      <td>3118.817466</td>
-      <td>1.767146</td>
-      <td>cycling</td>
-      <td>0</td>
-      <td>sf033_4</td>
-      <td>anode</td>
-      <td>arbin_res</td>
-      <td>[data/raw\20180418_sf033_4_cc_01.res]</td>
-      <td>data/cellpyfiles/20180418_sf033_4_cc.h5</td>
-      <td>SF12 Filter D micro-slurry</td>
-      <td>1</td>
-      <td>3</td>
-    </tr>
-    <tr>
-      <th>20180418_sf033_5_cc</th>
-      <td>None</td>
-      <td>0.295005</td>
-      <td>0.49</td>
-      <td>0.166939</td>
-      <td>3118.817466</td>
-      <td>1.767146</td>
-      <td>cycling</td>
-      <td>0</td>
-      <td>sf033_5</td>
-      <td>anode</td>
-      <td>arbin_res</td>
-      <td>[data/raw\20180418_sf033_5_cc_01.res]</td>
-      <td>data/cellpyfiles/20180418_sf033_5_cc.h5</td>
-      <td>SF12 Filter D micro-slurry</td>
-      <td>1</td>
-      <td>4</td>
-    </tr>
-    <tr>
-      <th>20180420_sf036_2_cc</th>
-      <td>None</td>
-      <td>0.572383</td>
-      <td>0.95</td>
-      <td>0.323902</td>
-      <td>3122.348698</td>
-      <td>1.767146</td>
-      <td>cycling</td>
-      <td>0</td>
-      <td>sf036_2</td>
-      <td>anode</td>
-      <td>arbin_res</td>
-      <td>[data/raw\20180420_sf036_2_cc_01.res]</td>
-      <td>data/cellpyfiles/20180420_sf036_2_cc.h5</td>
-      <td>SF12 Filter 1 micro-slurry</td>
-      <td>2</td>
-      <td>1</td>
-    </tr>
-    <tr>
-      <th>20180420_sf036_3_cc</th>
-      <td>None</td>
-      <td>0.716985</td>
-      <td>1.19</td>
-      <td>0.405730</td>
-      <td>3122.348698</td>
-      <td>1.767146</td>
-      <td>cycling</td>
-      <td>0</td>
-      <td>sf036_3</td>
-      <td>anode</td>
-      <td>arbin_res</td>
-      <td>[data/raw\20180420_sf036_3_cc_01.res]</td>
-      <td>data/cellpyfiles/20180420_sf036_3_cc.h5</td>
-      <td>SF12 Filter 1 micro-slurry</td>
-      <td>2</td>
-      <td>2</td>
-    </tr>
-    <tr>
-      <th>20180420_sf036_4_cc</th>
-      <td>None</td>
-      <td>0.584433</td>
-      <td>0.97</td>
-      <td>0.330721</td>
-      <td>3122.348698</td>
-      <td>1.767146</td>
-      <td>cycling</td>
-      <td>0</td>
-      <td>sf036_4</td>
-      <td>anode</td>
-      <td>arbin_res</td>
-      <td>[data/raw\20180420_sf036_4_cc_01.res]</td>
-      <td>data/cellpyfiles/20180420_sf036_4_cc.h5</td>
-      <td>SF12 Filter 1 micro-slurry</td>
-      <td>2</td>
-      <td>3</td>
-    </tr>
-  </tbody>
-</table>
+<small>shape: (7, 19)</small><table border="1" class="dataframe"><thead><tr><th>filename</th><th>argument</th><th>mass</th><th>total_mass</th><th>nom_cap_specifics</th><th>file_name_indicator</th><th>loading</th><th>nom_cap</th><th>area</th><th>experiment</th><th>fixed</th><th>label</th><th>cell_type</th><th>instrument</th><th>comment</th><th>group</th><th>raw_file_names</th><th>cellpy_file_name</th><th>sub_group</th></tr><tr><td>str</td><td>null</td><td>f64</td><td>f64</td><td>null</td><td>str</td><td>f64</td><td>f64</td><td>f64</td><td>str</td><td>i64</td><td>str</td><td>str</td><td>str</td><td>str</td><td>i64</td><td>list[str]</td><td>str</td><td>i64</td></tr></thead><tbody><tr><td>&quot;20180418_sf033_2_cc&quot;</td><td>null</td><td>0.337149</td><td>0.56</td><td>null</td><td>&quot;20180418_sf033_2_cc&quot;</td><td>0.190787</td><td>3118.817466</td><td>1.767146</td><td>&quot;cycling&quot;</td><td>0</td><td>&quot;sf033_2&quot;</td><td>&quot;anode&quot;</td><td>&quot;arbin_res&quot;</td><td>&quot;SF12 Filter D micro-slurry&quot;</td><td>1</td><td>[&quot;C:\scripting\cellpy-workspace\cellpy\docs\examples\batch_utility\data\raw\20180418_sf033_2_cc_01.res&quot;]</td><td>&quot;data\cellpyfiles\20180418_sf03…</td><td>1</td></tr><tr><td>&quot;20180418_sf033_3_cc&quot;</td><td>null</td><td>0.343169</td><td>0.57</td><td>null</td><td>&quot;20180418_sf033_3_cc&quot;</td><td>0.194194</td><td>3118.817466</td><td>1.767146</td><td>&quot;cycling&quot;</td><td>0</td><td>&quot;sf033_3&quot;</td><td>&quot;anode&quot;</td><td>&quot;arbin_res&quot;</td><td>&quot;SF12 Filter D micro-slurry&quot;</td><td>1</td><td>[&quot;C:\scripting\cellpy-workspace\cellpy\docs\examples\batch_utility\data\raw\20180418_sf033_3_cc_01.res&quot;]</td><td>&quot;data\cellpyfiles\20180418_sf03…</td><td>2</td></tr><tr><td>&quot;20180418_sf033_4_cc&quot;</td><td>null</td><td>0.288984</td><td>0.48</td><td>null</td><td>&quot;20180418_sf033_4_cc&quot;</td><td>0.163532</td><td>3118.817466</td><td>1.767146</td><td>&quot;cycling&quot;</td><td>0</td><td>&quot;sf033_4&quot;</td><td>&quot;anode&quot;</td><td>&quot;arbin_res&quot;</td><td>&quot;SF12 Filter D micro-slurry&quot;</td><td>1</td><td>[&quot;C:\scripting\cellpy-workspace\cellpy\docs\examples\batch_utility\data\raw\20180418_sf033_4_cc_01.res&quot;]</td><td>&quot;data\cellpyfiles\20180418_sf03…</td><td>3</td></tr><tr><td>&quot;20180418_sf033_5_cc&quot;</td><td>null</td><td>0.295005</td><td>0.49</td><td>null</td><td>&quot;20180418_sf033_5_cc&quot;</td><td>0.166939</td><td>3118.817466</td><td>1.767146</td><td>&quot;cycling&quot;</td><td>0</td><td>&quot;sf033_5&quot;</td><td>&quot;anode&quot;</td><td>&quot;arbin_res&quot;</td><td>&quot;SF12 Filter D micro-slurry&quot;</td><td>1</td><td>[&quot;C:\scripting\cellpy-workspace\cellpy\docs\examples\batch_utility\data\raw\20180418_sf033_5_cc_01.res&quot;]</td><td>&quot;data\cellpyfiles\20180418_sf03…</td><td>4</td></tr><tr><td>&quot;20180420_sf036_2_cc&quot;</td><td>null</td><td>0.572383</td><td>0.95</td><td>null</td><td>&quot;20180420_sf036_2_cc&quot;</td><td>0.323902</td><td>3122.348698</td><td>1.767146</td><td>&quot;cycling&quot;</td><td>0</td><td>&quot;sf036_2&quot;</td><td>&quot;anode&quot;</td><td>&quot;arbin_res&quot;</td><td>&quot;SF12 Filter 1 micro-slurry&quot;</td><td>2</td><td>[&quot;C:\scripting\cellpy-workspace\cellpy\docs\examples\batch_utility\data\raw\20180420_sf036_2_cc_01.res&quot;]</td><td>&quot;data\cellpyfiles\20180420_sf03…</td><td>1</td></tr><tr><td>&quot;20180420_sf036_3_cc&quot;</td><td>null</td><td>0.716985</td><td>1.19</td><td>null</td><td>&quot;20180420_sf036_3_cc&quot;</td><td>0.40573</td><td>3122.348698</td><td>1.767146</td><td>&quot;cycling&quot;</td><td>0</td><td>&quot;sf036_3&quot;</td><td>&quot;anode&quot;</td><td>&quot;arbin_res&quot;</td><td>&quot;SF12 Filter 1 micro-slurry&quot;</td><td>2</td><td>[&quot;C:\scripting\cellpy-workspace\cellpy\docs\examples\batch_utility\data\raw\20180420_sf036_3_cc_01.res&quot;]</td><td>&quot;data\cellpyfiles\20180420_sf03…</td><td>2</td></tr><tr><td>&quot;20180420_sf036_4_cc&quot;</td><td>null</td><td>0.584433</td><td>0.97</td><td>null</td><td>&quot;20180420_sf036_4_cc&quot;</td><td>0.330721</td><td>3122.348698</td><td>1.767146</td><td>&quot;cycling&quot;</td><td>0</td><td>&quot;sf036_4&quot;</td><td>&quot;anode&quot;</td><td>&quot;arbin_res&quot;</td><td>&quot;SF12 Filter 1 micro-slurry&quot;</td><td>2</td><td>[&quot;C:\scripting\cellpy-workspace\cellpy\docs\examples\batch_utility\data\raw\20180420_sf036_4_cc_01.res&quot;]</td><td>&quot;data\cellpyfiles\20180420_sf03…</td><td>3</td></tr></tbody></table>
 </div>
 
 
@@ -299,8 +179,12 @@ Now that everything is set up `b.update()` loads the data (and exports the corre
 b.update()
 ```
 
-      0%|          | 0/7 [00:00<?, ?it/s]
-    
+
+
+
+    BatchResult(results=[CellResult(label='20180418_sf033_2_cc', outcome=<CellOutcome.LOADED: 'loaded'>, cell=<CellpyCell> (id=0x221eaec9be0) [name=20180418_sf033_2_cc_01], source='raw', seconds=5.4500465000164695, error=None), CellResult(label='20180418_sf033_3_cc', outcome=<CellOutcome.LOADED: 'loaded'>, cell=<CellpyCell> (id=0x22252bd0830) [name=20180418_sf033_3_cc_01], source='raw', seconds=3.83964950000518, error=None), CellResult(label='20180418_sf033_4_cc', outcome=<CellOutcome.LOADED: 'loaded'>, cell=<CellpyCell> (id=0x22252bd1550) [name=20180418_sf033_4_cc_01], source='raw', seconds=3.574297299986938, error=None), CellResult(label='20180418_sf033_5_cc', outcome=<CellOutcome.LOADED: 'loaded'>, cell=<CellpyCell> (id=0x221ece58440) [name=20180418_sf033_5_cc_01], source='raw', seconds=4.090850799984764, error=None), CellResult(label='20180420_sf036_2_cc', outcome=<CellOutcome.LOADED: 'loaded'>, cell=<CellpyCell> (id=0x221ece58590) [name=20180420_sf036_2_cc_01], source='raw', seconds=4.030073800007813, error=None), CellResult(label='20180420_sf036_3_cc', outcome=<CellOutcome.LOADED: 'loaded'>, cell=<CellpyCell> (id=0x221ece58050) [name=20180420_sf036_3_cc_01], source='raw', seconds=3.3505931999825407, error=None), CellResult(label='20180420_sf036_4_cc', outcome=<CellOutcome.LOADED: 'loaded'>, cell=<CellpyCell> (id=0x221ece58830) [name=20180420_sf036_4_cc_01], source='raw', seconds=3.0614136999938637, error=None)])
+
+
 
 ## Exploring batch data
 
@@ -315,156 +199,7 @@ b.report()
 
 
 <div class="cellpy-dataframe">
-<table id="T_7d5d5">
-  <thead>
-    <tr>
-      <th class="blank level0" >&nbsp;</th>
-      <th id="T_7d5d5_level0_col0" class="col_heading level0 col0" >mass</th>
-      <th id="T_7d5d5_level0_col1" class="col_heading level0 col1" >total_mass</th>
-      <th id="T_7d5d5_level0_col2" class="col_heading level0 col2" >loading</th>
-      <th id="T_7d5d5_level0_col3" class="col_heading level0 col3" >nom_cap</th>
-      <th id="T_7d5d5_level0_col4" class="col_heading level0 col4" >empty</th>
-      <th id="T_7d5d5_level0_col5" class="col_heading level0 col5" >raw_rows</th>
-      <th id="T_7d5d5_level0_col6" class="col_heading level0 col6" >steps_rows</th>
-      <th id="T_7d5d5_level0_col7" class="col_heading level0 col7" >summary_rows</th>
-      <th id="T_7d5d5_level0_col8" class="col_heading level0 col8" >last_cycle</th>
-      <th id="T_7d5d5_level0_col9" class="col_heading level0 col9" >average_capacity</th>
-      <th id="T_7d5d5_level0_col10" class="col_heading level0 col10" >max_capacity</th>
-      <th id="T_7d5d5_level0_col11" class="col_heading level0 col11" >min_capacity</th>
-      <th id="T_7d5d5_level0_col12" class="col_heading level0 col12" >std_capacity</th>
-    </tr>
-    <tr>
-      <th class="index_name level0" >filename</th>
-      <th class="blank col0" >&nbsp;</th>
-      <th class="blank col1" >&nbsp;</th>
-      <th class="blank col2" >&nbsp;</th>
-      <th class="blank col3" >&nbsp;</th>
-      <th class="blank col4" >&nbsp;</th>
-      <th class="blank col5" >&nbsp;</th>
-      <th class="blank col6" >&nbsp;</th>
-      <th class="blank col7" >&nbsp;</th>
-      <th class="blank col8" >&nbsp;</th>
-      <th class="blank col9" >&nbsp;</th>
-      <th class="blank col10" >&nbsp;</th>
-      <th class="blank col11" >&nbsp;</th>
-      <th class="blank col12" >&nbsp;</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <th id="T_7d5d5_level0_row0" class="row_heading level0 row0" >20180418_sf033_2_cc</th>
-      <td id="T_7d5d5_row0_col0" class="data row0 col0" >0.337149</td>
-      <td id="T_7d5d5_row0_col1" class="data row0 col1" >0.560000</td>
-      <td id="T_7d5d5_row0_col2" class="data row0 col2" >0.190787</td>
-      <td id="T_7d5d5_row0_col3" class="data row0 col3" >3118.817466</td>
-      <td id="T_7d5d5_row0_col4" class="data row0 col4" >False</td>
-      <td id="T_7d5d5_row0_col5" class="data row0 col5" >160059</td>
-      <td id="T_7d5d5_row0_col6" class="data row0 col6" >1578</td>
-      <td id="T_7d5d5_row0_col7" class="data row0 col7" >304</td>
-      <td id="T_7d5d5_row0_col8" class="data row0 col8" >304</td>
-      <td id="T_7d5d5_row0_col9" class="data row0 col9" >1567.198001</td>
-      <td id="T_7d5d5_row0_col10" class="data row0 col10" >2079.481739</td>
-      <td id="T_7d5d5_row0_col11" class="data row0 col11" >0.000000</td>
-      <td id="T_7d5d5_row0_col12" class="data row0 col12" >209.150717</td>
-    </tr>
-    <tr>
-      <th id="T_7d5d5_level0_row1" class="row_heading level0 row1" >20180418_sf033_3_cc</th>
-      <td id="T_7d5d5_row1_col0" class="data row1 col0" >0.343169</td>
-      <td id="T_7d5d5_row1_col1" class="data row1 col1" >0.570000</td>
-      <td id="T_7d5d5_row1_col2" class="data row1 col2" >0.194194</td>
-      <td id="T_7d5d5_row1_col3" class="data row1 col3" >3118.817466</td>
-      <td id="T_7d5d5_row1_col4" class="data row1 col4" >False</td>
-      <td id="T_7d5d5_row1_col5" class="data row1 col5" >160980</td>
-      <td id="T_7d5d5_row1_col6" class="data row1 col6" >1587</td>
-      <td id="T_7d5d5_row1_col7" class="data row1 col7" >304</td>
-      <td id="T_7d5d5_row1_col8" class="data row1 col8" >304</td>
-      <td id="T_7d5d5_row1_col9" class="data row1 col9" >1597.665927</td>
-      <td id="T_7d5d5_row1_col10" class="data row1 col10" >2103.339517</td>
-      <td id="T_7d5d5_row1_col11" class="data row1 col11" >0.000000</td>
-      <td id="T_7d5d5_row1_col12" class="data row1 col12" >205.046181</td>
-    </tr>
-    <tr>
-      <th id="T_7d5d5_level0_row2" class="row_heading level0 row2" >20180418_sf033_4_cc</th>
-      <td id="T_7d5d5_row2_col0" class="data row2 col0" >0.288984</td>
-      <td id="T_7d5d5_row2_col1" class="data row2 col1" >0.480000</td>
-      <td id="T_7d5d5_row2_col2" class="data row2 col2" >0.163532</td>
-      <td id="T_7d5d5_row2_col3" class="data row2 col3" >3118.817466</td>
-      <td id="T_7d5d5_row2_col4" class="data row2 col4" >False</td>
-      <td id="T_7d5d5_row2_col5" class="data row2 col5" >155754</td>
-      <td id="T_7d5d5_row2_col6" class="data row2 col6" >1567</td>
-      <td id="T_7d5d5_row2_col7" class="data row2 col7" >304</td>
-      <td id="T_7d5d5_row2_col8" class="data row2 col8" >304</td>
-      <td id="T_7d5d5_row2_col9" class="data row2 col9" >1493.788287</td>
-      <td id="T_7d5d5_row2_col10" class="data row2 col10" >1952.530597</td>
-      <td id="T_7d5d5_row2_col11" class="data row2 col11" >0.000000</td>
-      <td id="T_7d5d5_row2_col12" class="data row2 col12" >189.297846</td>
-    </tr>
-    <tr>
-      <th id="T_7d5d5_level0_row3" class="row_heading level0 row3" >20180418_sf033_5_cc</th>
-      <td id="T_7d5d5_row3_col0" class="data row3 col0" >0.295005</td>
-      <td id="T_7d5d5_row3_col1" class="data row3 col1" >0.490000</td>
-      <td id="T_7d5d5_row3_col2" class="data row3 col2" >0.166939</td>
-      <td id="T_7d5d5_row3_col3" class="data row3 col3" >3118.817466</td>
-      <td id="T_7d5d5_row3_col4" class="data row3 col4" >False</td>
-      <td id="T_7d5d5_row3_col5" class="data row3 col5" >169567</td>
-      <td id="T_7d5d5_row3_col6" class="data row3 col6" >1588</td>
-      <td id="T_7d5d5_row3_col7" class="data row3 col7" >304</td>
-      <td id="T_7d5d5_row3_col8" class="data row3 col8" >304</td>
-      <td id="T_7d5d5_row3_col9" class="data row3 col9" >1741.579324</td>
-      <td id="T_7d5d5_row3_col10" class="data row3 col10" >2302.442797</td>
-      <td id="T_7d5d5_row3_col11" class="data row3 col11" >0.000000</td>
-      <td id="T_7d5d5_row3_col12" class="data row3 col12" >227.149486</td>
-    </tr>
-    <tr>
-      <th id="T_7d5d5_level0_row4" class="row_heading level0 row4" >20180420_sf036_2_cc</th>
-      <td id="T_7d5d5_row4_col0" class="data row4 col0" >0.572383</td>
-      <td id="T_7d5d5_row4_col1" class="data row4 col1" >0.950000</td>
-      <td id="T_7d5d5_row4_col2" class="data row4 col2" >0.323902</td>
-      <td id="T_7d5d5_row4_col3" class="data row4 col3" >3122.348698</td>
-      <td id="T_7d5d5_row4_col4" class="data row4 col4" >False</td>
-      <td id="T_7d5d5_row4_col5" class="data row4 col5" >157750</td>
-      <td id="T_7d5d5_row4_col6" class="data row4 col6" >1586</td>
-      <td id="T_7d5d5_row4_col7" class="data row4 col7" >304</td>
-      <td id="T_7d5d5_row4_col8" class="data row4 col8" >304</td>
-      <td id="T_7d5d5_row4_col9" class="data row4 col9" >1479.043916</td>
-      <td id="T_7d5d5_row4_col10" class="data row4 col10" >2319.709751</td>
-      <td id="T_7d5d5_row4_col11" class="data row4 col11" >0.000000</td>
-      <td id="T_7d5d5_row4_col12" class="data row4 col12" >474.421220</td>
-    </tr>
-    <tr>
-      <th id="T_7d5d5_level0_row5" class="row_heading level0 row5" >20180420_sf036_3_cc</th>
-      <td id="T_7d5d5_row5_col0" class="data row5 col0" >0.716985</td>
-      <td id="T_7d5d5_row5_col1" class="data row5 col1" >1.190000</td>
-      <td id="T_7d5d5_row5_col2" class="data row5 col2" >0.405730</td>
-      <td id="T_7d5d5_row5_col3" class="data row5 col3" >3122.348698</td>
-      <td id="T_7d5d5_row5_col4" class="data row5 col4" >False</td>
-      <td id="T_7d5d5_row5_col5" class="data row5 col5" >134496</td>
-      <td id="T_7d5d5_row5_col6" class="data row5 col6" >1571</td>
-      <td id="T_7d5d5_row5_col7" class="data row5 col7" >304</td>
-      <td id="T_7d5d5_row5_col8" class="data row5 col8" >304</td>
-      <td id="T_7d5d5_row5_col9" class="data row5 col9" >1062.506245</td>
-      <td id="T_7d5d5_row5_col10" class="data row5 col10" >2323.285459</td>
-      <td id="T_7d5d5_row5_col11" class="data row5 col11" >0.000000</td>
-      <td id="T_7d5d5_row5_col12" class="data row5 col12" >622.550951</td>
-    </tr>
-    <tr>
-      <th id="T_7d5d5_level0_row6" class="row_heading level0 row6" >20180420_sf036_4_cc</th>
-      <td id="T_7d5d5_row6_col0" class="data row6 col0" >0.584433</td>
-      <td id="T_7d5d5_row6_col1" class="data row6 col1" >0.970000</td>
-      <td id="T_7d5d5_row6_col2" class="data row6 col2" >0.330721</td>
-      <td id="T_7d5d5_row6_col3" class="data row6 col3" >3122.348698</td>
-      <td id="T_7d5d5_row6_col4" class="data row6 col4" >False</td>
-      <td id="T_7d5d5_row6_col5" class="data row6 col5" >128547</td>
-      <td id="T_7d5d5_row6_col6" class="data row6 col6" >1561</td>
-      <td id="T_7d5d5_row6_col7" class="data row6 col7" >304</td>
-      <td id="T_7d5d5_row6_col8" class="data row6 col8" >304</td>
-      <td id="T_7d5d5_row6_col9" class="data row6 col9" >880.014288</td>
-      <td id="T_7d5d5_row6_col10" class="data row6 col10" >2608.773865</td>
-      <td id="T_7d5d5_row6_col11" class="data row6 col11" >0.000000</td>
-      <td id="T_7d5d5_row6_col12" class="data row6 col12" >889.235451</td>
-    </tr>
-  </tbody>
-</table>
+<small>shape: (7, 11)</small><table border="1" class="dataframe"><thead><tr><th>cell</th><th>empty</th><th>n_raw</th><th>n_steps</th><th>n_summary</th><th>n_cycles</th><th>max_cap</th><th>min_cap</th><th>avg_cap</th><th>std_cap</th><th>pass</th></tr><tr><td>str</td><td>bool</td><td>i64</td><td>i64</td><td>i64</td><td>i64</td><td>f64</td><td>f64</td><td>f64</td><td>f64</td><td>bool</td></tr></thead><tbody><tr><td>&quot;20180418_sf033_2_cc&quot;</td><td>false</td><td>160059</td><td>1578</td><td>304</td><td>304</td><td>2079.481739</td><td>0.0</td><td>1567.198001</td><td>209.150717</td><td>true</td></tr><tr><td>&quot;20180418_sf033_3_cc&quot;</td><td>false</td><td>160980</td><td>1587</td><td>304</td><td>304</td><td>2103.339517</td><td>0.0</td><td>1597.665927</td><td>205.046181</td><td>true</td></tr><tr><td>&quot;20180418_sf033_4_cc&quot;</td><td>false</td><td>155754</td><td>1567</td><td>304</td><td>304</td><td>1952.530597</td><td>0.0</td><td>1493.788287</td><td>189.297846</td><td>true</td></tr><tr><td>&quot;20180418_sf033_5_cc&quot;</td><td>false</td><td>169567</td><td>1588</td><td>304</td><td>304</td><td>2302.442797</td><td>0.0</td><td>1741.579324</td><td>227.149486</td><td>true</td></tr><tr><td>&quot;20180420_sf036_2_cc&quot;</td><td>false</td><td>157750</td><td>1586</td><td>304</td><td>304</td><td>2319.709751</td><td>0.0</td><td>1479.043916</td><td>474.42122</td><td>true</td></tr><tr><td>&quot;20180420_sf036_3_cc&quot;</td><td>false</td><td>134496</td><td>1571</td><td>304</td><td>304</td><td>2323.285459</td><td>0.0</td><td>1062.506245</td><td>622.550951</td><td>true</td></tr><tr><td>&quot;20180420_sf036_4_cc&quot;</td><td>false</td><td>128547</td><td>1561</td><td>304</td><td>304</td><td>2608.773865</td><td>0.0</td><td>880.014288</td><td>889.235451</td><td>true</td></tr></tbody></table>
 </div>
 
 
@@ -477,40 +212,40 @@ b.plot(rate=True)
 ```
 
 
-
-
     
-![png](cellpy_batch_processing_docs_files/cellpy_batch_processing_docs_28_1.png)
+![png](cellpy_batch_processing_docs_files/cellpy_batch_processing_docs_28_0.png)
     
 
 
 ## Working with batch objects
-The implemented *Collectors* are meant to simplify plotting and exporting when working with batch objects. Available collectors include the `BatchSummaryCollector`, the `BatchCycleCollector` and the `BatchICACollector`.
+The *collectors* in `cellpy.collect` are meant to simplify plotting and exporting when working with batch objects: `summary_collector`, `cycles_collector` and `ica_collector` (plus `dva_collector`). Each returns a `Collection` that you inspect with `.plot()` and write out with `.save()`.
+
+!!! note "Coming from cellpy 1.x / 2.0"
+
+    The old `collectors.BatchSummaryCollector` / `BatchCyclesCollector` / `BatchICACollector`
+    classes were retired in 2.1 and now raise `NotImplementedError`. The functions below
+    replace them; `.show()` became `.plot()`. See the
+    [collect API reference](../../api/collect.md).
 
 ### Summaries
-The `BatchSummaryCollector` class collects and shows sumaries, including, e.g., the option to show statistical variations in the data (`spread=True`):
+`summary_collector` collects and shows summaries, including, e.g., the option to show statistical variations in the data (`spread=True`):
 
 
 ```python
 group_labels = {1: "starts ok", 2: "starts best"}
-discharge_cap_summaries_full = collectors.BatchSummaryCollector(
+discharge_cap_summaries_full = summary_collector(
     b,
-    columns=["discharge_capacity_gravimetric"],
+    columns=("discharge_capacity_gravimetric",),
     max_cycle=100,
     group_it=True,
-    data_collector_arguments=dict(custom_group_labels=group_labels),
-    spread=True,
-    height=600,
+    custom_group_labels=group_labels,
 )
-discharge_cap_summaries_full.show()
+discharge_cap_summaries_full.plot(spread=True, height=600)
 ```
 
-    figure name: paper01_collected_summaries_discharge_capacity_gravimetric_average
-    
-
 
     
-![png](cellpy_batch_processing_docs_files/cellpy_batch_processing_docs_31_1.png)
+![png](cellpy_batch_processing_docs_files/cellpy_batch_processing_docs_31_0.png)
     
 
 
@@ -518,35 +253,47 @@ These summaries can be saved for later:
 
 
 ```python
-# discharge_cap_summaries_full.save(serial_number=1)
+# discharge_cap_summaries_full.save(directory="out")
 ```
 
-Summary data can also be accessed from `b.summaries`:
+Summary data can also be accessed from `b.summaries`. This is a `polars` DataFrame in long (tidy) form — one row per cell and cycle — so pick columns explicitly and pivot to get one column per cell:
 
 
 ```python
-discharge_capacity = b.summaries.discharge_capacity_gravimetric
-charge_capacity = b.summaries.charge_capacity_gravimetric
-coulombic_efficiency = b.summaries.coulombic_efficiency
-ir_charge = b.summaries.ir_charge
+discharge_capacity = b.summaries.pivot(
+    values="discharge_capacity_gravimetric", index="cycle_num", on="cell"
+)
+coulombic_efficiency = b.summaries.pivot(
+    values="coulombic_efficiency", index="cycle_num", on="cell"
+)
+discharge_capacity.head()
 ```
 
-and ploted using matplotlib:
+
+
+
+<div class="cellpy-dataframe">
+<small>shape: (5, 8)</small><table border="1" class="dataframe"><thead><tr><th>cycle_num</th><th>20180418_sf033_2_cc</th><th>20180418_sf033_3_cc</th><th>20180418_sf033_4_cc</th><th>20180418_sf033_5_cc</th><th>20180420_sf036_2_cc</th><th>20180420_sf036_3_cc</th><th>20180420_sf036_4_cc</th></tr><tr><td>i64</td><td>f64</td><td>f64</td><td>f64</td><td>f64</td><td>f64</td><td>f64</td><td>f64</td></tr></thead><tbody><tr><td>1</td><td>2410.344052</td><td>2470.919948</td><td>2319.703848</td><td>2738.528722</td><td>2741.669006</td><td>2716.346428</td><td>3025.053861</td></tr><tr><td>2</td><td>2084.742948</td><td>2113.488897</td><td>1991.10792</td><td>2351.284743</td><td>2359.465284</td><td>2365.12461</td><td>2631.741818</td></tr><tr><td>3</td><td>2063.335009</td><td>2089.558613</td><td>1975.797964</td><td>2328.242558</td><td>2359.648097</td><td>2348.338226</td><td>2612.730491</td></tr><tr><td>4</td><td>1963.377783</td><td>1987.847841</td><td>1879.833318</td><td>2215.186859</td><td>2251.088259</td><td>2235.185286</td><td>2475.062489</td></tr><tr><td>5</td><td>1940.375824</td><td>1959.532358</td><td>1864.076532</td><td>2190.237154</td><td>2199.538629</td><td>2186.971316</td><td>2423.963912</td></tr></tbody></table>
+</div>
+
+
+
+and plotted using matplotlib (converting to pandas so the cycle number becomes the index):
 
 
 ```python
-fig, (ax1, ax2) = plt.subplots(2, 1)
-ax1.plot(discharge_capacity)
-ax1.set_ylabel("capacity ")
-ax2.plot(ir_charge)
+fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True)
+ax1.plot(discharge_capacity.to_pandas().set_index("cycle_num"))
+ax1.set_ylabel("capacity")
+ax2.plot(coulombic_efficiency.to_pandas().set_index("cycle_num"))
 ax2.set_xlabel("cycle")
-ax2.set_ylabel("resistance")
+ax2.set_ylabel("coulombic efficiency (%)")
 ```
 
 
 
 
-    Text(0, 0.5, 'resistance')
+    Text(0, 0.5, 'coulombic efficiency (%)')
 
 
 
@@ -557,58 +304,48 @@ ax2.set_ylabel("resistance")
 
 
 ### Cycles
-The `BatchCyclesCollector` class creates a collection of capacity plots, including several different options for customization. Two examples are shown here:
+`cycles_collector` creates a collection of capacity plots, including several different options for customization. Two examples are shown here:
 
 
 ```python
-cells_collected = collectors.BatchCyclesCollector(b, max_cycle=10)
-cells_collected.show()
+cells_collected = cycles_collector(b, cycles=tuple(range(1, 11)))
+cells_collected.plot()
 ```
 
-    figure name: paper01_collected_cycles_intp_p100_bf_pr_cell
-    
-
 
     
-![png](cellpy_batch_processing_docs_files/cellpy_batch_processing_docs_39_1.png)
+![png](cellpy_batch_processing_docs_files/cellpy_batch_processing_docs_39_0.png)
     
 
 
 
 ```python
-cycles_collected = collectors.BatchCyclesCollector(
+cycles_collected = cycles_collector(
     b,
-    cycles=[1, 2, 3, 10, 100, 200],
-    collector_type="forth-and-forth",
-    plot_type="fig_pr_cycle",
+    cycles=(1, 2, 3, 10, 100, 200),
+    method="forth-and-forth",
 )
-cycles_collected.show()
+cycles_collected.plot(layout="per_cycle")
 ```
 
-    figure name: paper01_collected_cycles_intp_p100_ff_pr_cyc
-    
-
 
     
-![png](cellpy_batch_processing_docs_files/cellpy_batch_processing_docs_40_1.png)
+![png](cellpy_batch_processing_docs_files/cellpy_batch_processing_docs_40_0.png)
     
 
 
 ### Incremental capacity analysis (ICA)
-Similarly, the `BatchICACollector` creates a collection of ICA (dQ/dV) plots:
+Similarly, `ica_collector` creates a collection of ICA (dQ/dV) plots:
 
 
 ```python
-icas_collected = collectors.BatchICACollector(b, cycles=[2, 3, 4])
-icas_collected.show()
+icas_collected = ica_collector(b, cycles=(2, 3, 4))
+icas_collected.plot()
 ```
 
-    figure name: paper01_collected_ica_pr_cell
-    
-
 
     
-![png](cellpy_batch_processing_docs_files/cellpy_batch_processing_docs_42_1.png)
+![png](cellpy_batch_processing_docs_files/cellpy_batch_processing_docs_42_0.png)
     
 
 
@@ -665,20 +402,20 @@ cap.head(2)
   <thead>
     <tr style="text-align: right;">
       <th></th>
-      <th>voltage</th>
+      <th>potential</th>
       <th>capacity</th>
       <th>direction</th>
     </tr>
   </thead>
   <tbody>
     <tr>
-      <th>267</th>
+      <th>266</th>
       <td>2.721604</td>
       <td>0.000054</td>
       <td>-1</td>
     </tr>
     <tr>
-      <th>268</th>
+      <th>267</th>
       <td>2.708690</td>
       <td>0.002016</td>
       <td>-1</td>
@@ -692,7 +429,7 @@ cap.head(2)
 
 ```python
 fig, ax = plt.subplots()
-ax.plot(cap.capacity, cap.voltage)
+ax.plot(cap.capacity, cap.potential)
 ax.set_xlabel("capacity")
 ax.set_ylabel("voltage");
 ```
@@ -720,10 +457,16 @@ ax.set_xlabel(
 )
 ax.set_ylabel(f"voltage ({c.cellpy_units.voltage} vs. Li/Li+)")
 ax.plot(
-    voltage_capacity_100.capacity, voltage_capacity_100.voltage, "o-", label="cycle 100"
+    voltage_capacity_100.capacity,
+    voltage_capacity_100.potential,
+    "o-",
+    label="cycle 100",
 )
 ax.plot(
-    voltage_capacity_200.capacity, voltage_capacity_200.voltage, "o-", label="cycle 200"
+    voltage_capacity_200.capacity,
+    voltage_capacity_200.potential,
+    "o-",
+    label="cycle 200",
 )
 ax.legend();
 ```

@@ -60,9 +60,10 @@ can drop the extra.
   still **pandas** at the public surface; a full polars user-facing flip is a
   later flag-day — watch `HISTORY.md`.
 - Prefer **`cell.schema`** for column identities:
-  `cell.schema.raw` / `.steps` / `.summary`. Legacy
-  `headers_normal` / `headers_summary` / `headers_step_table` still resolve via
-  a shim and warn once per attribute (removal **2.1**). See
+  `cell.schema.raw` / `.steps` / `.summary`. The legacy
+  `headers_normal` / `headers_summary` / `headers_step_table` attributes were a
+  2.0 shim and were **removed in 2.1** (they now raise `AttributeError`) — see
+  the [2.0 → 2.1 migration guide](migration_v2.0_to_2.1.md) and
   [`DEPRECATIONS.md`](../reference/deprecations.md).
 - Column renames (raw examples): `voltage` → `potential`, `cycle_index` →
   `cycle_num`, `type` → `step_type`, capacity/energy columns gain a
@@ -134,15 +135,15 @@ If you index the `get_cap` result directly, rename. In-repo consumers
 ## Plotting
 
 - **`cellpy.utils.easyplot` was removed in 2.0** (#544). Use
-  `cellpy.utils.plotutils` and `cellpy.utils.collectors`.
+  `cellpy.utils.plotutils` and `cellpy.collect` (`cellpy.utils.collectors` is a
+  re-export shim; its old `Batch*Collector` classes were removed in 2.1).
 - Prefer native x names (`x="cycle_num"`). Legacy `x="cycle_index"` is accepted
   again with a warning (#593).
-- `plotutils.summary_plot_legacy` is a deprecated alias of `summary_plot`
-  (removal 2.1).
+- `plotutils.summary_plot_legacy` was **removed in 2.1** — use `summary_plot`.
 - **`batch_plotters.py` was removed** (#658). `Batch.plot` draws through
   `cellpy.plotting.batch_summary_plot`. Backends: **`plotly`** (primary) and
-  **`matplotlib`**. `backend="seaborn"` warns once and maps to `matplotlib`;
-  `backend="bokeh"` raises — use plotly or matplotlib instead.
+  **`matplotlib`**. As of 2.1 both `backend="seaborn"` and `backend="bokeh"`
+  raise `ValueError` — use plotly or matplotlib instead.
 
 ### If a 2.0.0a5 script hit plotting bugs (#593 / #567 Phase 0)
 
@@ -173,11 +174,14 @@ duplicate column `dq` for one release).
 - Failed half-cycles emit `RuntimeWarning` and record
   `frame.attrs["failures"]` instead of silent empty arrays.
 - New: `ica.dvdq()` for differential voltage analysis.
-- Deprecated (removal **2.1**): `Converter`, `dqdv_cycle`, `dqdv_cycles`,
-  `dqdv_np`, old `dqdv(split=…/tidy=…/cycle=…/label_direction=…)` kwargs, and
-  the `dq` column — see [`DEPRECATIONS.md`](../reference/deprecations.md).
+- **Removed in 2.1**: `Converter`, `dqdv_cycle`, `dqdv_cycles`, `dqdv_np`, the
+  old `dqdv(split=…/tidy=…/cycle=…/label_direction=…)` kwargs, and the `dq`
+  column. `ica.dqdv(source, cycles=…, direction=…)` covers all of them — see the
+  [2.0 → 2.1 migration guide](migration_v2.0_to_2.1.md) and
+  [`DEPRECATIONS.md`](../reference/deprecations.md).
 
-`BatchICACollector.data` is the same specced frame; filter on string
+`cellpy.collect.collect_ica` (and the `ica_collector` wrapper, which replaced
+`BatchICACollector` in 2.1) produces the same specced frame; filter on string
 `direction` labels, not ±1 codes.
 
 ## Metadata and campaign merge

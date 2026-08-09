@@ -3,13 +3,19 @@ In this notebook we illustrate, how to use cellpy to extract dQ/dV data for sele
 
 The respective methods are collected in the ica utilities (cellpy.utils.ica):
 
-- **`ica.dqdv`**: This is the main and recommended method, taking data contained within the CellpyCell object as input.
+- **`ica.dqdv`**: This is the one entry point, and it accepts three kinds of input:
+    - a `CellpyCell` object (the usual case),
+    - a capacity vs voltage curve frame from `get_cap(categorical_column=True, label_cycle_number=True)`,
+    - a cellpy-agnostic `(voltage, capacity)` pair of arrays or Pandas Series.
 
-- Additional methods allow for the calculation of dQ/dV data based on voltage and capacity data provided in different, cellpy-agnostic formats:
-    - `ica.dqdv_cycle` and `ica.dqdv_cycles` takes Pandas DataFrames containing capacity vs voltage data for one or multiple cycles as input
-    - `ica.dqdv_np` uses simple arrays or Pandas DataSeries of capacity and voltage as input.
-    
-For more details on these, have a look at the source code.
+In all three cases it returns the same tidy frame: `cycle`, `direction`, `voltage`, `capacity`, `dqdv`.
+
+!!! note "Coming from cellpy 1.x / 2.0"
+
+    The separate `ica.dqdv_cycle`, `ica.dqdv_cycles` and `ica.dqdv_np` helpers (and
+    `ica.Converter`) were removed in 2.1 — `ica.dqdv` covers all of them via the input
+    forms above. The duplicate `dq` output column is gone too; use `dqdv`. See the
+    [2.0 → 2.1 migration guide](../getting_started/migration_v2.0_to_2.1.md).
 
 
 ```python
@@ -54,39 +60,51 @@ ica_df.head()
     <tr style="text-align: right;">
       <th></th>
       <th>cycle</th>
+      <th>direction</th>
       <th>voltage</th>
-      <th>dq</th>
+      <th>capacity</th>
+      <th>dqdv</th>
     </tr>
   </thead>
   <tbody>
     <tr>
       <th>0</th>
       <td>1</td>
+      <td>discharge</td>
       <td>0.051583</td>
+      <td>2310.870568</td>
       <td>-6388.687162</td>
     </tr>
     <tr>
       <th>1</th>
       <td>1</td>
+      <td>discharge</td>
       <td>0.054792</td>
+      <td>2291.260607</td>
       <td>-6828.975477</td>
     </tr>
     <tr>
       <th>2</th>
       <td>1</td>
+      <td>discharge</td>
       <td>0.058001</td>
+      <td>2268.134430</td>
       <td>-7514.790533</td>
     </tr>
     <tr>
       <th>3</th>
       <td>1</td>
+      <td>discharge</td>
       <td>0.061210</td>
+      <td>2242.747378</td>
       <td>-8284.857174</td>
     </tr>
     <tr>
       <th>4</th>
       <td>1</td>
+      <td>discharge</td>
       <td>0.064420</td>
+      <td>2215.988038</td>
       <td>-9098.355196</td>
     </tr>
   </tbody>
@@ -97,7 +115,7 @@ ica_df.head()
 
 
 ```python
-px.line(ica_df, x="voltage", y="dq", color="cycle", range_x=[0.001, 0.79])
+px.line(ica_df, x="voltage", y="dqdv", color="cycle", range_x=[0.001, 0.79])
 ```
 
 
@@ -106,12 +124,14 @@ px.line(ica_df, x="voltage", y="dq", color="cycle", range_x=[0.001, 0.79])
     
 
 
-If cycle number(s) are specified using the `cycle` keyword (as an integer or list of integers), the dQ/dV will be calculated for those cycles only. If `split=True`, two separate Pandas Dataframes will be obtained, one containing charge, and one containing discharge data:
+If cycle number(s) are specified using the `cycles` keyword (as an integer or list of integers), the dQ/dV will be calculated for those cycles only. The result is always one long frame; the `direction` column tells charge and discharge apart, so you split it by filtering (or ask for one direction up front with `direction="charge"`):
 
 
 ```python
 cycles = [2, 3, 4]
-charge_ica, discharge_ica = ica.dqdv(c, split=True, cycle=cycles)
+ica_frame = ica.dqdv(c, cycles=cycles)
+charge_ica = ica_frame[ica_frame.direction == "charge"]
+discharge_ica = ica_frame[ica_frame.direction == "discharge"]
 ```
 
 
@@ -127,29 +147,37 @@ charge_ica.head(3)
   <thead>
     <tr style="text-align: right;">
       <th></th>
-      <th>voltage</th>
       <th>cycle</th>
-      <th>dq</th>
+      <th>direction</th>
+      <th>voltage</th>
+      <th>capacity</th>
+      <th>dqdv</th>
     </tr>
   </thead>
   <tbody>
     <tr>
-      <th>0</th>
-      <td>0.094257</td>
+      <th>468</th>
       <td>2</td>
-      <td>NaN</td>
+      <td>charge</td>
+      <td>0.095357</td>
+      <td>0.357115</td>
+      <td>323.071717</td>
     </tr>
     <tr>
-      <th>1</th>
-      <td>0.103407</td>
+      <th>469</th>
       <td>2</td>
-      <td>365.946074</td>
+      <td>charge</td>
+      <td>0.097555</td>
+      <td>1.066030</td>
+      <td>324.656015</td>
     </tr>
     <tr>
-      <th>2</th>
-      <td>0.112558</td>
+      <th>470</th>
       <td>2</td>
-      <td>598.189449</td>
+      <td>charge</td>
+      <td>0.099754</td>
+      <td>1.774946</td>
+      <td>330.242688</td>
     </tr>
   </tbody>
 </table>
@@ -170,29 +198,37 @@ discharge_ica.head(3)
   <thead>
     <tr style="text-align: right;">
       <th></th>
-      <th>voltage</th>
       <th>cycle</th>
-      <th>dq</th>
+      <th>direction</th>
+      <th>voltage</th>
+      <th>capacity</th>
+      <th>dqdv</th>
     </tr>
   </thead>
   <tbody>
     <tr>
       <th>0</th>
-      <td>0.049979</td>
       <td>2</td>
-      <td>NaN</td>
+      <td>discharge</td>
+      <td>0.050879</td>
+      <td>1987.420359</td>
+      <td>-5707.834475</td>
     </tr>
     <tr>
       <th>1</th>
-      <td>0.058489</td>
       <td>2</td>
-      <td>-6538.113356</td>
+      <td>discharge</td>
+      <td>0.052679</td>
+      <td>1977.971449</td>
+      <td>-5816.236742</td>
     </tr>
     <tr>
       <th>2</th>
-      <td>0.066999</td>
       <td>2</td>
-      <td>-7797.598247</td>
+      <td>discharge</td>
+      <td>0.054479</td>
+      <td>1966.295070</td>
+      <td>-6004.101556</td>
     </tr>
   </tbody>
 </table>
@@ -202,7 +238,7 @@ discharge_ica.head(3)
 
 
 ```python
-px.line(charge_ica, x="voltage", y="dq", color="cycle")
+px.line(charge_ica, x="voltage", y="dqdv", color="cycle")
 ```
 
 
@@ -215,9 +251,9 @@ px.line(charge_ica, x="voltage", y="dq", color="cycle")
 
 
 ```python
-ica_df_1 = ica.dqdv(c, cycle=3, voltage_resolution=0.03)
-ica_df_2 = ica.dqdv(c, cycle=3, voltage_resolution=0.01)
-ica_df_3 = ica.dqdv(c, cycle=3, voltage_resolution=0.005)
+ica_df_1 = ica.dqdv(c, cycles=3, voltage_resolution=0.03)
+ica_df_2 = ica.dqdv(c, cycles=3, voltage_resolution=0.01)
+ica_df_3 = ica.dqdv(c, cycles=3, voltage_resolution=0.005)
 ```
 
 
@@ -232,7 +268,7 @@ ica_both = pd.concat(
 px.line(
     ica_both,
     x="voltage",
-    y="dq",
+    y="dqdv",
     color="v_res",
     range_x=[0.1, 0.4],
     range_y=[0, 6000],
@@ -247,72 +283,39 @@ px.line(
 
 
 ### More details on dqdv
-A lot of different options with respect to smoothing, interpolation etc. are available when calculating the dQ/dV. For more details, have a look at the source code:
+A lot of different options with respect to smoothing, interpolation etc. are available when calculating the dQ/dV. The signature is
 
 ```python
-def dqdv(cell, split=False, tidy=True, label_direction=False, **kwargs):
-    """Calculates dq-dv data for all cycles contained in
-    the given CellpyCell object, returns data as pandas.DataFrame(s) 
-
-    Args:
-        cell (CellpyCell-object).
-        split (bool): return one frame for charge and one for
-            discharge if True (defaults to False).
-        tidy (bool): returns the split frames in wide format (defaults
-            to True. Remark that this option is currently not available
-            for non-split frames).
-
-    Returns:
-        one or two ``pandas.DataFrame`` with the following columns:
-        cycle: cycle number (if split is set to True).
-        voltage: voltage
-        dq: the incremental capacity
-
-
-    Additional key-word arguments are sent to Converter:
-
-    Keyword Args:
-        cycle (int or list of ints (cycle numbers)): will process all (or up to max_cycle_number)
-            if not given or equal to None.
-        points_pr_split (int): only used when investigating data
-            using splits, defaults to 10.
-        max_points: None
-        voltage_resolution (float): used for interpolating voltage
-            data (e.g. 0.005)
-        capacity_resolution: used for interpolating capacity data
-        minimum_splits (int): defaults to 3.
-        interpolation_method: scipy interpolation method
-        increment_method (str): defaults to "diff"
-        pre_smoothing (bool): set to True for pre-smoothing (window)
-        smoothing (bool): set to True for smoothing during
-            differentiation (window)
-        post_smoothing (bool): set to True for post-smoothing
-            (gaussian)
-        normalize (bool): set to True for normalizing to capacity
-        normalizing_factor (float):
-        normalizing_roof  (float):
-        savgol_filter_window_divisor_default (int): used for window
-            smoothing, defaults to 50
-        savgol_filter_window_order: used for window smoothing
-        voltage_fwhm (float): used for setting the post-processing
-            gaussian sigma, defaults to 0.01
-        gaussian_order (int): defaults to 0
-        gaussian_mode (str): defaults to "reflect"
-        gaussian_cval (float): defaults to 0.0
-        gaussian_truncate (float): defaults to 4.0
-
-    Example:
-        >>> from cellpy.utils import ica
-        >>> charge_df, dcharge_df = ica.dqdv(my_cell, split=True)
-        >>> charge_df.plot(x="voltage",y="dq")
+ica.dqdv(source, cycles=None, direction="both", options=None, *,
+         strict=False, cycle_mode=None, number_of_points=None, **overrides)
 ```
 
-## Using the cellpy-agnostic methods
-- `ica.dqdv_cycle` and `ica.dqdv_cycles` takes Pandas DataFrames containing capacity vs voltage data for one or multiple cycles as input
-- `ica.dqdv_np` uses simple arrays or Pandas DataSeries of capacity and voltage as input.
+where the smoothing and interpolation knobs live on `cellpy.ica.IcaOptions` — pass an `IcaOptions` instance as `options=`, or override single fields as keyword arguments (as with `voltage_resolution=` above). The available fields, with their defaults:
+
+| Field | Default |
+|---|---|
+| `voltage_resolution` / `capacity_resolution` | `None` (interpolation step) |
+| `max_points` | `None` |
+| `interpolation_method` | `"linear"` |
+| `pre_smoothing` / `diff_smoothing` / `post_smoothing` | `False` / `False` / `True` |
+| `savgol_window_divisor` / `savgol_order` | `50` / `3` |
+| `voltage_fwhm` / `capacity_fwhm` | `0.01` / `None` (gaussian sigma) |
+| `normalize` | `"area"` |
+| `normalizing_factor` / `normalizing_roof` | `None` / `None` |
+| `increment_method` | `"diff"` |
+| `gaussian` | `GaussianOptions(order=0, mode="reflect", cval=0.0, truncate=4.0)` |
+
+Setting `strict=True` raises instead of warning when a half-cycle fails to convert. The returned frame's `.attrs` carries the options used, the resolved cycle mode, and any per-half-cycle failures. See the [ica API reference](../api/ica.md) for the authoritative documentation.
 
 
-To use the cellpy-agnostic methods mentioned above, capacity vs voltage data is needed as input. This has to be extracted first and can be done, e.g., by using the `get_cap` method.
+
+## Using the cellpy-agnostic input forms
+Besides a `CellpyCell`, `ica.dqdv` also accepts
+
+- a capacity vs voltage curve frame (for one or several cycles), and
+- a plain `(voltage, capacity)` pair of arrays or Pandas Series.
+
+To use these, capacity vs voltage data is needed as input. This has to be extracted first and can be done, e.g., by using the `get_cap` method.
 
 Specify cycle number(s):
 
@@ -322,7 +325,7 @@ cycle = 2
 cycles = [2, 3, 4]
 ```
 
-Get capacities (note here that the dqdv methods require `categorical_column` and `label_cycle_number` to be set to `True`):
+Get capacities (note here that `ica.dqdv` requires `categorical_column` and `label_cycle_number` to be set to `True` when it is handed a curve frame). The frame uses the native cellpy-core column names — `cycle_num`, `potential`, `capacity`, `direction`:
 
 
 ```python
@@ -344,22 +347,22 @@ vcap.head(2)
   <thead>
     <tr style="text-align: right;">
       <th></th>
-      <th>cycle</th>
-      <th>voltage</th>
+      <th>cycle_num</th>
+      <th>potential</th>
       <th>capacity</th>
       <th>direction</th>
     </tr>
   </thead>
   <tbody>
     <tr>
-      <th>1525</th>
+      <th>1524</th>
       <td>2</td>
       <td>0.892503</td>
       <td>0.041180</td>
       <td>-1</td>
     </tr>
     <tr>
-      <th>1526</th>
+      <th>1525</th>
       <td>2</td>
       <td>0.887276</td>
       <td>0.176045</td>
@@ -371,29 +374,66 @@ vcap.head(2)
 
 
 
-`dqdv_cycle` then outputs a tuple containing voltage and incremental capacity:
+If you only have plain arrays (no cellpy objects at all), hand `ica.dqdv` a `(voltage, capacity)` pair for a single half-cycle:
 
 
 ```python
-voltage, capacity = ica.dqdv_cycle(vcap)
-print(f"voltage:\n{voltage[:10]}\n\ncapacity:\n{capacity[:10]}")
+half = vcap[vcap["direction"] == -1]
+ica_from_arrays = ica.dqdv((half["potential"].to_numpy(), half["capacity"].to_numpy()))
+ica_from_arrays.head(3)
 ```
 
-    voltage:
-    [0.05087869 0.05267896 0.05447923 0.05627949 0.05807976 0.05988003
-     0.06168029 0.06348056 0.06528083 0.06708109]
-    
-    capacity:
-    [-5707.83447516 -5816.23674218 -6004.10155608 -6234.12949797
-     -6480.74747702 -6733.15734537 -6987.70817472 -7244.6875613
-     -7512.44888318 -7811.17678808]
-    
 
-while `dqdv_cycles` returns a pandas DataFrame:
+
+
+<div class="cellpy-dataframe">
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>cycle</th>
+      <th>direction</th>
+      <th>voltage</th>
+      <th>capacity</th>
+      <th>dqdv</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>0</td>
+      <td>charge</td>
+      <td>0.050879</td>
+      <td>1987.420359</td>
+      <td>-5707.834475</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>0</td>
+      <td>charge</td>
+      <td>0.052679</td>
+      <td>1977.971449</td>
+      <td>-5816.236742</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>0</td>
+      <td>charge</td>
+      <td>0.054479</td>
+      <td>1966.295070</td>
+      <td>-6004.101556</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+
+
+Handing the curve frame itself to `ica.dqdv` returns the same tidy frame as for a `CellpyCell`:
 
 
 ```python
-ica_cycles = ica.dqdv_cycles(vcap)
+ica_cycles = ica.dqdv(vcap)
 ica_cycles.head()
 ```
 
@@ -406,39 +446,51 @@ ica_cycles.head()
     <tr style="text-align: right;">
       <th></th>
       <th>cycle</th>
+      <th>direction</th>
       <th>voltage</th>
-      <th>dq</th>
+      <th>capacity</th>
+      <th>dqdv</th>
     </tr>
   </thead>
   <tbody>
     <tr>
       <th>0</th>
       <td>2</td>
+      <td>discharge</td>
       <td>0.050879</td>
+      <td>1987.420359</td>
       <td>-5707.834475</td>
     </tr>
     <tr>
       <th>1</th>
       <td>2</td>
+      <td>discharge</td>
       <td>0.052679</td>
+      <td>1977.971449</td>
       <td>-5816.236742</td>
     </tr>
     <tr>
       <th>2</th>
       <td>2</td>
+      <td>discharge</td>
       <td>0.054479</td>
+      <td>1966.295070</td>
       <td>-6004.101556</td>
     </tr>
     <tr>
       <th>3</th>
       <td>2</td>
+      <td>discharge</td>
       <td>0.056279</td>
+      <td>1954.789046</td>
       <td>-6234.129498</td>
     </tr>
     <tr>
       <th>4</th>
       <td>2</td>
+      <td>discharge</td>
       <td>0.058080</td>
+      <td>1943.862902</td>
       <td>-6480.747477</td>
     </tr>
   </tbody>
@@ -458,7 +510,7 @@ vcaps = c.get_cap(
     insert_nan=False,
     label_cycle_number=True,
 )
-ica_curves = ica.dqdv_cycles(vcaps)
+ica_curves = ica.dqdv(vcaps)
 ```
 
 
@@ -475,21 +527,27 @@ ica_curves.head(2)
     <tr style="text-align: right;">
       <th></th>
       <th>cycle</th>
+      <th>direction</th>
       <th>voltage</th>
-      <th>dq</th>
+      <th>capacity</th>
+      <th>dqdv</th>
     </tr>
   </thead>
   <tbody>
     <tr>
       <th>0</th>
       <td>2</td>
+      <td>discharge</td>
       <td>0.050879</td>
+      <td>1987.420359</td>
       <td>-5707.834475</td>
     </tr>
     <tr>
       <th>1</th>
       <td>2</td>
+      <td>discharge</td>
       <td>0.052679</td>
+      <td>1977.971449</td>
       <td>-5816.236742</td>
     </tr>
   </tbody>

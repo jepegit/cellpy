@@ -7,6 +7,14 @@ ecosystem of scientific tools available for Python. In particular, `cellpy` uses
 makes it easy for the user to apply advanced methods, analyses of or transformations to the data in addition
 to the features implemented in `cellpy`.
 
+`pandas` is not the only frame library in play, though. The multi-cell
+[collect](../api/collect.md) layer keeps its tidy frames in `polars`
+(`Collection.data`), converting to `pandas` at the plotting seam, and the v9
+cellpy-file stores its tables as parquet. Only the per-cell Data frames
+(`c.data.raw` / `.steps` / `.summary`) are `pandas` at the public surface — see
+the frame-type note in the [agents guide](../getting_started/agents.md) for where
+that boundary sits and how to cross it explicitly.
+
 The core of `cellpy` is the **CellpyCell** object ([illustration of the CellpyCell object](#the-fundamentals-of-cellpy)) that contains
 both the data (stored in the **Data** object) and central methods required to read, process and store battery testing data.
 The CellpyCell provides the appropriate interface and coordination of the resources needed, such as loading
