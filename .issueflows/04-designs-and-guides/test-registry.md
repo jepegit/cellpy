@@ -19,6 +19,7 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_collected_app_hooks.py::test_cycles_per_cell_facet_strips_are_pretty | yes | yes | plotting.collected collected_plot per_cell | #820 | no cell= strip |
 | tests/test_collected_app_hooks.py::test_cycles_per_cycle_facet_strips_are_pretty | yes | yes | plotting.collected collected_plot per_cycle | #820 | Cycle N strips |
 | tests/test_collected_summary_axes.py::test_spread_share_y_true_matches_axes | yes | yes | plotting.collected summary spread + share_y | #817 | Group avg + Spread |
+| tests/test_collected_summary_axes.py::test_spread_mean_traces_have_hovertemplate | yes | yes | plotting.collected.spread_plot hover | #875 | mean hover + bounds skip |
 | tests/test_collected_summary_axes.py::test_spread_default_independent_y_axes | yes | yes | plotting.collected summary spread default | #817 | |
 | tests/test_collected_summary_axes.py::test_spread_y_ranges_forces_independent_when_share_y_true | yes | yes | plotting.collected spread y_ranges | #817 | no re-link over limits |
 | tests/test_collected_summary_axes.py::test_collected_plot_spread_share_y | yes | yes | plotting.collected collected_plot spread | #817 | public entry |

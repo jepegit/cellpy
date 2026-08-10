@@ -39,7 +39,9 @@ Epic #567 Stage 3 / issue #657 re-bases collectors' drawing half onto
   limits: `y_ranges={"coulombic_efficiency": [0, 110], ...}` (variable →
   `[lo, hi]`). Non-empty `y_ranges` forces independent axes. Plotly is the
   supported backend for `y_ranges`; seaborn/matplotlib are best-effort and
-  ignore it.
+  ignore it. **Spread hover (#875):** mean traces carry a `hovertemplate`
+  (`group`/`cell`, `variable`, cycle, `mean`, `std`); Upper/Lower Bound band
+  traces use `hoverinfo="skip"`.
 - **App chrome (#801):** `plotly_template=` overrides the default
   `plotly+{method}` combo; `layout_updates=` is a shallow
   `fig.update_layout(**…)` after collector styling. Summary facet strips no

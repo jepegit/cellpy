@@ -265,3 +265,32 @@ def test_collected_plot_spread_share_y():
     )
     assert fig is not None
     assert fig.layout.yaxis2.matches == "y"
+
+
+@pytest.mark.essential
+def test_spread_mean_traces_have_hovertemplate():
+    """Mean hover matches group_it fields + std; bounds skip hover (#875)."""
+    pytest.importorskip("plotly", reason="plotting extras (batch) not installed")
+    from cellpy.plotting import theme
+    from cellpy.plotting.collected import summary_plotter
+
+    theme.make_collector_templates()
+    fig = summary_plotter(
+        _group_avg_summary_frame(),
+        backend="plotly",
+        spread=True,
+    )
+    mean_templates = []
+    for trace in fig.data:
+        name = trace.name or ""
+        if name.startswith("Upper Bound") or name.startswith("Lower Bound"):
+            assert trace.hoverinfo == "skip"
+            continue
+        tmpl = trace.hovertemplate or ""
+        mean_templates.append(tmpl)
+        assert "mean=%{y}" in tmpl
+        assert "variable=" in tmpl
+        assert "Cycle (n.)=%{x}" in tmpl
+        assert "std=%{customdata}" in tmpl
+        assert "group=" in tmpl
+    assert mean_templates, "expected at least one mean trace with hovertemplate"
