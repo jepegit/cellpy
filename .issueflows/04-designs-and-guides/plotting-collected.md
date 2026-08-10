@@ -18,6 +18,10 @@ Epic #567 Stage 3 / issue #657 re-bases collectors' drawing half onto
   - `film` → `kind="film"`
   - `spread=True` → `kind="spread"`
   - default → `kind="line"`
+- **Validation (#874):** unknown `layout=` / `kind=` / `method=` raise
+  `ValueError` (no silent fall-through to the line/`fig_pr_cell` renderer).
+  `layout="film"` is accepted as an alias for `kind="film"`
+  (`layout` becomes `per_cell`); conflicting `kind=` raises.
 - Flow: resolve layout/kind → `FigureSpec(extras["kind"]="collected", …)` →
   `get_backend(...).render` → collected layout engines (plotly primary;
   `seaborn` / `matplotlib` → historical seaborn collector path, best-effort).
