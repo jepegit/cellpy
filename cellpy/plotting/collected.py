@@ -201,17 +201,35 @@ def spread_plot(curves, plotly_arguments=None, y_label_mapper=None, **kwargs):
             else:
                 show_legend = False
             sub_data = data[data["variable"] == variable]
+            mean_kwargs = dict(
+                name=cell,
+                x=sub_data["cycle"],
+                y=sub_data["mean"],
+                mode=mode,
+                line=dict(color=color[0]),
+                legendgroup=cell,
+                legendgrouptitle=None,
+                showlegend=show_legend,
+            )
+            # Hover parity with group_it px path (#875); std via customdata.
+            if "std" in sub_data.columns:
+                mean_kwargs["customdata"] = sub_data["std"]
+                mean_kwargs["hovertemplate"] = (
+                    f"{series_col}={cell}<br>"
+                    f"variable={variable}<br>"
+                    "Cycle (n.)=%{x}<br>"
+                    "mean=%{y}<br>"
+                    "std=%{customdata}<extra></extra>"
+                )
+            else:
+                mean_kwargs["hovertemplate"] = (
+                    f"{series_col}={cell}<br>"
+                    f"variable={variable}<br>"
+                    "Cycle (n.)=%{x}<br>"
+                    "mean=%{y}<extra></extra>"
+                )
             fig.add_trace(
-                go.Scatter(
-                    name=cell,
-                    x=sub_data["cycle"],
-                    y=sub_data["mean"],
-                    mode=mode,
-                    line=dict(color=color[0]),
-                    legendgroup=cell,
-                    legendgrouptitle=None,
-                    showlegend=show_legend,
-                ),
+                go.Scatter(**mean_kwargs),
                 row=row_number + 1,
                 col=1,
             )
@@ -227,6 +245,7 @@ def spread_plot(curves, plotly_arguments=None, y_label_mapper=None, **kwargs):
                     line=dict(width=0),
                     showlegend=False,
                     legendgroup=cell,
+                    hoverinfo="skip",
                 ),
                 row=row_number + 1,
                 col=1,
@@ -245,6 +264,7 @@ def spread_plot(curves, plotly_arguments=None, y_label_mapper=None, **kwargs):
                     fill="tonexty",
                     showlegend=False,
                     legendgroup=cell,
+                    hoverinfo="skip",
                 ),
                 row=row_number + 1,
                 col=1,

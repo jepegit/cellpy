@@ -5,6 +5,8 @@
 * Validate collected `layout=` / `kind=` / `method=` (raise on unknown values);
   `layout='film'` aliases `kind='film'` so apps no longer get a silent wrong
   line plot. (#874)
+* `spread_plot`: mean traces get a real `hovertemplate` (group/cell, variable,
+  cycle, mean, std); Upper/Lower Bound band traces use `hoverinfo='skip'`. (#875)
 
 ## [2.1.2] - 2026-08-09
 
