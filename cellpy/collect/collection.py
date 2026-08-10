@@ -88,8 +88,10 @@ class Collection:
         (see :func:`cellpy.plotting.collected.summary_plotter`). App chrome:
         ``plotly_template``, ``layout_updates``, ``y_label_mapper``,
         ``height`` / ``height_per_panel``. Cycles / ICA: prefer ``layout=``
-        (``per_cell`` / ``per_cycle``); Plotly facet strips are pretty-printed
-        by default (``Cycle N`` / cell label).
+        (``per_cell`` / ``per_cycle``) and ``kind=`` (``line`` / ``film`` /
+        ``spread``); ``layout="film"`` aliases ``kind="film"``. Unknown
+        layout/kind/method values raise ``ValueError``. Plotly facet strips
+        are pretty-printed by default (``Cycle N`` / cell label).
         """
         from cellpy.plotting import collected_plot
 

@@ -1706,6 +1706,10 @@ _LAYOUT_TO_METHOD = {
     "summary": "summary",
 }
 
+_VALID_LAYOUTS = frozenset(_LAYOUT_TO_METHOD)
+_VALID_KINDS = frozenset({"line", "film", "spread"})
+_VALID_METHODS = frozenset(_METHOD_TO_LAYOUT)
+
 
 def resolve_collected_layout_kind(
     *,
@@ -1717,13 +1721,48 @@ def resolve_collected_layout_kind(
 ) -> tuple[str, str, str]:
     """Map legacy ``method``/``plot_type``/``spread`` to ``(layout, kind, method)``.
 
+    ``layout="film"`` is accepted as an alias for ``kind="film"`` (layout
+    becomes ``per_cell``). Unknown ``layout`` / ``kind`` / ``method`` values
+    raise ``ValueError`` instead of falling through to the line renderer.
+
     Returns:
         layout: ``per_cell`` | ``per_cycle`` | ``summary``
         kind: ``line`` | ``film`` | ``spread``
         method: legacy template/method string still understood by renderers
+
+    Raises:
+        ValueError: If ``layout``, ``kind``, or ``method``/``plot_type`` is
+            unrecognised, or if ``layout="film"`` conflicts with a non-film
+            ``kind``.
     """
     if method is None and plot_type is not None:
         method = plot_type
+
+    # Common footgun: film is a kind, but it sits next to layouts in docs/maps.
+    if layout == "film":
+        if kind is not None and kind != "film":
+            raise ValueError(
+                f"layout='film' conflicts with kind={kind!r}; "
+                "use kind='film' alone, or layout='film' without kind="
+            )
+        kind = "film"
+        layout = "per_cell"
+
+    if method is not None and method not in _VALID_METHODS:
+        allowed = ", ".join(sorted(_VALID_METHODS))
+        raise ValueError(f"Unknown method={method!r}; expected one of: {allowed}")
+
+    if kind is not None and kind not in _VALID_KINDS:
+        allowed = ", ".join(sorted(_VALID_KINDS))
+        raise ValueError(f"Unknown kind={kind!r}; expected one of: {allowed}")
+
+    if layout is not None and layout not in _VALID_LAYOUTS:
+        allowed = ", ".join(sorted(_VALID_LAYOUTS))
+        raise ValueError(
+            f"Unknown layout={layout!r}; expected one of: {allowed} "
+            "(note: 'film' is a kind=, not a layout= — use kind='film' or layout='film')"
+        )
+
     if kind is None:
         if spread:
             kind = "spread"
@@ -1734,15 +1773,13 @@ def resolve_collected_layout_kind(
     if layout is None:
         if method in _METHOD_TO_LAYOUT:
             layout = _METHOD_TO_LAYOUT[method]
-        elif kind == "film":
-            layout = "per_cell"
         else:
             layout = "per_cell"
     if method is None:
         if kind == "film":
             method = "film"
         else:
-            method = _LAYOUT_TO_METHOD.get(layout, "fig_pr_cell")
+            method = _LAYOUT_TO_METHOD[layout]
     if kind == "spread":
         # spread is a summary rendering mode
         if layout not in ("summary", "per_cell"):
