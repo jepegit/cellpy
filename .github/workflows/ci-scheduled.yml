@@ -88,6 +88,11 @@ jobs:
         run: |
           python -c "import pyodbc; drivers=[d for d in pyodbc.drivers() if d.startswith('Microsoft Access Driver')]; assert drivers, 'Microsoft Access ODBC driver not found'; print('Access drivers:', drivers)"
 
+      # Windows-only (conda-forge package requires __win); kept out of the shared env file.
+      - name: Install sqlalchemy-access (Windows)
+        if: matrix.os == 'windows'
+        run: conda install -c conda-forge sqlalchemy-access -y
+
       - name: Install cellpy (editable)
         run: python -m pip install -e .
 
@@ -128,7 +133,8 @@ jobs:
     name: pip install (${{ matrix.os }})
     runs-on: ${{ matrix.runner }}
     # Agg keeps matplotlib headless (#594). Plotly/seaborn cases skipif when the
-    # batch extra is not installed (plain `pip install -e .` here).
+    # batch extra is not installed. legacy-files pulls PyTables so the suite can
+    # read v4–v8 HDF5 fixtures (plain `pip install -e .` fails those tests).
     env:
       MPLBACKEND: Agg
     strategy:
@@ -168,6 +174,7 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install pytest pytest-timeout pytest-benchmark lmfit
 
+      # Apple Silicon needs brew HDF5/blosc paths for building/linking tables.
       - name: Install PyTables (macOS)
         if: matrix.os == 'macos-14'
         run: |
@@ -177,7 +184,7 @@ jobs:
           python -m pip install tables
 
       - name: Install cellpy
-        run: python -m pip install -e .
+        run: python -m pip install -e ".[legacy-files]"
 
       - name: Test with pytest
         run: pytest ${{ matrix.pytest-args }}

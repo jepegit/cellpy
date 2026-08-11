@@ -20,6 +20,13 @@ when you discover a gap). See [`tests/README.md`](../../tests/README.md).
 **What:** full conda pytest matrix (Linux / macOS-14 / Windows with ACE), pip-install
 matrix, nbmake notebook (Linux, `continue-on-error`), conda-forge install check.
 
+**Env constraints (issue #885):**
+- `sqlalchemy-access` is Windows-only on conda-forge (`__win`). Keep it out of
+  shared `github_actions_environment.yml` / `environment*.yml`; install on
+  Windows runners (or local Windows) only.
+- Scheduled `pip-install` uses `pip install -e ".[legacy-files]"` so Linux has
+  PyTables for v4–v8 HDF5 fixtures; the batch plotting extra stays optional.
+
 Failures are informational — fix on the next cycle; they do **not** block merges.
 
 Run manually before a release if the weekly schedule is too stale.

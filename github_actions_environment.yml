@@ -41,7 +41,7 @@ dependencies:
     - scipy
     - setuptools
     - sqlalchemy
-    - sqlalchemy-access
+    # sqlalchemy-access is Windows-only (__win); install in CI on Windows runners only.
     - tqdm
     - typer
     - xlrd
