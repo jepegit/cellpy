@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+* Run the real `essential` and `full` CI gates once for every PR targeting
+  `master` and every `master` push; remove same-named docs-only no-op checks
+  that could mask test results. (#876)
 * Validate collected `layout=` / `kind=` / `method=` (raise on unknown values);
   `layout='film'` aliases `kind='film'` so apps no longer get a silent wrong
   line plot. (#874)

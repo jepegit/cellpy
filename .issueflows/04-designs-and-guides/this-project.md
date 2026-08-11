@@ -21,8 +21,9 @@ See also [testing-and-coverage.md](testing-and-coverage.md) and [ci-tiers.md](ci
 
 ## Conventions
 
-- **PR merge gate:** `.github/workflows/ci.yml` runs only `pytest -m essential` on Linux (`uv`).
-  Full conda/platform matrix is in `ci-scheduled.yml` (weekly + manual).
+- **PR merge gates:** `.github/workflows/ci.yml` runs `pytest -m essential` and
+  the full Linux suite with plotting extras (`uv`). The full conda/platform
+  matrix is Tier 3 in `ci-scheduled.yml` (weekly + manual).
 - **`@pytest.mark.essential`:** Any test that must block a merge **must** carry this marker.
   Add it when the test guards read → step table → summary, cellpy-core parity, golden-fixture
   oracles, or other regressions you cannot leave to the scheduled run only. Keep the set

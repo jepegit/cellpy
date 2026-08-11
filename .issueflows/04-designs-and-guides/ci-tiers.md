@@ -1,8 +1,8 @@
 # CI tiers
 
-cellpy CI is split into a fast merge gate and a slower scheduled matrix.
+cellpy CI is split into two Linux merge gates and a slower scheduled matrix.
 
-## Tier 1 — merge gate (`ci.yml` → job `essential`)
+## Tier 1 — essential merge gate (`ci.yml` → job `essential`)
 
 **When:** pull requests and pushes to `master` (not feature-branch pushes).
 
@@ -13,7 +13,15 @@ cellpy CI is split into a fast merge gate and a slower scheduled matrix.
 **Contract:** anything that must block a merge belongs on the `essential` marker (or add it
 when you discover a gap). See [`tests/README.md`](../../tests/README.md).
 
-## Tier 2 — platform matrix (`ci-scheduled.yml`)
+## Tier 2 — full Linux merge gate (`ci.yml` → job `full`)
+
+**When:** pull requests and pushes to `master` (not feature-branch pushes).
+
+**What:** Linux, `uv sync --extra batch` with `UV_NO_SOURCES=1`, full `pytest`.
+
+**Branch protection:** require this job before merge.
+
+## Tier 3 — platform matrix (`ci-scheduled.yml`)
 
 **When:** Mondays 03:00 UTC, or **Actions → CI (scheduled) → Run workflow**.
 
@@ -41,9 +49,11 @@ Run manually before a release if the weekly schedule is too stale.
 
 - `draft-pdf.yml` — JOSS paper PDF
 
-## Skipped paths
+## Paths
 
-Doc-only changes under `docs/`, `paper/`, `.issueflows/`, `graphify-out/`, and `*.md` do not trigger `ci.yml`.
+`ci.yml` runs its real checks for every PR targeting `master` and every push to
+`master`, including doc-only changes. This keeps each required check name
+unambiguous.
 
 ## When to mark a test `essential`
 
