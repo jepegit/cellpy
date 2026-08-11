@@ -1,4 +1,4 @@
-# Merge gate (Tier 1): PRs and pushes to master only.
+# Linux merge gates (Tiers 1 and 2): PRs and pushes to master only.
 # ``essential`` is the fast signal; ``full`` runs the whole linux suite.
 # Both job display names are required status checks on master.
 #
