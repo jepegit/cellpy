@@ -133,7 +133,8 @@ jobs:
     name: pip install (${{ matrix.os }})
     runs-on: ${{ matrix.runner }}
     # Agg keeps matplotlib headless (#594). Plotly/seaborn cases skipif when the
-    # batch extra is not installed (plain `pip install -e .` here).
+    # batch extra is not installed. legacy-files pulls PyTables so the suite can
+    # read v4–v8 HDF5 fixtures (plain `pip install -e .` fails those tests).
     env:
       MPLBACKEND: Agg
     strategy:
@@ -173,6 +174,7 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install pytest pytest-timeout pytest-benchmark lmfit
 
+      # Apple Silicon needs brew HDF5/blosc paths for building/linking tables.
       - name: Install PyTables (macOS)
         if: matrix.os == 'macos-14'
         run: |
@@ -182,7 +184,7 @@ jobs:
           python -m pip install tables
 
       - name: Install cellpy
-        run: python -m pip install -e .
+        run: python -m pip install -e ".[legacy-files]"
 
       - name: Test with pytest
         run: pytest ${{ matrix.pytest-args }}
