@@ -53,7 +53,9 @@ dependencies:
     - sphinx-autoapi
     - sphinx_rtd_theme
     - sqlalchemy
-    - sqlalchemy-access
+    # sqlalchemy-access is Windows-only (conda-forge requires __win).
+    # On Windows: conda install -c conda-forge sqlalchemy-access
+    # or: python -m pip install sqlalchemy-access
     - tqdm
     - twine
     - typer
