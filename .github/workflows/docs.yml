@@ -1,9 +1,8 @@
 # Build the documentation on every change that can break it.
 #
 # Deliberately its own workflow rather than a job in ci.yml: the required
-# checks are "essential (linux / uv)" and "full (linux / uv)". ci.yml
-# path-ignores docs/**; ci-dummy.yml reports those check names as no-ops.
-# This workflow is the real docs build signal.
+# "essential (linux / uv)" and "full (linux / uv)" checks run on every PR
+# targeting master, while this workflow supplies the docs-specific build signal.
 name: Docs
 
 on:
