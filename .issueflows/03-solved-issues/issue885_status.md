@@ -1,0 +1,17 @@
+# Issue #885 status — Iterative fixes: fix-scheduled-ci
+
+Interactive `/iflow-fix` session. Small fixes logged below; landed together via `/iflow-close`.
+
+- [x] Done
+
+## Iterative fixes log
+
+- 2026-08-11: Dropped `sqlalchemy-access` from `github_actions_environment.yml` (Windows-only / `__win`); install it in `ci-scheduled.yml` on Windows runners only — unblocks conda env solve on Linux/macOS.
+- 2026-08-11: Scheduled `pip-install` job now uses `pip install -e ".[legacy-files]"` so Linux has PyTables for HDF5 fixture tests (batch extra still omitted).
+- 2026-08-11: Dropped `sqlalchemy-access` from `environment.yml` and `environment_dev.yml` (same `__win` constraint); Windows install noted in comments / existing docs.
+
+## Close notes
+
+- Essential suite: 679 passed (local; installed `unixodbc` for collection). Full matrix belongs on scheduled CI.
+- No tests added/changed → no essential-marker / registry updates.
+- Design note appended to `.issueflows/04-designs-and-guides/ci-tiers.md`.
