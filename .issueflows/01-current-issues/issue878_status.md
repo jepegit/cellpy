@@ -2,13 +2,19 @@
 
 - [ ] Done
 
-## Current
+## What's done
 
-Picked via `/iflow-pick`. Branch `cursor/878-batch-export-project-a7b0`.
-Init captured; plan drafted; waiting for plan Accept before code.
+- `Batch.export_project(destination, *, journal_path=None)`
+- `_persist_cells(..., force_rewrite=False)` — export always writes; load persist still skips
+- posix path write-back
+- essential tests: round-trip, force rewrite, unloaded error
+- migration docs + cookiecutter packaging cell
+- design note in `batch-load-orchestrator.md`
 
-## Remaining
+## Remaining work
 
-- Confirm plan
-- Implement `Batch.export_project` + tests + docs + cookie notebook
+- Run essential tests
+- HISTORY.md on close
 - `/iflow-close`
+
+PR: https://github.com/jepegit/cellpy/pull/894 (#894, draft)

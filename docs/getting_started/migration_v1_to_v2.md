@@ -144,6 +144,10 @@ If you index the `get_cap` result directly, rename. In-repo consumers
   `cellpy.plotting.batch_summary_plot`. Backends: **`plotly`** (primary) and
   **`matplotlib`**. As of 2.1 both `backend="seaborn"` and `backend="bokeh"`
   raise `ValueError` — use plotly or matplotlib instead.
+- **`Batch.duplicate_cellpy_files`** is gone. Use
+  `b.export_project("data/interim")` to write `<label>.cellpy` files, rewrite
+  journal `cellpy_file_name` to those (relative) paths, and save the journal
+  so a shared folder loads on another machine (#878).
 
 ### If a 2.0.0a5 script hit plotting bugs (#593 / #567 Phase 0)
 

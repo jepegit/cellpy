@@ -224,6 +224,63 @@ class Batch:
     def export_journal(self, path: Path | str | None = None) -> Path:
         return self.save(path)
 
+    def export_project(
+        self,
+        destination: Path | str,
+        *,
+        journal_path: Path | str | None = None,
+    ) -> Path:
+        """Write a shareable bundle: ``.cellpy`` files plus a rewritten journal.
+
+        2.x replacement for 1.x ``duplicate_cellpy_files(location="standard")``.
+        Each loaded cell is saved to ``<destination>/<label>.cellpy``, journal
+        ``cellpy_file_name`` is rewritten to those paths (cwd-relative posix
+        when possible), and the journal is saved (``Batch.save`` semantics:
+        ``cellpy_batch_<name>.json`` in the cwd unless ``journal_path`` is
+        given).
+
+        Does not copy raw files or clear ``raw_file_names``. Unloaded cells
+        raise ``ValueError`` — call :meth:`update` first.
+
+        Args:
+            destination: directory for the ``.cellpy`` files (created if needed).
+            journal_path: optional journal JSON path; default is cwd
+                ``cellpy_batch_<name>.json``.
+
+        Returns:
+            Path of the written journal.
+        """
+        dest_dir = Path(destination)
+        dest_dir.mkdir(parents=True, exist_ok=True)
+
+        unloaded = [
+            label for label in self.cell_names if not self.cells.is_loaded(label)
+        ]
+        if unloaded:
+            raise ValueError(
+                "export_project requires loaded cells; not loaded: "
+                f"{unloaded}. Call Batch.update() first."
+            )
+
+        cwd = Path.cwd().resolve()
+        saved: list[str] = []
+        for label in self.cell_names:
+            cell_path = (dest_dir / f"{label}.cellpy").resolve()
+            try:
+                saved.append(cell_path.relative_to(cwd).as_posix())
+            except ValueError:
+                saved.append(cell_path.as_posix())
+
+        self.journal.pages = self.pages.with_columns(
+            pl.Series(_CELLPY_FILE_COL, saved)
+        )
+        target = (
+            Path(journal_path)
+            if journal_path is not None
+            else Path(f"cellpy_batch_{self.journal.name or 'batch'}.json")
+        )
+        return _persist_cells(self, target, force_rewrite=True)
+
     def create_journal(self, **kwargs) -> Journal:
         """Populate the journal from the configured database (if any).
 
@@ -476,17 +533,20 @@ def _should_rewrite_cellpy(batch: Batch, label: str, dest: Path) -> bool:
     return True
 
 
-def _persist_cells(batch: Batch, journal_path: Path) -> Path:
+def _persist_cells(
+    batch: Batch, journal_path: Path, *, force_rewrite: bool = False
+) -> Path:
     """Save loaded cells as ``.cellpy`` and write the journal JSON.
 
     When ``cellpy_file_name`` is missing or null (e.g. ``load(frame=...)``),
     paths default to ``{cellpydatadir}/{label}.cellpy``.
 
     Cells already loaded from an on-disk ``.cellpy`` are not rewritten unless
-    ``policy.source`` is ``NEWEST`` or ``policy.recalc`` is set.
+    ``policy.source`` is ``NEWEST`` or ``policy.recalc`` is set, or
+    ``force_rewrite`` is True (used by :meth:`Batch.export_project`).
     """
     if _CELLPY_FILE_COL not in batch.pages.columns:
-        defaults = [str(_default_cellpy_path(lbl)) for lbl in batch.cell_names]
+        defaults = [_default_cellpy_path(lbl).as_posix() for lbl in batch.cell_names]
         batch.journal.pages = batch.pages.with_columns(
             pl.Series(_CELLPY_FILE_COL, defaults)
         )
@@ -501,16 +561,20 @@ def _persist_cells(batch: Batch, journal_path: Path) -> Path:
             else _default_cellpy_path(label)
         )
         dest.parent.mkdir(parents=True, exist_ok=True)
-        if _should_rewrite_cellpy(batch, label, dest):
+        do_save = batch.cells.is_loaded(label) and (
+            force_rewrite or _should_rewrite_cellpy(batch, label, dest)
+        )
+        if do_save:
             _log.info("saving %s -> %s", label, dest)
             batch.cells[label].save(dest, overwrite=True)
         else:
             _log.debug("skip save (already from cellpy or not loaded): %s", label)
-        saved.append(str(dest))
+        saved.append(dest.as_posix())
 
     batch.journal.pages = batch.journal.pages.with_columns(
         pl.Series(_CELLPY_FILE_COL, saved)
     )
+    journal_path = Path(journal_path)
     journal_path.parent.mkdir(parents=True, exist_ok=True)
     return batch.save(journal_path)
 
