@@ -89,6 +89,7 @@ nav = [
             { "Folder structure" = "contributing/developers_guide/dev_cellpy_folder_structure.md" },
             { "Data structure" = "contributing/developers_guide/dev_cellpy_data_structure.md" },
             { "Loaders and instruments" = "contributing/developers_guide/dev_loaders_and_instruments.md" },
+            { "Adding plots" = "contributing/developers_guide/dev_adding_plots.md" },
             { "Documentation" = "contributing/developers_guide/dev_docs.md" },
             { "Packaging for PyPI" = "contributing/developers_guide/dev_cellpy_packaging_pypi.md" },
             { "Conda packages" = "contributing/developers_guide/dev_conda_package.md" },
