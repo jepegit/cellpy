@@ -12,6 +12,7 @@
   cycle, mean, std); Upper/Lower Bound band traces use `hoverinfo='skip'`. (#875)
 * Fix scheduled CI: keep `sqlalchemy-access` Windows-only in conda env files,
   and install `legacy-files` (PyTables) in the scheduled pip matrix. (#885)
+* Iterative fixes: document for devs how to add plots. (#892)
 
 ## [2.1.2] - 2026-08-09
 
