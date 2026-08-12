@@ -1,6 +1,6 @@
 # Status — #878
 
-- [ ] Done
+- [x] Done
 
 ## What's done
 
@@ -10,11 +10,11 @@
 - essential tests: round-trip, force rewrite, unloaded error
 - migration docs + cookiecutter packaging cell
 - design note in `batch-load-orchestrator.md`
+- HISTORY.md Unreleased bullet
+- essential suite: 665 passed (collection of `test_arbin_variants_two_stage.py` ignored locally — missing `libodbc.so.2` / pyodbc; unrelated to this change)
 
 ## Remaining work
 
-- Run essential tests
-- HISTORY.md on close
-- `/iflow-close`
+None.
 
-PR: https://github.com/jepegit/cellpy/pull/894 (#894, draft)
+PR: https://github.com/jepegit/cellpy/pull/894 (#894)
