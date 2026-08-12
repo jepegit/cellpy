@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+* `Batch.export_project(destination)` writes a shareable `.cellpy` + journal
+  bundle (2.x replacement for `duplicate_cellpy_files`). (#878)
 * Run the real `essential` and `full` CI gates once for every PR targeting
   `master` and every `master` push; remove same-named docs-only no-op checks
   that could mask test results. (#876)
