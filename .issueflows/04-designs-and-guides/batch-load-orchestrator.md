@@ -45,6 +45,16 @@ Explicit `policy=` that conflicts with force flags raises `ValueError`.
 - Separate `load_batch` name — rejected; keep notebook call sites.
 - Journal hit via noop `link` — rejected; store would stay empty.
 
+## `Batch.export_project` (#878)
+
+Shareable bundle, distinct from persist-after-load:
+
+- Always rewrite `.cellpy` under `destination/` (`force_rewrite=True`).
+- Journal `cellpy_file_name` is cwd-relative posix when possible.
+- Journal still lands in cwd (`cellpy_batch_{name}.json`) unless `journal_path=`.
+- Unloaded cells raise. Raw files are not copied; `raw_file_names` is left as-is
+  (AUTO prefers existing `.cellpy`).
+
 ## Links
 
 - Issue #822; grill plan restore_batch.load_orchestrator.
