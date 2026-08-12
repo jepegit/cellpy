@@ -10,6 +10,8 @@ Notes for people working on the cellpy codebase.
   frames
 - [Loaders and instruments](dev_loaders_and_instruments.md) — adding or
   changing instrument support
+- [Adding plots](dev_adding_plots.md) — extending the prepare → spec → render
+  plotting stack
 - [Documentation](dev_docs.md) — building and writing the docs
 - [Packaging for PyPI](dev_cellpy_packaging_pypi.md) — releasing to PyPI
 - [Conda packages](dev_conda_package.md) — conda-forge / feedstock notes
