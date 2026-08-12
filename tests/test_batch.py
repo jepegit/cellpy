@@ -918,3 +918,108 @@ def test_load_save_cellpy_writes_journal(parameters, batch_instance, tmp_path, m
     assert out.is_file()
     # path suffix normalized to .cellpy even when nothing loaded
     assert str(b.pages[hdr_journal["cellpy_file_name"]][0]).endswith(".cellpy")
+
+
+def _stub_batch_with_cell(tmp_path, *, source="cellpy", dest=None):
+    """Minimal Batch with one loaded stub cell (same pattern as persist tests)."""
+    from pathlib import Path
+
+    import polars as pl
+
+    from cellpy.batch import Batch, LoadPolicy, SourcePreference
+    from cellpy.batch.journal import FILENAME, Journal
+    from cellpy.batch.result import BatchResult, CellOutcome, CellResult
+
+    dest = dest or (tmp_path / "cell_a.cellpy")
+    pages = pl.DataFrame(
+        {
+            FILENAME: ["cell_a"],
+            "group": [1],
+            "sub_group": [1],
+            hdr_journal["cellpy_file_name"]: [str(dest)],
+        }
+    )
+    batch = Batch(Journal(name="t", project="p", pages=pages))
+    batch.policy = LoadPolicy(source=SourcePreference.AUTO)
+
+    class _Cell:
+        def save(self, path, overwrite=True):
+            Path(path).parent.mkdir(parents=True, exist_ok=True)
+            Path(path).write_bytes(b"exported")
+
+    cell = _Cell()
+    batch._store = batch.cells.__class__.from_cells({"cell_a": cell})
+    batch._result = BatchResult(
+        [
+            CellResult(
+                "cell_a",
+                CellOutcome.LOADED,
+                cell=cell,
+                source=source,
+                seconds=0.1,
+            )
+        ]
+    )
+    return batch
+
+
+@pytest.mark.essential
+def test_export_project_writes_cells_and_relative_journal(tmp_path, monkeypatch):
+    """export_project copies cells, rewrites cellpy_file_name, saves journal."""
+    from pathlib import Path
+
+    from cellpy.batch.journal import read_journal
+
+    monkeypatch.chdir(tmp_path)
+    batch = _stub_batch_with_cell(tmp_path, dest=tmp_path / "original" / "cell_a.cellpy")
+    dest = Path("data/interim")
+    journal_path = batch.export_project(dest)
+
+    assert journal_path == Path("cellpy_batch_t.json")
+    assert journal_path.is_file()
+    written = dest / "cell_a.cellpy"
+    assert written.is_file()
+    assert written.read_bytes() == b"exported"
+
+    loaded = read_journal(journal_path)
+    cellpy_name = loaded.pages[hdr_journal["cellpy_file_name"]][0]
+    assert "\\" not in cellpy_name
+    resolved = Path(cellpy_name)
+    if not resolved.is_absolute():
+        resolved = (tmp_path / resolved).resolve()
+    assert dest.resolve() in resolved.parents or resolved.parent == dest.resolve()
+    assert resolved == written.resolve()
+
+
+@pytest.mark.essential
+def test_export_project_force_rewrites_existing_cellpy(tmp_path, monkeypatch):
+    """Unlike persist-after-load, export overwrites dest even if source is cellpy."""
+    from pathlib import Path
+
+    monkeypatch.chdir(tmp_path)
+    dest = Path("data/interim")
+    dest.mkdir(parents=True)
+    existing = dest / "cell_a.cellpy"
+    existing.write_bytes(b"stale")
+    batch = _stub_batch_with_cell(tmp_path, source="cellpy", dest=existing)
+    batch.export_project(dest)
+    assert existing.read_bytes() == b"exported"
+
+
+@pytest.mark.essential
+def test_export_project_raises_on_unloaded_cells(tmp_path):
+    import polars as pl
+
+    from cellpy.batch import Batch
+    from cellpy.batch.journal import FILENAME, Journal
+
+    pages = pl.DataFrame(
+        {
+            FILENAME: ["cell_a"],
+            "group": [1],
+            "sub_group": [1],
+        }
+    )
+    batch = Batch(Journal(name="t", project="p", pages=pages))
+    with pytest.raises(ValueError, match="not loaded"):
+        batch.export_project(tmp_path / "interim")

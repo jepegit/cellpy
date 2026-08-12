@@ -125,6 +125,7 @@ subsystem now lives in `cellpy.batch`, and the collectors in `cellpy.collect`.
 | `BatchCyclesCollector` / `cycles_collector(...)` | `cellpy.collect.collect_cycles(batch)` |
 | `BatchICACollector` / `ica_collector(...)` | `cellpy.collect.collect_ica(batch)` |
 | `batch_exporters` / `dumpers` | `cellpy.batch` outputs (`Batch.combine_summaries()`, `to_bdf`, …) |
+| `Batch.duplicate_cellpy_files(location="standard")` | `Batch.export_project("data/interim")` |
 
 ### `iterate_batches` / `process_batch` are recipes now
 
