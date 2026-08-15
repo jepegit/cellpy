@@ -37,7 +37,7 @@ def test_info_version_avoids_cellreader_import():
 
         result = CliRunner().invoke(cellpy.cli.cli, ["info", "--version"])
         assert result.exit_code == 0, result.output
-        assert "[cellpy] version:" in result.output
+        assert "cellpy " in result.output
         assert "cellpy.readers.cellreader" not in sys.modules, sorted(
             m for m in sys.modules if m.startswith("cellpy")
         )

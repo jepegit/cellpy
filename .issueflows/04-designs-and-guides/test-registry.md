@@ -57,6 +57,13 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_cli_flags.py::test_usage_errors_go_to_stderr | yes | yes | cli.run usage errors | #891 | stderr + exit 2, not stdout + 255 |
 | tests/test_cli_flags.py::test_run_list_still_works_without_a_name | yes | yes | cli.run NAME optionality | #891 | guards `run --list` against a required NAME |
 | tests/test_cli_surface.py::test_the_global_options_are_unchanged | yes | yes | root CLI options | #891 | snapshot now covers root params |
+| tests/test_cli_info.py::test_a_failing_check_exits_non_zero | yes | yes | cli_api._check / cli.info exit code | #891 | --check was always exit 0 |
+| tests/test_cli_info.py::test_check_does_not_shout_or_draw_banners | yes | yes | cli_api._check rendering | #891 | no ===/---/!!!! |
+| tests/test_cli_info.py::test_check_keeps_the_probe_narration_for_verbose | yes | yes | cli_api._debug gating | #891 | diagnostics only under --verbose |
+| tests/test_cli_info.py::test_quiet_reports_only_what_is_broken | yes | yes | check rendering under --quiet | #891 | failures survive quiet |
+| tests/test_cli_info.py::test_a_local_path_in_a_remote_capable_setting_is_still_checked | yes | yes | cli_api._check_config_file OTHERPATHS | #891 | local value in a remote-capable setting |
+| tests/test_cli_api.py::test_show_info_is_quiet_by_default | yes | yes | cli_api._ui / _silent binding | #891 | library prints nothing without echo |
+| tests/test_cellpy_cmd.py::test_info_check | yes | yes | cli info --check exit code | #891 | exit code must match the printed verdict |
 | tests/test_cellpy_file_v9.py::test_v9_parquet_members_use_zstd | yes | yes | v9._frame_to_parquet_bytes | #912 | new writes are zstd + ZIP_STORED |
 | tests/test_cellpy_file_v9.py::test_v9_loads_snappy_parquet_members | yes | yes | v9.load / _read_parquet_member | #912 | #898-era snappy members still load |
 | tests/test_cellpy_file_v9.py::test_failed_resave_keeps_the_old_file | yes | yes | cellpy_file.atomic.atomic_write / v9.save / CellpyCell.save | #845 | data-loss guard: interrupted re-save must not destroy the old file |

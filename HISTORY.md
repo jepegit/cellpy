@@ -2,6 +2,18 @@
 
 ## [Unreleased]
 
+* `cellpy info` and `cellpy info --check` report rather than narrate. The check
+  run is one line per check with a symbol, a short detail and a hint when it
+  fails, closing with `N of M checks passed` - instead of `=== checking ===`
+  banners, 80-column rules, a page of probe output per check and a
+  `failed!!!!` line that shipped with a stray `f`. The probe narration is still
+  there under `--verbose`. **`cellpy info --check` now exits 1 when a check
+  fails** (it always exited 0), so it can be used in a script. A path setting
+  that *may* be remote is now only skipped when the value actually is remote,
+  so a broken local `cellpydatadir` is reported instead of excused. Output
+  lines changed: `[cellpy] version: X` is now `cellpy X`, and
+  `[cellpy] -> <path>` is now `config   <path>`. (#891)
+
 * CLI: new global `--quiet` / `-q`, `--verbose` and `--no-color` options.
   `--quiet` reports problems and the output you asked for (`cellpy info` still
   answers) and drops progress chatter; colour is otherwise automatic and

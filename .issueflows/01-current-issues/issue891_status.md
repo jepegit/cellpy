@@ -25,9 +25,17 @@
   snapshot now describes the **root** command too, so global options are under
   the same contract as everything else.
 
+- **PR 3 — `info` / `info --check`.** Checks return a `_CheckOutcome` (verdict,
+  short detail, hint, detail lines) instead of printing their own banner and
+  narration, so the caller renders them consistently and the probe output drops
+  to `--verbose`. `info --check` exits 1 when a check fails. A remote-capable
+  path setting holding a local value is now actually checked. `cli_api._ui()`
+  returns a silent reporter when no `echo` was passed, keeping the
+  library-quiet contract; `Reporter` resolves its streams lazily so capture and
+  redirection work.
+
 ## Remaining work
 
-- [ ] PR 3 — `info` / `info --check`.
 - [ ] PR 4 — `setup` (drop the parameter dump, make `--silent` real).
 - [ ] PR 5 — copy pass over the remaining commands; fix the `f[cellpy]` literal
       and the `deiced` typo; remove the stray `print()` calls.

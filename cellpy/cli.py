@@ -341,7 +341,7 @@ def info(
     ] = False,
 ):
     """This will give you some valuable information about your cellpy."""
-    cli_api.show_info(
+    failed = cli_api.show_info(
         version=version,
         configloc=configloc,
         params=params,
@@ -350,6 +350,10 @@ def info(
         # `info` answers a question; every line is payload, so --quiet keeps it.
         echo=_echo(payload=True),
     )
+    if failed:
+        # `cellpy info --check` is worth scripting, so a broken setup has to be
+        # visible to the shell and not only to the reader (#891).
+        raise typer.Exit(code=1)
 
 
 # ----------------------- run ----------------------------------------

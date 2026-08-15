@@ -31,6 +31,7 @@ import subprocess
 import time
 from contextlib import contextmanager
 from contextvars import ContextVar
+from dataclasses import dataclass, field
 from typing import Any, Callable, Optional, Union
 
 from cellpy._version import __version__ as VERSION
@@ -487,8 +488,40 @@ _echo_var: ContextVar[Echo] = ContextVar("cellpy_cli_api_echo", default=_silent)
 
 
 def _say(message: str, **_kwargs) -> None:
-    """Report via the bound echo; colour kwargs from old typer.echo are ignored."""
+    """Report pre-formatted text via the bound echo.
+
+    The transport for messages not yet converted to the :mod:`cellpy.cli_ui`
+    vocabulary (#891). Prefer ``_ui()`` for anything new.
+    """
     _echo_var.get()(message)
+
+
+def _debug(message: Any) -> None:
+    """A diagnostic line: shown under ``--verbose``, hidden otherwise.
+
+    The check helpers used to narrate every probe at full volume; the verdict
+    is what a user needs, the narration is what they need when it goes wrong.
+    """
+    _ui().debug(str(message))
+
+
+def _ui():
+    """The active console reporter (see :mod:`cellpy.cli_ui`).
+
+    Commands that report structure - a check list, a verdict, a path with a
+    note - use this instead of ``_say``, so what they print carries meaning
+    (stream, colour, level) rather than being a string someone formatted by
+    hand.
+
+    A caller who passed no ``echo`` gets a reporter that prints nothing: these
+    functions are a library first, and a library does not write to stdout
+    because someone imported it.
+    """
+    from cellpy import cli_ui
+
+    if _echo_var.get() is _silent:
+        return cli_ui.silent_reporter()
+    return cli_ui.current()
 
 
 @contextmanager
@@ -811,17 +844,46 @@ def _ask_about_name(q, n):
     return new_name
 
 
-def _check_import_cellpy():
+@dataclass
+class _CheckOutcome:
+    """What one ``cellpy info --check`` line reports.
+
+    The checks used to print their own verdict and a page of diagnostics.
+    Returning the outcome instead lets the caller render it consistently -
+    verdict row first, then its detail lines - and lets the diagnostics drop to
+    ``--verbose`` where they belong.
+    """
+
+    ok: bool
+    detail: str = ""
+    hint: Optional[str] = None
+    details: list = field(default_factory=list)
+
+    def add(self, key: str, value: str, note: Optional[str] = None) -> None:
+        """Record a key/value line to print underneath the verdict."""
+        self.details.append((key, value, note))
+
+
+def _as_outcome(result) -> _CheckOutcome:
+    """Accept a bare bool from any check not yet returning an outcome."""
+    if isinstance(result, _CheckOutcome):
+        return result
+    return _CheckOutcome(bool(result))
+
+
+def _check_import_cellpy() -> _CheckOutcome:
     try:
         import cellpy  # noqa: F401
         from cellpy import log  # noqa: F401
         from cellpy.readers import cellreader  # noqa: F401
 
-        return True
-    except Exception:
-        _say(" Failed to import cellpy")
-        _say(" Severity: critical")
-        return False
+        return _CheckOutcome(True, "cellpy, log, cellreader")
+    except Exception as exc:
+        return _CheckOutcome(
+            False,
+            f"cannot import cellpy ({exc})",
+            hint="reinstall cellpy, or check for a broken pyarrow/pandas install",
+        )
 
 
 def _check_import_pyodbc():
@@ -834,86 +896,94 @@ def _check_import_pyodbc():
 
     use_subprocess = config.instruments.Arbin.use_subprocess
     detect_subprocess_need = config.instruments.Arbin.detect_subprocess_need
-    _say(" This is needed for loading Arbin .res files")
-    _say(" parsing prms")
-    _say(
+    _debug(" This is needed for loading Arbin .res files")
+    _debug(" parsing prms")
+    _debug(
         " (from your configuration file if it exists, otherwise using defaults)"
     )
-    _say(f" - ODBC: {ODBC}")
-    _say(f" - SEARCH_FOR_ODBC_DRIVERS: {SEARCH_FOR_ODBC_DRIVERS}")
-    _say(f" - use_subprocess: {use_subprocess}")
-    _say(f" - detect_subprocess_need: {detect_subprocess_need}")
-    _say(f" - stated office version: {config.instruments.Arbin.office_version}")
+    _debug(f" - ODBC: {ODBC}")
+    _debug(f" - SEARCH_FOR_ODBC_DRIVERS: {SEARCH_FOR_ODBC_DRIVERS}")
+    _debug(f" - use_subprocess: {use_subprocess}")
+    _debug(f" - detect_subprocess_need: {detect_subprocess_need}")
+    _debug(f" - stated office version: {config.instruments.Arbin.office_version}")
 
-    _say(" checking system")
+    _debug(" checking system")
     is_posix = False
     is_macos = False
     if os.name == "posix":
         is_posix = True
-        _say(" - running on posix")
+        _debug(" - running on posix")
     current_platform = platform.system()
     if current_platform == "Darwin":
         is_macos = True
-        _say(" - running on a mac")
+        _debug(" - running on a mac")
 
     python_version, os_version = platform.architecture()
-    _say(f" - python version: {python_version}")
-    _say(f" - os version: {os_version}")
+    _debug(f" - python version: {python_version}")
+    _debug(f" - os version: {os_version}")
 
     if not is_posix:
         if not config.instruments.Arbin.sub_process_path:
             sub_process_path = str(prms._sub_process_path)
         else:
             sub_process_path = str(config.instruments.Arbin.sub_process_path)
-        _say(f" stated path to sub-process: {sub_process_path}")
+        _debug(f" stated path to sub-process: {sub_process_path}")
         if not os.path.isfile(sub_process_path):
-            _say(" - OBS! missing")
+            _debug(" - OBS! missing")
 
     if is_posix:
-        _say(" checking existence of mdb-export")
+        _debug(" checking existence of mdb-export")
         sub_process_path = "mdb-export"
         from subprocess import PIPE, run
 
         command = ["command", "-v", sub_process_path]
 
         try:
-            _say(f" - trying to run {command}")
+            _debug(f" - trying to run {command}")
             result = run(
                 command, stdout=PIPE, stderr=PIPE, universal_newlines=True, shell=True
             )
             if result.returncode == 0:
-                _say(" - found it!")
-                return True
+                _debug(" - found it!")
+                return _CheckOutcome(True, f"{sub_process_path} on PATH")
 
-            _say(f" - could not find {sub_process_path}")
+            _debug(f" - could not find {sub_process_path}")
 
             if is_macos:
                 driver = "/usr/local/lib/libmdbodbc.dylib"
-                _say(
+                _debug(
                     f" looks like you are on a mac. Searching for suitable driver: {driver})"
                 )
                 if not os.path.isfile(driver):
-                    _say(f" - could not find {driver}")
-                    _say(
+                    _debug(f" - could not find {driver}")
+                    _debug(
                         " ! If you want to load Arbin .res files you will have to install it manually."
                     )
-                    _say(" - Try installing it with brew:\n")
-                    _say("   brew install mdbtools")
-                    return False
-                _say(f" - found it: {driver}")
-                return True
+                    _debug(" - Try installing it with brew:\n")
+                    _debug("   brew install mdbtools")
+                    return _CheckOutcome(
+                        False,
+                        "no mdbtools driver",
+                        hint="brew install mdbtools",
+                    )
+                _debug(f" - found it: {driver}")
+                return _CheckOutcome(True, driver)
             else:
-                _say(
+                _debug(
                     " ! If you want to load Arbin .res files you will have to install it manually."
                 )
-                _say("   For example (for ubuntu):\n")
-                _say("   sudp apt-get update")
-                _say("   sudp apt-get install -y mdbtools")
-            return False
+                _debug("   For example (for ubuntu):\n")
+                _debug("   sudp apt-get update")
+                _debug("   sudp apt-get install -y mdbtools")
+            return _CheckOutcome(
+                False,
+                "mdbtools not installed",
+                hint="apt-get install mdbtools (see the docs for other systems)",
+            )
 
         except AssertionError:
-            _say(" - could not find any suitable driver")
-            return False
+            _debug(" - could not find any suitable driver")
+            return _CheckOutcome(False, "no suitable driver found")
 
     # not posix - checking for odbc drivers
     # 1) checking if you have defined one
@@ -921,11 +991,11 @@ def _check_import_pyodbc():
         driver = config.instruments.Arbin.odbc_driver
         if not driver:
             raise AttributeError
-        _say(" You have defined an odbc driver in your config file")
-        _say(f" - driver: {driver}")
+        _debug(" You have defined an odbc driver in your config file")
+        _debug(f" - driver: {driver}")
     except AttributeError:
-        _say(" FYI: you have not defined any odbc_driver(s)")
-        _say(
+        _debug(" FYI: you have not defined any odbc_driver(s)")
+        _debug(
             " (The name of the driver from the configuration file is "
             "used as a backup when cellpy cannot locate a driver by itself)"
         )
@@ -934,79 +1004,84 @@ def _check_import_pyodbc():
 
     if ODBC == "ado":
         use_ado = True
-        _say(" you stated that you prefer the ado loader")
-        _say(" checking if adodbapi is installed")
+        _debug(" you stated that you prefer the ado loader")
+        _debug(" checking if adodbapi is installed")
         try:
             import adodbapi as dbloader
         except ImportError:
             use_ado = False
-            _say(" Failed! Try setting pyodbc as your loader or install")
-            _say(" adodbapi (http://adodbapi.sourceforge.net/)")
+            _debug(" Failed! Try setting pyodbc as your loader or install")
+            _debug(" adodbapi (http://adodbapi.sourceforge.net/)")
 
     if not use_ado:
         if ODBC == "pyodbc":
-            _say(" you stated that you prefer the pyodbc loader")
+            _debug(" you stated that you prefer the pyodbc loader")
             try:
                 import pyodbc as dbloader
             except ImportError:
-                _say(" Failed! Could not import it.")
-                _say(" Try 'pip install pyodbc'")
+                _debug(" Failed! Could not import it.")
+                _debug(" Try 'pip install pyodbc'")
                 dbloader = None
 
         elif ODBC == "pypyodbc":
-            _say(" you stated that you prefer the pypyodbc loader")
+            _debug(" you stated that you prefer the pypyodbc loader")
             try:
                 import pypyodbc as dbloader  # type: ignore
             except ImportError:
-                _say(" Failed! Could not import it.")
-                _say(" try 'pip install pypyodbc'")
-                _say(" or set pyodbc as your loader in your prm file")
-                _say(" (and install it)")
+                _debug(" Failed! Could not import it.")
+                _debug(" try 'pip install pypyodbc'")
+                _debug(" or set pyodbc as your loader in your prm file")
+                _debug(" (and install it)")
                 dbloader = None
 
-    _say(" searching for odbc drivers")
+    _debug(" searching for odbc drivers")
     try:
         drivers = [
             driver
             for driver in dbloader.drivers()
             if "Microsoft Access Driver" in driver
         ]
-        _say(f" Found these: {drivers}")
+        _debug(f" Found these: {drivers}")
         driver = drivers[0]
-        _say(f" - odbc driver: {driver}")
-        return True
+        _debug(f" - odbc driver: {driver}")
+        return _CheckOutcome(True, driver)
 
     except IndexError:
         logging.debug(" Unfortunately, it seems the list of drivers is emtpy.")
-        _say(
+        _debug(
             "\n Could not find any odbc-drivers suitable for .res-type files. "
             "Check out the homepage of pydobc for info on installing drivers"
         )
-        _say(
+        _debug(
             " One solution that might work is downloading "
             "the Microsoft Access database engine "
             "(in correct bytes (32 or 64)) "
             "from:\n"
             "https://www.microsoft.com/en-us/download/details.aspx?id=13255"
         )
-        _say(
+        _debug(
             " Or install mdbtools and set it up (check the cellpy docs for help)"
         )
-        _say("\n")
-        return False
+        _debug("\n")
+        return _CheckOutcome(
+            False,
+            "no odbc driver for .res files",
+            hint="install the Microsoft Access Database Engine, or mdbtools",
+        )
 
 
 def _check_config_file():
-    prm_file_name = _configloc()
-    env_file_name = _envloc()
+    from cellpy.config.loader import active_config_file
 
-    if env_file_name is None:
-        _say(" FYI! Could not locate the environment file")
+    outcome = _CheckOutcome(True)
+    prm_file_name = active_config_file().path
+    env_file_name = prmreader.get_env_file_name()
+
+    if env_file_name is None or not os.path.isfile(env_file_name):
+        outcome.add("env file", str(env_file_name or "not set"), "not found")
 
     if prm_file_name is None:
-        _say(" Could not find the config file")
-        _say(" You can create one by running 'cellpy setup'")
-        return False
+        return _CheckOutcome(False, "no configuration file", hint="cellpy setup")
 
     # Check the *resolved* paths rather than re-parsing the file: those are the
     # ones cellpy will use, and it works for both cellpy.toml and legacy YAML
@@ -1026,100 +1101,86 @@ def _check_config_file():
             "templatedir",
             "db_path",
         ]
+        from cellpy.internals.otherpath import OtherPath
         from cellpy.parameters.internal_settings import OTHERPATHS
 
         missing = 0
         for k in required_dirs:
             value = prm_paths.get(k, None)
-            _say(f" - {k}: {value}")
-            # splitting this into two if-statements to make it easier to debug if OtherPath changes
-            if k in OTHERPATHS:
-                print(f" skipping check for external {k} (for now)")
-                # if not OtherPath(
-                #     value
-                # ).is_dir():  # Assuming OtherPath returns True if it is external.
-                #     missing += 1
-                #     _say("COULD NOT CONNECT!")
-                #     _say(f"({value} is not a directory)")
-            elif value and not pathlib.Path(value).is_dir():
-                missing += 1
-                _say(" COULD NOT CONNECT!")
-                _say(f" ({value} is not a directory)")
             if not value:
                 missing += 1
-                _say(" MISSING")
+                outcome.add(k, "not set", "missing")
+                continue
+            # OTHERPATHS lists the settings that *may* point somewhere remote,
+            # not the ones that do - so ask the value itself. A local path in
+            # one of those settings still gets checked, which is why a wrong
+            # cellpydatadir used to be waved through as "external".
+            if k in OTHERPATHS and OtherPath(value).is_external:
+                # Verifying a remote path costs a connection; a wrong one is
+                # reported properly by the load that needs it.
+                outcome.add(k, str(value), "remote, not checked")
+            elif not pathlib.Path(value).is_dir():
+                missing += 1
+                outcome.add(k, str(value), "not a directory")
+            else:
+                outcome.add(k, str(value))
 
         value = prm_paths.get("db_filename", None)
-        _say(f" - db_filename: {value}")
-        if not value:
+        if value:
+            outcome.add("db_filename", str(value))
+        else:
             missing += 1
-            _say(" MISSING")
+            outcome.add("db_filename", "not set", "missing")
 
         if missing:
-            return False
+            outcome.ok = False
+            outcome.detail = f"{missing} path(s) missing or unusable"
+            outcome.hint = "cellpy edit config"
         else:
-            return True
+            outcome.detail = str(prm_file_name)
+        return outcome
 
-    except Exception as e:
-        _say(" Following error occurred:")
-        _say(e)
-        return False
+    except Exception as exc:
+        return _CheckOutcome(False, f"could not read the configuration ({exc})")
 
 
-def _check(dry_run=False, full_check=True):
-    _say(" checking ".center(80, "="))
+def _check(dry_run=False, full_check=True) -> int:
+    """Report what works and what does not, one line per check (#891).
+
+    Returns:
+        How many checks failed, so a caller can exit non-zero.
+    """
+    ui = _ui()
     if dry_run:
-        _say("*** dry-run: skipping the test")
-        return
-    failed_checks = 0
-    number_of_checks = 0
+        ui.warn("dry run", "checks skipped")
+        return 0
 
-    def sub_check(check_type, check_func):
-        failed = 0
-        _say(f"[cellpy] * - Checking {check_type}")
-        if check_func():
-            _say("[cellpy] -> succeeded!")
-        else:
-            _say("f[cellpy] -> failed!!!!")
-            failed = 1
-        _say(80 * "-")
-        return failed
+    ui.title(f"cellpy {VERSION} - checking your setup")
 
-    check_types = [
-        "cellpy imports",
-        "importing pyodbc",
+    checks = [
+        ("imports", _check_import_cellpy),
+        ("arbin .res support", _check_import_pyodbc),
     ]
-    check_funcs = [
-        _check_import_cellpy,
-        _check_import_pyodbc,
-    ]
-
-    # additional checks that require loading the config file (not a part of setup)
-    additional_types = ["configuration files"]
-    additional_funcs = [_check_config_file]
+    # Reading the config is not part of `setup`, which runs before there is one.
     if full_check:
-        check_types.extend(additional_types)
-        check_funcs.extend(additional_funcs)
+        checks.append(("configuration", _check_config_file))
 
-    for ct, cf in zip(check_types, check_funcs):
+    failed = 0
+    for label, check_func in checks:
         try:
-            failed_checks += sub_check(ct, cf)
-        except Exception as e:
-            _say(f"[cellpy] check raised an exception ({e})")
-        number_of_checks += 1
-    _say(" results ".center(80, "="))
-    succeeded_checks = number_of_checks - failed_checks
+            outcome = _as_outcome(check_func())
+        except Exception as exc:
+            outcome = _CheckOutcome(False, f"the check itself raised {exc!r}")
+        if outcome.ok:
+            ui.ok(label, outcome.detail)
+        else:
+            failed += 1
+            ui.fail(label, outcome.detail, hint=outcome.hint)
+        for key, value, note in outcome.details:
+            ui.detail(key, value, note=note)
 
-    if failed_checks > 0:
-        _say(
-            "[cellpy] Some of the checks failed! This could potentially be a problem."
-        )
-        _say(f"[cellpy] Failed {failed_checks} out of {number_of_checks} checks.")
-    else:
-        _say(
-            f"[cellpy] Succeeded {succeeded_checks} out of {number_of_checks} checks."
-        )
-    _say(80 * "=")
+    ui.summary(len(checks) - failed, len(checks))
+    return failed
 
 
 def _write_config_file(user_dir, dst_file, init_filename, dry_run):
@@ -1273,32 +1334,31 @@ def _pull_examples(directory, pw):
 
 # -- version/configloc/envloc/dump_params --
 def _version():
-    version_text = "[cellpy] version: " + str(VERSION)
-    _say(version_text)
+    _ui().payload(f"cellpy {VERSION}")
 
 
 def _configloc():
     """Report the config file cellpy actually reads (``None`` when there is none)."""
     from cellpy.config.loader import CONFIG_FILENAME, active_config_file
 
+    ui = _ui()
     active = active_config_file()
     if active.path is None:
         _, config_file_name = prmreader.get_user_dir_and_dst()
-        _say(f"[cellpy] -> {config_file_name}")
-        _say("[cellpy] File does not exist!")
+        ui.fail("config", f"{config_file_name} does not exist", hint="cellpy setup")
         if active.project_path is not None:
-            _say(
-                f"[cellpy] (project {active.project_path} also applies and takes precedence)"
-            )
+            ui.detail("project config", str(active.project_path), note="takes precedence")
         return None
 
-    _say(f"[cellpy] -> {active.path}")
+    ui.payload(f"config   {active.path}")
     if active.shadowed_legacy is not None:
-        _say(f"[cellpy] (legacy {active.shadowed_legacy} is ignored - {CONFIG_FILENAME} takes precedence)")
-    if active.project_path is not None:
-        _say(
-            f"[cellpy] (project {active.project_path} also applies and takes precedence)"
+        ui.detail(
+            "legacy",
+            str(active.shadowed_legacy),
+            note=f"ignored, {CONFIG_FILENAME} wins",
         )
+    if active.project_path is not None:
+        ui.detail("project", str(active.project_path), note="takes precedence")
     return active.path
 
 
@@ -1817,13 +1877,19 @@ def show_info(
     show_config: bool = False,
     check: bool = False,
     echo: Optional[Echo] = None,
-) -> None:
-    """Library form of ``cellpy info``."""
+) -> int:
+    """Library form of ``cellpy info``.
+
+    Returns:
+        The number of failed checks (always 0 unless ``check`` is set), so the
+        CLI can exit non-zero when the setup is broken.
+    """
     with _using_echo(echo):
         complete_info = True
+        failed = 0
         if check:
             complete_info = False
-            _check()
+            failed = _check()
         if version:
             complete_info = False
             _version()
@@ -1839,6 +1905,7 @@ def show_info(
         if complete_info:
             _version()
             _configloc()
+        return failed
 
 
 def config_path(*, echo: Optional[Echo] = None):
