@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Annotated, Any, Callable, Optional
 
@@ -42,6 +43,11 @@ def main(
     ] = False,
 ) -> None:
     """cellpy - command line interface."""
+    if no_color:
+        # Typer renders usage errors through its own rich console, which our
+        # reporter knows nothing about. NO_COLOR is the switch both honour, so
+        # setting it keeps the promise for every line the process prints.
+        os.environ["NO_COLOR"] = "1"
     cli_ui.set_reporter(
         cli_ui.make_reporter(quiet=quiet, verbose=verbose, no_color=no_color)
     )
