@@ -31,6 +31,29 @@ def in_notebook() -> bool:
     return name == "ZMQInteractiveShell" or "google.colab" in name
 
 
+def _pick_tqdm():
+    """Notebook widgets only when ipywidgets is importable; else std tqdm.
+
+    ``tqdm.auto`` in Jupyter still builds an ipywidgets model. Without the
+    package (or a matching lab extension) the cell shows
+    ``Error displaying widget: model not found`` and the bar fill ignores
+    later ``total`` changes.
+    """
+    if in_notebook():
+        try:
+            import ipywidgets  # noqa: F401
+        except ImportError:
+            from tqdm.std import tqdm
+
+            return tqdm
+        from tqdm.notebook import tqdm
+
+        return tqdm
+    from tqdm.auto import tqdm
+
+    return tqdm
+
+
 def should_show_default() -> bool:
     """TTY stderr or a notebook kernel — not a pytest/pipe capture."""
     if in_notebook():
@@ -57,7 +80,7 @@ class TqdmBatchProgress:
         show_children: bool = True,
         disable: bool = False,
     ) -> None:
-        from tqdm.auto import tqdm
+        tqdm = _pick_tqdm()
 
         self._tqdm = tqdm
         self.concurrent = concurrent
@@ -65,7 +88,7 @@ class TqdmBatchProgress:
         self.disable = disable
         self._lock = threading.Lock()
         self.overall = tqdm(
-            total=max(n_cells, 0),
+            total=(n_cells if n_cells > 0 else None),
             desc="batch",
             unit="cell",
             position=0,
@@ -83,16 +106,27 @@ class TqdmBatchProgress:
             self._handle(event)
 
     def set_n_cells(self, n: int) -> None:
+        """Set the overall total after the journal exists.
+
+        Must ``reset()`` — assigning ``.total`` does not update a Jupyter
+        widget max, so 4/25 looks like a full bar.
+        """
         with self._lock:
-            self.overall.total = max(n, 0)
-            self.overall.refresh()
+            n = max(n, 0)
+            done = self.cells_done
+            self.overall.reset(total=n)
+            if done:
+                self.overall.update(done)
+            self.overall.set_description("batch")
 
     def close(self) -> None:
         with self._lock:
             for bar in self._children.values():
+                self._finish(bar)
                 bar.close()
             self._children.clear()
             if self._serial is not None:
+                self._finish(self._serial)
                 self._serial.close()
                 self._serial = None
             self.overall.close()
@@ -111,6 +145,9 @@ class TqdmBatchProgress:
             self._child(event.label)
             return
         if event.phase in _STEPS and event.label:
+            if event.phase == "save" and event.label not in self._children:
+                self.overall.set_postfix_str(f"save {event.label}", refresh=True)
+                return
             bar = self._child(event.label)
             if event.phase == "copy" and event.total_n:
                 copied = event.n or 0
@@ -127,7 +164,7 @@ class TqdmBatchProgress:
             self.cells_done += 1
             self.overall.update(1)
             self.overall.set_postfix_str(event.label or "", refresh=True)
-            self._close_child(event.label)
+            self._close_child(event.label, finished=True)
 
     def _child(self, label: str):
         if label in self._children:
@@ -139,13 +176,14 @@ class TqdmBatchProgress:
             bar = self._tqdm(
                 total=3,
                 desc=label,
-                position=pos,
+                position=None if in_notebook() else pos,
                 leave=False,
                 disable=self.disable,
                 unit="step",
                 dynamic_ncols=True,
             )
             bar._cellpy_pos = pos
+            bar._cellpy_n = 0
             self._children[label] = bar
             return bar
         if self._serial is None:
@@ -161,24 +199,37 @@ class TqdmBatchProgress:
         else:
             self._serial.reset(total=3)
             self._serial.set_description(label)
+        self._serial._cellpy_n = 0
         self._children[label] = self._serial
         return self._serial
 
     def _advance(self, bar, step: int) -> None:
-        if bar.n < step:
-            bar.update(step - bar.n)
+        current = getattr(bar, "_cellpy_n", bar.n or 0)
+        if current < step:
+            bar.update(step - (bar.n or 0))
+            bar._cellpy_n = step
 
-    def _close_child(self, label: str) -> None:
+    def _finish(self, bar) -> None:
+        """Fill to 100% so Jupyter tqdm uses success (green), not danger (red)."""
+        total = bar.total or 0
+        current = getattr(bar, "_cellpy_n", bar.n or 0)
+        if total and current < total:
+            bar.update(total - (bar.n or 0))
+            bar._cellpy_n = total
+
+    def _close_child(self, label: str, finished: bool = False) -> None:
         bar = self._children.pop(label, None)
         if bar is None:
             return
+        if finished:
+            self._finish(bar)
         if self.concurrent:
             pos = getattr(bar, "_cellpy_pos", None)
             bar.close()
             if pos is not None:
                 self._free_pos.append(pos)
         elif bar is self._serial:
-            self._advance(bar, 3)
+            self._finish(bar)
 
 
 def attach_default(

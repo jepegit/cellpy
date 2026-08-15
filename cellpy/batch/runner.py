@@ -87,6 +87,7 @@ def load_cell(spec: CellSpec, policy: LoadPolicy | None = None) -> CellResult:
     started = time.perf_counter()
     token = set_cell_label(spec.label)
     try:
+        emit("cell_start", label=spec.label)
         emit("parse", label=spec.label)
         cell = _cellpy_get(**kwargs)
         emit("parse", label=spec.label, n=1, total_n=1)
@@ -132,6 +133,7 @@ def _strip_cell(result: CellResult) -> CellResult:
 
 def _dispatch(spec: CellSpec, policy: LoadPolicy, bad: frozenset) -> CellResult:
     if spec.label in bad:
+        emit("cell_start", label=spec.label)
         return CellResult(spec.label, CellOutcome.SKIPPED, source=None)
     return load_cell(spec, policy)
 
@@ -150,7 +152,6 @@ def _run_serial(specs, policy, bad, on_progress) -> list[CellResult]:
     results: list[CellResult] = []
     total = len(specs)
     for index, spec in enumerate(specs, start=1):
-        emit("cell_start", index=index, total=total, label=spec.label)
         result = _dispatch(spec, policy, bad)
         results.append(result)
         emit("cell_done", index=index, total=total, label=spec.label)
@@ -163,10 +164,10 @@ def _run_pool(pool_cls, worker, specs, policy, bad, on_progress) -> list[CellRes
     results: list[CellResult | None] = [None] * len(specs)
     total = len(specs)
     with pool_cls() as pool:
-        futures = {}
-        for i, spec in enumerate(specs):
-            emit("cell_start", index=i + 1, total=total, label=spec.label)
-            futures[pool.submit(worker, spec, policy, bad)] = i
+        futures = {
+            pool.submit(worker, spec, policy, bad): i
+            for i, spec in enumerate(specs)
+        }
         done = 0
         for future in as_completed(futures):
             index = futures[future]
