@@ -15,6 +15,10 @@
 * Fix scheduled CI: keep `sqlalchemy-access` Windows-only in conda env files,
   and install `legacy-files` (PyTables) in the scheduled pip matrix. (#885)
 * Iterative fixes: document for devs how to add plots. (#892)
+* Remote loads are cheaper: an `OtherPath` builds its credentialed filesystem
+  once and reuses it for `is_file` / `stat` / `copy`, and `from_raw` no longer
+  STATs a remote raw file it is about to copy (the copy raises if it is
+  missing). Missing local files still raise `NoDataFound`. (#901)
 
 ## [2.1.2] - 2026-08-09
 

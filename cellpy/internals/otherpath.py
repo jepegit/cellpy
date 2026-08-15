@@ -165,6 +165,10 @@ class OtherPath:
         self._uri_prefix = uri_prefix
         self._location = location
         self._extra_storage_options = dict(storage_options)
+        # Credentialed UPath (and its fs) cached per instance - see
+        # _upath_with_credentials (#901).
+        self._credentialed_upath: Optional[UPath] = None
+        self._credentialed_key: Optional[Tuple[str, bool]] = None
 
     # --- cellpy metadata -------------------------------------------------
 
@@ -323,14 +327,37 @@ class OtherPath:
     # --- remote / local I/O ----------------------------------------------
 
     def _upath_with_credentials(self, *, testing: bool = False) -> UPath:
+        """Credentialed ``UPath`` for this instance (built once, then reused).
+
+        Building it resolves credentials and instantiates the filesystem, and
+        the first remote call on a fresh one pays an SSH handshake (~0.5-0.8 s
+        measured). ``is_file`` + ``stat`` + ``copy`` on the *same* instance
+        therefore share one (#901). The cache is keyed on the URI string, so a
+        path that somehow changes identity rebuilds it.
+        """
         if not self.is_external:
             return self._upath
+        url = str(self._upath)
+        cache_key = (url, bool(testing))
+        cached = getattr(self, "_credentialed_upath", None)
+        if cached is not None and self._credentialed_key == cache_key:
+            return cached
         scheme = _scheme_from_uri_prefix(self._uri_prefix)
         if f"{scheme}:" not in IMPLEMENTED_PROTOCOLS:
             raise ValueError(f"uri_prefix {scheme} not implemented yet")
         creds = _credentials_from_env(testing=testing)
         options = {**dict(self._upath.storage_options), **self._extra_storage_options, **creds}
-        return UPath(str(self._upath), **options)
+        upath = UPath(url, **options)
+        self._credentialed_upath = upath
+        self._credentialed_key = cache_key
+        return upath
+
+    def __getstate__(self) -> Dict[str, Any]:
+        """Never carry a live filesystem/SSH client into a pickle or deepcopy."""
+        state = self.__dict__.copy()
+        state["_credentialed_upath"] = None
+        state["_credentialed_key"] = None
+        return state
 
     def connection_info(self, testing: bool = False) -> Tuple[Dict[str, Any], str]:
         """Return ``(storage_options, host)`` for remote paths (empty if local)."""
