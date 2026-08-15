@@ -17,6 +17,7 @@ from cellpy import get as _cellpy_get
 from cellpy.batch.journal import Journal
 from cellpy.batch.policy import CellSpec, LoadPolicy, SourcePreference, resolve_specs
 from cellpy.batch.result import BatchResult, CellOutcome, CellResult
+from cellpy.internals.progress import emit, reset_cell_label, set_cell_label
 
 ProgressHook = Callable[[int, int, CellResult], None]
 
@@ -84,8 +85,11 @@ def load_cell(spec: CellSpec, policy: LoadPolicy | None = None) -> CellResult:
     kwargs, source = _get_kwargs(spec, policy)
 
     started = time.perf_counter()
+    token = set_cell_label(spec.label)
     try:
+        emit("parse", label=spec.label)
         cell = _cellpy_get(**kwargs)
+        emit("parse", label=spec.label, n=1, total_n=1)
         if policy.recalc and cell is not None:
             # Summary C-rates are derived from the step table; remake both.
             cell.make_step_table()
@@ -100,13 +104,16 @@ def load_cell(spec: CellSpec, policy: LoadPolicy | None = None) -> CellResult:
             seconds=time.perf_counter() - started,
             error=error,
         )
-    return CellResult(
-        label=spec.label,
-        outcome=CellOutcome.LOADED,
-        cell=cell,
-        source=source,
-        seconds=time.perf_counter() - started,
-    )
+    else:
+        return CellResult(
+            label=spec.label,
+            outcome=CellOutcome.LOADED,
+            cell=cell,
+            source=source,
+            seconds=time.perf_counter() - started,
+        )
+    finally:
+        reset_cell_label(token)
 
 
 def _strip_cell(result: CellResult) -> CellResult:
@@ -143,8 +150,10 @@ def _run_serial(specs, policy, bad, on_progress) -> list[CellResult]:
     results: list[CellResult] = []
     total = len(specs)
     for index, spec in enumerate(specs, start=1):
+        emit("cell_start", index=index, total=total, label=spec.label)
         result = _dispatch(spec, policy, bad)
         results.append(result)
+        emit("cell_done", index=index, total=total, label=spec.label)
         if on_progress is not None:
             on_progress(index, total, result)
     return results
@@ -154,15 +163,21 @@ def _run_pool(pool_cls, worker, specs, policy, bad, on_progress) -> list[CellRes
     results: list[CellResult | None] = [None] * len(specs)
     total = len(specs)
     with pool_cls() as pool:
-        futures = {
-            pool.submit(worker, spec, policy, bad): i
-            for i, spec in enumerate(specs)
-        }
+        futures = {}
+        for i, spec in enumerate(specs):
+            emit("cell_start", index=i + 1, total=total, label=spec.label)
+            futures[pool.submit(worker, spec, policy, bad)] = i
         done = 0
         for future in as_completed(futures):
             index = futures[future]
             results[index] = future.result()
             done += 1
+            emit(
+                "cell_done",
+                index=done,
+                total=total,
+                label=results[index].label,
+            )
             if on_progress is not None:
                 on_progress(done, total, results[index])
     return results  # type: ignore[return-value]

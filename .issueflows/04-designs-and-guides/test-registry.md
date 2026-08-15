@@ -84,6 +84,9 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_config.py::test_active_config_file_agrees_with_load_config | no | yes | config.loader.active_config_file / load_config | #851 | anti-drift: helper and loader pick the same file |
 | tests/test_cellpy_cmd.py::test_info_configloc_reports_the_toml | yes | yes | cli_api._configloc | #851 | CLI reports the winning file |
 | tests/test_cellpy_cmd.py::test_info_configloc_flags_shadowed_legacy_file | yes | yes | cli_api._configloc | #851 | never point at the dead .conf |
+| tests/test_batch_progress.py::test_run_emits_cell_start_parse_done | yes | yes | batch.runner emit + on_progress | #916 | event bus + 3-arg callback |
+| tests/test_batch_progress.py::test_on_progress_still_wins_with_event_hook | yes | yes | batch.runner on_progress | #916 | BC: 3-arg hook still fires |
+| tests/test_batch_progress.py::test_tqdm_display_disable_tracks_cells | yes | yes | batch.progress.TqdmBatchProgress | #916 | overall n without TTY |
 
 **Columns**
 

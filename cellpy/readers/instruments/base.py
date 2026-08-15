@@ -335,6 +335,9 @@ class AtomicLoad:
             self._temp_file_path = self.name
             return
 
+        from cellpy.internals.progress import emit
+
+        emit("copy")
         self._temp_file_path = self.name.copy()
 
     def loader_executor(self, *args, **kwargs):
