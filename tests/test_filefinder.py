@@ -8,9 +8,10 @@ log.setup_logging(default_level="DEBUG", testing=True)
 
 
 @pytest.fixture
-def env(parameters):
+def env(parameters, config_guard):
     from cellpy.parameters import prms
 
+    config_guard("paths")
     config.paths.outdatadir = parameters.output_dir
     config.paths.rawdatadir = parameters.raw_data_dir
     config.paths.cellpydatadir = parameters.cellpy_data_dir
@@ -51,9 +52,11 @@ def test_search_for_res_files(parameters):
     assert parameters.res_file_path in raw_files
 
 
-def test_search_for_files_using_prms(parameters):
+def test_search_for_files_using_prms(parameters, config_guard):
     from cellpy import prms
 
+    # without the guard the "txt" extension leaks into every later test module
+    config_guard("file_names")
     config.file_names.reg_exp = ""
     config.file_names.raw_extension = "txt"
     raw_files, cellpy_file = filefinder.search_for_files(

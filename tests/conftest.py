@@ -4,6 +4,7 @@ import logging
 import pathlib
 
 import pytest
+from pydantic import BaseModel
 
 from cellpy.readers.data_structures import Data
 from cellpy.readers.cellreader import CellpyCell
@@ -20,6 +21,54 @@ from . import fdv
 @pytest.fixture
 def hello_world():
     return "hello cellpy!"
+
+
+def _snapshot_section(model: BaseModel) -> dict:
+    snapshot = {}
+    for name in type(model).model_fields:
+        value = getattr(model, name)
+        snapshot[name] = _snapshot_section(value) if isinstance(value, BaseModel) else value
+    return snapshot
+
+
+def _restore_section(model: BaseModel, snapshot: dict) -> None:
+    for name, value in snapshot.items():
+        current = getattr(model, name)
+        if isinstance(current, BaseModel) and isinstance(value, dict):
+            _restore_section(current, value)
+        elif current != value:
+            setattr(model, name, value)
+
+
+@pytest.fixture
+def config_guard():
+    """Restore the given global config sections when the test is done.
+
+    ``cellpy.config`` sections are process-global mutable models, so a fixture
+    or test that assigns to e.g. ``config.paths.rawdatadir`` leaks that value
+    into every test that runs afterwards. Call the yielded function with the
+    section names about to be touched::
+
+        config_guard("paths", "batch")
+
+    Alternatively use ``cellpy.config.override(...)`` where the code under test
+    stays in the same thread / asyncio task.
+    """
+
+    from cellpy import config
+
+    guarded: list[tuple[BaseModel, dict]] = []
+
+    def guard(*section_names: str) -> None:
+        for name in section_names:
+            section = getattr(config, name)
+            guarded.append((section, _snapshot_section(section)))
+
+    try:
+        yield guard
+    finally:
+        for section, snapshot in reversed(guarded):
+            _restore_section(section, snapshot)
 
 
 @pytest.fixture

@@ -31,10 +31,17 @@ def clean_dir():
 
 
 @pytest.fixture
-def batch_instance(clean_dir, parameters):
+def batch_instance(clean_dir, parameters, config_guard):
     # Change to temporary directory so that files are saved there
     original_cwd = os.getcwd()
     os.chdir(clean_dir)
+
+    # config sections are process-global: without the guard these assignments
+    # leak into every test that runs after this module (e.g. examplesdir /
+    # templatedir pointing at testdata dirs that do not exist). file_names is
+    # guarded because journal creation itself writes to it (_dbengine sets
+    # config.file_names.raw_extension from the instrument of each cell)
+    config_guard("paths", "batch", "file_names")
 
     try:
         config.paths.db_filename = parameters.db_file_name

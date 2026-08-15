@@ -97,10 +97,11 @@ def test_load_from_frame(tmp_path, monkeypatch):
 
 
 @pytest.fixture
-def db_env(parameters, tmp_path, monkeypatch):
+def db_env(parameters, tmp_path, monkeypatch, config_guard):
     from cellpy import prms
 
     monkeypatch.chdir(tmp_path)
+    config_guard("paths", "batch")
     config.paths.db_filename = parameters.db_file_name
     config.paths.cellpydatadir = str(tmp_path)
     config.paths.outdatadir = str(tmp_path)
