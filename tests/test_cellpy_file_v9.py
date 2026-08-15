@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import io
 import json
 import zipfile
 from pathlib import Path
 
+import pandas as pd
 import pytest
 from cellpycore.metadata import io as core_meta_io
 from cellpycore.metadata.models import TestMeta
@@ -103,6 +105,72 @@ def test_v9_parquet_members_are_stored_not_deflated(tmp_path):
     for name in parquet_members:
         assert infos[name].compress_type == zipfile.ZIP_STORED, name
     assert infos[META_JSON_NAME].compress_type == zipfile.ZIP_DEFLATED
+
+
+def _parquet_codec(data: bytes) -> str:
+    import pyarrow.parquet as pq
+
+    pf = pq.ParquetFile(io.BytesIO(data))
+    return str(pf.metadata.row_group(0).column(0).compression)
+
+
+def _frame_to_snappy_bytes(frame) -> bytes:
+    buf = io.BytesIO()
+    to_write = frame
+    if getattr(frame, "index", None) is not None and frame.index.name is not None:
+        name = frame.index.name
+        if name in frame.columns:
+            to_write = frame.reset_index(drop=True)
+        else:
+            to_write = frame.reset_index()
+    to_write.to_parquet(buf, index=False, engine="pyarrow", compression="snappy")
+    return buf.getvalue()
+
+
+@pytest.mark.essential
+def test_v9_parquet_members_use_zstd(tmp_path):
+    """New v9 writes use zstd inside parquet; zip stays STORED (#912)."""
+    source = _require_v8_with_fids()
+    original = load_cellpy_file(source)
+
+    outfile = tmp_path / "zstd.cellpy"
+    original.save(outfile)
+
+    with zipfile.ZipFile(outfile) as zf:
+        infos = {info.filename: info for info in zf.infolist()}
+        parquet_members = [name for name in infos if name.endswith(".parquet")]
+        assert parquet_members
+        for name in parquet_members:
+            assert infos[name].compress_type == zipfile.ZIP_STORED, name
+            assert _parquet_codec(zf.read(name)) == "ZSTD", name
+
+
+@pytest.mark.essential
+def test_v9_loads_snappy_parquet_members(tmp_path):
+    """Pre-#912 snappy parquet members still load."""
+    source = _require_v8_with_fids()
+    original = load_cellpy_file(source)
+    expected = snapshot_cell_state(original)
+
+    modern = tmp_path / "modern.cellpy"
+    original.save(modern)
+    snappy_path = tmp_path / "snappy.cellpy"
+
+    with zipfile.ZipFile(modern) as src, zipfile.ZipFile(
+        snappy_path, mode="w", compression=zipfile.ZIP_STORED
+    ) as dest:
+        for info in src.infolist():
+            payload = src.read(info.filename)
+            if info.filename.endswith(".parquet"):
+                frame = pd.read_parquet(io.BytesIO(payload), engine="pyarrow")
+                payload = _frame_to_snappy_bytes(frame)
+                assert _parquet_codec(payload) == "SNAPPY", info.filename
+            dest.writestr(info.filename, payload, compress_type=info.compress_type)
+
+    reloaded = load_cellpy_file(snappy_path)
+    assert_data_frames_equal(reloaded.data.raw, expected["raw"])
+    assert_data_frames_equal(reloaded.data.steps, expected["steps"])
+    assert_data_frames_equal(reloaded.data.summary, expected["summary"])
 
 
 @pytest.mark.essential
