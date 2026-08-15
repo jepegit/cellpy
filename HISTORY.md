@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+* `Collection.plot(backend="matplotlib")` no longer raises
+  `TypeError: warn_once() missing 1 required positional argument`. It keeps
+  aliasing to the seaborn layout path (and now actually returns a figure -
+  the y-label mapper crashed on the summary path). (#925)
+
 * `cellpy info` and `cellpy info --check` report rather than narrate. The check
   run is one line per check with a symbol, a short detail and a hint when it
   fails, closing with `N of M checks passed` - instead of `=== checking ===`

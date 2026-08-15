@@ -897,8 +897,23 @@ def sequence_plotter(
 
             g.set_xlabels(x_label)
             if y_label_mapper:
+                # ``y_label_mapper`` is keyed by variable name (summary_plotter
+                # builds one by default); the FacetGrid rows are in
+                # ``g.row_names`` order. Fall back to positional keys for the
+                # legacy list/dict-by-index shape (#925).
+                row_names = list(getattr(g, "row_names", None) or [])
+                mapper = y_label_mapper if isinstance(y_label_mapper, dict) else None
                 for i, ax in enumerate(g.axes.flat):
-                    ax.set_ylabel(y_label_mapper[i])
+                    label = None
+                    if mapper is not None and i < len(row_names):
+                        label = mapper.get(row_names[i])
+                    if label is None:
+                        try:
+                            label = y_label_mapper[i]
+                        except (KeyError, IndexError, TypeError):
+                            label = None
+                    if label is not None:
+                        ax.set_ylabel(label)
             g.add_legend()
             return fig
 
@@ -1896,9 +1911,13 @@ def collected_plot(
 
     backend_key = (backend or "plotly").strip().lower()
     if backend_key == "matplotlib":
+        # The collected layouts have no matplotlib engine of their own; the
+        # historical seaborn path is the best-effort stand-in (#925).
         warn_once(
-            "collected_plot: backend='matplotlib' uses the collectors seaborn "
-            "layout path (best-effort parity); prefer backend='plotly'.",
+            'collected_plot(backend="matplotlib")',
+            'backend="plotly"',
+            removal="2.3",
+            introduced="2.1",
             stacklevel=2,
         )
         backend_key = "seaborn"
