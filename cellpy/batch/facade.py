@@ -168,6 +168,8 @@ class Batch:
         ``"threads"`` mainly speeds up *reopening* cells from local ``.cellpy``
         files; a first load of remote raw files does not overlap on the wire,
         and ``"processes"`` usually loses to spawn overhead on Windows.
+        Process workers strip live cells; a raw load is written to ``.cellpy``
+        in the worker so ``save_cellpy=True`` can persist without ``None.save``.
         ``progress`` is ``None`` (auto: TTY or Jupyter), ``False`` (off),
         ``True`` (force), or a callable that receives progress events.
         ``on_progress(i, n, result)`` still wins when set (3-arg callback).
@@ -190,7 +192,7 @@ class Batch:
             self._result = run(
                 self.journal, policy, on_progress=on_progress, executor=executor
             )
-        self._store = CellStore.from_cells(self._result.cells())
+        self._store = _store_from_result(self._result, self.journal)
         self._summaries = None
         return self._result
 
@@ -521,6 +523,31 @@ def _resolve_policy(
     return replace(base, **updates) if updates else base
 
 
+def _store_from_result(result, journal: Journal) -> CellStore:
+    """Live cells when present; otherwise lazy reopen from ``.cellpy`` paths.
+
+    ``executor="processes"`` strips live objects. Workers save raw loads to
+    disk first; the parent reopens those files on first ``store[label]``.
+    """
+    from cellpy import get as cellpy_get
+
+    cells = result.cells()
+    loaders: dict[str, Any] = {}
+    paths: dict[str, Path] = {}
+    if _CELLPY_FILE_COL in journal.pages.columns:
+        for row in journal.pages.iter_rows(named=True):
+            raw = row.get(_CELLPY_FILE_COL)
+            if raw:
+                paths[row[FILENAME]] = Path(raw).with_suffix(".cellpy")
+    for item in result.loaded:
+        if item.cell is not None or item.label in cells:
+            continue
+        dest = paths.get(item.label) or _default_cellpy_path(item.label)
+        if dest.is_file():
+            loaders[item.label] = lambda p=dest: cellpy_get(cellpy_file=p)
+    return CellStore(loaders=loaders, cells=cells)
+
+
 def _default_cellpy_path(label: str) -> Path:
     """Fallback ``.cellpy`` path under ``config.paths.cellpydatadir``."""
     import cellpy.config as config
@@ -660,6 +687,9 @@ def load(
 
     Args:
         name / project: batch identity (required for DB / autoload paths).
+            ``project`` must be the **exact** folder name under
+            ``rawdatadir`` when ``config.batch.auto_use_file_list`` is on
+            (that dump joins ``rawdatadir / project`` — no fuzzy match).
         journal: explicit in-memory journal model.
         journal_file: path to a cellpy journal, or a BatBase/custom JSON DB file
             when ``reader`` / ``db_reader`` is a JSON reader.
@@ -687,9 +717,42 @@ def load(
             on a TTY or in Jupyter; ``False`` disables; ``True`` forces;
             a callable receives progress events. ``executor="threads"`` speeds
             up reopening cells from local ``.cellpy`` files; a first load of
-            remote raw files stays serial on the wire. ``export_cycles`` /
+            remote raw files stays serial on the wire. ``executor="processes"``
+            cannot return live cells (pickle); raw loads are saved in the
+            worker and reopened from ``.cellpy`` so ``save_cellpy=True`` works.
+            ``export_cycles`` /
             ``export_raw`` / ``export_ica`` are accepted but ignored (warned
             once).
+
+    Note:
+        ``executor`` chooses how cells are loaded (forwarded to
+        :meth:`Batch.update`). Suggested use:
+
+        * ``"serial"`` (default) — first load from remote raw files. SFTP
+          copies do not overlap, so threads buy almost nothing on the
+          download path (keep this for ``force_raw_file=True`` / a missing
+          ``.cellpy``).
+        * ``"threads"`` — reopen from local ``.cellpy`` files (the usual
+          second ``batch.load`` after ``save_cellpy=True``). Measured ~2–3×
+          on a warm 25-cell batch. Progress shows one child bar per
+          in-flight cell.
+        * ``"processes"`` — rarely worth it; Windows process spawn usually
+          eats the gain, and workers return outcomes only (no live cells).
+
+        ``config.batch.auto_use_file_list`` (default ``False``) is a config
+        flag, not a ``load()`` kwarg. When True, file search dumps
+        ``rawdatadir / project`` once. ``project`` must match that folder
+        name exactly or the dump raises. Leave it False unless the raw
+        tree is large enough that a per-cell walk hurts.
+
+    Example:
+        First load (leave serial on the wire)::
+
+            b = batch.load(name="exp", project="Proj")
+
+        Later reopen from saved ``.cellpy`` files::
+
+            b = batch.load(name="exp", project="Proj", executor="threads")
 
     Returns:
         Populated :class:`Batch`.

@@ -87,6 +87,8 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_batch_progress.py::test_run_emits_cell_start_parse_done | yes | yes | batch.runner emit + on_progress | #916 | event bus + 3-arg callback |
 | tests/test_batch_progress.py::test_on_progress_still_wins_with_event_hook | yes | yes | batch.runner on_progress | #916 | BC: 3-arg hook still fires |
 | tests/test_batch_progress.py::test_tqdm_display_disable_tracks_cells | yes | yes | batch.progress.TqdmBatchProgress | #916 | overall n without TTY |
+| tests/test_batch_v3_runner.py::test_dispatch_lite_saves_raw_then_strips | yes | yes | batch.runner._dispatch_lite | #920 | process worker saves raw load |
+| tests/test_batch_v3_runner.py::test_persist_skips_none_placeholder_from_processes | yes | yes | batch.facade._persist_cells / CellStore.is_loaded | #920 | None.save guard |
 
 **Columns**
 

@@ -87,6 +87,7 @@ def load_cell(spec: CellSpec, policy: LoadPolicy | None = None) -> CellResult:
     started = time.perf_counter()
     token = set_cell_label(spec.label)
     try:
+        emit("cell_start", label=spec.label)
         emit("parse", label=spec.label)
         cell = _cellpy_get(**kwargs)
         emit("parse", label=spec.label, n=1, total_n=1)
@@ -132,25 +133,40 @@ def _strip_cell(result: CellResult) -> CellResult:
 
 def _dispatch(spec: CellSpec, policy: LoadPolicy, bad: frozenset) -> CellResult:
     if spec.label in bad:
+        emit("cell_start", label=spec.label)
         return CellResult(spec.label, CellOutcome.SKIPPED, source=None)
     return load_cell(spec, policy)
+
+
+def _cellpy_dest(spec: CellSpec) -> Path:
+    """Where a process worker should write ``.cellpy`` before stripping."""
+    if spec.cellpy_file:
+        return Path(spec.cellpy_file).with_suffix(".cellpy")
+    from cellpy import config
+
+    return Path(config.paths.cellpydatadir) / f"{spec.label}.cellpy"
 
 
 def _dispatch_lite(spec: CellSpec, policy: LoadPolicy, bad: frozenset) -> CellResult:
     """Process-pool worker: like :func:`_dispatch` but returns a picklable result.
 
     The live :class:`CellpyCell` is not returned across the process boundary
-    (batch plan section 7, Windows pickling); ``executor="processes"`` yields
-    outcomes/timings, and cells are re-read from their cellpy files on demand.
+    (batch plan section 7, Windows pickling). A raw load is saved to
+    ``spec.cellpy_file`` first so the parent can persist / lazy-reopen.
     """
-    return _strip_cell(_dispatch(spec, policy, bad))
+    result = _dispatch(spec, policy, bad)
+    if result.ok and result.cell is not None and result.source == "raw":
+        dest = _cellpy_dest(spec)
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        result.cell.save(dest, overwrite=True)
+        emit("save", label=spec.label, n=1, total_n=1)
+    return _strip_cell(result)
 
 
 def _run_serial(specs, policy, bad, on_progress) -> list[CellResult]:
     results: list[CellResult] = []
     total = len(specs)
     for index, spec in enumerate(specs, start=1):
-        emit("cell_start", index=index, total=total, label=spec.label)
         result = _dispatch(spec, policy, bad)
         results.append(result)
         emit("cell_done", index=index, total=total, label=spec.label)
@@ -163,10 +179,10 @@ def _run_pool(pool_cls, worker, specs, policy, bad, on_progress) -> list[CellRes
     results: list[CellResult | None] = [None] * len(specs)
     total = len(specs)
     with pool_cls() as pool:
-        futures = {}
-        for i, spec in enumerate(specs):
-            emit("cell_start", index=i + 1, total=total, label=spec.label)
-            futures[pool.submit(worker, spec, policy, bad)] = i
+        futures = {
+            pool.submit(worker, spec, policy, bad): i
+            for i, spec in enumerate(specs)
+        }
         done = 0
         for future in as_completed(futures):
             index = futures[future]

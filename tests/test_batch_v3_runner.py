@@ -269,6 +269,72 @@ def test_run_threads_keeps_live_cells(parameters):
     assert sorted(seen) == [1, 2]
 
 
+@pytest.mark.essential
+def test_dispatch_lite_saves_raw_then_strips(tmp_path, monkeypatch):
+    """Process worker writes .cellpy before dropping the live cell (#920)."""
+    from pathlib import Path
+
+    from cellpy.batch.runner import _dispatch_lite
+
+    dest = tmp_path / "a.cellpy"
+
+    class _Cell:
+        def save(self, path, overwrite=True):
+            Path(path).write_bytes(b"from-worker")
+
+    monkeypatch.setattr("cellpy.batch.runner._cellpy_get", lambda **kwargs: _Cell())
+    spec = CellSpec(
+        label="a",
+        cellpy_file=str(dest),
+        raw_files=["raw.h5"],
+    )
+    result = _dispatch_lite(
+        spec, LoadPolicy(source=SourcePreference.RAW_ONLY), frozenset()
+    )
+    assert result.ok
+    assert result.cell is None
+    assert dest.read_bytes() == b"from-worker"
+
+
+@pytest.mark.essential
+def test_persist_skips_none_placeholder_from_processes(tmp_path):
+    """Stripped process results must not crash persist with None.save."""
+    from cellpy.batch import Batch, Journal, LoadPolicy, SourcePreference
+    from cellpy.batch import facade as facade_mod
+    from cellpy.batch.result import BatchResult, CellOutcome, CellResult
+    from cellpy.batch.store import CellStore
+
+    dest = tmp_path / "cell_a.cellpy"
+    dest.write_bytes(b"from-worker")
+    batch = Batch(
+        Journal(
+            name="t",
+            project="p",
+            pages=pl.DataFrame(
+                {
+                    FILENAME: ["cell_a"],
+                    "cellpy_file_name": [str(dest)],
+                }
+            ),
+        )
+    )
+    batch.policy = LoadPolicy(source=SourcePreference.RAW_ONLY)
+    batch._store = CellStore.from_cells({"cell_a": None})
+    batch._result = BatchResult(
+        [
+            CellResult(
+                "cell_a",
+                CellOutcome.LOADED,
+                cell=None,
+                source="raw",
+                seconds=0.1,
+            )
+        ]
+    )
+    facade_mod._persist_cells(batch, tmp_path / "cellpy_batch_t.json")
+    assert dest.read_bytes() == b"from-worker"
+
+
 def test_run_processes_returns_outcomes(parameters):
     j = _one_cell_journal("c45", parameters.cellpy_file_path)
     br = run(j, LoadPolicy(source=SourcePreference.CELLPY_ONLY), executor="processes")

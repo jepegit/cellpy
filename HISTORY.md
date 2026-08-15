@@ -14,6 +14,16 @@
   lines changed: `[cellpy] version: X` is now `cellpy X`, and
   `[cellpy] -> <path>` is now `config   <path>`. (#891)
 
+* `executor="processes"` writes ``.cellpy`` in the worker on a raw load and
+  lazy-reopens on the parent, so ``batch.load(..., save_cellpy=True)`` no
+  longer crashes with ``None.save``. Cached ``None`` is not treated as
+  loaded. (#920)
+* Fix batch tqdm bars: thread children start when a worker runs (not on
+  submit) and complete before close so Jupyter does not leave red 2/3
+  widgets; the overall bar ``reset()``s its total after the journal exists
+  so 4/25 no longer looks full. `batch.load` documents when to use
+  ``executor`` and that ``config.batch.auto_use_file_list`` needs ``project``
+  to match the raw folder name exactly.
 * `batch.load` / `Batch.update` show tqdm progress on a TTY or in Jupyter
   (`progress=None` auto, `False` off, `True` force, or a callable). Overall
   bar covers journal → search → cells → persist; per-cell bars cover
