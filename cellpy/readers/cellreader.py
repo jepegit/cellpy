@@ -1396,7 +1396,12 @@ class CellpyCell:
             logging.debug(f"{file_name}")
             if is_a_file:
                 file_name = internals.OtherPath(file_name)
-                if not file_name.is_file():
+                # A remote raw file is about to be copied (or opened) by the
+                # loader, and that step raises if it is missing - so skip the
+                # extra pre-copy STAT, which pays an SSH handshake per cell
+                # (#901). Local paths are cheap to check and give a clearer
+                # error than the loader would.
+                if not file_name.is_external and not file_name.is_file():
                     raise NoDataFound(f"Could not find the file {file_name}")
 
             new_data = raw_file_loader(

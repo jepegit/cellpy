@@ -397,3 +397,115 @@ def test_remote_exists_uses_upath(monkeypatch, mock_env_cellpy_key_filename):
     )
     assert p.exists(testing=True) is True
     assert p.is_file(testing=True) is True
+
+
+# --- credentialed fs reuse / no pre-copy STAT (#901) -----------------------
+
+
+def _credentialed_upath_spy(monkeypatch, tmp_path):
+    """Fake UPath that records every construction; returns the credentialed ones."""
+    constructed = []
+
+    class _FakeFS:
+        def __init__(self):
+            self.get_calls = 0
+
+        def get(self, remote_path, local_path):
+            self.get_calls += 1
+            pathlib.Path(local_path).write_text("data")
+
+        def info(self, path):
+            return {"size": 4, "mtime": 0, "atime": 0}
+
+    class _FakeUPath:
+        def __init__(self, *args, **kwargs):
+            self._url = str(args[0])
+            self.path = "/home/jepe/file.res"
+            self.storage_options = kwargs
+            self.fs = _FakeFS()
+            self.name = "file.res"
+            self.protocol = "sftp"
+            constructed.append(kwargs)
+
+        def __str__(self):
+            return self._url
+
+        def exists(self):
+            return True
+
+        def is_file(self):
+            return True
+
+        def is_dir(self):
+            return False
+
+    monkeypatch.setattr("cellpy.internals.otherpath.UPath", _FakeUPath)
+    return constructed
+
+
+def test_remote_instance_reuses_one_credentialed_upath(
+    monkeypatch, tmp_path, mock_env_cellpy_key_filename
+):
+    """is_file + stat + copy on one instance build the credentialed fs once (#901)."""
+    constructed = _credentialed_upath_spy(monkeypatch, tmp_path)
+
+    p = cellpy.internals.connections.OtherPath(
+        "sftp://jepe@server.ife.no/home/jepe/file.res"
+    )
+    p.is_file(testing=True)
+    p.is_file(testing=True)
+    p.stat(testing=True)
+    p.copy(destination=tmp_path, testing=True)
+
+    with_credentials = [kw for kw in constructed if "key_filename" in kw]
+    assert len(with_credentials) == 1, constructed
+
+
+def test_credentialed_upath_is_not_carried_into_a_pickle(
+    monkeypatch, tmp_path, mock_env_cellpy_key_filename
+):
+    """A live fs/SSH client must not travel to a worker process (#901)."""
+    _credentialed_upath_spy(monkeypatch, tmp_path)
+
+    p = cellpy.internals.connections.OtherPath(
+        "sftp://jepe@server.ife.no/home/jepe/file.res"
+    )
+    p.is_file(testing=True)
+    assert p._credentialed_upath is not None
+    assert p.__getstate__()["_credentialed_upath"] is None
+
+
+def test_from_raw_missing_local_file_still_raises(tmp_path):
+    """Skipping the pre-copy STAT must not silence a missing local file (#901)."""
+    from cellpy import cellreader
+    from cellpy.exceptions import NoDataFound
+
+    c = cellreader.CellpyCell()
+    with pytest.raises(NoDataFound, match="Could not find the file"):
+        c.from_raw(tmp_path / "does_not_exist.res")
+
+
+def test_from_raw_does_not_stat_a_remote_file_before_copying(monkeypatch, tmp_path):
+    """from_raw leaves the existence check to the copy/loader for remote paths."""
+    from cellpy import cellreader
+    from cellpy.internals.connections import OtherPath
+
+    calls = {"is_file": 0}
+    original = OtherPath.is_file
+
+    def _counting_is_file(self, *args, **kwargs):
+        if self.is_external:
+            calls["is_file"] += 1
+        return original(self, *args, **kwargs)
+
+    monkeypatch.setattr(OtherPath, "is_file", _counting_is_file)
+
+    def _boom(file_name, **kwargs):
+        raise RuntimeError("loader reached")
+
+    c = cellreader.CellpyCell()
+    monkeypatch.setattr(c, "loader", _boom, raising=False)
+    with pytest.raises(RuntimeError, match="loader reached"):
+        c.from_raw("sftp://jepe@server.ife.no/home/jepe/file.res")
+
+    assert calls["is_file"] == 0

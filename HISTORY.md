@@ -15,6 +15,10 @@
 * Fix scheduled CI: keep `sqlalchemy-access` Windows-only in conda env files,
   and install `legacy-files` (PyTables) in the scheduled pip matrix. (#885)
 * Iterative fixes: document for devs how to add plots. (#892)
+* Remote loads are cheaper: an `OtherPath` builds its credentialed filesystem
+  once and reuses it for `is_file` / `stat` / `copy`, and `from_raw` no longer
+  STATs a remote raw file it is about to copy (the copy raises if it is
+  missing). Missing local files still raise `NoDataFound`. (#901)
 * `config.batch.auto_use_file_list` is wired into `journal_from_db` /
   `find_files`: when enabled (default stays **false**) the raw-file directory
   is dumped once — scoped to the batch `project` by an exact join — and every
