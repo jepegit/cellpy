@@ -138,14 +138,29 @@ def _dispatch(spec: CellSpec, policy: LoadPolicy, bad: frozenset) -> CellResult:
     return load_cell(spec, policy)
 
 
+def _cellpy_dest(spec: CellSpec) -> Path:
+    """Where a process worker should write ``.cellpy`` before stripping."""
+    if spec.cellpy_file:
+        return Path(spec.cellpy_file).with_suffix(".cellpy")
+    from cellpy import config
+
+    return Path(config.paths.cellpydatadir) / f"{spec.label}.cellpy"
+
+
 def _dispatch_lite(spec: CellSpec, policy: LoadPolicy, bad: frozenset) -> CellResult:
     """Process-pool worker: like :func:`_dispatch` but returns a picklable result.
 
     The live :class:`CellpyCell` is not returned across the process boundary
-    (batch plan section 7, Windows pickling); ``executor="processes"`` yields
-    outcomes/timings, and cells are re-read from their cellpy files on demand.
+    (batch plan section 7, Windows pickling). A raw load is saved to
+    ``spec.cellpy_file`` first so the parent can persist / lazy-reopen.
     """
-    return _strip_cell(_dispatch(spec, policy, bad))
+    result = _dispatch(spec, policy, bad)
+    if result.ok and result.cell is not None and result.source == "raw":
+        dest = _cellpy_dest(spec)
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        result.cell.save(dest, overwrite=True)
+        emit("save", label=spec.label, n=1, total_n=1)
+    return _strip_cell(result)
 
 
 def _run_serial(specs, policy, bad, on_progress) -> list[CellResult]:

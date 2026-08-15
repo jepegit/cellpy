@@ -65,7 +65,7 @@ class CellStore(Mapping):
         return self.first()
 
     def is_loaded(self, label: str) -> bool:
-        return label in self._cache
+        return self._cache.get(label) is not None
 
     def unload(self, label: str) -> None:
         """Drop a loaded cell from the cache (explicit memory management)."""

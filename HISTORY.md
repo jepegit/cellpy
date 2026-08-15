@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+* `executor="processes"` writes ``.cellpy`` in the worker on a raw load and
+  lazy-reopens on the parent, so ``batch.load(..., save_cellpy=True)`` no
+  longer crashes with ``None.save``. Cached ``None`` is not treated as
+  loaded. (#920)
 * Fix batch tqdm bars: thread children start when a worker runs (not on
   submit) and complete before close so Jupyter does not leave red 2/3
   widgets; the overall bar ``reset()``s its total after the journal exists
