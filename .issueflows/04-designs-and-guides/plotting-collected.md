@@ -53,6 +53,13 @@ Epic #567 Stage 3 / issue #657 re-bases collectors' drawing half onto
   `"per_cycle"` (and legacy `fig_pr_*` / `film`) rewrite facet strips to
   `Cycle N` / cell label by default — strips stay visible (unlike summary's
   clear→y-title path). Prefer `layout=` over `method="fig_pr_*"`.
+- **Collected cycle legend (#928):** `layout="per_cell"` colours by cycle and
+  uses `cellpy.plotting.cycle_legend` — above `legend_cycle_limit` cycles
+  (default `DEFAULT_LEGEND_CYCLE_LIMIT` = 8, the same rule as the single-cell
+  `cycles_plot`) the discrete legend is replaced by a colorbar. `force_colorbar`
+  / `force_legend` / `force_nonbar` override. The knobs are consumed in
+  `sequence_plotter`, so they never reach a backend. `layout="per_cycle"`
+  colours by cell and is untouched.
 - **ICA `direction=` (#821):** `charge` / `discharge` / `both` on line layouts
   (`layout="per_cell"|"per_cycle"`) and `kind="film"`, not only film. Default
   for collected ICA remains `charge`. `both` overlays half-cycles; on Plotly
@@ -99,3 +106,4 @@ collection.plot(
 - Issue #804 (per-panel y-limits / `share_y`)
 - Issue #801 (theme / label / height hooks)
 - Issue #820 (cycles / ICA pretty facet strips)
+- Issue #928 (collected cycle legend vs colorbar) — see `plotting-cycle-legend.md`

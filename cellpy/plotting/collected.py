@@ -18,6 +18,11 @@ import pandas as pd
 
 from cellpycore.config import CurveCols
 from cellpy.parameters.internal_settings import get_headers_journal
+from cellpy.plotting.cycle_legend import (
+    add_plotly_cycle_colorbar,
+    pop_cycle_legend_options,
+    resolve_cycle_legend_mode,
+)
 from cellpy.plotting.labels import legend_replacer, remove_markers
 from cellpy.plotting import theme
 from cellpy.plotting.spec import FigureSpec
@@ -412,7 +417,12 @@ def sequence_plotter(
         spread (bool): plot error-bands instead of error-bars if True.
 
         **kwargs: sent to backend (if `backend == "plotly"`, it will be
-            sent to `plotly.express` etc.)
+            sent to `plotly.express` etc.). The cycle legend-vs-colorbar knobs
+            (`legend_cycle_limit`, `force_colorbar`, `force_legend` /
+            `force_nonbar`; see :mod:`cellpy.plotting.cycle_legend`) are
+            consumed here: cycle-coloured layouts (`fig_pr_cell`) swap the
+            discrete legend for a colorbar above `legend_cycle_limit` cycles
+            (default 8, same as `cycles_plot`).
 
     Returns:
         figure object
@@ -426,6 +436,12 @@ def sequence_plotter(
         print(f" - supported backends: {supported_backends}")
         return
     curves = None
+
+    # Shared legend-vs-colorbar policy for cycle-coloured figures (#928).
+    # Popped here so the knobs never leak into a backend call, whatever the
+    # method; only the cycle-coloured layouts act on the result.
+    cycle_legend_options = pop_cycle_legend_options(None, kwargs)
+    cycle_legend_mode = "legend"
 
     # ----------------- parsing arguments -----------------------------
 
@@ -551,6 +567,12 @@ def sequence_plotter(
                 start, end = palette_range
             unique_cycle_numbers = curves[z].unique()
             number_of_colors = len(unique_cycle_numbers)
+            # Same rule (and same default limit) as the single-cell
+            # ``cycles_plot`` / ``ica_plot``: a long discrete legend becomes a
+            # colorbar (#928).
+            cycle_legend_mode = resolve_cycle_legend_mode(
+                number_of_colors, **cycle_legend_options
+            )
             if number_of_colors > 1:
                 selected_colors = px.colors.sample_colorscale(
                     palette_continuous, number_of_colors, low=start, high=end
@@ -609,6 +631,21 @@ def sequence_plotter(
                 **plotly_arguments,
                 **kwargs,
             )
+
+            if method == "fig_pr_cell" and cycle_legend_mode == "colorbar":
+                # Keep the per-cycle trace colours, drop the long legend and
+                # show the scale instead (#928).
+                try:
+                    add_plotly_cycle_colorbar(
+                        fig,
+                        cycles=sorted(unique_cycle_numbers),
+                        colormap=palette_continuous,
+                        title=z_label,
+                    )
+                except (TypeError, ValueError) as e:
+                    logging.debug(f"sequence_plotter - no cycle colorbar: {e}")
+                else:
+                    fig.update_traces(showlegend=False)
 
             if method == "fig_pr_cycle" and group_cells:
                 try:
@@ -1870,6 +1907,10 @@ def collected_plot(
             ``height_per_panel`` / ``figure_border_height``.
             Cycles / ICA (#820): Plotly facet strips default to ``Cycle N`` /
             cell label (prefer ``layout=`` over legacy ``method="fig_pr_*"``).
+            ``layout="per_cell"`` colours by cycle and follows the shared
+            legend-vs-colorbar policy (#928): more than ``legend_cycle_limit``
+            cycles (default 8) get a colorbar instead of a long legend;
+            ``force_colorbar`` / ``force_legend`` override.
 
     Returns:
         Backend-native figure object.

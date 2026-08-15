@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+* `cycles_collector(b).plot(layout="per_cell")` follows the shared cycle
+  legend policy: more than `legend_cycle_limit` cycles (default 8, the same as
+  the single-cell `cycles_plot`) get a colorbar instead of a legend hundreds of
+  entries long. `force_colorbar` / `force_legend` override. (#928)
+
 * `cellpy info` and `cellpy info --check` report rather than narrate. The check
   run is one line per check with a symbol, a short detail and a hint when it
   fails, closing with `N of M checks passed` - instead of `=== checking ===`

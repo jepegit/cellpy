@@ -92,6 +92,10 @@ class Collection:
         ``spread``); ``layout="film"`` aliases ``kind="film"``. Unknown
         layout/kind/method values raise ``ValueError``. Plotly facet strips
         are pretty-printed by default (``Cycle N`` / cell label).
+
+        ``layout="per_cell"`` colours by cycle: more than
+        ``legend_cycle_limit`` cycles (default 8) get a colorbar instead of a
+        long legend, and ``force_colorbar`` / ``force_legend`` override (#928).
         """
         from cellpy.plotting import collected_plot
 
