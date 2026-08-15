@@ -19,6 +19,24 @@
   once and reuses it for `is_file` / `stat` / `copy`, and `from_raw` no longer
   STATs a remote raw file it is about to copy (the copy raises if it is
   missing). Missing local files still raise `NoDataFound`. (#901)
+* `config.batch.auto_use_file_list` is wired into `journal_from_db` /
+  `find_files`: when enabled (default stays **false**) the raw-file directory
+  is dumped once — scoped to the batch `project` by an exact join — and every
+  cell is matched against that list instead of searching the tree per cell. A
+  missing project folder raises with the joined path instead of producing an
+  empty journal. (#900)
+* Docs: `batch.load(..., executor="threads")` and the other measured speed
+  knobs (`auto_use_file_list`, `save_cellpy`, cold reopen) are documented for
+  agents; CONTRIBUTING warns about a mixed pip/conda `pyarrow`. (#903)
+* Per-cell `search_for_files` searches sub-folders with
+  `rglob(..., files_only=True)`, so a remote search can use the single
+  `find -L` listing instead of walking the tree per cell. (#899)
+* v9 `.cellpy` writes its parquet members with `ZIP_STORED` instead of
+  DEFLATE-ing already-compressed parquet, cutting seconds off every `save`.
+  `meta.json` stays deflated; the file format is unchanged. (#898)
+* Remote `rglob(..., files_only=True)` keeps the `find -L` listing when `find`
+  exits 1 because a sibling directory was unreadable, instead of discarding it
+  and falling back to the slow SFTP walk. (#897)
 
 ## [2.1.2] - 2026-08-09
 

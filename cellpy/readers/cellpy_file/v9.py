@@ -182,13 +182,15 @@ def save(
     def verify(staged: Path) -> None:
         _verify_members(staged, required)
 
+    # Parquet members are already compressed; DEFLATE-ing them again costs
+    # seconds per save and buys almost nothing (#898). meta.json is tiny text
+    # and stays deflated. ZIP_STORED is plain zip - old readers handle it.
     with atomic_write(path, verify=verify) as staged:
-        with zipfile.ZipFile(
-            staged, mode="w", compression=zipfile.ZIP_DEFLATED
-        ) as zf:
+        with zipfile.ZipFile(staged, mode="w", compression=zipfile.ZIP_STORED) as zf:
             zf.writestr(
                 META_JSON_NAME,
                 json.dumps(meta_doc, indent=2, default=meta_archive._json_default),
+                compress_type=zipfile.ZIP_DEFLATED,
             )
             zf.writestr(V9_RAW_PARQUET, _frame_to_parquet_bytes(scratch.raw))
             zf.writestr(V9_STEPS_PARQUET, _frame_to_parquet_bytes(scratch.steps))

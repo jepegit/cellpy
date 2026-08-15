@@ -312,6 +312,8 @@ Quick facts:
 - Ingestion form fields: `cellpy.instrument_meta_schema(instrument)` → `fields` / `units`.
 - Frames: `c.data.raw` / `.steps` / `.summary`; columns via `c.schema.*`.
 - Example data: `from cellpy.utils import example_data` → `example_data.raw_file()`.
+- Batch: `batch.load(name=..., project=...)`; `executor="threads"` speeds up
+  reopening local `.cellpy` files (first remote load stays serial on the wire).
 - Persist: `c.save("out.cellpy")`, `c.to_csv("out_dir")`.
   Collected figure bytes: `collection.to_image("png")` / `cellpy.plotting.write_image(fig, "svg")` (needs `cellpy[batch]` / kaleido).
 - Prefer schema-resolved names over hard-coded 1.x header strings.

@@ -382,7 +382,9 @@ def search_for_files(
                 logging.debug(f"checking in folder {d}")
                 logging.debug(f"{sub_folders=}")
                 if sub_folders:
-                    _run_files = d.rglob(glob_text_raw)
+                    # files_only lets a remote search use the single find -L
+                    # listing instead of walking the tree (#899).
+                    _run_files = d.rglob(glob_text_raw, files_only=True)
 
                 else:
                     _run_files = d.glob(glob_text_raw)
