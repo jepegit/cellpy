@@ -96,6 +96,107 @@ def test_epoch_time_utc_is_the_vendor_ticks_as_absolute_utc():
     assert difference == 0, f"epoch_time_utc is not the vendor ticks: off by {difference}"
 
 
+# --- one read, no legacy datetime work on the success path (#902) ----------
+
+
+@pytest.fixture
+def hdf_select_counter(monkeypatch):
+    """Count ``HDFStore.select`` calls."""
+    import pandas as pd
+
+    calls = []
+    original = pd.HDFStore.select
+
+    def _counting(self, key, *args, **kwargs):
+        calls.append(key)
+        return original(self, key, *args, **kwargs)
+
+    monkeypatch.setattr(pd.HDFStore, "select", _counting)
+    return calls
+
+
+@pytest.fixture
+def datetime_apply_spy(monkeypatch):
+    """Count ``from_arbin_to_datetime`` calls (the row-wise legacy decode)."""
+    from cellpy.readers.instruments import arbin_sql_h5
+
+    calls = []
+    original = arbin_sql_h5.from_arbin_to_datetime
+
+    def _spy(n):
+        calls.append(n)
+        return original(n)
+
+    monkeypatch.setattr(arbin_sql_h5, "from_arbin_to_datetime", _spy)
+    return calls
+
+
+@pytest.mark.essential
+def test_two_stage_load_reads_the_hdf_once(hdf_select_counter, datetime_apply_spy):
+    """parse() + loader() share one read, and no row-wise datetime decode (#902)."""
+    import cellpy
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        cell = cellpy.get(
+            SOURCE,
+            instrument="arbin_sql_h5",
+            mass=1.0,
+            testing=True,
+            auto_summary=False,
+        )
+
+    assert cell.data.raw is not None and len(cell.data.raw)
+    # data_df / info_df / stat_df, once - not twice.
+    assert hdf_select_counter == ["data_df", "info_df", "stat_df"], hdf_select_counter
+    # Only the single start_datetime value, never the whole column.
+    assert len(datetime_apply_spy) <= 1, len(datetime_apply_spy)
+
+
+@pytest.mark.essential
+def test_prefetch_failure_still_runs_the_legacy_post_process(
+    monkeypatch, datetime_apply_spy
+):
+    """When harmonize cannot run, the legacy datetime decode is still applied."""
+    import cellpy
+    from cellpy.readers import cellreader
+
+    monkeypatch.setattr(
+        cellreader.CellpyCell,
+        "_try_harmonized_raw_frame",
+        lambda self, **kwargs: None,
+    )
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        cell = cellpy.get(
+            SOURCE,
+            instrument="arbin_sql_h5",
+            mass=1.0,
+            testing=True,
+            auto_summary=False,
+        )
+
+    assert cell.data.raw is not None and len(cell.data.raw)
+    assert len(datetime_apply_spy) > 1, "legacy _post_process did not run"
+
+
+@pytest.mark.essential
+def test_parse_honours_refuse_copying_for_a_local_file():
+    """``refuse_copying=True`` reads the file where it lies (#902)."""
+    import pathlib
+
+    loader = _loader()
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        loader.parse(SOURCE, refuse_copying=True)
+
+    assert loader.refuse_copying is True
+    assert pathlib.Path(loader.temp_file_path).resolve() == pathlib.Path(
+        SOURCE
+    ).resolve()
+
+
 @pytest.mark.essential
 def test_two_stage_capacities_match_the_legacy_loader_stage_frame():
     import cellpy

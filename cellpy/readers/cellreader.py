@@ -1388,7 +1388,15 @@ class CellpyCell:
         ):
             # Forward loader knobs (bad_steps, data_points, …) so parse and the
             # cached Data shell see the same filters as loader() would.
-            prefetched_harmonized_raw = self._try_harmonized_raw_frame(**kwargs)
+            prefetched_harmonized_raw = self._try_harmonized_raw_frame(
+                refuse_copying=refuse_copying, **kwargs
+            )
+        if self.loader_class is not None:
+            # Loaders may skip work whose only product is the legacy raw frame
+            # that the harmonized frame replaces below (#902).
+            self.loader_class._harmonized_prefetch_ok = (
+                prefetched_harmonized_raw is not None
+            )
 
         data = None
         for file_name in self.file_names:
@@ -1507,7 +1515,7 @@ class CellpyCell:
         self.last_uploaded_at = datetime.datetime.now()
         return self
 
-    def _try_harmonized_raw_frame(self, **parse_kwargs):
+    def _try_harmonized_raw_frame(self, *, refuse_copying=False, **parse_kwargs):
         """Phase C: try ``harmonize(parse())`` for single-file raw.
 
         Returns a native pandas raw frame on success, or ``None`` to signal
@@ -1521,6 +1529,9 @@ class CellpyCell:
 
         ``parse_kwargs`` are forwarded to ``loader.parse`` (e.g. ``bad_steps``,
         ``data_points``) so the harmonized frame matches the filtered load.
+        ``refuse_copying`` is set on the loader instance (not passed as a parse
+        kwarg, which not every loader accepts) so ``parse`` does not copy a
+        local file the caller asked to read in place (#902).
         """
         if not getattr(config.reader, "use_harmonized_raw", True):
             return None
@@ -1536,6 +1547,8 @@ class CellpyCell:
 
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
+                if refuse_copying:
+                    loader.refuse_copying = True
                 vendor = loader.parse(source, **parse_kwargs)
                 declarations = loader.declarations()
                 native = harmonize(vendor, declarations, strict=False)
