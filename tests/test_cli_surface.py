@@ -63,6 +63,16 @@ def test_the_command_set_is_unchanged(expected, actual):
 
 
 @pytest.mark.essential
+def test_the_global_options_are_unchanged(expected, actual):
+    """`cellpy -q info` is a call users script; the root options are surface."""
+    before = {tuple(p["opts"]) for p in expected["root"]["params"]}
+    after = {tuple(p["opts"]) for p in actual["root"]["params"]}
+
+    assert not before - after, f"lost {sorted(before - after)}"
+    assert not after - before, f"added {sorted(after - before)}"
+
+
+@pytest.mark.essential
 def test_every_command_keeps_its_flags(expected, actual):
     """The check that matters: no option silently renamed or dropped."""
     expected_by_name = {c["name"]: c for c in expected["commands"]}

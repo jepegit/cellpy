@@ -8,6 +8,14 @@
   copy / parse / save. `executor="threads"` draws one child bar per in-flight
   cell; `processes` keeps the overall bar only. The 3-arg `on_progress`
   callback is unchanged. (#916)
+* CLI: new global `--quiet` / `-q`, `--verbose` and `--no-color` options.
+  `--quiet` reports problems and the output you asked for (`cellpy info` still
+  answers) and drops progress chatter; colour is otherwise automatic and
+  honours `NO_COLOR`. `cellpy run` without a NAME, or with a NAME but no
+  `--journal` / `--key` / `--folder` / `--cellpy-project`, is now a real usage
+  error on stderr with exit code 2 — it used to print hand-made usage text (or
+  a flag dump and an apology) to stdout and exit 255 or 0. `cellpy convert`
+  reports a rejected `--to` on stderr. (#891)
 * `Batch.export_project(destination)` writes a shareable `.cellpy` + journal
   bundle (2.x replacement for `duplicate_cellpy_files`). (#878)
 * Run the real `essential` and `full` CI gates once for every PR targeting

@@ -259,19 +259,26 @@ def test_run_empty():
 
 
 def test_run():
+    """A NAME with no mode is a usage error, not a successful no-op (#891).
+
+    This used to print the flags back plus "sorry, I am not allowed to run
+    this on my own" and exit 0, so `cellpy run mybatch && echo ok` reported
+    success having done nothing.
+    """
     name = "20190210_cell001_cc_01.h5"
     runner = CliRunner()
     result = runner.invoke(cli.cli, ["run", name])
     print("\n", result.output)
-    assert result.exit_code == 0
+    assert result.exit_code == 2
 
 
 def test_run_debug():
+    """--debug does not turn the missing mode into something runnable (#891)."""
     name = "20190210_cell001_cc_01.h5"
     runner = CliRunner()
     result = runner.invoke(cli.cli, ["run", "--debug", name])
     print("\n", result.output)
-    assert result.exit_code == 0
+    assert result.exit_code == 2
 
 
 def test_run_journal():
