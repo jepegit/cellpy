@@ -105,12 +105,51 @@ def create_factory():
     return instrument_factory
 
 
+def _dump_raw_file_directory(project=None, raw_file_dir=None, project_dir=None):
+    """One directory dump for ``auto_use_file_list`` (#900).
+
+    Scoped to ``project_dir`` (or the batch ``project``) by an exact join - no
+    fuzzy sibling matching (that is #691). A missing folder is an error, not an
+    empty journal.
+    """
+    from cellpy.internals.connections import OtherPath
+
+    if project_dir is None:
+        project_dir = project
+    if raw_file_dir is None:
+        raw_file_dir = config.paths.rawdatadir
+    given = raw_file_dir if isinstance(raw_file_dir, (list, tuple)) else [raw_file_dir]
+
+    roots = []
+    for d in given:
+        root = OtherPath(d)
+        if project_dir:
+            root = root / project_dir
+        if not root.is_dir():
+            raise FileNotFoundError(
+                f"auto_use_file_list is on, but the raw-file directory "
+                f"{root.full_path} does not exist. Point rawdatadir (and the "
+                "batch project) at an existing folder, or set "
+                "config.batch.auto_use_file_list = False."
+            )
+        roots.append(root)
+
+    logging.info(
+        "auto_use_file_list: dumping %s once",
+        ", ".join(r.full_path for r in roots),
+    )
+    return filefinder.find_in_raw_file_directory(
+        raw_file_dir=roots if len(roots) > 1 else roots[0]
+    )
+
+
 def find_files(
     info_dict,
     file_list=None,
     pre_path=None,
     sub_folders=None,
     skip_file_search=False,
+    project=None,
     **kwargs,
 ):
     """Find raw/cellpy files for each cell using :mod:`cellpy.filefinder`.
@@ -118,9 +157,22 @@ def find_files(
     Populates ``raw_file_names`` and ``cellpy_file_name`` in ``info_dict``.
     When ``skip_file_search`` is True the dict is returned unchanged (e.g.
     when a custom JSON db already carries the paths).
+
+    When ``config.batch.auto_use_file_list`` is True and the caller did not
+    supply ``file_list``, the raw-file directory is dumped **once** (scoped to
+    ``project_dir`` / ``project``) and every cell is matched against that list
+    instead of searching the tree per cell. The default of that setting is
+    False, so nothing changes unless it is switched on.
     """
     if skip_file_search:
         return info_dict
+
+    if file_list is None and config.batch.auto_use_file_list:
+        file_list = _dump_raw_file_directory(
+            project=project,
+            raw_file_dir=kwargs.get("raw_file_dir"),
+            project_dir=kwargs.get("project_dir"),
+        )
 
     sub_folders = sub_folders or config.file_names.sub_folders
     instrument_factory = create_factory()

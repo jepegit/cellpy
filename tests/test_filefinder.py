@@ -124,6 +124,60 @@ def test_search_for_files_no_sub_folders(raw_tree):
     assert names == ["runA_01.res", "runA_02.res"]
 
 
+@pytest.fixture
+def rglob_spy(monkeypatch):
+    """Record the kwargs ``search_for_files`` hands to ``OtherPath.rglob``."""
+    from cellpy.internals.connections import OtherPath
+
+    calls = []
+    original = OtherPath.rglob
+
+    def _spy(self, glob_str, *args, **kwargs):
+        calls.append(kwargs)
+        return original(self, glob_str, *args, **kwargs)
+
+    monkeypatch.setattr(OtherPath, "rglob", _spy)
+    return calls
+
+
+def test_search_for_files_recursive_uses_files_only(raw_tree, rglob_spy):
+    """Per-cell search must take the files_only / find -L path (#899)."""
+    raw_dir, cellpy_dir = raw_tree
+    raw_files, _ = filefinder.search_for_files(
+        "runA", raw_extension="res", raw_file_dir=raw_dir, cellpy_file_dir=cellpy_dir
+    )
+    assert rglob_spy, "search_for_files did not use rglob"
+    assert all(call.get("files_only") is True for call in rglob_spy)
+    names = sorted(pathlib.Path(f).name for f in raw_files)
+    assert names == ["runA_01.res", "runA_02.res", "runA_03.res"]
+
+
+def test_search_for_files_no_sub_folders_does_not_rglob(raw_tree, rglob_spy):
+    raw_dir, cellpy_dir = raw_tree
+    filefinder.search_for_files(
+        "runA",
+        raw_extension="res",
+        raw_file_dir=raw_dir,
+        cellpy_file_dir=cellpy_dir,
+        sub_folders=False,
+    )
+    assert rglob_spy == []
+
+
+def test_search_for_files_within_file_list_does_not_rglob(raw_tree, rglob_spy):
+    raw_dir, cellpy_dir = raw_tree
+    raw_files, _ = filefinder.search_for_files(
+        "runA",
+        raw_extension="res",
+        raw_file_dir=raw_dir,
+        cellpy_file_dir=cellpy_dir,
+        file_list=["runA_01.res", "runB_01.res"],
+        with_prefix=False,
+    )
+    assert raw_files == ["runA_01.res"]
+    assert rglob_spy == []
+
+
 def test_search_for_files_within_file_list(raw_tree):
     raw_dir, cellpy_dir = raw_tree
     raw_files, _ = filefinder.search_for_files(
