@@ -15,6 +15,12 @@
 * Fix scheduled CI: keep `sqlalchemy-access` Windows-only in conda env files,
   and install `legacy-files` (PyTables) in the scheduled pip matrix. (#885)
 * Iterative fixes: document for devs how to add plots. (#892)
+* `arbin_sql_h5` two-stage load reads the export once: `parse()` caches the HDF
+  frames and the temp copy for the following `loader()`, `parse()` honours
+  `refuse_copying`, and when the harmonize prefetch succeeds the legacy
+  row-wise datetime decode (whose only product is a raw frame that is
+  discarded) is skipped. Prefetch failure still takes the full legacy path.
+  (#902)
 * Remote loads are cheaper: an `OtherPath` builds its credentialed filesystem
   once and reuses it for `is_file` / `stat` / `copy`, and `from_raw` no longer
   STATs a remote raw file it is about to copy (the copy raises if it is

@@ -42,8 +42,9 @@ normal_headers_renaming_dict = {
 
 
 def from_arbin_to_datetime(n):
-    if isinstance(n, int):
-        n = str(n)
+    if not isinstance(n, str):
+        # int, numpy.int64, ... - the export stores 100 ns ticks as integers
+        n = str(int(n))
     ms_component = n[-7:]
     date_time_component = n[:-7]
     temp = f"{date_time_component}.{ms_component}"
@@ -110,6 +111,21 @@ class DataLoader(BaseLoader):
         raw_limits["ir_change"] = 0.00001
         return raw_limits
 
+    def copy_to_temporary(self):
+        """Reuse the temp copy an earlier ``parse()`` made for the same source.
+
+        ``loader_executor`` calls this again after ``parse()`` already did, which
+        meant downloading (or copying) the same export twice (#902).
+        """
+        if (
+            self._temp_file_path is not None
+            and getattr(self, "_temp_copy_of", None) == str(self.name)
+        ):
+            logging.debug("reusing the temporary copy made by parse()")
+            return
+        super().copy_to_temporary()
+        self._temp_copy_of = str(self.name)
+
     def parse(self, source, **kwargs):
         """Vendor stage: read the h5 export into a frame with Arbin names.
 
@@ -121,9 +137,15 @@ class DataLoader(BaseLoader):
 
         ``drop_duplicates`` is kept here because it is vendor cleanup (the export
         repeats rows), so the vendor frame is what a de-duplicated read yields.
+
+        ``refuse_copying`` (kwarg here, or the instance flag set by the caller)
+        is honoured, so a local file is read where it lies (#902).
         """
         import polars as pl
 
+        refuse_copying = kwargs.pop("refuse_copying", None)
+        if refuse_copying is not None:
+            self.refuse_copying = refuse_copying
         self.name = source if isinstance(source, Path) else Path(source)
         self.copy_to_temporary()
         data_df = self._parse_h5_data()["data_df"].drop_duplicates()
@@ -204,16 +226,29 @@ class DataLoader(BaseLoader):
         data.summary = (
             pd.DataFrame()
         )  # creating an empty frame - loading summary is not implemented yet
-        data = self._post_process(data)
+        # When the two-stage prefetch succeeded, this legacy raw frame is
+        # discarded right after the load - so do not spend ~5 s converting a
+        # datetime column nobody reads (#902).
+        data = self._post_process(
+            data, skip_row_wise_datetime=self.harmonized_prefetch_ok
+        )
         data = self.identify_last_data_point(data)
         return data
 
-    def _post_process(self, data):
+    @property
+    def harmonized_prefetch_ok(self) -> bool:
+        """True when ``harmonize(parse())`` already produced the native raw.
+
+        Set by ``CellpyCell.from_raw`` before it calls the loader.
+        """
+        return bool(getattr(self, "_harmonized_prefetch_ok", False))
+
+    def _post_process(self, data, skip_row_wise_datetime=False):
         set_index = True
         rename_headers = True
         forward_fill_ir = True
-        fix_datetime = True
-        set_dtypes = True
+        fix_datetime = not skip_row_wise_datetime
+        set_dtypes = not skip_row_wise_datetime
         fix_duplicated_rows = True
         recalc_capacity = False
 
@@ -283,6 +318,12 @@ class DataLoader(BaseLoader):
 
         hdr_date_time = self.arbin_headers_normal.datetime_txt
         start = data.raw[hdr_date_time].iat[0]
+        if skip_row_wise_datetime:
+            # The column is still Arbin ticks; convert the one value we keep
+            # instead of the whole column (same result, O(1) instead of O(n)).
+            start = pd.to_datetime(
+                from_arbin_to_datetime(start), format=DATE_TIME_FORMAT
+            )
         # TODO: convert to datetime:
         data.start_datetime = start
 
@@ -293,11 +334,20 @@ class DataLoader(BaseLoader):
         date_time_col = normal_headers_renaming_dict["datetime_txt"]
         file_name = pathlib.Path(file_name)
 
+        # parse() and a following loader() read the same export; cache the
+        # frames so the HDF store is only selected once per file (#902).
+        cached = getattr(self, "_parsed_frames", None)
+        if cached is not None and getattr(self, "_parsed_frames_path", None) == file_name:
+            logging.debug("reusing the HDF frames read by parse()")
+            return cached
+
         raw_frames = {}
         with pd.HDFStore(file_name) as h5_file:
             for key in ["data_df", "info_df", "stat_df"]:
                 raw_frames[key] = h5_file.select(key)
 
+        self._parsed_frames = raw_frames
+        self._parsed_frames_path = file_name
         return raw_frames
 
 
