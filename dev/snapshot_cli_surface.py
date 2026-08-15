@@ -68,9 +68,13 @@ def build_surface() -> dict:
         command = typer.main.get_command(command)
 
     return {
+        # The root's own options (--quiet, --no-color, ...) are part of the
+        # surface too: `cellpy -q info` is a call a user can have in a script,
+        # and describing only subcommands would let one vanish unnoticed (#891).
+        "root": _describe(command, "cellpy"),
         "commands": [
             _describe(sub, name) for name, sub in sorted(command.commands.items())
-        ]
+        ],
     }
 
 

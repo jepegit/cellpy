@@ -16,27 +16,31 @@
   migration. Nothing is wired to a command yet, so there is no user-visible
   change and no HISTORY entry.
 
+- **PR 2 — global flags, streams, exit codes.** Root callback installs the
+  reporter from `--quiet` / `-q`, `--verbose`, `--no-color`; per-command
+  `--silent` / `--debug` adjust one invocation via `Reporter.with_level`.
+  `cellpy run` raises real usage errors (stderr, exit 2) instead of hand-made
+  usage text and a flag dump; `convert` reports a bad `--to` on stderr.
+  `info` echoes as payload so `--quiet` cannot silence an answer. The surface
+  snapshot now describes the **root** command too, so global options are under
+  the same contract as everything else.
+
 ## Remaining work
 
-- [ ] PR 2 — global flags (`--quiet` / `--verbose` / `--no-color`), failures to
-      stderr, exit codes 0/1/2, delete the hand-rolled usage block in `run`;
-      regenerate `tests/data/cli_surface.json` in the same commit.
 - [ ] PR 3 — `info` / `info --check`.
 - [ ] PR 4 — `setup` (drop the parameter dump, make `--silent` real).
 - [ ] PR 5 — copy pass over the remaining commands; fix the `f[cellpy]` literal
       and the `deiced` typo; remove the stray `print()` calls.
-- [ ] Register the new essential tests in
-      [test-registry.md](../04-designs-and-guides/test-registry.md). Deferred
-      out of PR 1 only because the concurrent #912 session has uncommitted rows
-      in that file; staging it would have swept their work into this commit.
-      Rows to add (`tests/test_cli_ui.py`, essential/always, code under test
-      `cli_ui.Reporter`, issue #891) plus
-      `test_cli_light_import.py::test_importing_cli_ui_does_not_import_rich`.
+- [x] Register the new essential tests in
+      [test-registry.md](../04-designs-and-guides/test-registry.md) (deferred
+      from PR 1 while #912 held uncommitted rows there; done in PR 2).
 
 ## Notes
 
-- A concurrent session is working #912 in this same checkout. PR 1 commits only
-  `cellpy/cli_ui.py`, `tests/test_cli_ui.py`,
-  `tests/test_cli_light_import.py` and these `.issueflows` docs; the #912
-  changes to `cellpy/readers/cellpy_file/v9.py`, `tests/test_cellpy_file_v9.py`
-  and `HISTORY.md` are left untouched in the working tree.
+- PR 1 was built while a concurrent session held uncommitted #912 work in the
+  same checkout, so it committed only its own paths and deferred the
+  `test-registry.md` rows. #912 has since merged (#914) and the rows landed in
+  PR 2.
+- The surface snapshot gained a `root` entry in PR 2. It is additive: the
+  existing `commands` list and every per-command assertion are unchanged, and
+  no subcommand's parameters moved when the root callback was added.
