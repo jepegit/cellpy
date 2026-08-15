@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+* Figure export is discoverable from a collector: `BatchCollector.to_image()`
+  returns image bytes and `BatchCollector.save_figure(path)` /
+  `Collection.save_figure(path)` write one to disk. `.save()` still writes
+  frame + `meta.json` only, and now says so and names the figure API. (#926)
+
 * `cellpy info` and `cellpy info --check` report rather than narrate. The check
   run is one line per check with a symbol, a short detail and a hint when it
   fails, closing with `N of M checks passed` - instead of `=== checking ===`

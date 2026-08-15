@@ -76,7 +76,22 @@ class BatchCollector:
         return self.collection.data
 
     def save(self, directory: str | Path, **kwargs) -> list[Path]:
-        """Persist the collection (explicit directory, no cwd fallback)."""
+        """Persist the collected **frame** (+ ``meta.json``) -- data only.
+
+        Explicit directory, no cwd fallback. This writes no figures: use
+        :meth:`save_figure` for an image file, :meth:`to_image` for the bytes,
+        or :func:`cellpy.utils.plotutils.save_image_files` for a png/svg/json
+        set from a figure you already have.
+
+        Args:
+            directory: Where to write ``<name>.<fmt>`` and ``<name>.meta.json``.
+            **kwargs: Forwarded to
+                :meth:`cellpy.collect.Collection.save` (e.g.
+                ``formats=("parquet", "csv", "json", "xlsx")``).
+
+        Returns:
+            The paths written.
+        """
         return self.collection.save(directory, **kwargs)
 
     def plot(self, **kwargs) -> Any:
@@ -88,6 +103,37 @@ class BatchCollector:
                 "Use `.data` for the collected frame in the meantime."
             )
         return plot(**kwargs)
+
+    def to_image(self, fmt: str = "png", *, scale: float = 1.0, **plot_kwargs) -> bytes:
+        """Render :meth:`plot` and return static image bytes (needs kaleido).
+
+        Args:
+            fmt: ``png``, ``svg``, ``pdf``, ``jpg``/``jpeg``, or ``webp``.
+            scale: Pixel scale factor for kaleido.
+            **plot_kwargs: Forwarded to :meth:`plot`.
+
+        Returns:
+            Encoded image bytes (see :meth:`save_figure` to write a file).
+        """
+        return self.collection.to_image(fmt, scale=scale, **plot_kwargs)
+
+    def save_figure(
+        self, path: str | Path, *, scale: float = 1.0, **plot_kwargs
+    ) -> Path:
+        """Render :meth:`plot` and write the figure to *path* (needs kaleido).
+
+        The image format comes from the suffix (``.png`` when there is none).
+        :meth:`save` writes the data; this writes the picture.
+
+        Args:
+            path: Target file, e.g. ``"out/cycle_life.png"``.
+            scale: Pixel scale factor for kaleido.
+            **plot_kwargs: Forwarded to :meth:`plot`.
+
+        Returns:
+            The path written.
+        """
+        return self.collection.save_figure(path, scale=scale, **plot_kwargs)
 
     def __repr__(self) -> str:  # pragma: no cover - trivial
         kind = getattr(self._collection, "kind", "?")
