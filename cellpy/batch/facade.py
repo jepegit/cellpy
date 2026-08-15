@@ -159,6 +159,9 @@ class Batch:
         """Load every cell, caching them in the store.
 
         ``executor`` is ``"serial"`` (default), ``"threads"`` or ``"processes"``.
+        ``"threads"`` mainly speeds up *reopening* cells from local ``.cellpy``
+        files; a first load of remote raw files does not overlap on the wire,
+        and ``"processes"`` usually loses to spawn overhead on Windows.
         Known :class:`LoadPolicy` fields in ``overrides`` update the policy;
         unknown (legacy) kwargs like ``testing`` are forwarded to the loader
         (``cellpy.get``) via ``loader_kwargs``.
@@ -182,7 +185,11 @@ class Batch:
         return self._result
 
     def load(self, **overrides) -> BatchResult:
-        """Load cells (alias of :meth:`update`, kept for the legacy surface)."""
+        """Load cells (alias of :meth:`update`, kept for the legacy surface).
+
+        Takes the same ``executor`` / ``on_progress`` / policy overrides as
+        :meth:`update`, e.g. ``b.load(executor="threads")``.
+        """
         return self.update(**overrides)
 
     def recalc(self, **overrides) -> BatchResult:
@@ -660,8 +667,12 @@ def load(
         drop_bad_cells: drop ``session["bad_cells"]`` before update.
         save_cellpy: write journal JSON and any newly-needed ``.cellpy`` files (default True). Skips rewriting cells already loaded from disk.
         accept_errors / max_cycle: forwarded into the load policy.
-        **kwargs: DB engine knobs (``column_map``, ``raw_file_dir``, …) and
-            loader extras (``testing``, …). ``export_cycles`` / ``export_raw`` /
+        **kwargs: DB engine knobs (``column_map``, ``raw_file_dir``, …), load
+            knobs forwarded to :meth:`Batch.update` (``executor``,
+            ``on_progress`` and :class:`LoadPolicy` fields) and loader extras
+            (``testing``, …). ``executor="threads"`` speeds up reopening cells
+            from local ``.cellpy`` files; a first load of remote raw files
+            stays serial on the wire. ``export_cycles`` / ``export_raw`` /
             ``export_ica`` are accepted but ignored (warned once).
 
     Returns:

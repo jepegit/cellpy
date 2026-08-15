@@ -15,6 +15,9 @@
 * Fix scheduled CI: keep `sqlalchemy-access` Windows-only in conda env files,
   and install `legacy-files` (PyTables) in the scheduled pip matrix. (#885)
 * Iterative fixes: document for devs how to add plots. (#892)
+* Docs: `batch.load(..., executor="threads")` and the other measured speed
+  knobs (`auto_use_file_list`, `save_cellpy`, cold reopen) are documented for
+  agents; CONTRIBUTING warns about a mixed pip/conda `pyarrow`. (#903)
 * Per-cell `search_for_files` searches sub-folders with
   `rglob(..., files_only=True)`, so a remote search can use the single
   `find -L` listing instead of walking the tree per cell. (#899)

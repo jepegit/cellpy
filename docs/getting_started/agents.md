@@ -214,6 +214,54 @@ Instrument strings and formats: see
 the instruments API. Coming from cellpy 1.x:
 [migration guide](migration_v1_to_v2.md).
 
+## Recipe: loading many cells (batch) and its speed knobs
+
+```python
+from cellpy import batch
+
+b = batch.load(name="my_experiment", project="my_project")
+summaries = b.summaries          # polars frame across cells
+c = b.cells["my_cell_01"]        # a CellpyCell
+```
+
+`batch.load` (and `Batch.update` / `Batch.load` under it) takes an `executor`:
+
+```python
+b = batch.load(name="my_experiment", project="my_project", executor="threads")
+```
+
+| `executor` | When it helps |
+| --- | --- |
+| `"serial"` (default) | Always correct; the only mode that never adds overhead |
+| `"threads"` | **Reopening** cells from local `.cellpy` files — measured 25 warm cells 5.2 s → 2.0 s |
+| `"processes"` | Rarely; Windows process spawn usually eats the gain |
+
+The **first** load of remote raw files stays effectively serial on the wire —
+SFTP transfers do not overlap, so `executor="threads"` buys ~nothing there
+(measured 38.5 s serial vs 37.1 s threads for 3 remote `.h5`). Use threads for
+the reopen path, not the download path.
+
+Other measured knobs for a slow first batch load:
+
+- **File search.** Creating a journal from the database searches for each
+  cell's raw files, and on a shared remote `rawdatadir` that walks the tree
+  once per cell. `config.batch.auto_use_file_list` (default `false`) is the
+  switch for dumping the directory **once** and matching every cell against
+  that list instead (project-scoped when the batch has a `project`). Wiring it
+  into the v3 journal path is tracked in
+  [#900](https://github.com/jepegit/cellpy/issues/900); either way, pointing
+  `rawdatadir` at the project folder is the cheapest fix. See
+  [Remote paths](remote_paths.md#behaviour-notes).
+- **Saving `.cellpy` files.** First load writes one file per cell. Pass
+  `save_cellpy=False` if the app only needs the frames in memory.
+- **`pyarrow` installed twice.** A pip `pyarrow` on top of a conda
+  `pyarrow-core` (or the reverse) breaks `.cellpy` reads with a DLL error at
+  load time. Keep one installer's copy — see the environment notes in
+  [CONTRIBUTING.md](https://github.com/jepegit/cellpy/blob/master/CONTRIBUTING.md).
+- **A cold first reopen is not a decode bug.** On Windows the first read of a
+  large `.cellpy` can be slower than parsing the raw file, because of page
+  cache / antivirus, not the v9 format.
+
 ## Pitfalls agents hit
 
 - **Hard-coded column names** — use `c.schema.raw.potential` (etc.), not
