@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+* `executor="processes"` writes ``.cellpy`` in the worker on a raw load and
+  lazy-reopens on the parent, so ``batch.load(..., save_cellpy=True)`` no
+  longer crashes with ``None.save``. Cached ``None`` is not treated as
+  loaded. (#920)
 * `batch.load` / `Batch.update` show tqdm progress on a TTY or in Jupyter
   (`progress=None` auto, `False` off, `True` force, or a callable). Overall
   bar covers journal → search → cells → persist; per-cell bars cover

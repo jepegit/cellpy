@@ -75,7 +75,7 @@ class BatchResult:
 
     def cells(self) -> dict[str, Any]:
         """Mapping of label -> loaded cell, successful cells only."""
-        return {r.label: r.cell for r in self.loaded}
+        return {r.label: r.cell for r in self.loaded if r.cell is not None}
 
     def raise_if_failed(self) -> "BatchResult":
         """Strict mode: raise if any cell failed; otherwise return self."""
