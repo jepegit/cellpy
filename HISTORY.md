@@ -2,6 +2,20 @@
 
 ## [Unreleased]
 
+* `cellpy setup` reports one line per real action instead of narrating itself.
+  The parameter dump (`init_filename`, `dst_file`, `not_relative`, …) moved to
+  `--verbose`, a dry run states each file once instead of twice in two
+  formats, and **`--silent` is now genuinely silent** - it used to stop the
+  questions but still print ~25 lines. A per-command `--silent` / `--debug`
+  now also reaches the structured output, not only the plain lines. Copy pass
+  over the remaining commands (`edit`, `new`, `pull`, `serve`, `setup
+  migrate`): no more `[cellpy] (cmd)` prefixes, 80-column rules, apologies or
+  `RUNNING SOMETHING ELSE` debug prints, and several bare `print()` calls that
+  bypassed `echo=` (and `--silent`) now go through it. `cellpy new --list`
+  shows template locations instead of Python tuples, `cellpy pull` with
+  nothing selected and `cellpy edit <unknown>` are real usage errors (stderr,
+  exit 2). (#891)
+
 * `cellpy info` and `cellpy info --check` report rather than narrate. The check
   run is one line per check with a symbol, a short detail and a hint when it
   fails, closing with `N of M checks passed` - instead of `=== checking ===`

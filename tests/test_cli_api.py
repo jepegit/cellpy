@@ -105,7 +105,8 @@ def test_list_journals_counts_correctly(tmp_path, capsys):
     for name in ("cellpy_a.json", "cellpy_b.json", "cellpy_c.json"):
         (tmp_path / name).write_text("{}", encoding="utf-8")
 
-    cli_api.list_journals(tmp_path)
+    # the count used to go out through a bare print(), bypassing echo= (#891)
+    cli_api.list_journals(tmp_path, echo=print)
     assert "number of batch-files located: 3" in capsys.readouterr().out
 
 
@@ -115,7 +116,7 @@ def test_a_single_journal_is_not_reported_as_none(tmp_path, capsys):
     directly beneath the file it had just listed (0 is falsy)."""
     (tmp_path / "cellpy_only.json").write_text("{}", encoding="utf-8")
 
-    found = cli_api.list_journals(tmp_path)
+    found = cli_api.list_journals(tmp_path, echo=print)
     output = capsys.readouterr().out
     assert len(found) == 1
     assert "No batch-files found" not in output
@@ -309,8 +310,8 @@ def test_show_info_echoes_when_asked(capsys):
 def test_start_jupyter_reports_missing_directory(tmp_path, capsys):
     missing = tmp_path / "no_such_notebooks"
     cli_api.start_jupyter(directory=str(missing), echo=print)
-    out = capsys.readouterr().out
-    assert "does not exist" in out
+    # a failure, so it belongs on stderr (#891)
+    assert "does not exist" in capsys.readouterr().err
 
 
 @pytest.mark.essential
@@ -331,8 +332,7 @@ def test_create_project_returns_when_cookiecutter_missing(monkeypatch, capsys):
 
     monkeypatch.setattr(builtins, "__import__", fake_import)
     cli_api.create_project(list_=False, echo=print)
-    out = capsys.readouterr().out
-    assert "Could not import cookiecutter" in out
+    assert "Could not import cookiecutter" in capsys.readouterr().err
 
 
 @pytest.mark.essential

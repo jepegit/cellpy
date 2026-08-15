@@ -338,9 +338,10 @@ def test_cli_setup():
         result = runner.invoke(cli.cli, ["setup", "--dry-run"])
         print(result.output)
         assert result.exit_code == 0
-        assert "Configuration file written!" not in result.output
-        assert "Environment file written!" not in result.output
-        assert result.output.count("dry-run: would write") == 3
+        # one line per file it would touch (config, toml, env) and no claim
+        # that anything was written (#891)
+        assert result.output.count("dry-run: would") == 3
+        assert "written" not in result.output
 
 
 def test_cli_setup_interactive():
