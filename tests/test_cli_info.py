@@ -45,6 +45,24 @@ def one_failing_check(monkeypatch):
     )
 
 
+@pytest.fixture
+def every_check_passes(monkeypatch):
+    """Stub all three checks green.
+
+    Whether a real machine passes them depends on what is installed and
+    configured - CI has no user config file, so the configuration check fails
+    there quite correctly. A test about the *exit code* must not depend on it.
+    """
+    for name in (
+        "_check_import_cellpy",
+        "_check_import_pyodbc",
+        "_check_config_file",
+    ):
+        monkeypatch.setattr(
+            cli_api, name, lambda: cli_api._CheckOutcome(True, "fine")
+        )
+
+
 # -- info -------------------------------------------------------------------
 
 
@@ -110,10 +128,11 @@ def test_a_failing_check_exits_non_zero(one_failing_check):
 
 
 @pytest.mark.essential
-def test_a_passing_check_exits_zero():
+def test_a_passing_check_exits_zero(every_check_passes):
     result = runner.invoke(cli, ["info", "--check"])
 
-    assert result.exit_code == 0
+    assert result.exit_code == 0, plain(result.output)
+    assert "3 of 3 checks passed" in plain(result.output)
 
 
 @pytest.mark.essential
