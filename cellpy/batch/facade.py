@@ -34,8 +34,10 @@ from cellpy.batch.journal import (
 from cellpy.batch.layout import BatchPaths, ensure_dirs
 from cellpy.batch.policy import LoadPolicy, SourcePreference
 from cellpy.batch.result import BatchResult
+from cellpy.batch.progress import progress_scope
 from cellpy.batch.runner import run
 from cellpy.batch.store import CellStore
+from cellpy.internals.progress import emit
 from cellpy.parameters.internal_settings import get_headers_journal
 
 _log = logging.getLogger(__name__)
@@ -154,7 +156,11 @@ class Batch:
         return self._result
 
     def update(
-        self, on_progress=None, executor: str = "serial", **overrides
+        self,
+        on_progress=None,
+        executor: str = "serial",
+        progress=None,
+        **overrides
     ) -> BatchResult:
         """Load every cell, caching them in the store.
 
@@ -162,6 +168,9 @@ class Batch:
         ``"threads"`` mainly speeds up *reopening* cells from local ``.cellpy``
         files; a first load of remote raw files does not overlap on the wire,
         and ``"processes"`` usually loses to spawn overhead on Windows.
+        ``progress`` is ``None`` (auto: TTY or Jupyter), ``False`` (off),
+        ``True`` (force), or a callable that receives progress events.
+        ``on_progress(i, n, result)`` still wins when set (3-arg callback).
         Known :class:`LoadPolicy` fields in ``overrides`` update the policy;
         unknown (legacy) kwargs like ``testing`` are forwarded to the loader
         (``cellpy.get``) via ``loader_kwargs``.
@@ -177,9 +186,10 @@ class Batch:
                 policy = replace(
                     policy, loader_kwargs={**policy.loader_kwargs, **extra}
                 )
-        self._result = run(
-            self.journal, policy, on_progress=on_progress, executor=executor
-        )
+        with progress_scope(progress, len(self.cell_names), executor):
+            self._result = run(
+                self.journal, policy, on_progress=on_progress, executor=executor
+            )
         self._store = CellStore.from_cells(self._result.cells())
         self._summaries = None
         return self._result
@@ -187,8 +197,8 @@ class Batch:
     def load(self, **overrides) -> BatchResult:
         """Load cells (alias of :meth:`update`, kept for the legacy surface).
 
-        Takes the same ``executor`` / ``on_progress`` / policy overrides as
-        :meth:`update`, e.g. ``b.load(executor="threads")``.
+        Takes the same ``executor`` / ``on_progress`` / ``progress`` / policy
+        overrides as :meth:`update`, e.g. ``b.load(executor="threads")``.
         """
         return self.update(**overrides)
 
@@ -573,7 +583,9 @@ def _persist_cells(
         )
         if do_save:
             _log.info("saving %s -> %s", label, dest)
+            emit("save", label=label)
             batch.cells[label].save(dest, overwrite=True)
+            emit("save", label=label, n=1, total_n=1)
         else:
             _log.debug("skip save (already from cellpy or not loaded): %s", label)
         saved.append(dest.as_posix())
@@ -605,6 +617,7 @@ def _finalize(
         if journal_path is None:
             name = batch.journal.name or "batch"
             journal_path = _journal_path(name)
+        emit("persist")
         _persist_cells(batch, journal_path)
     return batch
 
@@ -669,11 +682,14 @@ def load(
         accept_errors / max_cycle: forwarded into the load policy.
         **kwargs: DB engine knobs (``column_map``, ``raw_file_dir``, …), load
             knobs forwarded to :meth:`Batch.update` (``executor``,
-            ``on_progress`` and :class:`LoadPolicy` fields) and loader extras
-            (``testing``, …). ``executor="threads"`` speeds up reopening cells
-            from local ``.cellpy`` files; a first load of remote raw files
-            stays serial on the wire. ``export_cycles`` / ``export_raw`` /
-            ``export_ica`` are accepted but ignored (warned once).
+            ``on_progress``, ``progress`` and :class:`LoadPolicy` fields) and
+            loader extras (``testing``, …). ``progress=None`` auto-shows tqdm
+            on a TTY or in Jupyter; ``False`` disables; ``True`` forces;
+            a callable receives progress events. ``executor="threads"`` speeds
+            up reopening cells from local ``.cellpy`` files; a first load of
+            remote raw files stays serial on the wire. ``export_cycles`` /
+            ``export_raw`` / ``export_ica`` are accepted but ignored (warned
+            once).
 
     Returns:
         Populated :class:`Batch`.
@@ -707,6 +723,7 @@ def load(
 
     # Split kwargs: known LoadPolicy extras / loader vs DB engine args.
     policy_field_names = {f.name for f in fields(LoadPolicy)}
+    progress = kwargs.pop("progress", None)
     update_kwargs = {
         k: kwargs.pop(k)
         for k in list(kwargs)
@@ -718,6 +735,48 @@ def load(
     if reader_path is not None:
         db_kwargs.setdefault("db_file", reader_path)
 
+    executor = update_kwargs.get("executor", "serial")
+    with progress_scope(progress, 0, executor) as display:
+        emit("journal")
+        return _load_after_progress(
+            name=name,
+            project=project,
+            journal=journal,
+            journal_file=journal_file,
+            journal_dir=journal_dir,
+            frame=frame,
+            db=db,
+            db_reader=db_reader,
+            allow_from_journal=allow_from_journal,
+            drop_bad_cells=drop_bad_cells,
+            save_cellpy=save_cellpy,
+            batch_col=batch_col,
+            resolved=resolved,
+            db_kwargs=db_kwargs,
+            update_kwargs=update_kwargs,
+            display=display,
+        )
+
+
+def _load_after_progress(
+    *,
+    name,
+    project,
+    journal,
+    journal_file,
+    journal_dir,
+    frame,
+    db,
+    db_reader,
+    allow_from_journal,
+    drop_bad_cells,
+    save_cellpy,
+    batch_col,
+    resolved,
+    db_kwargs,
+    update_kwargs,
+    display,
+) -> Batch:
     journal_path: Path | None = None
     batch: Batch | None = None
 
@@ -787,6 +846,8 @@ def load(
             )
 
     assert batch is not None
+    if display is not None:
+        display.set_n_cells(len(batch.cell_names))
     return _finalize(
         batch,
         policy=resolved,

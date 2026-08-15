@@ -224,11 +224,20 @@ summaries = b.summaries          # polars frame across cells
 c = b.cells["my_cell_01"]        # a CellpyCell
 ```
 
-`batch.load` (and `Batch.update` / `Batch.load` under it) takes an `executor`:
+`batch.load` (and `Batch.update` / `Batch.load` under it) takes an `executor`
+and a `progress` knob:
 
 ```python
 b = batch.load(name="my_experiment", project="my_project", executor="threads")
+b = batch.load(name="my_experiment", project="my_project", progress=False)
 ```
+
+`progress=None` (default) shows tqdm on a TTY or in JupyterLab. `False` turns
+bars off. `True` forces them on. A callable receives progress events
+(`journal` / `search` / `copy` / `parse` / `save` / `cell_done`). The older
+`on_progress(i, n, result)` callback still fires on each finished cell.
+`executor="threads"` draws one child bar per in-flight cell; `processes`
+keeps the overall bar only.
 
 | `executor` | When it helps |
 | --- | --- |

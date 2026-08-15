@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+* `batch.load` / `Batch.update` show tqdm progress on a TTY or in Jupyter
+  (`progress=None` auto, `False` off, `True` force, or a callable). Overall
+  bar covers journal → search → cells → persist; per-cell bars cover
+  copy / parse / save. `executor="threads"` draws one child bar per in-flight
+  cell; `processes` keeps the overall bar only. The 3-arg `on_progress`
+  callback is unchanged. (#916)
 * CLI: new global `--quiet` / `-q`, `--verbose` and `--no-color` options.
   `--quiet` reports problems and the output you asked for (`cellpy info` still
   answers) and drops progress chatter; colour is otherwise automatic and

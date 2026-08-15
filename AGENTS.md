@@ -314,6 +314,7 @@ Quick facts:
 - Example data: `from cellpy.utils import example_data` → `example_data.raw_file()`.
 - Batch: `batch.load(name=..., project=...)`; `executor="threads"` speeds up
   reopening local `.cellpy` files (first remote load stays serial on the wire).
+  `progress=None` auto-shows tqdm (TTY / Jupyter); `False` off.
 - Persist: `c.save("out.cellpy")`, `c.to_csv("out_dir")`.
   Collected figure bytes: `collection.to_image("png")` / `cellpy.plotting.write_image(fig, "svg")` (needs `cellpy[batch]` / kaleido).
 - Prefer schema-resolved names over hard-coded 1.x header strings.
