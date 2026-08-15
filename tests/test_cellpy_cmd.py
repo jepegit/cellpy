@@ -72,7 +72,7 @@ def test_info_version():
     result = runner.invoke(cli.cli, ["info", "--version"])
     print(result.output)
     assert result.exit_code == 0
-    assert f"[cellpy] version: {cellpy.__version__}" in result.output
+    assert f"cellpy {cellpy.__version__}" in result.output
 
 
 def test_info_configloc():
@@ -83,7 +83,7 @@ def test_info_configloc():
     assert result.exit_code == 0
     # Format-agnostic: the reported file may be cellpy.toml or a legacy .conf,
     # depending on what the machine running the tests has (#851).
-    assert "[cellpy] ->" in result.output
+    assert "config" in result.output
 
 
 def _fake_active_config_file(monkeypatch, active):
@@ -120,10 +120,10 @@ def test_info_configloc_flags_shadowed_legacy_file(monkeypatch, tmp_path):
     )
     result = CliRunner().invoke(cli.cli, ["info", "--configloc"])
     assert result.exit_code == 0
-    assert f"[cellpy] -> {toml_file}" in result.output
+    assert str(toml_file) in result.output
     assert str(legacy) in result.output
-    assert "is ignored" in result.output
-    assert "cellpy.toml takes precedence" in result.output
+    assert "ignored" in result.output
+    assert "cellpy.toml wins" in result.output
 
 
 @pytest.mark.essential
@@ -142,9 +142,9 @@ def test_info_configloc_reports_project_toml(monkeypatch, tmp_path):
     )
     result = CliRunner().invoke(cli.cli, ["info", "--configloc"])
     assert result.exit_code == 0
-    assert f"[cellpy] -> {user}" in result.output
+    assert str(user) in result.output
     assert str(project) in result.output
-    assert "also applies and takes precedence" in result.output
+    assert "takes precedence" in result.output
 
 
 def test_info_no_option():
@@ -173,10 +173,23 @@ def test_info_params():
 
 
 def test_info_check():
+    """The exit code must agree with the verdict (#891).
+
+    Not `exit_code == 0`: whether every check passes depends on the machine -
+    and on earlier tests, since some fixtures point `config.paths` at
+    directories that do not exist and never restore it. What must always hold
+    is that a reported failure is also reported to the shell.
+    """
+    import re
+
     runner = CliRunner()
     result = runner.invoke(cli.cli, ["info", "--check"])
     print("\n", result.output)
-    assert result.exit_code == 0
+
+    verdict = re.search(r"(\d+) of (\d+) checks passed", result.output)
+    assert verdict, result.output
+    passed, total = int(verdict.group(1)), int(verdict.group(2))
+    assert result.exit_code == (0 if passed == total else 1)
 
 
 @pytest.mark.slowtest

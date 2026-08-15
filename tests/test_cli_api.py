@@ -292,14 +292,17 @@ def test_convert_really_upgrades_a_legacy_file(tmp_path, target):
 
 @pytest.mark.essential
 def test_show_info_is_quiet_by_default(capsys):
+    """A library call prints nothing unless the caller asks for output."""
     cli_api.show_info(version=True)
-    assert "version" not in capsys.readouterr().out
+    assert capsys.readouterr().out.strip() == ""
 
 
 @pytest.mark.essential
 def test_show_info_echoes_when_asked(capsys):
+    import cellpy
+
     cli_api.show_info(version=True, echo=print)
-    assert "version" in capsys.readouterr().out
+    assert cellpy.__version__ in capsys.readouterr().out
 
 
 @pytest.mark.essential

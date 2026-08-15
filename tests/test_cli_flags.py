@@ -92,10 +92,12 @@ def test_no_color_disables_colour():
 @pytest.mark.essential
 def test_quiet_still_answers_a_question():
     """`info` is payload: --quiet silences progress, never the answer."""
+    import cellpy
+
     result = runner.invoke(cli, ["--quiet", "info", "--version"])
 
     assert result.exit_code == 0, result.output
-    assert "version" in plain(result.output)
+    assert cellpy.__version__ in plain(result.output)
 
 
 # -- usage errors ----------------------------------------------------------

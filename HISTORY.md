@@ -2,6 +2,18 @@
 
 ## [Unreleased]
 
+* `cellpy info` and `cellpy info --check` report rather than narrate. The check
+  run is one line per check with a symbol, a short detail and a hint when it
+  fails, closing with `N of M checks passed` - instead of `=== checking ===`
+  banners, 80-column rules, a page of probe output per check and a
+  `failed!!!!` line that shipped with a stray `f`. The probe narration is still
+  there under `--verbose`. **`cellpy info --check` now exits 1 when a check
+  fails** (it always exited 0), so it can be used in a script. A path setting
+  that *may* be remote is now only skipped when the value actually is remote,
+  so a broken local `cellpydatadir` is reported instead of excused. Output
+  lines changed: `[cellpy] version: X` is now `cellpy X`, and
+  `[cellpy] -> <path>` is now `config   <path>`. (#891)
+
 * `executor="processes"` writes ``.cellpy`` in the worker on a raw load and
   lazy-reopens on the parent, so ``batch.load(..., save_cellpy=True)`` no
   longer crashes with ``None.save``. Cached ``None`` is not treated as

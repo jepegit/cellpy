@@ -152,26 +152,47 @@ class Reporter:
         color: Optional[bool] = None,
         stdout: Optional[TextIO] = None,
         stderr: Optional[TextIO] = None,
+        enabled: bool = True,
     ) -> None:
         self.level = Level(level)
         self._color = color
-        self._stdout = stdout if stdout is not None else sys.stdout
-        self._stderr = stderr if stderr is not None else sys.stderr
-        self.symbols = (
-            UNICODE_SYMBOLS if supports_unicode(self._stdout) else ASCII_SYMBOLS
-        )
+        # A disabled reporter writes nowhere at any level - what a library call
+        # gets when the caller did not ask for output (``cli_api`` is quiet by
+        # default, and that includes failures).
+        self.enabled = enabled
+        # Streams stay unresolved when not injected: pytest's capsys, Click's
+        # CliRunner and a plain shell redirect all swap sys.stdout *after* a
+        # reporter may have been built, and a reporter that captured the old
+        # object would write into the void.
+        self._stdout = stdout
+        self._stderr = stderr
         self._out_console: Any = None
         self._err_console: Any = None
 
     # -- plumbing ------------------------------------------------------
 
+    def _stream(self, *, err: bool = False) -> Any:
+        if err:
+            return self._stderr if self._stderr is not None else sys.stderr
+        return self._stdout if self._stdout is not None else sys.stdout
+
+    @property
+    def symbols(self) -> Symbols:
+        """Unicode where the current stdout can encode it, else ASCII."""
+        return (
+            UNICODE_SYMBOLS
+            if supports_unicode(self._stream())
+            else ASCII_SYMBOLS
+        )
+
     def _console(self, *, err: bool = False) -> Any:
+        stream = self._stream(err=err)
         cached = self._err_console if err else self._out_console
-        if cached is not None:
+        # Reuse only while it still points at the stream in force.
+        if cached is not None and cached.file is stream:
             return cached
         from rich.console import Console
 
-        stream = self._stderr if err else self._stdout
         enabled = color_enabled(stream, color=self._color)
         console = Console(
             file=stream,
@@ -199,6 +220,8 @@ class Reporter:
         return self.level >= minimum
 
     def _write(self, text: Any, *, err: bool = False) -> None:
+        if not self.enabled:
+            return
         self._console(err=err).print(text)
 
     @property
@@ -332,6 +355,7 @@ class Reporter:
             color=self._color,
             stdout=self._stdout,
             stderr=self._stderr,
+            enabled=self.enabled,
         )
 
     # -- compatibility -------------------------------------------------
@@ -384,6 +408,11 @@ def _pad(value: str, width: int = LABEL_WIDTH) -> str:
 _reporter_var: ContextVar[Optional[Reporter]] = ContextVar(
     "cellpy_cli_reporter", default=None
 )
+
+
+def silent_reporter() -> Reporter:
+    """A reporter that prints nothing, for library calls that asked for quiet."""
+    return Reporter(enabled=False)
 
 
 def current() -> Reporter:
