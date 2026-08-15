@@ -243,6 +243,47 @@ def test_detail_lines_align_under_their_parent(plain_env, streams):
     assert "(remote, not checked)" in lines[1]
 
 
+# -- the active reporter ----------------------------------------------------
+
+
+@pytest.mark.essential
+def test_with_level_keeps_colour_and_streams(plain_env, streams):
+    out, _ = streams
+    reporter = _reporter(streams, color=True)
+
+    quiet = reporter.with_level(Level.QUIET)
+    quiet.ok("imports", "cellpy")
+    quiet.warn("legacy config")
+
+    assert quiet.level is Level.QUIET
+    assert reporter.level is Level.NORMAL, "the original must not be mutated"
+    printed = out.getvalue()
+    assert "imports" not in printed
+    assert "legacy config" in printed
+    assert "\x1b[" in printed, "colour choice should survive the level change"
+
+
+@pytest.mark.essential
+def test_current_defaults_and_can_be_replaced(plain_env, streams):
+    from cellpy import cli_ui
+
+    with cli_ui.using_reporter(None):
+        assert cli_ui.current().level is Level.NORMAL
+        installed = cli_ui.set_reporter(_reporter(streams, level=Level.QUIET))
+        assert cli_ui.current() is installed
+
+
+@pytest.mark.essential
+def test_using_reporter_restores_the_previous_one(plain_env, streams):
+    from cellpy import cli_ui
+
+    outer = _reporter(streams, level=Level.VERBOSE)
+    with cli_ui.using_reporter(outer):
+        with cli_ui.using_reporter(_reporter(streams, level=Level.QUIET)):
+            assert cli_ui.current().level is Level.QUIET
+        assert cli_ui.current() is outer
+
+
 # -- compatibility ----------------------------------------------------------
 
 

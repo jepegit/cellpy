@@ -50,6 +50,13 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_config.py::test_active_config_file_reports_project_toml | yes | yes | config.loader.active_config_file project_path | #853 | |
 | tests/test_cellpy_cmd.py::test_info_configloc_reports_project_toml | yes | yes | cli_api._configloc project notice | #853 | |
 | tests/test_cli_light_import.py::test_setup_deps_probes_optional_modules | yes | yes | cli_api.setup_config --deps | #839 | opt-in optional probe |
+| tests/test_cli_light_import.py::test_importing_cli_ui_does_not_import_rich | yes | yes | cli_ui lazy rich import | #891 | subprocess; keeps cold start off rich |
+| tests/test_cli_ui.py (whole file) | yes | yes | cli_ui.Reporter vocabulary | #891 | colour/symbol/level/stream decisions; injected streams |
+| tests/test_cli_flags.py::test_global_flags_install_the_matching_level | yes | yes | cli.main root callback -> cli_ui.Level | #891 | parametrised over -q/--verbose |
+| tests/test_cli_flags.py::test_quiet_still_answers_a_question | yes | yes | cli.info payload echo | #891 | --quiet must not silence `info` |
+| tests/test_cli_flags.py::test_usage_errors_go_to_stderr | yes | yes | cli.run usage errors | #891 | stderr + exit 2, not stdout + 255 |
+| tests/test_cli_flags.py::test_run_list_still_works_without_a_name | yes | yes | cli.run NAME optionality | #891 | guards `run --list` against a required NAME |
+| tests/test_cli_surface.py::test_the_global_options_are_unchanged | yes | yes | root CLI options | #891 | snapshot now covers root params |
 | tests/test_cellpy_file_v9.py::test_v9_parquet_members_use_zstd | yes | yes | v9._frame_to_parquet_bytes | #912 | new writes are zstd + ZIP_STORED |
 | tests/test_cellpy_file_v9.py::test_v9_loads_snappy_parquet_members | yes | yes | v9.load / _read_parquet_member | #912 | #898-era snappy members still load |
 | tests/test_cellpy_file_v9.py::test_failed_resave_keeps_the_old_file | yes | yes | cellpy_file.atomic.atomic_write / v9.save / CellpyCell.save | #845 | data-loss guard: interrupted re-save must not destroy the old file |

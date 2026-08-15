@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
-import sys
+import os
 from pathlib import Path
-from typing import Annotated, Any, Optional
+from typing import Annotated, Any, Callable, Optional
 
 import typer
+
+from cellpy import cli_ui
 
 cli = typer.Typer(
     name="cellpy",
@@ -16,6 +18,61 @@ cli = typer.Typer(
 )
 
 setup_app = typer.Typer()
+
+
+@cli.callback()
+def main(
+    quiet: Annotated[
+        bool,
+        typer.Option(
+            "--quiet",
+            "-q",
+            help="Only report problems and output you asked for.",
+        ),
+    ] = False,
+    verbose: Annotated[
+        bool,
+        typer.Option("--verbose", help="Report extra detail."),
+    ] = False,
+    no_color: Annotated[
+        bool,
+        typer.Option(
+            "--no-color",
+            help="Never colour the output (NO_COLOR is honoured too).",
+        ),
+    ] = False,
+) -> None:
+    """cellpy - command line interface."""
+    if no_color:
+        # Typer renders usage errors through its own rich console, which our
+        # reporter knows nothing about. NO_COLOR is the switch both honour, so
+        # setting it keeps the promise for every line the process prints.
+        os.environ["NO_COLOR"] = "1"
+    cli_ui.set_reporter(
+        cli_ui.make_reporter(quiet=quiet, verbose=verbose, no_color=no_color)
+    )
+
+
+def _echo(
+    *, silent: bool = False, debug: bool = False, payload: bool = False
+) -> Callable[[str], None]:
+    """The reporter's echo for this invocation.
+
+    A per-command ``--silent`` / ``--debug`` adjusts only this command, leaving
+    the reporter the global flags installed alone.
+
+    ``payload`` marks a command whose whole output *is* the answer the user
+    asked for (``cellpy info``): those lines survive ``--quiet``, because
+    silencing progress must not silence the answer.
+    """
+    reporter = cli_ui.current()
+    if silent:
+        reporter = reporter.with_level(cli_ui.Level.QUIET)
+    elif debug:
+        reporter = reporter.with_level(cli_ui.Level.VERBOSE)
+    if payload:
+        return reporter.payload
+    return reporter.as_echo()
 
 
 class _CliApiProxy:
@@ -145,7 +202,7 @@ def setup(
         deps=deps,
         no_deps=no_deps,
         check=check,
-        echo=typer.echo,
+        echo=_echo(),
     )
 
 
@@ -183,7 +240,7 @@ def setup_migrate(
     deprecation window); the generated TOML takes precedence once present.
     """
     cli_api.migrate_config(
-        src=src, dst=dst, dry_run=dry_run, force=force, echo=typer.echo
+        src=src, dst=dst, dry_run=dry_run, force=force, echo=_echo()
     )
 
 
@@ -245,7 +302,7 @@ def edit(
         default_editor=default_editor,
         debug=debug,
         silent=silent,
-        echo=typer.echo,
+        echo=_echo(silent=silent, debug=debug),
     )
 
 
@@ -290,7 +347,8 @@ def info(
         params=params,
         show_config=show_config,
         check=check,
-        echo=typer.echo,
+        # `info` answers a question; every line is payload, so --quiet keeps it.
+        echo=_echo(payload=True),
     )
 
 
@@ -375,27 +433,23 @@ def run(
 
     """
     if list_:
-        cli_api.list_journals(None if name == "NONE" else name, echo=typer.echo)
+        cli_api.list_journals(None if name == "NONE" else name, echo=_echo())
         return
 
     if name == "NONE":
-        typer.echo(
-            "Usage: cellpy run [OPTIONS] NAME\n"
-            "Try 'cellpy run --help' for help.\n\n"
-            "Error: Missing argument 'NAME'."
-        )
-        sys.exit(-1)
+        # Typer renders this as a real usage error on stderr, exit code 2 -
+        # the same treatment `cellpy convert` already gets for a bad path.
+        raise typer.BadParameter("give a NAME to run, or --list to see them.")
 
-    if debug:
-        typer.echo("[cellpy] (run) debug mode on")
-
+    ui = cli_ui.current()
     if silent:
-        typer.echo("[cellpy] (run) silent mode on")
-
-    typer.echo("[cellpy]\n")
+        ui = ui.with_level(cli_ui.Level.QUIET)
+    elif debug:
+        ui = ui.with_level(cli_ui.Level.VERBOSE)
+    ui.debug(f"debug mode on (running {name})")
 
     if cellpy_project:
-        cli_api.run_project(name, echo=typer.echo)
+        cli_api.run_project(name, echo=ui.as_echo())
     elif journal:
         cli_api.run_journal(
             name,
@@ -405,7 +459,7 @@ def run(
             cellpyfile=cellpyfile,
             minimal=minimal,
             nom_cap=nom_cap,
-            echo=typer.echo,
+            echo=ui.as_echo(),
         )
     elif folder:
         cli_api.run_journals(
@@ -415,7 +469,7 @@ def run(
             raw=raw,
             cellpyfile=cellpyfile,
             minimal=minimal,
-            echo=typer.echo,
+            echo=ui.as_echo(),
         )
     elif key:
         cli_api.run_from_db(
@@ -428,13 +482,15 @@ def run(
             nom_cap=nom_cap,
             batch_col=batch_col,
             project=project,
-            echo=typer.echo,
+            echo=ui.as_echo(),
         )
     else:
-        typer.echo(f"running {name}")
-        typer.echo(f" --debug [{debug}]")
-        typer.echo(f" --silent [{silent}]")
-        typer.echo("[cellpy]: sorry, I am not allowed to run this on my own")
+        # Was a flag dump plus "sorry, I am not allowed to run this on my own",
+        # printed to stdout with a success exit code.
+        raise typer.BadParameter(
+            "say what to run with NAME: --journal, --key, --folder "
+            "or --cellpy-project."
+        )
 
 
 # ----------------------- pull ---------------------------------------
@@ -468,7 +524,7 @@ def pull(
         clone=clone,
         directory=directory,
         password=password,
-        echo=typer.echo,
+        echo=_echo(),
     )
 
 
@@ -544,7 +600,7 @@ def new(
         lab=lab,
         jupyter_executable=jupyter_executable,
         list_=list_,
-        echo=typer.echo,
+        echo=_echo(),
     )
 
 
@@ -572,7 +628,7 @@ def serve(
 ):
     """Start a Jupyter server."""
     cli_api.start_jupyter(
-        lab=lab, directory=directory, executable=executable, echo=typer.echo
+        lab=lab, directory=directory, executable=executable, echo=_echo()
     )
 
 
@@ -595,11 +651,12 @@ def convert(
 ):
     """Upgrade a legacy cellpy-file to a current on-disk format."""
     try:
-        cli_api.convert(old_h5, new_h5, to=to, echo=typer.echo)
+        cli_api.convert(old_h5, new_h5, to=to, echo=_echo())
     except ValueError as exc:
-        typer.echo(f"[cellpy] (convert) {exc}")
+        # A rejected --to is a usage error: stderr, exit 2 (was stdout, exit 2).
+        cli_ui.current().fail("convert", str(exc))
         raise typer.Exit(code=2)
 
 
 if __name__ == "__main__":
-    cli_api.show_info(check=True, echo=typer.echo)
+    cli_api.show_info(check=True, echo=_echo())

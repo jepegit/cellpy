@@ -579,5 +579,48 @@
         "migrate"
       ]
     }
-  ]
+  ],
+  "root": {
+    "name": "cellpy",
+    "params": [
+      {
+        "is_flag": true,
+        "kind": "option",
+        "multiple": false,
+        "opts": [
+          "--no-color"
+        ],
+        "required": false
+      },
+      {
+        "is_flag": true,
+        "kind": "option",
+        "multiple": false,
+        "opts": [
+          "--quiet",
+          "-q"
+        ],
+        "required": false
+      },
+      {
+        "is_flag": true,
+        "kind": "option",
+        "multiple": false,
+        "opts": [
+          "--verbose"
+        ],
+        "required": false
+      }
+    ],
+    "subcommands": [
+      "convert",
+      "edit",
+      "info",
+      "new",
+      "pull",
+      "run",
+      "serve",
+      "setup"
+    ]
+  }
 }

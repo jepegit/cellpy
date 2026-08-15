@@ -33,8 +33,10 @@ from __future__ import annotations
 import enum
 import os
 import sys
+from contextlib import contextmanager
+from contextvars import ContextVar
 from dataclasses import dataclass
-from typing import Any, Callable, Optional, TextIO
+from typing import Any, Callable, Iterator, Optional, TextIO
 
 __all__ = [
     "ASCII_SYMBOLS",
@@ -43,8 +45,11 @@ __all__ = [
     "Symbols",
     "UNICODE_SYMBOLS",
     "color_enabled",
+    "current",
     "make_reporter",
+    "set_reporter",
     "supports_unicode",
+    "using_reporter",
 ]
 
 # Layout constants. The label column is wide enough for the longest label the
@@ -316,6 +321,19 @@ class Reporter:
         text.append(message, style=STYLE_DIM)
         self._write(text)
 
+    def with_level(self, level: Level) -> "Reporter":
+        """A copy that says more (or less), keeping colour and streams.
+
+        Lets a per-command ``--silent`` / ``--debug`` adjust one invocation
+        without mutating the reporter the rest of the process shares.
+        """
+        return Reporter(
+            level=level,
+            color=self._color,
+            stdout=self._stdout,
+            stderr=self._stderr,
+        )
+
     # -- compatibility -------------------------------------------------
 
     def as_echo(self) -> Callable[[str], None]:
@@ -358,6 +376,39 @@ class Reporter:
 def _pad(value: str, width: int = LABEL_WIDTH) -> str:
     """Left-align in a column, keeping at least two spaces after a long value."""
     return value.ljust(width) if len(value) < width else value + "  "
+
+
+# The reporter the CLI is currently speaking through. A ContextVar rather than
+# a plain global, matching ``cli_api._echo_var``, so concurrent work cannot
+# steal each other's verbosity.
+_reporter_var: ContextVar[Optional[Reporter]] = ContextVar(
+    "cellpy_cli_reporter", default=None
+)
+
+
+def current() -> Reporter:
+    """The active reporter, defaulting to a plain one on first use."""
+    reporter = _reporter_var.get()
+    if reporter is None:
+        reporter = Reporter()
+        _reporter_var.set(reporter)
+    return reporter
+
+
+def set_reporter(reporter: Optional[Reporter]) -> Optional[Reporter]:
+    """Install ``reporter`` as the active one (``None`` resets to default)."""
+    _reporter_var.set(reporter)
+    return reporter
+
+
+@contextmanager
+def using_reporter(reporter: Optional[Reporter]) -> Iterator[Optional[Reporter]]:
+    """Scope a reporter, restoring the previous one afterwards (tests)."""
+    token = _reporter_var.set(reporter)
+    try:
+        yield reporter
+    finally:
+        _reporter_var.reset(token)
 
 
 def make_reporter(
