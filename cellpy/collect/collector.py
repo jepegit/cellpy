@@ -12,6 +12,7 @@ layers -- with a single options object plus a collect callable. The
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 from typing import Any, Callable
 
@@ -80,7 +81,16 @@ class BatchCollector:
         return self.collection.save(directory, **kwargs)
 
     def plot(self, **kwargs) -> Any:
-        """Draw the collection via ``cellpy.plotting``."""
+        """Draw the collection via ``cellpy.plotting``.
+
+        Args:
+            **kwargs: Forwarded to :meth:`cellpy.collect.Collection.plot` --
+                e.g. ``height``, ``backend``, ``legend_title`` or
+                ``layout`` / ``kind`` (cycles / ICA / DVA).
+
+        Returns:
+            A backend-native figure object.
+        """
         plot = getattr(self.collection, "plot", None)
         if plot is None:
             raise NotImplementedError(
@@ -95,33 +105,256 @@ class BatchCollector:
         return f"<BatchCollector {self.name!r} kind={kind} rows={rows}>"
 
 
+def _given(**candidates: Any) -> dict[str, Any]:
+    """Keep only the arguments the caller actually set (``None`` = not set).
+
+    The convenience collectors spell the common options out in their signature
+    so Jupyter's ``Shift-Tab`` shows them (#924), but the defaults live on the
+    options dataclasses -- passing ``None`` through would overwrite them.
+    """
+    return {name: value for name, value in candidates.items() if value is not None}
+
+
+def _summary_headers(batch: Any) -> Any:
+    """The summary header set (``c.schema.summary``) of the batch's first cell.
+
+    Named plot families are header-bound, so resolving one for a batch needs a
+    loaded cell (#927). Any included cell will do -- a batch mixing schemas is
+    not collectable into one frame anyway.
+    """
+    for cell in getattr(batch, "cells", {}).values():
+        schema = getattr(cell, "schema", None)
+        headers = getattr(schema, "summary", None)
+        if headers is not None:
+            return headers
+    raise ValueError(
+        "cannot resolve a plot family without a loaded cell: the family's "
+        "columns depend on the cell's summary schema. Load the batch first "
+        "(b.update() / b.load()), or pass columns= / options= directly."
+    )
+
+
+def _family_options(batch: Any, name: str) -> SummaryOptions:
+    """Build :class:`SummaryOptions` for the named family (see #927/#868)."""
+    from cellpy.plotting import get_family
+
+    return get_family(name).summary_options(_summary_headers(batch))
+
+
 def summary_collector(
-    batch: Any, options: SummaryOptions | None = None, *, autorun: bool = True, **overrides
+    batch: Any,
+    options: SummaryOptions | None = None,
+    *,
+    family: str | None = None,
+    y: str | None = None,
+    columns: Any = None,
+    group_it: bool | None = None,
+    custom_group_labels: Any = None,
+    rate: float | None = None,
+    max_cycle: int | None = None,
+    partition_by_cv: bool | None = None,
+    autorun: bool = True,
+    **overrides,
 ) -> BatchCollector:
-    """Convenience :class:`BatchCollector` bound to :func:`collect_summaries`."""
+    """Collect the per-cell summaries of a batch (cycle-life data).
+
+    Returns a :class:`BatchCollector` holding a
+    :class:`~cellpy.collect.Collection`: ``.data`` is the tidy frame, ``.plot()``
+    draws it and ``.save(dir)`` writes the frame plus its metadata.
+
+    Examples:
+        >>> caps = summary_collector(b, family="fullcell_standard_gravimetric",
+        ...                          group_it=True)
+        >>> caps.plot(height=600)
+
+    Args:
+        batch: The :class:`~cellpy.batch.Batch` to collect from.
+        options (SummaryOptions, optional): A ready options object. Wins over
+            ``family`` and is still updated by the keyword arguments below.
+        family (str, optional): Name of a registered plot family, the same
+            names ``summary_plot(y=...)`` takes (``capacities_gravimetric``,
+            ``fullcell_standard_gravimetric``, ...). Its columns and transforms
+            are resolved against the first loaded cell's summary schema. An
+            unknown name raises ``ValueError`` listing the known families;
+            ``cellpy.plotting.families()`` lists them too.
+        y (str, optional): Alias of ``family``, matching ``summary_plot(y=...)``.
+        columns (sequence of str, optional): Summary columns to keep. Wins over
+            ``family``. Journal keys (cell/group/...) are always kept.
+        group_it (bool, optional): Average per journal group -> tidy long frame
+            ``(group, cycle_num, variable, mean, std)``.
+        custom_group_labels (mapping, optional): ``group id -> display label``,
+            used for the plot legend (int or str keys both match).
+        rate (float, optional): Keep only cycles run at this C-rate (see
+            ``rate_on`` / ``rate_std`` / ``rate_inverted`` on
+            :class:`~cellpy.collect.SummaryOptions`).
+        max_cycle (int, optional): Drop cycles above this number.
+        partition_by_cv (bool, optional): Also emit ``*_non_cv`` / ``*_cv``
+            capacity contributions.
+        autorun (bool): Run the collector immediately (default ``True``).
+        **overrides: Any other field of
+            :class:`~cellpy.collect.SummaryOptions` -- ``rate_on``,
+            ``rate_std``, ``rate_inverted``, ``only_selected``, ``remove_last``,
+            ``normalize_cycles``, ``average_method``, ``transforms``, ...
+
+    Returns:
+        BatchCollector: bound to :func:`cellpy.collect.collect_summaries`.
+
+    Raises:
+        ValueError: ``family``/``y`` is not a registered family, or no loaded
+            cell is available to resolve it against.
+    """
+    name = family or y
+    if options is not None and name is not None:
+        logging.info(
+            "summary_collector: options= is explicit, ignoring family=%r", name
+        )
+    elif name is not None:
+        options = _family_options(batch, name)
+
+    overrides = {
+        **_given(
+            columns=columns,
+            group_it=group_it,
+            custom_group_labels=custom_group_labels,
+            rate=rate,
+            max_cycle=max_cycle,
+            partition_by_cv=partition_by_cv,
+        ),
+        **overrides,
+    }
     return BatchCollector(
         batch, collect_summaries, options, autorun=autorun, **overrides
     )
 
 
 def cycles_collector(
-    batch: Any, options: CurveOptions | None = None, *, autorun: bool = True, **overrides
+    batch: Any,
+    options: CurveOptions | None = None,
+    *,
+    cycles: Any = None,
+    rate: float | None = None,
+    mode: str | None = None,
+    method: str | None = None,
+    autorun: bool = True,
+    **overrides,
 ) -> BatchCollector:
-    """Convenience :class:`BatchCollector` bound to :func:`collect_cycles`."""
+    """Collect voltage-capacity curves per cell and cycle.
+
+    Returns a :class:`BatchCollector` holding a
+    :class:`~cellpy.collect.Collection`: ``.data`` is the tidy frame, ``.plot()``
+    draws it and ``.save(dir)`` writes the frame plus its metadata.
+
+    Examples:
+        >>> curves = cycles_collector(b, cycles=[1, 10, 20])
+        >>> curves.plot(layout="per_cell")  # or layout="per_cycle", kind="film"
+
+    Args:
+        batch: The :class:`~cellpy.batch.Batch` to collect from.
+        options (CurveOptions, optional): A ready options object; the keyword
+            arguments below still update it.
+        cycles (sequence of int, optional): Cycles to collect. Resolved **per
+            cell**, so a cell missing one cycle does not narrow the others.
+        rate (float, optional): Rate-based cycle selection (see ``rate_on`` /
+            ``rate_std`` / ``inverse`` on
+            :class:`~cellpy.collect.CurveOptions`).
+        mode (str, optional): Capacity mode forwarded to ``CellpyCell.get_cap``
+            (``gravimetric`` / ``areal`` / ``absolute``).
+        method (str, optional): ``forth-and-forth`` / ``back-and-forth`` /
+            ``forth``, forwarded to ``CellpyCell.get_cap``.
+        autorun (bool): Run the collector immediately (default ``True``).
+        **overrides: Any other field of
+            :class:`~cellpy.collect.CurveOptions` -- ``rate_on``, ``rate_std``,
+            ``inverse``, ``transforms``.
+
+    Returns:
+        BatchCollector: bound to :func:`cellpy.collect.collect_cycles`.
+    """
+    overrides = {
+        **_given(cycles=cycles, rate=rate, mode=mode, method=method),
+        **overrides,
+    }
     return BatchCollector(batch, collect_cycles, options, autorun=autorun, **overrides)
 
 
 def ica_collector(
-    batch: Any, options: IcaOptions | None = None, *, autorun: bool = True, **overrides
+    batch: Any,
+    options: IcaOptions | None = None,
+    *,
+    cycles: Any = None,
+    voltage_resolution: float | None = None,
+    autorun: bool = True,
+    **overrides,
 ) -> BatchCollector:
-    """Convenience :class:`BatchCollector` bound to :func:`collect_ica`."""
+    """Collect incremental-capacity (dQ/dV) curves per cell and cycle.
+
+    Returns a :class:`BatchCollector` holding a
+    :class:`~cellpy.collect.Collection`: ``.data`` is the tidy frame, ``.plot()``
+    draws it and ``.save(dir)`` writes the frame plus its metadata.
+
+    Examples:
+        >>> ica = ica_collector(b, cycles=[1, 10, 20])
+        >>> ica.plot(layout="per_cell")
+
+    Args:
+        batch: The :class:`~cellpy.batch.Batch` to collect from.
+        options (IcaOptions, optional): A ready options object; the keyword
+            arguments below still update it.
+        cycles (sequence of int, optional): Cycles to collect (resolved per
+            cell).
+        voltage_resolution (float, optional): Voltage step for the q(V)
+            interpolation dQ/dV differentiates along.
+        autorun (bool): Run the collector immediately (default ``True``).
+        **overrides: Any other field of
+            :class:`~cellpy.collect.IcaOptions` -- ``transforms``.
+
+    Returns:
+        BatchCollector: bound to :func:`cellpy.collect.collect_ica`.
+    """
+    overrides = {
+        **_given(cycles=cycles, voltage_resolution=voltage_resolution),
+        **overrides,
+    }
     return BatchCollector(batch, collect_ica, options, autorun=autorun, **overrides)
 
 
 def dva_collector(
-    batch: Any, options: IcaOptions | None = None, *, autorun: bool = True, **overrides
+    batch: Any,
+    options: IcaOptions | None = None,
+    *,
+    cycles: Any = None,
+    capacity_resolution: float | None = None,
+    autorun: bool = True,
+    **overrides,
 ) -> BatchCollector:
-    """Convenience :class:`BatchCollector` bound to :func:`collect_dva`."""
+    """Collect differential-voltage (dV/dQ) curves per cell and cycle.
+
+    Returns a :class:`BatchCollector` holding a
+    :class:`~cellpy.collect.Collection`: ``.data`` is the tidy frame, ``.plot()``
+    draws it and ``.save(dir)`` writes the frame plus its metadata.
+
+    Examples:
+        >>> dva = dva_collector(b, cycles=[1, 10, 20])
+        >>> dva.plot(layout="per_cell")
+
+    Args:
+        batch: The :class:`~cellpy.batch.Batch` to collect from.
+        options (IcaOptions, optional): A ready options object; the keyword
+            arguments below still update it.
+        cycles (sequence of int, optional): Cycles to collect (resolved per
+            cell).
+        capacity_resolution (float, optional): Capacity step for the V(q)
+            interpolation dV/dQ differentiates along.
+        autorun (bool): Run the collector immediately (default ``True``).
+        **overrides: Any other field of
+            :class:`~cellpy.collect.IcaOptions` -- ``transforms``.
+
+    Returns:
+        BatchCollector: bound to :func:`cellpy.collect.collect_dva`.
+    """
+    overrides = {
+        **_given(cycles=cycles, capacity_resolution=capacity_resolution),
+        **overrides,
+    }
     return BatchCollector(batch, collect_dva, options, autorun=autorun, **overrides)
 
 

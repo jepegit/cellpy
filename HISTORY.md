@@ -2,6 +2,19 @@
 
 ## [Unreleased]
 
+* Collector help is usable from Jupyter: `summary_collector`, `cycles_collector`,
+  `ica_collector` and `dva_collector` spell out the kwargs people actually pass
+  (`columns`, `group_it`, `custom_group_labels`, `rate`, `cycles`, `mode`,
+  `voltage_resolution`, …) in their signature and a Google-style docstring, and
+  point at `SummaryOptions` / `CurveOptions` / `IcaOptions` for the rest.
+  Shift-Tab no longer shows a one-line wrapper and `**overrides`. (#924)
+
+* `summary_collector(b, family="fullcell_standard_gravimetric")` (or `y=`, the
+  `summary_plot` alias) builds the collection from a registered plot family,
+  resolved against the first loaded cell's summary schema. Explicit `columns=`
+  / `options=` still win; an unknown name raises the same `ValueError` that
+  lists the known families. (#927)
+
 * `cellpy info` and `cellpy info --check` report rather than narrate. The check
   run is one line per check with a symbol, a short detail and a hint when it
   fails, closing with `N of M checks passed` - instead of `=== checking ===`

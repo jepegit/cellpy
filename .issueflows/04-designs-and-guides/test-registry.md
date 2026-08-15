@@ -89,6 +89,12 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_batch_progress.py::test_tqdm_display_disable_tracks_cells | yes | yes | batch.progress.TqdmBatchProgress | #916 | overall n without TTY |
 | tests/test_batch_v3_runner.py::test_dispatch_lite_saves_raw_then_strips | yes | yes | batch.runner._dispatch_lite | #920 | process worker saves raw load |
 | tests/test_batch_v3_runner.py::test_persist_skips_none_placeholder_from_processes | yes | yes | batch.facade._persist_cells / CellStore.is_loaded | #920 | None.save guard |
+| tests/test_collect.py::test_summary_collector_accepts_a_named_family | yes | yes | collect.collector.summary_collector family= | #927 | same frame as family.summary_options |
+| tests/test_collect.py::test_summary_collector_y_is_an_alias_for_family | yes | yes | collect.collector.summary_collector y= | #927 | summary_plot name parity |
+| tests/test_collect.py::test_summary_collector_rejects_an_unknown_family | yes | yes | collect.collector._family_options | #927 | get_family ValueError |
+| tests/test_collect.py::test_explicit_columns_win_over_the_family | yes | yes | collect.collector.summary_collector | #927 | precedence |
+| tests/test_collect.py::test_a_family_needs_a_cell_to_resolve_its_columns | yes | yes | collect.collector._summary_headers | #927 | header-bound families |
+| tests/test_collect.py::test_collector_help_names_the_common_kwargs | yes | yes | collect.collector signatures/docstrings | #924 | Jupyter Shift-Tab contract |
 
 **Columns**
 
