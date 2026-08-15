@@ -86,6 +86,26 @@ def test_v8_to_v9_to_read_roundtrip(tmp_path):
 
 
 @pytest.mark.essential
+def test_v9_parquet_members_are_stored_not_deflated(tmp_path):
+    """Parquet is already compressed - do not DEFLATE it again (#898)."""
+    source = _require_v8_with_fids()
+    original = load_cellpy_file(source)
+
+    outfile = tmp_path / "stored.cellpy"
+    original.save(outfile)
+
+    with zipfile.ZipFile(outfile) as zf:
+        infos = {info.filename: info for info in zf.infolist()}
+    parquet_members = [name for name in infos if name.endswith(".parquet")]
+    assert V9_RAW_PARQUET in parquet_members
+    assert V9_STEPS_PARQUET in parquet_members
+    assert V9_SUMMARY_PARQUET in parquet_members
+    for name in parquet_members:
+        assert infos[name].compress_type == zipfile.ZIP_STORED, name
+    assert infos[META_JSON_NAME].compress_type == zipfile.ZIP_DEFLATED
+
+
+@pytest.mark.essential
 def test_v9_persists_extra_test_meta(tmp_path):
     """v9 round-trip keeps non-active TestMeta records (unlike v8)."""
     source = _require_v8_with_fids()

@@ -18,6 +18,12 @@
 * Per-cell `search_for_files` searches sub-folders with
   `rglob(..., files_only=True)`, so a remote search can use the single
   `find -L` listing instead of walking the tree per cell. (#899)
+* v9 `.cellpy` writes its parquet members with `ZIP_STORED` instead of
+  DEFLATE-ing already-compressed parquet, cutting seconds off every `save`.
+  `meta.json` stays deflated; the file format is unchanged. (#898)
+* Remote `rglob(..., files_only=True)` keeps the `find -L` listing when `find`
+  exits 1 because a sibling directory was unreadable, instead of discarding it
+  and falling back to the slow SFTP walk. (#897)
 
 ## [2.1.2] - 2026-08-09
 
