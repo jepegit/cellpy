@@ -687,6 +687,9 @@ def load(
 
     Args:
         name / project: batch identity (required for DB / autoload paths).
+            ``project`` must be the **exact** folder name under
+            ``rawdatadir`` when ``config.batch.auto_use_file_list`` is on
+            (that dump joins ``rawdatadir / project`` — no fuzzy match).
         journal: explicit in-memory journal model.
         journal_file: path to a cellpy journal, or a BatBase/custom JSON DB file
             when ``reader`` / ``db_reader`` is a JSON reader.
@@ -720,6 +723,36 @@ def load(
             ``export_cycles`` /
             ``export_raw`` / ``export_ica`` are accepted but ignored (warned
             once).
+
+    Note:
+        ``executor`` chooses how cells are loaded (forwarded to
+        :meth:`Batch.update`). Suggested use:
+
+        * ``"serial"`` (default) — first load from remote raw files. SFTP
+          copies do not overlap, so threads buy almost nothing on the
+          download path (keep this for ``force_raw_file=True`` / a missing
+          ``.cellpy``).
+        * ``"threads"`` — reopen from local ``.cellpy`` files (the usual
+          second ``batch.load`` after ``save_cellpy=True``). Measured ~2–3×
+          on a warm 25-cell batch. Progress shows one child bar per
+          in-flight cell.
+        * ``"processes"`` — rarely worth it; Windows process spawn usually
+          eats the gain, and workers return outcomes only (no live cells).
+
+        ``config.batch.auto_use_file_list`` (default ``False``) is a config
+        flag, not a ``load()`` kwarg. When True, file search dumps
+        ``rawdatadir / project`` once. ``project`` must match that folder
+        name exactly or the dump raises. Leave it False unless the raw
+        tree is large enough that a per-cell walk hurts.
+
+    Example:
+        First load (leave serial on the wire)::
+
+            b = batch.load(name="exp", project="Proj")
+
+        Later reopen from saved ``.cellpy`` files::
+
+            b = batch.load(name="exp", project="Proj", executor="threads")
 
     Returns:
         Populated :class:`Batch`.

@@ -130,6 +130,37 @@ def test_tqdm_display_disable_tracks_cells():
         display.close()
 
 
+@pytest.mark.essential
+def test_set_n_cells_resets_total_not_just_attribute():
+    display = TqdmBatchProgress(0, disable=True)
+    try:
+        display.set_n_cells(25)
+        assert display.overall.total == 25
+        assert (display.overall.n or 0) == 0
+        display(ProgressEvent("cell_done", label="a"))
+        assert display.cells_done == 1
+    finally:
+        display.close()
+
+
+@pytest.mark.essential
+def test_thread_child_fills_before_close():
+    """Incomplete close paints Jupyter tqdm red; cell_done must finish 3/3."""
+    display = TqdmBatchProgress(1, concurrent=True, disable=True)
+    try:
+        display(ProgressEvent("cell_start", label="a"))
+        display(ProgressEvent("parse", label="a", n=1, total_n=1))
+        bar = display._children["a"]
+        assert bar._cellpy_n == 2
+        display(ProgressEvent("cell_done", label="a"))
+        assert bar._cellpy_n == 3
+        assert display._children == {}
+        display(ProgressEvent("save", label="a", n=1, total_n=1))
+        assert display._children == {}
+    finally:
+        display.close()
+
+
 def test_tqdm_processes_skips_child_bars():
     display = TqdmBatchProgress(1, show_children=False, disable=True)
     try:
