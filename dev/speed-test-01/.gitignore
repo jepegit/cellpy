@@ -1,0 +1,5 @@
+_tmp/
+*.h5
+*.cellpy
+*.json
+importtime*.txt
