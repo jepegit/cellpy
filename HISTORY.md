@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+* `batch.load` / `Batch.update` show tqdm progress on a TTY or in Jupyter
+  (`progress=None` auto, `False` off, `True` force, or a callable). Overall
+  bar covers journal → search → cells → persist; per-cell bars cover
+  copy / parse / save. `executor="threads"` draws one child bar per in-flight
+  cell; `processes` keeps the overall bar only. The 3-arg `on_progress`
+  callback is unchanged. (#916)
 * `Batch.export_project(destination)` writes a shareable `.cellpy` + journal
   bundle (2.x replacement for `duplicate_cellpy_files`). (#878)
 * Run the real `essential` and `full` CI gates once for every PR targeting

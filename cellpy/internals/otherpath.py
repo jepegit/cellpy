@@ -424,17 +424,63 @@ class OtherPath:
         path_of_copied_file = destination / self.name
 
         if not self.is_external:
+            from cellpy.internals.progress import emit
+
+            emit("copy")
             shutil.copy2(os.fspath(self), destination)
+            emit("copy", n=1, total_n=1)
             return path_of_copied_file
 
         upath = self._upath_with_credentials(testing=testing)
         try:
-            upath.fs.get(upath.path, str(path_of_copied_file))
+            self._get_with_progress(upath, path_of_copied_file)
         except FileNotFoundError as exc:
             raise FileNotFoundError(
                 f"Could not find file {self.raw_path} on {self.location}"
             ) from exc
         return path_of_copied_file
+
+    def _get_with_progress(self, upath, dest: pathlib.Path) -> None:
+        """``fs.get`` plus optional byte ticks on the progress bus."""
+        from cellpy.internals.progress import emit
+
+        size = None
+        try:
+            info = upath.fs.info(upath.path)
+            size = int(info.get("size") or 0) or None
+        except Exception:
+            size = None
+        emit("copy", n=0, total_n=size)
+
+        callback = None
+        try:
+            from fsspec.callbacks import Callback
+
+            class _Emit(Callback):
+                def set_size(self, size_):
+                    super().set_size(size_)
+                    emit("copy", n=0, total_n=int(size_ or 0) or None)
+
+                def relative_update(self, inc=1):
+                    super().relative_update(inc)
+                    emit(
+                        "copy",
+                        n=int(getattr(self, "value", 0) or 0),
+                        total_n=int(getattr(self, "size", 0) or 0) or None,
+                    )
+
+            callback = _Emit()
+        except Exception:
+            callback = None
+
+        try:
+            if callback is not None:
+                upath.fs.get(upath.path, str(dest), callback=callback)
+            else:
+                upath.fs.get(upath.path, str(dest))
+        except TypeError:
+            upath.fs.get(upath.path, str(dest))
+        emit("copy", n=size, total_n=size)
 
     def _wrap_remote_child(self, child: UPath) -> "OtherPath":
         child_path = child.path if child.path.startswith("/") else f"/{child.path}"

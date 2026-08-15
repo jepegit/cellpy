@@ -167,6 +167,10 @@ def find_files(
     if skip_file_search:
         return info_dict
 
+    from cellpy.internals.progress import emit
+
+    emit("search")
+
     if file_list is None and config.batch.auto_use_file_list:
         file_list = _dump_raw_file_directory(
             project=project,
