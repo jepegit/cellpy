@@ -234,6 +234,62 @@ def test_rglob_find_l_fast_path(fake_remote):
     assert fake_remote.ls_calls == ls_before  # walk not used
 
 
+def test_rglob_find_l_keeps_listing_on_exit_1(fake_remote):
+    """Partial ``find`` (unreadable sibling -> exit 1) still lists files (#897)."""
+
+    class _Stdout:
+        def __init__(self, text: str):
+            self.channel = SimpleNamespace(recv_exit_status=lambda: 1)
+            self._text = text.encode("utf-8")
+
+        def read(self):
+            return self._text
+
+    class _Stderr:
+        def read(self):
+            return b"find: '/home/user/projects/secret': Permission denied\n"
+
+    def exec_command(cmd, timeout=None):
+        body = "\n".join(
+            [
+                "/home/user/projects/LongLife/20250709_lol079_01_cc_01.h5",
+                "/home/user/projects/plain/other.h5",
+            ]
+        )
+        return None, _Stdout(body), _Stderr()
+
+    fake_remote.client = SimpleNamespace(exec_command=exec_command)
+    ls_before = fake_remote.ls_calls
+    root = OtherPath("sftp://user@host/home/user/projects")
+    names = sorted(p.name for p in root.rglob("*.h5", testing=True, files_only=True))
+    assert names == ["20250709_lol079_01_cc_01.h5", "other.h5"]
+    assert fake_remote.ls_calls == ls_before  # walk not used
+
+
+def test_rglob_find_l_exit_1_without_output_falls_back_to_walk(fake_remote):
+    """Exit 1 and nothing listed is a real failure -> walk (#897)."""
+
+    class _Stdout:
+        def __init__(self):
+            self.channel = SimpleNamespace(recv_exit_status=lambda: 1)
+
+        def read(self):
+            return b"\n  \n"
+
+    class _Stderr:
+        def read(self):
+            return b"find: '/home/user/projects': Permission denied\n"
+
+    def exec_command(cmd, timeout=None):
+        return None, _Stdout(), _Stderr()
+
+    fake_remote.client = SimpleNamespace(exec_command=exec_command)
+    root = OtherPath("sftp://user@host/home/user/projects")
+    names = sorted(p.name for p in root.rglob("*.h5", testing=True, files_only=True))
+    assert "20250709_lol079_01_cc_01.h5" in names
+    assert fake_remote.ls_calls > 0
+
+
 def test_rglob_find_l_failure_falls_back_to_walk(fake_remote):
     def exec_command(cmd, timeout=None):
         raise OSError("no shell")
