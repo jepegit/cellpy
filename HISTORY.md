@@ -37,6 +37,9 @@
 * Per-cell `search_for_files` searches sub-folders with
   `rglob(..., files_only=True)`, so a remote search can use the single
   `find -L` listing instead of walking the tree per cell. (#899)
+* v9 `.cellpy` writes parquet members with zstd level 3 so new files stay
+  near the old DEFLATE size without a second zip compressor. Snappy members
+  from #898-era files still load. (#912)
 * v9 `.cellpy` writes its parquet members with `ZIP_STORED` instead of
   DEFLATE-ing already-compressed parquet, cutting seconds off every `save`.
   `meta.json` stays deflated; the file format is unchanged. (#898)

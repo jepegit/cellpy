@@ -50,6 +50,8 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_config.py::test_active_config_file_reports_project_toml | yes | yes | config.loader.active_config_file project_path | #853 | |
 | tests/test_cellpy_cmd.py::test_info_configloc_reports_project_toml | yes | yes | cli_api._configloc project notice | #853 | |
 | tests/test_cli_light_import.py::test_setup_deps_probes_optional_modules | yes | yes | cli_api.setup_config --deps | #839 | opt-in optional probe |
+| tests/test_cellpy_file_v9.py::test_v9_parquet_members_use_zstd | yes | yes | v9._frame_to_parquet_bytes | #912 | new writes are zstd + ZIP_STORED |
+| tests/test_cellpy_file_v9.py::test_v9_loads_snappy_parquet_members | yes | yes | v9.load / _read_parquet_member | #912 | #898-era snappy members still load |
 | tests/test_cellpy_file_v9.py::test_failed_resave_keeps_the_old_file | yes | yes | cellpy_file.atomic.atomic_write / v9.save / CellpyCell.save | #845 | data-loss guard: interrupted re-save must not destroy the old file |
 | tests/test_cellpy_file_v9.py::test_failed_first_save_leaves_no_file | yes | yes | cellpy_file.atomic.atomic_write / v9.save | #845 | no half-written archive on a fresh path |
 | tests/test_ica_plot_prepare.py::test_ica_dva_plotly_both_direction_dash_differs | yes | yes | plotting.backends.plotly._render_ica_dva | #862 | charge solid / discharge dot |

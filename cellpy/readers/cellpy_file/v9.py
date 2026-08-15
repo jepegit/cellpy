@@ -91,6 +91,12 @@ def _normalize_frame_nulls(frame):
     return frame.replace({None: externals.numpy.nan})
 
 
+# Parquet already compresses columns. zstd:3 matches old zip-DEFLATE size
+# without a second zip compressor (#912). Readers still accept snappy (#898).
+PARQUET_COMPRESSION = "zstd"
+PARQUET_COMPRESSION_LEVEL = 3
+
+
 def _frame_to_parquet_bytes(frame) -> bytes:
     buf = io.BytesIO()
     to_write = frame
@@ -100,7 +106,13 @@ def _frame_to_parquet_bytes(frame) -> bytes:
             to_write = frame.reset_index(drop=True)
         else:
             to_write = frame.reset_index()
-    to_write.to_parquet(buf, index=False, engine="pyarrow")
+    to_write.to_parquet(
+        buf,
+        index=False,
+        engine="pyarrow",
+        compression=PARQUET_COMPRESSION,
+        compression_level=PARQUET_COMPRESSION_LEVEL,
+    )
     return buf.getvalue()
 
 
