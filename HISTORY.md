@@ -15,6 +15,9 @@
 * Fix scheduled CI: keep `sqlalchemy-access` Windows-only in conda env files,
   and install `legacy-files` (PyTables) in the scheduled pip matrix. (#885)
 * Iterative fixes: document for devs how to add plots. (#892)
+* Remote `rglob(..., files_only=True)` keeps the `find -L` listing when `find`
+  exits 1 because a sibling directory was unreadable, instead of discarding it
+  and falling back to the slow SFTP walk. (#897)
 
 ## [2.1.2] - 2026-08-09
 
