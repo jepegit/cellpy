@@ -94,6 +94,13 @@ Ready to contribute? Here's how to set up ``cellpy`` for local development.
    can be found in the root of the repository (``environment_dev.yml``; to create the environment,
    run ``conda env create -f environment_dev.yml``).
 
+   **Do not mix pip and conda for ``pyarrow``.** A leftover pip ``pyarrow`` on top of
+   a conda ``pyarrow-core`` (or the reverse) loads the wrong DLLs and breaks reading
+   ``.cellpy`` files — the parquet import fails at load time, not at install time.
+   Pick one installer: in a conda env keep the conda build and
+   ``pip uninstall pyarrow`` any pip copy (``pip list`` and ``conda list`` will both
+   show it when both are present); in a pip/uv env install only the pip build.
+
 4. Run commands inside the environment with ``uv run``, e.g.:
 
     ```shell

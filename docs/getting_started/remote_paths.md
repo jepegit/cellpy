@@ -117,7 +117,15 @@ Use `cellpy.utils.helpers.check_connection()` (or
   file-only listing (`files_only`) and, when the SSH session allows it, a
   single remote `find -L … -type f` for speed, with a walk fallback. A warning
   is logged if the dump returns thousands of paths. Smarter project-scoped
-  search is tracked separately (issue #691).
+  search is tracked separately (issue #691). The default is
+  `auto_use_file_list: false`; when enabled, batch dumps the directory **once**
+  (project-scoped when the batch has a `project`) and matches every cell
+  against that list instead of searching per cell — wiring it into the v3
+  journal path is tracked in issue #900.
+- **Batch load executor.** `batch.load(..., executor="threads")` overlaps cell
+  loads and mainly helps *reopening* local `.cellpy` files; a first load of
+  remote raw files does not overlap on the wire. See
+  [Using cellpy from an agent](agents.md#recipe-loading-many-cells-batch-and-its-speed-knobs).
 
 ## Live SFTP tests (Docker)
 

@@ -445,7 +445,12 @@ class OtherPath:
     def _remote_find_l_file_paths(self, fs: Any, root: str) -> Optional[List[str]]:
         """Bulk list files via remote ``find -L`` when Paramiko exec is available.
 
-        Returns ``None`` on any failure so callers fall back to the ls-walk.
+        ``find`` exits 1 when it could not descend into some directory (a
+        shared ``rawdatadir`` almost always has an unreadable sibling), but it
+        still prints every path it did list. Keep that listing and only fall
+        back to the ls-walk when nothing was listed (#897).
+
+        Returns ``None`` on failure so callers fall back to the ls-walk.
         """
         client = getattr(fs, "client", None)
         exec_command = getattr(client, "exec_command", None) if client is not None else None
@@ -460,14 +465,6 @@ class OtherPath:
         except (OSError, AttributeError, TypeError, ValueError) as exc:
             logging.debug("Remote find -L failed for %s: %s", root, exc)
             return None
-        if exit_status not in (0, None):
-            logging.debug(
-                "Remote find -L exit %s for %s: %s",
-                exit_status,
-                root,
-                err[:200] if isinstance(err, (bytes, bytearray)) else err,
-            )
-            return None
         if isinstance(out, (bytes, bytearray)):
             text = out.decode("utf-8", errors="replace")
         else:
@@ -477,6 +474,16 @@ class OtherPath:
             path = line.strip()
             if path:
                 paths.append(path)
+        if exit_status not in (0, None):
+            logging.debug(
+                "Remote find -L exit %s for %s (%s paths listed): %s",
+                exit_status,
+                root,
+                len(paths),
+                err[:200] if isinstance(err, (bytes, bytearray)) else err,
+            )
+            if not paths:
+                return None
         return paths
 
     def _remote_rglob_from_find(
