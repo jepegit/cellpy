@@ -15,6 +15,9 @@
 * Fix scheduled CI: keep `sqlalchemy-access` Windows-only in conda env files,
   and install `legacy-files` (PyTables) in the scheduled pip matrix. (#885)
 * Iterative fixes: document for devs how to add plots. (#892)
+* v9 `.cellpy` writes its parquet members with `ZIP_STORED` instead of
+  DEFLATE-ing already-compressed parquet, cutting seconds off every `save`.
+  `meta.json` stays deflated; the file format is unchanged. (#898)
 
 ## [2.1.2] - 2026-08-09
 
