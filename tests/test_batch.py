@@ -301,6 +301,160 @@ def test_find_files_skip_file_search():
     assert out[hdr_journal["cellpy_file_name"]] == ["/path/to/cell_a.h5"]
 
 
+# --- auto_use_file_list wiring (#900) -------------------------------------
+
+
+@pytest.fixture
+def auto_list_tree(tmp_path):
+    """A raw-file directory with one project folder holding two cells."""
+    raw_dir = tmp_path / "raw"
+    project_dir = raw_dir / "P"
+    project_dir.mkdir(parents=True)
+    (project_dir / "cell_a_01.res").touch()
+    (project_dir / "cell_b_01.res").touch()
+    # A sibling project that must not show up in a project-scoped dump.
+    other = raw_dir / "OTHER"
+    other.mkdir()
+    (other / "cell_a_02.res").touch()
+    cellpy_dir = tmp_path / "cellpyfiles"
+    cellpy_dir.mkdir()
+    return raw_dir, cellpy_dir
+
+
+@pytest.fixture
+def dump_spy(monkeypatch):
+    """Count (and record) ``find_in_raw_file_directory`` calls from find_files."""
+    from cellpy import filefinder
+
+    calls = []
+    original = filefinder.find_in_raw_file_directory
+
+    def _spy(*args, **kwargs):
+        calls.append((args, kwargs))
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(_dbengine.filefinder, "find_in_raw_file_directory", _spy)
+    return calls
+
+
+def _info_dict(*names):
+    return {
+        hdr_journal["filename"]: list(names),
+        hdr_journal["file_name_indicator"]: list(names),
+        hdr_journal["instrument"]: ["arbin_res"] * len(names),
+    }
+
+
+def test_find_files_no_dump_when_flag_is_false(auto_list_tree, dump_spy):
+    """Default (False) must not dump the raw-file directory."""
+    raw_dir, cellpy_dir = auto_list_tree
+    with config.override(batch={"auto_use_file_list": False}):
+        out = _dbengine.find_files(
+            _info_dict("cell_a"),
+            project="P",
+            raw_file_dir=raw_dir,
+            cellpy_file_dir=cellpy_dir,
+        )
+    assert dump_spy == []
+    assert out[hdr_journal["raw_file_names"]][0] is not None
+
+
+def test_find_files_auto_use_file_list_dumps_once(auto_list_tree, dump_spy):
+    """One project-scoped dump feeds every cell (#900)."""
+    raw_dir, cellpy_dir = auto_list_tree
+    with config.override(batch={"auto_use_file_list": True}):
+        out = _dbengine.find_files(
+            _info_dict("cell_a", "cell_b"),
+            project="P",
+            raw_file_dir=raw_dir,
+            cellpy_file_dir=cellpy_dir,
+        )
+
+    assert len(dump_spy) == 1, "the directory must be dumped exactly once"
+    dumped_root = str(dump_spy[0][1]["raw_file_dir"]).replace("\\", "/")
+    assert dumped_root.endswith("/raw/P")
+
+    found = out[hdr_journal["raw_file_names"]]
+    assert [f is not None for f in found] == [True, True]
+    assert any("cell_a_01.res" in str(p) for p in found[0])
+    assert any("cell_b_01.res" in str(p) for p in found[1])
+    # The sibling project is outside the project-scoped dump.
+    assert not any("cell_a_02.res" in str(p) for p in found[0])
+
+
+def test_find_files_auto_use_file_list_missing_project_raises(auto_list_tree, dump_spy):
+    """A missing project folder is an error, not an empty journal (#900)."""
+    raw_dir, cellpy_dir = auto_list_tree
+    with config.override(batch={"auto_use_file_list": True}):
+        with pytest.raises(FileNotFoundError, match="NOPE"):
+            _dbengine.find_files(
+                _info_dict("cell_a"),
+                project="NOPE",
+                raw_file_dir=raw_dir,
+                cellpy_file_dir=cellpy_dir,
+            )
+
+
+def test_find_files_caller_file_list_wins(auto_list_tree, dump_spy):
+    """An explicit file_list is used as-is - no dump."""
+    raw_dir, cellpy_dir = auto_list_tree
+    with config.override(batch={"auto_use_file_list": True}):
+        out = _dbengine.find_files(
+            _info_dict("cell_a"),
+            file_list=["some/other/place/cell_a_01.res"],
+            project="P",
+            raw_file_dir=raw_dir,
+            cellpy_file_dir=cellpy_dir,
+        )
+    assert dump_spy == []
+    assert out[hdr_journal["raw_file_names"]][0] == [
+        "some/other/place/cell_a_01.res"
+    ]
+
+
+def test_simple_db_engine_forwards_project_to_the_dump(auto_list_tree, dump_spy):
+    """The project reaches find_files through simple_db_engine (#900)."""
+
+    class _StubReader:
+        pages_dict = {
+            hdr_journal["filename"]: ["cell_a"],
+            hdr_journal["file_name_indicator"]: ["cell_a"],
+            hdr_journal["instrument"]: ["arbin_res"],
+            hdr_journal["group"]: [1],
+        }
+
+    raw_dir, cellpy_dir = auto_list_tree
+    with config.override(batch={"auto_use_file_list": True}):
+        pages = _dbengine.simple_db_engine(
+            reader=_StubReader(),
+            project="P",
+            raw_file_dir=raw_dir,
+            cellpy_file_dir=cellpy_dir,
+        )
+
+    assert len(dump_spy) == 1
+    assert str(dump_spy[0][1]["raw_file_dir"]).replace("\\", "/").endswith("/raw/P")
+    raw_names = pages[hdr_journal["raw_file_names"]].iloc[0]
+    assert any("cell_a_01.res" in str(p) for p in raw_names)
+
+
+def test_journal_from_db_passes_project_to_the_engine(monkeypatch):
+    """journal_from_db hands its project to the engine (scopes the dump)."""
+    from cellpy.batch import db as batch_db
+
+    seen = {}
+
+    def _fake_engine(reader, **kwargs):
+        seen.update(kwargs)
+        return pandas.DataFrame()
+
+    monkeypatch.setattr(batch_db._dbengine, "make_db_reader", lambda **_kw: object())
+    monkeypatch.setattr(batch_db._dbengine, "simple_db_engine", _fake_engine)
+
+    batch_db.journal_from_db("my_batch", "my_project")
+    assert seen["project"] == "my_project"
+
+
 def test_reading_cell_specs(batch_instance):
     # For the simple excel dbreader, cell specs are given in the
     # columns "argument" as str.

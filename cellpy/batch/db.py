@@ -39,6 +39,9 @@ def journal_from_db(
     :func:`cellpy.batch._dbengine.simple_db_engine` /
     :func:`cellpy.batch._dbengine.find_files`. Pass ``skip_file_search=True``
     when the JSON already carries ``raw_file_names`` / ``cellpy_file_name``.
+
+    ``project`` also scopes the one-shot raw-file-directory dump used when
+    ``config.batch.auto_use_file_list`` is True (default False).
     """
     column_map = kwargs.pop("column_map", None)
     dbreader_kwargs = kwargs.pop("dbreader_kwargs", None) or {}
@@ -48,6 +51,8 @@ def journal_from_db(
     )
 
     engine_kwargs: dict[str, Any] = dict(kwargs)
+    # The batch project scopes the auto_use_file_list dump (#900).
+    engine_kwargs.setdefault("project", project)
     if raw_file_dir is not None:
         engine_kwargs["raw_file_dir"] = raw_file_dir
     if cellpy_file_dir is not None:
