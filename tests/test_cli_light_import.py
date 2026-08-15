@@ -104,6 +104,23 @@ def test_setup_check_imports_cellreader():
 
 
 @pytest.mark.essential
+def test_importing_cli_ui_does_not_import_rich():
+    """``cli_ui`` defers rich to first output, so importing it stays cheap (#891)."""
+    completed = _run_script(
+        """
+        import sys
+
+        import cellpy.cli_ui
+
+        assert not [m for m in sys.modules if m.startswith("rich")], sorted(
+            m for m in sys.modules if m.startswith("rich")
+        )
+        """
+    )
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+
+
+@pytest.mark.essential
 def test_setup_deps_probes_optional_modules():
     """``setup --deps`` opts into optional-extra probing (#839)."""
     completed = _run_script(
