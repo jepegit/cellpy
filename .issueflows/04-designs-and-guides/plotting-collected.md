@@ -53,6 +53,16 @@ Epic #567 Stage 3 / issue #657 re-bases collectors' drawing half onto
   `"per_cycle"` (and legacy `fig_pr_*` / `film`) rewrite facet strips to
   `Cycle N` / cell label by default — strips stay visible (unlike summary's
   clear→y-title path). Prefer `layout=` over `method="fig_pr_*"`.
+- **Grouped summary series (#923):** a group-averaged frame is coloured by
+  `group_label` when the collection carries one (from the journal or
+  `custom_group_labels=`) and by `group` otherwise; groups without a label keep
+  their id, and label keys match integer *and* string group ids. Its legend
+  title defaults to **Group** (ungrouped stays **Cell**); `legend_title=`
+  overrides. Facet order comes from `order_variables=`, which
+  `Collection.plot` fills in from the collected `columns=`; variables outside
+  that list (CV split, normalized retention) keep their own order after the
+  listed ones rather than being dropped. Plotly puts the first facet row on
+  top, so the requested order reads down the figure.
 - **ICA `direction=` (#821):** `charge` / `discharge` / `both` on line layouts
   (`layout="per_cell"|"per_cycle"`) and `kind="film"`, not only film. Default
   for collected ICA remains `charge`. `both` overlays half-cycles; on Plotly
@@ -99,3 +109,4 @@ collection.plot(
 - Issue #804 (per-panel y-limits / `share_y`)
 - Issue #801 (theme / label / height hooks)
 - Issue #820 (cycles / ICA pretty facet strips)
+- Issue #923 (grouped summary facet order / group labels / legend title)
