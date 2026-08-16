@@ -158,6 +158,54 @@ def extract_cell_summary(cell: Any, opts: Any) -> pl.DataFrame | None:
     return frame
 
 
+def resolve_group_labels(
+    frame: pl.DataFrame, group_labels: dict[Any, Any] | None
+) -> dict[Any, Any] | None:
+    """Key *group_labels* by the group values actually present in *frame*.
+
+    Journal group ids are integers while a hand-written
+    ``custom_group_labels={1: "first"}`` may arrive with either integer or
+    string keys (JSON round-trips, spreadsheet imports). Matching on the raw
+    key alone silently dropped those labels (#923), so look each present group
+    up by value *and* by its string form.
+    """
+    if not group_labels or "group" not in frame.columns:
+        return None
+    lookup: dict[Any, Any] = {}
+    for key, value in group_labels.items():
+        if value is None:
+            continue
+        lookup.setdefault(key, value)
+        lookup.setdefault(str(key), value)
+    resolved: dict[Any, Any] = {}
+    for group in frame["group"].unique().to_list():
+        if group is None:
+            continue
+        if group in lookup:
+            resolved[group] = lookup[group]
+        elif str(group) in lookup:
+            resolved[group] = lookup[str(group)]
+    return resolved or None
+
+
+def _with_group_label(
+    out: pl.DataFrame, frame: pl.DataFrame, group_labels: dict[Any, Any] | None
+) -> pl.DataFrame:
+    """Add a ``group_label`` column from *group_labels* (no-op when unmapped)."""
+    mapping = resolve_group_labels(frame, group_labels)
+    if not mapping:
+        return out
+    return out.with_columns(
+        pl.col("group")
+        .replace_strict(
+            {key: str(value) for key, value in mapping.items()},
+            default=None,
+            return_dtype=pl.Utf8,
+        )
+        .alias("group_label")
+    )
+
+
 def _numeric_value_columns(frame: pl.DataFrame, keys: tuple[str, ...]) -> list[str]:
     return [
         c
@@ -223,12 +271,7 @@ def group_average(
         agg_expr, pl.col("_v").std().alias("std")
     )
 
-    if group_labels:
-        mapping = {k: v for k, v in group_labels.items() if v is not None}
-        if mapping:
-            out = out.with_columns(
-                pl.col("group").replace(mapping, default=None).alias("group_label")
-            )
+    out = _with_group_label(out, frame, group_labels)
 
     sort_cols = [c for c in ("group", CYCLE, "variable") if c in out.columns]
     return out.sort(sort_cols)
@@ -257,12 +300,7 @@ def singletons_as_long(
         index=id_cols, on=value_cols, variable_name="variable", value_name="mean"
     ).with_columns(pl.lit(None).cast(pl.Float64).alias("std"))
 
-    if group_labels:
-        mapping = {k: v for k, v in group_labels.items() if v is not None}
-        if mapping:
-            out = out.with_columns(
-                pl.col("group").replace(mapping, default=None).alias("group_label")
-            )
+    out = _with_group_label(out, frame, group_labels)
 
     sort_cols = [c for c in ("group", CYCLE, "variable") if c in out.columns]
     return out.sort(sort_cols)
