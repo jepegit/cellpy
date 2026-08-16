@@ -30,6 +30,7 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_collected_ica_direction.py::test_ica_invalid_direction_warns_and_coerces | yes | yes | plotting.collected ica_plotter warn | #821 | |
 | tests/test_collected_ica_direction.py::test_collected_plot_ica_per_cell_honours_direction | yes | yes | plotting.collected collected_plot ica | #821 | public entry |
 | tests/test_resolve_collected_layout_kind.py (module) | yes | yes | plotting.collected.resolve_collected_layout_kind | #874 | validate + film alias |
+| tests/test_collected_cycle_colorbar.py (module) | yes | yes | plotting.collected.sequence_plotter fig_pr_cell | #928 | collected cycle legend vs colorbar |
 | tests/test_batch_v3_runner.py::test_auto_uses_existing_cellpy_without_raw | yes | yes | batch.runner._get_kwargs AUTO | #825 | prefer local .cellpy |
 | tests/test_batch_v3_runner.py::test_auto_falls_back_to_raw_when_cellpy_missing | yes | yes | batch.runner._get_kwargs AUTO | #825 | |
 | tests/test_batch_v3_runner.py::test_newest_passes_both_paths | yes | yes | batch.runner._get_kwargs NEWEST | #825 | freshness check |
@@ -90,7 +91,7 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_batch_v3_runner.py::test_dispatch_lite_saves_raw_then_strips | yes | yes | batch.runner._dispatch_lite | #920 | process worker saves raw load |
 | tests/test_batch_v3_runner.py::test_persist_skips_none_placeholder_from_processes | yes | yes | batch.facade._persist_cells / CellStore.is_loaded | #920 | None.save guard |
 | tests/test_collected_summary_groups.py (module) | yes | yes | plotting.collected.summary_plotter / Collection.plot | #923 | facet order, group labels, legend title |
-| tests/test_collected_cycle_colorbar.py (module) | yes | yes | plotting.collected.sequence_plotter fig_pr_cell | #928 | collected cycle legend vs colorbar |
+| tests/test_collected_backend_alias.py (module) | yes | yes | plotting.collected.collected_plot backend alias | #925 | matplotlib -> seaborn, warn_once signature |
 
 **Columns**
 

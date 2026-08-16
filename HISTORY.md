@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+* `Collection.plot(backend="matplotlib")` no longer raises
+  `TypeError: warn_once() missing 1 required positional argument`. It keeps
+  aliasing to the seaborn layout path (and now actually returns a figure -
+  the y-label mapper crashed on the summary path). (#925)
+
 * `cycles_collector(b).plot(layout="per_cell")` follows the shared cycle
   legend policy: more than `legend_cycle_limit` cycles (default 8, the same as
   the single-cell `cycles_plot`) get a colorbar instead of a legend hundreds of
