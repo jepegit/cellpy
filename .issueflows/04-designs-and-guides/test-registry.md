@@ -13,6 +13,9 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_plot_image_bytes.py::test_write_image_returns_bytes | yes | yes | plotting.figures.write_image | #818 | monkeypatch to_image |
 | tests/test_plot_image_bytes.py::test_write_image_missing_kaleido | yes | yes | plotting.figures.write_image | #818 | OptionalDependencyError |
 | tests/test_plot_image_bytes.py::test_collection_to_image_uses_plot | yes | yes | Collection.to_image | #818 | |
+| tests/test_collect.py::test_batch_collector_to_image | yes | yes | collect.collector.BatchCollector.to_image | #926 | proxies Collection.to_image |
+| tests/test_collect.py::test_batch_collector_save_figure_writes_a_file | yes | yes | collect.collector.BatchCollector.save_figure | #926 | suffix defaults to .png |
+| tests/test_collect.py::test_save_help_says_data_only_and_names_the_figure_api | yes | yes | Collection.save / BatchCollector.save docstrings | #926 | `.save?` must name the figure API |
 | tests/test_collect.py::test_group_it_averages_multi_when_mixed_with_singleton | yes | yes | collect.summary group_it mixed | #816 | multi avg + singleton long |
 | tests/test_cellpy.py::test_get_h5_instrument_skips_native_autopick | yes | yes | cellreader.get auto_pick vs instrument | #819 | monkeypatch load/from_raw routing |
 | tests/test_collected_app_hooks.py::test_pretty_facet_annotation_cycles_and_cells | yes | yes | plotting.collected._pretty_facet_annotation | #820 | unit helper |
@@ -30,6 +33,7 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_collected_ica_direction.py::test_ica_invalid_direction_warns_and_coerces | yes | yes | plotting.collected ica_plotter warn | #821 | |
 | tests/test_collected_ica_direction.py::test_collected_plot_ica_per_cell_honours_direction | yes | yes | plotting.collected collected_plot ica | #821 | public entry |
 | tests/test_resolve_collected_layout_kind.py (module) | yes | yes | plotting.collected.resolve_collected_layout_kind | #874 | validate + film alias |
+| tests/test_collected_cycle_colorbar.py (module) | yes | yes | plotting.collected.sequence_plotter fig_pr_cell | #928 | collected cycle legend vs colorbar |
 | tests/test_batch_v3_runner.py::test_auto_uses_existing_cellpy_without_raw | yes | yes | batch.runner._get_kwargs AUTO | #825 | prefer local .cellpy |
 | tests/test_batch_v3_runner.py::test_auto_falls_back_to_raw_when_cellpy_missing | yes | yes | batch.runner._get_kwargs AUTO | #825 | |
 | tests/test_batch_v3_runner.py::test_newest_passes_both_paths | yes | yes | batch.runner._get_kwargs NEWEST | #825 | freshness check |
@@ -58,6 +62,8 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_cli_flags.py::test_run_list_still_works_without_a_name | yes | yes | cli.run NAME optionality | #891 | guards `run --list` against a required NAME |
 | tests/test_cli_surface.py::test_the_global_options_are_unchanged | yes | yes | root CLI options | #891 | snapshot now covers root params |
 | tests/test_cli_info.py::test_a_failing_check_exits_non_zero | yes | yes | cli_api._check / cli.info exit code | #891 | --check was always exit 0 |
+| tests/test_cli_setup_output.py (module) | yes | yes | cli_api.setup_config / cli_api._ui / cli.pull / cli.edit | #891 | no parameter dump, real --silent, usage exit 2 |
+| tests/test_cellpy_cmd.py::test_cli_setup | yes | no | cli.setup dry-run reporting | #891 | isolated user dir; was reading the real ~/.cellpy_prms_*.conf |
 | tests/test_cli_info.py::test_check_does_not_shout_or_draw_banners | yes | yes | cli_api._check rendering | #891 | no ===/---/!!!! |
 | tests/test_cli_info.py::test_check_keeps_the_probe_narration_for_verbose | yes | yes | cli_api._debug gating | #891 | diagnostics only under --verbose |
 | tests/test_cli_info.py::test_quiet_reports_only_what_is_broken | yes | yes | check rendering under --quiet | #891 | failures survive quiet |
@@ -90,8 +96,7 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_batch_v3_runner.py::test_dispatch_lite_saves_raw_then_strips | yes | yes | batch.runner._dispatch_lite | #920 | process worker saves raw load |
 | tests/test_batch_v3_runner.py::test_persist_skips_none_placeholder_from_processes | yes | yes | batch.facade._persist_cells / CellStore.is_loaded | #920 | None.save guard |
 | tests/test_collected_summary_groups.py (module) | yes | yes | plotting.collected.summary_plotter / Collection.plot | #923 | facet order, group labels, legend title |
-| tests/test_cli_setup_output.py (module) | yes | yes | cli_api.setup_config / cli_api._ui / cli.pull / cli.edit | #891 | no parameter dump, real --silent, usage exit 2 |
-| tests/test_cellpy_cmd.py::test_cli_setup | yes | no | cli.setup dry-run reporting | #891 | isolated user dir; was reading the real ~/.cellpy_prms_*.conf |
+| tests/test_collected_backend_alias.py (module) | yes | yes | plotting.collected.collected_plot backend alias | #925 | matplotlib -> seaborn, warn_once signature |
 
 **Columns**
 

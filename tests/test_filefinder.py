@@ -19,7 +19,7 @@ def env(parameters, config_guard):
     config.paths.db_filename = parameters.db_file_name
 
 
-def test_search_for_files_with_dirs(parameters):
+def test_search_for_files_with_dirs(parameters, default_file_names):
     import os
 
     raw_files, cellpy_file = filefinder.search_for_files(
@@ -104,13 +104,14 @@ def raw_tree(tmp_path):
     return tmp_path, cellpy_dir
 
 
-def test_search_for_files_recursive(raw_tree):
+def test_search_for_files_recursive(raw_tree, default_file_names):
     raw_dir, cellpy_dir = raw_tree
     raw_files, cellpy_file = filefinder.search_for_files(
         "runA", raw_extension="res", raw_file_dir=raw_dir, cellpy_file_dir=cellpy_dir
     )
     names = sorted(pathlib.Path(f).name for f in raw_files)
     assert names == ["runA_01.res", "runA_02.res", "runA_03.res"]
+    # the default extension, pinned by the fixture - not the developer's own
     assert cellpy_file.endswith("runA.h5")
 
 

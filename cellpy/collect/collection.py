@@ -93,6 +93,10 @@ class Collection:
         layout/kind/method values raise ``ValueError``. Plotly facet strips
         are pretty-printed by default (``Cycle N`` / cell label).
 
+        ``layout="per_cell"`` colours by cycle: more than
+        ``legend_cycle_limit`` cycles (default 8) get a colorbar instead of a
+        long legend, and ``force_colorbar`` / ``force_legend`` override (#928).
+
         Summary facets follow the collected ``columns=`` order unless
         ``order_variables=`` is given (#923); derived series (the CV split, a
         normalized retention curve) keep their own order after them.
@@ -128,12 +132,51 @@ class Collection:
 
         return write_image(self.plot(**plot_kwargs), fmt, scale=scale)
 
+    def save_figure(
+        self, path: Path | str, *, scale: float = 1.0, **plot_kwargs
+    ) -> Path:
+        """Render via :meth:`plot` and write the figure to *path* (needs kaleido).
+
+        The image format comes from the suffix (``.png`` when there is none).
+        This is the file-writing counterpart of :meth:`to_image`;
+        :func:`cellpy.utils.plotutils.save_image_files` writes a whole
+        png/svg/json set from an existing figure instead.
+
+        Args:
+            path: Target file. A missing suffix defaults to ``.png``.
+            scale: Pixel scale factor for kaleido.
+            **plot_kwargs: Forwarded to :meth:`plot`.
+
+        Returns:
+            The path written.
+        """
+        path = Path(path)
+        if not path.suffix:
+            path = path.with_suffix(".png")
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(self.to_image(path.suffix, scale=scale, **plot_kwargs))
+        return path
+
     def save(
         self,
         directory: Path | str | None = None,
         formats: tuple[str, ...] = ("parquet", "csv"),
     ) -> list[Path]:
-        """Save the frame (+ ``meta.json``). No cwd fallback -- ``directory`` is explicit."""
+        """Save the collected **frame** (+ ``meta.json``) -- data only, no figures.
+
+        No cwd fallback -- ``directory`` is explicit. Figures are a separate
+        product: use :meth:`save_figure` to write one to disk, :meth:`to_image`
+        for the bytes, or :func:`cellpy.utils.plotutils.save_image_files` for a
+        png/svg/json set from a figure you already have.
+
+        Args:
+            directory: Where to write ``<name>.<fmt>`` and ``<name>.meta.json``.
+            formats: Frame formats to write (``parquet``, ``csv``, ``json``,
+                ``xlsx``).
+
+        Returns:
+            The paths written.
+        """
         if directory is None:
             raise ValueError("save() needs an explicit directory (no cwd fallback)")
         directory = Path(directory)

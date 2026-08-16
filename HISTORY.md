@@ -2,6 +2,24 @@
 
 ## [Unreleased]
 
+* `Collection.plot(backend="matplotlib")` no longer raises
+  `TypeError: warn_once() missing 1 required positional argument`. It keeps
+  aliasing to the seaborn layout path (and now actually returns a figure -
+  the y-label mapper crashed on the summary path). (#925)
+
+* `cycles_collector(b).plot(layout="per_cell")` follows the shared cycle
+  legend policy: more than `legend_cycle_limit` cycles (default 8, the same as
+  the single-cell `cycles_plot`) get a colorbar instead of a legend hundreds of
+  entries long. `force_colorbar` / `force_legend` override. (#928)
+
+* Grouped summary collections plot the way they were collected: facets follow
+  the `columns=` order instead of coming out alphabetical (derived series such
+  as the CV split or a normalized retention curve keep their own order after
+  the requested ones), `custom_group_labels=` reach the legend (integer *and*
+  string group ids now match; an unlabelled group keeps its id), and the legend
+  title of a grouped summary is **Group** rather than **Cell**. `legend_title=`
+  and `order_variables=` still override. (#923)
+
 * `cellpy setup` reports one line per real action instead of narrating itself.
   The parameter dump (`init_filename`, `dst_file`, `not_relative`, …) moved to
   `--verbose`, a dry run states each file once instead of twice in two
@@ -15,14 +33,6 @@
   shows template locations instead of Python tuples, `cellpy pull` with
   nothing selected and `cellpy edit <unknown>` are real usage errors (stderr,
   exit 2). (#891)
-
-* Grouped summary collections plot the way they were collected: facets follow
-  the `columns=` order instead of coming out alphabetical (derived series such
-  as the CV split or a normalized retention curve keep their own order after
-  the requested ones), `custom_group_labels=` reach the legend (integer *and*
-  string group ids now match; an unlabelled group keeps its id), and the legend
-  title of a grouped summary is **Group** rather than **Cell**. `legend_title=`
-  and `order_variables=` still override. (#923)
 
 * `cellpy info` and `cellpy info --check` report rather than narrate. The check
   run is one line per check with a symbol, a short detail and a hint when it
@@ -60,6 +70,10 @@
   error on stderr with exit code 2 — it used to print hand-made usage text (or
   a flag dump and an apology) to stdout and exit 255 or 0. `cellpy convert`
   reports a rejected `--to` on stderr. (#891)
+* Figure export is discoverable from a collector: `BatchCollector.to_image()`
+  returns image bytes and `BatchCollector.save_figure(path)` /
+  `Collection.save_figure(path)` write one to disk. `.save()` still writes
+  frame + `meta.json` only, and now says so and names the figure API. (#926)
 * `Batch.export_project(destination)` writes a shareable `.cellpy` + journal
   bundle (2.x replacement for `duplicate_cellpy_files`). (#878)
 * Run the real `essential` and `full` CI gates once for every PR targeting
