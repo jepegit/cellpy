@@ -41,6 +41,7 @@ PathLike = Union[str, pathlib.Path]
 Echo = Callable[[str], None]
 
 REPO = "jepegit/cellpy"
+REPO_URL = f"https://github.com/{REPO}.git"
 USER = "jepegit"
 GITHUB_PWD_VAR_NAME = "GD_PWD"
 DEFAULT_EDITOR = "vim"
@@ -306,8 +307,8 @@ def run_journal(
         **kwargs,
     )
     if result is not None and not silent:
-        print(result)
-    say("---")
+        # was a bare print(), so it escaped both the echo contract and --silent
+        say(str(result))
     return result
 
 
@@ -341,7 +342,6 @@ def run_journals(
         silent=True,
         **kwargs,
     )
-    say("---")
 
 
 def run_from_db(
@@ -379,8 +379,8 @@ def run_from_db(
         **kwargs,
     )
     if result is not None and not silent:
-        print(result)
-    say("---")
+        # was a bare print(), so it escaped both the echo contract and --silent
+        say(str(result))
     return result
 
 
@@ -391,16 +391,15 @@ def run_project(project: PathLike, *, echo: Optional[Echo] = None, **kwargs: Any
         import papermill as pm  # type: ignore
     except ImportError:
         say(
-            "[cellpy]: You need to install papermill for automatically execute the notebooks."
+            "papermill is needed to execute the notebooks automatically "
+            "- install it with:  python -m pip install papermill"
         )
-        say("[cellpy]: You can install it using pip like this:")
-        say(" >> pip install papermill")
         return
 
     project_path = pathlib.Path(project)
-    say(f"[cellpy]: trying to run notebooks in {project_path}")
+    say(f"running the notebooks in {project_path}")
     for notebook in sorted(project_path.glob("*.ipynb")):
-        say(f"[cellpy - papermill] running {notebook.name}")
+        say(f"running {notebook.name}")
         pm.execute_notebook(notebook, notebook, parameters=kwargs)
 
 
@@ -436,9 +435,9 @@ def list_journals(
     # leftover index was 0, which is falsy, so it printed "No batch-files
     # found" directly beneath the file it had listed.
     if found:
-        print(f"\nnumber of batch-files located: {len(found)}")
+        say(f"\nnumber of batch-files located: {len(found)}")
     else:
-        print("No batch-files found in this directory.")
+        say("No batch-files found in this directory.")
     return found
 
 
@@ -448,13 +447,11 @@ def open_db_editor(
     """Open the cellpy database in the platform's spreadsheet application."""
     say = _resolve_echo(echo)
 
-    if not silent:
-        say("running database editor")
-    if debug:
-        say("running in debug-mode, but nothing to tell")
-
     db_path = pathlib.Path(config.paths.db_path) / config.paths.db_filename
     system = platform.system()
+    if not silent:
+        say(f"opening {db_path}")
+    logging.debug("open_db_editor on %s (debug=%s)", system, debug)
 
     if system == "Windows":
         import os
@@ -462,19 +459,12 @@ def open_db_editor(
         try:
             os.system(f'start excel "{str(db_path)}"')
         except Exception as exc:
-            say("Something went wrong trying to open")
-            say(str(db_path))
-            print()
-            print(exc)
+            say(f"could not open {db_path} ({exc})")
         return
 
-    if system == "Linux":
-        say("RUNNING LINUX")
-    elif system == "Darwin":
-        say(" - running on a mac")
-    else:
-        print("RUNNING SOMETHING ELSE")
-        print(system)
+    if system not in ("Linux", "Darwin"):
+        # untested territory; say so instead of shouting the platform name
+        say(f"opening the database editor is untested on {system} - trying anyway")
 
     # not tested on any of these
     subprocess.check_call(["open", "-a", "Microsoft Excel", db_path])
@@ -516,11 +506,19 @@ def _ui():
     A caller who passed no ``echo`` gets a reporter that prints nothing: these
     functions are a library first, and a library does not write to stdout
     because someone imported it.
+
+    When the bound echo came from a reporter (``Reporter.as_echo`` /
+    ``Reporter.payload``) that reporter is used, so a per-command ``--silent``
+    or ``--debug`` adjusts this output as well as the ``_say`` lines.
     """
     from cellpy import cli_ui
 
-    if _echo_var.get() is _silent:
+    echo = _echo_var.get()
+    if echo is _silent:
         return cli_ui.silent_reporter()
+    bound = getattr(echo, "reporter", None) or getattr(echo, "__self__", None)
+    if isinstance(bound, cli_ui.Reporter):
+        return bound
     return cli_ui.current()
 
 
@@ -545,9 +543,7 @@ def _create_dir(path, confirm=True, parents=True, exist_ok=True):
         create_dir = True
         if confirm:
             if not o_parent.is_dir():
-                create_dir = input(
-                    f"\n[cellpy] (setup) {o_parent} does not exist. Create it [y]/n ?"
-                )
+                create_dir = input(f"\n  {o_parent} does not exist. Create it? [y]/n > ")
                 if not create_dir:
                     create_dir = True
                 elif create_dir in ["y", "Y"]:
@@ -555,20 +551,20 @@ def _create_dir(path, confirm=True, parents=True, exist_ok=True):
                 else:
                     create_dir = False
 
+        ui = _ui()
         if create_dir:
             try:
                 o.mkdir(parents=parents, exist_ok=exist_ok)
-                _say(f"[cellpy] (setup) Created {o}")
+                ui.step(f"created {o}")
             except FileExistsError:
-                _say(f"[cellpy] (setup) {o} already exists.")
+                _debug(f"{o} already exists")
             except FileNotFoundError:
-                _say(f"[cellpy] (setup) {o} not available.")
+                ui.warn("directory", f"{o} is not available")
             except Exception as e:
-                _say(f"[cellpy] (setup) WARNING! Could not create {o}.")
+                ui.warn("directory", f"could not create {o}", hint="continuing anyway")
                 logging.debug(e)
-                _say("[cellpy] (setup) ...continuing anyway.")
         else:
-            _say(f"[cellpy] (setup) Could not create {o}")
+            ui.warn("directory", f"not created: {o}")
     return o
 
 # -- setup file helpers --
@@ -579,7 +575,7 @@ def save_prm_file(prm_filename):
 
 def dump_env_file(env_filename):
     """saves (writes) the env to file"""
-    _say(f" dumping env file to {env_filename}")
+    _debug(f"dumping env file to {env_filename}")
     prmreader._write_env_file(env_filename)
 
 
@@ -607,11 +603,11 @@ def get_dst_file(user_dir, init_filename):
 
 
 def echo_missing_modules():
-    """prints out the missing modules"""
+    """Report the optional modules that could not be imported."""
     _probe_optional_deps()
+    ui = _ui()
     for m in DIFFICULT_MISSING_MODULES:
-        print(f"missing module: {m}")
-        print(f"message: {DIFFICULT_MISSING_MODULES[m]}")
+        ui.warn("missing module", m, hint=DIFFICULT_MISSING_MODULES[m])
 
 
 # -- write toml --
@@ -632,14 +628,15 @@ def _write_toml_config_file(dst_file, dry_run, test_user=None):
     else:
         toml_path = config_loader.user_config_path()
 
+    ui = _ui()
     if dry_run:
-        _say(f"[cellpy] (setup) dry-run: would write {toml_path}")
+        ui.step(f"dry-run: would write {toml_path}")
         return
 
     data = cellpy_config.get_config().model_dump_for_file()
     toml_path.parent.mkdir(parents=True, exist_ok=True)
     config_loader.write_toml(toml_path, data)
-    _say(f"[cellpy] (setup) wrote {toml_path}")
+    ui.ok("cellpy.toml", str(toml_path))
 
 # -- migrate --
 def migrate_config(
@@ -663,36 +660,41 @@ def _migrate_config_body(src, dst, dry_run, force):
     from cellpy.config import loader as config_loader
     from cellpy.config import migrate as config_migrate
 
+    ui = _ui()
+
     if src is None:
         try:
             src = prmreader._get_prm_file()
         except Exception:
             src = None
         if src is None or not pathlib.Path(src).is_file():
-            _say(
-                "[cellpy] (setup migrate) no legacy config file found - "
-                "nothing to migrate (run `cellpy setup` to create a fresh one)."
+            ui.warn(
+                "migrate",
+                "no legacy config file found - nothing to migrate",
+                hint="cellpy setup writes a fresh cellpy.toml",
             )
             return
     src = pathlib.Path(src)
 
     toml_path = pathlib.Path(dst) if dst else config_loader.user_config_path()
     if toml_path.is_file() and not force:
-        _say(
-            f"[cellpy] (setup migrate) {toml_path} already exists "
-            "- use --force to overwrite."
+        ui.warn(
+            "migrate",
+            f"{toml_path} already exists",
+            hint="pass --force to overwrite it",
         )
         return
 
-    _say(f"[cellpy] (setup migrate) source: {src}")
-    _say(f"[cellpy] (setup migrate) target: {toml_path}")
+    ui.detail("source", str(src))
+    ui.detail("target", str(toml_path))
     if dry_run:
-        _say("[cellpy] (setup migrate) dry-run: not writing anything.")
+        ui.step("dry-run: nothing written")
         return
 
     toml_path.parent.mkdir(parents=True, exist_ok=True)
     config_migrate.convert_yaml_file_to_toml(src, toml_path)
-    _say("[cellpy] (setup migrate) done - the old file is kept untouched.")
+    ui.ok("migrated", str(toml_path))
+    ui.hint("the legacy file is kept untouched")
 
 # -- update_paths through get_default_editor --
 def _update_paths(
@@ -711,10 +713,9 @@ def _update_paths(
     if default_dir is None:
         default_dir = "cellpy_data"
 
-    if dry_run:
-        _say(f" - default_dir: {default_dir}")
-        _say(f" - custom_dir: {custom_dir}")
-        _say(f" - relative_home: {relative_home}")
+    _debug(f"default_dir: {default_dir}")
+    _debug(f"custom_dir: {custom_dir}")
+    _debug(f"relative_home: {relative_home}")
 
     if custom_dir:
         reset = True
@@ -761,10 +762,10 @@ def _update_paths(
     templatedir = h / templatedir
     instrumentdir = h / instrumentdir
 
-    if dry_run:
-        _say(f" - base (h): {h}")
+    _debug(f"base directory: {h}")
 
     if interactive:
+        _ui().title("interactive setup - press enter to keep a suggested value")
         outdatadir = _ask_about_path(
             "where to output processed data and results", outdatadir
         )
@@ -799,7 +800,7 @@ def _update_paths(
         if not dry_run:
             _create_dir(d, confirm=not silent)
         else:
-            _say(f"dry run (so I did not create {d})")
+            _ui().step(f"dry-run: would create {d}")
 
     # update config-file based on suggestions
     config.paths.outdatadir = str(outdatadir)
@@ -815,33 +816,27 @@ def _update_paths(
     config.paths.instrumentdir = str(instrumentdir)
 
 
+def _ask(q, current) -> str:
+    """Ask for one setup value, showing the current one as the default (#891)."""
+    ui = _ui()
+    ui.blank()
+    ui.step(q)
+    ui.detail("current", str(current))
+    return input("  > ").strip()
+
+
 def _ask_about_path(q, p):
-    _say(f"\n[cellpy] (setup) input {q}")
-    _say(f"[cellpy] (setup) current: {p}")
-    new_path = input("[cellpy] (setup) new value (press enter to keep) >>> ").strip()
-    if not new_path:
-        new_path = p
-    return pathlib.Path(new_path)
+    return pathlib.Path(_ask(q, p) or p)
 
 
 def _ask_about_otherpath(q, p):
     from cellpy.internals.otherpath import OtherPath
 
-    _say(f"\n[cellpy] (setup) input {q}")
-    _say(f"[cellpy] (setup) current: {p}")
-    new_path = input("[cellpy] (setup) new value (press enter to keep) >>> ").strip()
-    if not new_path:
-        new_path = p
-    return OtherPath(new_path)
+    return OtherPath(_ask(q, p) or p)
 
 
 def _ask_about_name(q, n):
-    _say(f"\n[cellpy] (setup) input {q}")
-    _say(f"[cellpy] (setup) current: {n}")
-    new_name = input("[cellpy] (setup) new value (press enter to keep) >>> ").strip()
-    if not new_name:
-        new_name = n
-    return new_name
+    return _ask(q, n) or n
 
 
 @dataclass
@@ -1184,93 +1179,73 @@ def _check(dry_run=False, full_check=True) -> int:
 
 
 def _write_config_file(user_dir, dst_file, init_filename, dry_run):
+    """Write the user config file, reporting one line per real action (#891)."""
     from cellpy.exceptions import ConfigFileNotWritten
 
-    _say(" update configuration ".center(80, "-"))
-    _say("[cellpy] (setup) Writing configurations to user directory:")
-    _say(f"\n         {user_dir}\n")
+    ui = _ui()
+    _debug(f"user directory: {user_dir}")
+
+    if dry_run:
+        ui.step(f"dry-run: would write {dst_file}")
+        return
 
     if os.path.isfile(dst_file):
-        _say("[cellpy] (setup) File already exists!")
-        _say("[cellpy] (setup) Keeping most of the old configuration parameters")
+        _debug(f"{dst_file} exists - keeping the settings it already holds")
+
     try:
-        if dry_run:
-            _say(
-                f"*** dry-run: skipping actual saving of {dst_file} ***")
-        else:
-            _say(f"[cellpy] (setup) Saving file ({dst_file})")
-            save_prm_file(dst_file)
-
+        save_prm_file(dst_file)
     except ConfigFileNotWritten:
-        _say("[cellpy] (setup) Something went wrong! Could not write the file")
-        _say(
-            "[cellpy] (setup) Trying to write a file"
-            + f"called {prmreader.DEFAULT_FILENAME} instead"
+        ui.warn(
+            "configuration file",
+            f"could not write {dst_file}",
+            hint=f"retrying as {prmreader.DEFAULT_FILENAME}",
         )
-
         try:
             user_dir, dst_file = prmreader.get_user_dir_and_dst(init_filename)
-            if dry_run:
-                _say(
-                    f"*** dry-run: skipping actual saving of {dst_file} ***",
-                    color="red",
-                )
-            else:
-                save_prm_file(dst_file)
-
-        except ConfigFileNotWritten:
-            _txt = "[cellpy] (setup) No, that did not work either.\n"
-            _txt += "[cellpy] (setup) Well, guess you have to talk to the developers."
-            _say(_txt)
-    else:
-        if dry_run:
-            _say(
-                "[cellpy] (setup) dry-run: would write "
-                f"{dst_file} (not written)"
+            save_prm_file(dst_file)
+        except ConfigFileNotWritten as exc:
+            ui.fail(
+                "configuration file",
+                f"could not write {dst_file} ({exc})",
+                hint="check the directory permissions, then report this at "
+                "https://github.com/jepegit/cellpy/issues",
             )
             return
-        _say("[cellpy] (setup) Configuration file written!")
-        _say(
-            "[cellpy] (setup) OK! Now you can edit it. For example by "
-            f"issuing \n\n         [your-favourite-editor] {init_filename}\n"
-        )
+
+    ui.ok("configuration file", str(dst_file))
+    ui.hint("edit it with:  cellpy edit config")
 
 
 def _write_env_file(user_dir, dst_file, dry_run):
+    """Write the ``.env_cellpy`` file, reporting one line per real action (#891)."""
     from cellpy.exceptions import ConfigFileNotWritten
 
-    _say(" update configuration ".center(80, "-"))
-    _say("[cellpy] (setup) Writing environment file:")
-    _say(f"\n         {dst_file}\n")
+    ui = _ui()
 
     if os.path.isfile(dst_file):
-        _say(f"[cellpy] (setup) Environment file {dst_file} already exists!")
         if not dry_run:
+            ui.ok("environment file", f"{dst_file} (kept)")
             return
-    try:
-        if dry_run:
-            _say(
-                f"*** dry-run: skipping actual saving of {dst_file} ***")
-        else:
-            _say(f"[cellpy] (setup) Saving file ({dst_file})")
-            dump_env_file(dst_file)
+        ui.step(f"dry-run: would keep {dst_file}")
+        return
 
-    except ConfigFileNotWritten:
-        _txt = "[cellpy] (setup) No, that did not work either.\n"
-        _txt += "[cellpy] (setup) Well, guess you have to talk to the developers."
-        _say(_txt)
-    else:
-        if dry_run:
-            _say(
-                "[cellpy] (setup) dry-run: would write "
-                f"{dst_file} (not written)"
-            )
-            return
-        _say("[cellpy] (setup) Environment file written!")
-        _say(
-            "[cellpy] (setup) OK! Now you can edit it. For example by "
-            f"issuing \n\n         [your-favourite-editor] {dst_file}\n"
+    if dry_run:
+        ui.step(f"dry-run: would write {dst_file}")
+        return
+
+    try:
+        dump_env_file(dst_file)
+    except ConfigFileNotWritten as exc:
+        ui.fail(
+            "environment file",
+            f"could not write {dst_file} ({exc})",
+            hint="check the directory permissions, then report this at "
+            "https://github.com/jepegit/cellpy/issues",
         )
+        return
+
+    ui.ok("environment file", str(dst_file))
+    ui.hint("edit it with:  cellpy edit env")
 
 
 def _get_default_editor():
@@ -1291,45 +1266,34 @@ def _dump_config_resolved():
 
     data = cellpy_config.get_config().model_dump_for_file()
     provenance = cellpy_config.sources()
-    _say("[cellpy] resolved configuration (value  # source-layer):")
+    ui = _ui()
+    ui.payload("# resolved configuration (value  # source-layer)")
     for section, fields in data.items():
-        _say(f"\n[{section}]")
+        ui.payload(f"\n[{section}]")
         if not isinstance(fields, dict):
-            _say(f"  {fields!r}")
+            ui.payload(f"  {fields!r}")
             continue
         for key, value in fields.items():
             layer = provenance.get(f"{section}.{key}", "default")
-            _say(f"  {key} = {value!r}  # {layer}")
+            ui.payload(f"  {key} = {value!r}  # {layer}")
 
 # -- pull clone/tests/examples --
 def _clone_repo(directory, password):
-    directory = pathlib.Path(directory)
-    txt = "[cellpy] The plan is that this "
-    txt += "[cellpy] cmd will pull (clone) the cellpy repo.\n"
-    txt += "[cellpy] For now it only prints the link to the git-hub\n"
-    txt += "[cellpy] repository:\n"
-    txt += "[cellpy]\n"
-    txt += "[cellpy] https://github.com/jepegit/cellpy.git\n"
-    txt += "[cellpy]\n"
-    _say(txt)
+    """``cellpy pull --clone`` has never cloned anything - say so plainly."""
+    ui = _ui()
+    ui.warn("--clone", "not implemented yet")
+    ui.hint(f"clone it yourself:  git clone {REPO_URL}")
 
 
 def _pull_tests(directory, pw=None):
-    txt = (
-        "[cellpy] (pull) Pulling tests from",
-        " https://github.com/jepegit/cellpy.git",
-    )
-    _say(txt)
+    # was _say(tuple) - which printed the tuple repr, not the sentence
+    _ui().step(f"pulling tests from {REPO_URL}")
     _pull(gdirpath="tests", rootpath=directory, pw=pw)
     _pull(gdirpath="testdata", rootpath=directory, pw=pw)
 
 
 def _pull_examples(directory, pw):
-    txt = (
-        "[cellpy] (pull) Pulling examples from",
-        " https://github.com/jepegit/cellpy.git",
-    )
-    _say(txt)
+    _ui().step(f"pulling examples from {REPO_URL}")
     _pull(gdirpath="examples", rootpath=directory, pw=pw)
 
 # -- version/configloc/envloc/dump_params --
@@ -1364,14 +1328,15 @@ def _configloc():
 
 def _envloc():
     env_file_name = prmreader.get_env_file_name()
-    _say(f"[cellpy] (from config) -> {env_file_name}")
+    ui = _ui()
     if not os.path.isfile(env_file_name):
+        ui.fail("env", f"{env_file_name} does not exist", hint="cellpy setup")
         return
+    ui.payload(f"env      {env_file_name}")
     return env_file_name
 
 
 def _dump_params():
-    _say("[cellpy] Running prmreader.info:\n")
     prmreader.info()
 
 
@@ -1381,13 +1346,13 @@ def _download_g_blob(name, local_path):
 
     dirs = local_path.parent
     if not dirs.is_dir():
-        _say(f"[cellpy] (pull) creating dir: {dirs}")
+        _debug(f"creating {dirs}")
         dirs.mkdir(parents=True)
-    print(f"[cellpy] (pull) downloading blob: {name.download_url}")
+    _debug(f"downloading {name.download_url}")
     filename, headers = urllib.request.urlretrieve(
         name.download_url, filename=local_path
     )
-    _say(f"[cellpy] (pull) downloaded blob: {filename}")
+    _ui().step(f"downloaded {filename}")
 
 
 def _parse_g_subdir(stuff, repo, gdirpath):
@@ -1429,18 +1394,17 @@ def _pull(gdirpath="examples", rootpath=None, u=None, pw=None):
 
     ndirpath = rootpath / gdirpath
 
+    ui = _ui()
+
     if pw is not None:
-        _say(" DEV MODE ".center(80, "-"))
+        _debug("dev mode: authenticating against github")
         u = _get_user_name()
         if pw == "ask":
-            _say("   - ask for password")
             pw = _get_pw(pw)
         elif pw == "env":
-            _say("   - check environ for password ")
             pw = _get_pw(pw)
-            _say("   - got something")
             if pw is None:
-                _say("   - only None")
+                _debug("no password in the environment - falling back to anonymous")
                 u = None
 
     _probe_optional_deps()
@@ -1448,21 +1412,13 @@ def _pull(gdirpath="examples", rootpath=None, u=None, pw=None):
     try:
         repo = g.get_repo(REPO)
     except github.RateLimitExceededException:
-        _say("   - rate limit exceeded")
-        _say("   - waiting 60 seconds, and trying only once more")
-        _say(
-            "   - hint! you can check status directly using the github api, e.g. "
-        )
-        _say("     $ curl -i https://api.github.com/users/USERNAME")
-        _say("   - press ctrl-c to abort")
-        time.sleep(60)
+        _rate_limited(ui)
         repo = g.get_repo(REPO)
 
-    _say(f"[cellpy] (pull) pulling {gdirpath}")
-    _say(f"[cellpy] (pull) -> {ndirpath}")
+    ui.step(f"pulling {gdirpath} -> {ndirpath}")
 
     if not ndirpath.is_dir():
-        _say(f"[cellpy] (pull) creating dir: {ndirpath}")
+        ui.step(f"creating {ndirpath}")
         ndirpath.mkdir(parents=True)
 
     for gfile in _parse_g_dir(repo, gdirpath):
@@ -1471,11 +1427,20 @@ def _pull(gdirpath="examples", rootpath=None, u=None, pw=None):
         try:
             _download_g_blob(gfile, nfilename)
         except github.RateLimitExceededException:
-            _say("   - rate limit exceeded")
-            _say("   - waiting 60 seconds, and trying only once more")
-            _say("   - press ctrl-c to abort")
-            time.sleep(60)
+            _rate_limited(ui)
             _download_g_blob(gfile, nfilename)
+
+    ui.ok("pulled", str(ndirpath))
+
+
+def _rate_limited(ui) -> None:
+    """Report a GitHub rate limit and wait once before retrying."""
+    ui.warn(
+        "github rate limit",
+        "waiting 60 seconds, then trying once more (ctrl-c to abort)",
+        hint="check your quota with:  curl -i https://api.github.com/users/USERNAME",
+    )
+    time.sleep(60)
 
 # -- templates --
 def _get_default_template():
@@ -1485,6 +1450,17 @@ def _get_default_template():
     except Exception:
         logging.debug("You dont have any default template defined in you .conf file")
     return template
+
+
+def _template_location(entry) -> str:
+    """Where a registered template lives.
+
+    The registry stores ``(location, cookie_subdirectory)``; only the location
+    means anything to a user reading ``cellpy new --list``.
+    """
+    if isinstance(entry, (tuple, list)):
+        return str(entry[0])
+    return str(entry)
 
 
 def _read_local_templates(local_templates_path=None):
@@ -1539,29 +1515,33 @@ def _new(
         import cookiecutter.prompt
 
     except ModuleNotFoundError:
-        _say("Could not import cookiecutter.")
-        _say("Try installing it, for example by writing:")
-        _say("\npython -m pip install cookiecutter\n")
+        _ui().fail(
+            "cookiecutter",
+            "Could not import cookiecutter.",
+            hint="python -m pip install cookiecutter",
+        )
         return
 
-    if list_:
-        _say("\n[cellpy] batch templates")
+    ui = _ui()
 
+    if list_:
         default_template = _get_default_template()
         local_templates = _read_local_templates()
         local_templates_path = config.paths.templatedir
         registered_templates = REGISTERED_TEMPLATES
-        _say(f"[cellpy] - default: {default_template}")
-        _say("[cellpy] - registered templates (on github):")
-        for label, link in registered_templates.items():
-            _say(f"\t\t{label:18s} {link}")
 
+        ui.title("batch templates")
+        ui.detail("default", str(default_template))
+        ui.blank()
+        ui.step("registered (on github)")
+        for label, link in registered_templates.items():
+            ui.detail(label, _template_location(link))
+        ui.step(f"local ({local_templates_path})")
         if local_templates:
-            _say(f"[cellpy] - local templates ({local_templates_path}):")
             for label, link in local_templates.items():
-                _say(f"\t\t{label:18s} {link}")
+                ui.detail(label, _template_location(link))
         else:
-            _say(f"[cellpy] - local templates ({local_templates_path}): none")
+            ui.detail("none", "-")
 
         return
 
@@ -1576,14 +1556,16 @@ def _new(
     else:
         server = "notebook"
 
-    _say(f"Template: {template}")
+    ui.step(f"template: {template}")
     if local_user_template:
         # forcing using local template
         templates = _read_local_templates()
 
         if not templates:
-            _say(
-                "You asked me to use a local template, but you have none. Aborting."
+            ui.fail(
+                "template",
+                "no local templates found",
+                hint=f"put a cellpy_cookie_*.zip in {config.paths.templatedir}",
             )
             return
     else:
@@ -1592,7 +1574,11 @@ def _new(
             templates.update(local_templates)
 
     if template.lower() not in templates:
-        _say("This template does not exist. Aborting.")
+        ui.fail(
+            "template",
+            f"no template named {template!r}",
+            hint="cellpy new --list to see the known ones",
+        )
         return
 
     if directory is None:
@@ -1600,8 +1586,11 @@ def _new(
         directory = config.paths.notebookdir
 
     if not os.path.isdir(directory):
-        _say("Sorry. This did not work as expected!")
-        _say(f" - {directory} does not exist")
+        ui.fail(
+            "notebook directory",
+            f"{directory} does not exist",
+            hint="cellpy setup, or pass --directory",
+        )
         return
 
     directory = pathlib.Path(directory)
@@ -1614,11 +1603,11 @@ def _new(
                 f"{project_dir} does not exist. Create?", "yes"
             ):
                 os.mkdir(selected_project_dir)
-                _say(f"Created {selected_project_dir}")
+                ui.step(f"created {selected_project_dir}")
 
             else:
                 selected_project_dir = None
-                _say("Select another directory instead")
+                ui.step("pick another directory instead")
     CREATE_NEW_DIR = "Create new project..."
     if not selected_project_dir:
         project_dirs = [
@@ -1647,9 +1636,9 @@ def _new(
             )
             try:
                 os.mkdir(directory / project_dir)
-                _say(f"created {project_dir}")
+                ui.step(f"created {project_dir}")
             except FileExistsError:
-                _say("OK - but this directory already exists!")
+                ui.step(f"{project_dir} already exists - using it")
         selected_project_dir = directory / project_dir
 
     # get a list of all folders
@@ -1685,33 +1674,32 @@ def _new(
             directory=cookie_dir,
         )
     except cookiecutter.exceptions.OutputDirExistsException as e:
-        _say("Sorry. This did not work as expected!")
-        _say(" - cookiecutter refused to create the project")
-        _say(e)
+        ui.fail("project", f"cookiecutter refused to create the project ({e})")
 
     if serve_:
         os.chdir(directory)
         _serve(server, executable)
 
     elif run_:
-        _say("WARNING - experimental feature - use at your own risk")
-        input("Press Enter to continue...")
+        ui.warn("--run", "experimental - use at your own risk")
+        input("  press enter to continue > ")
         import importlib.util
 
         if importlib.util.find_spec("papermill") is None:
-            _say(
-                "[cellpy]: You need to install papermill for automatically execute the notebooks."
+            ui.fail(
+                "papermill",
+                "needed to execute the notebooks automatically",
+                hint="python -m pip install papermill",
             )
-            _say("[cellpy]: You can install it using pip like this:")
-            _say(" >> pip install papermill")
             return
         new_existing_projects = os.listdir(selected_project_dir)
         our_new_projects = list(set(new_existing_projects) - set(existing_projects))
 
         if not len(our_new_projects):
-            _say(
-                "[cellpy]: Sorry, could not deiced what is the new project "
-                "- so I don't dare to try to execute automatically."
+            ui.fail(
+                "project",
+                "could not tell which project is the new one, so nothing was run",
+                hint="run the notebooks yourself, or start from an empty directory",
             )
             return
         our_new_project = selected_project_dir / our_new_projects[0]
@@ -1726,19 +1714,18 @@ def _get_author_name():
 
         author_name = getpass.getuser()
     except Exception as e:
-        _say("Could not get the author name")
-        _say(e)
+        logging.debug("could not get the author name: %s", e)
         author_name = "unknown"
     return author_name
 
 
 def _serve(server, executable=None):
-    _say(f"serving with jupyter {server}")
+    _ui().step(f"serving with jupyter {server}")
     # TODO: search for jupyter and find the right one
     if executable is None:
         executable = "jupyter"
     subprocess.run([executable, server], check=True)
-    _say("Finished serving.")
+    _ui().step("stopped serving")
 
 
 
@@ -1768,74 +1755,64 @@ def setup_config(
             ``cellpy setup --check`` (#839).
     """
     with _using_echo(echo):
-        _say("[cellpy] (setup)")
-        _say(f"[cellpy] root-dir: {root_dir}")
+        ui = _ui()
+        ui.title(f"cellpy {VERSION} - setting up")
 
         if no_deps and not deps:
-            _say(
-                "[cellpy] (setup) note: --no-deps is deprecated; "
-                "optional dependency probing is off by default (use --deps to enable)"
+            ui.warn(
+                "--no-deps",
+                "deprecated no-op",
+                hint="dependency probing is off by default; use --deps to turn it on",
             )
 
         # Optional extras — opt-in only so default setup stays off the heavy stack (#839).
         if deps:
             _probe_optional_deps()
-            _say("[cellpy] checking dependencies")
+            ui.step("checking dependencies")
             for m in DIFFICULT_MISSING_MODULES:
-                _say(" [cellpy] WARNING! ".center(80, "-"))
-                _say("[cellpy] missing dependencies:")
-                _say(f"[cellpy] - {m}")
-                _say(f"[cellpy] {DIFFICULT_MISSING_MODULES[m]}")
-                _say(
-                    "[cellpy] (dependency probing is opt-in; omit --deps to skip)"
-                )
-                _say(80 * "-")
+                ui.warn("missing dependency", m, hint=DIFFICULT_MISSING_MODULES[m])
 
         # generate variables
         init_filename = prmreader.create_custom_init_filename()
         user_dir, dst_file = prmreader.get_user_dir_and_dst(init_filename)
         env_file = prmreader.get_env_file_name()
 
-        if dry_run:
-            _say("Create custom init filename and get user_dir and destination")
-            _say("Got the following parameters:")
-            _say(f" - init_filename: {init_filename}")
-            _say(f" - user_dir: {user_dir}")
-            _say(f" - dst_file: {dst_file}")
-            _say(f" - not_relative: {not_relative}")
+        # The parameter dump was the loudest thing `setup --dry-run` printed and
+        # the least useful to a user; it is developer detail, so it lives at
+        # --verbose now (#891).
+        _debug(f"init_filename: {init_filename}")
+        _debug(f"user_dir: {user_dir}")
+        _debug(f"dst_file: {dst_file}")
+        _debug(f"not_relative: {not_relative}")
 
         if root_dir and not interactive:
-            _say("[cellpy] custom root-dir can only be used in interactive mode")
-            _say("[cellpy] -> setting interactive mode")
+            ui.warn(
+                "--root-dir",
+                "only has an effect in interactive mode",
+                hint="continuing in interactive mode",
+            )
             interactive = True
 
         if not root_dir:
             root_dir = user_dir
             # root_dir = pathlib.Path(os.getcwd())
         root_dir = pathlib.Path(root_dir)
-
-        if dry_run:
-            _say(f" - root_dir: {root_dir}")
+        _debug(f"root_dir: {root_dir}")
 
         if test_user:
-            _say(f"[cellpy] (setup) DEV-MODE test_user: {test_user}")
             init_filename = prmreader.create_custom_init_filename(test_user)
             user_dir = root_dir
             dst_file = get_dst_file(user_dir, init_filename)
-            _say(f"[cellpy] (setup) DEV-MODE user_dir: {user_dir}")
-            _say(f"[cellpy] (setup) DEV-MODE dst_file: {dst_file}")
+            _debug(f"test user {test_user}: user_dir={user_dir} dst_file={dst_file}")
 
         if not pathlib.Path(dst_file).is_file():
-            _say(f"[cellpy] {dst_file} not found -> I will make one for you")
+            ui.step(f"no configuration file yet - writing {dst_file}")
             reset = True
 
         if not pathlib.Path(env_file).is_file():
-            _say(
-                f"[cellpy] {env_file} not found -> I will make one (but you must edit it yourself)"
-            )
+            ui.step(f"no environment file yet - writing {env_file}")
 
         if interactive:
-            _say(" interactive mode ".center(80, "-"))
             _update_paths(
                 custom_dir=root_dir,
                 relative_home=not not_relative,
@@ -1931,8 +1908,11 @@ def start_jupyter(
             directory = pathlib.Path(os.getcwd())
 
         if not os.path.isdir(directory):
-            _say("Sorry. This did not work as expected!")
-            _say(f" - {directory} does not exist")
+            _ui().fail(
+                "notebook directory",
+                f"{directory} does not exist",
+                hint="cellpy setup, or pass --directory",
+            )
             return
 
         server = "lab" if lab else "notebook"
@@ -1955,20 +1935,21 @@ def edit_file(
             open_db_editor(debug=debug, silent=silent, echo=echo)
             return
 
+        ui = _ui()
         if key is not None and key not in ("env", "config"):
-            _say("unknown file")
+            ui.fail("edit", f"unknown file {name!r}", hint="try: config, env or db")
             return
 
         if key is None or key == "config":
             config_file = _configloc()
             if config_file is None:
-                print("could not find the config file")
+                ui.fail("config file", "not found", hint="cellpy setup")
                 return
             filename = str(pathlib.Path(config_file).resolve())
         elif key == "env":
             filename = _envloc()
             if filename is None:
-                print("could not find the env file")
+                ui.fail("environment file", "not found", hint="cellpy setup")
                 return
         else:
             filename = name
@@ -1977,13 +1958,14 @@ def edit_file(
             default_editor = _get_default_editor()
 
         args = [default_editor, filename]
-        _say(f"[cellpy] (edit) Calling '{default_editor}'")
+        ui.step(f"opening {filename} with {default_editor}")
         try:
             subprocess.call(args)
-        except Exception:
-            _say("[cellpy] (edit) Failed!")
-            _say(
-                "[cellpy] (edit) Try 'cellpy edit -e notepad.exe' if you are on Windows"
+        except Exception as exc:
+            ui.fail(
+                "editor",
+                f"could not start {default_editor} ({exc})",
+                hint="name one yourself, e.g. cellpy edit -e notepad.exe",
             )
 
 
@@ -1999,12 +1981,12 @@ def pull_resources(
     """Library form of ``cellpy pull``."""
     with _using_echo(echo):
         if directory is not None:
-            _say(f"[cellpy] (pull) custom directory: {directory}")
+            _debug(f"custom directory: {directory}")
         else:
             directory = pathlib.Path(config.paths.examplesdir)
 
         if password is not None:
-            _say("DEV MODE: password provided")
+            _debug("dev mode: password provided")
         if clone:
             _clone_repo(directory, password)
         else:
@@ -2013,9 +1995,10 @@ def pull_resources(
             if examples:
                 _pull_examples(directory, password)
             elif not tests:
-                _say(
-                    "[cellpy] (pull) Nothing selected for pulling. "
-                    "Please select an option (--tests,--examples, -clone, ...) "
+                _ui().fail(
+                    "pull",
+                    "nothing selected",
+                    hint="pick one of --tests, --examples or --clone",
                 )
 
 

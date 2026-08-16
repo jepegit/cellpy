@@ -202,7 +202,8 @@ def setup(
         deps=deps,
         no_deps=no_deps,
         check=check,
-        echo=_echo(),
+        # --silent means silent: it used to only stop the questions (#891).
+        echo=_echo(silent=silent),
     )
 
 
@@ -297,6 +298,8 @@ def edit(
             cellpy edit env -e notepad.exe
 
     """
+    if name is not None and name.lower() not in ("config", "env", "db"):
+        raise typer.BadParameter(f"unknown file {name!r}: try config, env or db.")
     cli_api.edit_file(
         name,
         default_editor=default_editor,
@@ -522,6 +525,10 @@ def pull(
     ] = None,
 ):
     """Download examples or tests from the big internet (needs git)."""
+    if not (tests or examples or clone):
+        # a usage error, so Typer renders it on stderr with exit code 2 - the
+        # same treatment `run` and `convert` already get (#891)
+        raise typer.BadParameter("pick one of --tests, --examples or --clone.")
     cli_api.pull_resources(
         tests=tests,
         examples=examples,

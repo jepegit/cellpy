@@ -373,6 +373,10 @@ class Reporter:
                 return
             self.payload(message)
 
+        # Whoever holds the echo can find the reporter behind it, so a
+        # per-command ``--silent`` / ``--debug`` reaches structured output
+        # (``cli_api._ui()``) too and not only the ``_say`` lines (#891).
+        echo.reporter = self
         return echo
 
     # -- internals -----------------------------------------------------

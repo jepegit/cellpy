@@ -68,6 +68,8 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_cli_flags.py::test_run_list_still_works_without_a_name | yes | yes | cli.run NAME optionality | #891 | guards `run --list` against a required NAME |
 | tests/test_cli_surface.py::test_the_global_options_are_unchanged | yes | yes | root CLI options | #891 | snapshot now covers root params |
 | tests/test_cli_info.py::test_a_failing_check_exits_non_zero | yes | yes | cli_api._check / cli.info exit code | #891 | --check was always exit 0 |
+| tests/test_cli_setup_output.py (module) | yes | yes | cli_api.setup_config / cli_api._ui / cli.pull / cli.edit | #891 | no parameter dump, real --silent, usage exit 2 |
+| tests/test_cellpy_cmd.py::test_cli_setup | yes | no | cli.setup dry-run reporting | #891 | isolated user dir; was reading the real ~/.cellpy_prms_*.conf |
 | tests/test_cli_info.py::test_check_does_not_shout_or_draw_banners | yes | yes | cli_api._check rendering | #891 | no ===/---/!!!! |
 | tests/test_cli_info.py::test_check_keeps_the_probe_narration_for_verbose | yes | yes | cli_api._debug gating | #891 | diagnostics only under --verbose |
 | tests/test_cli_info.py::test_quiet_reports_only_what_is_broken | yes | yes | check rendering under --quiet | #891 | failures survive quiet |
