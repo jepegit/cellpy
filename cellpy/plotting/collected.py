@@ -689,24 +689,28 @@ def sequence_plotter(
                 annotations = fig.layout.annotations
                 if annotations:
                     try:
-                        for i in range(len(annotations)):
-                            row = i + 1
-                            if annotations[i].text.startswith("variable="):
-                                variable = annotations[i].text.split("=")[1]
-                                if variable in y_label_mapper:
-                                    v = y_label_mapper[variable]
-                                    fig.for_each_yaxis(
-                                        functools.partial(y_axis_replacer, label=v),
-                                        row=row,
-                                    )
+                        for annotation in annotations:
+                            text = annotation.text or ""
+                            if text.startswith("variable="):
+                                variable = text.split("=", 1)[1]
+                                label = y_label_mapper.get(variable)
                             else:
-                                for k, v in y_label_mapper.items():
-                                    if annotations[i].text.endswith(k):
-                                        fig.for_each_yaxis(
-                                            functools.partial(y_axis_replacer, label=v),
-                                            row=row,
-                                        )
-                                        break
+                                label = next(
+                                    (
+                                        v
+                                        for k, v in y_label_mapper.items()
+                                        if text.endswith(k)
+                                    ),
+                                    None,
+                                )
+                            if label is None:
+                                continue
+                            # Resolve the axis from the strip's own position
+                            # rather than assuming the annotation order lines
+                            # up with Plotly's row numbering (#923).
+                            key = _yaxis_key_for_facet_label(fig, text)
+                            if key is not None:
+                                y_axis_replacer(fig.layout[key], label)
 
                         fig.update_annotations(text="")
 
@@ -1287,6 +1291,18 @@ def summary_plotter(collected_curves, cycles_to_plot=None, backend="plotly", **k
       built automatically (facet ``variable=…`` strip cleared).
     - ``height`` / ``height_per_panel`` (alias of ``sub_fig_min_height``) /
       ``figure_border_height``: absolute or per-panel height control.
+
+    Facets and legend (#923):
+
+    - ``order_variables``: list of ``variable`` names giving the facet order.
+      Variables outside the list (derived series such as the CV split or a
+      normalized retention curve) keep their own order after the listed ones.
+      :meth:`cellpy.collect.Collection.plot` fills this in from the collected
+      ``columns=``.
+    - A grouped frame (``mean``/``std``) is coloured by ``group_label`` when the
+      collection carries one (``custom_group_labels=``), else by ``group``, and
+      its legend title defaults to ``"Group"`` instead of ``"Cell"``.
+      ``legend_title=`` still overrides.
     """
 
     # start_cell is used to determine the starting cell for the subplots (plotly)
@@ -1371,6 +1387,23 @@ def summary_plotter(collected_curves, cycles_to_plot=None, backend="plotly", **k
         # the series is the group, not the (absent) per-cell column
         if hdr_journal.group in id_vars:
             z = hdr_journal.group
+        # Journal / custom group labels beat the bare group id in the legend
+        # (#923). Groups without a label keep the id so nothing goes missing.
+        label_column = hdr_journal.group_label
+        if label_column in collected_curves.columns:
+            labels = collected_curves[label_column]
+            if labels.notna().any():
+                fallback = (
+                    collected_curves[z].astype(str)
+                    if z in collected_curves.columns
+                    else ""
+                )
+                collected_curves = collected_curves.assign(
+                    **{label_column: labels.where(labels.notna(), fallback)}
+                )
+                z = label_column
+        # A grouped summary has groups in the legend, not cells (#923).
+        kwargs.setdefault("legend_title", "Group")
 
     else:
         y = "value"
@@ -1382,8 +1415,16 @@ def summary_plotter(collected_curves, cycles_to_plot=None, backend="plotly", **k
     # order the variables by a given order:
     order_variables = kwargs.pop("order_variables", None)
     if order_variables:
+        # Variables that are not in the requested order (derived series such as
+        # the CV split or a normalized retention curve) keep their own order
+        # after the requested ones -- listing them as categories would drop
+        # their rows to NaN and lose a facet (#923).
+        present = list(pd.unique(collected_curves[g]))
+        categories = [v for v in order_variables if v in present]
+        categories += [v for v in present if v not in categories]
+        collected_curves = collected_curves.copy()
         collected_curves[g] = collected_curves[g].astype(
-            pd.CategoricalDtype(categories=order_variables, ordered=True)
+            pd.CategoricalDtype(categories=categories, ordered=True)
         )
         collected_curves = collected_curves.sort_values(by=[g, z, x])
 

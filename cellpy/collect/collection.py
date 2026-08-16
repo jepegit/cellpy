@@ -92,13 +92,21 @@ class Collection:
         ``spread``); ``layout="film"`` aliases ``kind="film"``. Unknown
         layout/kind/method values raise ``ValueError``. Plotly facet strips
         are pretty-printed by default (``Cycle N`` / cell label).
+
+        Summary facets follow the collected ``columns=`` order unless
+        ``order_variables=`` is given (#923); derived series (the CV split, a
+        normalized retention curve) keep their own order after them.
         """
         from cellpy.plotting import collected_plot
 
         family = family_kind or self._FAMILY.get(self.kind, "cycles")
         frame = self.data.to_pandas()
-        if family == "summary" and "cycle_num" in frame.columns:
-            frame = frame.rename(columns={"cycle_num": "cycle"})
+        if family == "summary":
+            if "cycle_num" in frame.columns:
+                frame = frame.rename(columns={"cycle_num": "cycle"})
+            requested = (self.meta.options or {}).get("columns")
+            if requested and "order_variables" not in kwargs:
+                kwargs = {**kwargs, "order_variables": list(requested)}
         return collected_plot(frame, family_kind=family, **kwargs)
 
     def to_image(self, fmt: str = "png", *, scale: float = 1.0, **plot_kwargs) -> bytes:
