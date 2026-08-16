@@ -37,6 +37,10 @@ def isolated_filesystem():
     ``typer.testing.CliRunner`` does not subclass Click's, so it has no
     ``isolated_filesystem()``. These tests need a throwaway cwd — ``cellpy
     setup`` writes into it — and that is all this provides.
+
+    Note what it does **not** provide: a throwaway *user* directory. ``cellpy
+    setup`` reads and writes ``~/.cellpy_prms_<user>.conf``, not the cwd, so a
+    test that asserts on setup's output also needs ``isolated_user_dir``.
     """
     previous = os.getcwd()
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
@@ -45,6 +49,23 @@ def isolated_filesystem():
             yield tmp
         finally:
             os.chdir(previous)
+
+
+@pytest.fixture
+def isolated_user_dir(tmp_path, monkeypatch, config_guard):
+    """Point ``cellpy setup`` at a throwaway user directory.
+
+    Without this, setup finds (or does not find) the *developer's* real config
+    and behaves differently: with one present it writes three files, with none
+    it also resets the paths and reports ten directories it would create. A
+    test counting those lines therefore passes on one machine and fails on the
+    next — which is how ``test_cli_setup`` came to pass locally and fail on CI
+    (#891).
+    """
+    config_guard("paths")
+    monkeypatch.setattr(prmreader, "get_user_dir", lambda: tmp_path)
+    monkeypatch.setattr(config.paths, "env_file", tmp_path / ".env_cellpy")
+    return tmp_path
 
 
 def test_get_user_name():
@@ -332,19 +353,19 @@ def test_cli_setup_help():
     assert result.exit_code == 0
 
 
-def test_cli_setup():
+def test_cli_setup(isolated_user_dir):
     runner = CliRunner()
     with isolated_filesystem():
         result = runner.invoke(cli.cli, ["setup", "--dry-run"])
         print(result.output)
         assert result.exit_code == 0
-        # one line per file it would touch (config, toml, env) and no claim
+        # one line per file it would write (config, toml, env) and no claim
         # that anything was written (#891)
-        assert result.output.count("dry-run: would") == 3
+        assert result.output.count("dry-run: would write") == 3
         assert "written" not in result.output
 
 
-def test_cli_setup_interactive():
+def test_cli_setup_interactive(isolated_user_dir):
     runner = CliRunner()
 
     with isolated_filesystem():
@@ -355,7 +376,7 @@ def test_cli_setup_interactive():
         assert result.exit_code == 0
 
 
-def test_cli_setup_custom_dir():
+def test_cli_setup_custom_dir(isolated_user_dir):
     runner = CliRunner()
 
     with isolated_filesystem():
@@ -368,12 +389,12 @@ def test_cli_setup_custom_dir():
         assert result.exit_code == 0
 
 
-def test_cli_setup_creates_dirs_and_files(tmp_path, monkeypatch):
+def test_cli_setup_creates_dirs_and_files(isolated_user_dir):
     runner = CliRunner()
     test_user = "inventory_user"
-
-    monkeypatch.setattr(prmreader, "get_user_dir", lambda: tmp_path)
-    config.paths.env_file = tmp_path / ".env_cellpy"
+    # was assigning config.paths.env_file directly and never putting it back,
+    # so the tmp path leaked into every later test in the process
+    tmp_path = isolated_user_dir
 
     result = runner.invoke(
         cli.cli,
