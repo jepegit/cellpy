@@ -297,7 +297,7 @@ def test_check64bit():
     logging.debug(f"OS 64bit? {b}")
 
 
-def test_search_for_files(parameters):
+def test_search_for_files(parameters, default_file_names):
     import os
 
     from cellpy import filefinder

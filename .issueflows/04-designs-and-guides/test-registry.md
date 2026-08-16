@@ -14,6 +14,12 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_plot_image_bytes.py::test_write_image_missing_kaleido | yes | yes | plotting.figures.write_image | #818 | OptionalDependencyError |
 | tests/test_plot_image_bytes.py::test_collection_to_image_uses_plot | yes | yes | Collection.to_image | #818 | |
 | tests/test_collect.py::test_group_it_averages_multi_when_mixed_with_singleton | yes | yes | collect.summary group_it mixed | #816 | multi avg + singleton long |
+| tests/test_collect.py::test_summary_collector_accepts_a_named_family | yes | yes | collect.collector.summary_collector family= | #927 | same frame as family.summary_options |
+| tests/test_collect.py::test_summary_collector_y_is_an_alias_for_family | yes | yes | collect.collector.summary_collector y= | #927 | summary_plot name parity |
+| tests/test_collect.py::test_summary_collector_rejects_an_unknown_family | yes | yes | collect.collector._family_options | #927 | get_family ValueError |
+| tests/test_collect.py::test_explicit_columns_win_over_the_family | yes | yes | collect.collector.summary_collector | #927 | precedence |
+| tests/test_collect.py::test_a_family_needs_a_cell_to_resolve_its_columns | yes | yes | collect.collector._summary_headers | #927 | header-bound families |
+| tests/test_collect.py::test_collector_help_names_the_common_kwargs | yes | yes | collect.collector signatures/docstrings | #924 | Jupyter Shift-Tab contract |
 | tests/test_cellpy.py::test_get_h5_instrument_skips_native_autopick | yes | yes | cellreader.get auto_pick vs instrument | #819 | monkeypatch load/from_raw routing |
 | tests/test_collected_app_hooks.py::test_pretty_facet_annotation_cycles_and_cells | yes | yes | plotting.collected._pretty_facet_annotation | #820 | unit helper |
 | tests/test_collected_app_hooks.py::test_cycles_per_cell_facet_strips_are_pretty | yes | yes | plotting.collected collected_plot per_cell | #820 | no cell= strip |
@@ -90,12 +96,7 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_batch_v3_runner.py::test_dispatch_lite_saves_raw_then_strips | yes | yes | batch.runner._dispatch_lite | #920 | process worker saves raw load |
 | tests/test_batch_v3_runner.py::test_persist_skips_none_placeholder_from_processes | yes | yes | batch.facade._persist_cells / CellStore.is_loaded | #920 | None.save guard |
 | tests/test_collected_summary_groups.py (module) | yes | yes | plotting.collected.summary_plotter / Collection.plot | #923 | facet order, group labels, legend title |
-| tests/test_collect.py::test_summary_collector_accepts_a_named_family | yes | yes | collect.collector.summary_collector family= | #927 | same frame as family.summary_options |
-| tests/test_collect.py::test_summary_collector_y_is_an_alias_for_family | yes | yes | collect.collector.summary_collector y= | #927 | summary_plot name parity |
-| tests/test_collect.py::test_summary_collector_rejects_an_unknown_family | yes | yes | collect.collector._family_options | #927 | get_family ValueError |
-| tests/test_collect.py::test_explicit_columns_win_over_the_family | yes | yes | collect.collector.summary_collector | #927 | precedence |
-| tests/test_collect.py::test_a_family_needs_a_cell_to_resolve_its_columns | yes | yes | collect.collector._summary_headers | #927 | header-bound families |
-| tests/test_collect.py::test_collector_help_names_the_common_kwargs | yes | yes | collect.collector signatures/docstrings | #924 | Jupyter Shift-Tab contract |
+| tests/test_collected_backend_alias.py (module) | yes | yes | plotting.collected.collected_plot backend alias | #925 | matplotlib -> seaborn, warn_once signature |
 
 **Columns**
 

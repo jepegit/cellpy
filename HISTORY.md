@@ -2,18 +2,10 @@
 
 ## [Unreleased]
 
-* Collector help is usable from Jupyter: `summary_collector`, `cycles_collector`,
-  `ica_collector` and `dva_collector` spell out the kwargs people actually pass
-  (`columns`, `group_it`, `custom_group_labels`, `rate`, `cycles`, `mode`,
-  `voltage_resolution`, …) in their signature and a Google-style docstring, and
-  point at `SummaryOptions` / `CurveOptions` / `IcaOptions` for the rest.
-  Shift-Tab no longer shows a one-line wrapper and `**overrides`. (#924)
-
-* `summary_collector(b, family="fullcell_standard_gravimetric")` (or `y=`, the
-  `summary_plot` alias) builds the collection from a registered plot family,
-  resolved against the first loaded cell's summary schema. Explicit `columns=`
-  / `options=` still win; an unknown name raises the same `ValueError` that
-  lists the known families. (#927)
+* `Collection.plot(backend="matplotlib")` no longer raises
+  `TypeError: warn_once() missing 1 required positional argument`. It keeps
+  aliasing to the seaborn layout path (and now actually returns a figure -
+  the y-label mapper crashed on the summary path). (#925)
 
 * Grouped summary collections plot the way they were collected: facets follow
   the `columns=` order instead of coming out alphabetical (derived series such
@@ -69,6 +61,17 @@
   line plot. (#874)
 * `spread_plot`: mean traces get a real `hovertemplate` (group/cell, variable,
   cycle, mean, std); Upper/Lower Bound band traces use `hoverinfo='skip'`. (#875)
+* Collector help is usable from Jupyter: `summary_collector`, `cycles_collector`,
+  `ica_collector` and `dva_collector` spell out the kwargs people actually pass
+  (`columns`, `group_it`, `custom_group_labels`, `rate`, `cycles`, `mode`,
+  `voltage_resolution`, …) in their signature and a Google-style docstring, and
+  point at `SummaryOptions` / `CurveOptions` / `IcaOptions` for the rest.
+  Shift-Tab no longer shows a one-line wrapper and `**overrides`. (#924)
+* `summary_collector(b, family="fullcell_standard_gravimetric")` (or `y=`, the
+  `summary_plot` alias) builds the collection from a registered plot family,
+  resolved against the first loaded cell's summary schema. Explicit `columns=`
+  / `options=` still win; an unknown name raises the same `ValueError` that
+  lists the known families. (#927)
 * Fix scheduled CI: keep `sqlalchemy-access` Windows-only in conda env files,
   and install `legacy-files` (PyTables) in the scheduled pip matrix. (#885)
 * Iterative fixes: document for devs how to add plots. (#892)
