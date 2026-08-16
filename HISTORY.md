@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+* `Collection.plot(backend="matplotlib")` no longer raises
+  `TypeError: warn_once() missing 1 required positional argument`. It keeps
+  aliasing to the seaborn layout path (and now actually returns a figure -
+  the y-label mapper crashed on the summary path). (#925)
+
 * Grouped summary collections plot the way they were collected: facets follow
   the `columns=` order instead of coming out alphabetical (derived series such
   as the CV split or a normalized retention curve keep their own order after
