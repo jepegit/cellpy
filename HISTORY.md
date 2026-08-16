@@ -7,6 +7,14 @@
   aliasing to the seaborn layout path (and now actually returns a figure -
   the y-label mapper crashed on the summary path). (#925)
 
+* Grouped summary collections plot the way they were collected: facets follow
+  the `columns=` order instead of coming out alphabetical (derived series such
+  as the CV split or a normalized retention curve keep their own order after
+  the requested ones), `custom_group_labels=` reach the legend (integer *and*
+  string group ids now match; an unlabelled group keeps its id), and the legend
+  title of a grouped summary is **Group** rather than **Cell**. `legend_title=`
+  and `order_variables=` still override. (#923)
+
 * `cellpy info` and `cellpy info --check` report rather than narrate. The check
   run is one line per check with a symbol, a short detail and a hint when it
   fails, closing with `N of M checks passed` - instead of `=== checking ===`
