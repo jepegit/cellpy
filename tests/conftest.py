@@ -72,6 +72,29 @@ def config_guard():
 
 
 @pytest.fixture
+def default_file_names(config_guard):
+    """Pin the ``file_names`` settings to the packaged defaults.
+
+    A test that asserts on a generated file name is otherwise reading the
+    developer's own ``cellpy.toml``: ``filefinder.search_for_files`` falls back
+    to ``config.file_names.cellpy_file_extension`` when the caller passes no
+    extension, so a machine that sets ``cellpy_file_extension = "cellpy"``
+    produced ``runA.cellpy`` where the test expected ``runA.h5``. CI has no
+    user config and stayed green, which made it look like a real regression on
+    whatever branch happened to be checked out.
+    """
+
+    from cellpy import config
+
+    config_guard("file_names")
+    section = config.file_names
+    defaults = type(section)()
+    for name in type(defaults).model_fields:
+        setattr(section, name, getattr(defaults, name))
+    return section
+
+
+@pytest.fixture
 def parameters():
     """Files, Directories, and Variables to be used in the tests."""
     return fdv
