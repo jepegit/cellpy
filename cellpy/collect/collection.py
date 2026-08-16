@@ -93,6 +93,10 @@ class Collection:
         layout/kind/method values raise ``ValueError``. Plotly facet strips
         are pretty-printed by default (``Cycle N`` / cell label).
 
+        ``layout="per_cell"`` colours by cycle: more than
+        ``legend_cycle_limit`` cycles (default 8) get a colorbar instead of a
+        long legend, and ``force_colorbar`` / ``force_legend`` override (#928).
+
         Summary facets follow the collected ``columns=`` order unless
         ``order_variables=`` is given (#923); derived series (the CV split, a
         normalized retention curve) keep their own order after them.

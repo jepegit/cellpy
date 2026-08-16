@@ -7,6 +7,11 @@
   aliasing to the seaborn layout path (and now actually returns a figure -
   the y-label mapper crashed on the summary path). (#925)
 
+* `cycles_collector(b).plot(layout="per_cell")` follows the shared cycle
+  legend policy: more than `legend_cycle_limit` cycles (default 8, the same as
+  the single-cell `cycles_plot`) get a colorbar instead of a legend hundreds of
+  entries long. `force_colorbar` / `force_legend` override. (#928)
+
 * Grouped summary collections plot the way they were collected: facets follow
   the `columns=` order instead of coming out alphabetical (derived series such
   as the CV split or a normalized retention curve keep their own order after
