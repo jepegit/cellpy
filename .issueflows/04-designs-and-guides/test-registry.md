@@ -17,6 +17,12 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_collect.py::test_batch_collector_save_figure_writes_a_file | yes | yes | collect.collector.BatchCollector.save_figure | #926 | suffix defaults to .png |
 | tests/test_collect.py::test_save_help_says_data_only_and_names_the_figure_api | yes | yes | Collection.save / BatchCollector.save docstrings | #926 | `.save?` must name the figure API |
 | tests/test_collect.py::test_group_it_averages_multi_when_mixed_with_singleton | yes | yes | collect.summary group_it mixed | #816 | multi avg + singleton long |
+| tests/test_collect.py::test_summary_collector_accepts_a_named_family | yes | yes | collect.collector.summary_collector family= | #927 | same frame as family.summary_options |
+| tests/test_collect.py::test_summary_collector_y_is_an_alias_for_family | yes | yes | collect.collector.summary_collector y= | #927 | summary_plot name parity |
+| tests/test_collect.py::test_summary_collector_rejects_an_unknown_family | yes | yes | collect.collector._family_options | #927 | get_family ValueError |
+| tests/test_collect.py::test_explicit_columns_win_over_the_family | yes | yes | collect.collector.summary_collector | #927 | precedence |
+| tests/test_collect.py::test_a_family_needs_a_cell_to_resolve_its_columns | yes | yes | collect.collector._summary_headers | #927 | header-bound families |
+| tests/test_collect.py::test_collector_help_names_the_common_kwargs | yes | yes | collect.collector signatures/docstrings | #924 | Jupyter Shift-Tab contract |
 | tests/test_cellpy.py::test_get_h5_instrument_skips_native_autopick | yes | yes | cellreader.get auto_pick vs instrument | #819 | monkeypatch load/from_raw routing |
 | tests/test_collected_app_hooks.py::test_pretty_facet_annotation_cycles_and_cells | yes | yes | plotting.collected._pretty_facet_annotation | #820 | unit helper |
 | tests/test_collected_app_hooks.py::test_cycles_per_cell_facet_strips_are_pretty | yes | yes | plotting.collected collected_plot per_cell | #820 | no cell= strip |

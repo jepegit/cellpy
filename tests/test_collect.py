@@ -17,6 +17,9 @@ from cellpy.collect import (
     SummaryOptions,
     collect_cycles,
     collect_summaries,
+    cycles_collector,
+    dva_collector,
+    ica_collector,
     load_collection,
     normalize_column,
     normalize_column_on_max,
@@ -537,6 +540,83 @@ def test_normalize_column_on_max_wide_and_grouped():
     assert normalize_column_on_max("nope")(wide).equals(wide)
 
 
+# ---- named plot family on the collector (#927) --------------------------
+
+
+@pytest.mark.essential
+def test_summary_collector_accepts_a_named_family(real_batch, real_cell):
+    """``family=`` must collect exactly what ``family.summary_options`` asks for."""
+    hdr = real_cell.schema.summary
+    family = registry.get("fullcell_standard_gravimetric")
+    expected = collect_summaries(real_batch, options=family.summary_options(hdr)).data
+
+    data = summary_collector(real_batch, family="fullcell_standard_gravimetric").data
+
+    assert data.columns == expected.columns
+    assert data.equals(expected)
+
+
+@pytest.mark.essential
+def test_summary_collector_y_is_an_alias_for_family(real_batch):
+    """Same names as ``summary_plot(y=...)``, so ``y=`` must work too (#927)."""
+    by_family = summary_collector(real_batch, family="capacities_gravimetric").data
+    by_y = summary_collector(real_batch, y="capacities_gravimetric").data
+    assert by_family.equals(by_y)
+
+
+@pytest.mark.essential
+def test_summary_collector_rejects_an_unknown_family(real_batch):
+    with pytest.raises(ValueError, match="unknown plot family"):
+        summary_collector(real_batch, family="not_a_family")
+
+
+@pytest.mark.essential
+def test_explicit_columns_win_over_the_family(real_batch):
+    data = summary_collector(
+        real_batch,
+        family="capacities_gravimetric",
+        columns=("charge_capacity_gravimetric",),
+    ).data
+    assert "charge_capacity_gravimetric" in data.columns
+    assert "discharge_capacity_gravimetric" not in data.columns
+
+
+@pytest.mark.essential
+def test_a_family_needs_a_cell_to_resolve_its_columns():
+    pages = pl.DataFrame({FILENAME: ["x"], "group": [1], "sub_group": [1]})
+    b = _batch_with_cells({"x": _SummaryCell([1.0, 2.0])}, pages)  # no .schema
+    with pytest.raises(ValueError, match="without a loaded cell"):
+        summary_collector(b, family="capacities_gravimetric")
+
+
+# ---- collector help lists the kwargs users actually pass (#924) ---------
+
+
+@pytest.mark.essential
+@pytest.mark.parametrize(
+    ("collector", "expected"),
+    [
+        (
+            summary_collector,
+            ("family", "columns", "group_it", "custom_group_labels", "rate"),
+        ),
+        (cycles_collector, ("cycles", "rate", "mode", "method")),
+        (ica_collector, ("cycles", "voltage_resolution")),
+        (dva_collector, ("cycles", "capacity_resolution")),
+    ],
+    ids=["summary", "cycles", "ica", "dva"],
+)
+def test_collector_help_names_the_common_kwargs(collector, expected):
+    """Shift-Tab in Jupyter must show more than ``**overrides`` (#924)."""
+    import inspect
+
+    parameters = inspect.signature(collector).parameters
+    doc = inspect.getdoc(collector) or ""
+    for name in expected:
+        assert name in parameters, f"{collector.__name__} signature misses {name}"
+        assert f"{name} " in doc, f"{collector.__name__} docstring misses {name}"
+    # and the escape hatch to the full option set is named
+    assert "Options" in doc
 # ---- figure export is discoverable from the collector (#926) ------------
 
 
