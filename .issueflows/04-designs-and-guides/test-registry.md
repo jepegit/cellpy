@@ -13,6 +13,9 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_plot_image_bytes.py::test_write_image_returns_bytes | yes | yes | plotting.figures.write_image | #818 | monkeypatch to_image |
 | tests/test_plot_image_bytes.py::test_write_image_missing_kaleido | yes | yes | plotting.figures.write_image | #818 | OptionalDependencyError |
 | tests/test_plot_image_bytes.py::test_collection_to_image_uses_plot | yes | yes | Collection.to_image | #818 | |
+| tests/test_collect.py::test_batch_collector_to_image | yes | yes | collect.collector.BatchCollector.to_image | #926 | proxies Collection.to_image |
+| tests/test_collect.py::test_batch_collector_save_figure_writes_a_file | yes | yes | collect.collector.BatchCollector.save_figure | #926 | suffix defaults to .png |
+| tests/test_collect.py::test_save_help_says_data_only_and_names_the_figure_api | yes | yes | Collection.save / BatchCollector.save docstrings | #926 | `.save?` must name the figure API |
 | tests/test_collect.py::test_group_it_averages_multi_when_mixed_with_singleton | yes | yes | collect.summary group_it mixed | #816 | multi avg + singleton long |
 | tests/test_collect.py::test_summary_collector_accepts_a_named_family | yes | yes | collect.collector.summary_collector family= | #927 | same frame as family.summary_options |
 | tests/test_collect.py::test_summary_collector_y_is_an_alias_for_family | yes | yes | collect.collector.summary_collector y= | #927 | summary_plot name parity |
@@ -36,6 +39,7 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_collected_ica_direction.py::test_ica_invalid_direction_warns_and_coerces | yes | yes | plotting.collected ica_plotter warn | #821 | |
 | tests/test_collected_ica_direction.py::test_collected_plot_ica_per_cell_honours_direction | yes | yes | plotting.collected collected_plot ica | #821 | public entry |
 | tests/test_resolve_collected_layout_kind.py (module) | yes | yes | plotting.collected.resolve_collected_layout_kind | #874 | validate + film alias |
+| tests/test_collected_cycle_colorbar.py (module) | yes | yes | plotting.collected.sequence_plotter fig_pr_cell | #928 | collected cycle legend vs colorbar |
 | tests/test_batch_v3_runner.py::test_auto_uses_existing_cellpy_without_raw | yes | yes | batch.runner._get_kwargs AUTO | #825 | prefer local .cellpy |
 | tests/test_batch_v3_runner.py::test_auto_falls_back_to_raw_when_cellpy_missing | yes | yes | batch.runner._get_kwargs AUTO | #825 | |
 | tests/test_batch_v3_runner.py::test_newest_passes_both_paths | yes | yes | batch.runner._get_kwargs NEWEST | #825 | freshness check |

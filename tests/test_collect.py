@@ -617,3 +617,46 @@ def test_collector_help_names_the_common_kwargs(collector, expected):
         assert f"{name} " in doc, f"{collector.__name__} docstring misses {name}"
     # and the escape hatch to the full option set is named
     assert "Options" in doc
+# ---- figure export is discoverable from the collector (#926) ------------
+
+
+class _FakeFig:
+    def __init__(self, payload=b"IMAGE"):
+        self.payload = payload
+        self.calls = []
+
+    def to_image(self, format="png", scale=1.0, **kwargs):
+        self.calls.append({"format": format, "scale": scale, **kwargs})
+        return self.payload
+
+
+@pytest.mark.essential
+def test_batch_collector_to_image(real_batch, monkeypatch):
+    bc = summary_collector(real_batch, columns=("charge_capacity",))
+    fig = _FakeFig(b"from-collector")
+    monkeypatch.setattr(bc.collection, "plot", lambda **kwargs: fig)
+
+    assert bc.to_image("svg", scale=2.0) == b"from-collector"
+    assert fig.calls[0] == {"format": "svg", "scale": 2.0}
+
+
+@pytest.mark.essential
+def test_batch_collector_save_figure_writes_a_file(real_batch, monkeypatch, tmp_path):
+    bc = summary_collector(real_batch, columns=("charge_capacity",))
+    monkeypatch.setattr(bc.collection, "plot", lambda **kwargs: _FakeFig(b"PNGBYTES"))
+
+    written = bc.save_figure(tmp_path / "cycle_life")
+    assert written == tmp_path / "cycle_life.png"
+    assert written.read_bytes() == b"PNGBYTES"
+
+
+@pytest.mark.essential
+def test_save_help_says_data_only_and_names_the_figure_api():
+    """``.save?`` used to say nothing about figures at all (#926)."""
+    import inspect
+
+    for save in (BatchCollector.save, Collection.save):
+        doc = inspect.getdoc(save) or ""
+        assert "data only" in doc
+        assert "save_figure" in doc
+        assert "to_image" in doc
