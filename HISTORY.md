@@ -56,6 +56,10 @@
   error on stderr with exit code 2 — it used to print hand-made usage text (or
   a flag dump and an apology) to stdout and exit 255 or 0. `cellpy convert`
   reports a rejected `--to` on stderr. (#891)
+* Figure export is discoverable from a collector: `BatchCollector.to_image()`
+  returns image bytes and `BatchCollector.save_figure(path)` /
+  `Collection.save_figure(path)` write one to disk. `.save()` still writes
+  frame + `meta.json` only, and now says so and names the figure API. (#926)
 * `Batch.export_project(destination)` writes a shareable `.cellpy` + journal
   bundle (2.x replacement for `duplicate_cellpy_files`). (#878)
 * Run the real `essential` and `full` CI gates once for every PR targeting

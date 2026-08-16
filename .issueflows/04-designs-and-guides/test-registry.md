@@ -13,6 +13,9 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_plot_image_bytes.py::test_write_image_returns_bytes | yes | yes | plotting.figures.write_image | #818 | monkeypatch to_image |
 | tests/test_plot_image_bytes.py::test_write_image_missing_kaleido | yes | yes | plotting.figures.write_image | #818 | OptionalDependencyError |
 | tests/test_plot_image_bytes.py::test_collection_to_image_uses_plot | yes | yes | Collection.to_image | #818 | |
+| tests/test_collect.py::test_batch_collector_to_image | yes | yes | collect.collector.BatchCollector.to_image | #926 | proxies Collection.to_image |
+| tests/test_collect.py::test_batch_collector_save_figure_writes_a_file | yes | yes | collect.collector.BatchCollector.save_figure | #926 | suffix defaults to .png |
+| tests/test_collect.py::test_save_help_says_data_only_and_names_the_figure_api | yes | yes | Collection.save / BatchCollector.save docstrings | #926 | `.save?` must name the figure API |
 | tests/test_collect.py::test_group_it_averages_multi_when_mixed_with_singleton | yes | yes | collect.summary group_it mixed | #816 | multi avg + singleton long |
 | tests/test_cellpy.py::test_get_h5_instrument_skips_native_autopick | yes | yes | cellreader.get auto_pick vs instrument | #819 | monkeypatch load/from_raw routing |
 | tests/test_collected_app_hooks.py::test_pretty_facet_annotation_cycles_and_cells | yes | yes | plotting.collected._pretty_facet_annotation | #820 | unit helper |
