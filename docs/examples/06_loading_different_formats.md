@@ -16,15 +16,16 @@ To get an overview on all the implemented instruments/loaders:
 
 
 ```python
-from cellpy.readers import core
+from cellpy.readers import data_structures
 
-print(core.find_all_instruments().keys())
+print(data_structures.find_all_instruments().keys())
+
 ```
 
     dict_keys(['arbin_res', 'arbin_sql', 'arbin_sql_7', 'arbin_sql_csv', 'arbin_sql_h5', 'arbin_sql_xlsx', 
     'biologics_mpr', 'custom', 'ext_nda_reader', 'local_instrument', 'maccor_txt', 'neware_txt', 'neware_xlsx', 
     'pec_csv'])
-    
+
 
 Some instruments have different types of `models` - for more details on those, have a look at the section on reading of *Maccor* data below.
 
@@ -64,7 +65,7 @@ print(f"{p.name=}")
 ```
 
     p.name='pec.csv'
-    
+
 
 Below we take a look at the first 35 lines of the example PEC csv-files.
 
@@ -111,7 +112,7 @@ head(p, 35)
     [33] Test,Cell,Rack,Shelf,Position,Cell ID,Step,Cycle,Total Time (Seconds),Load On Time (Seconds),Step Time (Seconds),Cycle Charge Time (Seconds),Cycle Discharge Time (Seconds),Real Time,Position Start Time,Voltage (mV),Current (mA),Charge Capacity (mAh),Discharge Capacity (mAh),Charge Capacity (mWh),Discharge Capacity (mWh),ReasonCode,50% DoD (mV),PeakPower 1 (W),PeakPower 2 (W),Open Circuit Voltage 1 (V),Open Circuit Voltage 2 (V),Internal Resistance 1 (mOhm),Internal Resistance 2 (mOhm),Ambient temperature (Â°C),Cell surface temperature (Â°C),DC Internal Resistance (mOhm),AC Internal Resistance (mOhm),Station Temperature (Â°C),
     [34] 187,1,SBT0550,001,1,,0,0,1,0,1,0,0,02/22/2019 16:23:27,02/22/2019 16:23:26,3272.632,0,0,0,0,0,30,0,0,0,0,0,0,0,25.83,24.9,,,,
     [35] 187,1,SBT0550,001,1,,0,0,5,0,5,0,0,02/22/2019 16:23:31,02/22/2019 16:23:26,3272.2776,0,0,0,0,0,30,0,0,0,0,0,0,0,25.83,24.9,,,,
-    
+
 
 ### Loading the file
 
@@ -156,12 +157,13 @@ You can get information about the different models for the loaders by looking at
 
 
 ```python
-config = core.instrument_configurations("maccor")
+config = data_structures.instrument_configurations("maccor")
 print(config.keys())
+
 ```
 
     dict_keys(['maccor_txt'])
-    
+
 
 2. Check which *models* are available for Maccor:
 
@@ -171,7 +173,7 @@ print(config["maccor_txt"]["__all__"])
 ```
 
     ['default', 'ZERO', 'ONE', 'TWO', 'THREE', 'S4000-UBHAM', 'S4000-KIT', 'S4000-WMG']
-    
+
 
 3. Have a closer look at a selected model configuration, here for model `THREE`:
 
@@ -247,7 +249,7 @@ print(config["maccor_txt"]["THREE"])
         ),
         'doc': 'Class for loading data from Maccor txt files.'
     }
-    
+
 
 Especially the `formatters` give valuable hints if a model is promising for your specific file or not:
 
@@ -257,7 +259,7 @@ print(config["maccor_txt"]["THREE"]["config_params"].formatters)
 ```
 
     {'skiprows': 2, 'sep': '\t', 'header': 0, 'encoding': 'ISO-8859-1', 'decimal': ',', 'thousands': None}
-    
+
 
 Note that "config_params" is not a dictionary, but an instance of the ModelParameters class (so dot notation is needed).
 
@@ -271,7 +273,7 @@ print(f"{p.name=}")
 ```
 
     p.name='maccor_three.txt'
-    
+
 
 
 ```python
@@ -289,7 +291,7 @@ head(p, 10)
     [08] 3	0	1	  0d 00:02:00.00	  0d 00:02:00.00	0.0	0.0	0.0	1853.0556	R	1	08/23/2021 6:06:18 PM
     [09] 4	0	1	  0d 00:03:00.00	  0d 00:03:00.00	0.0	0.0	0.0	1853.2082	R	1	08/23/2021 6:07:18 PM
     [10] 5	0	1	  0d 00:04:00.00	  0d 00:04:00.00	0.0	0.0	0.0	1853.0556	R	1	08/23/2021 6:08:18 PM
-    
+
 
 The file format for this file is handled by the model `THREE` in `cellpy`. Both, information on the instrument ("maccor_txt") and on the *model* ("THREE") has to be included when loading the data using the standard  `cellpy.get` method:
 
@@ -312,7 +314,7 @@ c = cellpy.get(p, instrument="maccor_txt", model="THREE", cycle_mode="full_cell"
     (cellpy) - running post-processor: convert_date_time_to_datetime
     (cellpy) - running post-processor: convert_step_time_to_timedelta
     (cellpy) - running post-processor: convert_test_time_to_timedelta
-    
+
 
 After loading the file, you are ready to use all common `cellpy` functionalities:
 
@@ -323,7 +325,7 @@ plotutils.raw_plot(c, width=1200, height=400)
 ```
 
     Available cycles in the file: [ 1  2  3  4  5  6  7  8  9 10 11 12 13 14 15]
-    
+
 
 
     
@@ -358,12 +360,13 @@ For exported Neware files, the default text `model` is `"ONE"` (`"UIO"` is a nic
 
 
 ```python
-config = core.instrument_configurations("neware")
+config = data_structures.instrument_configurations("neware")
 print(config["neware_txt"]["__all__"])
+
 ```
 
     ['default', 'ONE', 'UIO']
-    
+
 
 Check the configuration for *model* `ONE`:
 
@@ -448,7 +451,7 @@ print(config["neware_txt"]["ONE"])
         ),
         'doc': 'Class for loading data from Neware txt files.'
     }
-    
+
 
 
 ```python
@@ -457,7 +460,7 @@ print(f"{p.name=}")
 ```
 
     p.name='neware_uio.csv'
-    
+
 
 
 ```python
@@ -487,7 +490,7 @@ c = cellpy.get(p, instrument="neware_txt", mass=2.09)
     (cellpy) - running post-processor: convert_date_time_to_datetime
     (cellpy) - running post-processor: convert_step_time_to_timedelta
     (cellpy) - running post-processor: convert_test_time_to_timedelta
-    
+
 
 Notice that this loader (with the default model) uses the auto-formatting method. The method tries to find out type of delimiter and number of header rows automatically. You can override this by providing the values in the call yourself, for example `c.get(p, instrument="neware_txt", sep=",")`
 

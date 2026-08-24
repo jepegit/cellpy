@@ -34,60 +34,76 @@ else:
 pec_file
 ```
 
+Look at the first few lines of the PEC file to understand its structure.
+
+
 
 ```python
-# Let's take a look at the first few lines of the PEC file to understand its structure.
 with open(pec_file, encoding="utf-8-sig") as handle:
     for line_number, line in zip(range(1, 13), handle):
         print(f"{line_number:02d}: {line.rstrip()}")
+
 ```
+
+Load the PEC data with the built-in `pec_csv` loader. The `mass` value can be adjusted for the dataset.
+
 
 
 ```python
-# Now we can load the PEC data using cellpy. We specify the instrument type as "pec_csv" and set the mass to 1.0 (this is a parameter that can be adjusted based on the specific dataset).
-cell = cellpy.get(
+c = cellpy.get(
     filename=pec_file,
     instrument="pec_csv",
     mass=1.0,
     auto_summary=False,
 )
-cell
+c
+
 ```
+
+The raw table is a pandas DataFrame. Prefer `c.schema` so column names track the native 2.1 headers.
+
 
 
 ```python
-# Now that we have loaded the data, we can take a look at the raw data to see what it looks like. The raw data is stored in a pandas DataFrame, and we can use the `head()` method to see the first few rows.
-# Prefer c.schema so column names track the native 2.0 headers.
-raw = cell.data.raw
-r = cell.schema.raw
+raw = c.data.raw
+r = c.schema.raw
 raw[[r.datapoint_num, r.cycle_num, r.step_num, r.test_time, r.current, r.potential]].head()
+
+```
+
+Build the step table and summary so cycle and step information is available.
+
+
+
+```python
+c.make_step_table()
+c.make_summary()
+
+print(f"Loaded rows: {len(c.data.raw)}")
+print(f"Cycles: {c.get_cycle_numbers()[:10]}")
+print(f"Start time: {c.data.start_datetime}")
+
 ```
 
 
 ```python
-# After loading the data, we need to make the step table and summary to have access to the cycle and step information.
-cell.make_step_table()
-cell.make_summary()
+c.data.steps.head()
 
-print(f"Loaded rows: {len(cell.data.raw)}")
-print(f"Cycles: {cell.get_cycle_numbers()[:10]}")
-print(f"Start time: {cell.data.start_datetime}")
 ```
 
 
 ```python
-cell.data.steps.head()
+c.data.summary.head()
+
 ```
+
+Save in HDF5 / cellpy format.
+
 
 
 ```python
-cell.data.summary.head()
-```
+c.save("pec_data.h5")
 
-
-```python
-# Save in h5 format
-cell.save("pec_data.h5")
 ```
 
 # Loading Multiple tests for the same CellID
@@ -109,10 +125,11 @@ config.reader.max_raw_files_to_merge = 50  # or whatever you need
 
 ```
 
+Multiple files can be loaded at once by passing a list of file paths to `cellpy.get()`. The files are sorted by the test number extracted from the file name.
+
+
 
 ```python
-# Multiple files can be loaded at once by passing a list of file paths to the cellpy.get() function. The files will be sorted based on the test number extracted from the file name.
-
 def test_number(path):
     """Extract the test number from the file name. Expects file names in the format "TestXXXXX.csv"."""
     return int(re.search(r"Test(\d+)\.csv$", path.name).group(1))
@@ -128,9 +145,5 @@ files = sorted(files, key=test_number)
 c = cellpy.get(files, instrument="pec_csv")
 c.make_step_table()
 c.make_summary()
-```
-
-
-```python
 
 ```

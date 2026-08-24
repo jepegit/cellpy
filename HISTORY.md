@@ -129,6 +129,10 @@
 * Remote `rglob(..., files_only=True)` keeps the `find -L` listing when `find`
   exits 1 because a sibling directory was unreadable, instead of discarding it
   and falling back to the slow SFTP walk. (#897)
+* Example notebooks use the 2.1 schema and public APIs (`c.schema`,
+  `potential` / `cycle_num` / `step_type`, `cellpy.readers.data_structures`,
+  registered `summary_plot` families). `cellpy.get` docstring examples load
+  `.cellpy` files and pass `nominal_capacity=`. (#940)
 
 ## [2.1.2] - 2026-08-09
 

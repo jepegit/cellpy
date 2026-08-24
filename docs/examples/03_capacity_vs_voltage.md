@@ -78,11 +78,13 @@ cap.head(2)
 
 
 
-In its simplest form, this returns a pandas DataFrame, containing the voltage and capacity for the selected cycles.
+In its simplest form, this returns a pandas DataFrame, containing the potential and capacity for the selected cycles.
+
 
 
 ```python
-px.line(cap, x="capacity", y="voltage")
+px.line(cap, x="capacity", y="potential")
+
 ```
 
 
@@ -149,7 +151,8 @@ cap1.head(2)
 
 
 ```python
-px.line(cap1, x="capacity", y="voltage", color="cycle", symbol="direction")
+px.line(cap1, x="capacity", y="potential", color="cycle_num", symbol="direction")
+
 ```
 
 
@@ -172,7 +175,8 @@ cap2 = c.get_cap(
     categorical_column=True,
     method="forth-and-forth",
 )
-px.line(cap2, x="capacity", y="voltage", color="cycle", title="Method: Forth-and-forth")
+px.line(cap2, x="capacity", y="potential", color="cycle_num", title="Method: Forth-and-forth")
+
 ```
 
 
@@ -186,7 +190,8 @@ px.line(cap2, x="capacity", y="voltage", color="cycle", title="Method: Forth-and
 cap3 = c.get_cap(
     cycle=[1, 2, 3], label_cycle_number=True, categorical_column=True, method="forth"
 )
-px.line(cap3, x="capacity", y="voltage", color="cycle", title="Method: Forth")
+px.line(cap3, x="capacity", y="potential", color="cycle_num", title="Method: Forth")
+
 ```
 
 

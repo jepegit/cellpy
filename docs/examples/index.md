@@ -8,11 +8,10 @@ Here we provide a few basic examples to get you started with cellpy - from readi
 folder](https://github.com/jepegit/cellpy/tree/master/examples) in the cellpy GitHub repository.
 
 !!! note
-    Most of these notebooks were originally written for cellpy 1.x. The
-    [Incremental capacity analysis](04_incremental_capacity_analysis.md) and
-    [Batch processing](batch_utility/cellpy_batch_processing.md) pages have been
-    brought up to the 2.1 API and re-executed; the others may still show 1.x idioms.
-    If something looks off, [let us know](https://github.com/jepegit/cellpy/issues).
+    The numbered tutorials and the [Batch processing](batch_utility/cellpy_batch_processing.md)
+    page follow the 2.1 API (`c.schema`, `potential` / `cycle_num` / `step_type`,
+    registered `summary_plot` families). If something looks off,
+    [let us know](https://github.com/jepegit/cellpy/issues).
 
 [Contributions](../contributing/contributing.md) to more example notebooks are of course very welcome!
 

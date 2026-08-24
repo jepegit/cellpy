@@ -10,9 +10,10 @@ frame = ica.dvdq(c, direction="charge")   # cycle, direction, capacity, voltage,
 ```
 
 Both are thin wrappers over stateless transform functions
-([`transform_half_cycle`][]) configured by a single frozen [`IcaOptions`][]
-object: interpolate V(q), optionally smooth, invert to q(V), differentiate,
-optionally smooth again, optionally normalize.
+([`transform_half_cycle`][cellpy.ica.transform_half_cycle]) configured by a
+single frozen [`IcaOptions`][cellpy.ica.IcaOptions] object: interpolate V(q),
+optionally smooth, invert to q(V), differentiate, optionally smooth again,
+optionally normalize.
 
 - The output frame is *specced*: always long format, always the same columns,
   with `direction` spelled `"charge"`/`"discharge"`.
@@ -149,8 +150,8 @@ class IcaOptions:
             ``end_capacity / normalizing_roof`` — the hook for normalizing a
             whole series to one nominal capacity.
         increment_method: Only ``"diff"`` is implemented on this path; the
-            unfinished ``"hist"`` binning method is reachable through the
-            deprecated [`Converter`][cellpy.ica.Converter] only.
+            unfinished ``"hist"`` binning method lived on the 1.x ``Converter``
+            class, which was removed in 2.1.
     """
 
     # interpolation

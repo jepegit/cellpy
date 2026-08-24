@@ -4443,17 +4443,17 @@ def get(
     Examples:
         >>> # read an arbin .res file and create a cellpy object with
         >>> # populated summary and step-table:
-        >>> c = cellpy.get("my_data.res", instrument="arbin_res", mass=1.14, area=2.12, loading=1.2, nom_cap=155.2)
+        >>> c = cellpy.get("my_data.res", instrument="arbin_res", mass=1.14, area=2.12, loading=1.2, nominal_capacity=155.2)
         >>>
         >>> # load a cellpy-file:
-        >>> c = cellpy.get("my_cellpy_file.clp")
+        >>> c = cellpy.get("my_cellpy_file.cellpy")
         >>>
         >>> # load a txt-file exported from Maccor:
         >>> c = cellpy.get("my_data.txt", instrument="maccor_txt", model="one")
         >>>
         >>> # load a raw-file if it is newer than the corresponding cellpy-file,
         >>> # if not, load the cellpy-file:
-        >>> c = cellpy.get("my_data.res", cellpy_file="my_data.clp")
+        >>> c = cellpy.get("my_data.res", cellpy_file="my_data.cellpy")
         >>>
         >>> # load a file with a custom file-description:
         >>> c = cellpy.get("my_file.csv", instrument_file="my_instrument.yaml")
