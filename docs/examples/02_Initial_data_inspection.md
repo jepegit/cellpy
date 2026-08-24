@@ -23,7 +23,18 @@ Either load raw data or your saved cellpy files:
 
 ```python
 filedir = pathlib.Path("data")  # foldername within the same directory
-c = cellpy.get(filedir / "out" / "20210210_FC.h5")
+candidates = [
+    filedir / "20210210_FC.h5",
+    filedir / "out" / "20210210_FC.h5",
+]
+cellpy_path = next((p for p in candidates if p.exists()), None)
+if cellpy_path is None:
+    from cellpy.utils import example_data
+
+    c = example_data.cellpy_file()
+else:
+    c = cellpy.get(cellpy_path)
+
 ```
 
 ## Looking at the data
@@ -387,7 +398,9 @@ These plot functions offer some flexibility. You can, e.g. select specific cycle
 
 
 ```python
-plotutils.cycle_info_plot(c, cycle=[7, 8, 9], title="Cycle info plot:", t_unit="days")
+cycles = list(c.get_cycle_numbers())[:3]
+plotutils.cycle_info_plot(c, cycle=cycles, title="Cycle info plot:", t_unit="days")
+
 ```
 
 
@@ -434,7 +447,7 @@ print(c.data.summary.columns)
            'cumulated_charge_capacity_loss_areal', 'shifted_charge_capacity_areal',
            'shifted_discharge_capacity_areal'],
           dtype='object')
-    
+
 
 Here is one example:
 
@@ -443,9 +456,10 @@ Here is one example:
 ```python
 plotutils.summary_plot(
     c,
-    y="shifted_discharge_capacity_gravimetric",
-    title="<b>Shifted Charge Capacity</b>",
+    y="capacities_gravimetric_coulombic_efficiency",
+    title="<b>Gravimetric Capacities and Coulombic Efficiency</b>",
 )
+
 ```
 
 
@@ -481,9 +495,17 @@ plotutils.summary_plot(c, y="voltages", title="<b>End Voltages</b>")
     
 
 
-The pre-defined variable sets for the summary plots are: 
-- "voltages"
-- "capacities_gravimetric"
-- "capacities_areal"
-- "capacities_gravimetric_split_constant_voltage"
-- "capacities_areal_split_constant_voltage"
+The `summary_plot` function also has some pre-defined sets of variables for plotting the most common variables.
+
+The pre-defined variable sets for the summary plots are:
+
+- `"voltages"`
+- `"capacities"`
+- `"capacities_gravimetric"` / `"capacities_areal"` / `"capacities_absolute"`
+- `"capacities_gravimetric_coulombic_efficiency"` / `"capacities_areal_coulombic_efficiency"` / `"capacities_absolute_coulombic_efficiency"`
+- `"capacities_gravimetric_with_rate"` / `"capacities_areal_with_rate"` / `"capacities_absolute_with_rate"`
+- `"capacities_gravimetric_split_constant_voltage"` / `"capacities_areal_split_constant_voltage"`
+- `"fullcell_standard_gravimetric"` / `"fullcell_standard_areal"` / `"fullcell_standard_absolute"`
+- `"fullcell_standard_cumloss_gravimetric"` / `"fullcell_standard_cumloss_areal"` / `"fullcell_standard_cumloss_absolute"`
+- `"fullcell_standard_dev"`
+

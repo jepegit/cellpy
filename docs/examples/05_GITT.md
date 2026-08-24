@@ -18,14 +18,27 @@ Set filepath and load the datafile:
 
 ```python
 filedir = pathlib.Path("data")  # foldername within the same directory
-c = cellpy.get(filedir / "out" / "20210210_FC.h5")
+candidates = [
+    filedir / "20210210_FC.h5",
+    filedir / "out" / "20210210_FC.h5",
+]
+cellpy_path = next((p for p in candidates if p.exists()), None)
+if cellpy_path is None:
+    raise FileNotFoundError(
+        "Could not find 20210210_FC.h5 in examples/data/ or examples/data/out/. "
+        "Run notebook 01, or place the file in examples/data/."
+    )
+c = cellpy.get(cellpy_path)
+
 ```
 
 Produce an overview plot to identify cycle numbers for the GITT experiment (for an interactive version of this plot, you have to have `plotly` installed):
 
 
 ```python
-plotutils.cycle_info_plot(c, cycle=list(range(2, 7)))
+cycles = [n for n in c.get_cycle_numbers() if 2 <= n <= 6]
+plotutils.cycle_info_plot(c, cycle=cycles)
+
 ```
 
 

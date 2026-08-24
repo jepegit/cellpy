@@ -71,7 +71,7 @@ c
     (cellpy) - running post-processor: rename_headers
     (cellpy) - running post-processor: cumulate_capacity_within_cycle
     (cellpy) - running post-processor: set_index
-    
+
 
 
 
@@ -1132,17 +1132,18 @@ summary = c.data.summary
 
 print(f"Raw points: {len(raw):,}")
 print(f"Cycles: {len(c.get_cycle_numbers())}")
-print(f"Step types: {steps['type'].value_counts().to_dict()}")
+print(f"Step types: {steps[c.schema.steps.step_type].value_counts().to_dict()}")
+
 ```
 
     Raw points: 21,206
     Cycles: 109
     Step types: {'rest': 117, 'discharge': 110, 'charge': 109, 'ocvrlx_up': 109}
-    
+
 
 
 ```python
-r = cell.schema.raw
+r = c.schema.raw
 raw[[
     r.datapoint_num,
     r.test_time,
@@ -1154,6 +1155,7 @@ raw[[
     r.cumulative_charge_capacity,
     r.cumulative_discharge_capacity,
 ]].head()
+
 ```
 
 
@@ -1256,7 +1258,17 @@ raw[[
 
 
 ```python
-steps[["cycle", "step", "type", "point_min", "point_max", "voltage_first", "voltage_last"]].head(10)
+st = c.schema.steps
+steps[[
+    st.cycle_num,
+    st.step_num,
+    st.step_type,
+    st.datapoint_num_first,
+    st.datapoint_num_last,
+    st.potential_first,
+    st.potential_last,
+]].head(10)
+
 ```
 
 
@@ -1578,11 +1590,12 @@ The raw table is a normal pandas DataFrame, so you can use pandas, matplotlib, s
 
 ```python
 fig, ax = plt.subplots(figsize=(10, 4))
-ax.plot(raw["test_time"] / 3600, raw["voltage"], lw=0.8)
+ax.plot(raw[c.schema.raw.test_time] / 3600, raw[c.schema.raw.potential], lw=0.8)
 ax.set_xlabel("Test time / h")
 ax.set_ylabel("Voltage / V")
 ax.set_title("BatMo BDF raw voltage trace")
 ax.grid(alpha=0.25);
+
 ```
 
 
@@ -1669,15 +1682,16 @@ curve.head()
 ```python
 fig, ax = plt.subplots(figsize=(7, 5))
 
-for (cycle, direction), frame in curve.groupby(["cycle", "direction"]):
+for (cycle, direction), frame in curve.groupby(["cycle_num", "direction"]):
     label = f"cycle {cycle} {'charge' if direction > 0 else 'discharge'}"
-    ax.plot(frame["capacity"], frame["voltage"], label=label, lw=1.2)
+    ax.plot(frame["capacity"], frame["potential"], label=label, lw=1.2)
 
 ax.set_xlabel("Capacity / mAh")
 ax.set_ylabel("Voltage / V")
 ax.set_title("Selected BatMo voltage-capacity curves")
 ax.legend(fontsize=8)
 ax.grid(alpha=0.25);
+
 ```
 
 
@@ -1707,7 +1721,7 @@ sorted(path.name for path in out_dir.iterdir())
 ```
 
     <ApiModule 'cellpy.readers.externals'>
-    
+
 
 
 
@@ -1730,7 +1744,7 @@ print(f"Reloaded cycles: {len(c2.get_cycle_numbers())}")
 
     Reloaded raw points: 21,206
     Reloaded cycles: 109
-    
+
 
 
 ```python

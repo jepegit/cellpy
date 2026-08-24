@@ -568,7 +568,7 @@ print(c.cellpy_units)
         temperature='C',
         pressure='bar'
     )
-    
+
 
 Metadata can also be included by the use of a database file containing the required values. The information on database filename and content has to be set in the config file.
 
@@ -599,7 +599,18 @@ To load saved files, you can use the `cellpy.get()` function again:
 
 
 ```python
-c = cellpy.get(filedir / "out" / "20210210_FC.h5")
+candidates = [
+    filedir / "20210210_FC.h5",
+    filedir / "out" / "20210210_FC.h5",
+]
+cellpy_path = next((p for p in candidates if p.exists()), None)
+if cellpy_path is None:
+    raise FileNotFoundError(
+        "Could not find 20210210_FC.h5 in data/ or data/out/. "
+        "Run the save cell above, or place the file in examples/data/."
+    )
+c = cellpy.get(cellpy_path)
+
 ```
 
 
