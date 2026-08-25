@@ -112,10 +112,7 @@ def _credentials_from_env(*, testing: bool = False) -> Dict[str, Any]:
     password = credentials.get_password()
     key_filename = credentials.get_key_filename()
     if password is None and key_filename is None:
-        raise UnderDefined(
-            f"You must define either {ENV_VAR_CELLPY_PASSWORD} "
-            f"or {ENV_VAR_CELLPY_KEY_FILENAME} environment variables."
-        )
+        raise UnderDefined(credentials.missing_remote_credentials_message())
     if key_filename is not None:
         key_path = pathlib.Path(key_filename).expanduser().resolve()
         if not testing and not key_path.is_file():

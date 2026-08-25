@@ -24,6 +24,7 @@ Credentials are never read from a config file: the loader refuses a
 from __future__ import annotations
 
 import os
+from pathlib import Path
 
 from cellpy.config.models import SecretsConfig
 
@@ -52,6 +53,59 @@ def _resolve(field: str) -> str | None:
     if value:
         return value
     return os.getenv(ENV_VARS[field]) or None
+
+
+def describe_env_file(env_file: Path | str | None) -> str:
+    """Status of a configured env file for error and warning text.
+
+    Empty string when ``env_file`` is unset. Otherwise names the resolved
+    path and, if that path is missing, a same-named file under the home
+    directory when one exists.
+    """
+    if env_file is None or env_file == "":
+        return ""
+    configured = Path(env_file).expanduser()
+    resolved = configured.resolve()
+    if resolved.is_file():
+        return (
+            f"Configured env_file {resolved} was found but does not set "
+            f"{ENV_VARS['password']} or {ENV_VARS['key_filename']}."
+        )
+    parts = [f"Configured env_file {configured} resolved to {resolved} and was not found."]
+    home_candidate = Path.home() / configured.name
+    try:
+        home_same = home_candidate.resolve() == resolved
+    except OSError:
+        home_same = False
+    if home_candidate.is_file() and not home_same:
+        parts.append(
+            f"A file named {configured.name} exists at {home_candidate}; "
+            "set paths.env_file to that absolute path."
+        )
+    else:
+        parts.append(
+            "Create that file (or run `cellpy setup`) so those variables can be loaded."
+        )
+    return " ".join(parts)
+
+
+def missing_remote_credentials_message(env_file: Path | str | None = None) -> str:
+    """``UnderDefined`` text when neither password nor key file is set."""
+    base = (
+        f"You must define either {ENV_VARS['password']} "
+        f"or {ENV_VARS['key_filename']} environment variables."
+    )
+    if env_file is None:
+        try:
+            from cellpy.config.session import get_config
+
+            env_file = get_config().paths.env_file
+        except Exception:
+            env_file = None
+    hint = describe_env_file(env_file)
+    if not hint:
+        return base
+    return f"{base} {hint}"
 
 
 def get_password() -> str | None:
