@@ -117,6 +117,7 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_batch_v3_runner.py::test_load_cell_fails_when_filefinder_found_nothing | yes | yes | batch.runner.load_cell | #962 | empty raw+cellpy is FAILED not empty LOADED |
 | tests/test_batch_v3_runner.py::test_load_cell_reraises_missing_files_when_not_accepting | yes | yes | batch.runner.load_cell accept_errors | #962 | |
 | tests/test_batch_v3_facade.py::test_load_warns_when_no_raw_files_were_found | yes | yes | batch.facade._finalize | #962 | batch.load warning + result.report |
+| tests/test_batch_v3_facade.py::test_batch_public_methods_have_shift_tab_docs | yes | yes | batch.facade.Batch | #963 | Shift-Tab docstrings on b.plot etc. |
 
 **Columns**
 

@@ -37,6 +37,21 @@ def test_facade_public_surface():
         assert hasattr(b, name), f"Batch lost `{name}`"
 
 
+@pytest.mark.essential
+def test_batch_public_methods_have_shift_tab_docs():
+    """Jupyter Shift-Tab must show help for the methods users actually call (#963)."""
+    import inspect
+
+    class_doc = inspect.getdoc(Batch) or ""
+    assert "plot" in class_doc
+    assert "batch.load" in class_doc
+    for name in FACADE_MUST_KEEP:
+        if name == "journal":
+            continue
+        obj = getattr(Batch, name)
+        assert inspect.getdoc(obj), f"Batch.{name} has no docstring"
+
+
 def test_from_journal(parameters):
     b = from_journal(parameters.journal_file_json_path)
     assert isinstance(b, Batch)

@@ -1,14 +1,16 @@
-"""cellpy.batch -- the batch subsystem.
+"""Load and work with a set of cells.
 
-A boring, standard architecture for batch processing. ``cellpy.utils.batch``
-is a thin re-export/shim.
+Typical use::
 
-Modules:
-    journal  -- Journal model + json readers/writers
-    layout   -- BatchPaths: pure path computation + ensure_dirs
-    policy   -- LoadPolicy / CellSpec typed options
-    runner   -- load_cell / run -> BatchResult
-    ...
+    from cellpy import batch
+    b = batch.load(name="exp", project="proj")
+    b.summaries
+    b.cells["cell_01"]
+    b.plot()
+    b.result.report()
+
+``b`` is a :class:`Batch`. ``cellpy.utils.batch`` re-exports the same entry
+points.
 """
 
 from __future__ import annotations

@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+* Batch docs start from ``b = batch.load(...)`` (what ``b`` can do, including
+  ``b.plot()``) instead of a "Facade" heading. Public ``Batch`` methods have
+  Shift-Tab docstrings. (#963)
+
 * ``batch.load`` no longer treats a filefinder miss as success: cells with
   no raw files and no local ``.cellpy`` are ``FAILED`` (not an empty
   ``LOADED`` cell), ``find_files`` warns with the labels, and load warns
