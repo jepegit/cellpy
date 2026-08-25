@@ -226,6 +226,17 @@ summaries = b.summaries          # polars frame across cells
 c = b.cells["my_cell_01"]        # a CellpyCell
 ```
 
+Dropping cells:
+
+- `b.mark_as_bad("my_cell_01")` only writes `journal.session["bad_cells"]`.
+  The cell stays in `pages`, the store, and plots until you drop it.
+- `b.drop("my_cell_01")` (or `b.drop_cells_marked_bad()`) removes it now.
+  `b.plot()` / `b.summaries` / `b.report()` then use the remaining cells —
+  no `update()` required. Call `b.save()` to persist the thinner journal.
+- Next `batch.load(...)` (default `drop_bad_cells=True`) drops
+  `session["bad_cells"]` **before** it loads, so a saved mark is enough if
+  you reload instead of dropping in the same session.
+
 `batch.load` (and `Batch.update` / `Batch.load` under it) takes an `executor`
 and a `progress` knob:
 

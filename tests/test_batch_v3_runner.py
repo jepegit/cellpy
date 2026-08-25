@@ -76,6 +76,28 @@ def test_cellstore_is_lazy():
     assert not store.is_loaded("a")
 
 
+@pytest.mark.essential
+def test_cellstore_remove_drops_label_unload_keeps_it():
+    calls = []
+
+    def make(label):
+        return lambda: (calls.append(label), f"cell::{label}")[1]
+
+    store = CellStore({"a": make("a"), "b": make("b")})
+    assert store["a"] == "cell::a"
+    store.unload("a")
+    assert "a" in store
+    assert store["a"] == "cell::a"  # reloads
+    assert calls == ["a", "a"]
+
+    store.remove("a")
+    assert "a" not in store
+    assert list(store) == ["b"]
+    with pytest.raises(KeyError):
+        store["a"]
+    store.remove("missing")  # no-op
+
+
 def test_cellstore_no_label_mangling():
     """The legacy x_/lstrip accessor turned 'xenon_cell' into 'enon_cell'."""
     store = CellStore.from_cells({"xenon_cell": "X", "x_ray": "R"})

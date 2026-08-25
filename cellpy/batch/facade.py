@@ -330,7 +330,7 @@ class Batch:
 
     def drop(self, label: str) -> "Batch":
         self.journal.pages = self.journal.pages.filter(pl.col(FILENAME) != label)
-        self._store.unload(label)
+        self._store.remove(label)
         self._summaries = None
         return self
 

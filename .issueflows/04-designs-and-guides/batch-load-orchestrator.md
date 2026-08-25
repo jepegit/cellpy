@@ -13,6 +13,16 @@ Notebooks expected the v1 flow: resolve journal → load cells → persist.
    `cellpy_batch_{name}.json` from `journal_dir` (default **cwd**), else DB.
 2. `drop_bad_cells` (default True) removes `session["bad_cells"]`.
 3. Always `Batch.update()` (legacy `link` is a no-op in v3).
+
+### Same-session `drop` vs `unload` (#952)
+
+- `CellStore.unload` only evicts the cache; the label stays and the next
+  access reloads. That is memory management, not a journal edit.
+- `Batch.drop` / `drop_cells_marked_bad` call `CellStore.remove`, which
+  drops `_labels` / `_cache` / `_loaders`. Pages and store stay aligned so
+  `plot` / `summaries` / `report` work without a following `update()`.
+- `mark_as_bad` only appends `session["bad_cells"]`. The load path above
+  still drops those labels before `update()`.
 4. Persist journal JSON when `save_cellpy=True` (default). Rewrite `.cellpy` only for cells loaded from raw (or `NEWEST` / `recalc`); skip rewrite when already loaded from an on-disk `.cellpy`.
 
 ### Journal location

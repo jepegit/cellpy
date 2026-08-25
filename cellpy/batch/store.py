@@ -68,8 +68,23 @@ class CellStore(Mapping):
         return self._cache.get(label) is not None
 
     def unload(self, label: str) -> None:
-        """Drop a loaded cell from the cache (explicit memory management)."""
+        """Drop a loaded cell from the cache (explicit memory management).
+
+        The label stays in the store; the next access reloads it. Use
+        :meth:`remove` to forget a cell entirely (e.g. ``Batch.drop``).
+        """
         self._cache.pop(label, None)
+
+    def remove(self, label: str) -> None:
+        """Forget a cell: drop cache, loader, and the store key.
+
+        Missing labels are a no-op. After this, ``label not in store`` and
+        ``store[label]`` raises ``KeyError``.
+        """
+        self._cache.pop(label, None)
+        self._loaders.pop(label, None)
+        if label in self._labels:
+            self._labels.remove(label)
 
     def _ipython_key_completions_(self) -> list[str]:
         """Tab completion for ``store["<TAB>"]`` -- no prefix mangling."""

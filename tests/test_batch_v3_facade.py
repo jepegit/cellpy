@@ -74,6 +74,45 @@ def test_mark_as_bad_and_drop():
     assert b2.cell_names == []
 
 
+class _StubData:
+    def __init__(self, summary):
+        self.summary = summary
+        self.raw = None
+        self.steps = None
+
+
+class _StubCell:
+    def __init__(self, name):
+        self.cell_name = name
+        self.empty = False
+        self.data = _StubData(
+            pl.DataFrame(
+                {
+                    "cycle_index": [1, 2],
+                    "charge_capacity_gravimetric": [1.0, 0.9],
+                }
+            )
+        )
+
+
+@pytest.mark.essential
+def test_drop_loaded_cell_forgets_store_label():
+    b = Batch.from_cells(
+        {"keep": _StubCell("keep"), "gone": _StubCell("gone")},
+        name="t",
+        project="p",
+    )
+    assert b.cells.is_loaded("gone")
+    b.drop("gone")
+    assert b.cell_names == ["keep"]
+    assert list(b.cells) == ["keep"]
+    assert "gone" not in b.pages[FILENAME].to_list()
+    assert b.cells.is_loaded("keep")
+    assert set(b.summaries["cell"].to_list()) == {"keep"}
+    assert b.report()["cell"].to_list() == ["keep"]
+    assert b.experiment.cell_names == ["keep"]
+
+
 def test_save_roundtrip(tmp_path):
     b = _one_cell_batch()
     out = b.save(tmp_path / "j.json")
