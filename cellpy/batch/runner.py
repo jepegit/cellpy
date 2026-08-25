@@ -85,6 +85,20 @@ def load_cell(spec: CellSpec, policy: LoadPolicy | None = None) -> CellResult:
     kwargs, source = _get_kwargs(spec, policy)
 
     started = time.perf_counter()
+    if source is None:
+        error = FileNotFoundError(
+            f"No raw files or cellpy file found for {spec.label!r}. "
+            "filefinder did not match any raw files and no local .cellpy exists."
+        )
+        if not policy.accept_errors:
+            raise error
+        return CellResult(
+            label=spec.label,
+            outcome=CellOutcome.FAILED,
+            source=None,
+            seconds=time.perf_counter() - started,
+            error=error,
+        )
     token = set_cell_label(spec.label)
     try:
         emit("cell_start", label=spec.label)

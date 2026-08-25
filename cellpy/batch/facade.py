@@ -639,6 +639,15 @@ def _finalize(
     if drop_bad_cells:
         batch.drop_cells_marked_bad()
     batch.update(**update_kwargs)
+    if batch.result is not None and batch.result.failed:
+        labels = ", ".join(item.label for item in batch.result.failed)
+        warnings.warn(
+            f"{len(batch.result.failed)} cell(s) failed to load: {labels}. "
+            "See batch.result.report() for per-cell errors "
+            "(missing raw files are a common cause).",
+            UserWarning,
+            stacklevel=2,
+        )
     batch.combine_summaries()
     if save_cellpy:
         if journal_path is None:

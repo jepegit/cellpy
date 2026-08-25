@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+* ``batch.load`` no longer treats a filefinder miss as success: cells with
+  no raw files and no local ``.cellpy`` are ``FAILED`` (not an empty
+  ``LOADED`` cell), ``find_files`` warns with the labels, and load warns
+  pointing at ``batch.result.report()``. (#962)
+
 * Missing ``env_file`` is named in the ``UnderDefined`` remote-auth error
   (and a load-time warning) instead of only mentioning ``CELLPY_PASSWORD`` /
   ``CELLPY_KEY_FILENAME``. (#961)

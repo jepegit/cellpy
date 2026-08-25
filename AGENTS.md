@@ -317,7 +317,8 @@ Quick facts:
   `progress=None` auto-shows tqdm (TTY / Jupyter); `False` off.
   `mark_as_bad` is a session flag; `drop` / `drop_cells_marked_bad` remove now
   (plot/summaries work without `update()`). `save()` then next `load` (default
-  `drop_bad_cells=True`) drops marked cells before update.
+  `drop_bad_cells=True`) drops marked cells before update. Missing raw files
+  (filefinder miss) mark the cell `FAILED` and warn; see `b.result.report()`.
 - Persist: `c.save("out.cellpy")`, `c.to_csv("out_dir")`.
   Collected figure bytes: `collection.to_image("png")` / `cellpy.plotting.write_image(fig, "svg")` (needs `cellpy[batch]` / kaleido).
 - Prefer schema-resolved names over hard-coded 1.x header strings.

@@ -402,6 +402,19 @@ def test_find_files_auto_use_file_list_missing_project_raises(auto_list_tree, du
             )
 
 
+def test_find_files_warns_when_no_raw_match(auto_list_tree):
+    raw_dir, cellpy_dir = auto_list_tree
+    with config.override(batch={"auto_use_file_list": False}):
+        with pytest.warns(UserWarning, match="no raw files"):
+            out = _dbengine.find_files(
+                _info_dict("no_such_cell"),
+                project="P",
+                raw_file_dir=raw_dir,
+                cellpy_file_dir=cellpy_dir,
+            )
+    assert out[hdr_journal["raw_file_names"]][0] is None
+
+
 def test_find_files_caller_file_list_wins(auto_list_tree, dump_spy):
     """An explicit file_list is used as-is - no dump."""
     raw_dir, cellpy_dir = auto_list_tree
