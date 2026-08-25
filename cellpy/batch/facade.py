@@ -1,15 +1,7 @@
-"""Batch facade.
+"""The ``Batch`` object returned by ``cellpy.batch.load``.
 
-The thin, notebook-friendly ``Batch`` class that ties the pieces together:
-journal + policy/resolve_specs + runner/result/store +
-aggregate/qc/outputs. Keeps the beloved surface the characterization net
-pinned -- ``pages``, ``cells``, ``summaries``, ``update``, ``report``,
-``save``, ``mark_as_bad``, ``drop`` -- while everything underneath is the new
-package.
-
-Plot wiring: ``plot()`` delegates to the plotting layer via a small legacy
-adapter; the full tidy-frame plot path lands with the collectors redesign
-(Epic B, batch plan section 4.7).
+Implementation module for :class:`Batch`, :func:`load`, :func:`from_journal`,
+and :func:`from_cells`. Import those from ``cellpy.batch``, not from here.
 """
 
 from __future__ import annotations
@@ -48,7 +40,26 @@ _EXPORT_KWARGS_WARNED = False
 
 
 class Batch:
-    """A batch of cells: a journal, a lazy cell store, and derived frames."""
+    """A loaded experiment: journal, cells, summaries, and a summary plot.
+
+    Typical use::
+
+        from cellpy import batch
+        b = batch.load(name="exp", project="proj")
+        b.summaries
+        b.cells["cell_01"]
+        b.plot()
+        b.result.report()
+
+    Attributes:
+        journal: The :class:`~cellpy.batch.journal.Journal` (pages + session).
+        policy: The :class:`~cellpy.batch.policy.LoadPolicy` used on the last load.
+        pages (polars.DataFrame): Journal table (filename, mass, group, …).
+        cell_names (list[str]): Labels in journal order.
+        cells: Lazy :class:`~cellpy.batch.store.CellStore` of ``CellpyCell`` objects.
+        summaries (polars.DataFrame): Combined per-cycle summaries.
+        result: :class:`~cellpy.batch.result.BatchResult` from the last ``update``.
+    """
 
     def __init__(
         self,
@@ -141,18 +152,25 @@ class Batch:
     # -- data surface ----------------------------------------------------
     @property
     def pages(self) -> pl.DataFrame:
+        """Journal table (filename, mass, group, raw_file_names, …)."""
         return self.journal.pages
 
     @property
     def cell_names(self) -> list[str]:
+        """Cell labels in journal order."""
         return self.journal.cell_names
 
     @property
     def cells(self) -> CellStore:
+        """Loaded cells, keyed by label (``b.cells['cell_01']``)."""
         return self._store
 
     @property
     def result(self) -> BatchResult | None:
+        """Per-cell load outcomes from the last ``update`` / ``load``.
+
+        Use ``b.result.report()`` for a tidy frame (outcome, source, error).
+        """
         return self._result
 
     def update(
@@ -205,15 +223,21 @@ class Batch:
         return self.update(**overrides)
 
     def recalc(self, **overrides) -> BatchResult:
+        """Reload every cell and remake step tables and summaries.
+
+        Same kwargs as :meth:`update`.
+        """
         return self.update(recalc=True, **overrides)
 
     @property
     def summaries(self) -> pl.DataFrame:
+        """Combined per-cycle summary frame across the batch (cached)."""
         if self._summaries is None:
             self._summaries = aggregate.combine_summaries(self._store, self.journal)
         return self._summaries
 
     def combine_summaries(self, **_kwargs) -> pl.DataFrame:
+        """Rebuild and return the combined summary frame (clears the cache)."""
         self._summaries = aggregate.combine_summaries(self._store, self.journal)
         return self._summaries
 
@@ -228,19 +252,32 @@ class Batch:
         return aggregate.combine_tests(self._store, self.journal)
 
     def make_summaries(self) -> pl.DataFrame:
+        """Alias of :meth:`combine_summaries`."""
         return self.combine_summaries()
 
     def report(self, check: bool = True) -> pl.DataFrame:
+        """QC-style per-cell status frame (not the same as ``result.report()``).
+
+        Args:
+            check (bool): kept for the legacy surface; the frame is always built.
+        """
         return qc.check(self._store, self.journal)
 
     # -- journal ops -----------------------------------------------------
     def save(self, path: Path | str | None = None) -> Path:
+        """Write the journal JSON (default ``cellpy_batch_<name>.json`` in cwd).
+
+        Args:
+            path: Destination file. ``None`` uses the default name from
+                ``journal.name``.
+        """
         target = Path(path) if path else Path(
             f"cellpy_batch_{self.journal.name or 'batch'}.json"
         )
         return write_journal(self.journal, target)
 
     def export_journal(self, path: Path | str | None = None) -> Path:
+        """Alias of :meth:`save`."""
         return self.save(path)
 
     def export_project(
@@ -317,18 +354,29 @@ class Batch:
         return self.journal
 
     def paginate(self) -> tuple[Path, ...]:
+        """Create the batch project folders and return their paths."""
         paths = BatchPaths.create(
             self.journal.name or "batch", self.journal.project or ""
         )
         return ensure_dirs(paths)
 
     def mark_as_bad(self, label: str) -> None:
+        """Flag ``label`` in ``journal.session['bad_cells']`` (does not drop).
+
+        Args:
+            label: Cell name as in ``b.cell_names``.
+        """
         bad = list(self.journal.session.get("bad_cells") or [])
         if label not in bad:
             bad.append(label)
         self.journal.session["bad_cells"] = bad
 
     def drop(self, label: str) -> "Batch":
+        """Remove ``label`` from the journal and the store now.
+
+        Args:
+            label: Cell name as in ``b.cell_names``.
+        """
         self.journal.pages = self.journal.pages.filter(pl.col(FILENAME) != label)
         self._store.remove(label)
         self._summaries = None
@@ -348,6 +396,16 @@ class Batch:
 
     # -- plotting (delegated; full wiring is Epic B) ---------------------
     def plot(self, backend: str | None = None, show: bool = False, **kwargs) -> Any:
+        """Plot combined summaries for this batch.
+
+        Args:
+            backend: Plotting backend (``None`` uses the configured default).
+            show: If True, display the figure immediately.
+            **kwargs: Forwarded to the summary plotter (columns, grouping, …).
+
+        Returns:
+            A figure from the plotting layer (backend-dependent).
+        """
         from cellpy.plotting.batch_summary import batch_summary_plot
 
         return batch_summary_plot(
