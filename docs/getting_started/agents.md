@@ -224,6 +224,8 @@ from cellpy import batch
 b = batch.load(name="my_experiment", project="my_project")
 summaries = b.summaries          # polars frame across cells
 c = b.cells["my_cell_01"]        # a CellpyCell
+# If filefinder found no raw files, those cells are FAILED (not empty
+# LOADED). Check b.result.report() / the UserWarning from load.
 ```
 
 Dropping cells:

@@ -114,6 +114,9 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_config_secrets.py::test_describe_env_file_points_at_home_sibling | yes | yes | credentials.describe_env_file | #961 | home-named sibling hint |
 | tests/test_config_secrets.py::test_credentials_from_env_mentions_missing_env_file | yes | yes | otherpath._credentials_from_env | #961 | OtherPath auth error names env_file |
 | tests/test_config_secrets.py::test_loader_warns_when_env_file_is_missing | yes | yes | loader._collect_env_overrides | #961 | load-time warning |
+| tests/test_batch_v3_runner.py::test_load_cell_fails_when_filefinder_found_nothing | yes | yes | batch.runner.load_cell | #962 | empty raw+cellpy is FAILED not empty LOADED |
+| tests/test_batch_v3_runner.py::test_load_cell_reraises_missing_files_when_not_accepting | yes | yes | batch.runner.load_cell accept_errors | #962 | |
+| tests/test_batch_v3_facade.py::test_load_warns_when_no_raw_files_were_found | yes | yes | batch.facade._finalize | #962 | batch.load warning + result.report |
 
 **Columns**
 

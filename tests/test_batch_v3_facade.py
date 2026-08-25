@@ -125,11 +125,24 @@ def test_load_from_frame(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     frame = pl.DataFrame({FILENAME: ["a", "b"], "mass": [1.0, 2.0]})
     # No cellpy paths on the frame; persist fills defaults under cellpydatadir.
-    b = load(name="n", project="p", frame=frame, journal_dir=tmp_path)
+    # No raw files either — load records FAILED cells and warns (#962).
+    with pytest.warns(UserWarning, match="failed to load"):
+        b = load(name="n", project="p", frame=frame, journal_dir=tmp_path)
     assert isinstance(b, Batch)
     assert b.cell_names == ["a", "b"]
     assert b.journal.name == "n" and b.journal.project == "p"
     assert (tmp_path / "cellpy_batch_n.json").is_file()
+
+
+@pytest.mark.essential
+def test_load_warns_when_no_raw_files_were_found(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    frame = pl.DataFrame({FILENAME: ["ghost"], "mass": [1.0]})
+    with pytest.warns(UserWarning, match="failed to load: ghost"):
+        b = load(name="n", project="p", frame=frame, journal_dir=tmp_path)
+    assert b.result is not None
+    assert [r.label for r in b.result.failed] == ["ghost"]
+    assert "filefinder" in str(b.result["ghost"].error)
 
 
 # ---- db path (#703) -----------------------------------------------------

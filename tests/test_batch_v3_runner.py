@@ -188,6 +188,27 @@ def test_load_cell_error_is_captured(tmp_path):
     assert result.error is not None
 
 
+@pytest.mark.essential
+def test_load_cell_fails_when_filefinder_found_nothing(tmp_path):
+    spec = CellSpec(
+        label="ghost",
+        cellpy_file=str(tmp_path / "missing.cellpy"),
+        raw_files=[],
+    )
+    result = load_cell(spec, LoadPolicy(source=SourcePreference.AUTO))
+    assert result.outcome == CellOutcome.FAILED
+    assert isinstance(result.error, FileNotFoundError)
+    assert "ghost" in str(result.error)
+    assert "filefinder" in str(result.error)
+
+
+@pytest.mark.essential
+def test_load_cell_reraises_missing_files_when_not_accepting(tmp_path):
+    spec = CellSpec(label="ghost", raw_files=[])
+    with pytest.raises(FileNotFoundError, match="filefinder"):
+        load_cell(spec, LoadPolicy(accept_errors=False))
+
+
 def test_load_cell_reraises_when_not_accepting(tmp_path):
     spec = CellSpec(label="bad", cellpy_file=str(tmp_path / "nope.h5"))
     with pytest.raises(Exception):

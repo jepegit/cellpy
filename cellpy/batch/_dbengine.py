@@ -189,6 +189,7 @@ def find_files(
     if hdr_journal["cellpy_file_name"] not in info_dict:
         info_dict[hdr_journal["cellpy_file_name"]] = []
 
+    missing_raw: list[str] = []
     for i, run_name in enumerate(file_name_indicators):
         try:
             instrument = info_dict[hdr_journal["instrument"]][i]
@@ -209,8 +210,18 @@ def find_files(
         )
         if not raw_files:
             raw_files = None
+            missing_raw.append(str(run_name))
         info_dict[hdr_journal["raw_file_names"]].append(raw_files)
         info_dict[hdr_journal["cellpy_file_name"]].append(cellpyfile)
+
+    if missing_raw:
+        warnings.warn(
+            f"filefinder found no raw files for {len(missing_raw)} cell(s): "
+            f"{', '.join(missing_raw)}. Check paths.rawdatadir (and OtherPath "
+            "hosts) plus the filename indicators in the database.",
+            UserWarning,
+            stacklevel=2,
+        )
 
     return info_dict
 
