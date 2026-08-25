@@ -2,12 +2,20 @@
 
 ## What this project is
 
-TODO: Summarize the project in one short paragraph. Mention what it does, who it is for, and the main outcome it produces.
+Python library + `cellpy` CLI for battery/cell cycling data (no hosted GUI).
+Researchers and other libraries ingest tester files, build step/summary tables,
+plot, and persist `.cellpy` archives.
 
 ## Stack / runtime
 
-- TODO: Primary language(s), runtime versions, package manager(s), and major frameworks.
-- TODO: External services, CLIs, or local tools that agents should know about.
+- Python 3.13, package manager **uv** (`uv.lock`, hatchling, git-tag version).
+- Local interpreter: `.venv` from `uv sync`. Always `uv run …` — never bare
+  `python`, and never conda for day-to-day pytest.
+- Conda (`environment*.yml`, `github_actions_environment.yml`, feedstock) is
+  **only** for conda-forge packaging and scheduled Tier-3 CI. Use it when the
+  issue is specifically "does conda install / that env file work?"
+- Issue-flow's generic "if conda is documented, don't substitute uv" does
+  **not** apply: this file is the toolchain source of truth.
 
 ## How to run / test
 
@@ -38,7 +46,9 @@ See also [testing-and-coverage.md](testing-and-coverage.md) and [ci-tiers.md](ci
   [`docs/getting_started/agents.md`](../../docs/getting_started/agents.md) and the
   short **Using cellpy (for agents)** section in root `AGENTS.md` in the same PR.
   Do not put long recipes inside the managed issue-flow block of `AGENTS.md`.
-- TODO: Branch, commit, formatting, typing, or review conventions beyond the above.
+- **Local pytest:** `uv run pytest` / `uv run pytest -m essential`. Do not
+  activate `cellpy_dev_313` or other conda envs unless the issue is conda
+  packaging / scheduled CI.
 
 ## Entry points
 

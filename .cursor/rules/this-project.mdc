@@ -5,19 +5,29 @@ alwaysApply: true
 
 # Best practices for cellpy
 
-This project is called "cellpy". 
-It is supposed to work an many platforms.
+This project is called "cellpy". It is supposed to work on many platforms.
 
-We have several python environments
+## Toolchain
 
-conda: cellpy_dev_313
-python: .venv
+**uv is the local default.** After `uv sync`, run everything through `uv run`
+(scripts, `pytest`, CLI). Do not call bare `python`.
 
-Rember to activate it! 
+```bash
+uv sync
+uv run pytest -m essential    # merge-gate subset
+uv run pytest                 # full suite (default addopts deselects slow/local)
+```
 
-We also have uv installed. Use it if you want (uv run python).
+A `.venv` from `uv sync` is the project interpreter.
 
-I recommend using conda when running pytest. First activate the conda environment. Then run pytest.
+**Do not use conda for day-to-day pytest** (including `cellpy_dev_313` /
+`conda run -n …`). Conda env files (`environment.yml`, `environment_dev.yml`,
+`github_actions_environment.yml`) exist for conda-forge packaging and
+scheduled Tier-3 CI. Use conda only when the task is specifically to test
+conda install, feedstock, or those env files.
+
+Issue-flow's generic "if the project documents a conda environment, don't
+substitute uv" does **not** apply here — this file is the override.
 
 ## Working on issues
 

@@ -321,6 +321,14 @@ Quick facts:
 - When changing public get/save/schema/CLI surface, update
   `docs/getting_started/agents.md` and this section in the same PR.
 
+## Local toolchain
+
+Day-to-day: `uv sync`, then `uv run pytest` / `uv run pytest -m essential` /
+`uv run cellpy …`. Do **not** use conda for local pytest unless the issue is
+specifically conda-forge install, `environment*.yml`, or scheduled CI conda
+jobs. That overrides the generic issue-flow "if conda is documented" block
+above. Detail: `.issueflows/04-designs-and-guides/this-project.md`.
+
 ## Cursor Cloud specific instructions
 
 Environment is already provisioned on cloud VM startup: `uv` (on PATH via
