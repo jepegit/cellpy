@@ -225,7 +225,9 @@ def summary_collector(
             ``cellpy.plotting.families()`` lists them too.
         y (str, optional): Alias of ``family``, matching ``summary_plot(y=...)``.
         columns (sequence of str, optional): Summary columns to keep. Wins over
-            ``family``. Journal keys (cell/group/...) are always kept.
+            ``family``. Journal keys (cell/group/...) are always kept. Plot
+            facet rows follow this order top → bottom (Plotly first row on
+            top).
         group_it (bool, optional): Average per journal group -> tidy long frame
             ``(group, cycle_num, variable, mean, std)``.
         custom_group_labels (mapping, optional): ``group id -> display label``,

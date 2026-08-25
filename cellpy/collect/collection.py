@@ -97,9 +97,10 @@ class Collection:
         ``legend_cycle_limit`` cycles (default 8) get a colorbar instead of a
         long legend, and ``force_colorbar`` / ``force_legend`` override (#928).
 
-        Summary facets follow the collected ``columns=`` order unless
-        ``order_variables=`` is given (#923); derived series (the CV split, a
-        normalized retention curve) keep their own order after them.
+        Summary facets follow the collected ``columns=`` order (top → bottom)
+        unless ``order_variables=`` is given (#923); derived series (the CV
+        split, a normalized retention curve) keep their own order after them.
+        Default y-axis titles include units (#947).
         """
         from cellpy.plotting import collected_plot
 

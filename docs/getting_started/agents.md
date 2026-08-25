@@ -168,6 +168,8 @@ Suggested layering:
       independent y-axes (`share_y=False`). For Capacity+CE, pin CE with
       `collection.plot(y_ranges={"coulombic_efficiency": [0, 110]})`
       (Plotly). `share_y=True` / `match_axes=True` restores a shared scale.
+      Default y-axis titles include units (`Charge Capacity (mAh/g)`). Facet
+      rows follow the collected `columns=` order top → bottom.
     - **Instrument picker for free.** `cellpy.list_instruments()` returns
       `[{"id", "label", "models", "suffixes"}, ...]` and is quiet by contract
       (probe/discovery skips stay at DEBUG — no `WARNING` spam on the root

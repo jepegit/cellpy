@@ -44,9 +44,17 @@ def _summary_frame() -> pd.DataFrame:
 
 @pytest.mark.essential
 def test_pretty_variable_label_strips_mode_suffix():
-    assert _pretty_variable_label("charge_capacity_gravimetric") == "Charge Capacity"
-    assert _pretty_variable_label("coulombic_efficiency") == "Coulombic Efficiency"
-    assert _pretty_variable_label("discharge_capacity_areal_cv") == "Discharge Capacity CV"
+    assert _pretty_variable_label("charge_capacity_gravimetric") == "Charge Capacity (mAh/g)"
+    assert _pretty_variable_label("coulombic_efficiency") == "Coulombic Efficiency (%)"
+    assert (
+        _pretty_variable_label("discharge_capacity_areal_cv")
+        == "Discharge Capacity CV (mAh/cm**2)"
+    )
+
+
+@pytest.mark.essential
+def test_pretty_variable_label_unknown_stays_unitless():
+    assert _pretty_variable_label("some_custom_metric") == "Some Custom Metric"
 
 
 @pytest.mark.essential
@@ -54,8 +62,8 @@ def test_default_summary_y_label_mapper():
     mapper = _default_summary_y_label_mapper(
         ["charge_capacity_gravimetric", "coulombic_efficiency"]
     )
-    assert mapper["charge_capacity_gravimetric"] == "Charge Capacity"
-    assert mapper["coulombic_efficiency"] == "Coulombic Efficiency"
+    assert mapper["charge_capacity_gravimetric"] == "Charge Capacity (mAh/g)"
+    assert mapper["coulombic_efficiency"] == "Coulombic Efficiency (%)"
 
 
 @pytest.mark.essential
@@ -69,13 +77,15 @@ def test_summary_pretty_labels_clear_variable_facet_strip():
     assert fig is not None
     texts = [getattr(a, "text", None) or "" for a in (fig.layout.annotations or ())]
     assert not any(t.startswith("variable=") for t in texts)
+    from cellpy.plotting.collected import _plain_axis_title
+
     y_titles = [
-        fig.layout[k].title.text
+        _plain_axis_title(fig.layout[k].title.text)
         for k in fig.layout
         if str(k).startswith("yaxis") and fig.layout[k].title.text
     ]
-    assert "Charge Capacity" in y_titles
-    assert "Coulombic Efficiency" in y_titles
+    assert "Charge Capacity (mAh/g)" in y_titles
+    assert "Coulombic Efficiency (%)" in y_titles
 
 
 @pytest.mark.essential
