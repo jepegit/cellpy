@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+* `Batch.drop` (and `drop_cells_marked_bad`) remove the cell from the store,
+  not just the cache, so `plot` / `summaries` / `report` work without a
+  following `update()`. `mark_as_bad` stays a session flag. (#952)
+
 * Collected summary y-axis titles include units
   (`Charge Capacity (mAh/g)`, `Coulombic Efficiency (%)`).
   `spread=True` legends use `custom_group_labels=`, and facet rows follow
