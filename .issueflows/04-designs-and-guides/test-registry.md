@@ -101,7 +101,12 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_batch_progress.py::test_tqdm_display_disable_tracks_cells | yes | yes | batch.progress.TqdmBatchProgress | #916 | overall n without TTY |
 | tests/test_batch_v3_runner.py::test_dispatch_lite_saves_raw_then_strips | yes | yes | batch.runner._dispatch_lite | #920 | process worker saves raw load |
 | tests/test_batch_v3_runner.py::test_persist_skips_none_placeholder_from_processes | yes | yes | batch.facade._persist_cells / CellStore.is_loaded | #920 | None.save guard |
-| tests/test_collected_summary_groups.py (module) | yes | yes | plotting.collected.summary_plotter / Collection.plot | #923 | facet order, group labels, legend title |
+| tests/test_collected_summary_groups.py (module) | yes | yes | plotting.collected.summary_plotter / Collection.plot | #923 #947 | facet order, group labels, legend title, units |
+| tests/test_collected_app_hooks.py::test_pretty_variable_label_strips_mode_suffix | yes | yes | plotting.collected._pretty_variable_label | #947 | units on default titles |
+| tests/test_collected_app_hooks.py::test_pretty_variable_label_unknown_stays_unitless | yes | yes | plotting.collected._pretty_variable_label | #947 | unknown vars stay bare |
+| tests/test_collected_summary_groups.py::test_spread_plot_legend_uses_custom_group_labels | yes | yes | plotting.collected.spread_plot | #947 | group_label in spread legend |
+| tests/test_collected_summary_groups.py::test_spread_plot_facets_follow_the_collected_column_order | yes | yes | plotting.collected.spread_plot | #947 | categorical facet order |
+| tests/test_collected_summary_groups.py::test_summary_collector_plot_uses_custom_group_labels_and_units | yes | yes | collect.collector.summary_collector + plot | #947 | issue snippet e2e |
 | tests/test_collected_backend_alias.py (module) | yes | yes | plotting.collected.collected_plot backend alias | #925 | matplotlib -> seaborn, warn_once signature |
 
 **Columns**

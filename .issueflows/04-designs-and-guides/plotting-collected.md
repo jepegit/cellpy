@@ -44,9 +44,10 @@ Epic #567 Stage 3 / issue #657 re-bases collectors' drawing half onto
   traces use `hoverinfo="skip"`.
 - **App chrome (#801):** `plotly_template=` overrides the default
   `plotly+{method}` combo; `layout_updates=` is a shallow
-  `fig.update_layout(**…)` after collector styling. Summary facet strips no
+  `fig.update_layout(**…)` after collector styling.   Summary facet strips no
   longer keep raw `variable=…` text by default — pretty y-axis titles are
-  built automatically (`y_label_mapper=` overrides). Height:
+  built automatically and include units (`Charge Capacity (mAh/g)`;
+  `y_label_mapper=` overrides) (#947). Height:
   `height=` (absolute) or `height_per_panel=` (alias of `sub_fig_min_height`;
   summary default 300 px/panel) plus optional `figure_border_height=`.
 - **Cycles / ICA facet chrome (#820):** Plotly `layout="per_cell"` /
@@ -117,4 +118,5 @@ collection.plot(
 - Issue #801 (theme / label / height hooks)
 - Issue #820 (cycles / ICA pretty facet strips)
 - Issue #923 (grouped summary facet order / group labels / legend title)
+- Issue #947 (default y-titles include units; spread legend uses `group_label`)
 - Issue #928 (collected cycle legend vs colorbar) — see `plotting-cycle-legend.md`

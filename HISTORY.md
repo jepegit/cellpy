@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+* Collected summary y-axis titles include units
+  (`Charge Capacity (mAh/g)`, `Coulombic Efficiency (%)`).
+  `spread=True` legends use `custom_group_labels=`, and facet rows follow
+  the collected `columns=` order top to bottom. (#947)
+
 * `Collection.plot(backend="matplotlib")` no longer raises
   `TypeError: warn_once() missing 1 required positional argument`. It keeps
   aliasing to the seaborn layout path (and now actually returns a figure -

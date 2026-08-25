@@ -159,7 +159,7 @@ def spread_plot(curves, plotly_arguments=None, y_label_mapper=None, **kwargs):
     else:
         y_label_mapper = _plotly_y_label_cleaner(y_label_mapper)
 
-    selected_variables = curves["variable"].unique()
+    selected_variables = _ordered_variables(curves)
     number_of_rows = len(selected_variables)
     # TODO: change this (only temporary fix to allow height fractions to be set by spread_plot)
     height_fractions = kwargs.get(
@@ -182,9 +182,9 @@ def spread_plot(curves, plotly_arguments=None, y_label_mapper=None, **kwargs):
     else:
         mode = "lines"
 
-    # Series key: per-cell frames use "cell"; group-averaged frames are keyed by
-    # "group" and have no "cell" column (#785).
-    series_col = "cell" if "cell" in curves.columns else "group"
+    # Series key: per-cell frames use "cell"; group-averaged frames prefer
+    # ``group_label`` when present (#923 / #947), else ``group`` (#785).
+    series_col = _spread_series_column(curves)
     g = curves.groupby(series_col)
     fig = make_subplots(
         rows=number_of_rows,
@@ -1013,34 +1013,50 @@ def _pretty_print_facet_strips(fig: Any) -> None:
             fig.layout.annotations[i].text = pretty
 
 
-def _pretty_variable_label(variable: str, units: Any = None) -> str:
-    """Humanize a summary ``variable`` column name for facet / y-axis titles.
+def _ordered_variables(curves: pd.DataFrame) -> list:
+    """Return ``variable`` values in facet order (categorical, else appearance)."""
+    series = curves["variable"]
+    present = list(pd.unique(series.dropna()))
+    if isinstance(series.dtype, pd.CategoricalDtype):
+        return [v for v in series.cat.categories if v in set(present)]
+    return present
 
-    Strips specific-mode suffixes (``_gravimetric`` / ``_areal`` / …). When
-    ``units`` is the Batch-style dict used by :func:`summary_plotter`, appends
-    a parenthetical unit; otherwise returns the title-cased name alone.
-    """
+
+def _spread_series_column(curves: pd.DataFrame) -> str:
+    """Column used as the spread-plot series / legend key."""
+    label_column = hdr_journal.group_label
+    if label_column in curves.columns and curves[label_column].notna().any():
+        return label_column
+    if "cell" in curves.columns:
+        return "cell"
+    return "group"
+
+
+def _cellpy_units_from(units: Any):
+    """Resolve ``units=`` to a ``CellpyUnits`` (session default when omitted)."""
+    from cellpy.parameters.internal_settings import get_cellpy_units
+
+    if isinstance(units, dict) and units.get("cellpy_units") is not None:
+        return units["cellpy_units"]
+    if units is not None and not isinstance(units, dict):
+        return units
+    return get_cellpy_units()
+
+
+def _mode_from_variable(variable: str) -> Optional[str]:
     v = str(variable)
-    u_sub = None
-    if units:
-        cellpy_units = units["cellpy_units"]
-        if v.endswith("_areal") or v.endswith("_areal_cv"):
-            u_sub = cellpy_units.specific_areal
-        elif v.endswith("_gravimetric") or v.endswith("_gravimetric_cv"):
-            u_sub = cellpy_units.specific_gravimetric
-        elif v.endswith("_volumetric") or v.endswith("_volumetric_cv"):
-            u_sub = cellpy_units.specific_volumetric
+    if v.endswith("_areal") or v.endswith("_areal_cv"):
+        return "areal"
+    if v.endswith("_gravimetric") or v.endswith("_gravimetric_cv"):
+        return "gravimetric"
+    if v.endswith("_volumetric") or v.endswith("_volumetric_cv"):
+        return "volumetric"
+    return None
 
-    u_top = None
-    if units:
-        cellpy_units = units["cellpy_units"]
-        if "_capacity" in v:
-            u_top = cellpy_units.charge
-        if "_norm" in v:
-            u_top = "normalized"
-        if v == "coulombic_efficiency":
-            u_top = "%"
 
+def _pretty_variable_name(variable: str) -> str:
+    """Title-case a summary ``variable``, stripping mode suffixes."""
+    v = str(variable)
     parts = v.split("_")
     mode_suffixes = {"gravimetric", "areal", "volumetric"}
     if parts and parts[-1] == "cv" and len(parts) >= 2 and parts[-2] in mode_suffixes:
@@ -1050,15 +1066,42 @@ def _pretty_variable_label(variable: str, units: Any = None) -> str:
     label = " ".join(parts).title()
     if label.endswith("Cv"):
         label = label.replace("Cv", "CV")
+    return label
 
-    if not units:
+
+def _pretty_variable_label(variable: str, units: Any = None) -> str:
+    """Humanize a summary ``variable`` column name for facet / y-axis titles.
+
+    Strips specific-mode suffixes (``_gravimetric`` / ``_areal`` / …) and
+    appends a parenthetical unit from session / cell ``CellpyUnits`` (#947).
+    Unknown quantities stay unit-less. ``units`` may be a ``CellpyUnits``,
+    the legacy ``{"cellpy_units": …}`` dict, or omitted.
+    """
+    from cellpy.exceptions import UnitsError
+    from cellpy.units import with_cellpy_unit
+
+    v = str(variable)
+    label = _pretty_variable_name(v)
+    if v == "coulombic_efficiency" or v.endswith("_coulombic_efficiency"):
+        return f"{label} (%)"
+    if "_norm" in v:
+        return f"{label} (normalized)"
+
+    property_name = None
+    if "_capacity" in v:
+        property_name = "charge"
+    elif "_energy" in v:
+        property_name = "energy"
+    if property_name is None:
         return label
 
-    u = u_top or "Value"
-    if u_sub:
-        u_sub = str(u_sub).replace("**", "")
-        u = f"{u}/{u_sub}"
-    return f"{label} ({u})"
+    spec = _cellpy_units_from(units)
+    try:
+        return with_cellpy_unit(
+            label, property_name, _mode_from_variable(v), units=spec
+        )
+    except UnitsError:
+        return label
 
 
 def _default_summary_y_label_mapper(
@@ -1066,6 +1109,11 @@ def _default_summary_y_label_mapper(
 ) -> dict[str, str]:
     """Build ``variable → pretty label`` for collected summary facets (#801)."""
     return {v: _pretty_variable_label(v, units=units) for v in variables}
+
+
+def _plain_axis_title(title: str) -> str:
+    """Collapse Plotly ``<br>`` wraps so title matching ignores line breaks."""
+    return " ".join(str(title).replace("<br>", " ").split())
 
 
 def _yaxis_key_for_facet_label(fig: Any, label: str) -> Optional[str]:
@@ -1110,6 +1158,7 @@ def _yaxis_key_for_variable(
     if key is not None:
         return key
     pretty = _pretty_variable_label(variable)
+    bare = _pretty_variable_name(variable)
     for layout_key in fig.layout:
         key_s = str(layout_key)
         if not key_s.startswith("yaxis"):
@@ -1117,8 +1166,13 @@ def _yaxis_key_for_variable(
         title = getattr(fig.layout[layout_key].title, "text", None)
         if not title:
             continue
-        if title == pretty or title.startswith(f"{pretty} ") or title.startswith(
-            f"{pretty} ("
+        plain = _plain_axis_title(title)
+        if (
+            plain == pretty
+            or plain == bare
+            or plain.startswith(f"{bare} (")
+            or title == pretty
+            or title.startswith(f"{bare} (")
         ):
             return key_s
     return None
@@ -1339,8 +1393,8 @@ def summary_plotter(collected_curves, cycles_to_plot=None, backend="plotly", **k
 
     - ``plotly_template``: override the default ``plotly+summary`` template.
     - ``layout_updates``: dict passed to ``fig.update_layout`` after collector styling.
-    - ``y_label_mapper``: ``variable → label``; when omitted, pretty labels are
-      built automatically (facet ``variable=…`` strip cleared).
+    - ``y_label_mapper``: ``variable → label``; when omitted, pretty labels
+      with units are built automatically (facet ``variable=…`` strip cleared).
     - ``height`` / ``height_per_panel`` (alias of ``sub_fig_min_height``) /
       ``figure_border_height``: absolute or per-panel height control.
 
@@ -1959,7 +2013,7 @@ def collected_plot(
             control shared vs independent facet y-scales (default independent);
             ``y_ranges`` maps variable name → ``[lo, hi]`` for per-panel limits.
             App chrome (#801): ``plotly_template``, ``layout_updates``,
-            ``y_label_mapper`` (pretty labels by default), ``height`` /
+            ``y_label_mapper`` (pretty labels with units by default), ``height`` /
             ``height_per_panel`` / ``figure_border_height``.
             Cycles / ICA (#820): Plotly facet strips default to ``Cycle N`` /
             cell label (prefer ``layout=`` over legacy ``method="fig_pr_*"``).

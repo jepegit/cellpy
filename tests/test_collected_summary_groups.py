@@ -6,6 +6,7 @@ import polars as pl
 import pytest
 
 from cellpy.collect.collection import Collection, CollectionMeta
+from cellpy.plotting.collected import _plain_axis_title
 
 _COLUMNS = ("cap_charge", "cap_discharge", "ce")
 
@@ -61,7 +62,7 @@ def _facet_labels(fig) -> list[str]:
         for key in fig.layout
         if str(key).startswith("yaxis") and fig.layout[key].domain
     ]
-    return [title for _, title in sorted(axes, key=lambda item: -item[0])]
+    return [_plain_axis_title(title) for _, title in sorted(axes, key=lambda item: -item[0])]
 
 
 @pytest.mark.essential
@@ -116,6 +117,27 @@ def test_custom_group_labels_are_the_legend_entries():
         "my_first_group",
         "my_second_group",
     }
+
+
+@pytest.mark.essential
+def test_spread_plot_legend_uses_custom_group_labels():
+    pytest.importorskip("plotly", reason="plotting extras (batch) not installed")
+    collection = _grouped_collection(labels={1: "run-14", 2: "run-15"})
+    fig = collection.plot(spread=True)
+    assert {trace.name for trace in fig.data if trace.showlegend} == {
+        "run-14",
+        "run-15",
+    }
+
+
+@pytest.mark.essential
+def test_spread_plot_facets_follow_the_collected_column_order():
+    pytest.importorskip("plotly", reason="plotting extras (batch) not installed")
+    columns = ("cap_charge", "ce", "cap_discharge")
+    fig = _grouped_collection(columns).plot(
+        spread=True, y_label_mapper=_identity_mapper(*columns)
+    )
+    assert _facet_labels(fig) == list(columns)
 
 
 @pytest.mark.essential
@@ -196,3 +218,55 @@ def test_custom_group_labels_match_int_and_str_group_ids(keys):
         custom_group_labels={first: "alpha", second: "beta"},
     )
     assert set(collection.data["group_label"].to_list()) == {"alpha", "beta"}
+
+
+@pytest.mark.essential
+def test_summary_collector_plot_uses_custom_group_labels_and_units():
+    """Issue #947 snippet: legend labels + unit-bearing y-titles."""
+    pytest.importorskip("plotly", reason="plotting extras (batch) not installed")
+    from types import SimpleNamespace
+
+    from cellpy.batch import Batch, Journal
+    from cellpy.batch.journal import FILENAME
+    from cellpy.batch.store import CellStore
+    from cellpy.collect import summary_collector
+
+    columns = (
+        "charge_capacity_gravimetric",
+        "discharge_capacity_gravimetric",
+        "coulombic_efficiency",
+    )
+
+    class _Cell:
+        def __init__(self, scale):
+            self.data = SimpleNamespace(
+                summary=pl.DataFrame(
+                    {
+                        "cycle_num": [1, 2],
+                        "charge_capacity_gravimetric": [100.0 * scale, 99.0 * scale],
+                        "discharge_capacity_gravimetric": [98.0 * scale, 97.0 * scale],
+                        "coulombic_efficiency": [98.0, 97.5],
+                    }
+                ),
+                steps=None,
+            )
+
+    pages = pl.DataFrame(
+        {FILENAME: ["a", "b", "c", "d"], "group": [1, 1, 2, 2], "sub_group": [1, 2, 1, 2]}
+    )
+    batch = Batch(Journal(name="b", project="p", pages=pages))
+    batch._store = CellStore.from_cells(
+        {"a": _Cell(1), "b": _Cell(1.1), "c": _Cell(0.9), "d": _Cell(1.2)}
+    )
+    fig = summary_collector(
+        batch,
+        columns=list(columns),
+        group_it=True,
+        custom_group_labels={1: "run-14", 2: "run-15"},
+    ).plot()
+    assert {trace.name for trace in fig.data} == {"run-14", "run-15"}
+    assert _facet_labels(fig) == [
+        "Charge Capacity (mAh/g)",
+        "Discharge Capacity (mAh/g)",
+        "Coulombic Efficiency (%)",
+    ]
