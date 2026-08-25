@@ -1,10 +1,10 @@
 """Journal-from-database.
 
 Reads a batch selection from a cellpy database (the simple Excel reader or the
-JSON readers) into a new :class:`~cellpy.batch.journal.Journal`. The database
-parsing is done natively by :mod:`cellpy.batch._dbengine`; the db
-readers themselves live in :mod:`cellpy.readers.dbreader` /
-:mod:`cellpy.readers.json_dbreader`.
+JSON readers) into a new `Journal`. The database
+parsing is done natively by `_dbengine`; the db
+readers themselves live in `dbreader` /
+`json_dbreader`.
 """
 
 from __future__ import annotations
@@ -28,7 +28,7 @@ def journal_from_db(
     cellpy_file_dir: Any = None,
     **kwargs: Any,
 ) -> Journal:
-    """Read a batch from a database into a :class:`Journal`.
+    """Read a batch from a database into a `Journal`.
 
     ``db_reader`` selects the reader (``"default"``/``"simple_excel_reader"``,
     ``"batbase_json_reader"``, ``"custom_json_reader"``); ``db_file`` and
@@ -36,8 +36,8 @@ def journal_from_db(
 
     Extra kwargs (e.g. ``skip_file_search``, ``file_list``, ``pre_path``,
     ``sub_folders``) are forwarded to
-    :func:`cellpy.batch._dbengine.simple_db_engine` /
-    :func:`cellpy.batch._dbengine.find_files`. Pass ``skip_file_search=True``
+    `simple_db_engine` /
+    `find_files`. Pass ``skip_file_search=True``
     when the JSON already carries ``raw_file_names`` / ``cellpy_file_name``.
 
     ``project`` also scopes the one-shot raw-file-directory dump used when

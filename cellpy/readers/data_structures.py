@@ -665,8 +665,8 @@ class Data:
         The active test's record is derived from ``meta_common`` /
         ``meta_test_dependent`` (which stay authoritative — the core engine
         reads them live), so mutating the returned record is a snapshot edit
-        and does not persist. Use :meth:`set_test_meta` /
-        :meth:`set_cycle_mode` (or the legacy attributes) to write.
+        and does not persist. Use `set_test_meta` /
+        `set_cycle_mode` (or the legacy attributes) to write.
         """
         collection = TestMetaCollection()
         active_id = self.active_test_id
@@ -868,7 +868,7 @@ class InstrumentFactory:
 
         Args:
             quiet: if True, log every create failure at DEBUG (used by
-                :func:`list_instruments` so apps get a silent listing).
+                `list_instruments` so apps get a silent listing).
             **kwargs: sent to the initializer of the loader class.
 
         Returns:
@@ -1083,7 +1083,7 @@ def list_instruments() -> List[Dict[str, Any]]:
 
     Returns one dict per loader -- ``{"id", "label", "models", "suffixes"}`` --
     suitable for building an instrument picker / ingestion form. Unlike
-    :func:`instrument_configurations`, it does **not** log a warning for each
+    `instrument_configurations`, it does **not** log a warning for each
     skipped non-loader module, and it includes a human ``label`` and the raw
     file ``suffixes``.
 
@@ -1130,7 +1130,7 @@ def instrument_meta_schema(instrument: Optional[str] = None) -> Dict[str, Any]:
     the call shape.
 
     Args:
-        instrument: Loader id from :func:`list_instruments` (e.g.
+        instrument: Loader id from `list_instruments` (e.g.
             ``"maccor_txt"``). Optional; echoed in the return value.
 
     Returns:

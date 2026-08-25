@@ -79,7 +79,7 @@ def _duration_to_seconds(value: str | None) -> float | None:
 
 #: Split the single signed capacity column into charge and discharge.
 #:
-#: Uses the shared :func:`~cellpy.readers.instruments.hooks.state_splitter`.
+#: Uses the shared `state_splitter`.
 #: This module previously carried its own copy built on ``forward_fill()``,
 #: which was **not** the legacy behaviour it claimed to reproduce: a forward
 #: fill also fills rests *between* two same-direction rows, where
@@ -132,7 +132,7 @@ class MaccorTxtLoader:
     """Maccor tab-delimited txt, two-stage style.
 
     Conforms structurally to
-    :class:`~cellpy.readers.instruments.contract.InstrumentLoader`.
+    `InstrumentLoader`.
     """
 
     name = "maccor_txt_native"

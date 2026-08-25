@@ -1,6 +1,6 @@
 """Cycles-plot prepare path: voltage–capacity frame + FigureSpec.
 
-Public ``cycles_plot`` calls :func:`prepare` then hands ``(frame, FigureSpec)``
+Public ``cycles_plot`` calls `prepare` then hands ``(frame, FigureSpec)``
 to a backend renderer (``spec.extras['kind'] == 'cycles'``).
 """
 
@@ -21,7 +21,7 @@ _CCOLS = CurveCols()
 
 @dataclass
 class CyclesPrepareConfig:
-    """Input knobs for :func:`prepare` (mirrors public ``cycles_plot`` args)."""
+    """Input knobs for `prepare` (mirrors public ``cycles_plot`` args)."""
 
     cycles: Optional[Any] = None
     inter_cycle_shift: bool = True
@@ -110,12 +110,12 @@ def prepare(
     family: Any,
     config: CyclesPrepareConfig,
 ) -> tuple[pd.DataFrame, FigureSpec]:
-    """Prepare a voltage–capacity frame and :class:`FigureSpec` for ``cycles_plot``.
+    """Prepare a voltage–capacity frame and `FigureSpec` for ``cycles_plot``.
 
     Args:
-        ctx: :class:`~cellpy.plotting.context.CellContext` (or compatible).
-        family: registered :class:`~cellpy.plotting.registry.PlotFamily` (``cycles``).
-        config: :class:`CyclesPrepareConfig` built by the public entry point.
+        ctx: `CellContext` (or compatible).
+        family: registered `PlotFamily` (``cycles``).
+        config: `CyclesPrepareConfig` built by the public entry point.
 
     Returns:
         ``(frame, spec)`` where ``spec.extras['kind'] == 'cycles'``.

@@ -3,8 +3,8 @@
 Pure path computation, separated from filesystem side effects. In the legacy
 ``LabJournal`` code, exporting a batch created directories as a side effect of
 ``paginate()`` (dumpers.py:22 obtained output folders by *calling* it). Here the
-two concerns are split: :class:`BatchPaths` only *computes* paths; the single
-:func:`ensure_dirs` function is the only thing that touches the filesystem.
+two concerns are split: `BatchPaths` only *computes* paths; the single
+`ensure_dirs` function is the only thing that touches the filesystem.
 
 The layout mirrors the modern ``paginate`` default (batch_journals.py): the
 project directory is the current working directory, the batch dump directory is
@@ -29,7 +29,7 @@ class BatchPaths:
     """Computed, immutable folder layout for one batch.
 
     Nothing here creates directories -- constructing a ``BatchPaths`` and
-    reading its properties is free of side effects. Call :func:`ensure_dirs`
+    reading its properties is free of side effects. Call `ensure_dirs`
     to materialise the folders.
     """
 

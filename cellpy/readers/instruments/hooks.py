@@ -16,7 +16,7 @@ Two differences from the legacy version, both structural rather than semantic:
 - **Polars, expression-based**, so the per-cycle Python loop is gone.
 
 The semantics are deliberately a faithful port, quirks included — see
-:func:`state_splitter`. Improving them is a separate, release-noted decision;
+`state_splitter`. Improving them is a separate, release-noted decision;
 doing it inside a port is how a refactor silently changes someone's data.
 """
 

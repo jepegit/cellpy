@@ -116,6 +116,9 @@ them.
 ### Doc-strings
 
 - Use Google-style doc-strings
+- Do not use Sphinx roles (`:class:`, `:meth:`, `:func:`, …). Zensical /
+  mkdocstrings leaves them as literal text. Write a markdown code span
+  (`` `Name` ``) or a cross-ref (``[`Name`][module.Name]``).
 - In addition to the standard admonitions, you can also use:
   - Transferred Arguments
   - See Also

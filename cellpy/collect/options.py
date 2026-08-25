@@ -20,7 +20,7 @@ Transform = Callable[["object"], "object"]
 
 @dataclass(frozen=True)
 class SummaryOptions:
-    """Options for :func:`cellpy.collect.collect_summaries`.
+    """Options for `collect_summaries`.
 
     One source of truth for the whole summary pipeline, replacing the ~30
     keyword arguments of the legacy ``helpers.concat_summaries``. The three
@@ -99,8 +99,8 @@ class CurveOptions:
 class IcaOptions:
     """Options for dQ/dV (ICA) and dV/dQ (DVA) collection.
 
-    Shared by :func:`cellpy.collect.collect_ica` and
-    :func:`cellpy.collect.collect_dva` -- each forwards only the resolution
+    Shared by `collect_ica` and
+    `collect_dva` -- each forwards only the resolution
     knob its own transform actually uses: ``dqdv`` differentiates along
     voltage (needs ``voltage_resolution`` for the q(V) interpolation);
     ``dvdq`` differentiates along capacity (needs ``capacity_resolution`` for
@@ -118,7 +118,7 @@ class IcaOptions:
 
 @dataclass(frozen=True)
 class SaveOptions:
-    """Where/how a :class:`Collection` is saved (no cwd fallback)."""
+    """Where/how a `Collection` is saved (no cwd fallback)."""
 
     directory: Path | None = None
     formats: tuple[str, ...] = ("parquet", "csv")

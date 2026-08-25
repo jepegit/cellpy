@@ -113,7 +113,7 @@ class LoaderDeclarations:
     #: How the ``date_time`` passthrough encodes its absolute timestamp, so
     #: ``harmonize()`` can parse it and derive the required ``epoch_time_utc``
     #: (int64 ns UTC). ``None`` means the loader carries no absolute timestamp.
-    #: One of :data:`DATETIME_KINDS`:
+    #: One of `DATETIME_KINDS`:
     #:
     #: - ``"datetime"``  — already a polars ``Datetime`` (pec).
     #: - ``"string"``    — a wall-clock string; parsed with ``pandas.to_datetime``

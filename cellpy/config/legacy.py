@@ -97,7 +97,7 @@ def load_legacy_yaml_dict(path: Path) -> dict:
 
 
 def load_legacy_yaml_overrides(path: Path) -> dict:
-    """Alias for :func:`load_legacy_yaml_dict` (explicit reload overrides)."""
+    """Alias for `load_legacy_yaml_dict` (explicit reload overrides)."""
 
     return load_legacy_yaml_dict(path)
 

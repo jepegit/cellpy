@@ -249,7 +249,7 @@ def _config_name(config: Any) -> str:
     """A name for messages, for either shape of configuration.
 
     Derivation accepts both a ``configurations.*`` **module** (what the shipped
-    configurations are) and a live :class:`ModelParameters` **instance** (what a
+    configurations are) and a live `ModelParameters` **instance** (what a
     loader carries as ``config_params``, including the ones assembled at runtime
     from a YAML file). The two spell their name differently.
     """
@@ -437,7 +437,7 @@ def declarations_from_configuration(
         timezone: IANA zone for naive vendor timestamps.
 
     Returns:
-        A validated :class:`LoaderDeclarations`.
+        A validated `LoaderDeclarations`.
 
     Raises:
         LoaderError: if the derived declarations do not validate — which is the

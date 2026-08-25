@@ -9,7 +9,7 @@ Typical use::
     b.plot()
     b.result.report()
 
-``b`` is a :class:`Batch`. ``cellpy.utils.batch`` re-exports the same entry
+``b`` is a `Batch`. ``cellpy.utils.batch`` re-exports the same entry
 points.
 """
 

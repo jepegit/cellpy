@@ -5,7 +5,7 @@ rate-based cycle selection, CV partitioning, and group averaging -- that
 previously lived as pandas helpers keyed off the deprecated ``headers_summary``
 / ``headers_step_table`` singletons. These use the cell's own ``schema`` (the
 2.1 native accessor) and operate on the tidy long frame produced by
-:mod:`cellpy.batch.aggregate`.
+`aggregate`.
 """
 
 from __future__ import annotations
@@ -46,7 +46,7 @@ def rate_cycles(cell: Any, opts: Any) -> list[int]:
 
     Port of ``helpers.select_summary_based_on_rate`` -- the step-table mask --
     returning just the surviving cycle numbers (the summary filtering happens
-    in :func:`extract_cell_summary`). ``rate_inverse`` negates the *step* mask;
+    in `extract_cell_summary`). ``rate_inverse`` negates the *step* mask;
     the caller handles ``rate_inverted`` (negating the *cycle* selection).
     """
     steps = to_polars(getattr(getattr(cell, "data", None), "steps", None))

@@ -1,6 +1,6 @@
 """Cycle-info prepare path: scaled raw+steps frame + FigureSpec.
 
-Public ``cycle_info_plot`` calls :func:`prepare` then hands ``(frame, FigureSpec)``
+Public ``cycle_info_plot`` calls `prepare` then hands ``(frame, FigureSpec)``
 to a backend renderer (``spec.extras['kind'] == 'cycle_info'``).
 """
 
@@ -19,7 +19,7 @@ from cellpy.plotting.spec import AxisSpec, FigureSpec, PanelSpec
 
 @dataclass
 class CycleInfoPrepareConfig:
-    """Input knobs for :func:`prepare` (mirrors public ``cycle_info_plot`` args)."""
+    """Input knobs for `prepare` (mirrors public ``cycle_info_plot`` args)."""
 
     cycle: Optional[Any] = None
     get_axes: bool = False
@@ -35,12 +35,12 @@ def prepare(
     family: Any,
     config: CycleInfoPrepareConfig,
 ) -> tuple[pd.DataFrame, FigureSpec]:
-    """Prepare scaled raw/steps data and :class:`FigureSpec` for ``cycle_info_plot``.
+    """Prepare scaled raw/steps data and `FigureSpec` for ``cycle_info_plot``.
 
     Args:
-        ctx: :class:`~cellpy.plotting.context.CellContext` (or compatible).
+        ctx: `CellContext` (or compatible).
         family: registered family (``cycle_info``).
-        config: :class:`CycleInfoPrepareConfig` built by the public entry point.
+        config: `CycleInfoPrepareConfig` built by the public entry point.
 
     Returns:
         ``(frame, spec)`` where ``spec.extras['kind'] == 'cycle_info'``.

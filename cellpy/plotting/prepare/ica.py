@@ -1,6 +1,6 @@
 """ICA/DVA prepare path: long frames from ``cellpy.ica`` + FigureSpec.
 
-Public ``ica_plot`` / ``dva_plot`` call :func:`prepare` then hand
+Public ``ica_plot`` / ``dva_plot`` call `prepare` then hand
 ``(frame, FigureSpec)`` to a backend renderer (``spec.extras['kind']`` is
 ``'ica'`` or ``'dva'``).
 """
@@ -23,7 +23,7 @@ Derivative = Literal["dqdv", "dvdq"]
 
 @dataclass
 class IcaPrepareConfig:
-    """Input knobs for :func:`prepare` (mirrors public ``ica_plot`` / ``dva_plot``)."""
+    """Input knobs for `prepare` (mirrors public ``ica_plot`` / ``dva_plot``)."""
 
     derivative: Derivative = "dqdv"
     cycles: Optional[Any] = None
@@ -72,13 +72,13 @@ def prepare(
     family: Any,
     config: IcaPrepareConfig,
 ) -> tuple[pd.DataFrame, FigureSpec]:
-    """Prepare an ICA or DVA frame and :class:`FigureSpec`.
+    """Prepare an ICA or DVA frame and `FigureSpec`.
 
     Args:
-        ctx: :class:`~cellpy.plotting.context.CellContext` (or compatible).
-        family: registered :class:`~cellpy.plotting.registry.PlotFamily`
+        ctx: `CellContext` (or compatible).
+        family: registered `PlotFamily`
             (``ica`` or ``dva``).
-        config: :class:`IcaPrepareConfig` built by the public entry point.
+        config: `IcaPrepareConfig` built by the public entry point.
 
     Returns:
         ``(frame, spec)`` where ``spec.extras['kind']`` is ``'ica'`` or ``'dva'``.

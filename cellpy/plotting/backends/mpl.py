@@ -1235,7 +1235,7 @@ class MatplotlibBackend:
         convention as the collected ICA line plots, #821) so the two
         half-cycles stay distinguishable on a static export; a
         single-direction plot stays solid. Cycle legend vs colorbar via
-        :mod:`cellpy.plotting.cycle_legend`.
+        `cycle_legend`.
         """
         import matplotlib.pyplot as plt
         from matplotlib.colors import Normalize

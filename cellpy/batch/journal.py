@@ -4,7 +4,7 @@ A journal is a *document*, not an actor: reading one never touches the
 filesystem layout, and the data model is separated from serialisation. This is
 the successor of ``utils/batch_tools/batch_journals.LabJournal`` (a ~1100-line
 class mixing data model, three file formats, path fixing, selection state and
-folder generation). Folder layout lives in :mod:`cellpy.batch.layout`.
+folder generation). Folder layout lives in `layout`.
 
 The on-disk JSON format is preserved for compatibility: a top-level object with
 ``info_df`` (pages, pandas ``to_json`` "columns" orient), ``metadata`` and
@@ -126,11 +126,11 @@ def _pages_to_info_df(pages: pl.DataFrame) -> dict:
 
 
 def read_journal(path: Path | str) -> Journal:
-    """Load a journal into the :class:`Journal` model.
+    """Load a journal into the `Journal` model.
 
     ``.json`` is the native, round-trippable format. ``.xlsx`` is supported
     **read-only** (a lab convenience); writing Excel is intentionally not
-    supported in batch v3 (see :func:`write_journal`).
+    supported in batch v3 (see `write_journal`).
     """
     path = Path(path)
     if path.suffix == ".xlsx":
@@ -215,14 +215,14 @@ def journal_from_custom_json(
     name: str | None = None,
     project: str | None = None,
 ) -> Journal:
-    """Build a :class:`Journal` from an arbitrary JSON file."""
+    """Build a `Journal` from an arbitrary JSON file."""
     return Journal(
         name=name, project=project, pages=read_custom_json(path, column_map)
     )
 
 
 def write_journal(journal: Journal, path: Path | str) -> Path:
-    """Write a :class:`Journal` to ``path`` in the compatible JSON format.
+    """Write a `Journal` to ``path`` in the compatible JSON format.
 
     Only ``.json`` is written. Excel journals are read-only in batch v3
     (metadata plan Step 4); export a report frame instead of a journal.

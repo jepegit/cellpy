@@ -1,7 +1,7 @@
 """Summary-plot prepare path: tidy frame + FigureSpec.
 
 Extracted from ``cellpy.utils.plotutils.SummaryPlotDataPreparer``. Public
-``summary_plot`` calls :func:`prepare` then hands ``(frame, spec)`` to a
+``summary_plot`` calls `prepare` then hands ``(frame, spec)`` to a
 backend renderer.
 """
 
@@ -268,11 +268,11 @@ def prepare(
     config: Any,
     plot_info: Any = None,
 ) -> tuple[pd.DataFrame, FigureSpec]:
-    """Prepare a tidy summary frame and a :class:`FigureSpec`.
+    """Prepare a tidy summary frame and a `FigureSpec`.
 
     Args:
-        source: ``CellpyCell`` or :class:`~cellpy.plotting.context.CellContext`.
-        family: registered :class:`~cellpy.plotting.registry.PlotFamily`.
+        source: ``CellpyCell`` or `CellContext`.
+        family: registered `PlotFamily`.
         config: ``SummaryPlotConfig`` (or duck-typed equivalent).
         plot_info: optional ``SummaryPlotInfo``; built from the cell when omitted.
 
@@ -662,7 +662,7 @@ class SummaryPlotDataPreparer:
           ``rate = current / nom_cap``, the rate columns are multiplied
           by ``old_nom_cap / new_nom_cap``.
         * ``config.filters`` is forwarded to
-          :func:`cellpy.filters.filter_summary`. The default
+          `filter_summary`. The default
           ``rate_filter_columns`` resolves to both rate columns from
           ``c.schema.summary`` (charge AND discharge).
 

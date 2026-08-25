@@ -144,7 +144,7 @@ class DataLoader(BaseLoader):
     def parse(self, source, **kwargs):
         """Vendor stage: read the CSV export into an Arbin-named frame.
 
-        Taps the same ``_query_csv`` read as :meth:`loader`, stopping before the
+        Taps the same ``_query_csv`` read as `loader`, stopping before the
         rename. The vendor ``Date_Time`` here is a wall-clock **string** (the
         legacy path never converts the column, only parses the first value for
         ``start_datetime``), so ``declarations`` sets ``datetime_kind="string"``.

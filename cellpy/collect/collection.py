@@ -32,7 +32,7 @@ def _cellpy_version() -> str:
 
 @dataclass
 class CollectionMeta:
-    """Provenance for a :class:`Collection`."""
+    """Provenance for a `Collection`."""
 
     kind: str
     batch_name: str | None = None
@@ -76,7 +76,7 @@ class Collection:
         return self.data.pivot(values=values, index=index, on=columns)
 
     def plot(self, *, family_kind: str | None = None, **kwargs):
-        """Draw the collection via :func:`cellpy.plotting.collected_plot`.
+        """Draw the collection via `collected_plot`.
 
         The drawing lives in ``cellpy.plotting``; a collection just hands
         it the tidy frame and the family. The only reconciliation needed is the
@@ -85,7 +85,7 @@ class Collection:
 
         For summary collections (Plotly), pass ``share_y`` / ``match_axes`` and
         optional ``y_ranges={variable: [lo, hi], ...}`` for per-facet y-limits
-        (see :func:`cellpy.plotting.collected.summary_plotter`). App chrome:
+        (see `summary_plotter`). App chrome:
         ``plotly_template``, ``layout_updates``, ``y_label_mapper``,
         ``height`` / ``height_per_panel``. Cycles / ICA: prefer ``layout=``
         (``per_cell`` / ``per_cycle``) and ``kind=`` (``line`` / ``film`` /
@@ -115,16 +115,16 @@ class Collection:
         return collected_plot(frame, family_kind=family, **kwargs)
 
     def to_image(self, fmt: str = "png", *, scale: float = 1.0, **plot_kwargs) -> bytes:
-        """Render via :meth:`plot` and return static image bytes (needs kaleido).
+        """Render via `plot` and return static image bytes (needs kaleido).
 
         Args:
             fmt: ``png``, ``svg``, ``pdf``, ``jpg``/``jpeg``, or ``webp``.
             scale: Pixel scale factor for kaleido.
-            **plot_kwargs: Forwarded to :meth:`plot`.
+            **plot_kwargs: Forwarded to `plot`.
 
         Returns:
             Encoded image bytes. Use
-            :func:`cellpy.plotting.image_media_type` for a download MIME type.
+            `image_media_type` for a download MIME type.
 
         Raises:
             OptionalDependencyError: If plotly or kaleido is not installed.
@@ -136,17 +136,17 @@ class Collection:
     def save_figure(
         self, path: Path | str, *, scale: float = 1.0, **plot_kwargs
     ) -> Path:
-        """Render via :meth:`plot` and write the figure to *path* (needs kaleido).
+        """Render via `plot` and write the figure to *path* (needs kaleido).
 
         The image format comes from the suffix (``.png`` when there is none).
-        This is the file-writing counterpart of :meth:`to_image`;
-        :func:`cellpy.utils.plotutils.save_image_files` writes a whole
+        This is the file-writing counterpart of `to_image`;
+        `save_image_files` writes a whole
         png/svg/json set from an existing figure instead.
 
         Args:
             path: Target file. A missing suffix defaults to ``.png``.
             scale: Pixel scale factor for kaleido.
-            **plot_kwargs: Forwarded to :meth:`plot`.
+            **plot_kwargs: Forwarded to `plot`.
 
         Returns:
             The path written.
@@ -166,8 +166,8 @@ class Collection:
         """Save the collected **frame** (+ ``meta.json``) -- data only, no figures.
 
         No cwd fallback -- ``directory`` is explicit. Figures are a separate
-        product: use :meth:`save_figure` to write one to disk, :meth:`to_image`
-        for the bytes, or :func:`cellpy.utils.plotutils.save_image_files` for a
+        product: use `save_figure` to write one to disk, `to_image`
+        for the bytes, or `save_image_files` for a
         png/svg/json set from a figure you already have.
 
         Args:

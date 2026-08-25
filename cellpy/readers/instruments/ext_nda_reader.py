@@ -8,7 +8,7 @@ data (a ``load_nda`` stub that printed its arguments and returned ``None``),
 so a "successful" load produced an empty cell.
 
 Per the loader plan's tier-3 decision it is **parked, not silently broken**:
-selecting it raises a typed :class:`~cellpy.exceptions.LoaderError` naming the
+selecting it raises a typed `LoaderError` naming the
 replacement. Removal in 2.1 unless users object.
 """
 

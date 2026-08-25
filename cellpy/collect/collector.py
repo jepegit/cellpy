@@ -1,8 +1,8 @@
 """Convenience collector + recipes.
 
-:class:`BatchCollector` is the thin successor of the legacy
+`BatchCollector` is the thin successor of the legacy
 ``utils.collectors.BatchCollector`` family: run a collect function, hold the
-resulting :class:`~cellpy.collect.collection.Collection`, and offer
+resulting `Collection`, and offer
 ``save`` / ``plot`` on top. It replaces the "elevated arguments" machinery --
 ~20 parameters redeclared per subclass and merged through three priority
 layers -- with a single options object plus a collect callable. The
@@ -29,11 +29,11 @@ Collector = Callable[..., Any]
 
 
 class BatchCollector:
-    """Run a collect function and hold its :class:`Collection`.
+    """Run a collect function and hold its `Collection`.
 
     Args:
-        batch: the :class:`~cellpy.batch.Batch` to collect from.
-        collector: a collect callable, e.g. :func:`collect_summaries`.
+        batch: the `Batch` to collect from.
+        collector: a collect callable, e.g. `collect_summaries`.
         options: the options dataclass for ``collector`` (optional).
         name: display/base name (defaults to the batch/journal name).
         autorun: run the collector immediately (default ``True``).
@@ -80,14 +80,14 @@ class BatchCollector:
         """Persist the collected **frame** (+ ``meta.json``) -- data only.
 
         Explicit directory, no cwd fallback. This writes no figures: use
-        :meth:`save_figure` for an image file, :meth:`to_image` for the bytes,
-        or :func:`cellpy.utils.plotutils.save_image_files` for a png/svg/json
+        `save_figure` for an image file, `to_image` for the bytes,
+        or `save_image_files` for a png/svg/json
         set from a figure you already have.
 
         Args:
             directory: Where to write ``<name>.<fmt>`` and ``<name>.meta.json``.
             **kwargs: Forwarded to
-                :meth:`cellpy.collect.Collection.save` (e.g.
+                `save` (e.g.
                 ``formats=("parquet", "csv", "json", "xlsx")``).
 
         Returns:
@@ -99,7 +99,7 @@ class BatchCollector:
         """Draw the collection via ``cellpy.plotting``.
 
         Args:
-            **kwargs: Forwarded to :meth:`cellpy.collect.Collection.plot` --
+            **kwargs: Forwarded to `plot` --
                 e.g. ``height``, ``backend``, ``legend_title`` or
                 ``layout`` / ``kind`` (cycles / ICA / DVA).
 
@@ -115,30 +115,30 @@ class BatchCollector:
         return plot(**kwargs)
 
     def to_image(self, fmt: str = "png", *, scale: float = 1.0, **plot_kwargs) -> bytes:
-        """Render :meth:`plot` and return static image bytes (needs kaleido).
+        """Render `plot` and return static image bytes (needs kaleido).
 
         Args:
             fmt: ``png``, ``svg``, ``pdf``, ``jpg``/``jpeg``, or ``webp``.
             scale: Pixel scale factor for kaleido.
-            **plot_kwargs: Forwarded to :meth:`plot`.
+            **plot_kwargs: Forwarded to `plot`.
 
         Returns:
-            Encoded image bytes (see :meth:`save_figure` to write a file).
+            Encoded image bytes (see `save_figure` to write a file).
         """
         return self.collection.to_image(fmt, scale=scale, **plot_kwargs)
 
     def save_figure(
         self, path: str | Path, *, scale: float = 1.0, **plot_kwargs
     ) -> Path:
-        """Render :meth:`plot` and write the figure to *path* (needs kaleido).
+        """Render `plot` and write the figure to *path* (needs kaleido).
 
         The image format comes from the suffix (``.png`` when there is none).
-        :meth:`save` writes the data; this writes the picture.
+        `save` writes the data; this writes the picture.
 
         Args:
             path: Target file, e.g. ``"out/cycle_life.png"``.
             scale: Pixel scale factor for kaleido.
-            **plot_kwargs: Forwarded to :meth:`plot`.
+            **plot_kwargs: Forwarded to `plot`.
 
         Returns:
             The path written.
@@ -181,7 +181,7 @@ def _summary_headers(batch: Any) -> Any:
 
 
 def _family_options(batch: Any, name: str) -> SummaryOptions:
-    """Build :class:`SummaryOptions` for the named family (see #927/#868)."""
+    """Build `SummaryOptions` for the named family (see #927/#868)."""
     from cellpy.plotting import get_family
 
     return get_family(name).summary_options(_summary_headers(batch))
@@ -204,8 +204,8 @@ def summary_collector(
 ) -> BatchCollector:
     """Collect the per-cell summaries of a batch (cycle-life data).
 
-    Returns a :class:`BatchCollector` holding a
-    :class:`~cellpy.collect.Collection`: ``.data`` is the tidy frame, ``.plot()``
+    Returns a `BatchCollector` holding a
+    `Collection`: ``.data`` is the tidy frame, ``.plot()``
     draws it and ``.save(dir)`` writes the frame plus its metadata.
 
     Examples:
@@ -214,7 +214,7 @@ def summary_collector(
         >>> caps.plot(height=600)
 
     Args:
-        batch: The :class:`~cellpy.batch.Batch` to collect from.
+        batch: The `Batch` to collect from.
         options (SummaryOptions, optional): A ready options object. Wins over
             ``family`` and is still updated by the keyword arguments below.
         family (str, optional): Name of a registered plot family, the same
@@ -234,18 +234,18 @@ def summary_collector(
             used for the plot legend (int or str keys both match).
         rate (float, optional): Keep only cycles run at this C-rate (see
             ``rate_on`` / ``rate_std`` / ``rate_inverted`` on
-            :class:`~cellpy.collect.SummaryOptions`).
+            `SummaryOptions`).
         max_cycle (int, optional): Drop cycles above this number.
         partition_by_cv (bool, optional): Also emit ``*_non_cv`` / ``*_cv``
             capacity contributions.
         autorun (bool): Run the collector immediately (default ``True``).
         **overrides: Any other field of
-            :class:`~cellpy.collect.SummaryOptions` -- ``rate_on``,
+            `SummaryOptions` -- ``rate_on``,
             ``rate_std``, ``rate_inverted``, ``only_selected``, ``remove_last``,
             ``normalize_cycles``, ``average_method``, ``transforms``, ...
 
     Returns:
-        BatchCollector: bound to :func:`cellpy.collect.collect_summaries`.
+        BatchCollector: bound to `collect_summaries`.
 
     Raises:
         ValueError: ``family``/``y`` is not a registered family, or no loaded
@@ -288,8 +288,8 @@ def cycles_collector(
 ) -> BatchCollector:
     """Collect voltage-capacity curves per cell and cycle.
 
-    Returns a :class:`BatchCollector` holding a
-    :class:`~cellpy.collect.Collection`: ``.data`` is the tidy frame, ``.plot()``
+    Returns a `BatchCollector` holding a
+    `Collection`: ``.data`` is the tidy frame, ``.plot()``
     draws it and ``.save(dir)`` writes the frame plus its metadata.
 
     Examples:
@@ -297,25 +297,25 @@ def cycles_collector(
         >>> curves.plot(layout="per_cell")  # or layout="per_cycle", kind="film"
 
     Args:
-        batch: The :class:`~cellpy.batch.Batch` to collect from.
+        batch: The `Batch` to collect from.
         options (CurveOptions, optional): A ready options object; the keyword
             arguments below still update it.
         cycles (sequence of int, optional): Cycles to collect. Resolved **per
             cell**, so a cell missing one cycle does not narrow the others.
         rate (float, optional): Rate-based cycle selection (see ``rate_on`` /
             ``rate_std`` / ``inverse`` on
-            :class:`~cellpy.collect.CurveOptions`).
+            `CurveOptions`).
         mode (str, optional): Capacity mode forwarded to ``CellpyCell.get_cap``
             (``gravimetric`` / ``areal`` / ``absolute``).
         method (str, optional): ``forth-and-forth`` / ``back-and-forth`` /
             ``forth``, forwarded to ``CellpyCell.get_cap``.
         autorun (bool): Run the collector immediately (default ``True``).
         **overrides: Any other field of
-            :class:`~cellpy.collect.CurveOptions` -- ``rate_on``, ``rate_std``,
+            `CurveOptions` -- ``rate_on``, ``rate_std``,
             ``inverse``, ``transforms``.
 
     Returns:
-        BatchCollector: bound to :func:`cellpy.collect.collect_cycles`.
+        BatchCollector: bound to `collect_cycles`.
     """
     overrides = {
         **_given(cycles=cycles, rate=rate, mode=mode, method=method),
@@ -335,8 +335,8 @@ def ica_collector(
 ) -> BatchCollector:
     """Collect incremental-capacity (dQ/dV) curves per cell and cycle.
 
-    Returns a :class:`BatchCollector` holding a
-    :class:`~cellpy.collect.Collection`: ``.data`` is the tidy frame, ``.plot()``
+    Returns a `BatchCollector` holding a
+    `Collection`: ``.data`` is the tidy frame, ``.plot()``
     draws it and ``.save(dir)`` writes the frame plus its metadata.
 
     Examples:
@@ -344,7 +344,7 @@ def ica_collector(
         >>> ica.plot(layout="per_cell")
 
     Args:
-        batch: The :class:`~cellpy.batch.Batch` to collect from.
+        batch: The `Batch` to collect from.
         options (IcaOptions, optional): A ready options object; the keyword
             arguments below still update it.
         cycles (sequence of int, optional): Cycles to collect (resolved per
@@ -353,10 +353,10 @@ def ica_collector(
             interpolation dQ/dV differentiates along.
         autorun (bool): Run the collector immediately (default ``True``).
         **overrides: Any other field of
-            :class:`~cellpy.collect.IcaOptions` -- ``transforms``.
+            `IcaOptions` -- ``transforms``.
 
     Returns:
-        BatchCollector: bound to :func:`cellpy.collect.collect_ica`.
+        BatchCollector: bound to `collect_ica`.
     """
     overrides = {
         **_given(cycles=cycles, voltage_resolution=voltage_resolution),
@@ -376,8 +376,8 @@ def dva_collector(
 ) -> BatchCollector:
     """Collect differential-voltage (dV/dQ) curves per cell and cycle.
 
-    Returns a :class:`BatchCollector` holding a
-    :class:`~cellpy.collect.Collection`: ``.data`` is the tidy frame, ``.plot()``
+    Returns a `BatchCollector` holding a
+    `Collection`: ``.data`` is the tidy frame, ``.plot()``
     draws it and ``.save(dir)`` writes the frame plus its metadata.
 
     Examples:
@@ -385,7 +385,7 @@ def dva_collector(
         >>> dva.plot(layout="per_cell")
 
     Args:
-        batch: The :class:`~cellpy.batch.Batch` to collect from.
+        batch: The `Batch` to collect from.
         options (IcaOptions, optional): A ready options object; the keyword
             arguments below still update it.
         cycles (sequence of int, optional): Cycles to collect (resolved per
@@ -394,10 +394,10 @@ def dva_collector(
             interpolation dV/dQ differentiates along.
         autorun (bool): Run the collector immediately (default ``True``).
         **overrides: Any other field of
-            :class:`~cellpy.collect.IcaOptions` -- ``transforms``.
+            `IcaOptions` -- ``transforms``.
 
     Returns:
-        BatchCollector: bound to :func:`cellpy.collect.collect_dva`.
+        BatchCollector: bound to `collect_dva`.
     """
     overrides = {
         **_given(cycles=cycles, capacity_resolution=capacity_resolution),
@@ -443,7 +443,7 @@ def normalize_column_on_max(
 ) -> Callable[[pl.DataFrame], pl.DataFrame]:
     """Build a transform that adds ``scaler * column / max(column)`` as a new series.
 
-    The counterpart of :func:`normalize_column` for the case where the reference
+    The counterpart of `normalize_column` for the case where the reference
     value is not known up front — retention against the cell's own best cycle,
     which is what ``summary_plot`` does by default
     (``fullcell_standard_normalization_type="max"``).

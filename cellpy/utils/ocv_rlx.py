@@ -287,7 +287,7 @@ class MultiCycleOcvFit:
 
     @property
     def data(self):
-        """Deprecated alias for :attr:`cell` (the held CellpyCell) -- ends the ``self.data.data.steps`` double-``.data`` trap."""
+        """Deprecated alias for `cell` (the held CellpyCell) -- ends the ``self.data.data.steps`` double-``.data`` trap."""
         warn_once(
             "MultiCycleOcvFit.data",
             "MultiCycleOcvFit.cell",
@@ -325,7 +325,7 @@ class MultiCycleOcvFit:
         self.cell = cellpydata
 
     def set_data(self, cellpydata):
-        """Deprecated alias for :meth:`set_cell`."""
+        """Deprecated alias for `set_cell`."""
         warn_once(
             "MultiCycleOcvFit.set_data",
             "MultiCycleOcvFit.set_cell",

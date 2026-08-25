@@ -1,11 +1,11 @@
-"""Deprecated shim: ``cellpy.utils.batch`` -> :mod:`cellpy.batch`.
+"""Deprecated shim: ``cellpy.utils.batch`` -> `batch`.
 
-The batch subsystem was redesigned and now lives in :mod:`cellpy.batch`
+The batch subsystem was redesigned and now lives in `batch`
 (journal / policy / runner / store / aggregate / qc / outputs / facade). This
 module keeps the historical import path and entry points working -- returning
-the new :class:`cellpy.batch.Batch` -- and will remain permanently as a thin
+the new `Batch` -- and will remain permanently as a thin
 re-export. The legacy ``batch_tools`` internals were removed in 2.1;
-the DB-journal path they used to own is now native in :mod:`cellpy.batch`.
+the DB-journal path they used to own is now native in `batch`.
 """
 
 from __future__ import annotations
@@ -62,7 +62,7 @@ def _setup_logging(default_log_level=None, testing=False) -> None:
 
 
 def init(name=None, project=None, *, empty=False, **kwargs) -> Batch:
-    """Initialise a batch (shim -> :func:`cellpy.batch.load`).
+    """Initialise a batch (shim -> `load`).
 
     Legacy flow ``init() -> create_journal() -> update()`` is preserved: with a
     database source, ``init`` defers the read to ``create_journal``.
@@ -93,7 +93,7 @@ def naked(name=None, project=None) -> Batch:
 
 
 def from_journal(journal_file, autolink=True, testing=False, **kwargs) -> Batch:
-    """Create a batch from a journal file (shim -> :func:`cellpy.batch.from_journal`)."""
+    """Create a batch from a journal file (shim -> `from_journal`)."""
     _setup_logging(testing=testing)
     b = _new_from_journal(journal_file)
     if autolink:
@@ -116,7 +116,7 @@ def load(
     policy=None,
     **kwargs,
 ) -> Batch:
-    """Load a batch (shim -> orchestrated :func:`cellpy.batch.load`)."""
+    """Load a batch (shim -> orchestrated `load`)."""
     _setup_logging(kwargs.pop("default_log_level", None), testing)
 
     if column_map is not None:

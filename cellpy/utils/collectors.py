@@ -1,17 +1,17 @@
-"""Deprecated shim: ``cellpy.utils.collectors`` -> :mod:`cellpy.collect`.
+"""Deprecated shim: ``cellpy.utils.collectors`` -> `collect`.
 
-The collector subsystem was redesigned and now lives in :mod:`cellpy.collect`
+The collector subsystem was redesigned and now lives in `collect`
 (options / collection / summary / curves / ica / collector). The legacy
 ``BatchCollector`` family and the ``*_collector`` functions -- built on the
 "elevated arguments" machinery (~20 parameters redeclared per subclass and
 merged through three priority layers) -- are **removed in 2.1**: this module
 keeps the import path alive but the old entry points raise, pointing at their
-:mod:`cellpy.collect` replacements.
+`collect` replacements.
 
 The shared figure/label/drawing helpers (``load_figure`` & friends,
 ``legend_replacer``/``remove_markers``, ``collected_plot``/``_select_direction``)
 are still re-exported from here -- they are canonical single copies owned by
-:mod:`cellpy.plotting`, unrelated to the collector classes.
+`plotting`, unrelated to the collector classes.
 """
 
 from __future__ import annotations
@@ -91,28 +91,28 @@ def pick_named_cell(*args: Any, **kwargs: Any) -> NoReturn:
 
 
 class BatchCollector:
-    """Removed in 2.1 -- use :class:`cellpy.collect.BatchCollector`."""
+    """Removed in 2.1 -- use `BatchCollector`."""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         _moved("BatchCollector", "cellpy.collect.BatchCollector")
 
 
 class BatchSummaryCollector(BatchCollector):
-    """Removed in 2.1 -- use :func:`cellpy.collect.summary_collector`."""
+    """Removed in 2.1 -- use `summary_collector`."""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         _moved("BatchSummaryCollector", "cellpy.collect.summary_collector")
 
 
 class BatchCyclesCollector(BatchCollector):
-    """Removed in 2.1 -- use :func:`cellpy.collect.cycles_collector`."""
+    """Removed in 2.1 -- use `cycles_collector`."""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         _moved("BatchCyclesCollector", "cellpy.collect.cycles_collector")
 
 
 class BatchICACollector(BatchCollector):
-    """Removed in 2.1 -- use :func:`cellpy.collect.ica_collector`."""
+    """Removed in 2.1 -- use `ica_collector`."""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         _moved("BatchICACollector", "cellpy.collect.ica_collector")

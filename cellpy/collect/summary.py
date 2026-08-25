@@ -1,9 +1,9 @@
 """Summary collection.
 
-Assembles per-cell summaries into one tidy :class:`Collection`, carrying the
+Assembles per-cell summaries into one tidy `Collection`, carrying the
 full rate-filtering / grouping / CV-partition feature set of the legacy
-``helpers.concat_summaries`` on the :class:`SummaryOptions` model. Cycle-level
-work (rate/CV/max-cycle) happens per cell in :mod:`._summary_ops`; combination,
+``helpers.concat_summaries`` on the `SummaryOptions` model. Cycle-level
+work (rate/CV/max-cycle) happens per cell in `_summary_ops`; combination,
 column selection, group averaging and cleanup happen on the combined frame.
 """
 
@@ -41,11 +41,11 @@ def _pages_lookup(batch: Any) -> dict[str, dict[str, Any]]:
 def collect_summaries(
     batch: Any, options: SummaryOptions | None = None, **overrides
 ) -> Collection:
-    """Collect per-cell summaries into one tidy :class:`Collection`.
+    """Collect per-cell summaries into one tidy `Collection`.
 
     With defaults this is a plain long-format concatenation (one row per
     cell/cycle). The options add rate filtering, CV partition, per-group
-    averaging and inf/extreme cleanup -- see :class:`SummaryOptions`.
+    averaging and inf/extreme cleanup -- see `SummaryOptions`.
     """
     opts = options or SummaryOptions()
     if overrides:

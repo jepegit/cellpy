@@ -122,9 +122,9 @@ def with_cellpy_unit(
 
     Args:
         name: the human-readable quantity name, e.g. ``"Capacity"``.
-        physical_property: as :func:`units_label`.
-        mode: as :func:`units_label`.
-        units: as :func:`units_label`.
+        physical_property: as `units_label`.
+        mode: as `units_label`.
+        units: as `units_label`.
 
     Returns:
         e.g. ``"Capacity (mAh/g)"``, ``"Voltage (V)"``.

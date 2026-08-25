@@ -7,7 +7,7 @@ journal was corrected for the report but not for the cell, and the two could
 disagree indefinitely.
 
 This module supplies the missing direction — a journal row as a
-:class:`~cellpy.readers.meta_resolver.MetaResolver` layer, sitting where the
+`MetaResolver` layer, sitting where the
 plan puts it: below explicit user arguments, above whatever the instrument file
 happened to contain.
 

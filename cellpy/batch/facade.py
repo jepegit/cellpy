@@ -1,7 +1,7 @@
 """The ``Batch`` object returned by ``cellpy.batch.load``.
 
-Implementation module for :class:`Batch`, :func:`load`, :func:`from_journal`,
-and :func:`from_cells`. Import those from ``cellpy.batch``, not from here.
+Implementation module for `Batch`, `load`, `from_journal`,
+and `from_cells`. Import those from ``cellpy.batch``, not from here.
 """
 
 from __future__ import annotations
@@ -52,13 +52,13 @@ class Batch:
         b.result.report()
 
     Attributes:
-        journal: The :class:`~cellpy.batch.journal.Journal` (pages + session).
-        policy: The :class:`~cellpy.batch.policy.LoadPolicy` used on the last load.
+        journal: The `Journal` (pages + session).
+        policy: The `LoadPolicy` used on the last load.
         pages (polars.DataFrame): Journal table (filename, mass, group, …).
         cell_names (list[str]): Labels in journal order.
-        cells: Lazy :class:`~cellpy.batch.store.CellStore` of ``CellpyCell`` objects.
+        cells: Lazy `CellStore` of ``CellpyCell`` objects.
         summaries (polars.DataFrame): Combined per-cycle summaries.
-        result: :class:`~cellpy.batch.result.BatchResult` from the last ``update``.
+        result: `BatchResult` from the last ``update``.
     """
 
     def __init__(
@@ -101,7 +101,7 @@ class Batch:
         The pieces a batch needs -- a journal ``pages`` frame (polars, keyed by
         ``filename``) plus a populated cell store -- are constructed here, so a
         GUI/notebook holding cells in memory can feed them straight to
-        :func:`cellpy.collect.collect_summaries` / ``collect_cycles`` or
+        `collect_summaries` / ``collect_cycles`` or
         ``batch.plot()`` without writing a journal to disk.
 
         Args:
@@ -191,7 +191,7 @@ class Batch:
         ``progress`` is ``None`` (auto: TTY or Jupyter), ``False`` (off),
         ``True`` (force), or a callable that receives progress events.
         ``on_progress(i, n, result)`` still wins when set (3-arg callback).
-        Known :class:`LoadPolicy` fields in ``overrides`` update the policy;
+        Known `LoadPolicy` fields in ``overrides`` update the policy;
         unknown (legacy) kwargs like ``testing`` are forwarded to the loader
         (``cellpy.get``) via ``loader_kwargs``.
         """
@@ -215,17 +215,17 @@ class Batch:
         return self._result
 
     def load(self, **overrides) -> BatchResult:
-        """Load cells (alias of :meth:`update`, kept for the legacy surface).
+        """Load cells (alias of `update`, kept for the legacy surface).
 
         Takes the same ``executor`` / ``on_progress`` / ``progress`` / policy
-        overrides as :meth:`update`, e.g. ``b.load(executor="threads")``.
+        overrides as `update`, e.g. ``b.load(executor="threads")``.
         """
         return self.update(**overrides)
 
     def recalc(self, **overrides) -> BatchResult:
         """Reload every cell and remake step tables and summaries.
 
-        Same kwargs as :meth:`update`.
+        Same kwargs as `update`.
         """
         return self.update(recalc=True, **overrides)
 
@@ -252,7 +252,7 @@ class Batch:
         return aggregate.combine_tests(self._store, self.journal)
 
     def make_summaries(self) -> pl.DataFrame:
-        """Alias of :meth:`combine_summaries`."""
+        """Alias of `combine_summaries`."""
         return self.combine_summaries()
 
     def report(self, check: bool = True) -> pl.DataFrame:
@@ -277,7 +277,7 @@ class Batch:
         return write_journal(self.journal, target)
 
     def export_journal(self, path: Path | str | None = None) -> Path:
-        """Alias of :meth:`save`."""
+        """Alias of `save`."""
         return self.save(path)
 
     def export_project(
@@ -296,7 +296,7 @@ class Batch:
         given).
 
         Does not copy raw files or clear ``raw_file_names``. Unloaded cells
-        raise ``ValueError`` — call :meth:`update` first.
+        raise ``ValueError`` — call `update` first.
 
         Args:
             destination: directory for the ``.cellpy`` files (created if needed).
@@ -502,18 +502,18 @@ _JSON_DB_READERS = frozenset({"custom_json_reader", "batbase_json_reader"})
 def from_journal(
     journal_file: Path | str, policy: LoadPolicy | None = None, **_kwargs
 ) -> Batch:
-    """Build a :class:`Batch` from a cellpy journal file (.json or .xlsx).
+    """Build a `Batch` from a cellpy journal file (.json or .xlsx).
 
     For BatBase / custom JSON downloads that need post-read file search, use
-    :func:`load` with ``db_reader="batbase_json_reader"`` or
+    `load` with ``db_reader="batbase_json_reader"`` or
     ``"custom_json_reader"`` (and ``column_map`` for custom JSON).
     """
     return Batch(read_journal(journal_file), policy=policy)
 
 
 def from_cells(cells, **kwargs) -> Batch:
-    """Build a :class:`Batch` from already-loaded cells (see
-    :meth:`Batch.from_cells`) -- feed it to ``collect_summaries`` /
+    """Build a `Batch` from already-loaded cells (see
+    `from_cells`) -- feed it to ``collect_summaries`` /
     ``collect_cycles`` or call ``batch.plot()``."""
     return Batch.from_cells(cells, **kwargs)
 
@@ -547,7 +547,7 @@ def _resolve_policy(
     accept_errors: bool | None,
     max_cycle: int | None,
 ) -> LoadPolicy:
-    """Map legacy force_* flags onto a :class:`LoadPolicy`.
+    """Map legacy force_* flags onto a `LoadPolicy`.
 
     Raises:
         ValueError: if ``policy`` conflicts with force_raw_file / force_cellpy.
@@ -645,7 +645,7 @@ def _persist_cells(
 
     Cells already loaded from an on-disk ``.cellpy`` are not rewritten unless
     ``policy.source`` is ``NEWEST`` or ``policy.recalc`` is set, or
-    ``force_rewrite`` is True (used by :meth:`Batch.export_project`).
+    ``force_rewrite`` is True (used by `export_project`).
     """
     if _CELLPY_FILE_COL not in batch.pages.columns:
         defaults = [_default_cellpy_path(lbl).as_posix() for lbl in batch.cell_names]
@@ -744,10 +744,10 @@ def load(
     """Load a batch the notebook-friendly way (v1 orchestration on v3).
 
     Resolves a journal (explicit file, cwd/`journal_dir` autoload, or database),
-    runs :meth:`Batch.update`, optionally drops bad cells, and by default
+    runs `update`, optionally drops bad cells, and by default
     persists ``.cellpy`` files plus the journal JSON.
 
-    Journal location: ``journal_dir`` or :func:`pathlib.Path.cwd` (typically the
+    Journal location: ``journal_dir`` or `cwd` (typically the
     notebook folder when the kernel was started there). Autoload looks for
     ``cellpy_batch_{name}.json`` in that directory when ``allow_from_journal``
     is True.
@@ -766,7 +766,7 @@ def load(
             ``db_reader``).
         reader_path: DB file path for non-default readers.
         batch_col: Excel batch column (default ``b01`` when reading the DB).
-        policy: explicit :class:`LoadPolicy` (conflicts with force_* raise).
+        policy: explicit `LoadPolicy` (conflicts with force_* raise).
         allow_from_journal: autoload ``cellpy_batch_{name}.json`` when present.
         force_reload: kept for API parity; journal hits always ``update()``.
         force_raw_file / force_cellpy: map to ``RAW_ONLY`` / ``CELLPY_ONLY``.
@@ -778,8 +778,8 @@ def load(
         save_cellpy: write journal JSON and any newly-needed ``.cellpy`` files (default True). Skips rewriting cells already loaded from disk.
         accept_errors / max_cycle: forwarded into the load policy.
         **kwargs: DB engine knobs (``column_map``, ``raw_file_dir``, …), load
-            knobs forwarded to :meth:`Batch.update` (``executor``,
-            ``on_progress``, ``progress`` and :class:`LoadPolicy` fields) and
+            knobs forwarded to `update` (``executor``,
+            ``on_progress``, ``progress`` and `LoadPolicy` fields) and
             loader extras (``testing``, …). ``progress=None`` auto-shows tqdm
             on a TTY or in Jupyter; ``False`` disables; ``True`` forces;
             a callable receives progress events. ``executor="threads"`` speeds
@@ -793,7 +793,7 @@ def load(
 
     Note:
         ``executor`` chooses how cells are loaded (forwarded to
-        :meth:`Batch.update`). Suggested use:
+        `update`). Suggested use:
 
         * ``"serial"`` (default) — first load from remote raw files. SFTP
           copies do not overlap, so threads buy almost nothing on the
@@ -822,7 +822,7 @@ def load(
             b = batch.load(name="exp", project="Proj", executor="threads")
 
     Returns:
-        Populated :class:`Batch`.
+        Populated `Batch`.
 
     Raises:
         ValueError: missing required args, force-flag conflicts, missing journal

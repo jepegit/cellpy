@@ -7,7 +7,7 @@ functionally identical; the batch_plotters legend copy carried an extra
 with ``inverted_mode=False`` as the default.
 
 Axis labels for ``raw_plot`` / ``cycle_info_plot`` go through
-:func:`quantity_label` / :func:`units_quantity_label` so those paths do not
+`quantity_label` / `units_quantity_label` so those paths do not
 hand-compose ``f"{name} ({unit})"`` strings.
 """
 
@@ -44,12 +44,12 @@ def units_quantity_label(
     *,
     units: Optional["CellpyUnits"] = None,
 ) -> str:
-    """Axis label via :func:`cellpy.units.units_label`.
+    """Axis label via `units_label`.
 
     Args:
         name: human-readable quantity name.
-        physical_property: as :func:`~cellpy.units.units_label`.
-        mode: as :func:`~cellpy.units.units_label`.
+        physical_property: as `units_label`.
+        mode: as `units_label`.
         units: unit spec for the series (e.g. ``cell.data.raw_units``).
 
     Returns:
