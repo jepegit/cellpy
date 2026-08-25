@@ -237,7 +237,7 @@ class DataLoader(BaseLoader):
     def parse(self, source, **kwargs):
         """Vendor stage: query the SQL Server into an Arbin-named frame.
 
-        The two-stage counterpart to :meth:`loader`, tapping the same
+        The two-stage counterpart to `loader`, tapping the same
         ``_query_sql`` read. It stops before ``_post_process`` — the rename, the
         Arbin-integer datetime decode and the dtype coercion are declared and
         handled by ``harmonize()``. No in-repo fixture exists (this needs a live

@@ -443,7 +443,7 @@ class CellpyCell:
         (``native_schema=False``) ``schema.raw.potential`` returns
         ``"voltage"`` — the name that actually indexes that frame. Whatever
         this returns is a valid column key for the matching frame. See
-        :mod:`cellpy.parameters.cell_schema`.
+        `cell_schema`.
         """
         if self._schema is None:
             self._schema = CellSchema(self.core.schema, native=self.native_schema)
@@ -670,43 +670,43 @@ class CellpyCell:
     # The split/drop-cycle helpers live in cellpy.readers.slicing (issue
     # #519); thin delegates below keep the public API and subclass dispatch.
     def mod_raw_split_cycle(self, data_points: List) -> None:
-        """Split cycle(s) into several cycles. See :func:`cellpy.readers.slicing.mod_raw_split_cycle`."""
+        """Split cycle(s) into several cycles. See `mod_raw_split_cycle`."""
         return slicing.mod_raw_split_cycle(self, data_points)
 
     def _mod_raw_split_cycle(self, data_point: int) -> None:
-        """See :func:`cellpy.readers.slicing._mod_raw_split_cycle`."""
+        """See `_mod_raw_split_cycle`."""
         return slicing._mod_raw_split_cycle(self, data_point)
 
     def split(self, cycle=None):
-        """Split experiment into two sub-experiments. See :func:`cellpy.readers.slicing.split`."""
+        """Split experiment into two sub-experiments. See `split`."""
         return slicing.split(self, cycle=cycle)
 
     def drop_from(self, cycle=None):
-        """Select first part of experiment up to cycle. See :func:`cellpy.readers.slicing.drop_from`."""
+        """Select first part of experiment up to cycle. See `drop_from`."""
         return slicing.drop_from(self, cycle=cycle)
 
     def drop_to(self, cycle=None):
-        """Select last part of experiment from cycle. See :func:`cellpy.readers.slicing.drop_to`."""
+        """Select last part of experiment from cycle. See `drop_to`."""
         return slicing.drop_to(self, cycle=cycle)
 
     def from_cycle(self, cycle: int) -> "CellpyCell":
-        """Select experiment from cycle number. See :func:`cellpy.readers.slicing.from_cycle`."""
+        """Select experiment from cycle number. See `from_cycle`."""
         return slicing.from_cycle(self, cycle)
 
     def to_cycle(self, cycle: int) -> "CellpyCell":
-        """Select experiment to cycle number. See :func:`cellpy.readers.slicing.to_cycle`."""
+        """Select experiment to cycle number. See `to_cycle`."""
         return slicing.to_cycle(self, cycle)
 
     def drop_edges(self, start: int, end: int) -> "CellpyCell":
-        """Select middle part of experiment. See :func:`cellpy.readers.slicing.drop_edges`."""
+        """Select middle part of experiment. See `drop_edges`."""
         return slicing.drop_edges(self, start, end)
 
     def split_many(self, base_cycles: Optional[Union[int, List[int]]] = None) -> List["CellpyCell"]:
-        """Split experiment into several sub-experiments. See :func:`cellpy.readers.slicing.split_many`."""
+        """Split experiment into several sub-experiments. See `split_many`."""
         return slicing.split_many(self, base_cycles=base_cycles)
 
     def with_cycles(self, cycles: Union[int, List[int]]) -> "CellpyCell":
-        """Select a subset of cycles. See :func:`cellpy.readers.slicing.with_cycles`."""
+        """Select a subset of cycles. See `with_cycles`."""
         return slicing.with_cycles(self, cycles)
 
     # ------------------- SPLITTING AND DROPPING FINISHED -----------
@@ -1567,7 +1567,7 @@ class CellpyCell:
         return native.to_pandas()
 
     def _maybe_use_harmonized_raw(self, **parse_kwargs):
-        """Backward-compatible alias for :meth:`_try_harmonized_raw_frame`.
+        """Backward-compatible alias for `_try_harmonized_raw_frame`.
 
         Kept so older call sites / tests that monkeypatch this name still work.
         Prefer ``_try_harmonized_raw_frame`` for new code.
@@ -2526,7 +2526,7 @@ class CellpyCell:
         shift=0.0,
         last_cycle=None,
     ):
-        """Export voltage-capacity curves to a .csv file. See :func:`cellpy.exporters.tabular.export_cycles`."""
+        """Export voltage-capacity curves to a .csv file. See `export_cycles`."""
         return exporters_tabular.export_cycles(
             self,
             setname=setname,
@@ -2539,19 +2539,19 @@ class CellpyCell:
         )
 
     def _export_normal(self, data, setname=None, sep=None, outname=None):
-        """Export the raw frame to a .csv file. See :func:`cellpy.exporters.tabular.export_normal`."""
+        """Export the raw frame to a .csv file. See `export_normal`."""
         return exporters_tabular.export_normal(
             self, data, setname=setname, sep=sep, outname=outname
         )
 
     def _export_stats(self, data, setname=None, sep=None, outname=None):
-        """Export the summary frame to a .csv file. See :func:`cellpy.exporters.tabular.export_stats`."""
+        """Export the summary frame to a .csv file. See `export_stats`."""
         return exporters_tabular.export_stats(
             self, data, setname=setname, sep=sep, outname=outname
         )
 
     def _export_steptable(self, data, setname=None, sep=None, outname=None):
-        """Export the steps frame to a .csv file. See :func:`cellpy.exporters.tabular.export_steptable`."""
+        """Export the steps frame to a .csv file. See `export_steptable`."""
         return exporters_tabular.export_steptable(
             self, data, setname=setname, sep=sep, outname=outname
         )
@@ -2566,7 +2566,7 @@ class CellpyCell:
         get_cap_kwargs=None,
         to_excel_kwargs=None,
     ):
-        """Saves the data as .xlsx file(s). See :func:`cellpy.exporters.tabular.to_excel`."""
+        """Saves the data as .xlsx file(s). See `to_excel`."""
         return exporters_tabular.to_excel(
             self,
             filename=filename,
@@ -2590,7 +2590,7 @@ class CellpyCell:
         shift=0.0,
         last_cycle=None,
     ):
-        """Saves the data as .csv file(s). See :func:`cellpy.exporters.tabular.to_csv`."""
+        """Saves the data as .csv file(s). See `to_csv`."""
         return exporters_tabular.to_csv(
             self,
             datadir=datadir,
@@ -2645,7 +2645,7 @@ class CellpyCell:
                 a new DataFrame. This function is applied to the raw DataFrame
                 after the cycle filter and before the BDF export.
             bdf_units: Optional
-                :class:`~cellpy.parameters.internal_settings.CellpyUnits`
+                `CellpyUnits`
                 controlling the **units written into the BDF file**.
                 ``None`` (default) emits a strictly BDF-compliant file
                 (``A``, ``V``, ``Ah``, ``Wh``, ``s``, ``W``, ``ohm``).
@@ -2657,7 +2657,7 @@ class CellpyCell:
                 (e.g. ``"Charging Capacity / mAh"`` /
                 ``"charging_capacity_mah"``) and values are scaled
                 accordingly via pint. An incompatible unit (e.g.
-                ``charge="kg"``) raises :class:`ValueError`. A file
+                ``charge="kg"``) raises `ValueError`. A file
                 written with overrides is no longer strictly BDF-
                 compliant; this is logged once at INFO level.
 
@@ -2699,13 +2699,13 @@ class CellpyCell:
     # near-dead, test-pinned only; moved to cellpy.exporters.tabular (#518),
     # removal decision deferred to the DI pass (#520)
     def _cap_mod_summary(self, summary, capacity_modifier="reset"):
-        """See :func:`cellpy.exporters.tabular.cap_mod_summary`."""
+        """See `cap_mod_summary`."""
         return exporters_tabular.cap_mod_summary(
             self, summary, capacity_modifier=capacity_modifier
         )
 
     def _cap_mod_normal(self, capacity_modifier="reset", allctypes=True):
-        """See :func:`cellpy.exporters.tabular.cap_mod_normal`."""
+        """See `cap_mod_normal`."""
         return exporters_tabular.cap_mod_normal(
             self, capacity_modifier=capacity_modifier, allctypes=allctypes
         )
@@ -3029,7 +3029,7 @@ class CellpyCell:
         usteps=False,
         **kwargs,
     ):
-        """Returns discharge capacity and voltage for the selected cycle. See :func:`cellpy.readers.capacity_curves.get_dcap`."""
+        """Returns discharge capacity and voltage for the selected cycle. See `get_dcap`."""
         return capacity_curves.get_dcap(
             self,
             cycle=cycle,
@@ -3049,7 +3049,7 @@ class CellpyCell:
         usteps=False,
         **kwargs,
     ):
-        """Returns charge capacity and voltage for the selected cycle. See :func:`cellpy.readers.capacity_curves.get_ccap`."""
+        """Returns charge capacity and voltage for the selected cycle. See `get_ccap`."""
         return capacity_curves.get_ccap(
             self,
             cycle=cycle,
@@ -3086,7 +3086,7 @@ class CellpyCell:
         dynamic=False,
         **kwargs,
     ):
-        """Gets the capacity for the run. See :func:`cellpy.readers.capacity_curves.get_cap`."""
+        """Gets the capacity for the run. See `get_cap`."""
         return capacity_curves.get_cap(
             self,
             cycle=cycle,
@@ -3125,7 +3125,7 @@ class CellpyCell:
         usteps=False,
         detailed=False,
     ):
-        """ See :func:`cellpy.readers.capacity_curves._get_cap`."""
+        """ See `_get_cap`."""
         return capacity_curves._get_cap(
             self,
             cycle=cycle,
@@ -3147,7 +3147,7 @@ class CellpyCell:
         dx=None,
         number_of_points=None,
     ):
-        """Get the open circuit voltage relaxation curves. See :func:`cellpy.readers.capacity_curves.get_ocv`."""
+        """Get the open circuit voltage relaxation curves. See `get_ocv`."""
         return capacity_curves.get_ocv(
             self,
             cycles=cycles,
@@ -4244,7 +4244,7 @@ class CellpyCell:
     ):
         """Return a filtered copy of the summary DataFrame.
 
-        Thin wrapper around :func:`cellpy.filters.filter_summary` that
+        Thin wrapper around `filter_summary` that
         resolves the rate column names from ``self.schema.summary``.
         See the underlying function for the full range semantics; in
         short ``(low, high)`` keeps rows where ``low < value <= high``
@@ -4268,7 +4268,7 @@ class CellpyCell:
                 headers_summary.discharge_c_rate)``. Pass a single
                 string to filter on only one side.
             **extra_filters: Additional range filters registered with
-                :func:`cellpy.filters.register_range_filter`.
+                `register_range_filter`.
 
         Returns:
             Filtered copy of ``self.data.summary`` (cycle index reset
@@ -4322,14 +4322,14 @@ class CellpyCell:
 def merge_cells(cells, mode="campaign", **kwargs) -> "CellpyCell":
     """Merge several cells into a new CellpyCell without mutating any of them.
 
-    Convenience wrapper around :meth:`CellpyCell.merge`: the
+    Convenience wrapper around `merge`: the
     first cell is deep-copied and the rest are folded in. See the method
     docstring for the "campaign" vs "continuation" semantics.
 
     Args:
         cells: sequence of CellpyCell (or Data) instances; order matters.
         mode (str): "campaign" (default) or "continuation".
-        **kwargs: forwarded to :meth:`CellpyCell.merge`.
+        **kwargs: forwarded to `merge`.
 
     Returns:
         A new CellpyCell holding the merged object.

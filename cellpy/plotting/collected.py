@@ -2,7 +2,7 @@
 
 Collectors own collection; this module owns drawing for already-tidy frames
 with ``cell`` / ``group`` / ``sub_group`` columns. Public entry:
-:func:`collected_plot` → ``FigureSpec`` → backend.render.
+`collected_plot` → ``FigureSpec`` → backend.render.
 """
 
 from __future__ import annotations
@@ -419,7 +419,7 @@ def sequence_plotter(
         **kwargs: sent to backend (if `backend == "plotly"`, it will be
             sent to `plotly.express` etc.). The cycle legend-vs-colorbar knobs
             (`legend_cycle_limit`, `force_colorbar`, `force_legend` /
-            `force_nonbar`; see :mod:`cellpy.plotting.cycle_legend`) are
+            `force_nonbar`; see `cycle_legend`) are
             consumed here: cycle-coloured layouts (`fig_pr_cell`) swap the
             discrete legend for a colorbar above `legend_cycle_limit` cycles
             (default 8, same as `cycles_plot`).
@@ -1403,7 +1403,7 @@ def summary_plotter(collected_curves, cycles_to_plot=None, backend="plotly", **k
     - ``order_variables``: list of ``variable`` names giving the facet order.
       Variables outside the list (derived series such as the CV split or a
       normalized retention curve) keep their own order after the listed ones.
-      :meth:`cellpy.collect.Collection.plot` fills this in from the collected
+      `plot` fills this in from the collected
       ``columns=``.
     - A grouped frame (``mean``/``std``) is coloured by ``group_label`` when the
       collection carries one (``custom_group_labels=``), else by ``group``, and
@@ -1652,7 +1652,7 @@ def cycles_plotter(
 ):
     """Plot charge-discharge curves.
 
-    Prefer :func:`collected_plot` with ``layout="per_cell"`` / ``"per_cycle"``
+    Prefer `collected_plot` with ``layout="per_cell"`` / ``"per_cycle"``
     over the legacy ``method="fig_pr_cell"`` / ``"fig_pr_cycle"`` knobs.
 
     Args:
@@ -1660,7 +1660,7 @@ def cycles_plotter(
         cycles_to_plot (list): cycles to plot
         backend (str): what backend to use.
         method (str): 'fig_pr_cell' or 'fig_pr_cycle' (legacy; prefer ``layout=``
-            via :func:`collected_plot`).
+            via `collected_plot`).
         x_unit (str): unit for x-axis.
         y_unit (str): unit for y-axis.
 
@@ -1775,7 +1775,7 @@ def dva_plotter(
 ):
     """Plot collected DVA (dV/dQ) curves.
 
-    Mirrors :func:`ica_plotter` (#863) -- same direction handling (including
+    Mirrors `ica_plotter` (#863) -- same direction handling (including
     ``"both"`` overlay with ``line_dash`` so the half-cycles do not join) --
     but along the DVA axes (capacity vs dV/dQ) rather than ICA's (voltage vs
     dQ/dV).

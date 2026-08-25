@@ -50,17 +50,17 @@ class PlotFamily:
         the single-cell prepare path
         (``cellpy.plotting.prepare.summary``), which uses ``row`` to place the
         derived series on a subplot. It is **not** a collect transform — use
-        :meth:`summary_options` for the ``cellpy.collect`` path.
+        `summary_options` for the ``cellpy.collect`` path.
         """
         if self.transforms_builder is None:
             return {}
         return dict(self.transforms_builder(hdr, normalize_col))
 
     def summary_options(self, hdr: Any, *, norm_factor: Optional[float] = None) -> Any:
-        """Return ready :class:`~cellpy.collect.options.SummaryOptions` for this family.
+        """Return ready `SummaryOptions` for this family.
 
         Makes the registry self-describing for the collect path: every option a
-        family needs to produce its own :meth:`columns` is derived here, so an
+        family needs to produce its own `columns` is derived here, so an
         app building a plot menu never needs out-of-band knowledge.
 
         * ``*_cv`` / ``*_non_cv`` columns are requested by their base name and
@@ -77,7 +77,7 @@ class PlotFamily:
 
         Returns:
             ``SummaryOptions``: pass straight to
-            :func:`cellpy.collect.collect_summaries`.
+            `collect_summaries`.
         """
         from cellpy.collect.collector import normalize_column, normalize_column_on_max
         from cellpy.collect.options import SummaryOptions
@@ -154,7 +154,7 @@ def families(*, entry_point: Optional[str] = None) -> list[tuple[str, str]]:
 def iter_families(*, entry_point: Optional[str] = None) -> list[PlotFamily]:
     """Return registered families in registration order.
 
-    See :func:`families` for the optional ``entry_point`` filter.
+    See `families` for the optional ``entry_point`` filter.
     """
     if entry_point is None:
         return list(_FAMILIES.values())
@@ -162,7 +162,7 @@ def iter_families(*, entry_point: Optional[str] = None) -> list[PlotFamily]:
 
 
 def _register_family(family: PlotFamily) -> None:
-    """Provisionally register (or overwrite) a :class:`PlotFamily`.
+    """Provisionally register (or overwrite) a `PlotFamily`.
 
     Public promotion of this hook waits for a release of in-tree use.
     """

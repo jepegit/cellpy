@@ -9,8 +9,8 @@ without reverse-engineering it from cellpy's internals::
         check_loader(MyCyclerLoader, fixture=Path("tests/data/sample.mcx"))
 
 Every check corresponds to a promise in
-:mod:`cellpy.readers.instruments.contract`; failures raise
-:class:`AssertionError` naming the promise that was broken.
+`contract`; failures raise
+`AssertionError` naming the promise that was broken.
 """
 
 from __future__ import annotations

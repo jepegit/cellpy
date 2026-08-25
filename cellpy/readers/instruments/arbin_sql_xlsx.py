@@ -151,7 +151,7 @@ class DataLoader(BaseLoader):
     def parse(self, source, **kwargs):
         """Vendor stage: read the xlsx export into an Arbin-named frame.
 
-        Taps the same ``_parse_xlsx_data`` read as :meth:`loader`, stopping
+        Taps the same ``_parse_xlsx_data`` read as `loader`, stopping
         before the rename. ``_parse_xlsx_data`` passes ``parse_dates=[Date_Time]``
         to pandas, so the vendor ``Date_Time`` is already a real datetime — hence
         ``declarations`` sets ``datetime_kind="datetime"``. No in-repo xlsx

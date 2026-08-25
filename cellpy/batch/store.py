@@ -18,7 +18,7 @@ class CellStore(Mapping):
     """A lazy ``Mapping[str, CellpyCell]``.
 
     Construct with per-label zero-argument loaders (called on first access) or
-    with already-loaded cells (:meth:`from_cells`). Loaded cells are cached.
+    with already-loaded cells (`from_cells`). Loaded cells are cached.
     """
 
     def __init__(
@@ -61,7 +61,7 @@ class CellStore(Mapping):
         return self[self._labels[0]]
 
     def sample(self) -> Any:
-        """Alias for :meth:`first` (a representative cell)."""
+        """Alias for `first` (a representative cell)."""
         return self.first()
 
     def is_loaded(self, label: str) -> bool:
@@ -71,7 +71,7 @@ class CellStore(Mapping):
         """Drop a loaded cell from the cache (explicit memory management).
 
         The label stays in the store; the next access reloads it. Use
-        :meth:`remove` to forget a cell entirely (e.g. ``Batch.drop``).
+        `remove` to forget a cell entirely (e.g. ``Batch.drop``).
         """
         self._cache.pop(label, None)
 

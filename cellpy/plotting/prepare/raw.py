@@ -1,6 +1,6 @@
 """Raw-plot prepare path: raw frame + FigureSpec.
 
-Public ``raw_plot`` calls :func:`prepare` then hands ``(frame, FigureSpec)``
+Public ``raw_plot`` calls `prepare` then hands ``(frame, FigureSpec)``
 to a backend renderer (``spec.extras['kind'] == 'raw'``).
 """
 
@@ -20,7 +20,7 @@ from cellpy.plotting.spec import AxisSpec, FigureSpec, PanelSpec
 
 @dataclass
 class RawPrepareConfig:
-    """Input knobs for :func:`prepare` (mirrors public ``raw_plot`` args)."""
+    """Input knobs for `prepare` (mirrors public ``raw_plot`` args)."""
 
     y: Optional[Any] = None
     y_label: Optional[Any] = None
@@ -96,12 +96,12 @@ def prepare(
     family: Any,
     config: RawPrepareConfig,
 ) -> tuple[pd.DataFrame, FigureSpec]:
-    """Prepare a raw frame and :class:`FigureSpec` for ``raw_plot``.
+    """Prepare a raw frame and `FigureSpec` for ``raw_plot``.
 
     Args:
-        ctx: :class:`~cellpy.plotting.context.CellContext` (or compatible).
-        family: registered :class:`~cellpy.plotting.registry.PlotFamily` (``raw``).
-        config: :class:`RawPrepareConfig` built by the public entry point.
+        ctx: `CellContext` (or compatible).
+        family: registered `PlotFamily` (``raw``).
+        config: `RawPrepareConfig` built by the public entry point.
 
     Returns:
         ``(frame, spec)`` where ``spec.extras['kind'] == 'raw'``.

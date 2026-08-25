@@ -4,10 +4,10 @@ Replaces the kwargs tunnels of the legacy ``CyclingExperiment.update`` (79
 ``kwargs.pop/get`` calls, precedence documented in a single docstring) with two
 dataclasses and one pure function:
 
-- :class:`LoadPolicy` -- batch-wide loading knobs (``force_cellpy``/``force_raw``/
+- `LoadPolicy` -- batch-wide loading knobs (``force_cellpy``/``force_raw``/
   ``force_recalc``/... collapse into typed fields).
-- :class:`CellSpec` -- fully resolved per-cell loading instructions.
-- :func:`resolve_specs` -- the *single* place journal rows, policy-level
+- `CellSpec` -- fully resolved per-cell loading instructions.
+- `resolve_specs` -- the *single* place journal rows, policy-level
   overrides and per-cell overrides merge, with the precedence the legacy code
   smeared across ~200 lines of ``update()``:
 
@@ -70,7 +70,7 @@ class CellSpec:
     overrides: dict = field(default_factory=dict)
 
 
-#: Journal columns that map directly to a typed :class:`CellSpec` field.
+#: Journal columns that map directly to a typed `CellSpec` field.
 _SPEC_FIELDS = ("instrument", "model", "mass", "nom_cap", "nom_cap_specifics", "area", "cycle_mode")
 
 
@@ -139,7 +139,7 @@ def resolve_specs(
     policy: LoadPolicy | None = None,
     per_cell: Mapping[str, Mapping[str, Any]] | None = None,
 ) -> list[CellSpec]:
-    """Resolve one :class:`CellSpec` per cell in ``journal``.
+    """Resolve one `CellSpec` per cell in ``journal``.
 
     Precedence (later wins): journal columns < journal ``argument`` <
     ``policy.overrides`` < ``per_cell[label]``.

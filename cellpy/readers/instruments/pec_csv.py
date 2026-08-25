@@ -265,7 +265,7 @@ class DataLoader(BaseLoader):
     def parse(self, source, **kwargs):
         """Vendor stage: read PEC csv into a canonical, unit-normalised frame.
 
-        The two-stage counterpart to :meth:`loader`. Unlike the
+        The two-stage counterpart to `loader`. Unlike the
         configuration-driven loaders, PEC identifies columns by *alias set* and
         carries a **different unit per column** in the header
         (``Voltage (V)`` vs ``(mV)``). ``harmonize()`` has no per-column unit

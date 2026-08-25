@@ -173,7 +173,7 @@ class DataLoader(BaseLoader):
     def parse(self, source, bad_steps=None, **kwargs):
         """Vendor stage: read the mpr file into a cellpy-named frame.
 
-        The two-stage counterpart to :meth:`loader`, tapping the same
+        The two-stage counterpart to `loader`, tapping the same
         ``_load_mpr_data`` + ``_rename_headers`` the legacy path uses, and
         stopping before the (empty) summary. Unlike the Arbin/PEC loaders,
         biologics' ``_rename_headers`` is not a plain rename: it *derives*

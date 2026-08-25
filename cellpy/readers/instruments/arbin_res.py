@@ -820,7 +820,7 @@ class DataLoader(BaseLoader):
     def parse(self, source, **kwargs):
         """Vendor stage: read the .res into a frame with **Arbin** names.
 
-        The two-stage counterpart to :meth:`loader`, and the point where the
+        The two-stage counterpart to `loader`, and the point where the
         vendor part of arbin ends: reading the Access database (ODBC on Windows,
         mdbtools on posix) and assembling the normal data table. Everything
         after — the rename to native columns, the datetime conversion — is

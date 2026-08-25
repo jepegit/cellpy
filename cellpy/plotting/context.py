@@ -57,7 +57,7 @@ def from_frame(
     units: Any = None,
     journal: Any = None,
 ) -> FrameContext:
-    """Wrap a collected tidy frame as a :class:`FrameContext`."""
+    """Wrap a collected tidy frame as a `FrameContext`."""
     if isinstance(frame, FrameContext):
         return frame
     return FrameContext(
@@ -68,8 +68,8 @@ def from_frame(
 def from_source(source: Any) -> CellContext:
     """Adapt *source* to a plotting context.
 
-    Single-cell inputs become :class:`CellContext`. Collected frames should use
-    :func:`from_frame` / :func:`collected_plot` instead.
+    Single-cell inputs become `CellContext`. Collected frames should use
+    `from_frame` / `collected_plot` instead.
     """
     if isinstance(source, CellContext):
         return source

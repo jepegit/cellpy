@@ -46,7 +46,7 @@ def _summary_of(cell: Any) -> pl.DataFrame | None:
         return None
 
 
-#: Scalar TestMeta fields surfaced by :func:`combine_tests` (skips nested/object
+#: Scalar TestMeta fields surfaced by `combine_tests` (skips nested/object
 #: fields like ``cell``; ``raw_file_names`` is joined to a string).
 _TEST_FIELDS = (
     "test_id",

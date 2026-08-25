@@ -480,7 +480,7 @@ _echo_var: ContextVar[Echo] = ContextVar("cellpy_cli_api_echo", default=_silent)
 def _say(message: str, **_kwargs) -> None:
     """Report pre-formatted text via the bound echo.
 
-    The transport for messages not yet converted to the :mod:`cellpy.cli_ui`
+    The transport for messages not yet converted to the `cli_ui`
     vocabulary (#891). Prefer ``_ui()`` for anything new.
     """
     _echo_var.get()(message)
@@ -496,7 +496,7 @@ def _debug(message: Any) -> None:
 
 
 def _ui():
-    """The active console reporter (see :mod:`cellpy.cli_ui`).
+    """The active console reporter (see `cli_ui`).
 
     Commands that report structure - a check list, a verdict, a path with a
     note - use this instead of ``_say``, so what they print carries meaning

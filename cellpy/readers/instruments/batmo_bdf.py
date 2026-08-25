@@ -42,7 +42,7 @@ class DataLoader(TxtLoader):
         BatMo's inherited ``TxtLoader.parse()`` only reads the CSV. The real
         decoding — hours→seconds, signed current from ``Step Type``, continuous
         step indices, step_time, synthetic ``data_point`` / ``date_time`` —
-        lives in :meth:`_post_rename_headers` and used to run only on the
+        lives in `_post_rename_headers` and used to run only on the
         legacy ``loader()`` path. Under ``harmonize(parse())`` that left
         ``test_time`` in hours. Mirror the biologics pattern: ``parse()``
         performs the decode, ``declarations()`` maps the resulting cellpy
@@ -69,11 +69,11 @@ class DataLoader(TxtLoader):
     def declarations(self):
         """Declarations for BatMo BDF.
 
-        The parsed frame already uses cellpy header names (see :meth:`parse`),
+        The parsed frame already uses cellpy header names (see `parse`),
         so the map is ``derive_column_maps`` over the identity
         ``{legacy_attr -> its own header name}`` restricted to columns this
         file produced. ``datetime_kind="datetime"`` because
-        :meth:`_post_rename_headers` builds a real datetime from test_time.
+        `_post_rename_headers` builds a real datetime from test_time.
         ``cumulate_capacity_within_cycle`` in the configuration marks
         capacities as ``PER_STEP``.
         """

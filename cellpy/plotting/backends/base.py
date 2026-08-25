@@ -9,7 +9,7 @@ from cellpy.plotting.spec import FigureSpec
 
 @runtime_checkable
 class Backend(Protocol):
-    """Render a tidy frame according to a :class:`~cellpy.plotting.spec.FigureSpec`."""
+    """Render a tidy frame according to a `FigureSpec`."""
 
     def render(self, frame: Any, spec: FigureSpec) -> Any:
         """Return a backend-native figure object."""

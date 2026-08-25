@@ -2,12 +2,12 @@
 
 Reads a batch selection from a cellpy database (the simple Excel reader or the
 JSON readers) into a pandas ``pages`` frame, then hands it to
-:mod:`cellpy.batch.db` which converts it to the polars :class:`Journal`.
+`db` which converts it to the polars `Journal`.
 
 This is the native replacement for the ``LabJournal.from_db`` path that used
 to live in ``cellpy/utils/batch_tools`` (``batch_journals`` + ``engines`` +
 ``batch_helpers``), removed in 2.1. The database readers themselves
-(:mod:`cellpy.readers.dbreader`, :mod:`cellpy.readers.json_dbreader`) are
+(`dbreader`, `json_dbreader`) are
 unchanged and still own the actual db access; only the journal-building glue
 moved here.
 """
@@ -152,7 +152,7 @@ def find_files(
     project=None,
     **kwargs,
 ):
-    """Find raw/cellpy files for each cell using :mod:`cellpy.filefinder`.
+    """Find raw/cellpy files for each cell using `filefinder`.
 
     Populates ``raw_file_names`` and ``cellpy_file_name`` in ``info_dict``.
     When ``skip_file_search`` is True the dict is returned unchanged (e.g.
@@ -406,7 +406,7 @@ def simple_db_engine(
     """Look up cell metadata from the db and find the matching files.
 
     Returns a pandas ``pages`` frame indexed by cell name. ``reader`` is a
-    :class:`cellpy.readers.dbreader.Reader` (or a JSON reader exposing a
+    `Reader` (or a JSON reader exposing a
     ``pages_dict``); ``cell_ids`` are pre-selected db keys, or ``batch_name``
     is used to select. ``**kwargs`` are forwarded to the file finder.
     """

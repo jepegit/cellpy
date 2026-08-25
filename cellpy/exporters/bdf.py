@@ -1,4 +1,4 @@
-"""Export a :class:`cellpy.readers.cellreader.CellpyCell` raw time-series
+"""Export a `CellpyCell` raw time-series
 in `Battery Data Format (BDF) <https://github.com/battery-data-alliance/battery-data-format>`_.
 
 The BDF specifies a fixed column schema and unit set for cycler
@@ -9,7 +9,7 @@ time-series. This module:
 2. Converts unit-bearing columns (capacity in ``mAh`` -> ``Ah``,
    ``date_time`` -> Unix seconds, etc.) using the cell's
    ``CellpyUnits``.
-3. Filters by cycle (delegated to :func:`cellpy.filters.filter_cycles`).
+3. Filters by cycle (delegated to `filter_cycles`).
 4. Writes the result as ``.bdf.csv`` (default) or ``.bdf.parquet``.
 
 Design rules (recorded in ``.issueflows/04-designs-and-guides/bdf-export.md``):
@@ -58,11 +58,11 @@ DATETIME_KIND = "datetime"
 class _BdfColumn:
     """One row of the cellpy <-> BDF column map.
 
-    ``unit_kind`` is the attribute name on :class:`cellpy.parameters.internal_settings.CellpyUnits`
+    ``unit_kind`` is the attribute name on `CellpyUnits`
     that holds the source unit (e.g. ``"charge"`` -> ``cellpy_units.charge``)
     and, when ``bdf_units`` override is used, the target unit.
     ``bdf_unit`` is the BDF spec target unit symbol that ``pint`` understands
-    (e.g. ``"Ah"``). The special value :data:`DATETIME_KIND` for ``unit_kind``
+    (e.g. ``"Ah"``). The special value `DATETIME_KIND` for ``unit_kind``
     skips pint and routes the column through Unix-seconds conversion.
     Use ``None`` for both fields when no unit conversion is needed
     (e.g. dimensionless cycle / step indices).
@@ -244,14 +244,14 @@ def _conversion_factor(
 ) -> float:
     """Return the multiplier that turns ``source_unit`` into ``target_unit``.
 
-    Delegates to :func:`cellpy.readers.data_structures.Q` (pint) so that any unit
+    Delegates to `Q` (pint) so that any unit
     spelling pint understands works automatically (``"mAh" -> "Ah"``,
     ``"sec" -> "s"``, ``"kWh" -> "Wh"``, ...). Returns ``1.0`` when no
     conversion is needed or the symbols are equal.
 
     When ``strict`` is true (i.e. the caller is acting on an explicit
     user ``bdf_units`` override), an incompatible / unknown unit raises
-    :class:`ValueError` rather than silently leaving values unchanged.
+    `ValueError` rather than silently leaving values unchanged.
     """
     if not source_unit or not target_unit or source_unit == target_unit:
         return 1.0
@@ -385,7 +385,7 @@ def to_bdf(
         preprocess_fn: A function that takes the raw DataFrame and returns
             a new DataFrame. This function is applied to the raw DataFrame
             after the cycle filter and before the BDF export.
-        bdf_units: Optional :class:`~cellpy.parameters.internal_settings.CellpyUnits`
+        bdf_units: Optional `CellpyUnits`
             controlling the **units written into the BDF file**. ``None``
             (default) uses the BDF spec defaults (``A``, ``V``, ``Ah``,
             ``Wh``, ``s``, ``W``, ``ohm``); the file is then strictly
@@ -402,7 +402,7 @@ def to_bdf(
             *Caveat*: any override to a non-default unit makes the file
             no longer strictly BDF-compliant (parallel to ``extras=True``).
             An incompatible unit (e.g. ``charge="kg"``) raises
-            :class:`ValueError` rather than emitting wrong-unit numbers.
+            `ValueError` rather than emitting wrong-unit numbers.
 
             *Source units*: the conversion source is
             ``cell.data.raw_units`` (set by the instrument loader), **not**

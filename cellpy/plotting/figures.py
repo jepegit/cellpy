@@ -112,7 +112,7 @@ def load_plotly_figure(filename):
         return None
 
 
-#: Formats accepted by :func:`write_image` / ``Collection.to_image``.
+#: Formats accepted by `write_image` / ``Collection.to_image``.
 IMAGE_FORMATS = frozenset({"png", "svg", "pdf", "jpg", "jpeg", "webp"})
 
 _IMAGE_MEDIA_TYPES = {
@@ -142,7 +142,7 @@ def write_image(figure, fmt: str = "png", *, scale: float = 1.0, **kwargs) -> by
 
     In-process via ``figure.to_image`` — no temp files, no subprocess wrapper,
     no stdout status. For notebook/disk export see
-    :func:`cellpy.utils.plotutils.save_image_files`.
+    `save_image_files`.
 
     Args:
         figure: A Plotly figure (must implement ``to_image``).

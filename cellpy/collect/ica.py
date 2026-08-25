@@ -1,8 +1,8 @@
 """dQ/dV (ICA) collection.
 
-Per-cell dQ/dV curves via :func:`cellpy.utils.ica.dqdv`, concatenated into one
+Per-cell dQ/dV curves via `dqdv`, concatenated into one
 tidy frame with ``cell`` / ``group`` / ``sub_group`` keys. Mirrors
-:func:`cellpy.collect.curves.collect_cycles` -- including the per-cell cycle
+`collect_cycles` -- including the per-cell cycle
 isolation that fixes the legacy cross-cell narrowing bug (collectors.py:1691) --
 but emits the specced ICA frame: ``cycle, direction, voltage, capacity,
 dqdv`` (+ the deprecated ``dq`` duplicate until 2.1).

@@ -3,7 +3,7 @@
 Per-cell work is a pure function -- one cell in, one result out, no shared
 mutable state. Serial vs parallel execution is then a choice of executor, not a
 second 300-line method (the legacy ``update`` / ``parallel_update`` clone):
-``executor="serial" | "threads" | "processes"`` all reuse :func:`load_cell`.
+``executor="serial" | "threads" | "processes"`` all reuse `load_cell`.
 """
 
 from __future__ import annotations
@@ -33,7 +33,7 @@ def _cellpy_file_exists(path: Any) -> bool:
 
 
 def _get_kwargs(spec: CellSpec, policy: LoadPolicy) -> tuple[dict, str | None]:
-    """Map a resolved :class:`CellSpec` + policy onto ``cellpy.get`` kwargs.
+    """Map a resolved `CellSpec` + policy onto ``cellpy.get`` kwargs.
 
     Returns the kwargs and the source label ("cellpy"/"raw"/None) we expect.
 
@@ -78,7 +78,7 @@ def _get_kwargs(spec: CellSpec, policy: LoadPolicy) -> tuple[dict, str | None]:
 def load_cell(spec: CellSpec, policy: LoadPolicy | None = None) -> CellResult:
     """Load one cell from its resolved spec. Pure-ish: no prints, no mutation.
 
-    Returns a :class:`CellResult` carrying the cell or the exception; only
+    Returns a `CellResult` carrying the cell or the exception; only
     re-raises when ``policy.accept_errors`` is False.
     """
     policy = policy or LoadPolicy()
@@ -162,9 +162,9 @@ def _cellpy_dest(spec: CellSpec) -> Path:
 
 
 def _dispatch_lite(spec: CellSpec, policy: LoadPolicy, bad: frozenset) -> CellResult:
-    """Process-pool worker: like :func:`_dispatch` but returns a picklable result.
+    """Process-pool worker: like `_dispatch` but returns a picklable result.
 
-    The live :class:`CellpyCell` is not returned across the process boundary
+    The live `CellpyCell` is not returned across the process boundary
     (batch plan section 7, Windows pickling). A raw load is saved to
     ``spec.cellpy_file`` first so the parent can persist / lazy-reopen.
     """
@@ -237,10 +237,10 @@ def run(
     on_progress: ProgressHook | None = None,
     executor: str = "serial",
 ) -> BatchResult:
-    """Load every cell in ``journal``, returning a :class:`BatchResult`.
+    """Load every cell in ``journal``, returning a `BatchResult`.
 
     ``executor`` chooses ``"serial"`` (default), ``"threads"`` or
-    ``"processes"`` -- all reuse :func:`load_cell`. Progress is reported via the
+    ``"processes"`` -- all reuse `load_cell`. Progress is reported via the
     ``on_progress`` callback; the runner never imports tqdm or prints.
     """
     policy = policy or LoadPolicy()

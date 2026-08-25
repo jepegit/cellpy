@@ -4,7 +4,7 @@ from cellpycore.exceptions import CellpyError, NoDataFound
 
 
 class Error(Exception):
-    """Base class for other exceptions (legacy; prefer :class:`CellpyError`)."""
+    """Base class for other exceptions (legacy; prefer `CellpyError`)."""
 
     pass
 

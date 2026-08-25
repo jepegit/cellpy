@@ -627,9 +627,9 @@ class AutoLoader(BaseLoader):
         return frame
 
     def declarations(self):
-        """The :class:`LoaderDeclarations` for the file most recently parsed.
+        """The `LoaderDeclarations` for the file most recently parsed.
 
-        **Call this after :meth:`parse`, not before** — and it raises if you do
+        **Call this after `parse`, not before** — and it raises if you do
         not, which is the point. Declarations are *not* a static property of the
         loader class for every instrument: neware writes its units into the
         column names (``Current(A)``), and which units those are is read from

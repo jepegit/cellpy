@@ -881,10 +881,10 @@ class SummaryPlotInfo:
     def _create_col_info(self, c: Any) -> tuple[tuple, dict, dict, dict]:
         """Create column information for summary plots.
 
-        Thin adapter over :mod:`cellpy.plotting.registry`. Column-set
+        Thin adapter over `registry`. Column-set
         selection for named ``y`` values lives in ``PlotFamily`` records; this
         method only materialises them against ``c.schema.summary``. Keep in
-        sync with :meth:`_create_label_dict`.
+        sync with `_create_label_dict`.
 
         Args:
             c: cellpy object
@@ -1009,10 +1009,10 @@ def summary_plot(
         fullcell_standard_normalization_cycle_numbers: cycle numbers to use for normalization (only for fullcell_standard plots)
         seaborn_line_hooks: list of functions to hook into the seaborn lines (e.g. to update the marker_size)
         filters: optional dict forwarded to
-            :func:`cellpy.filters.filter_summary` to drop rows from the
+            `filter_summary` to drop rows from the
             summary before plotting (e.g. ``filters={"rate": (0, 0.5)}``
             drops slow-rate characterisation cycles). See
-            :func:`cellpy.filters.filter_summary` for range semantics.
+            `filter_summary` for range semantics.
         nominal_capacity: optional plain float in
             ``c.cellpy_units.nominal_capacity`` units. When given, the
             ``charge_c_rate`` / ``discharge_c_rate`` columns are
@@ -1097,7 +1097,7 @@ def summary_plot(
             ... )
 
         The same filter is available without plotting via
-        :meth:`CellpyCell.filtered_summary` (returns a DataFrame copy)::
+        `filtered_summary` (returns a DataFrame copy)::
 
             >>> trimmed = c.filtered_summary(rate=(0.1, 10.0))
 

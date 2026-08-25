@@ -139,7 +139,7 @@ class Reporter:
     """Renders the CLI's output vocabulary.
 
     Args:
-        level: how much to say (see :class:`Level`).
+        level: how much to say (see `Level`).
         color: force colour on/off; ``None`` (default) decides per stream.
         stdout / stderr: streams to write to (defaults to the real ones);
             injectable so tests can capture without touching global state.
@@ -452,7 +452,7 @@ def make_reporter(
     stdout: Optional[TextIO] = None,
     stderr: Optional[TextIO] = None,
 ) -> Reporter:
-    """Build a :class:`Reporter` from CLI-shaped flags.
+    """Build a `Reporter` from CLI-shaped flags.
 
     ``quiet`` wins over ``verbose`` - asking for silence and noise at once is
     a user mistake, not a reason to be noisy.

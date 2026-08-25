@@ -238,7 +238,7 @@ class DataLoader(BaseLoader):
     def parse(self, source, **kwargs):
         """Vendor stage: query MITS 7.0 SQL Server into an Arbin frame.
 
-        Taps the same ``_query_sql`` read as :meth:`loader`. Note this loader is
+        Taps the same ``_query_sql`` read as `loader`. Note this loader is
         still under development upstream — ``_query_sql`` pivots the raw table to
         integer ``Data_Type`` column names it never renames to ``Voltage`` etc.,
         so the vendor frame is incomplete regardless of stage. The two-stage

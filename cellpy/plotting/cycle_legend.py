@@ -65,7 +65,7 @@ def pop_cycle_legend_options(
 
     Returns:
         Dict with ``legend_cycle_limit``, ``force_colorbar``, ``force_legend``
-        ready to splat into :func:`resolve_cycle_legend_mode`.
+        ready to splat into `resolve_cycle_legend_mode`.
     """
     extras = dict(extras or {})
     source = dict(kwargs) if kwargs is not None else {}

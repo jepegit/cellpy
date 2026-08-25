@@ -1,6 +1,6 @@
 """cellpy.collect -- collection as a first-class product.
 
-A collection is a product, not a side effect: :class:`Collection` = a tidy frame
+A collection is a product, not a side effect: `Collection` = a tidy frame
 plus provenance. Built on ``cellpy.batch.aggregate`` (Epic A), replacing the
 ``utils/collectors`` "elevated arguments" machinery and fixing the cross-cell
 cycle-narrowing bug by design. ``cellpy.utils.collectors`` is now a thin shim

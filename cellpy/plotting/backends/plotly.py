@@ -1,8 +1,8 @@
 """Plotly backend: formation/facet layout + summary ``render``.
 
-Formation axis grids live in :func:`configure_formation_layout`. Public
-``summary_plot`` draws through :class:`PlotlyBackend.render` from a tidy
-frame + :class:`~cellpy.plotting.spec.FigureSpec`.
+Formation axis grids live in `configure_formation_layout`. Public
+``summary_plot`` draws through `render` from a tidy
+frame + `FigureSpec`.
 """
 
 from __future__ import annotations
@@ -279,11 +279,11 @@ def configure_fullcell_standard_domains(
 
 
 class PlotlyBackend:
-    """Plotly implementation of the :class:`~cellpy.plotting.backends.base.Backend` protocol.
+    """Plotly implementation of the `Backend` protocol.
 
     ``render(frame, spec)`` is the interactive path for public ``summary_plot``.
     Layout knobs are expected on ``spec.extras['render']`` as produced
-    by :mod:`cellpy.plotting.prepare.summary`.
+    by `summary`.
     """
 
     name = "plotly"
@@ -867,7 +867,7 @@ class PlotlyBackend:
         line plots, #821) so the two half-cycles stay distinguishable on a
         static export; a single-direction plot stays solid. Hover also
         includes direction. Cycle legend vs colorbar via
-        :mod:`cellpy.plotting.cycle_legend`.
+        `cycle_legend`.
         """
         import plotly.express as px
         import plotly.graph_objects as go

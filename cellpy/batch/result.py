@@ -1,6 +1,6 @@
 """Batch run results.
 
-"Errors are data": a batch run returns a :class:`BatchResult` with a per-cell
+"Errors are data": a batch run returns a `BatchResult` with a per-cell
 outcome, timing and captured exception, instead of the legacy mix of printing,
 partial ``errors`` lists and aborting. Printing/raising is the caller's policy
 (``result.raise_if_failed()`` for strict mode).
@@ -24,7 +24,7 @@ class CellOutcome(str, Enum):
 
 
 class BatchLoadError(CellpyError):
-    """Raised by :meth:`BatchResult.raise_if_failed` when cells failed."""
+    """Raised by `raise_if_failed` when cells failed."""
 
 
 @dataclass
@@ -45,7 +45,7 @@ class CellResult:
 
 @dataclass
 class BatchResult:
-    """The outcome of a batch run: one :class:`CellResult` per cell."""
+    """The outcome of a batch run: one `CellResult` per cell."""
 
     results: list[CellResult] = field(default_factory=list)
 

@@ -4,7 +4,7 @@ One formal contract every loader satisfies — built-in or third-party — so th
 framework can discover, validate and route loaders without knowing anything
 about the vendor formats behind them.
 
-The contract is a :class:`typing.Protocol`, **not** a base class. A third-party
+The contract is a `Protocol`, **not** a base class. A third-party
 loader inherits nothing and imports nothing from cellpy; conformance is
 structural. That is what makes an out-of-tree loader a first-class citizen
 rather than a special case (architecture plan §5.1.1).
@@ -74,7 +74,7 @@ class LoaderCapabilities(Protocol):
     Protocol carrying **non-method** members cannot be used with
     ``issubclass()``, and the registry must check a loader *class* without
     instantiating it. So the runtime structural check lives on
-    :class:`InstrumentLoader` (methods only) and these attributes are validated
+    `InstrumentLoader` (methods only) and these attributes are validated
     explicitly by the registry, which can also say precisely which one is
     missing. Use this Protocol for static typing.
     """
@@ -93,9 +93,9 @@ class InstrumentLoader(Protocol):
 
     Implementations need not import or inherit anything from cellpy. Register
     via the ``cellpy.loaders`` entry-point group; see
-    :mod:`cellpy.readers.instruments.registry`.
+    `registry`.
 
-    A conforming loader also declares the :class:`LoaderCapabilities`
+    A conforming loader also declares the `LoaderCapabilities`
     attributes (``name``, ``instrument``, ``supported_suffixes``); they are not
     members of *this* Protocol only so that ``issubclass()`` keeps working —
     the registry validates them separately and rejects a loader that omits
@@ -136,7 +136,7 @@ class InstrumentLoader(Protocol):
                 not an error.
 
         Returns:
-            One :class:`LoaderResult` per test in the source — always a tuple,
+            One `LoaderResult` per test in the source — always a tuple,
             length 1 for single-test formats.
 
         Raises:

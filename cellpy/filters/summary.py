@@ -2,12 +2,12 @@
 
 This module operates on plain pandas DataFrames so it can be reused by
 plotters, exporters, and batch tools. It complements the cycle-based
-:func:`cellpy.filters.cycles.filter_cycles` and the legacy summary helpers
-in :mod:`cellpy.utils.helpers` (``remove_first_cycles_from_summary``,
+`filter_cycles` and the legacy summary helpers
+in `helpers` (``remove_first_cycles_from_summary``,
 ``remove_last_cycles_from_summary``, ``remove_outliers_from_summary_*``,
 ``yank_before``, ``yank_after``).
 
-The public entry point is :func:`filter_summary`. Filters are exposed
+The public entry point is `filter_summary`. Filters are exposed
 through a small registry (``_RANGE_FILTERS``) so additional value-range
 filters (capacity, temperature, ...) can be added without changing the
 public signature.
@@ -167,7 +167,7 @@ def filter_summary(
             than one column the predicate is AND-ed across columns - a
             row is kept only if *every* listed column lies in range.
         **extra_filters: Reserved for additional range filters
-            registered via :func:`register_range_filter`. Unknown filter
+            registered via `register_range_filter`. Unknown filter
             names raise ``ValueError`` so typos fail loudly.
 
     Returns:

@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+* Zensical API pages no longer show raw Sphinx roles (``:class:``,
+  ``:meth:``, ``:func:``); library docstrings use markdown code spans. (#967)
+
 * Batch docs start from ``b = batch.load(...)`` (what ``b`` can do, including
   ``b.plot()``) instead of a "Facade" heading. Public ``Batch`` methods have
   Shift-Tab docstrings. (#963)

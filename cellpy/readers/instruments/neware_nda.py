@@ -172,7 +172,7 @@ class DataLoader(BaseLoader):
     def parse(self, source, **kwargs):
         """Vendor stage: read the nda/ndax file into a fastnda-named frame.
 
-        Taps the same ``_run_fastnda`` read as :meth:`loader` — including its
+        Taps the same ``_run_fastnda`` read as `loader` — including its
         charge/discharge split of the signed capacity/energy/power columns, which
         is vendor decoding rather than a declarative rename — and stops before
         ``_post_process`` (the rename, the Unix-time datetime conversion). The

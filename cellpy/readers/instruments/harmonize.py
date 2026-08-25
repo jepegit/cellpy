@@ -2,7 +2,7 @@
 
 Every loader used to do its own renaming, casting, timestamp conversion and
 capacity fiddling. ``harmonize()`` does it once, for all of them, driven by the
-loader's :class:`~cellpy.readers.instruments.declarations.LoaderDeclarations`::
+loader's `LoaderDeclarations`::
 
     vendor file ──parse()──► vendor frame + declarations ──harmonize()──► native raw
 
@@ -17,10 +17,10 @@ The order of operations matters and is fixed here:
 7. identity and provenance stamping
 8. ``validate_raw_frame``
 
-Step 6 is the one to be careful about; see :func:`normalize_reset_granularity`.
+Step 6 is the one to be careful about; see `normalize_reset_granularity`.
 Step 4 must precede step 5: the schema dtype for those columns is numeric, so
 casting a duration string first would null the column outright — see
-:func:`_cast_to_schema`, which now refuses to do that quietly.
+`_cast_to_schema`, which now refuses to do that quietly.
 """
 
 from __future__ import annotations
@@ -207,7 +207,7 @@ def _derive_epoch_time_utc(
     A loader declares that column's form with ``datetime_kind``; here it becomes
     a proper polars ``Datetime`` (so the ``date_time`` passthrough kept for the
     one-release window is a real datetime, not a raw string), and a copy is
-    placed in ``epoch_time_utc`` for :func:`_convert_timestamps` to turn into
+    placed in ``epoch_time_utc`` for `_convert_timestamps` to turn into
     int64 ns UTC — so the naive-timezone rule lives in one place, not two.
     """
     schema = default_schema().raw

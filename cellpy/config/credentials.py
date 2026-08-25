@@ -129,7 +129,7 @@ def get_user() -> str | None:
 
 
 def resolve_credentials() -> SecretsConfig:
-    """All four credentials as a fresh :class:`SecretsConfig`.
+    """All four credentials as a fresh `SecretsConfig`.
 
     Convenience for callers that need more than one; the password comes back
     wrapped in a ``SecretStr`` again, so use ``.get_password()`` on the result.

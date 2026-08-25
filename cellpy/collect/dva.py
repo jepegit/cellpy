@@ -1,8 +1,8 @@
 """dV/dQ (DVA) collection.
 
-Per-cell dV/dQ curves via :func:`cellpy.ica.dvdq`, concatenated into one tidy
+Per-cell dV/dQ curves via `dvdq`, concatenated into one tidy
 frame with ``cell`` / ``group`` / ``sub_group`` keys. Mirrors
-:func:`cellpy.collect.ica.collect_ica` -- including the per-cell cycle
+`collect_ica` -- including the per-cell cycle
 isolation that fixes the legacy cross-cell narrowing bug (collectors.py:1691)
 -- but emits the specced DVA frame: ``cycle, direction, capacity, voltage,
 dvdq`` (#863).
@@ -37,7 +37,7 @@ def collect_dva(
 
     Cycle selection is derived per cell from the *originally requested* cycles
     every iteration, so a cell missing a cycle never narrows the request for
-    the cells after it (mirrors :func:`cellpy.collect.collect_ica`).
+    the cells after it (mirrors `collect_ica`).
     """
     from cellpy.utils import ica
 

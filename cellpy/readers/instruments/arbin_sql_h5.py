@@ -129,7 +129,7 @@ class DataLoader(BaseLoader):
     def parse(self, source, **kwargs):
         """Vendor stage: read the h5 export into a frame with Arbin names.
 
-        The two-stage counterpart to :meth:`loader`, tapping the same
+        The two-stage counterpart to `loader`, tapping the same
         ``_parse_h5_data`` read so the two cannot drift. It stops before
         ``_post_process`` — the rename, the datetime conversion and the
         internal-resistance fill — all of which are now declared and handled by
