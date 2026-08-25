@@ -252,3 +252,50 @@ def test_configuration_reference_documents_secrets_without_values():
     assert "CELLPY_PASSWORD" in rendered
     # The secrets section documents the env var, never a default value.
     assert "ChangeMe123" not in rendered
+
+
+@pytest.mark.essential
+def test_describe_env_file_names_a_missing_path(tmp_path):
+    missing = tmp_path / "no-such.env"
+    text = credentials.describe_env_file(missing)
+    assert str(missing.resolve()) in text.replace("\\", "/") or str(missing.resolve()) in text
+    assert "was not found" in text
+    msg = credentials.missing_remote_credentials_message(missing)
+    assert "CELLPY_PASSWORD" in msg
+    assert "was not found" in msg
+
+
+@pytest.mark.essential
+def test_describe_env_file_points_at_home_sibling(tmp_path, monkeypatch):
+    home = tmp_path / "home"
+    home.mkdir()
+    sibling = home / ".env_cellpy"
+    sibling.write_text("CELLPY_PASSWORD=x\n", encoding="utf-8")
+    monkeypatch.setattr(credentials.Path, "home", staticmethod(lambda: home))
+    text = credentials.describe_env_file(tmp_path / ".env_cellpy")
+    assert "was not found" in text
+    assert str(sibling) in text or str(sibling.resolve()) in text
+    assert "absolute path" in text
+
+
+@pytest.mark.essential
+def test_credentials_from_env_mentions_missing_env_file(tmp_path, hermetic_session, monkeypatch):
+    from cellpy.exceptions import UnderDefined
+    from cellpy.internals import otherpath
+
+    missing = tmp_path / "gone.env"
+    with hermetic_session.override(paths={"env_file": missing}):
+        monkeypatch.delenv("CELLPY_PASSWORD", raising=False)
+        monkeypatch.delenv("CELLPY_KEY_FILENAME", raising=False)
+        with pytest.raises(UnderDefined, match="was not found") as exc:
+            otherpath._credentials_from_env()
+    assert "CELLPY_PASSWORD" in str(exc.value)
+    assert "gone.env" in str(exc.value)
+
+
+@pytest.mark.essential
+def test_loader_warns_when_env_file_is_missing(tmp_path, caplog):
+    missing = tmp_path / "missing.env"
+    caplog.set_level(logging.WARNING)
+    load_config(options=LoadOptions(skip_files=True, skip_env=False, env_file=missing))
+    assert any("was not found" in rec.message for rec in caplog.records)

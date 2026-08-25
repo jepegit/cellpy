@@ -177,6 +177,10 @@ def _collect_env_overrides(env_file: Path | None) -> dict[str, Any]:
     raw: dict[str, str | None] = {}
     if env_file and env_file.is_file():
         raw.update({k: v for k, v in dotenv_values(env_file).items() if v is not None})
+    elif env_file:
+        from cellpy.config.credentials import describe_env_file
+
+        logging.warning(describe_env_file(env_file))
     for key, value in os.environ.items():
         if key.startswith("CELLPY_"):
             raw[key] = value

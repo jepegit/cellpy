@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+* Missing ``env_file`` is named in the ``UnderDefined`` remote-auth error
+  (and a load-time warning) instead of only mentioning ``CELLPY_PASSWORD`` /
+  ``CELLPY_KEY_FILENAME``. (#961)
+
 * `Batch.drop` (and `drop_cells_marked_bad`) remove the cell from the store,
   not just the cache, so `plot` / `summaries` / `report` work without a
   following `update()`. `mark_as_bad` stays a session flag. (#952)

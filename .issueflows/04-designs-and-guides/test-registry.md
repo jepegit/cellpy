@@ -110,6 +110,10 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_collected_summary_groups.py::test_spread_plot_facets_follow_the_collected_column_order | yes | yes | plotting.collected.spread_plot | #947 | categorical facet order |
 | tests/test_collected_summary_groups.py::test_summary_collector_plot_uses_custom_group_labels_and_units | yes | yes | collect.collector.summary_collector + plot | #947 | issue snippet e2e |
 | tests/test_collected_backend_alias.py (module) | yes | yes | plotting.collected.collected_plot backend alias | #925 | matplotlib -> seaborn, warn_once signature |
+| tests/test_config_secrets.py::test_describe_env_file_names_a_missing_path | yes | yes | credentials.describe_env_file | #961 | missing env_file in UnderDefined |
+| tests/test_config_secrets.py::test_describe_env_file_points_at_home_sibling | yes | yes | credentials.describe_env_file | #961 | home-named sibling hint |
+| tests/test_config_secrets.py::test_credentials_from_env_mentions_missing_env_file | yes | yes | otherpath._credentials_from_env | #961 | OtherPath auth error names env_file |
+| tests/test_config_secrets.py::test_loader_warns_when_env_file_is_missing | yes | yes | loader._collect_env_overrides | #961 | load-time warning |
 
 **Columns**
 

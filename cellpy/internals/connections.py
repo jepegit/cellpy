@@ -76,10 +76,7 @@ def check_connection(
 
     key_filename = credentials.get_key_filename()
     if password is None and key_filename is None:
-        print(
-            f"   - You must define either {ENV_VAR_CELLPY_PASSWORD} "
-            f"or {ENV_VAR_CELLPY_KEY_FILENAME} environment variables."
-        )
+        print(f"   - {credentials.missing_remote_credentials_message()}")
     if key_filename is not None:
         key_path = pathlib.Path(key_filename).expanduser().resolve()
         info["key_filename"] = str(key_path)
