@@ -27,6 +27,8 @@ when you discover a gap). See [`tests/README.md`](../../tests/README.md).
 
 **What:** full conda pytest matrix (Linux / macOS-14 / Windows with ACE), pip-install
 matrix, nbmake notebook (Linux, `continue-on-error`), conda-forge install check.
+Local day-to-day work stays on **uv**; do not run this conda matrix unless the
+issue is specifically about conda install / those env files.
 
 **Env constraints (issue #885):**
 - `sqlalchemy-access` is Windows-only on conda-forge (`__win`). Keep it out of

@@ -2,6 +2,9 @@
 
 Durable guide for running cellpy's test suite and coverage locally. Established in issue #372.
 
+**Local runner is uv** (`uv run pytest`). Do not use conda for ordinary pytest.
+Conda env files are for conda-forge / scheduled Tier-3 CI only.
+
 ## Environment setup
 
 `pyproject.toml` has no `[project]` table (cellpy is a legacy `setup.py` project), so `uv sync`
