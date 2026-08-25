@@ -11,14 +11,13 @@ code spans (the target name, no role prefix).
 - Docs live on `master` and are built by Zensical + mkdocstrings/Griffe
   (`docs-on-master.md`, `dev_docs.md`). `docstring_style = "google"` stays.
   Switching to `sphinx` would break Google `Args` / `Returns` sections.
-- The docs CI / RTD build is `uvx --with mkdocstrings-python zensical` (no
-  cellpy import). Any converter must be a repo-local file the build can load
-  from the checkout — no new PyPI dependency.
-- Do not rewrite ~300 role occurrences across 69 `cellpy/**/*.py` files. That
-  is a noisy library diff and does not stop the next Sphinx-style docstring
-  from leaking.
-- `show_source` is already `false`, so the HTML leak is from rendered
-  docstrings, not from source blocks.
+- Source of truth is the docstring text. Rewrite it; do not add a build-time
+  Griffe/markdown hook that leaves Sphinx markup in the library.
+- Same replacement rule as the discarded hook: role → markdown code span of
+  the last dotted segment (strip a leading `~`). No Autorefs links in this
+  issue (a missed inventory path would become a leftover `[text][id]`).
+- No new dependency. No new durable converter module. A one-shot rewrite in
+  the PR is enough; a small grep test prevents recurrence.
 - No roles in `docs/**/*.md` — this is an API-docstring problem only.
 
 ### Prior art
@@ -26,71 +25,61 @@ code spans (the target name, no role prefix).
 - Toolbox: none (no docs-role helper).
 - Graph: `graphify-out/` absent.
 - Grep: roles `class` / `meth` / `func` / `mod` / `attr` / `data` in 69
-  modules. Heaviest: `cellpy/collect/collector.py`, `cellpy/readers/cellreader.py`,
-  `cellpy/batch/facade.py`.
-- Config: `zensical.toml` `[project.plugins.mkdocstrings.handlers.python.options]`
-  already sets `docstring_style = "google"`. Official `griffe-sphinx` is
-  unrelated (it only lifts `#:` attribute comments).
-- Convention already documented in `docs/contributing/developers_guide/dev_docs.md`:
-  Google-style docstrings. It does not mention Sphinx roles or markdown
-  cross-refs.
+  modules (~300 hits). Heaviest: `cellpy/collect/collector.py`,
+  `cellpy/readers/cellreader.py`, `cellpy/batch/facade.py`.
+- Config: `zensical.toml` already sets `docstring_style = "google"`. Official
+  `griffe-sphinx` is unrelated (`#:` attribute comments only).
+- `dev_docs.md` already says Google-style; it does not yet ban Sphinx roles.
+
+### Why rewrite (not a Griffe hook)
+
+The first draft avoided touching 69 library files. That was the wrong
+trade-off: a hook is permanent machinery for a one-time markup cleanup,
+`help()` / source still show `:class:`, and the project already documents
+Google + markdown. A mechanical source rewrite matches the stack and needs
+no `zensical.toml` / CI path-filter wiring.
 
 ## Approach
 
-Add a tiny Griffe extension (one module under `dev/`) that rewrites Sphinx
-interpreted-text roles in each object's docstring **before** mkdocstrings
-renders them:
+1. Replace Sphinx interpreted-text roles in `cellpy/**/*.py` (docstrings and
+   module docs; the pattern does not appear in `docs/`):
 
-| Source | Becomes |
-| --- | --- |
-| `:class:`Collection`` | `` `Collection` `` |
-| `:class:`~cellpy.collect.collection.Collection`` | `` `Collection` `` |
-| `:func:`cellpy.collect.collect_summaries`` | `` `collect_summaries` `` |
-| `:meth:`plot`` | `` `plot` `` |
+   | Source | Becomes |
+   | --- | --- |
+   | `:class:`Collection`` | `` `Collection` `` |
+   | `:class:`~cellpy.collect.collection.Collection`` | `` `Collection` `` |
+   | `:func:`cellpy.collect.collect_summaries`` | `` `collect_summaries` `` |
+   | `:meth:`plot`` | `` `plot` `` |
 
-Rules:
+   Roles: `class|meth|func|mod|attr|data|exc|obj|paramref`.
 
-1. Match `:role:`target`` for `class|meth|func|mod|attr|data|exc|obj|paramref`.
-2. Strip a leading `~` (Sphinx short-name flag).
-3. Display the last dotted segment as a markdown code span.
-4. Do **not** emit Autorefs links in this issue. A missed inventory path would
-   become a broken `[text][id]` leftover, which is worse than a code span.
-   Code span is the “nicer” the issue asks for.
+2. Run the replace from a short-lived script (stdlib `re` over the 69 files).
+   Do not commit the script unless it earns a `00-tools/` row; prefer deleting
+   it after the rewrite.
 
-Wire it in `zensical.toml` under the python handler `extensions` list
-(Zensical’s mkdocstrings plugin accepts the same handler options as MkDocs).
-Point at the local module path so `uvx` / RTD still see it from the checkout.
+3. Spot-check a few dense files (`collector.py`, `cellreader.py`, `facade.py`)
+   so we did not turn an already-backticked example or a non-docstring string.
 
-Note in `dev_docs.md` (Doc-strings section): leftover Sphinx roles are stripped
-at build time; prefer markdown `` `Name` `` (or ``[`Name`][path]``) in new
-docstrings.
+4. Note in `dev_docs.md` (Doc-strings): do not use Sphinx roles; write
+   markdown `` `Name` `` (or ``[`Name`][path]`` if you want a cross-ref).
 
-Add the new `dev/` path to `.github/workflows/docs.yml` `paths:` filters so a
-converter-only change still runs the docs job. `.readthedocs.yaml` needs no
-extra install.
+5. Add `tests/test_no_sphinx_doc_roles.py`: walk `cellpy/**/*.py` and fail on
+   leftover `:role:`…`` markers. Not `@pytest.mark.essential`.
 
 ## Files to touch
 
-- `dev/sphinx_doc_roles.py` (new) — Griffe extension + the regex helper (kept
-  importable so tests can hit it without a docs build).
-- `zensical.toml` — register the extension on the python handler.
-- `docs/contributing/developers_guide/dev_docs.md` — one short convention note.
-- `.github/workflows/docs.yml` — watch the new `dev/` file.
-- `tests/test_sphinx_doc_roles.py` (new) — regex cases for the shapes above.
+- `cellpy/**/*.py` — mechanical docstring rewrite (69 files today).
+- `docs/contributing/developers_guide/dev_docs.md` — convention note.
+- `tests/test_no_sphinx_doc_roles.py` (new) — recurrence guard.
 
 ## Test strategy
 
-- New unit tests: `uv run pytest tests/test_sphinx_doc_roles.py` (no
-  `@pytest.mark.essential` — this is docs chrome, not a merge-gate oracle).
+- `uv run pytest tests/test_no_sphinx_doc_roles.py`
 - Docs build: `uv run --group docs zensical build --clean`, then grep `site/`
-  HTML for leftover `:class:`, `:meth:`, `:func:`, `:mod:`, `:attr:`, `:data:`.
-  Expect zero hits in rendered pages (especially `site/api/collect/`).
-- `uv run pytest -m essential` once at close (no expected change).
+  HTML for leftover `:class:` / `:meth:` / `:func:` / `:mod:` / `:attr:` /
+  `:data:`. Expect zero on rendered API pages (especially `site/api/collect/`).
+- `uv run pytest -m essential` at close (no expected change).
 
 ## Open questions
 
-None that block coding. Two explicit non-goals (say so if you want them in
-scope):
-
-- Rewriting source docstrings to markdown cross-refs.
-- Turning roles into Autorefs links (follow-up if code spans are not enough).
+None that block coding. Still out of scope: Autorefs links.
