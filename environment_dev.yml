@@ -5,7 +5,7 @@ dependencies:
     - python=3.13
     - PyGithub
     - black
-    - cellpycore ==0.2.3
+    - cellpycore ==0.2.4
     - cookiecutter
     - coverage
     - cryptography
@@ -52,14 +52,14 @@ dependencies:
     - sphinx
     - sphinx-autoapi
     - sphinx_rtd_theme
-    - sqlalchemy
+    - sqlalchemy >= 2.0.0
     # sqlalchemy-access is Windows-only (conda-forge requires __win).
     # On Windows: conda install -c conda-forge sqlalchemy-access
     # or: python -m pip install sqlalchemy-access
     - tqdm
     - twine
     - typer
-    - xlrd
+    - xlrd >= 2.0.1
     - xmltodict
     - charset-normalizer
     - pip:

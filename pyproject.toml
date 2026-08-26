@@ -62,6 +62,7 @@ dependencies = [
     "platformdirs>=4.10.0",
     "universal-pathlib>=0.3.10",
     "paramiko>=5.0.0",
+    "xlrd>=2.0.1",
 ]
 
 [project.optional-dependencies]
