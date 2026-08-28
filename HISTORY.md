@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+* Sync conda env files with ``pyproject.toml``: pin ``cellpycore ==0.2.4``,
+  ``sqlalchemy >= 2.0.0``, and ``xlrd >= 2.0.1``. Add ``xlrd>=2.0.1`` to
+  install requires (old ``.xls`` loaders). (#969)
+
 * Zensical API pages no longer show raw Sphinx roles (``:class:``,
   ``:meth:``, ``:func:``); library docstrings use markdown code spans. (#967)
 

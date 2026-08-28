@@ -3,7 +3,7 @@ channels:
     - conda-forge
 dependencies:
     - python >= 3.13
-    - cellpycore ==0.2.3
+    - cellpycore ==0.2.4
     - charset-normalizer
     - cookiecutter
     - cryptography
@@ -37,13 +37,13 @@ dependencies:
     - rich
     - scipy
     - setuptools
-    - sqlalchemy
+    - sqlalchemy >= 2.0.0
     # sqlalchemy-access is Windows-only (conda-forge requires __win).
     # On Windows: conda install -c conda-forge sqlalchemy-access
     # or: python -m pip install sqlalchemy-access
     - tqdm
     - typer
-    - xlrd
+    - xlrd >= 2.0.1
     - xmltodict
     - pip:
         # Optional external fastnda; cellpy defaults to cellpy.libs.local_fastnda.

@@ -5,7 +5,7 @@ channels:
 dependencies:
     - python
     - PyGithub
-    - cellpycore ==0.2.3
+    - cellpycore ==0.2.4
     - charset-normalizer
     - cookiecutter
     - coverage
@@ -40,11 +40,11 @@ dependencies:
     - rich
     - scipy
     - setuptools
-    - sqlalchemy
+    - sqlalchemy >= 2.0.0
     # sqlalchemy-access is Windows-only (__win); install in CI on Windows runners only.
     - tqdm
     - typer
-    - xlrd
+    - xlrd >= 2.0.1
     - xmltodict
     - pip:
         # Optional external fastnda; cellpy defaults to cellpy.libs.local_fastnda.
