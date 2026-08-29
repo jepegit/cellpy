@@ -271,6 +271,37 @@ def test_a_frame_without_the_curve_columns_says_so():
         ica.dqdv(pd.DataFrame({"nope": [1.0, 2.0]}))
 
 
+@pytest.mark.essential
+def test_an_empty_frame_says_the_cycle_is_missing():
+    """Empty get_cap output must not look like a missing-column schema error (#971)."""
+    with pytest.raises(ValueError, match="cycle frame is empty"):
+        ica.dqdv(pd.DataFrame())
+
+
+@pytest.mark.essential
+def test_an_empty_frame_with_curve_columns_says_the_cycle_is_missing():
+    from cellpycore.config import CurveCols
+
+    cols = CurveCols()
+    empty = pd.DataFrame(
+        {
+            cols.cycle_num: pd.Series(dtype="int64"),
+            cols.direction: pd.Series(dtype="int64"),
+            cols.potential: pd.Series(dtype="float64"),
+            cols.capacity: pd.Series(dtype="float64"),
+        }
+    )
+    with pytest.raises(ValueError, match="cycle frame is empty"):
+        ica.dqdv(empty)
+
+
+@pytest.mark.essential
+def test_a_missing_cycle_on_a_cell_says_the_frame_is_empty(dataset):
+    missing = int(max(dataset.get_cycle_numbers())) + 100
+    with pytest.raises(ValueError, match="cycle frame is empty"):
+        ica.dqdv(dataset, cycles=missing)
+
+
 def test_an_unusable_source_says_so():
     with pytest.raises(TypeError, match="cannot read curves"):
         ica.dqdv("not a cell")

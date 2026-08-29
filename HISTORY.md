@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+* ``ica.dqdv`` / ``ica.dvdq`` raise when the cycle frame is empty (missing
+  requested cycle) instead of claiming missing curve columns. (#971)
+
 * Sync conda env files with ``pyproject.toml``: pin ``cellpycore ==0.2.4``,
   ``sqlalchemy >= 2.0.0``, and ``xlrd >= 2.0.1``. Add ``xlrd>=2.0.1`` to
   install requires (old ``.xls`` loaders). (#969)
