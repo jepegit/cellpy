@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+* `from_cells` raises `ValueError` naming every value that is not a cell (and
+  the type that arrived) instead of accepting it and quietly producing a
+  thinner collection later. `collect_summaries` warns and names the cells it
+  leaves out, so a collection narrower than your cell list says why. (#939)
+
 * `b.mark_as_bad("typo")` raises `ValueError` naming the batch's cells instead
   of recording a label that can never be dropped, and `b.drop("typo")` warns
   rather than doing nothing quietly. `drop_cells_marked_bad` stays silent about
