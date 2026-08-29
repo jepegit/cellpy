@@ -119,6 +119,9 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_batch_v3_facade.py::test_load_warns_when_no_raw_files_were_found | yes | yes | batch.facade._finalize | #962 | batch.load warning + result.report |
 | tests/test_batch_v3_facade.py::test_batch_public_methods_have_shift_tab_docs | yes | yes | batch.facade.Batch | #963 | Shift-Tab docstrings on b.plot etc. |
 | tests/test_no_sphinx_doc_roles.py::test_no_sphinx_doc_roles_in_cellpy_source | no | no | cellpy/**/*.py docstrings | #967 | docs chrome; not a merge-gate oracle |
+| tests/test_ica_api.py::test_an_empty_frame_says_the_cycle_is_missing | yes | yes | ica._half_cycles_from_frame | #971 | empty DataFrame() is not a missing-column error |
+| tests/test_ica_api.py::test_an_empty_frame_with_curve_columns_says_the_cycle_is_missing | yes | yes | ica._half_cycles_from_frame | #971 | empty-with-columns |
+| tests/test_ica_api.py::test_a_missing_cycle_on_a_cell_says_the_frame_is_empty | yes | yes | ica._resolve_source | #971 | CellpyCell + missing cycle |
 
 **Columns**
 
