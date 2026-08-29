@@ -242,6 +242,22 @@ Dropping cells:
   `session["bad_cells"]` **before** it loads, so a saved mark is enough if
   you reload instead of dropping in the same session.
 
+Building a batch from cells you already hold (a GUI, a notebook, a file
+picker) goes through `from_cells`, which takes cells — not paths:
+
+```python
+from cellpy.collect import from_cells
+
+b = from_cells({"cell_01": cellpy.get(path_1), "cell_02": cellpy.get(path_2)})
+```
+
+- A value that is not a cell raises `ValueError` naming every offending key
+  and the type that arrived. Watch the `example_data` asymmetry:
+  `cellpy_file()` hands back a cell, `rate_file()` hands back a **path**.
+- `collect_summaries` warns (`UserWarning`) and names any cell that
+  contributed no rows, so a collection that is thinner than your cell list
+  says why. `collection.meta.cells_included` is the authoritative list.
+
 `batch.load` (and `Batch.update` / `Batch.load` under it) takes an `executor`
 and a `progress` knob:
 

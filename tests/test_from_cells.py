@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import polars as pl
 import pytest
 
@@ -59,3 +61,46 @@ def test_from_cells_available_on_batch_collect_and_classmethod():
         b = maker(cells)
         assert isinstance(b, Batch)
         assert list(b.cells) == ["A"]
+
+
+@pytest.mark.essential
+def test_from_cells_rejects_values_that_are_not_cells():
+    """#939: a path or an int used to vanish downstream without a word."""
+    cells = {"good": _SummaryCell([1.0]), "a_path": Path("rate.res"), "an_int": 42}
+
+    with pytest.raises(ValueError) as excinfo:
+        from_cells(cells)
+
+    message = str(excinfo.value)
+    # every offender is named, once, with the type that actually arrived
+    assert "'a_path'" in message
+    assert "'an_int'" in message
+    assert type(Path("rate.res")).__name__ in message  # PosixPath / WindowsPath
+    assert "int" in message
+    assert "good" not in message
+
+
+@pytest.mark.essential
+def test_from_cells_error_points_a_path_at_cellpy_get():
+    """The reported trap: rate_file() hands back a path, cellpy_file() a cell."""
+    with pytest.raises(ValueError, match=r"cellpy\.get\(path\)"):
+        from_cells({"a_path": Path("rate.res")})
+
+
+@pytest.mark.essential
+def test_from_cells_validates_the_sequence_form_too():
+    with pytest.raises(ValueError, match="not cells"):
+        from_cells([_SummaryCell([1.0]), 42])
+
+
+@pytest.mark.essential
+def test_from_cells_accepts_a_cell_that_has_no_data_yet():
+    """``CellpyCell.data`` raises ``NoDataFound`` until something is loaded.
+
+    Asking the instance would therefore answer "not a cell" (or raise), so the
+    guard has to ask the type.
+    """
+    from cellpy.readers.cellreader import CellpyCell
+
+    b = from_cells({"empty": CellpyCell()})
+    assert list(b.cells) == ["empty"]

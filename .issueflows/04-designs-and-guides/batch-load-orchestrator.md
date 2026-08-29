@@ -13,6 +13,7 @@ Notebooks expected the v1 flow: resolve journal → load cells → persist.
    `cellpy_batch_{name}.json` from `journal_dir` (default **cwd**), else DB.
 2. `drop_bad_cells` (default True) removes `session["bad_cells"]`.
 3. Always `Batch.update()` (legacy `link` is a no-op in v3).
+4. Persist journal JSON when `save_cellpy=True` (default). Rewrite `.cellpy` only for cells loaded from raw (or `NEWEST` / `recalc`); skip rewrite when already loaded from an on-disk `.cellpy`.
 
 ### Same-session `drop` vs `unload` (#952)
 
@@ -40,7 +41,28 @@ Where the signal goes depends on who calls:
 
 `session["bad_cells"]` is deliberately **not** pruned when a drop succeeds —
 it is the record that a later `load(drop_bad_cells=True)` replays.
-4. Persist journal JSON when `save_cellpy=True` (default). Rewrite `.cellpy` only for cells loaded from raw (or `NEWEST` / `recalc`); skip rewrite when already loaded from an on-disk `.cellpy`.
+
+### Feedback on values that are not cells (#939)
+
+Same raise/warn split, one layer up — at the point a batch is built from
+objects the caller already holds rather than from a journal:
+
+- `Batch.from_cells` **raises `ValueError`** naming every value that is not a
+  cell, with the type that arrived. It is direct user input, and a `Path` or an
+  `int` in that mapping can only ever produce a thinner collection later.
+- `collect_summaries` **warns** (`UserWarning`) and names the cells that
+  contributed no rows. It is not always a mistake — `max_cycle` / `rate` /
+  `remove_last` legitimately empty a cell — so it must not raise, but the
+  narrowing has to be visible. Cells skipped by `only_selected` are a
+  deliberate choice and are **not** reported.
+- `CellStore.from_cells` is **not** validated: it is the internal loader path
+  (`_store_from_result` hands it whatever the runner produced, including
+  `None` placeholders from `executor="processes"`).
+
+"Is a cell" is decided by duck-typing on `.data`, asked of the **type**, not
+the instance — `CellpyCell.data` is a property that raises `NoDataFound` until
+something is loaded, so an instance-level `hasattr` would both raise and answer
+"not a cell" for a legitimately empty cell.
 
 ### Journal location
 

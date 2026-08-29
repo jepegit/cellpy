@@ -1,6 +1,7 @@
 """Tests for the cellpy.collect foundation (collectors redesign, #705/#706)."""
 
 import re
+import warnings
 from types import SimpleNamespace
 
 import polars as pl
@@ -150,6 +151,75 @@ class _SummaryCell:
             ),
             steps=None,
         )
+
+
+# ---- a narrowed collection says so (#939) -------------------------------
+
+
+def _two_cells_one_without_a_summary() -> Batch:
+    pages = pl.DataFrame(
+        {FILENAME: ["with_data", "no_summary"], "group": [1, 1], "sub_group": [1, 2]}
+    )
+    return _batch_with_cells(
+        {
+            "with_data": _SummaryCell([1.0, 2.0]),
+            "no_summary": SimpleNamespace(
+                data=SimpleNamespace(summary=None, steps=None)
+            ),
+        },
+        pages,
+    )
+
+
+@pytest.mark.essential
+def test_collect_summaries_warns_about_cells_it_leaves_out():
+    """#939: a cell contributing nothing used to disappear without a word."""
+    col = None
+    with pytest.warns(UserWarning, match="no_summary"):
+        col = collect_summaries(_two_cells_one_without_a_summary())
+
+    # the good cell still comes through, and the meta agrees with the warning
+    assert col.data["cell"].unique().to_list() == ["with_data"]
+    assert col.meta.cells_included == ["with_data"]
+
+
+@pytest.mark.essential
+def test_collect_summaries_is_quiet_when_every_cell_contributes():
+    """The warning must not fire on a healthy batch (it would be noise)."""
+    pages = pl.DataFrame(
+        {FILENAME: ["x", "y"], "group": [1, 1], "sub_group": [1, 2]}
+    )
+    batch = _batch_with_cells(
+        {"x": _SummaryCell([1.0, 2.0]), "y": _SummaryCell([3.0, 4.0])}, pages
+    )
+
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        collect_summaries(batch)
+
+    assert not [w for w in caught if "left out" in str(w.message)]
+
+
+def test_collect_summaries_does_not_blame_deselected_cells():
+    """``only_selected`` skips are deliberate, not a silent narrowing."""
+    pages = pl.DataFrame(
+        {
+            FILENAME: ["keep", "skip"],
+            "group": [1, 1],
+            "sub_group": [1, 2],
+            "selected": [1, 0],
+        }
+    )
+    batch = _batch_with_cells(
+        {"keep": _SummaryCell([1.0]), "skip": _SummaryCell([2.0])}, pages
+    )
+
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        col = collect_summaries(batch, only_selected=True)
+
+    assert col.data["cell"].unique().to_list() == ["keep"]
+    assert not [w for w in caught if "left out" in str(w.message)]
 
 
 def test_collect_summaries_group_average():

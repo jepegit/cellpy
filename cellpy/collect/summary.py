@@ -9,6 +9,7 @@ column selection, group averaging and cleanup happen on the combined frame.
 
 from __future__ import annotations
 
+import warnings
 from collections import Counter
 from typing import Any
 
@@ -20,6 +21,21 @@ from cellpy.collect.collection import Collection, CollectionMeta
 from cellpy.collect.options import SummaryOptions
 
 _KEYS = ("cell", "group", "sub_group", "group_label", "label", ops.CYCLE)
+_MAX_LISTED_CELLS = 8
+
+
+def _warn_left_out(skipped: list[str]) -> None:
+    """Name the cells that contributed no rows (#939: this used to be silent)."""
+    listed = ", ".join(repr(label) for label in skipped[:_MAX_LISTED_CELLS])
+    if len(skipped) > _MAX_LISTED_CELLS:
+        listed += f", … ({len(skipped)} cells in total)"
+    warnings.warn(
+        f"collect_summaries left out cells that contributed no rows: {listed}. "
+        "A cell drops out when it carries no summary data, or when the current "
+        "options (max_cycle / rate / remove_last) filtered every cycle away.",
+        UserWarning,
+        stacklevel=3,
+    )
 
 
 def _pages_lookup(batch: Any) -> dict[str, dict[str, Any]]:
@@ -55,6 +71,7 @@ def collect_summaries(
 
     frames: list[pl.DataFrame] = []
     included: list[str] = []
+    skipped: list[str] = []
     for label, cell in batch.cells.items():
         meta = lookup.get(label, {})
         if opts.only_selected and "selected" in meta and meta.get("selected") != 1:
@@ -62,6 +79,7 @@ def collect_summaries(
 
         frame = ops.extract_cell_summary(cell, opts)
         if frame is None or frame.height == 0:
+            skipped.append(label)
             continue
 
         frames.append(
@@ -74,6 +92,9 @@ def collect_summaries(
             )
         )
         included.append(label)
+
+    if skipped:
+        _warn_left_out(skipped)
 
     frame = (
         pl.concat(frames, how="diagonal_relaxed") if frames else pl.DataFrame()
