@@ -579,9 +579,18 @@ def _curves_from_cell(source, cycles, number_of_points) -> pd.DataFrame:
     )
 
 
+def _empty_cycle_frame_error() -> ValueError:
+    return ValueError(
+        "cycle frame is empty. The requested cycle may be missing from the source data."
+    )
+
+
 def _half_cycles_from_frame(
     frame: pd.DataFrame, cycle_mode: str | None, direction: str
 ) -> Iterable[_HalfCycle]:
+    if frame.empty:
+        raise _empty_cycle_frame_error()
+
     labels = _direction_labels(cycle_mode)
     required = {_CCOLS.potential, _CCOLS.capacity, _CCOLS.direction}
     missing = required - set(frame.columns)
@@ -633,7 +642,7 @@ def _resolve_source(
         mode = cycle_mode or getattr(source, "cycle_mode", None)
         frame = _curves_from_cell(source, cycles, number_of_points)
         if frame is None or len(frame) == 0:
-            return [], mode
+            raise _empty_cycle_frame_error()
         return list(_half_cycles_from_frame(frame, mode, direction)), mode
 
     if isinstance(source, pd.DataFrame):
