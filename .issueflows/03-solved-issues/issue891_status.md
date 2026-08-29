@@ -1,6 +1,10 @@
 # Issue #891 — status
 
-- [ ] Done
+- [x] Done
+
+Closed out 2026-08-29 by `/iflow-doctor`: the remaining work below all landed,
+but this file was never updated when the last PR merged. GitHub issue #891 was
+closed 2026-08-16 (milestone v.2.1.3).
 
 ## What's done
 
@@ -18,20 +22,23 @@
 
 ## Remaining work
 
-- [ ] PR 2 — global flags (`--quiet` / `--verbose` / `--no-color`), failures to
+None — every item below shipped:
+
+- [x] PR 2 — global flags (`--quiet` / `--verbose` / `--no-color`), failures to
       stderr, exit codes 0/1/2, delete the hand-rolled usage block in `run`;
       regenerate `tests/data/cli_surface.json` in the same commit.
-- [ ] PR 3 — `info` / `info --check`.
-- [ ] PR 4 — `setup` (drop the parameter dump, make `--silent` real).
-- [ ] PR 5 — copy pass over the remaining commands; fix the `f[cellpy]` literal
+      → `be37069c` (#915).
+- [x] PR 3 — `info` / `info --check`. → `4a190122` (#918), with `d502fe5a`
+      (#922) relaxing the check test's machine assumptions.
+- [x] PR 4 — `setup` (drop the parameter dump, make `--silent` real).
+      → `2ee02193` (#934).
+- [x] PR 5 — copy pass over the remaining commands; fix the `f[cellpy]` literal
       and the `deiced` typo; remove the stray `print()` calls.
-- [ ] Register the new essential tests in
-      [test-registry.md](../04-designs-and-guides/test-registry.md). Deferred
-      out of PR 1 only because the concurrent #912 session has uncommitted rows
-      in that file; staging it would have swept their work into this commit.
-      Rows to add (`tests/test_cli_ui.py`, essential/always, code under test
-      `cli_ui.Reporter`, issue #891) plus
-      `test_cli_light_import.py::test_importing_cli_ui_does_not_import_rich`.
+      → `2ee02193` (#934).
+- [x] Register the new essential tests in
+      [test-registry.md](../04-designs-and-guides/test-registry.md). The
+      registry now carries 16 rows tagged #891, so the #912 collision noted
+      below resolved itself.
 
 ## Notes
 
