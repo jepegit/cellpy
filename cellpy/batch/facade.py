@@ -7,6 +7,7 @@ and `from_cells`. Import those from ``cellpy.batch``, not from here.
 from __future__ import annotations
 
 import logging
+import os
 import warnings
 from collections.abc import Mapping, Sequence
 from dataclasses import fields, replace
@@ -48,6 +49,41 @@ def _known_cells_hint(known: Sequence[str]) -> str:
     if len(known) > _MAX_LISTED_CELLS:
         listed += f", … ({len(known)} cells in total)"
     return f"Known cells: {listed} (see b.cell_names)."
+
+
+def _is_cell(value: Any) -> bool:
+    """Duck-type test used everywhere a cell is read: it exposes ``.data``.
+
+    Deliberately not ``isinstance(value, CellpyCell)`` -- consumers only ever
+    reach for ``cell.data.summary`` / ``.steps`` / ``.raw``, so anything cell
+    shaped (including test doubles) is legitimate here.
+
+    Asks the *type*, never the instance: ``CellpyCell.data`` is a property that
+    raises ``NoDataFound`` on a cell with nothing loaded yet, which would make
+    an instance-level ``hasattr`` both raise and answer "not a cell".
+    """
+    return hasattr(type(value), "data") or "data" in getattr(value, "__dict__", {})
+
+
+def _not_a_cell_message(offenders: Sequence[tuple[str, Any]]) -> str:
+    """Name the values that are not cells, with the type that arrived."""
+    listed = ", ".join(
+        f"{label!r} ({type(value).__name__})"
+        for label, value in offenders[:_MAX_LISTED_CELLS]
+    )
+    if len(offenders) > _MAX_LISTED_CELLS:
+        listed += f", … ({len(offenders)} values in total)"
+    message = (
+        f"from_cells got values that are not cells: {listed}. "
+        "A cell is what cellpy.get(...) returns."
+    )
+    if any(isinstance(value, (str, os.PathLike)) for _, value in offenders):
+        message += (
+            " A path is not a cell -- load it first with cellpy.get(path). "
+            "Note that example_data.rate_file() hands back a path while "
+            "example_data.cellpy_file() hands back a cell."
+        )
+    return message
 
 
 class Batch:
@@ -125,6 +161,11 @@ class Batch:
             selected: optional ``{label: bool}`` (defaults True) for the journal
                 ``selected`` column.
             name / project: journal name/project.
+
+        Raises:
+            ValueError: if any value is not a cell. Collections used to narrow
+                silently around such a value (#939), which reads downstream as
+                a plot with fewer lines than the caller has cells.
         """
         if isinstance(cells, Mapping):
             cell_map: dict[str, Any] = dict(cells)
@@ -137,6 +178,10 @@ class Batch:
                     n += 1
                     label = f"{base}_{n}"
                 cell_map[label] = cell
+
+        offenders = [(lbl, val) for lbl, val in cell_map.items() if not _is_cell(val)]
+        if offenders:
+            raise ValueError(_not_a_cell_message(offenders))
 
         labels = list(cell_map)
         groups = dict(groups or {})

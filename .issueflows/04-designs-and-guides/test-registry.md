@@ -124,6 +124,12 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_ica_api.py::test_an_empty_frame_says_the_cycle_is_missing | yes | yes | ica._half_cycles_from_frame | #971 | empty DataFrame() is not a missing-column error |
 | tests/test_ica_api.py::test_an_empty_frame_with_curve_columns_says_the_cycle_is_missing | yes | yes | ica._half_cycles_from_frame | #971 | empty-with-columns |
 | tests/test_ica_api.py::test_a_missing_cycle_on_a_cell_says_the_frame_is_empty | yes | yes | ica._resolve_source | #971 | CellpyCell + missing cycle |
+| tests/test_from_cells.py::test_from_cells_rejects_values_that_are_not_cells | yes | yes | batch.facade.Batch.from_cells / _is_cell | #939 | issue repro: Path + int used to vanish silently |
+| tests/test_from_cells.py::test_from_cells_error_points_a_path_at_cellpy_get | yes | yes | batch.facade._not_a_cell_message | #939 | rate_file() vs cellpy_file() trap named in the error |
+| tests/test_from_cells.py::test_from_cells_validates_the_sequence_form_too | yes | yes | batch.facade.Batch.from_cells | #939 | list form goes through the same guard |
+| tests/test_from_cells.py::test_from_cells_accepts_a_cell_that_has_no_data_yet | yes | yes | batch.facade._is_cell | #939 | anti-regression: `.data` property raises NoDataFound, so ask the type |
+| tests/test_collect.py::test_collect_summaries_warns_about_cells_it_leaves_out | yes | yes | collect.summary.collect_summaries | #939 | narrowed collection names the dropped cells |
+| tests/test_collect.py::test_collect_summaries_is_quiet_when_every_cell_contributes | yes | yes | collect.summary._warn_left_out | #939 | noise guard: healthy batch must not warn |
 
 **Columns**
 
