@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+* `b.mark_as_bad("typo")` raises `ValueError` naming the batch's cells instead
+  of recording a label that can never be dropped, and `b.drop("typo")` warns
+  rather than doing nothing quietly. `drop_cells_marked_bad` stays silent about
+  labels dropped in an earlier session (`bad_cells` survives `save`). (#950)
+
 * ``ica.dqdv`` / ``ica.dvdq`` raise when the cycle frame is empty (missing
   requested cycle) instead of claiming missing curve columns. (#971)
 

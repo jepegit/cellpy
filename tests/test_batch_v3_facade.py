@@ -1,5 +1,6 @@
 """Tests for the batch v3 facade (#702)."""
 
+import warnings
 from pathlib import Path
 
 import polars as pl
@@ -126,6 +127,61 @@ def test_drop_loaded_cell_forgets_store_label():
     assert set(b.summaries["cell"].to_list()) == {"keep"}
     assert b.report()["cell"].to_list() == ["keep"]
     assert b.experiment.cell_names == ["keep"]
+
+
+@pytest.mark.essential
+def test_marked_bad_drop_on_loaded_batch_keeps_summaries_and_plot_usable():
+    """#950: mark several cells bad, drop them, then combine/plot without update()."""
+    b = Batch.from_cells(
+        {name: _StubCell(name) for name in ("keep", "bad1", "bad2")},
+        name="t",
+        project="p",
+    )
+    b.mark_as_bad("bad1")
+    b.mark_as_bad("bad2")
+    b.drop_cells_marked_bad()
+
+    assert b.cell_names == ["keep"]
+    assert list(b.cells) == ["keep"]
+    assert b.pages[FILENAME].to_list() == ["keep"]
+    # the two crash sites in the report: combine_summaries and the plot adapter
+    assert set(b.combine_summaries()["cell"].to_list()) == {"keep"}
+    assert b.experiment.cell_names == ["keep"]
+
+
+@pytest.mark.essential
+def test_mark_as_bad_rejects_an_unknown_cell():
+    """#950: a mistyped label can never drop anything, so refuse it up front."""
+    b = Batch.from_cells({"keep": _StubCell("keep")}, name="t", project="p")
+    with pytest.raises(ValueError, match="not a cell in this batch"):
+        b.mark_as_bad("kepe")
+    assert not (b.journal.session.get("bad_cells") or [])
+
+
+def test_drop_warns_on_an_unknown_cell():
+    b = Batch.from_cells({"keep": _StubCell("keep")}, name="t", project="p")
+    with pytest.warns(UserWarning, match="Nothing to drop"):
+        b.drop("kepe")
+    assert b.cell_names == ["keep"]
+
+
+def test_drop_cells_marked_bad_is_quiet_about_already_dropped_cells(tmp_path):
+    """bad_cells survives save/reload; a second pass must not warn (#950)."""
+    b = Batch.from_cells(
+        {"keep": _StubCell("keep"), "gone": _StubCell("gone")},
+        name="t",
+        project="p",
+    )
+    b.mark_as_bad("gone")
+    b.drop_cells_marked_bad()
+
+    reloaded = from_journal(b.save(tmp_path / "j.json"))
+    assert reloaded.journal.session["bad_cells"] == ["gone"]
+    assert "gone" not in reloaded.cell_names
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", UserWarning)
+        reloaded.drop_cells_marked_bad()
+    assert reloaded.cell_names == ["keep"]
 
 
 def test_save_roundtrip(tmp_path):

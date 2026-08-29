@@ -37,6 +37,17 @@ _HDR_JOURNAL = get_headers_journal()
 _CELLPY_FILE_COL = _HDR_JOURNAL["cellpy_file_name"]
 _EXPORT_KWARGS = frozenset({"export_cycles", "export_raw", "export_ica"})
 _EXPORT_KWARGS_WARNED = False
+_MAX_LISTED_CELLS = 8
+
+
+def _known_cells_hint(known: Sequence[str]) -> str:
+    """Name the batch's cells for an unknown-label error or warning."""
+    if not known:
+        return "This batch has no cells."
+    listed = ", ".join(repr(name) for name in known[:_MAX_LISTED_CELLS])
+    if len(known) > _MAX_LISTED_CELLS:
+        listed += f", … ({len(known)} cells in total)"
+    return f"Known cells: {listed} (see b.cell_names)."
 
 
 class Batch:
@@ -365,7 +376,18 @@ class Batch:
 
         Args:
             label: Cell name as in ``b.cell_names``.
+
+        Raises:
+            ValueError: If ``label`` is not a cell in this batch. Marking a
+                name that does not exist can never drop anything later, so it
+                is rejected here rather than silently recorded (#950).
         """
+        known = self.journal.cell_names
+        if label not in known:
+            raise ValueError(
+                f"Cannot mark {label!r} as bad: it is not a cell in this "
+                f"batch. {_known_cells_hint(known)}"
+            )
         bad = list(self.journal.session.get("bad_cells") or [])
         if label not in bad:
             bad.append(label)
@@ -376,14 +398,33 @@ class Batch:
 
         Args:
             label: Cell name as in ``b.cell_names``.
+
+        Warns:
+            UserWarning: If ``label`` is not a cell in this batch; the call
+                is a no-op instead of a silent one (#950).
         """
+        if label not in self.journal.cell_names and label not in self._store:
+            warnings.warn(
+                f"Nothing to drop: {label!r} is not a cell in this batch. "
+                f"{_known_cells_hint(self.journal.cell_names)}",
+                UserWarning,
+                stacklevel=2,
+            )
+            return self
         self.journal.pages = self.journal.pages.filter(pl.col(FILENAME) != label)
         self._store.remove(label)
         self._summaries = None
         return self
 
     def drop_cells_marked_bad(self) -> "Batch":
-        """Drop every label listed in ``journal.session["bad_cells"]``."""
+        """Drop every label listed in ``journal.session["bad_cells"]``.
+
+        Labels that are no longer in the journal are skipped quietly:
+        ``bad_cells`` survives ``save`` / reload, so a cell dropped in an
+        earlier session is still listed here and must not warn on every
+        subsequent load (`_finalize` calls this on each `load`). Unknown
+        labels are rejected up front by `mark_as_bad` instead.
+        """
         bad = list(self.journal.session.get("bad_cells") or [])
         for label in bad:
             if label in self.journal.cell_names:
