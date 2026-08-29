@@ -1,6 +1,6 @@
 # Status: #950 `mark_as_bad` / `drop_cells_marked_bad` not working
 
-- [ ] Done
+- [x] Done
 
 ## What's done
 
@@ -39,10 +39,14 @@ labels in `mark_as_bad` closes the hole at the source instead, so the drop path
 stays quiet. `test_drop_cells_marked_bad_is_quiet_about_already_dropped_cells`
 pins this.
 
+- `MPLBACKEND=Agg uv run pytest` (full suite, `--extra batch`): 1737 passed,
+  17 skipped, 15 xfailed, 1 xpassed.
+- `HISTORY.md` bullet under `## [Unreleased]`.
+
 ## Remaining work
 
-- [ ] `HISTORY.md` bullet (written at `/iflow-close`).
-- [ ] Full-suite run + PR.
+- None. The reporter is worth asking to re-confirm on the next release, since
+  their crash was fixed by #952 rather than by this PR.
 
 ## Notes
 
