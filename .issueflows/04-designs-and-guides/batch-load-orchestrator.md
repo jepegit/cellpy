@@ -23,6 +23,23 @@ Notebooks expected the v1 flow: resolve journal → load cells → persist.
   `plot` / `summaries` / `report` work without a following `update()`.
 - `mark_as_bad` only appends `session["bad_cells"]`. The load path above
   still drops those labels before `update()`.
+
+### Feedback on unknown labels (#950)
+
+Where the signal goes depends on who calls:
+
+- `mark_as_bad(label)` **raises `ValueError`** for a label that is not in
+  `journal.cell_names`. It is direct user input, nothing on the load path
+  calls it, and a name that does not exist can never drop anything later.
+- `drop(label)` **warns** (`UserWarning`) and no-ops for an unknown label.
+- `drop_cells_marked_bad()` **stays quiet** about `bad_cells` entries it
+  cannot find. `session` is persisted by `write_journal`, so a cell dropped
+  in an earlier session is still listed after a reload; `_finalize` calls
+  this method on every `load`, so warning there would fire on a normal
+  round-trip. `mark_as_bad` is the gate that keeps bad labels out.
+
+`session["bad_cells"]` is deliberately **not** pruned when a drop succeeds —
+it is the record that a later `load(drop_bad_cells=True)` replays.
 4. Persist journal JSON when `save_cellpy=True` (default). Rewrite `.cellpy` only for cells loaded from raw (or `NEWEST` / `recalc`); skip rewrite when already loaded from an on-disk `.cellpy`.
 
 ### Journal location

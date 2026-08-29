@@ -316,7 +316,8 @@ Quick facts:
   reopening local `.cellpy` files (first remote load stays serial on the wire).
   `progress=None` auto-shows tqdm (TTY / Jupyter); `False` off.
   After load: `b.summaries`, `b.cells[label]`, `b.plot()`, `b.result.report()`.
-  `mark_as_bad` is a session flag; `drop` / `drop_cells_marked_bad` remove now
+  `mark_as_bad` is a session flag (unknown cell name → `ValueError`); `drop` /
+  `drop_cells_marked_bad` remove now
   (plot/summaries work without `update()`). `save()` then next `load` (default
   `drop_bad_cells=True`) drops marked cells before update. Missing raw files
   (filefinder miss) mark the cell `FAILED` and warn; see `b.result.report()`.

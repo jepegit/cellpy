@@ -232,7 +232,9 @@ fig = b.plot()                   # summary plot
 Dropping cells:
 
 - `b.mark_as_bad("my_cell_01")` only writes `journal.session["bad_cells"]`.
-  The cell stays in `pages`, the store, and plots until you drop it.
+  The cell stays in `pages`, the store, and plots until you drop it. A name
+  that is not in `b.cell_names` raises `ValueError` (it could never drop
+  anything); `b.drop` warns instead of doing nothing quietly.
 - `b.drop("my_cell_01")` (or `b.drop_cells_marked_bad()`) removes it now.
   `b.plot()` / `b.summaries` / `b.report()` then use the remaining cells —
   no `update()` required. Call `b.save()` to persist the thinner journal.
