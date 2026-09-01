@@ -1329,7 +1329,7 @@ wheels = [
 
 [[package]]
 name = "ipython"
-version = "9.16.0"
+version = "9.17.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "colorama", marker = "sys_platform == 'win32'" },
@@ -1343,9 +1343,9 @@ dependencies = [
     { name = "stack-data" },
     { name = "traitlets" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/52/49/04360f83b4d110195751b4171b75dc1cd7b97ba122b18da34b5828172d59/ipython-9.16.0.tar.gz", hash = "sha256:d2f92587b1ef51d84f934dffe05fabb9255f0038ed0a21426f2ea761e39ad09a", size = 4515375, upload-time = "2026-07-31T08:02:51.977Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/c4/bc/e05ae123712ce4e1fde4408eedca1791fc1ff832684565132ea1dc646092/ipython-9.17.0.tar.gz", hash = "sha256:1dc69e6966b270fb259f676c71a21450e63607729b14a672b942914a54e8b730", size = 4538547, upload-time = "2026-08-28T09:00:58.233Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/d1/82/d30656b9eb33b8ed4e421ca55c13c7fff412086f0405bbe53c39a7ee4a3b/ipython-9.16.0-py3-none-any.whl", hash = "sha256:3d02b96de2a59074d153b1ac1c3865de738df114e430e879e6e5ef100a4d470c", size = 625973, upload-time = "2026-07-31T08:02:50.114Z" },
+    { url = "https://files.pythonhosted.org/packages/18/5f/f992b57e8deb8fa6c2e614b422d80698adb5107902bbc89832e203665bd1/ipython-9.17.0-py3-none-any.whl", hash = "sha256:ce647713be8fef3fab2418c515a0def4d45d6705dd102be2c6d1f3015d7368b0", size = 638698, upload-time = "2026-08-28T09:00:56.174Z" },
 ]
 
 [[package]]
