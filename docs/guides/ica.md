@@ -46,9 +46,8 @@ frame = ica.dqdv(c, cycles=3, options=opts.replace(pre_smoothing=True))
 frame = ica.dqdv(c, cycles=3, options=opts, voltage_fwhm=0.02)
 ```
 
-`dvdq` uses the same class. Its default recipe is
-[`DVA_DEFAULTS`][cellpy.ica.DVA_DEFAULTS] (`normalize=False` — peak
-*positions* on the capacity axis are the signal):
+`dvdq` uses the same class. Its default recipe is `ica.DVA_DEFAULTS`
+(`normalize=False` — peak *positions* on the capacity axis are the signal):
 
 ```python
 dva_opts = ica.DVA_DEFAULTS.replace(capacity_resolution=5.0)

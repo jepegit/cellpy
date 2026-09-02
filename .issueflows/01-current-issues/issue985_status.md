@@ -13,3 +13,4 @@ Interactive `/iflow-fix` session: improve ICA docs.
 - 2026-09-02 — Tutorial: prefer `from cellpy import ica`; add DVA/plotting closer in `examples/04_incremental_capacity_analysis.ipynb` and the rendered docs copy.
 - 2026-09-02 — Stale docstrings: drop “`dq` until 2.1” from `cellpy/collect/ica.py`; update `cellpy/utils/ica.py` re-export note; fundamentals no longer call ICA a utils-only tool.
 - 2026-09-02 — How to use `IcaOptions`: construct the dataclass, pass `options=`, `.replace()`, and stacked keyword overrides. Added to `docs/guides/ica.md` (plus collect-side `IcaOptions`), `docs/api/ica.md`, the agents recipe, `AGENTS.md`, and the ICA tutorial notebook / rendered page.
+- 2026-09-02 — Docs CI: drop the `[cellpy.ica.DVA_DEFAULTS]` autoref in `docs/guides/ica.md` (module constant has no mkdocstrings identifier; zensical reported "1 issue found").
