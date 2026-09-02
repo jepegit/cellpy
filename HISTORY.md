@@ -2,10 +2,19 @@
 
 ## [Unreleased]
 
+## [2.1.3.post2] - 2026-09-02
+
+Post-release of 2.1.3 — one `IcaOptions` recipe for collect and verbs, ICA/DVA
+docs, and clearer errors for empty cycles and unknown batch labels.
+
 * `collect_ica` / `collect_dva` take the same `cellpy.ica.IcaOptions` recipe
   as `dqdv` / `dvdq` (smoothing, FWHM, normalize, …) and keep `cycles` /
   `transforms` as collect-level keyword arguments. The thinner
-  `cellpy.collect.IcaOptions` still works and warns (removal 2.3).
+  `cellpy.collect.IcaOptions` still works and warns (removal 2.3). (#987)
+
+* ICA / DVA guide documents how to construct `IcaOptions`, pass it as
+  `options=`, and use `.replace()` for one-off tweaks, plus the collect
+  verbs that share the same recipe. (#986)
 
 * `from_cells` raises `ValueError` naming every value that is not a cell (and
   the type that arrived) instead of accepting it and quietly producing a
@@ -17,15 +26,21 @@
   rather than doing nothing quietly. `drop_cells_marked_bad` stays silent about
   labels dropped in an earlier session (`bad_cells` survives `save`). (#950)
 
-* ``ica.dqdv`` / ``ica.dvdq`` raise when the cycle frame is empty (missing
+* `ica.dqdv` / `ica.dvdq` raise when the cycle frame is empty (missing
   requested cycle) instead of claiming missing curve columns. (#971)
 
-* Sync conda env files with ``pyproject.toml``: pin ``cellpycore ==0.2.4``,
-  ``sqlalchemy >= 2.0.0``, and ``xlrd >= 2.0.1``. Add ``xlrd>=2.0.1`` to
-  install requires (old ``.xls`` loaders). (#969)
+* Sync conda env files with `pyproject.toml`: pin `cellpycore ==0.2.4`,
+  `sqlalchemy >= 2.0.0`, and `xlrd >= 2.0.1`. Add `xlrd>=2.0.1` to
+  install requires (old `.xls` loaders). (#969)
 
-* Zensical API pages no longer show raw Sphinx roles (``:class:``,
-  ``:meth:``, ``:func:``); library docstrings use markdown code spans. (#967)
+* Zensical API pages no longer show raw Sphinx roles (`:class:`,
+  `:meth:`, `:func:`); library docstrings use markdown code spans. (#967)
+
+## [2.1.3] - 2026-08-16
+
+Patch release — batch load/plot/docs, CLI quietness, collect/plot polish, and
+cheaper remote `.cellpy` writes. Additive, no breaking changes. The interim
+`v2.1.3.post1` packaging tag (2026-08-25) is folded into this section.
 
 * Batch docs start from ``b = batch.load(...)`` (what ``b`` can do, including
   ``b.plot()``) instead of a "Facade" heading. Public ``Batch`` methods have
