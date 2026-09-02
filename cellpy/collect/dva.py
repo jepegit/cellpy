@@ -12,84 +12,37 @@ from __future__ import annotations
 
 from typing import Any
 
-import polars as pl
-
-from cellpy.collect.cells import iter_cells
-from cellpy.collect.collection import Collection, CollectionMeta
-from cellpy.collect.options import IcaOptions
+from cellpy.collect.collection import Collection
+from cellpy.collect.ica import _collect_derivative
 
 
-def _as_polars(frame: Any) -> pl.DataFrame | None:
-    if frame is None:
-        return None
-    if isinstance(frame, pl.DataFrame):
-        return frame
-    try:
-        return pl.from_pandas(frame)
-    except (TypeError, ValueError):
-        return None
-
-
-def collect_dva(
-    batch: Any, options: IcaOptions | None = None, **overrides
-) -> Collection:
+def collect_dva(batch: Any, options: Any = None, **overrides) -> Collection:
     """Collect dV/dQ (differential voltage) curves per cell into one Collection.
+
+    ``options`` is a [`cellpy.ica.IcaOptions`][cellpy.ica.IcaOptions] recipe,
+    forwarded whole to [`dvdq`][cellpy.ica.dvdq]. When omitted, ``dvdq``'s
+    ``DVA_DEFAULTS`` (``normalize=False``) are used. ``cycles`` and
+    ``transforms`` are collect-level knobs (keyword arguments, not recipe
+    fields).
 
     Cycle selection is derived per cell from the *originally requested* cycles
     every iteration, so a cell missing a cycle never narrows the request for
     the cells after it (mirrors `collect_ica`).
+
+    Example:
+        >>> from cellpy import ica
+        >>> from cellpy.collect import collect_dva
+        >>> opts = ica.DVA_DEFAULTS.replace(capacity_resolution=5.0)
+        >>> collect_dva(batch, options=opts, cycles=(2, 3))
     """
-    from cellpy.utils import ica
+    from cellpy.ica import DVA_DEFAULTS
 
-    opts = options or IcaOptions()
-    if overrides:
-        opts = opts.replace(**overrides)
-    requested = tuple(opts.cycles) if opts.cycles is not None else None
-
-    # dV/dQ differentiates along capacity (V(q) interpolation), unlike
-    # dQ/dV's voltage_resolution (q(V) interpolation).
-    dvdq_kwargs: dict[str, Any] = {}
-    if opts.capacity_resolution is not None:
-        dvdq_kwargs["capacity_resolution"] = opts.capacity_resolution
-
-    frames: list[pl.DataFrame] = []
-    for item in iter_cells(batch):
-        cell = item.cell
-        if requested is None:
-            cycles = None
-        else:
-            available = set(cell.get_cycle_numbers())
-            cycles = [c for c in requested if c in available]
-            if not cycles:
-                continue
-
-        curve = _as_polars(ica.dvdq(cell, cycles=cycles, **dvdq_kwargs))
-        if curve is None or curve.height == 0:
-            continue
-        frames.append(
-            curve.with_columns(
-                pl.lit(item.label).alias("cell"),
-                pl.lit(item.group).alias("group"),
-                pl.lit(item.sub_group).alias("sub_group"),
-            )
-        )
-
-    data = pl.concat(frames, how="diagonal_relaxed") if frames else pl.DataFrame()
-    for transform in opts.transforms:
-        data = transform(data)
-
-    meta = CollectionMeta(
+    return _collect_derivative(
+        batch,
+        options,
+        overrides,
         kind="dva",
-        batch_name=batch.journal.name,
-        options={
-            "cycles": list(requested) if requested else None,
-            "capacity_resolution": opts.capacity_resolution,
-        },
-        cells_included=list(batch.cells),
-    )
-    return Collection(
-        data=data,
-        kind="dva",
-        name=f"{batch.journal.name or 'batch'}_dva",
-        meta=meta,
+        verb="dvdq",
+        default_recipe=DVA_DEFAULTS,
+        resolution_key="capacity_resolution",
     )

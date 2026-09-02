@@ -345,15 +345,15 @@ def ica_collector(
 
     Args:
         batch: The `Batch` to collect from.
-        options (IcaOptions, optional): A ready options object; the keyword
-            arguments below still update it.
+        options: A [`cellpy.ica.IcaOptions`][cellpy.ica.IcaOptions] recipe
+            (the deprecated collect-only ``IcaOptions`` is still accepted).
         cycles (sequence of int, optional): Cycles to collect (resolved per
             cell).
         voltage_resolution (float, optional): Voltage step for the q(V)
             interpolation dQ/dV differentiates along.
         autorun (bool): Run the collector immediately (default ``True``).
-        **overrides: Any other field of
-            `IcaOptions` -- ``transforms``.
+        **overrides: Other [`IcaOptions`][cellpy.ica.IcaOptions] fields, plus
+            collect-level ``transforms``.
 
     Returns:
         BatchCollector: bound to `collect_ica`.
@@ -386,15 +386,15 @@ def dva_collector(
 
     Args:
         batch: The `Batch` to collect from.
-        options (IcaOptions, optional): A ready options object; the keyword
-            arguments below still update it.
+        options: A [`cellpy.ica.IcaOptions`][cellpy.ica.IcaOptions] recipe
+            (the deprecated collect-only ``IcaOptions`` is still accepted).
         cycles (sequence of int, optional): Cycles to collect (resolved per
             cell).
         capacity_resolution (float, optional): Capacity step for the V(q)
             interpolation dV/dQ differentiates along.
         autorun (bool): Run the collector immediately (default ``True``).
-        **overrides: Any other field of
-            `IcaOptions` -- ``transforms``.
+        **overrides: Other [`IcaOptions`][cellpy.ica.IcaOptions] fields, plus
+            collect-level ``transforms``.
 
     Returns:
         BatchCollector: bound to `collect_dva`.

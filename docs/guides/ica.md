@@ -86,24 +86,22 @@ Both accept `backend="plotly"` (default) or `"matplotlib"`. Set
 ## Many cells
 
 ```python
-from cellpy.collect import IcaOptions as CollectIcaOptions
+from cellpy import ica
 from cellpy.collect import collect_ica, collect_dva
 
-# keyword overrides (same as one-cell)
-ica_coll = collect_ica(batch, cycles=(2, 3), voltage_resolution=0.005)
-dva_coll = collect_dva(batch, cycles=(2, 3), capacity_resolution=5.0)
-
-# or a collect-side options object
-coll_opts = CollectIcaOptions(cycles=(2, 3), voltage_resolution=0.005)
-ica_coll = collect_ica(batch, options=coll_opts)
+# same IcaOptions as dqdv / dvdq; cycles stay a collect-level knob
+ica_coll = collect_ica(batch, options=opts, cycles=(2, 3))
 dva_coll = collect_dva(
-    batch, options=coll_opts.replace(capacity_resolution=5.0)
+    batch, options=ica.DVA_DEFAULTS.replace(capacity_resolution=5.0), cycles=(2, 3)
 )
+
+# one-off field overrides still work
+ica_coll = collect_ica(batch, cycles=(2, 3), voltage_resolution=0.005)
 ```
 
-`cellpy.collect.IcaOptions` is **not** `cellpy.ica.IcaOptions`. The collect
-variant only has `cycles`, `voltage_resolution`, `capacity_resolution`, and
-`transforms`. Do not pass one where the other is expected.
+`cycles` and `transforms` are collect-level keyword arguments, not fields on
+[`IcaOptions`][cellpy.ica.IcaOptions]. The old `cellpy.collect.IcaOptions`
+bag still works and warns.
 
 ## See also
 

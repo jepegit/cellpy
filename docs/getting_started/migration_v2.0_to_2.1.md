@@ -82,11 +82,11 @@ The 1.x ICA compatibility layer is removed.
 | the duplicate `dq` output column | the single canonical dQ/dV column |
 
 For **multi-cell** ICA / DVA collection, prefer
-`cellpy.collect.collect_ica(batch)` / `collect_dva(batch)`
-(see the batch section below). One-cell plots:
-`cellpy.utils.plotutils.ica_plot` / `dva_plot`.
-`cellpy.ica.IcaOptions` (transform recipe) is not
-`cellpy.collect.IcaOptions` (collection knobs).
+`cellpy.collect.collect_ica(batch, options=ica.IcaOptions(...), cycles=…)` /
+`collect_dva(batch, …)` (see the batch section below). One-cell plots:
+`cellpy.utils.plotutils.ica_plot` / `dva_plot`. The collect-only
+`cellpy.collect.IcaOptions` bag is deprecated; use `cellpy.ica.IcaOptions`
+plus `cycles=`.
 
 ## Plotting
 

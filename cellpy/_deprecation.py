@@ -132,6 +132,16 @@ def _seed_known_deprecations() -> None:
         introduced="2.1",
     )
 
+    # collect.IcaOptions was a thinner twin of cellpy.ica.IcaOptions
+    # (cycles + resolution only). collect_ica / collect_dva now take the
+    # real recipe and keep cycles/transforms as collect-level kwargs.
+    _register(
+        "cellpy.collect.IcaOptions",
+        "cellpy.ica.IcaOptions plus cycles= / transforms=",
+        removal="2.3",
+        introduced="2.1",
+    )
+
 
 if __name__ == "__main__":
     _seed_known_deprecations()
