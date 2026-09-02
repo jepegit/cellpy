@@ -88,6 +88,6 @@ More extractors (`get_current`, `get_voltage`, `split`, `merge`, …) are on
 ## Next steps
 
 - [Incremental capacity analysis](../examples/04_incremental_capacity_analysis.md)
-  and other tutorials for ICA, GITT, and batch work
+  (tutorial) and [Compute ICA / DVA](../guides/ica.md) (short recipe)
 - [Using cellpy from an agent](agents.md) if you are wiring a GUI or app
 - [Check your installation](checkup.md) if something failed to load

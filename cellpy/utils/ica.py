@@ -10,8 +10,8 @@ from cellpy.utils import ica    # still works
 ```
 
 Both names refer to the same objects, so nothing breaks. This module carries no
-logic of its own — see [`cellpy.ica`][cellpy.ica] for the API, and ``DEPRECATIONS.md``
-for what goes away in 2.1.
+logic of its own — see [`cellpy.ica`][cellpy.ica] for the API. The 1.x helpers
+(`Converter`, `dqdv_cycle`, …) were removed in 2.1; see the migration guide.
 """
 
 from __future__ import annotations

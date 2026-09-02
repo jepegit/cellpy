@@ -4,8 +4,7 @@ Per-cell dQ/dV curves via `dqdv`, concatenated into one
 tidy frame with ``cell`` / ``group`` / ``sub_group`` keys. Mirrors
 `collect_cycles` -- including the per-cell cycle
 isolation that fixes the legacy cross-cell narrowing bug (collectors.py:1691) --
-but emits the specced ICA frame: ``cycle, direction, voltage, capacity,
-dqdv`` (+ the deprecated ``dq`` duplicate until 2.1).
+but emits the specced ICA frame: ``cycle, direction, voltage, capacity, dqdv``.
 """
 
 from __future__ import annotations

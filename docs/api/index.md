@@ -19,8 +19,10 @@ you already know what you want and need the signature.
 | The cell object and its frames | [Readers](readers.md) |
 | Instrument loaders and the plugin contract | [Instruments](instruments.md) |
 | Run a set of cells as one job | [Batch](batch.md) |
-| Collect a batch into one tidy frame | [Collect](collect.md) |
-| Plotting, helpers, ICA | [Utils](utils.md) |
+| Collect a batch into one tidy frame | [Collect](collect.md) — summaries, curves, ICA, DVA |
+| Incremental capacity / DVA | [ICA and DVA](ica.md) — `dqdv`, `dvdq`, `IcaOptions` |
+| Plot a cell or collection | [Plotting](plotting.md); `ica_plot` / `dva_plot` in [Utils](utils.md#plotting) |
+| Helpers (OCV, …) | [Utils](utils.md) |
 | Configuration and column schemas | [Parameters and config](parameters.md) |
 
 ## Stability

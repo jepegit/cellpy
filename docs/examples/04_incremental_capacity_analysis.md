@@ -1,9 +1,11 @@
 # Incremental capacity analysis (dQ/dV)
-In this notebook we illustrate, how to use cellpy to extract dQ/dV data for selected cycles.
+In this notebook we illustrate how to extract dQ/dV data for selected cycles.
 
-The respective methods are collected in the ica utilities (cellpy.utils.ica):
+Prefer `from cellpy import ica` (`cellpy.utils.ica` is the same module). The
+sibling verb `ica.dvdq` does differential voltage analysis (dV/dQ). Short
+recipe: [Compute ICA / DVA](../guides/ica.md).
 
-- **`ica.dqdv`**: This is the one entry point, and it accepts three kinds of input:
+- **`ica.dqdv`**: the dQ/dV entry point. It accepts three kinds of input:
     - a `CellpyCell` object (the usual case),
     - a capacity vs voltage curve frame from `get_cap(categorical_column=True, label_cycle_number=True)`,
     - a cellpy-agnostic `(voltage, capacity)` pair of arrays or Pandas Series.
@@ -20,7 +22,8 @@ In all three cases it returns the same tidy frame: `cycle`, `direction`, `voltag
 
 ```python
 import cellpy
-from cellpy.utils import example_data, ica
+from cellpy import ica
+from cellpy.utils import example_data
 ```
 
 <div class="alert alert-block alert-info">
@@ -518,6 +521,24 @@ ica_curves = ica.dqdv(vcaps)
 ica_curves.head(2)
 ```
 
+## Differential voltage (dV/dQ) and plotting
+
+`ica.dvdq` is the DVA sibling — same sources and `IcaOptions`, columns
+`cycle`, `direction`, `capacity`, `voltage`, `dvdq`. For a figure without
+building the frame yourself:
+
+```python
+from cellpy.utils.plotutils import ica_plot, dva_plot
+
+fig = ica_plot(c, cycles=[2, 3], voltage_resolution=0.005)
+fig = dva_plot(c, cycles=2, direction="charge")
+```
+
+Multi-cell: `cellpy.collect.collect_ica(batch)` / `collect_dva(batch)`.
+`cellpy.collect.IcaOptions` is not `cellpy.ica.IcaOptions`. See the
+[how-to](../guides/ica.md) and the [API](../api/ica.md).
+
+
 
 
 
@@ -553,5 +574,23 @@ ica_curves.head(2)
   </tbody>
 </table>
 </div>
+
+
+## Differential voltage (dV/dQ) and plotting
+
+`ica.dvdq` is the DVA sibling — same sources and `IcaOptions`, columns
+`cycle`, `direction`, `capacity`, `voltage`, `dvdq`. For a figure without
+building the frame yourself:
+
+```python
+from cellpy.utils.plotutils import ica_plot, dva_plot
+
+fig = ica_plot(c, cycles=[2, 3], voltage_resolution=0.005)
+fig = dva_plot(c, cycles=2, direction="charge")
+```
+
+Multi-cell: `cellpy.collect.collect_ica(batch)` / `collect_dva(batch)`.
+`cellpy.collect.IcaOptions` is not `cellpy.ica.IcaOptions`. See the
+[how-to](../guides/ica.md) and the [API](../api/ica.md).
 
 

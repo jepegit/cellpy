@@ -8,8 +8,10 @@ existing imports keep working. `Batch.plot` delegates to
 `cellpy.utils.batch_tools.batch_plotters` module is gone.
 
 The drawing functions themselves (`summary_plot`, `raw_plot`,
-`cycle_info_plot`, `cycles_plot`) still live in
+`cycle_info_plot`, `cycles_plot`, `ica_plot`, `dva_plot`) still live in
 [Utils](utils.md#plotting) and move here in a later phase of the redesign.
+`ica_plot` / `dva_plot` consume the long frames from
+[`cellpy.ica`](ica.md).
 
 ::: cellpy.plotting.figures
 
