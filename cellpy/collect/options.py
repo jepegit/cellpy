@@ -12,7 +12,9 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass, field, replace
 from pathlib import Path
-from typing import Callable
+from typing import Any, Callable
+
+from cellpy._deprecation import warn_once
 
 #: A transform is a pure frame -> frame step applied after collection.
 Transform = Callable[["object"], "object"]
@@ -97,14 +99,12 @@ class CurveOptions:
 
 @dataclass(frozen=True)
 class IcaOptions:
-    """Options for dQ/dV (ICA) and dV/dQ (DVA) collection.
+    """Deprecated collect-only ICA knobs.
 
-    Shared by `collect_ica` and
-    `collect_dva` -- each forwards only the resolution
-    knob its own transform actually uses: ``dqdv`` differentiates along
-    voltage (needs ``voltage_resolution`` for the q(V) interpolation);
-    ``dvdq`` differentiates along capacity (needs ``capacity_resolution`` for
-    the V(q) interpolation).
+    Pass [`cellpy.ica.IcaOptions`][cellpy.ica.IcaOptions] as ``options=`` and
+    ``cycles=`` / ``transforms=`` as collect-level keyword arguments.
+    Kept so ``collect_ica(options=IcaOptions(cycles=..., voltage_resolution=...))``
+    still works for one release.
     """
 
     cycles: tuple[int, ...] | None = None
@@ -114,6 +114,62 @@ class IcaOptions:
 
     def replace(self, **changes) -> "IcaOptions":
         return replace(self, **changes)
+
+
+def resolve_ica_collection(
+    options: Any,
+    overrides: dict[str, Any],
+    *,
+    default_recipe: Any,
+) -> tuple[Any, tuple[int, ...] | None, tuple]:
+    """Split collect-level knobs from the ``cellpy.ica.IcaOptions`` recipe.
+
+    Returns ``(recipe, cycles, transforms)``. ``cycles`` / ``transforms`` stay
+    on this side of the collect seam; every other override is applied to the
+    recipe and forwarded whole to ``dqdv`` / ``dvdq``.
+    """
+    from cellpy.ica import IcaOptions as IcaRecipe
+
+    overrides = dict(overrides)
+    cycles = overrides.pop("cycles", None)
+    transforms = overrides.pop("transforms", None)
+
+    if options is None:
+        recipe = default_recipe
+        resolved_cycles = cycles
+        resolved_transforms = () if transforms is None else transforms
+    elif type(options) is IcaOptions:
+        warn_once(
+            "cellpy.collect.IcaOptions",
+            "cellpy.ica.IcaOptions plus cycles= / transforms=",
+            removal="2.3",
+            introduced="2.1",
+        )
+        extra = {}
+        if options.voltage_resolution is not None:
+            extra["voltage_resolution"] = options.voltage_resolution
+        if options.capacity_resolution is not None:
+            extra["capacity_resolution"] = options.capacity_resolution
+        recipe = default_recipe.replace(**extra) if extra else default_recipe
+        resolved_cycles = options.cycles if cycles is None else cycles
+        resolved_transforms = options.transforms if transforms is None else transforms
+    elif isinstance(options, IcaRecipe):
+        recipe = options
+        resolved_cycles = cycles
+        resolved_transforms = () if transforms is None else transforms
+    else:
+        raise TypeError(
+            "options must be cellpy.ica.IcaOptions (or the deprecated "
+            f"cellpy.collect.IcaOptions), got {type(options).__name__}"
+        )
+
+    if overrides:
+        recipe = recipe.replace(**overrides)
+    if resolved_cycles is not None:
+        resolved_cycles = tuple(resolved_cycles)
+    if resolved_transforms is None:
+        resolved_transforms = ()
+    return recipe, resolved_cycles, resolved_transforms
 
 
 @dataclass(frozen=True)

@@ -560,8 +560,8 @@ fig = ica_plot(c, cycles=[2, 3], voltage_resolution=0.005)
 fig = dva_plot(c, cycles=2, direction="charge")
 ```
 
-Multi-cell: `cellpy.collect.collect_ica(batch)` / `collect_dva(batch)`.
-`cellpy.collect.IcaOptions` is not `cellpy.ica.IcaOptions`. See the
+Multi-cell: `collect_ica(batch, options=opts, cycles=…)` / `collect_dva(batch, …)`
+use the same `IcaOptions` as `dqdv` / `dvdq`. See the
 [how-to](../guides/ica.md) and the [API](../api/ica.md).
 
 
@@ -615,8 +615,8 @@ fig = ica_plot(c, cycles=[2, 3], voltage_resolution=0.005)
 fig = dva_plot(c, cycles=2, direction="charge")
 ```
 
-Multi-cell: `cellpy.collect.collect_ica(batch)` / `collect_dva(batch)`.
-`cellpy.collect.IcaOptions` is not `cellpy.ica.IcaOptions`. See the
+Multi-cell: `collect_ica(batch, options=opts, cycles=…)` / `collect_dva(batch, …)`
+use the same `IcaOptions` as `dqdv` / `dvdq`. See the
 [how-to](../guides/ica.md) and the [API](../api/ica.md).
 
 

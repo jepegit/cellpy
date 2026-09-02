@@ -239,12 +239,12 @@ frame = ica.dqdv(c, cycles=[1, 2], options=opts.replace(pre_smoothing=True))
 fig = ica_plot(c, cycles=[1, 2], options=opts)
 ```
 
-`cellpy.ica.IcaOptions` is the transform recipe. `cellpy.collect.IcaOptions`
-is a different dataclass (cycles + resolution knobs only) for
-`collect_ica` / `collect_dva`. Do not mix them. How-to:
+`cellpy.ica.IcaOptions` is the transform recipe for `dqdv` / `dvdq` /
+`ica_plot` / `collect_ica` / `collect_dva`. Collect keeps `cycles=` (and
+`transforms=`) as its own knobs. How-to:
 [Compute ICA / DVA](../guides/ica.md).
 
-Multi-cell: `cellpy.collect.collect_ica(batch)` / `collect_dva(batch)`.
+Multi-cell: `cellpy.collect.collect_ica(batch, options=opts, cycles=(1, 2))`.
 Worked notebook: [Incremental capacity analysis](../examples/04_incremental_capacity_analysis.md).
 API: [ICA and DVA](../api/ica.md).
 

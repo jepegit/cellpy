@@ -45,10 +45,9 @@ wide = ica.to_wide(frame)
 | Many cells, dQ/dV | [`collect_ica`][cellpy.collect.ica.collect_ica] |
 | Many cells, dV/dQ | [`collect_dva`][cellpy.collect.dva.collect_dva] |
 
-`cellpy.collect.IcaOptions` is a **different** dataclass from
-[`cellpy.ica.IcaOptions`][cellpy.ica.IcaOptions]: it only holds the collection
-knobs (`cycles`, `voltage_resolution`, `capacity_resolution`). Do not pass one
-where the other is expected.
+`collect_ica` / `collect_dva` take the same
+[`IcaOptions`][cellpy.ica.IcaOptions] as `dqdv` / `dvdq`. `cycles` and
+`transforms` stay collect-level keyword arguments.
 
 Worked notebook: [Incremental capacity analysis](../examples/04_incremental_capacity_analysis.md).
 Short recipe: [How to compute ICA / DVA](../guides/ica.md).

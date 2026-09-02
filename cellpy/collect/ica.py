@@ -15,7 +15,7 @@ import polars as pl
 
 from cellpy.collect.cells import iter_cells
 from cellpy.collect.collection import Collection, CollectionMeta
-from cellpy.collect.options import IcaOptions
+from cellpy.collect.options import resolve_ica_collection
 
 
 def _as_polars(frame: Any) -> pl.DataFrame | None:
@@ -29,25 +29,23 @@ def _as_polars(frame: Any) -> pl.DataFrame | None:
         return None
 
 
-def collect_ica(
-    batch: Any, options: IcaOptions | None = None, **overrides
+def _collect_derivative(
+    batch: Any,
+    options: Any,
+    overrides: dict[str, Any],
+    *,
+    kind: str,
+    verb: str,
+    default_recipe: Any,
+    resolution_key: str,
 ) -> Collection:
-    """Collect dQ/dV (incremental capacity) curves per cell into one Collection.
+    """Per-cell ICA/DVA collection with a shared recipe + cycle isolation."""
+    from cellpy.utils import ica as ica_mod
 
-    Cycle selection is derived per cell from the *originally requested* cycles
-    every iteration, so a cell missing a cycle never narrows the request for
-    the cells after it.
-    """
-    from cellpy.utils import ica
-
-    opts = options or IcaOptions()
-    if overrides:
-        opts = opts.replace(**overrides)
-    requested = tuple(opts.cycles) if opts.cycles is not None else None
-
-    dqdv_kwargs: dict[str, Any] = {}
-    if opts.voltage_resolution is not None:
-        dqdv_kwargs["voltage_resolution"] = opts.voltage_resolution
+    recipe, requested, transforms = resolve_ica_collection(
+        options, overrides, default_recipe=default_recipe
+    )
+    verb_fn = getattr(ica_mod, verb)
 
     frames: list[pl.DataFrame] = []
     for item in iter_cells(batch):
@@ -60,7 +58,7 @@ def collect_ica(
             if not cycles:
                 continue
 
-        curve = _as_polars(ica.dqdv(cell, cycles=cycles, **dqdv_kwargs))
+        curve = _as_polars(verb_fn(cell, cycles=cycles, options=recipe))
         if curve is None or curve.height == 0:
             continue
         frames.append(
@@ -72,21 +70,51 @@ def collect_ica(
         )
 
     data = pl.concat(frames, how="diagonal_relaxed") if frames else pl.DataFrame()
-    for transform in opts.transforms:
+    for transform in transforms:
         data = transform(data)
 
     meta = CollectionMeta(
-        kind="ica",
+        kind=kind,
         batch_name=batch.journal.name,
         options={
             "cycles": list(requested) if requested else None,
-            "voltage_resolution": opts.voltage_resolution,
+            resolution_key: getattr(recipe, resolution_key),
         },
         cells_included=list(batch.cells),
     )
     return Collection(
         data=data,
-        kind="ica",
-        name=f"{batch.journal.name or 'batch'}_ica",
+        kind=kind,
+        name=f"{batch.journal.name or 'batch'}_{kind}",
         meta=meta,
+    )
+
+
+def collect_ica(batch: Any, options: Any = None, **overrides) -> Collection:
+    """Collect dQ/dV (incremental capacity) curves per cell into one Collection.
+
+    ``options`` is a [`cellpy.ica.IcaOptions`][cellpy.ica.IcaOptions] recipe,
+    forwarded whole to [`dqdv`][cellpy.ica.dqdv]. ``cycles`` and ``transforms``
+    are collect-level knobs (keyword arguments, not recipe fields).
+
+    Cycle selection is derived per cell from the *originally requested* cycles
+    every iteration, so a cell missing a cycle never narrows the request for
+    the cells after it.
+
+    Example:
+        >>> from cellpy import ica
+        >>> from cellpy.collect import collect_ica
+        >>> opts = ica.IcaOptions(voltage_resolution=0.005, voltage_fwhm=0.015)
+        >>> collect_ica(batch, options=opts, cycles=(2, 3))
+    """
+    from cellpy.ica import IcaOptions as IcaRecipe
+
+    return _collect_derivative(
+        batch,
+        options,
+        overrides,
+        kind="ica",
+        verb="dqdv",
+        default_recipe=IcaRecipe(),
+        resolution_key="voltage_resolution",
     )

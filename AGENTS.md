@@ -315,9 +315,8 @@ Quick facts:
 - ICA/DVA: `from cellpy import ica` then `ica.dqdv(c)` / `ica.dvdq(c)`.
   Recipe: `opts = ica.IcaOptions(...)` then `options=opts` (or one-off kwargs).
   Plot: `from cellpy.utils.plotutils import ica_plot, dva_plot`.
-  Multi-cell: `cellpy.collect.collect_ica` / `collect_dva`.
-  `cellpy.ica.IcaOptions` ≠ `cellpy.collect.IcaOptions`. How-to:
-  [`docs/guides/ica.md`](docs/guides/ica.md).
+  Multi-cell: `collect_ica(batch, options=opts, cycles=...)` — same recipe.
+  How-to: [`docs/guides/ica.md`](docs/guides/ica.md).
 - Batch: `batch.load(name=..., project=...)`; `executor="threads"` speeds up
   reopening local `.cellpy` files (first remote load stays serial on the wire).
   `progress=None` auto-shows tqdm (TTY / Jupyter); `False` off.

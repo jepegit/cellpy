@@ -21,7 +21,8 @@ from tests.test_batch import (  # noqa: F401  (imported for fixture resolution)
 
 plotly = pytest.importorskip("plotly", reason="plotting extras (batch) not installed")
 
-from cellpy.collect import IcaOptions, collect_dva, dva_collector  # noqa: E402
+from cellpy import ica  # noqa: E402
+from cellpy.collect import collect_dva, dva_collector  # noqa: E402
 
 
 def _assert_rendered(collector):
@@ -69,10 +70,13 @@ def test_collect_dva_forwards_capacity_resolution_not_voltage_resolution(
 
     monkeypatch.setattr(ica_mod, "dvdq", spy)
     col = collect_dva(
-        populated_batch, options=IcaOptions(cycles=(1,), capacity_resolution=0.01)
+        populated_batch,
+        options=ica.DVA_DEFAULTS.replace(capacity_resolution=0.01),
+        cycles=(1,),
     )
 
-    assert captured.get("capacity_resolution") == 0.01
+    assert captured["options"].capacity_resolution == 0.01
+    assert captured["options"].normalize is False
     assert "voltage_resolution" not in captured
     assert col.meta.options["capacity_resolution"] == 0.01
 

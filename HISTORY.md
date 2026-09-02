@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+* `collect_ica` / `collect_dva` take the same `cellpy.ica.IcaOptions` recipe
+  as `dqdv` / `dvdq` (smoothing, FWHM, normalize, …) and keep `cycles` /
+  `transforms` as collect-level keyword arguments. The thinner
+  `cellpy.collect.IcaOptions` still works and warns (removal 2.3).
+
 * `from_cells` raises `ValueError` naming every value that is not a cell (and
   the type that arrived) instead of accepting it and quietly producing a
   thinner collection later. `collect_summaries` warns and names the cells it
