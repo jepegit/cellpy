@@ -293,7 +293,33 @@ ica.dqdv(source, cycles=None, direction="both", options=None, *,
          strict=False, cycle_mode=None, number_of_points=None, **overrides)
 ```
 
-where the smoothing and interpolation knobs live on `cellpy.ica.IcaOptions` — pass an `IcaOptions` instance as `options=`, or override single fields as keyword arguments (as with `voltage_resolution=` above). The available fields, with their defaults:
+where the smoothing and interpolation knobs live on `cellpy.ica.IcaOptions`. Three equivalent ways to use it:
+
+```python
+# 1. One-off keyword (as with voltage_resolution= above)
+frame = ica.dqdv(c, cycles=3, voltage_resolution=0.005)
+
+# 2. Build a reusable recipe
+opts = ica.IcaOptions(
+    voltage_resolution=0.005,
+    voltage_fwhm=0.015,
+    post_smoothing=True,
+)
+frame = ica.dqdv(c, cycles=3, options=opts)
+
+# 3. Tweak a copy — IcaOptions is frozen, so use replace()
+#    Keyword overrides also stack on an existing options object
+frame = ica.dqdv(c, cycles=3, options=opts.replace(pre_smoothing=True))
+frame = ica.dqdv(c, cycles=3, options=opts, voltage_fwhm=0.02)
+```
+
+`dvdq` uses the same class; its default recipe is `ica.DVA_DEFAULTS` (`normalize=False`):
+
+```python
+dva = ica.dvdq(c, cycles=3, options=ica.DVA_DEFAULTS.replace(capacity_resolution=5.0))
+```
+
+The available fields, with their defaults:
 
 | Field | Default |
 |---|---|

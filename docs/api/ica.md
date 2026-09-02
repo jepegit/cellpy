@@ -14,7 +14,15 @@ frame = ica.dvdq(c, direction="charge")  # cycle, direction, capacity, voltage, 
 Both verbs accept the same three kinds of source — a `CellpyCell`, a curve
 frame from `get_cap`, or a bare `(voltage, capacity)` pair — and the same
 [`IcaOptions`][cellpy.ica.IcaOptions] recipe (or individual fields as keyword
-overrides).
+overrides):
+
+```python
+opts = ica.IcaOptions(voltage_resolution=0.005, voltage_fwhm=0.015)
+frame = ica.dqdv(c, cycles=3, options=opts)
+frame = ica.dqdv(c, cycles=3, options=opts.replace(pre_smoothing=True))
+frame = ica.dqdv(c, cycles=3, voltage_resolution=0.005)  # one-off override
+dva = ica.dvdq(c, cycles=3, options=ica.DVA_DEFAULTS.replace(capacity_resolution=5.0))
+```
 
 `direction` is **cell-centric**: `"charge"` means the *cell* is charging
 (same sense as `get_ccap` / the summary). Filter the long frame, or pass

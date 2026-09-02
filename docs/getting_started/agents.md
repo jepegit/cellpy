@@ -231,12 +231,18 @@ from cellpy.utils.plotutils import ica_plot, dva_plot
 frame = ica.dqdv(c, cycles=[1, 2])           # cycle, direction, voltage, capacity, dqdv
 dva = ica.dvdq(c, cycles=1, direction="charge")  # cycle, direction, capacity, voltage, dvdq
 charge = frame[frame.direction == "charge"]  # cell-centric labels
-fig = ica_plot(c, cycles=[1, 2], voltage_resolution=0.005)
+
+# reusable recipe (frozen — tweak with replace() or stack a keyword)
+opts = ica.IcaOptions(voltage_resolution=0.005, voltage_fwhm=0.015)
+frame = ica.dqdv(c, cycles=[1, 2], options=opts)
+frame = ica.dqdv(c, cycles=[1, 2], options=opts.replace(pre_smoothing=True))
+fig = ica_plot(c, cycles=[1, 2], options=opts)
 ```
 
 `cellpy.ica.IcaOptions` is the transform recipe. `cellpy.collect.IcaOptions`
 is a different dataclass (cycles + resolution knobs only) for
-`collect_ica` / `collect_dva`. Do not mix them.
+`collect_ica` / `collect_dva`. Do not mix them. How-to:
+[Compute ICA / DVA](../guides/ica.md).
 
 Multi-cell: `cellpy.collect.collect_ica(batch)` / `collect_dva(batch)`.
 Worked notebook: [Incremental capacity analysis](../examples/04_incremental_capacity_analysis.md).
