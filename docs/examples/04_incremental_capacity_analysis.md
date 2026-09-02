@@ -1,9 +1,11 @@
 # Incremental capacity analysis (dQ/dV)
-In this notebook we illustrate, how to use cellpy to extract dQ/dV data for selected cycles.
+In this notebook we illustrate how to extract dQ/dV data for selected cycles.
 
-The respective methods are collected in the ica utilities (cellpy.utils.ica):
+Prefer `from cellpy import ica` (`cellpy.utils.ica` is the same module). The
+sibling verb `ica.dvdq` does differential voltage analysis (dV/dQ). Short
+recipe: [Compute ICA / DVA](../guides/ica.md).
 
-- **`ica.dqdv`**: This is the one entry point, and it accepts three kinds of input:
+- **`ica.dqdv`**: the dQ/dV entry point. It accepts three kinds of input:
     - a `CellpyCell` object (the usual case),
     - a capacity vs voltage curve frame from `get_cap(categorical_column=True, label_cycle_number=True)`,
     - a cellpy-agnostic `(voltage, capacity)` pair of arrays or Pandas Series.
@@ -20,7 +22,8 @@ In all three cases it returns the same tidy frame: `cycle`, `direction`, `voltag
 
 ```python
 import cellpy
-from cellpy.utils import example_data, ica
+from cellpy import ica
+from cellpy.utils import example_data
 ```
 
 <div class="alert alert-block alert-info">
@@ -290,7 +293,33 @@ ica.dqdv(source, cycles=None, direction="both", options=None, *,
          strict=False, cycle_mode=None, number_of_points=None, **overrides)
 ```
 
-where the smoothing and interpolation knobs live on `cellpy.ica.IcaOptions` — pass an `IcaOptions` instance as `options=`, or override single fields as keyword arguments (as with `voltage_resolution=` above). The available fields, with their defaults:
+where the smoothing and interpolation knobs live on `cellpy.ica.IcaOptions`. Three equivalent ways to use it:
+
+```python
+# 1. One-off keyword (as with voltage_resolution= above)
+frame = ica.dqdv(c, cycles=3, voltage_resolution=0.005)
+
+# 2. Build a reusable recipe
+opts = ica.IcaOptions(
+    voltage_resolution=0.005,
+    voltage_fwhm=0.015,
+    post_smoothing=True,
+)
+frame = ica.dqdv(c, cycles=3, options=opts)
+
+# 3. Tweak a copy — IcaOptions is frozen, so use replace()
+#    Keyword overrides also stack on an existing options object
+frame = ica.dqdv(c, cycles=3, options=opts.replace(pre_smoothing=True))
+frame = ica.dqdv(c, cycles=3, options=opts, voltage_fwhm=0.02)
+```
+
+`dvdq` uses the same class; its default recipe is `ica.DVA_DEFAULTS` (`normalize=False`):
+
+```python
+dva = ica.dvdq(c, cycles=3, options=ica.DVA_DEFAULTS.replace(capacity_resolution=5.0))
+```
+
+The available fields, with their defaults:
 
 | Field | Default |
 |---|---|
@@ -518,6 +547,24 @@ ica_curves = ica.dqdv(vcaps)
 ica_curves.head(2)
 ```
 
+## Differential voltage (dV/dQ) and plotting
+
+`ica.dvdq` is the DVA sibling — same sources and `IcaOptions`, columns
+`cycle`, `direction`, `capacity`, `voltage`, `dvdq`. For a figure without
+building the frame yourself:
+
+```python
+from cellpy.utils.plotutils import ica_plot, dva_plot
+
+fig = ica_plot(c, cycles=[2, 3], voltage_resolution=0.005)
+fig = dva_plot(c, cycles=2, direction="charge")
+```
+
+Multi-cell: `cellpy.collect.collect_ica(batch)` / `collect_dva(batch)`.
+`cellpy.collect.IcaOptions` is not `cellpy.ica.IcaOptions`. See the
+[how-to](../guides/ica.md) and the [API](../api/ica.md).
+
+
 
 
 
@@ -553,5 +600,23 @@ ica_curves.head(2)
   </tbody>
 </table>
 </div>
+
+
+## Differential voltage (dV/dQ) and plotting
+
+`ica.dvdq` is the DVA sibling — same sources and `IcaOptions`, columns
+`cycle`, `direction`, `capacity`, `voltage`, `dvdq`. For a figure without
+building the frame yourself:
+
+```python
+from cellpy.utils.plotutils import ica_plot, dva_plot
+
+fig = ica_plot(c, cycles=[2, 3], voltage_resolution=0.005)
+fig = dva_plot(c, cycles=2, direction="charge")
+```
+
+Multi-cell: `cellpy.collect.collect_ica(batch)` / `collect_dva(batch)`.
+`cellpy.collect.IcaOptions` is not `cellpy.ica.IcaOptions`. See the
+[how-to](../guides/ica.md) and the [API](../api/ica.md).
 
 

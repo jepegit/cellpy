@@ -39,9 +39,10 @@ Summary of the types of contents in a **CellpyCell Data** object.
 The most common data processing routines, such as extraction of charge/discharge voltage curves in different
 formats or selecting data for specified step-types, are implemented as methods on the CellpyCell object. In
 addition, the `cellpy` library also consists of a rich set of utilities ([cellpy utilities](#the-fundamentals-of-cellpy)) that can be
-used for further processing the data, both individually and within batch routines. Utility functions include *e.g.*,
-ICA tools, assisting in creating dQ/dV graphs (employing different data-smoothing algorithms), or tools for
-OCV relaxation analysis.
+used for further processing the data, both individually and within batch routines. Incremental capacity
+and differential voltage live on [`cellpy.ica`](../api/ica.md) (`dqdv` / `dvdq`);
+`cellpy.utils.ica` re-exports the same API. Other helpers include OCV
+relaxation analysis.
 
 
 ![cellpy-utilities](./figures/Cellpy-Utils.jpg){ .center }

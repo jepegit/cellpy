@@ -119,6 +119,8 @@ Useful methods on `CellpyCell` (non-exhaustive):
 
 - `get_cycle_numbers()` — list of cycle indices
 - `get_cap(...)` / capacity–voltage style extracts (see API / examples)
+- ICA / DVA — `from cellpy import ica` then `ica.dqdv(c)` / `ica.dvdq(c)`
+  (see [Compute ICA / DVA](../guides/ica.md))
 - `make_step_table()` / `make_summary()` — usually already run by `get`
 - `refresh_after(("mass",))` — after editing mass / area / `nominal_capacity` /
   `cycle_mode` on a cell that already has a summary, rebuild only the
@@ -215,6 +217,36 @@ Instrument strings and formats: see
 [Loading different formats](../examples/06_loading_different_formats.md) and
 the instruments API. Coming from cellpy 1.x:
 [migration guide](migration_v1_to_v2.md).
+
+## Recipe: incremental capacity and differential voltage
+
+Prefer `from cellpy import ica`. `cellpy.utils.ica` is a re-export of the same
+objects. Do not use the removed 1.x helpers (`Converter`, `dqdv_cycle`,
+`dqdv_cycles`, `dqdv_np`) or the old `dq` column.
+
+```python
+from cellpy import ica
+from cellpy.utils.plotutils import ica_plot, dva_plot
+
+frame = ica.dqdv(c, cycles=[1, 2])           # cycle, direction, voltage, capacity, dqdv
+dva = ica.dvdq(c, cycles=1, direction="charge")  # cycle, direction, capacity, voltage, dvdq
+charge = frame[frame.direction == "charge"]  # cell-centric labels
+
+# reusable recipe (frozen — tweak with replace() or stack a keyword)
+opts = ica.IcaOptions(voltage_resolution=0.005, voltage_fwhm=0.015)
+frame = ica.dqdv(c, cycles=[1, 2], options=opts)
+frame = ica.dqdv(c, cycles=[1, 2], options=opts.replace(pre_smoothing=True))
+fig = ica_plot(c, cycles=[1, 2], options=opts)
+```
+
+`cellpy.ica.IcaOptions` is the transform recipe. `cellpy.collect.IcaOptions`
+is a different dataclass (cycles + resolution knobs only) for
+`collect_ica` / `collect_dva`. Do not mix them. How-to:
+[Compute ICA / DVA](../guides/ica.md).
+
+Multi-cell: `cellpy.collect.collect_ica(batch)` / `collect_dva(batch)`.
+Worked notebook: [Incremental capacity analysis](../examples/04_incremental_capacity_analysis.md).
+API: [ICA and DVA](../api/ica.md).
 
 ## Recipe: loading many cells (batch) and its speed knobs
 
@@ -328,6 +360,7 @@ Other measured knobs for a slow first batch load:
 | Install / config / CLI checkup | [Installation](installation.md), [Configuration](configuration.md), [Checkup](checkup.md) |
 | Frames and `schema` | [Data structure](../fundamentals/data_structure.md) |
 | Tutorials | [Examples](../examples/index.md) |
+| ICA / DVA | [How-to](../guides/ica.md), [API](../api/ica.md) |
 | API signatures | [API reference](../api/index.md) |
 | Contribute to cellpy itself | [Developers guide](../contributing/developers_guide/index.md) |
 

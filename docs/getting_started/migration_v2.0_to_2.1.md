@@ -15,7 +15,7 @@ guide maps each removed surface to its replacement. What still warns (now with a
 |---|---|---|
 | Column names | `c.headers_normal` / `c.headers_summary` / `c.headers_step_table` | `c.schema.raw` / `c.schema.summary` / `c.schema.steps` |
 | Empty cell | `make_new_cell()` | `CellpyCell.vacant()` |
-| ICA | `ica.Converter`, `dqdv_cycle` / `dqdv_cycles` / `dqdv_np`, the duplicate `dq` column | `ica.dqdv(...)` |
+| ICA | `ica.Converter`, `dqdv_cycle` / `dqdv_cycles` / `dqdv_np`, the duplicate `dq` column | `ica.dqdv(...)` / `ica.dvdq(...)` |
 | Plotting | `interactive=`, `xlim=` / `ylim=`, `summary_plot_legacy` | `backend=` + the returned figure |
 | Plot backends | `backend="seaborn"`, `backend="bokeh"` | `"plotly"` (default) or `"matplotlib"` |
 | Batch package | `cellpy.utils.batch_tools.*` | `cellpy.batch` / `cellpy.collect` |
@@ -81,8 +81,12 @@ The 1.x ICA compatibility layer is removed.
 | `dqdv(..., split=…, tidy=…, cycle=…, label_direction=…)` | the current `dqdv` signature |
 | the duplicate `dq` output column | the single canonical dQ/dV column |
 
-For **multi-cell** ICA collection, prefer `cellpy.collect.collect_ica(batch)`
-(see the batch section below).
+For **multi-cell** ICA / DVA collection, prefer
+`cellpy.collect.collect_ica(batch)` / `collect_dva(batch)`
+(see the batch section below). One-cell plots:
+`cellpy.utils.plotutils.ica_plot` / `dva_plot`.
+`cellpy.ica.IcaOptions` (transform recipe) is not
+`cellpy.collect.IcaOptions` (collection knobs).
 
 ## Plotting
 

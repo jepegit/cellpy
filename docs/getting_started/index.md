@@ -18,3 +18,5 @@ through these pages in order, or jump to what you need.
   app/GUI builders
 - [Coming from cellpy 1.x](migration_v1_to_v2.md) — what changed in 2.x and
   how to migrate
+- [Coming from cellpy 2.0](migration_v2.0_to_2.1.md) — removed shims, including
+  the old ICA helpers
