@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+* `cellpy new` honours `no_input` when the project directory does not exist:
+  `cli_api.create_project(..., no_input=True)` creates the directory instead of
+  prompting, so it can be driven from a script, a GUI, or an MCP tool. (#990)
+
 ## [2.1.3.post2] - 2026-09-02
 
 Post-release of 2.1.3 — one `IcaOptions` recipe for collect and verbs, ICA/DVA

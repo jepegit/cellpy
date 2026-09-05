@@ -1,0 +1,22 @@
+# Cycle status
+
+- Queue spec: `yolo` (resolved `label:yolo`)
+- Repo: `jepegit/cellpy` (`C:\scripting\cellpy-workspace\cellpy`), default branch `master`
+- Failure policy: `onfail:stop`
+- Started: 2026-09-05T19:25:00+02:00
+- Confirmed: yes (single consolidated confirm, 3 issues)
+
+- [ ] Done
+
+## Queue (ordered)
+
+- [ ] #990 — cellpy new: honour no_input when the project directory does not exist — pending
+- [ ] #991 — Add cli_api.list_templates() returning the batch templates as data — pending
+- [ ] #993 — Docstring cross-references lost their module paths in #968, making them unresolvable — pending
+
+Blocked: none. Skipped (closed): none.
+
+## Notes
+
+- Leftover `issue985_*` group (`- [ ] Done`) in `01-current-issues/` is swept to
+  `02-partly-solved-issues/` by the first `/iflow-init`.

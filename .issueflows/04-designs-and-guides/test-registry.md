@@ -130,6 +130,7 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_from_cells.py::test_from_cells_accepts_a_cell_that_has_no_data_yet | yes | yes | batch.facade._is_cell | #939 | anti-regression: `.data` property raises NoDataFound, so ask the type |
 | tests/test_collect.py::test_collect_summaries_warns_about_cells_it_leaves_out | yes | yes | collect.summary.collect_summaries | #939 | narrowed collection names the dropped cells |
 | tests/test_collect.py::test_collect_summaries_is_quiet_when_every_cell_contributes | yes | yes | collect.summary._warn_left_out | #939 | noise guard: healthy batch must not warn |
+| tests/test_cli_api.py::test_create_project_with_no_input_creates_the_project_dir | yes | yes | cli_api._new project-dir branch | #990 | no_input must not read stdin (scriptable `cellpy new`) |
 
 **Columns**
 
