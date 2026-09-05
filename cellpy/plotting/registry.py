@@ -154,7 +154,7 @@ def families(*, entry_point: Optional[str] = None) -> list[tuple[str, str]]:
 def iter_families(*, entry_point: Optional[str] = None) -> list[PlotFamily]:
     """Return registered families in registration order.
 
-    See `families` for the optional ``entry_point`` filter.
+    See `cellpy.plotting.registry.families` for the optional ``entry_point`` filter.
     """
     if entry_point is None:
         return list(_FAMILIES.values())

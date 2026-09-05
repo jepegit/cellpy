@@ -11,6 +11,12 @@
   renders its listing from that same dictionary so the two cannot drift
   apart. (#991)
 
+* Docstring cross-references name their target by its importable dotted path
+  again — `cellpy.readers.capacity_curves.get_cap` rather than a bare
+  `get_cap` — so IDEs, `help()` and docs tooling can follow a thin wrapper to
+  the delegate that documents its arguments. A new test resolves every such
+  reference, so a future docs pass cannot quietly drop the paths again. (#993)
+
 ## [2.1.3.post2] - 2026-09-02
 
 Post-release of 2.1.3 — one `IcaOptions` recipe for collect and verbs, ICA/DVA

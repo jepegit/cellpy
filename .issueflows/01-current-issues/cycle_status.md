@@ -11,8 +11,8 @@
 ## Queue (ordered)
 
 - [x] #990 — cellpy new: honour no_input when the project directory does not exist — merged https://github.com/jepegit/cellpy/pull/994
-- [ ] #991 — Add cli_api.list_templates() returning the batch templates as data — in-progress
-- [ ] #993 — Docstring cross-references lost their module paths in #968, making them unresolvable — pending
+- [x] #991 — Add cli_api.list_templates() returning the batch templates as data — merged https://github.com/jepegit/cellpy/pull/995
+- [ ] #993 — Docstring cross-references lost their module paths in #968, making them unresolvable — in-progress
 
 Blocked: none. Skipped (closed): none.
 

@@ -133,6 +133,8 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_cli_api.py::test_create_project_with_no_input_creates_the_project_dir | yes | yes | cli_api._new project-dir branch | #990 | no_input must not read stdin (scriptable `cellpy new`) |
 | tests/test_cli_api.py::test_list_templates_returns_the_templates_as_data | yes | yes | cli_api.list_templates | #991 | shape contract for non-CLI callers |
 | tests/test_cli_api.py::test_the_template_listing_is_rendered_from_list_templates | yes | yes | cli_api._new list_ branch | #991 | printed listing cannot drift from the data |
+| tests/test_doc_cross_references.py::test_every_see_reference_names_an_importable_target | yes | yes | cellpy/**/*.py docstring `See `…`` targets | #993 | guards the targets; test_no_sphinx_doc_roles guards the syntax |
+| tests/test_doc_cross_references.py::test_the_thinnest_delegates_point_at_their_documentation | yes | yes | CellpyCell.get_cap / to_csv / to_excel | #993 | the three pointers carrying the most undocumented arguments |
 
 **Columns**
 
