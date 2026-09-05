@@ -336,6 +336,38 @@ def test_create_project_returns_when_cookiecutter_missing(monkeypatch, capsys):
 
 
 @pytest.mark.essential
+def test_create_project_with_no_input_creates_the_project_dir(monkeypatch, tmp_path):
+    """no_input=True used to prompt for the missing project dir (#990)."""
+    import cookiecutter.main
+    import cookiecutter.prompt
+
+    def refuse(*args, **kwargs):
+        raise AssertionError("no_input=True must not read from stdin")
+
+    for helper in ["read_user_yes_no", "read_user_choice", "read_user_variable"]:
+        monkeypatch.setattr(cookiecutter.prompt, helper, refuse)
+
+    seen = {}
+
+    def fake_cookiecutter(template, **kwargs):
+        seen["template"] = template
+        seen["no_input"] = kwargs.get("no_input")
+
+    monkeypatch.setattr(cookiecutter.main, "cookiecutter", fake_cookiecutter)
+    monkeypatch.chdir(tmp_path)
+
+    cli_api.create_project(
+        directory=str(tmp_path),
+        project="demo",
+        experiment="exp001",
+        no_input=True,
+    )
+
+    assert (tmp_path / "demo").is_dir()
+    assert seen["no_input"] is True
+
+
+@pytest.mark.essential
 def test_pull_resources_with_nothing_selected_is_quiet_by_default(capsys):
     cli_api.pull_resources()
     assert "Nothing selected" not in capsys.readouterr().out

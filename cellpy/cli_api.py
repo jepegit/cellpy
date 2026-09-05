@@ -1599,7 +1599,7 @@ def _new(
     if project_dir:
         selected_project_dir = directory / project_dir
         if not selected_project_dir.is_dir():
-            if cookiecutter.prompt.read_user_yes_no(
+            if no_input or cookiecutter.prompt.read_user_yes_no(
                 f"{project_dir} does not exist. Create?", "yes"
             ):
                 os.mkdir(selected_project_dir)
