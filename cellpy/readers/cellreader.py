@@ -670,43 +670,43 @@ class CellpyCell:
     # The split/drop-cycle helpers live in cellpy.readers.slicing (issue
     # #519); thin delegates below keep the public API and subclass dispatch.
     def mod_raw_split_cycle(self, data_points: List) -> None:
-        """Split cycle(s) into several cycles. See `mod_raw_split_cycle`."""
+        """Split cycle(s) into several cycles. See `cellpy.readers.slicing.mod_raw_split_cycle`."""
         return slicing.mod_raw_split_cycle(self, data_points)
 
     def _mod_raw_split_cycle(self, data_point: int) -> None:
-        """See `_mod_raw_split_cycle`."""
+        """See `cellpy.readers.slicing._mod_raw_split_cycle`."""
         return slicing._mod_raw_split_cycle(self, data_point)
 
     def split(self, cycle=None):
-        """Split experiment into two sub-experiments. See `split`."""
+        """Split experiment into two sub-experiments. See `cellpy.readers.slicing.split`."""
         return slicing.split(self, cycle=cycle)
 
     def drop_from(self, cycle=None):
-        """Select first part of experiment up to cycle. See `drop_from`."""
+        """Select first part of experiment up to cycle. See `cellpy.readers.slicing.drop_from`."""
         return slicing.drop_from(self, cycle=cycle)
 
     def drop_to(self, cycle=None):
-        """Select last part of experiment from cycle. See `drop_to`."""
+        """Select last part of experiment from cycle. See `cellpy.readers.slicing.drop_to`."""
         return slicing.drop_to(self, cycle=cycle)
 
     def from_cycle(self, cycle: int) -> "CellpyCell":
-        """Select experiment from cycle number. See `from_cycle`."""
+        """Select experiment from cycle number. See `cellpy.readers.slicing.from_cycle`."""
         return slicing.from_cycle(self, cycle)
 
     def to_cycle(self, cycle: int) -> "CellpyCell":
-        """Select experiment to cycle number. See `to_cycle`."""
+        """Select experiment to cycle number. See `cellpy.readers.slicing.to_cycle`."""
         return slicing.to_cycle(self, cycle)
 
     def drop_edges(self, start: int, end: int) -> "CellpyCell":
-        """Select middle part of experiment. See `drop_edges`."""
+        """Select middle part of experiment. See `cellpy.readers.slicing.drop_edges`."""
         return slicing.drop_edges(self, start, end)
 
     def split_many(self, base_cycles: Optional[Union[int, List[int]]] = None) -> List["CellpyCell"]:
-        """Split experiment into several sub-experiments. See `split_many`."""
+        """Split experiment into several sub-experiments. See `cellpy.readers.slicing.split_many`."""
         return slicing.split_many(self, base_cycles=base_cycles)
 
     def with_cycles(self, cycles: Union[int, List[int]]) -> "CellpyCell":
-        """Select a subset of cycles. See `with_cycles`."""
+        """Select a subset of cycles. See `cellpy.readers.slicing.with_cycles`."""
         return slicing.with_cycles(self, cycles)
 
     # ------------------- SPLITTING AND DROPPING FINISHED -----------
@@ -2526,7 +2526,7 @@ class CellpyCell:
         shift=0.0,
         last_cycle=None,
     ):
-        """Export voltage-capacity curves to a .csv file. See `export_cycles`."""
+        """Export voltage-capacity curves to a .csv file. See `cellpy.exporters.tabular.export_cycles`."""
         return exporters_tabular.export_cycles(
             self,
             setname=setname,
@@ -2539,19 +2539,19 @@ class CellpyCell:
         )
 
     def _export_normal(self, data, setname=None, sep=None, outname=None):
-        """Export the raw frame to a .csv file. See `export_normal`."""
+        """Export the raw frame to a .csv file. See `cellpy.exporters.tabular.export_normal`."""
         return exporters_tabular.export_normal(
             self, data, setname=setname, sep=sep, outname=outname
         )
 
     def _export_stats(self, data, setname=None, sep=None, outname=None):
-        """Export the summary frame to a .csv file. See `export_stats`."""
+        """Export the summary frame to a .csv file. See `cellpy.exporters.tabular.export_stats`."""
         return exporters_tabular.export_stats(
             self, data, setname=setname, sep=sep, outname=outname
         )
 
     def _export_steptable(self, data, setname=None, sep=None, outname=None):
-        """Export the steps frame to a .csv file. See `export_steptable`."""
+        """Export the steps frame to a .csv file. See `cellpy.exporters.tabular.export_steptable`."""
         return exporters_tabular.export_steptable(
             self, data, setname=setname, sep=sep, outname=outname
         )
@@ -2566,7 +2566,7 @@ class CellpyCell:
         get_cap_kwargs=None,
         to_excel_kwargs=None,
     ):
-        """Saves the data as .xlsx file(s). See `to_excel`."""
+        """Saves the data as .xlsx file(s). See `cellpy.exporters.tabular.to_excel`."""
         return exporters_tabular.to_excel(
             self,
             filename=filename,
@@ -2590,7 +2590,7 @@ class CellpyCell:
         shift=0.0,
         last_cycle=None,
     ):
-        """Saves the data as .csv file(s). See `to_csv`."""
+        """Saves the data as .csv file(s). See `cellpy.exporters.tabular.to_csv`."""
         return exporters_tabular.to_csv(
             self,
             datadir=datadir,
@@ -2699,13 +2699,13 @@ class CellpyCell:
     # near-dead, test-pinned only; moved to cellpy.exporters.tabular (#518),
     # removal decision deferred to the DI pass (#520)
     def _cap_mod_summary(self, summary, capacity_modifier="reset"):
-        """See `cap_mod_summary`."""
+        """See `cellpy.exporters.tabular.cap_mod_summary`."""
         return exporters_tabular.cap_mod_summary(
             self, summary, capacity_modifier=capacity_modifier
         )
 
     def _cap_mod_normal(self, capacity_modifier="reset", allctypes=True):
-        """See `cap_mod_normal`."""
+        """See `cellpy.exporters.tabular.cap_mod_normal`."""
         return exporters_tabular.cap_mod_normal(
             self, capacity_modifier=capacity_modifier, allctypes=allctypes
         )
@@ -3029,7 +3029,10 @@ class CellpyCell:
         usteps=False,
         **kwargs,
     ):
-        """Returns discharge capacity and voltage for the selected cycle. See `get_dcap`."""
+        """Returns discharge capacity and voltage for the selected cycle.
+
+        See `cellpy.readers.capacity_curves.get_dcap`.
+        """
         return capacity_curves.get_dcap(
             self,
             cycle=cycle,
@@ -3049,7 +3052,7 @@ class CellpyCell:
         usteps=False,
         **kwargs,
     ):
-        """Returns charge capacity and voltage for the selected cycle. See `get_ccap`."""
+        """Returns charge capacity and voltage for the selected cycle. See `cellpy.readers.capacity_curves.get_ccap`."""
         return capacity_curves.get_ccap(
             self,
             cycle=cycle,
@@ -3086,7 +3089,7 @@ class CellpyCell:
         dynamic=False,
         **kwargs,
     ):
-        """Gets the capacity for the run. See `get_cap`."""
+        """Gets the capacity for the run. See `cellpy.readers.capacity_curves.get_cap`."""
         return capacity_curves.get_cap(
             self,
             cycle=cycle,
@@ -3125,7 +3128,7 @@ class CellpyCell:
         usteps=False,
         detailed=False,
     ):
-        """ See `_get_cap`."""
+        """ See `cellpy.readers.capacity_curves._get_cap`."""
         return capacity_curves._get_cap(
             self,
             cycle=cycle,
@@ -3147,7 +3150,7 @@ class CellpyCell:
         dx=None,
         number_of_points=None,
     ):
-        """Get the open circuit voltage relaxation curves. See `get_ocv`."""
+        """Get the open circuit voltage relaxation curves. See `cellpy.readers.capacity_curves.get_ocv`."""
         return capacity_curves.get_ocv(
             self,
             cycles=cycles,
