@@ -336,6 +336,30 @@ def test_create_project_returns_when_cookiecutter_missing(monkeypatch, capsys):
 
 
 @pytest.mark.essential
+def test_list_templates_returns_the_templates_as_data():
+    """`cellpy new --list` only printed; callers had to use private helpers (#991)."""
+    templates = cli_api.list_templates()
+
+    assert set(templates) == {"default", "registered", "local", "templatedir"}
+    assert templates["default"] in templates["registered"]
+    for group in ["registered", "local"]:
+        assert all(isinstance(location, str) for location in templates[group].values())
+    assert isinstance(templates["templatedir"], str)
+
+
+@pytest.mark.essential
+def test_the_template_listing_is_rendered_from_list_templates(capsys):
+    """The printed listing and the data cannot drift apart (#991)."""
+    listed = cli_api.create_project(list_=True, echo=print)
+    out = capsys.readouterr().out
+
+    assert listed == cli_api.list_templates()
+    assert listed["default"] in out
+    for label in listed["registered"]:
+        assert label in out
+
+
+@pytest.mark.essential
 def test_create_project_with_no_input_creates_the_project_dir(monkeypatch, tmp_path):
     """no_input=True used to prompt for the missing project dir (#990)."""
     import cookiecutter.main

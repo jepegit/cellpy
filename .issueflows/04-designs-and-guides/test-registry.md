@@ -131,6 +131,8 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_collect.py::test_collect_summaries_warns_about_cells_it_leaves_out | yes | yes | collect.summary.collect_summaries | #939 | narrowed collection names the dropped cells |
 | tests/test_collect.py::test_collect_summaries_is_quiet_when_every_cell_contributes | yes | yes | collect.summary._warn_left_out | #939 | noise guard: healthy batch must not warn |
 | tests/test_cli_api.py::test_create_project_with_no_input_creates_the_project_dir | yes | yes | cli_api._new project-dir branch | #990 | no_input must not read stdin (scriptable `cellpy new`) |
+| tests/test_cli_api.py::test_list_templates_returns_the_templates_as_data | yes | yes | cli_api.list_templates | #991 | shape contract for non-CLI callers |
+| tests/test_cli_api.py::test_the_template_listing_is_rendered_from_list_templates | yes | yes | cli_api._new list_ branch | #991 | printed listing cannot drift from the data |
 
 **Columns**
 

@@ -1506,7 +1506,8 @@ def _new(
         cookie_directory: name of the directory for your cookie (inside the repository or zip file).
         local_templates_with_sub_directories: use sub-directories in local templates if True.
     Returns:
-        None
+        The `cellpy.cli_api.list_templates` dictionary when ``list_`` is True,
+        else None.
     """
 
     try:
@@ -1525,25 +1526,22 @@ def _new(
     ui = _ui()
 
     if list_:
-        default_template = _get_default_template()
-        local_templates = _read_local_templates()
-        local_templates_path = config.paths.templatedir
-        registered_templates = REGISTERED_TEMPLATES
+        templates = list_templates()
 
         ui.title("batch templates")
-        ui.detail("default", str(default_template))
+        ui.detail("default", str(templates["default"]))
         ui.blank()
         ui.step("registered (on github)")
-        for label, link in registered_templates.items():
-            ui.detail(label, _template_location(link))
-        ui.step(f"local ({local_templates_path})")
-        if local_templates:
-            for label, link in local_templates.items():
-                ui.detail(label, _template_location(link))
+        for label, link in templates["registered"].items():
+            ui.detail(label, link)
+        ui.step(f"local ({templates['templatedir']})")
+        if templates["local"]:
+            for label, link in templates["local"].items():
+                ui.detail(label, link)
         else:
             ui.detail("none", "-")
 
-        return
+        return templates
 
     if project_dir is None or session_id is None:
         no_input = False
@@ -2000,6 +1998,38 @@ def pull_resources(
                     "nothing selected",
                     hint="pick one of --tests, --examples or --clone",
                 )
+
+
+def list_templates() -> dict:
+    """The batch templates ``cellpy new`` knows about, as data.
+
+    The library form of ``cellpy new --list``: enough to name every template,
+    say which one is the default, and tell registered from local apart without
+    reaching for private helpers.
+
+    Returns:
+        dict: ``default`` (the template used when none is given), ``registered``
+        (the GitHub-hosted templates as ``{name: location}``), ``local`` (the
+        same shape for templates found in the template directory), and
+        ``templatedir`` (where the local ones are looked up).
+
+    Example:
+        >>> templates = list_templates()
+        >>> templates["default"] in templates["registered"]
+        True
+    """
+    return {
+        "default": _get_default_template(),
+        "registered": {
+            label: _template_location(entry)
+            for label, entry in REGISTERED_TEMPLATES.items()
+        },
+        "local": {
+            label: _template_location(entry)
+            for label, entry in _read_local_templates().items()
+        },
+        "templatedir": str(config.paths.templatedir),
+    }
 
 
 def create_project(

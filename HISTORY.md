@@ -6,6 +6,11 @@
   `cli_api.create_project(..., no_input=True)` creates the directory instead of
   prompting, so it can be driven from a script, a GUI, or an MCP tool. (#990)
 
+* `cli_api.list_templates()` returns the batch templates as data (default,
+  registered, local, and the template directory), and `cellpy new --list`
+  renders its listing from that same dictionary so the two cannot drift
+  apart. (#991)
+
 ## [2.1.3.post2] - 2026-09-02
 
 Post-release of 2.1.3 — one `IcaOptions` recipe for collect and verbs, ICA/DVA
