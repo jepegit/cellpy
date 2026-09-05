@@ -2032,3 +2032,130 @@ def create_project(
             list_=list_,
             **kwargs,
         )
+
+
+# ----------------------- mcp ----------------------------------------
+#
+# `cellpy mcp` is a *shim*. The MCP server lives in a separate distribution,
+# `cellpy-mcp`, and cellpy deliberately does not depend on it: the MCP Python
+# SDK is young and moving (2.0 renamed `FastMCP` to `MCPServer` and ships two
+# `Context` classes with different attributes), and a long-lived network-facing
+# process is a security surface a data library should not carry. Keeping the
+# server out means it can move at the SDK's pace instead of cellpy's release
+# cadence — while the entry point still lives where people look for it.
+#
+# So cellpy gains a command, not a dependency. What that costs is a contract:
+#
+#   cellpy_mcp.__version__
+#   cellpy_mcp.serve(root=None)                      -> None (blocks on stdio)
+#   cellpy_mcp.install(root=None, client=None, dry_run=False) -> str
+#
+# `status` is the exception and is implemented here, because its whole job is
+# to answer "is it installed?" — a question that cannot be delegated to the
+# thing whose absence is the answer.
+
+#: The distribution to install, and the module it provides. Different strings
+#: on purpose: `pip install cellpy-mcp` gives you `import cellpy_mcp`, and a
+#: hint that prints the wrong one sends people to a 404.
+MCP_DISTRIBUTION = "cellpy-mcp"
+MCP_MODULE = "cellpy_mcp"
+
+
+def _import_mcp():
+    """The server package, or ``None`` after reporting how to install it."""
+    import importlib
+
+    try:
+        return importlib.import_module(MCP_MODULE)
+    except ImportError:
+        _ui().fail(
+            "mcp",
+            f"{MCP_DISTRIBUTION} is not installed.",
+            hint=f"python -m pip install {MCP_DISTRIBUTION}",
+        )
+        return None
+
+
+def mcp_serve(root=None, echo: Optional[Echo] = None):
+    """Run the MCP server over stdio. Returns true when it could not start.
+
+    This blocks: an MCP client spawns it as a subprocess and talks to it over
+    stdin/stdout, so there is nothing to background and nothing to connect to.
+    Running it by hand is mostly useful for seeing that it starts.
+    """
+    with _using_echo(echo):
+        module = _import_mcp()
+        if module is None:
+            return True
+        # Nothing is printed on the way up: stdout *is* the protocol channel,
+        # and a friendly banner on it is a parse error at the other end.
+        module.serve(root=root)
+        return False
+
+
+def mcp_install(
+    root=None,
+    client: Optional[str] = None,
+    dry_run: bool = False,
+    echo: Optional[Echo] = None,
+):
+    """Register the server with a chat client. Returns true on failure."""
+    with _using_echo(echo):
+        module = _import_mcp()
+        if module is None:
+            return True
+
+        ui = _ui()
+        try:
+            where = module.install(root=root, client=client, dry_run=dry_run)
+        except Exception as exc:  # noqa: BLE001 - the reason belongs on screen
+            ui.fail("mcp install", str(exc))
+            return True
+
+        ui.ok("registered" if not dry_run else "would register", str(where))
+        if not dry_run:
+            ui.hint("restart the client to pick it up")
+        return False
+
+
+def mcp_status(echo: Optional[Echo] = None):
+    """Report whether the server is installed, and what it would serve.
+
+    Answers the three questions someone actually has when a chat client says
+    it cannot see cellpy: is the package there, which cellpy would it use, and
+    which directory would it be allowed to read.
+    """
+    import importlib
+    import importlib.metadata
+
+    with _using_echo(echo):
+        from cellpy import __version__ as cellpy_version
+
+        ui = _ui()
+        ui.title("cellpy mcp")
+
+        try:
+            module = importlib.import_module(MCP_MODULE)
+        except ImportError:
+            ui.detail("server", "not installed")
+            ui.detail("cellpy", cellpy_version)
+            ui.hint(f"python -m pip install {MCP_DISTRIBUTION}")
+            # Not an error: "not installed" is a true and useful answer, and a
+            # non-zero exit would make `cellpy mcp status` unscriptable as the
+            # check it exists to be.
+            return False
+
+        try:
+            version = importlib.metadata.version(MCP_DISTRIBUTION)
+        except importlib.metadata.PackageNotFoundError:
+            # Importable but not installed as a distribution — an editable
+            # checkout on the path. Worth saying rather than guessing.
+            version = getattr(module, "__version__", "unknown (not installed)")
+
+        ui.detail("server", version)
+        ui.detail("cellpy", cellpy_version)
+        describe = getattr(module, "describe", None)
+        if callable(describe):
+            for key, value in describe().items():
+                ui.detail(key, str(value))
+        return False
