@@ -132,6 +132,15 @@
       ]
     },
     {
+      "name": "mcp",
+      "params": [],
+      "subcommands": [
+        "install",
+        "serve",
+        "status"
+      ]
+    },
+    {
       "name": "new",
       "params": [
         {
@@ -616,6 +625,7 @@
       "convert",
       "edit",
       "info",
+      "mcp",
       "new",
       "pull",
       "run",

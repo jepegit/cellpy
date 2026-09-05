@@ -18,6 +18,7 @@ cli = typer.Typer(
 )
 
 setup_app = typer.Typer()
+mcp_app = typer.Typer()
 
 
 @cli.callback()
@@ -643,8 +644,72 @@ def serve(
     )
 
 
-# `setup` is the only group; the rest register themselves with @cli.command().
+# ----------------------- mcp ----------------------------------------
+#
+# Spelled `cellpy mcp`, not `cellpy server mcp`: `cellpy serve` already starts
+# Jupyter, and for an audience defined by not being comfortable in a terminal,
+# one letter between two unrelated commands is a trap. The server itself lives
+# in the separate `cellpy-mcp` distribution — see `cli_api` for why, and for
+# the contract these three wrap.
+
+
+@mcp_app.command("serve")
+def mcp_serve(
+    root: Annotated[
+        Optional[str],
+        typer.Option(
+            "--root",
+            "-r",
+            help="The only directory the server may read or write.",
+        ),
+    ] = None,
+):
+    """Run the MCP server over stdio (a client normally spawns this)."""
+    if cli_api.mcp_serve(root=root, echo=_echo()):
+        raise typer.Exit(code=1)
+
+
+@mcp_app.command("install")
+def mcp_install(
+    root: Annotated[
+        Optional[str],
+        typer.Option(
+            "--root",
+            "-r",
+            help="The only directory the server may read or write.",
+        ),
+    ] = None,
+    client: Annotated[
+        Optional[str],
+        typer.Option("--client", "-c", help="Which chat client to register with."),
+    ] = None,
+    dry_run: Annotated[
+        bool,
+        typer.Option(
+            "--dry-run",
+            "-dr",
+            help="Print the configuration instead of writing it.",
+        ),
+    ] = False,
+):
+    """Register the MCP server with a chat client."""
+    if cli_api.mcp_install(root=root, client=client, dry_run=dry_run, echo=_echo()):
+        raise typer.Exit(code=1)
+
+
+@mcp_app.command("status")
+def mcp_status():
+    """Report whether the MCP server is installed, and what it would serve."""
+    # Deliberately never exits non-zero: "not installed" is a true answer, and
+    # this is the command you script to find that out.
+    cli_api.mcp_status(echo=_echo(payload=True))
+
+
+# ----------------------- groups --------------------------------------
+
+# `setup` and `mcp` are the groups; the rest register with @cli.command().
 cli.add_typer(setup_app, name="setup")
+cli.add_typer(mcp_app, name="mcp", help="Run cellpy as an MCP server.")
 
 
 @cli.command()
