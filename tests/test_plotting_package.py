@@ -234,6 +234,33 @@ def test_legend_replacer_leaves_an_unrecognised_label_alone(journal):
 
 
 @pytest.mark.essential
+def test_legend_replacer_three_part_name_is_the_cell(journal):
+    """px.line + line_dash names traces ``group, direction, subgroup`` (#983)."""
+    trace = labels.legend_replacer(_FakeTrace("1, charge, 2"), journal)
+    assert trace.name == "cell_b"
+    assert trace.legendgroup == "cell_b"
+    assert trace.legendgrouptitle_text == "cell_b"
+    assert trace.hovertemplate.startswith("cell_b<br>")
+
+
+@pytest.mark.essential
+def test_legend_replacer_three_part_direction_at_end(journal):
+    """Integer pair still wins if the direction token is last."""
+    trace = labels.legend_replacer(_FakeTrace("1, 2, discharge"), journal)
+    assert trace.name == "cell_b"
+    assert trace.legendgroup == "cell_b"
+
+
+@pytest.mark.essential
+def test_legend_replacer_three_part_ignores_group_legends(journal):
+    grouped = labels.legend_replacer(
+        _FakeTrace("1,discharge,2"), journal, group_legends=True
+    )
+    assert grouped.legendgroup == "cell_b"
+    assert grouped.legendgrouptitle_text == "cell_b"
+
+
+@pytest.mark.essential
 def test_remove_markers():
     trace = labels.remove_markers(_FakeTrace("1,1"))
     assert trace.marker is None

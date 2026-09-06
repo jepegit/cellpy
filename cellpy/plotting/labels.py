@@ -73,40 +73,68 @@ def legend_replacer(trace, df, group_legends=True, inverted_mode=False):
     ends up with legends like ``"2,1"``. This looks the pair up in the journal
     and substitutes the cell name, in the legend and in the hover text.
 
+    ``direction="both"`` adds ``line_dash`` (#821). Plotly Express then
+    names traces ``"group, direction, subgroup"`` (color, dash, symbol).
+    Those three-part labels are accepted too (#983): the two integers look
+    up the cell wherever the direction token sits; the visible title and
+    mute group become the cell (direction stays in the dash style).
+
     Args:
         trace: the plotly trace to update, in place.
         df: journal frame carrying group / sub-group / cell columns.
         group_legends: put every sub-group of a group in one legend entry.
-        inverted_mode: the label reads ``"subgroup,group"`` rather than
-            ``"group,subgroup"``.
+            Ignored for three-part (direction-split) names — mute is per cell.
+        inverted_mode: the two integer ids read ``"subgroup, group"`` rather
+            than ``"group, subgroup"``.
 
     Returns:
         The trace, updated.
     """
     name = trace.name
-    parts = name.split(",")
-    if len(parts) != 2:
+    parts = [p.strip() for p in str(name).split(",")]
+    ids: list[int] = []
+    for part in parts:
+        try:
+            ids.append(int(part))
+        except ValueError:
+            continue
+    if len(ids) != 2:
         # Not a grouped trace; leave it alone rather than guessing.
         logging.debug(
-            "cannot replace the legend label %r: only 'group,subgroup' labels "
-            "are understood",
+            "cannot replace the legend label %r: need two integer group ids "
+            "(optionally with a direction token)",
             name,
         )
         return trace
 
-    group = int(parts[0])
-    subgroup = int(parts[1])
+    group, subgroup = ids
     if inverted_mode:
         group, subgroup = subgroup, group
 
-    cell_label = df.loc[
+    matches = df.loc[
         (df[hdr_journal.group] == group) & (df[hdr_journal.sub_group] == subgroup),
         "cell",
-    ].values[0]
+    ]
+    if matches.empty:
+        logging.debug(
+            "cannot replace the legend label %r: no cell for group=%s subgroup=%s",
+            name,
+            group,
+            subgroup,
+        )
+        return trace
 
-    trace.update(
-        name=cell_label,
-        legendgroup=group if group_legends else cell_label,
-        hovertemplate=f"{cell_label}<br>{trace.hovertemplate}",
-    )
+    cell_label = matches.values[0]
+    direction_split = len(parts) == 3
+    updates = {
+        "name": cell_label,
+        "hovertemplate": f"{cell_label}<br>{trace.hovertemplate}",
+    }
+    if direction_split:
+        updates["legendgroup"] = cell_label
+        updates["legendgrouptitle_text"] = cell_label
+    else:
+        updates["legendgroup"] = group if group_legends else cell_label
+
+    trace.update(**updates)
     return trace

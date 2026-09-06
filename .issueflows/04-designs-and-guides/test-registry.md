@@ -38,6 +38,10 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_collected_ica_direction.py::test_ica_line_direction_both_overlays_without_coerce | yes | yes | plotting.collected ica both line_dash | #821 | |
 | tests/test_collected_ica_direction.py::test_ica_invalid_direction_warns_and_coerces | yes | yes | plotting.collected ica_plotter warn | #821 | |
 | tests/test_collected_ica_direction.py::test_collected_plot_ica_per_cell_honours_direction | yes | yes | plotting.collected collected_plot ica | #821 | public entry |
+| tests/test_collected_ica_direction.py::test_collected_plot_ica_per_cycle_both_uses_cell_legend_labels | yes | yes | plotting.labels.legend_replacer + collected per_cycle both | #983 | group numbers must not appear |
+| tests/test_plotting_package.py::test_legend_replacer_three_part_name_is_the_cell | yes | yes | plotting.labels.legend_replacer | #983 | px `group, direction, subgroup` |
+| tests/test_plotting_package.py::test_legend_replacer_three_part_direction_at_end | yes | yes | plotting.labels.legend_replacer | #983 | direction token last |
+| tests/test_plotting_package.py::test_legend_replacer_three_part_ignores_group_legends | yes | yes | plotting.labels.legend_replacer | #983 | mute by cell when split |
 | tests/test_resolve_collected_layout_kind.py (module) | yes | yes | plotting.collected.resolve_collected_layout_kind | #874 | validate + film alias |
 | tests/test_collected_cycle_colorbar.py (module) | yes | yes | plotting.collected.sequence_plotter fig_pr_cell | #928 | collected cycle legend vs colorbar |
 | tests/test_batch_v3_runner.py::test_auto_uses_existing_cellpy_without_raw | yes | yes | batch.runner._get_kwargs AUTO | #825 | prefer local .cellpy |

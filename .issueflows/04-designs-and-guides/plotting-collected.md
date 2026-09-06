@@ -75,7 +75,10 @@ Epic #567 Stage 3 / issue #657 re-bases collectors' drawing half onto
   (`layout="per_cell"|"per_cycle"`) and `kind="film"`, not only film. Default
   for collected ICA remains `charge`. `both` overlays half-cycles; on Plotly
   line plots, `line_dash` separates directions so lobes do not join. Invalid
-  values warn and coerce to `charge`.
+  values warn and coerce to `charge`. On `layout="per_cycle"` + `both`,
+  `legend_replacer` reads the two integer ids out of the
+  `group, direction, subgroup` `px.line` name so the legend shows cell
+  labels, not group numbers (#983).
 
 ### Example — Capacity + CE without crushing panels
 

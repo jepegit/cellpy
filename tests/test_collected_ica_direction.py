@@ -11,17 +11,23 @@ import pytest
 from cellpy.plotting.collected import _select_direction
 
 
-def _ica_frame() -> pd.DataFrame:
-    """Tidy ICA frame with distinct charge vs discharge lobes."""
+def _ica_frame(*cells: str) -> pd.DataFrame:
+    """Tidy ICA frame with distinct charge vs discharge lobes.
+
+    One cell by default (``"a"``). Extra names get the next sub-group in
+    group 1 so ``per_cycle`` + ``group_cells`` can exercise legend replace.
+    """
+    if not cells:
+        cells = ("a",)
     rows = []
-    for cell in ("a",):
+    for sg, cell in enumerate(cells, start=1):
         for cycle in (1, 2):
             for i, v in enumerate((0.1, 0.2, 0.3)):
                 rows.append(
                     {
                         "cell": cell,
                         "group": 1,
-                        "sub_group": 1,
+                        "sub_group": sg,
                         "cycle": cycle,
                         "direction": "charge",
                         "voltage": v,
@@ -34,7 +40,7 @@ def _ica_frame() -> pd.DataFrame:
                     {
                         "cell": cell,
                         "group": 1,
-                        "sub_group": 1,
+                        "sub_group": sg,
                         "cycle": cycle,
                         "direction": "discharge",
                         "voltage": v,
@@ -169,3 +175,32 @@ def test_collected_plot_ica_per_cell_honours_direction():
     assert fig is not None
     ys = _trace_ys(fig)
     assert min(ys) > 100.0
+
+
+@pytest.mark.essential
+def test_collected_plot_ica_per_cycle_both_uses_cell_legend_labels():
+    """``direction="both"`` must not leave group numbers in the legend (#983)."""
+    pytest.importorskip("plotly", reason="plotting extras (batch) not installed")
+    from cellpy.plotting import theme
+    from cellpy.plotting.collected import collected_plot
+
+    theme.make_collector_templates()
+    fig = collected_plot(
+        _ica_frame("alpha", "beta"),
+        family_kind="ica",
+        layout="per_cycle",
+        backend="plotly",
+        direction="both",
+        cycles=[1],
+    )
+    assert fig is not None
+    names = {tr.name for tr in fig.data}
+    assert names == {"alpha", "beta"}
+    titles = {
+        getattr(tr, "legendgrouptitle_text", None) or getattr(tr, "legendgroup", None)
+        for tr in fig.data
+    }
+    assert titles == {"alpha", "beta"}
+    for tr in fig.data:
+        assert "1," not in str(tr.name)
+        assert str(tr.name) not in {"1", "1, 1", "1, 2"}
