@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+* `layout="per_cycle"` + `direction="both"` ICA/DVA collected plots show
+  cell labels in the Plotly legend instead of group numbers. (#983)
+
 * `cellpy new` honours `no_input` when the project directory does not exist:
   `cli_api.create_project(..., no_input=True)` creates the directory instead of
   prompting, so it can be driven from a script, a GUI, or an MCP tool. (#990)
