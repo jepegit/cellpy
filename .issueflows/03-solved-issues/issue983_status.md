@@ -1,6 +1,6 @@
 # Issue #983 status
 
-- [ ] Done
+- [x] Done
 
 ## What's done
 
@@ -12,7 +12,8 @@
 - Unit tests + `per_cycle` / `direction="both"` collected plot test
   (essential).
 - Note in `plotting-collected.md`.
+- HISTORY bullet under `[Unreleased]`.
 
 ## Remaining work
 
-- HISTORY bullet + close.
+- None.
