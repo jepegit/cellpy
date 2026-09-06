@@ -220,22 +220,20 @@ def test_custom_group_labels_match_int_and_str_group_ids(keys):
     assert set(collection.data["group_label"].to_list()) == {"alpha", "beta"}
 
 
-@pytest.mark.essential
-def test_summary_collector_plot_uses_custom_group_labels_and_units():
-    """Issue #947 snippet: legend labels + unit-bearing y-titles."""
-    pytest.importorskip("plotly", reason="plotting extras (batch) not installed")
+_SUMMARY_COLLECTOR_COLUMNS = (
+    "charge_capacity_gravimetric",
+    "discharge_capacity_gravimetric",
+    "coulombic_efficiency",
+)
+
+
+def _summary_collector_batch():
+    """Two groups of two cells — the #947 / #948 `summary_collector` snippet."""
     from types import SimpleNamespace
 
     from cellpy.batch import Batch, Journal
     from cellpy.batch.journal import FILENAME
     from cellpy.batch.store import CellStore
-    from cellpy.collect import summary_collector
-
-    columns = (
-        "charge_capacity_gravimetric",
-        "discharge_capacity_gravimetric",
-        "coulombic_efficiency",
-    )
 
     class _Cell:
         def __init__(self, scale):
@@ -258,15 +256,39 @@ def test_summary_collector_plot_uses_custom_group_labels_and_units():
     batch._store = CellStore.from_cells(
         {"a": _Cell(1), "b": _Cell(1.1), "c": _Cell(0.9), "d": _Cell(1.2)}
     )
-    fig = summary_collector(
-        batch,
-        columns=list(columns),
+    return batch
+
+
+def _labelled_summary_collector():
+    from cellpy.collect import summary_collector
+
+    return summary_collector(
+        _summary_collector_batch(),
+        columns=list(_SUMMARY_COLLECTOR_COLUMNS),
         group_it=True,
         custom_group_labels={1: "run-14", 2: "run-15"},
-    ).plot()
+    )
+
+
+@pytest.mark.essential
+def test_summary_collector_plot_uses_custom_group_labels_and_units():
+    """Issue #947 snippet: legend labels + unit-bearing y-titles."""
+    pytest.importorskip("plotly", reason="plotting extras (batch) not installed")
+    fig = _labelled_summary_collector().plot()
     assert {trace.name for trace in fig.data} == {"run-14", "run-15"}
     assert _facet_labels(fig) == [
         "Charge Capacity (mAh/g)",
         "Discharge Capacity (mAh/g)",
         "Coulombic Efficiency (%)",
     ]
+
+
+@pytest.mark.essential
+def test_summary_collector_spread_plot_keeps_custom_group_labels():
+    """Issue #948: `spread=True` must not fall back to group ids."""
+    pytest.importorskip("plotly", reason="plotting extras (batch) not installed")
+    fig = _labelled_summary_collector().plot(spread=True)
+    assert {trace.name for trace in fig.data if trace.showlegend} == {
+        "run-14",
+        "run-15",
+    }

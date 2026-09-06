@@ -151,6 +151,10 @@ def spread_plot(curves, plotly_arguments=None, y_label_mapper=None, **kwargs):
     and then adds the traces one by one. This methodology will eventually replace the use of plotly.express
     for all the summary plots.
 
+    Per-panel y-limits belong on `summary_plotter` / `Collection.plot` as
+    ``y_ranges=`` (and ``share_y=False``). Row 1 is the top facet; do not
+    reuse ``fig.update_yaxes(..., row=N)`` numbers from a non-spread figure.
+
     """
     from plotly.subplots import make_subplots
 

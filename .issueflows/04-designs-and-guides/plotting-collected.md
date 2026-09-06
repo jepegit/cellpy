@@ -59,7 +59,9 @@ Epic #567 Stage 3 / issue #657 re-bases collectors' drawing half onto
   `custom_group_labels=`) and by `group` otherwise; groups without a label keep
   their id, and label keys match integer *and* string group ids. Its legend
   title defaults to **Group** (ungrouped stays **Cell**); `legend_title=`
-  overrides. Facet order comes from `order_variables=`, which
+  overrides. `kind="spread"` / `spread=True` uses the same
+  `group_label` key (#948). Per-panel limits stay `y_ranges=`
+  (spread row 1 is the top facet). Facet order comes from `order_variables=`, which
   `Collection.plot` fills in from the collected `columns=`; variables outside
   that list (CV split, normalized retention) keep their own order after the
   listed ones rather than being dropped. Plotly puts the first facet row on
