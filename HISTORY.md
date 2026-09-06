@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+* `summary_collector(..., custom_group_labels=...).plot(spread=True)` keeps
+  those labels in the Plotly legend (same as the non-spread plot). Per-panel
+  y-limits stay `y_ranges=` — do not reuse `fig.update_yaxes(..., row=N)`
+  from a non-spread figure. (#948)
+
 * `layout="per_cycle"` + `direction="both"` ICA/DVA collected plots show
   cell labels in the Plotly legend instead of group numbers. (#983)
 

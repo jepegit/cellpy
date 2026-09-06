@@ -85,7 +85,9 @@ class Collection:
 
         For summary collections (Plotly), pass ``share_y`` / ``match_axes`` and
         optional ``y_ranges={variable: [lo, hi], ...}`` for per-facet y-limits
-        (see `summary_plotter`). App chrome:
+        (see `summary_plotter`). Same knobs apply to ``spread=True`` — do not
+        poke ``fig.update_yaxes(..., row=N)`` after the fact (row numbering
+        differs from the px.line path). App chrome:
         ``plotly_template``, ``layout_updates``, ``y_label_mapper``,
         ``height`` / ``height_per_panel``. Cycles / ICA: prefer ``layout=``
         (``per_cell`` / ``per_cycle``) and ``kind=`` (``line`` / ``film`` /
