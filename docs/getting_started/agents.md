@@ -30,6 +30,8 @@ Consumer install:
 
 ```bash
 pip install cellpy
+# matplotlib backend: pip install cellpy[plotting-mpl]
+# Jupyter kernel:     pip install cellpy[notebook]
 # or: conda install -c conda-forge cellpy
 ```
 

@@ -157,9 +157,10 @@ Conda and `environment.yml` / the project lockfile (`uv.lock`, driven by
 | --- | --- |
 | Core science stack | `numpy`, `scipy`, `pandas` |
 | cellpy files (HDF5 path) | `tables` (PyTables) |
-| Fitting helpers | `lmfit` |
+| Fitting helpers | `lmfit` (`cellpy[fit]`) |
 | Templates | `jinja2-time`, and `git` on `PATH` |
-| Tutorials / notebooks | `jupyter`, `seaborn`, `plotly` |
+| Tutorials / notebooks | `cellpy[notebook]` (`ipykernel`); conda still ships Jupyter |
+| Matplotlib plots | `cellpy[plotting-mpl]` (plotly lives in `cellpy[batch]`) |
 
 Optional extras and plotting backends evolve with the release — prefer the
 conda-forge package or the repo env file over hand-picking versions.

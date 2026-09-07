@@ -336,7 +336,7 @@ Quick facts:
   `collect_summaries` leaves a cell out (no summary, or filtered away) it
   warns and names it; `collection.meta.cells_included` is authoritative.
 - Persist: `c.save("out.cellpy")`, `c.to_csv("out_dir")`.
-  Collected figure bytes: `collection.to_image("png")` / `cellpy.plotting.write_image(fig, "svg")` (needs `cellpy[batch]` / kaleido).
+    Collected figure bytes: `collection.to_image("png")` / `cellpy.plotting.write_image(fig, "svg")` (needs `cellpy[batch]` / kaleido). Matplotlib plots need `cellpy[plotting-mpl]` (#937).
 - Prefer schema-resolved names over hard-coded 1.x header strings.
 - When changing public get/save/schema/CLI surface, update
   `docs/getting_started/agents.md` and this section in the same PR.

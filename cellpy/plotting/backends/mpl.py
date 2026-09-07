@@ -20,6 +20,31 @@ from cellpy.units import units_label
 logger = logging.getLogger(__name__)
 
 
+def require_matplotlib(context: str) -> None:
+    """Raise a typed error when matplotlib is missing and *context* needs it.
+
+    ``matplotlib`` moved from a required dependency to the ``plotting-mpl``
+    extra (#937) so a plain install does not pull the notebook/font stack.
+
+    Args:
+        context: what the caller was trying to do, for the error message.
+
+    Raises:
+        OptionalDependencyError: naming the extra to install.
+    """
+    import importlib.util
+
+    if importlib.util.find_spec("matplotlib") is not None:
+        return
+
+    from cellpy.exceptions import OptionalDependencyError
+
+    raise OptionalDependencyError(
+        f"{context} needs matplotlib, which is not installed. "
+        "Install the extra with:  pip install cellpy[plotting-mpl]"
+    )
+
+
 def _seaborn_available() -> bool:
     import importlib.util
 

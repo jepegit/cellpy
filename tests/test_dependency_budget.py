@@ -87,6 +87,57 @@ def test_tables_stays_in_the_dev_group(pyproject):
 
 
 @pytest.mark.essential
+def test_matplotlib_and_ipykernel_left_the_required_set(pyproject):
+    declared = _bare_names(pyproject["project"]["dependencies"])
+    assert "matplotlib" not in declared
+    assert "ipykernel" not in declared
+
+
+@pytest.mark.essential
+def test_matplotlib_lives_in_the_plotting_mpl_extra(pyproject):
+    extras = pyproject["project"]["optional-dependencies"]
+    assert _bare_names(extras["plotting-mpl"]) == {"matplotlib"}
+    assert "matplotlib" in _bare_names(extras["all"])
+
+
+@pytest.mark.essential
+def test_ipykernel_lives_in_the_notebook_extra(pyproject):
+    extras = pyproject["project"]["optional-dependencies"]
+    assert "ipykernel" in _bare_names(extras["notebook"])
+    assert "ipython" in _bare_names(extras["notebook"])
+    assert "ipykernel" in _bare_names(extras["all"])
+
+
+@pytest.mark.essential
+def test_matplotlib_stays_in_the_dev_group(pyproject):
+    """Essential CI runs `uv sync` (dev group, no extras). Plot tests use Agg
+    and still need matplotlib even though a plain pip install does not."""
+    dev = _bare_names(pyproject["dependency-groups"]["dev"])
+    assert "matplotlib" in dev
+    assert "ipykernel" in dev
+
+
+@pytest.mark.essential
+def test_require_matplotlib_names_the_extra(monkeypatch):
+    import importlib.util as ilu
+
+    from cellpy.exceptions import OptionalDependencyError
+    from cellpy.plotting.backends.mpl import require_matplotlib
+
+    real_find_spec = ilu.find_spec
+
+    def missing_matplotlib(name, *args, **kwargs):
+        if name == "matplotlib":
+            return None
+        return real_find_spec(name, *args, **kwargs)
+
+    monkeypatch.setattr(ilu, "find_spec", missing_matplotlib)
+
+    with pytest.raises(OptionalDependencyError, match=r"plotting-mpl"):
+        require_matplotlib("a matplotlib plot")
+
+
+@pytest.mark.essential
 @pytest.mark.parametrize(
     "manifest",
     [

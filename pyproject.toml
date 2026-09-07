@@ -30,7 +30,6 @@ dependencies = [
     "numpy",
     "pandas>=3.0.3,<4",
     "setuptools",
-    "matplotlib",
     "openpyxl",
     "PyGithub",
     "tqdm",
@@ -43,7 +42,6 @@ dependencies = [
     "cookiecutter",
     "pyyaml",
     "jinja2_time",
-    "ipykernel",
     "rich",
     "charset-normalizer",
     "polars",
@@ -69,7 +67,9 @@ dependencies = [
 batch = ["ipython", "jupyter", "plotly", "seaborn", "kaleido>=0.1,<1.4"]
 fit = ["lmfit"]
 legacy-files = ["tables"]
-all = ["ipython", "jupyter", "plotly", "seaborn", "kaleido>=0.1,<1.4", "lmfit", "tables"]
+notebook = ["ipykernel", "ipython"]
+plotting-mpl = ["matplotlib"]
+all = ["ipython", "jupyter", "plotly", "seaborn", "kaleido>=0.1,<1.4", "lmfit", "tables", "ipykernel", "matplotlib"]
 
 [project.scripts]
 cellpy = "cellpy.cli:cli"
@@ -89,6 +89,7 @@ dev = [
     "coverage",
     "flake8",
     "ipykernel",
+    "matplotlib",
     "nox",
     "lmfit",
     "pytest",

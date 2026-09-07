@@ -19,7 +19,10 @@ import logging
 import pickle as pkl
 from pathlib import Path
 
-import matplotlib.pyplot as plt
+try:
+    import matplotlib.pyplot as plt
+except ImportError:
+    plt = None
 
 plotly_available = importlib.util.find_spec("plotly") is not None
 
@@ -61,6 +64,9 @@ def load_figure(filename, backend=None):
 
 def save_matplotlib_figure(fig, filename):
     """Pickle a matplotlib figure to *filename*."""
+    from cellpy.plotting.backends.mpl import require_matplotlib
+
+    require_matplotlib("saving a matplotlib figure")
     with open(filename, "wb") as handle:
         pkl.dump(fig, handle)
 
@@ -72,6 +78,9 @@ def make_matplotlib_manager(fig):
     from a throwaway figure is the standard workaround
     (https://stackoverflow.com/a/54579616/8508004).
     """
+    from cellpy.plotting.backends.mpl import require_matplotlib
+
+    require_matplotlib("showing a matplotlib figure")
     dummy = plt.figure()
     new_manager = dummy.canvas.manager
     new_manager.canvas.figure = fig

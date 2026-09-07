@@ -14,7 +14,10 @@ import logging
 import warnings
 from typing import Any, Optional
 
-import matplotlib.pyplot as plt
+try:
+    import matplotlib.pyplot as plt
+except ImportError:
+    plt = None
 import pandas as pd
 
 import cellpy.config as config
@@ -149,6 +152,9 @@ def batch_summary_plot(
             canvas.show()
         return canvas
 
+    from cellpy.plotting.backends.mpl import require_matplotlib
+
+    require_matplotlib("Batch.plot(backend='matplotlib')")
     # matplotlib — wide MultiIndex frame (legacy cycle-life layout)
     width = kwargs.pop("width", config.batch.summary_plot_width)
     height = kwargs.pop("height", config.batch.summary_plot_height)

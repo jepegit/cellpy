@@ -13,8 +13,12 @@ except ImportError as e:
 
 import math
 
-import matplotlib as mpl
-import matplotlib.pyplot as plt
+try:
+    import matplotlib as mpl
+    import matplotlib.pyplot as plt
+except ImportError:
+    mpl = None
+    plt = None
 import numpy as np
 import pandas as pd
 
@@ -489,6 +493,9 @@ class MultiCycleOcvFit:
 
     @staticmethod
     def create_colormap(name="plasma", cycles=None):
+        from cellpy.plotting.backends.mpl import require_matplotlib
+
+        require_matplotlib("OCV relaxation plots")
         if cycles is None:
             cycles = np.arange(1, 101)
         colormap_proxy = np.array(cycles)
@@ -502,6 +509,9 @@ class MultiCycleOcvFit:
 
     def plot_summary(self, cycles=None):
         """Convenience function for plotting the summary of the fit"""
+        from cellpy.plotting.backends.mpl import require_matplotlib
+
+        require_matplotlib("OCV relaxation plots")
         if cycles is None:
             cycles = self.get_fit_cycles()
         fig1 = plt.figure(tight_layout=True)
@@ -543,6 +553,9 @@ class MultiCycleOcvFit:
     def plot_summary_translated(self):
         """Convenience function for plotting the summary of the
         fit (translated)"""
+        from cellpy.plotting.backends.mpl import require_matplotlib
+
+        require_matplotlib("OCV relaxation plots")
 
         fig2 = plt.figure()
         ax1 = fig2.add_subplot(221)
