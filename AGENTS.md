@@ -311,6 +311,9 @@ Quick facts:
 - Metadata peek (no frames): `cellpy.read_meta(path)` → dict with `cell` / `tests`.
 - Ingestion form fields: `cellpy.instrument_meta_schema(instrument)` → `fields` / `units`.
 - Frames: `c.data.raw` / `.steps` / `.summary`; columns via `c.schema.*`.
+  After `get`, each cycle's raw capacity starts at 0. A forgotten tester
+  reset that 1.x plotted as doubled capacity is rebased on load; a
+  `UserWarning` fires when values actually change (#989).
 - Example data: `from cellpy.utils import example_data` → `example_data.raw_file()`.
 - ICA/DVA: `from cellpy import ica` then `ica.dqdv(c)` / `ica.dvdq(c)`.
   Recipe: `opts = ica.IcaOptions(...)` then `options=opts` (or one-off kwargs).

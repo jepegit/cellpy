@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import logging
 import re
+import warnings
 from datetime import datetime, timedelta, timezone as dt_timezone
 from typing import Any
 
@@ -64,6 +65,11 @@ def normalize_reset_granularity(
         Resets each step, so within a cycle we must re-accumulate: add the
         running total of the *completed* steps of that cycle.
 
+    When a ``PER_TEST`` / ``PER_STEP`` rebase actually changes values, a
+    ``UserWarning`` names the columns. A no-op (already cycle-cumulative) is
+    silent. 1.x kept the tester column as-is, so a forgotten reset looked
+    like doubled capacity; 2.x resets each cycle to start at 0 (#989).
+
     Args:
         raw: frame already renamed to native columns.
         declarations: carries ``reset_granularity`` per column.
@@ -83,6 +89,7 @@ def normalize_reset_granularity(
         )
 
     out = raw
+    rebased: list[str] = []
     for column, granularity in declarations.reset_granularity.items():
         if column not in out.columns:
             # Declared but absent: the file simply did not carry it.
@@ -91,6 +98,7 @@ def normalize_reset_granularity(
         if granularity is ResetGranularity.PER_CYCLE:
             continue
 
+        before = out.get_column(column)
         if granularity is ResetGranularity.PER_TEST:
             # Value entering the cycle = the column's first value in the cycle.
             # Subtracting it rebases each cycle to start at zero.
@@ -99,9 +107,7 @@ def normalize_reset_granularity(
                     column
                 )
             )
-            continue
-
-        if granularity is ResetGranularity.PER_STEP:
+        elif granularity is ResetGranularity.PER_STEP:
             step_column = schema.step_num
             if step_column not in out.columns:
                 raise LoaderError(
@@ -128,10 +134,20 @@ def normalize_reset_granularity(
                 .with_columns((pl.col(column) + pl.col("_offset")).alias(column))
                 .drop("_offset")
             )
-            continue
+        else:
+            raise LoaderError(f"unknown reset granularity {granularity!r} for {column!r}")
+        if not out.get_column(column).equals(before):
+            rebased.append(f"{column} ({granularity})")
 
-        raise LoaderError(f"unknown reset granularity {granularity!r} for {column!r}")
-
+    if rebased:
+        warnings.warn(
+            "cellpy rebased vendor capacity/energy so each cycle starts at 0: "
+            + ", ".join(rebased)
+            + ". 1.x kept the tester column as-is (a forgotten reset then "
+            "looks like doubled capacity).",
+            UserWarning,
+            stacklevel=2,
+        )
     return out
 
 

@@ -34,3 +34,24 @@ on the single-cell Arbin benchmark (CI gate fail at +100%).
   double-read.
 
 **Refs.** jepegit/cellpy#560; PR #623; loader plan in `cellpy-design-and-development/archive/foundations/cellpy2-loader-port-and-extraction-plan.md`.
+
+## Cycle-cumulative capacity rebase (#989)
+
+1.x kept the vendor capacity column as-is. If a tester step forgot to
+reset, `get_cap` / cycle plots showed doubled capacity. Both 1.x and 2.x
+still take the cycle's last point for per-cycle summary capacity.
+
+2.x `harmonize()` always runs `normalize_reset_granularity` so **each
+cycle starts at 0**:
+
+- `PER_CYCLE` — already cycle-cumulative, untouched (silent).
+- `PER_TEST` — subtract the first value of each cycle (that first point
+  becomes 0).
+- `PER_STEP` — re-accumulate completed steps within the cycle.
+
+When a `PER_TEST` / `PER_STEP` rebase actually changes values, one
+`UserWarning` names the columns. Identity rebases (already starting at 0
+each cycle) stay silent.
+
+This is cellpy-only (loader declarations). Do not confuse with
+`cellpycore.summarizers.normalize_capacity_granularity`.

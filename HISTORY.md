@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+* After load, vendor capacity/energy that does not already start at 0 each
+  cycle is rebased so it does; a `UserWarning` names the columns when values
+  actually change (1.x kept the tester column as-is). (#989)
+
 * `b.plot(ir=True, direction="discharge")` shows an IR panel: it prefers
   `ir_discharge`, falls back to `ir_charge` with a warning if that column is
   missing, and warns instead of silently skipping when neither IR column is

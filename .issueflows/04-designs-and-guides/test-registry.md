@@ -148,6 +148,11 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_batch_summary_ir.py::test_discharge_direction_falls_back_to_ir_charge | yes | yes | plotting.batch_summary plotly fallback | #949 | skip if no plotly |
 | tests/test_batch_summary_ir.py::test_ir_false_omits_the_panel_even_when_columns_exist | yes | yes | plotting.batch_summary ir=False | #949 | skip if no plotly |
 | tests/test_batch_summary_ir.py::test_missing_ir_columns_warn_and_skip_the_panel | yes | yes | plotting.batch_summary missing IR | #949 | skip if no plotly |
+| tests/test_harmonize.py::test_per_cycle_is_the_target_and_is_untouched | yes | yes | instruments.harmonize.normalize_reset_granularity | #989 | PER_CYCLE silent |
+| tests/test_harmonize.py::test_per_test_is_rebased_at_each_cycle_boundary | yes | yes | instruments.harmonize.normalize_reset_granularity | #989 | PER_TEST warns |
+| tests/test_harmonize.py::test_per_step_accumulates_completed_steps_within_the_cycle | yes | yes | instruments.harmonize.normalize_reset_granularity | #989 | PER_STEP warns |
+| tests/test_harmonize.py::test_per_cycle_capacity_is_the_cycle_last_value | yes | yes | instruments.harmonize.normalize_reset_granularity | #989 | summary last-datapoint invariant |
+| tests/test_harmonize.py::test_per_test_already_cycle_cumulative_is_silent | yes | yes | instruments.harmonize.normalize_reset_granularity | #989 | identity PER_TEST no UserWarning |
 
 **Columns**
 
