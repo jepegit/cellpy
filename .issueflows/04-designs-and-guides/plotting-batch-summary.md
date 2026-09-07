@@ -15,6 +15,12 @@ and deleting `batch_plotters.py`.
 - Facade: thin `_BatchPlotterHolder` keeps `b.plotter.figure` / `.farms`.
 - Frame prep names an unnamed summary index `cycle_index` before `reset_index`
   (join_summaries farms often leave the index unnamed).
+- **IR + `direction=` (#949):** `ir=True` (plotly default) picks
+  `ir_discharge` when `direction="discharge"`, else `ir_charge`. If that
+  column is missing, the other IR column is used and a `UserWarning` names
+  both. If neither column is in the melted frame, warn and skip the panel
+  (no debug-only skip). `ir=False` omits IR even when the columns exist.
+  All-NaN values still keep the panel.
 
 ## Links
 

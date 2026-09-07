@@ -321,6 +321,8 @@ Quick facts:
   reopening local `.cellpy` files (first remote load stays serial on the wire).
   `progress=None` auto-shows tqdm (TTY / Jupyter); `False` off.
   After load: `b.summaries`, `b.cells[label]`, `b.plot()`, `b.result.report()`.
+  `b.plot(ir=True, direction="discharge")` uses `ir_discharge`, or `ir_charge`
+  with a warning if that column is missing.
   `mark_as_bad` is a session flag (unknown cell name → `ValueError`); `drop` /
   `drop_cells_marked_bad` remove now
   (plot/summaries work without `update()`). `save()` then next `load` (default

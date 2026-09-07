@@ -32,6 +32,64 @@ hdr_summary = get_headers_summary()
 SUPPORTED_BATCH_PLOT_BACKENDS = ("plotly", "matplotlib")
 
 
+def _pick_optional_summary(available, preferred, fallback=None):
+    """Pick ``preferred`` from ``available``, else ``fallback``, else ``None``.
+
+    ``available`` is copied to a list so membership works for numpy / Arrow
+    unique() results as well as plain sequences (#949).
+    """
+    names = list(available)
+    if preferred in names:
+        return preferred
+    if fallback is not None and fallback in names:
+        return fallback
+    return None
+
+
+def _ir_headers_for_direction(direction: str) -> tuple[str, str]:
+    """Return ``(preferred, fallback)`` IR summary headers for ``direction``."""
+    hdr_ir_charge = hdr_summary["ir_charge"]
+    hdr_ir_discharge = hdr_summary["ir_discharge"]
+    if direction == "discharge":
+        return hdr_ir_discharge, hdr_ir_charge
+    return hdr_ir_charge, hdr_ir_discharge
+
+
+def _select_ir_column(available, direction: str, *, ir: bool):
+    """Choose an IR summary column or warn when ``ir=True`` cannot plot one.
+
+    Args:
+        available: Column / variable names present in the plot frame.
+        direction: ``"charge"`` or ``"discharge"`` (anything else uses charge).
+        ir: If False, skip IR and do not warn.
+
+    Returns:
+        The preferred IR header, the other direction's header (fallback), or
+        ``None`` when IR is off or both headers are missing.
+    """
+    if not ir:
+        return None
+    preferred, fallback = _ir_headers_for_direction(direction)
+    picked = _pick_optional_summary(available, preferred, fallback)
+    if picked == preferred:
+        return picked
+    if picked is not None:
+        warnings.warn(
+            f"b.plot(ir=True, direction={direction!r}) has no {preferred} in "
+            f"the summary; using {picked}.",
+            UserWarning,
+            stacklevel=3,
+        )
+        return picked
+    warnings.warn(
+        "b.plot(ir=True) found neither ir_charge nor ir_discharge in the "
+        "summary; skipping the IR panel.",
+        UserWarning,
+        stacklevel=3,
+    )
+    return None
+
+
 def resolve_batch_plot_backend(backend: Optional[str]) -> str:
     """Normalize Batch.plot backend names."""
     if backend is None:
@@ -394,8 +452,6 @@ def plot_cycle_life_summary_plotly(summaries: pd.DataFrame, **kwargs):
     hdr_charge, hdr_discharge = _get_capacity_columns(capacity_specifics)
 
     hdr_ce = hdr_summary["coulombic_efficiency"]
-    hdr_ir_charge = hdr_summary["ir_charge"]
-    hdr_ir_discharge = hdr_summary["ir_discharge"]
     hdr_charge_rate = hdr_summary["charge_c_rate"]
     hdr_discharge_rate = hdr_summary["discharge_c_rate"]
     hdr_group = hdr_journal.group
@@ -414,19 +470,15 @@ def plot_cycle_life_summary_plotly(summaries: pd.DataFrame, **kwargs):
         color_selector, symbol_selector = symbol_selector, color_selector
 
     if direction == "discharge":
-        hdr_ir = hdr_ir_discharge
         hdr_rate = hdr_discharge_rate
         selected_summaries = [hdr_cycle, hdr_ce, hdr_discharge]
     else:
         selected_summaries = [hdr_cycle, hdr_ce, hdr_charge]
-        hdr_ir = hdr_ir_charge
         hdr_rate = hdr_charge_rate
 
-    if ir:
-        if hdr_ir in available_summaries:
-            selected_summaries.append(hdr_ir)
-        else:
-            logging.debug("no ir data available")
+    picked_ir = _select_ir_column(available_summaries, direction, ir=ir)
+    if picked_ir is not None:
+        selected_summaries.append(picked_ir)
     if rate:
         if hdr_rate in available_summaries:
             selected_summaries.append(hdr_rate)
@@ -578,14 +630,17 @@ def plot_cycle_life_summary_matplotlib(
     # convert from bokeh to matplotlib - figsize - inch-ish
     width /= 80
     height /= 120
+    ir = kwargs.pop("ir", True)
+    direction = kwargs.pop("direction", "charge")
     discharge_capacity = summaries[hdr_summary["discharge_capacity_gravimetric"]]
     charge_capacity = summaries[hdr_summary["charge_capacity_gravimetric"]]
     coulombic_efficiency = summaries.coulombic_efficiency
-    try:
-        ir_charge = summaries.ir_charge
-    except AttributeError:
-        logging.debug("the data is missing ir charge")
-        ir_charge = None
+    if isinstance(summaries.columns, pd.MultiIndex):
+        available = summaries.columns.get_level_values(0).unique()
+    else:
+        available = summaries.columns
+    picked_ir = _select_ir_column(available, direction, ir=ir)
+    ir_frame = summaries[picked_ir] if picked_ir is not None else None
 
     plt.rcParams["figure.figsize"] = (10, 10)
     marker_types = [
@@ -614,7 +669,7 @@ def plot_cycle_life_summary_matplotlib(
     group_styles, sub_group_styles = create_plot_option_dicts(
         info, marker_types=marker_types, size=marker_size
     )
-    if ir_charge is None:
+    if ir_frame is None:
         canvas, (ax_ce, ax_cap) = plt.subplots(
             2,
             1,
@@ -669,10 +724,10 @@ def plot_cycle_life_summary_matplotlib(
             markerfacecolor=c,
         )
 
-        if ir_charge is not None:
+        if ir_frame is not None:
             try:
                 ax_ir.plot(
-                    ir_charge[label], color=c, label=name, marker=m, markerfacecolor=c
+                    ir_frame[label], color=c, label=name, marker=m, markerfacecolor=c
                 )
             except Exception as e:
                 logging.debug(f"Could not plot IR for {label} ({e})")
@@ -682,8 +737,8 @@ def plot_cycle_life_summary_matplotlib(
     ax_ce.set_ylim((0, 110))
     ax_cap.set_ylabel("Capacity\n(mAh/g)")
 
-    if ir_charge is not None:
-        ax_ir.set_ylabel("IR\n(charge)")
+    if ir_frame is not None:
+        ax_ir.set_ylabel(_make_labels().get(picked_ir, "IR").replace(" ", "\n"))
         ax_ir.set_xlabel("Cycle")
         ax_all.append(ax_ir)
     else:
