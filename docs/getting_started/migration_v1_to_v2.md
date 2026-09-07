@@ -120,6 +120,16 @@ def update_cell(c):
 If you index the `get_cap` result directly, rename. In-repo consumers
 (`plotutils.cycles_plot`, collectors, `ica`, CSV/Excel exporters) are updated.
 
+### Capacity reset granularity (#989)
+
+1.x kept the tester capacity column as-is. If a step forgot to reset,
+cycle plots showed doubled capacity. Both 1.x and 2.x still take the
+cycle's last point for per-cycle summary capacity.
+
+2.x additionally rebases vendor capacity/energy so **each cycle starts at
+0** (`normalize_reset_granularity`). When that rebase actually changes
+values, a `UserWarning` names the columns. Identity rebases stay silent.
+
 ## Configuration: `prms` → `cellpy.config`
 
 - Runtime config is the pydantic-settings stack under **`cellpy.config`**

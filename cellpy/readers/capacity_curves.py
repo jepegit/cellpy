@@ -187,6 +187,13 @@ def get_cap(
         ``pandas.DataFrame`` ((cycle) voltage, capacity, (direction (-1, 1)))
         unless split is explicitly set to True. Then it returns a tuple
         with capacity and voltage.
+
+    Note:
+        Raw capacity columns are cycle-cumulative after load: each cycle
+        starts at 0. Testers that never reset (or reset per step) are
+        rebased in ``normalize_reset_granularity``; a ``UserWarning`` names
+        the columns when values actually change. 1.x kept the tester column
+        as-is, so a forgotten reset looked like doubled capacity (#989).
     """
 
     # TODO: allow for fixing the interpolation range (so that it is possible

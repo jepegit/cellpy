@@ -9,6 +9,7 @@ to know the right answer independently.
 from __future__ import annotations
 
 import logging
+import warnings
 
 import polars as pl
 import pytest
@@ -119,7 +120,11 @@ def test_per_cycle_is_the_target_and_is_untouched():
         steps=[1, 1, 2, 1, 1, 2],
         values=[0.0, 1.0, 3.0, 0.0, 2.0, 5.0],
     )
-    out = normalize_reset_granularity(frame, _declarations(ResetGranularity.PER_CYCLE))
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", UserWarning)
+        out = normalize_reset_granularity(
+            frame, _declarations(ResetGranularity.PER_CYCLE)
+        )
     assert out[SCHEMA.cumulative_charge_capacity].to_list() == [
         0.0,
         1.0,
@@ -139,7 +144,8 @@ def test_per_test_is_rebased_at_each_cycle_boundary():
         steps=[1, 1, 2, 1, 1, 2],
         values=[0.0, 1.0, 3.0, 3.0, 5.0, 8.0],
     )
-    out = normalize_reset_granularity(frame, _declarations(ResetGranularity.PER_TEST))
+    with pytest.warns(UserWarning, match="rebased vendor capacity"):
+        out = normalize_reset_granularity(frame, _declarations(ResetGranularity.PER_TEST))
     assert out[SCHEMA.cumulative_charge_capacity].to_list() == [
         0.0,
         1.0,
@@ -163,7 +169,8 @@ def test_per_step_accumulates_completed_steps_within_the_cycle():
         steps=[1, 1, 1, 2, 2, 1, 1, 2, 2],
         values=[0.0, 1.0, 2.0, 0.0, 3.0, 0.0, 4.0, 0.0, 1.0],
     )
-    out = normalize_reset_granularity(frame, _declarations(ResetGranularity.PER_STEP))
+    with pytest.warns(UserWarning, match="rebased vendor capacity"):
+        out = normalize_reset_granularity(frame, _declarations(ResetGranularity.PER_STEP))
     assert out[SCHEMA.cumulative_charge_capacity].to_list() == [
         0.0,
         1.0,
@@ -191,7 +198,10 @@ def test_per_cycle_capacity_is_the_cycle_last_value():
         steps=[1, 1, 2, 1, 1, 2],
         values=[0.0, 1.0, 3.0, 3.0, 5.0, 8.0],
     )
-    out = normalize_reset_granularity(per_test, _declarations(ResetGranularity.PER_TEST))
+    with pytest.warns(UserWarning, match="rebased vendor capacity"):
+        out = normalize_reset_granularity(
+            per_test, _declarations(ResetGranularity.PER_TEST)
+        )
     last = (
         out.group_by(SCHEMA.cycle_num, maintain_order=True)
         .agg(pl.col(SCHEMA.cumulative_charge_capacity).last().alias("cap"))
@@ -210,6 +220,29 @@ def test_per_step_without_a_step_column_fails_loudly():
     )
     with pytest.raises(LoaderError, match="needs"):
         normalize_reset_granularity(frame, _declarations(ResetGranularity.PER_STEP))
+
+
+@pytest.mark.essential
+def test_per_test_already_cycle_cumulative_is_silent():
+    # Same values as PER_CYCLE: subtracting each cycle's first value is a no-op.
+    frame = _frame(
+        cycles=[1, 1, 1, 2, 2, 2],
+        steps=[1, 1, 2, 1, 1, 2],
+        values=[0.0, 1.0, 3.0, 0.0, 2.0, 5.0],
+    )
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", UserWarning)
+        out = normalize_reset_granularity(
+            frame, _declarations(ResetGranularity.PER_TEST)
+        )
+    assert out[SCHEMA.cumulative_charge_capacity].to_list() == [
+        0.0,
+        1.0,
+        3.0,
+        0.0,
+        2.0,
+        5.0,
+    ]
 
 
 # -- harmonize -----------------------------------------------------------------
