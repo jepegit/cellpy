@@ -185,18 +185,49 @@ def test_factory_loader_is_package_path_class(parameters, instrument):
     assert isinstance(loader, module.DataLoader)
 
 
-# ---- app-facing list_instruments (#786) ---------------------------------
+# ---- app-facing list_instruments (#786 / #938) --------------------------------
 
 
+@pytest.mark.essential
+def test_require_mdb_export_names_mdbtools(monkeypatch):
+    from cellpy.exceptions import OptionalDependencyError
+    from cellpy.readers.instruments import arbin_res
+
+    monkeypatch.setattr(arbin_res.shutil, "which", lambda cmd: None)
+    with pytest.raises(OptionalDependencyError, match="mdbtools"):
+        arbin_res.require_mdb_export("mdb-export")
+
+
+@pytest.mark.essential
+def test_require_mdb_export_ignores_windows_path(monkeypatch):
+    from cellpy.readers.instruments import arbin_res
+
+    monkeypatch.setattr(arbin_res.shutil, "which", lambda cmd: None)
+    arbin_res.require_mdb_export(r"C:\Program Files\mdb-export.exe")
+
+
+@pytest.mark.essential
 def test_list_instruments_shape_and_known_entry():
     import cellpy
 
     rows = cellpy.list_instruments()
     assert isinstance(rows, list) and rows
     for row in rows:
-        assert set(row) == {"id", "label", "models", "suffixes"}
+        assert set(row) == {
+            "id",
+            "label",
+            "models",
+            "suffixes",
+            "available",
+            "reason",
+        }
         assert isinstance(row["models"], list)
         assert isinstance(row["suffixes"], list)
+        assert isinstance(row["available"], bool)
+        if row["available"]:
+            assert row["reason"] is None
+        else:
+            assert isinstance(row["reason"], str) and row["reason"]
 
     by_id = {row["id"]: row for row in rows}
     assert "maccor_txt" in by_id
@@ -204,9 +235,50 @@ def test_list_instruments_shape_and_known_entry():
     assert maccor["label"] == "Maccor (text)"
     assert maccor["suffixes"] == [".txt"]
     assert maccor["models"]  # non-empty
+    assert maccor["available"] is True
     # derived labels for a couple more (no per-instrument table)
     assert by_id["arbin_sql_csv"]["label"] == "Arbin SQL (CSV)"
     assert by_id["pec_csv"]["label"] == "PEC (CSV)"
+
+
+@pytest.mark.essential
+def test_list_instruments_includes_failed_sql_create(monkeypatch):
+    import cellpy
+    from cellpy.readers import data_structures as core
+
+    original = core.InstrumentFactory.create_models
+
+    def boom(self, key, **kwargs):
+        if key in ("arbin_sql", "arbin_sql_7"):
+            raise ImportError("libodbc.so.2: cannot open shared object file")
+        return original(self, key, **kwargs)
+
+    monkeypatch.setattr(core.InstrumentFactory, "create_models", boom)
+    by_id = {row["id"]: row for row in cellpy.list_instruments()}
+    row = by_id["arbin_sql"]
+    assert row["available"] is False
+    assert "libodbc.so.2" in row["reason"]
+    assert row["models"] == []
+    assert row["suffixes"] == []
+    assert row["label"] == "Arbin SQL"
+
+
+@pytest.mark.essential
+def test_list_instruments_marks_arbin_res_when_mdb_export_missing(monkeypatch):
+    import cellpy
+    from cellpy.readers.instruments import arbin_res
+
+    monkeypatch.setattr(
+        arbin_res,
+        "mdb_export_unavailable_reason",
+        lambda sub_process_path=None: "needs mdbtools (test)",
+    )
+    by_id = {row["id"]: row for row in cellpy.list_instruments()}
+    row = by_id["arbin_res"]
+    assert row["available"] is False
+    assert "mdbtools" in row["reason"]
+    assert row["models"]
+    assert ".res" in row["suffixes"]
 
 
 @pytest.mark.essential

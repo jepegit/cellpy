@@ -43,7 +43,7 @@ import pandas as pd
 import sqlalchemy as sa
 
 from cellpy import prms
-from cellpy.exceptions import LoaderError, NullData
+from cellpy.exceptions import LoaderError, NullData, OptionalDependencyError
 from cellpy.parameters.internal_settings import HeaderDict, get_headers_normal
 from cellpy.readers.data_structures import (
     Data,
@@ -102,6 +102,39 @@ if _use_subprocess and not _is_posix:
 
 if _is_posix:
     _sub_process_path = "mdb-export"
+
+_MDB_EXPORT_COMMAND = "mdb-export"
+
+
+def mdb_export_unavailable_reason(sub_process_path: str | None = None) -> str | None:
+    """Return a reason if the posix ``mdb-export`` command is missing.
+
+    Windows bundled ``mdb-export.exe`` paths are left alone. Callers that
+    need a hard failure should use ``require_mdb_export``.
+    """
+    if sub_process_path is None:
+        if not _is_posix:
+            return None
+        path = _sub_process_path
+    else:
+        path = sub_process_path
+    if str(path) != _MDB_EXPORT_COMMAND:
+        return None
+    if shutil.which(_MDB_EXPORT_COMMAND):
+        return None
+    return (
+        "Reading Arbin .res on Linux/macOS needs mdbtools (provides `mdb-export`). "
+        "Debian/Ubuntu: apt install mdbtools. macOS: brew install mdbtools."
+    )
+
+
+def require_mdb_export(sub_process_path: str | None = None) -> None:
+    """Raise when posix loads need ``mdb-export`` and it is not on PATH."""
+    reason = mdb_export_unavailable_reason(sub_process_path)
+    if reason is None:
+        return
+    raise OptionalDependencyError(reason)
+
 
 try:
     driver_dll = config.instruments.Arbin.odbc_driver
@@ -1057,6 +1090,7 @@ class DataLoader(BaseLoader):
     ):
         import subprocess
 
+        require_mdb_export(_sub_process_path)
         # creating tmp-filenames
         temp_csv_filename_global = os.path.join(temp_dir, "global_tmp.csv")
         temp_csv_filename_normal = os.path.join(temp_dir, "normal_tmp.csv")
@@ -1079,12 +1113,12 @@ class DataLoader(BaseLoader):
                         [_sub_process_path, temp_filename, table_name], stdout=f
                     )
                     logging.debug(f"ran mdb-export {str(f)} {table_name}")
-                except FileNotFoundError as e:
+                except FileNotFoundError:
+                    require_mdb_export(_sub_process_path)
                     logging.critical(
                         f"Could not run {_sub_process_path} on {temp_filename}"
                     )
-                    logging.critical(f"Possible work-around: install mdbtools")
-                    raise e
+                    raise
         return (
             temp_csv_filename_global,
             temp_csv_filename_normal,

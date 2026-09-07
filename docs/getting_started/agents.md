@@ -178,9 +178,11 @@ Suggested layering:
       Default y-axis titles include units (`Charge Capacity (mAh/g)`). Facet
       rows follow the collected `columns=` order top → bottom.
     - **Instrument picker for free.** `cellpy.list_instruments()` returns
-      `[{"id", "label", "models", "suffixes"}, ...]` and is quiet by contract
-      (probe/discovery skips stay at DEBUG — no `WARNING` spam on the root
-      logger), ready to drive an import form.
+      `[{"id", "label", "models", "suffixes", "available", "reason"}, ...]`
+      and is quiet by contract (probe/discovery skips stay at DEBUG — no
+      `WARNING` spam on the root logger). Rows with `available=False` are
+      still listed so a UI can grey them out (`reason` names the missing
+      tool, e.g. mdbtools / `libodbc.so.2`).
     - **Keep the console quiet.** cellpy logs through the `cellpy` logger; raise
       its level in an app you want silent:
       `logging.getLogger("cellpy").setLevel(logging.ERROR)`. Suppress one-off

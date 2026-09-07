@@ -48,8 +48,9 @@ class CorruptCellpyFile(IOError, CellpyError):
 class OptionalDependencyError(ImportError, CellpyError):
     """A feature needs an optional dependency that is not installed.
 
-    The message names the extra to install (e.g. ``pip install
-    cellpy[legacy-files]``), so the fix travels with the error.
+    The message names the extra or system package to install (e.g.
+    ``pip install cellpy[legacy-files]``, or ``apt install mdbtools``),
+    so the fix travels with the error.
     """
 
     pass

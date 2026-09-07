@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+* Missing `mdb-export` on Linux/macOS raises `OptionalDependencyError` naming
+  mdbtools (`apt` / `brew`). `list_instruments()` still lists loaders that
+  fail to import, with `available=False` and a `reason` a UI can show, and
+  marks `arbin_res` unavailable when mdbtools is absent. (#938)
+
 * `matplotlib` and `ipykernel` are no longer required pip dependencies.
   Use `cellpy[plotting-mpl]` / `cellpy[notebook]` (or `cellpy[all]`) when you
   need them; a missing matplotlib backend raises `OptionalDependencyError`.
