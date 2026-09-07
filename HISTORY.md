@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+* `b.plot(ir=True, direction="discharge")` shows an IR panel: it prefers
+  `ir_discharge`, falls back to `ir_charge` with a warning if that column is
+  missing, and warns instead of silently skipping when neither IR column is
+  in the summary. (#949)
+
 * `summary_collector(..., custom_group_labels=...).plot(spread=True)` keeps
   those labels in the Plotly legend (same as the non-spread plot). Per-panel
   y-limits stay `y_ranges=` — do not reuse `fig.update_yaxes(..., row=N)`

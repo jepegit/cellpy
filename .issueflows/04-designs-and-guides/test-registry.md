@@ -140,6 +140,14 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_cli_api.py::test_the_template_listing_is_rendered_from_list_templates | yes | yes | cli_api._new list_ branch | #991 | printed listing cannot drift from the data |
 | tests/test_doc_cross_references.py::test_every_see_reference_names_an_importable_target | yes | yes | cellpy/**/*.py docstring `See `…`` targets | #993 | guards the targets; test_no_sphinx_doc_roles guards the syntax |
 | tests/test_doc_cross_references.py::test_the_thinnest_delegates_point_at_their_documentation | yes | yes | CellpyCell.get_cap / to_csv / to_excel | #993 | the three pointers carrying the most undocumented arguments |
+| tests/test_batch_summary_ir.py::test_pick_optional_summary_prefers_then_falls_back | yes | yes | plotting.batch_summary._pick_optional_summary | #949 | |
+| tests/test_batch_summary_ir.py::test_select_ir_falls_back_and_warns | yes | yes | plotting.batch_summary._select_ir_column | #949 | discharge missing → ir_charge |
+| tests/test_batch_summary_ir.py::test_select_ir_warns_when_neither_column_exists | yes | yes | plotting.batch_summary._select_ir_column | #949 | |
+| tests/test_batch_summary_ir.py::test_select_ir_false_is_silent | yes | yes | plotting.batch_summary._select_ir_column | #949 | ir=False must not warn |
+| tests/test_batch_summary_ir.py::test_discharge_direction_uses_ir_discharge_when_present | yes | yes | plotting.batch_summary plotly title | #949 | skip if no plotly |
+| tests/test_batch_summary_ir.py::test_discharge_direction_falls_back_to_ir_charge | yes | yes | plotting.batch_summary plotly fallback | #949 | skip if no plotly |
+| tests/test_batch_summary_ir.py::test_ir_false_omits_the_panel_even_when_columns_exist | yes | yes | plotting.batch_summary ir=False | #949 | skip if no plotly |
+| tests/test_batch_summary_ir.py::test_missing_ir_columns_warn_and_skip_the_panel | yes | yes | plotting.batch_summary missing IR | #949 | skip if no plotly |
 
 **Columns**
 

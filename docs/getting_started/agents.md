@@ -256,7 +256,10 @@ from cellpy import batch
 b = batch.load(name="my_experiment", project="my_project")
 summaries = b.summaries          # polars frame across cells
 c = b.cells["my_cell_01"]        # a CellpyCell
-fig = b.plot()                   # summary plot
+fig = b.plot()                   # cycle-life summary (cap / CE)
+# ir=True is the default. direction="discharge" uses ir_discharge, and
+# falls back to ir_charge with a UserWarning if that column is missing.
+fig = b.plot(ir=True, rate=True, direction="discharge")
 # If filefinder found no raw files, those cells are FAILED (not empty
 # LOADED). Check b.result.report() / the UserWarning from load.
 ```
