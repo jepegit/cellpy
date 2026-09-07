@@ -15,7 +15,10 @@ from typing import Any, Callable, Optional, Union
 import warnings
 from pathlib import Path
 
-import matplotlib.pyplot as plt
+try:
+    import matplotlib.pyplot as plt
+except ImportError:
+    plt = None
 import pandas as pd
 import numpy as np
 

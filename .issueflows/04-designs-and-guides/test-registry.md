@@ -153,6 +153,11 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_harmonize.py::test_per_step_accumulates_completed_steps_within_the_cycle | yes | yes | instruments.harmonize.normalize_reset_granularity | #989 | PER_STEP warns |
 | tests/test_harmonize.py::test_per_cycle_capacity_is_the_cycle_last_value | yes | yes | instruments.harmonize.normalize_reset_granularity | #989 | summary last-datapoint invariant |
 | tests/test_harmonize.py::test_per_test_already_cycle_cumulative_is_silent | yes | yes | instruments.harmonize.normalize_reset_granularity | #989 | identity PER_TEST no UserWarning |
+| tests/test_dependency_budget.py::test_matplotlib_and_ipykernel_left_the_required_set | yes | yes | pyproject required deps | #937 | pip extras |
+| tests/test_dependency_budget.py::test_matplotlib_lives_in_the_plotting_mpl_extra | yes | yes | pyproject plotting-mpl extra | #937 | |
+| tests/test_dependency_budget.py::test_ipykernel_lives_in_the_notebook_extra | yes | yes | pyproject notebook extra | #937 | |
+| tests/test_dependency_budget.py::test_matplotlib_stays_in_the_dev_group | yes | yes | pyproject dev group | #937 | CI uv sync |
+| tests/test_dependency_budget.py::test_require_matplotlib_names_the_extra | yes | yes | plotting.backends.mpl.require_matplotlib | #937 | OptionalDependencyError |
 
 **Columns**
 

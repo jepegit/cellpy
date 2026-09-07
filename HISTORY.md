@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+* `matplotlib` and `ipykernel` are no longer required pip dependencies.
+  Use `cellpy[plotting-mpl]` / `cellpy[notebook]` (or `cellpy[all]`) when you
+  need them; a missing matplotlib backend raises `OptionalDependencyError`.
+  (#937)
+
 * After load, vendor capacity/energy that does not already start at 0 each
   cycle is rebased so it does; a `UserWarning` names the columns when values
   actually change (1.x kept the tester column as-is). (#989)
