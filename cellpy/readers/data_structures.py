@@ -863,6 +863,29 @@ class InstrumentFactory:
             return True
         return False
 
+    def create_models(self, key: str, **kwargs):
+        """Create default plus named model instances for one registered loader.
+
+        Args:
+            key: instrument id
+            **kwargs: sent to the initializer of the loader class.
+
+        Returns:
+            dict mapping ``"default"`` and any supported model names to loader
+            instances.
+        """
+        bargs = dict(self._kwargs.get(key, {}))
+        bargs.update(kwargs)
+        models = {}
+        loader = self.create(key, **bargs)
+        models["default"] = loader
+        if available_models := self._get_models(loader):
+            for model in available_models:
+                model_args = dict(bargs)
+                model_args["model"] = model
+                models[model] = self.create(key, **model_args)
+        return models
+
     def create_all(self, quiet: bool = False, **kwargs):
         """Create all the instrument loader modules.
 
@@ -876,19 +899,8 @@ class InstrumentFactory:
         """
         loaders = {}
         for key in self._builders:
-            bargs = self._kwargs.get(key, {})
-            bargs.update(kwargs)
             try:
-                models = {}
-                loader = self.create(key, **bargs)
-                models["default"] = loader
-
-                if available_models := self._get_models(loader):
-                    for model in available_models:
-                        bargs["model"] = model
-                        models[model] = self.create(key, **bargs)
-
-                loaders[key] = models
+                loaders[key] = self.create_models(key, **kwargs)
             except Exception as e:
                 message = f"Could not create loader for {key}: {e}"
                 if quiet or self._is_expected_discovery_skip(key, e):
@@ -1081,42 +1093,72 @@ def _instrument_label(loader_id: str) -> str:
 def list_instruments() -> List[Dict[str, Any]]:
     """Quiet, app-facing instrument listing.
 
-    Returns one dict per loader -- ``{"id", "label", "models", "suffixes"}`` --
-    suitable for building an instrument picker / ingestion form. Unlike
-    `instrument_configurations`, it does **not** log a warning for each
-    skipped non-loader module, and it includes a human ``label`` and the raw
-    file ``suffixes``.
+    Returns one dict per registered loader -- ``{"id", "label", "models",
+    "suffixes", "available", "reason"}`` -- suitable for building an
+    instrument picker / ingestion form. Loaders that fail to import still
+    appear with ``available=False`` and a short ``reason`` (e.g. missing
+    ``libodbc.so.2``). Expected skips (``local_instrument``, missing
+    ``DataLoader``) stay omitted. Unlike `instrument_configurations`, it
+    does **not** log a warning for each skipped non-loader module.
 
     Example::
 
         [{"id": "maccor_txt", "label": "Maccor (text)",
-          "models": ["default", "ZERO", ...], "suffixes": [".txt"]}, ...]
+          "models": ["default", "ZERO", ...], "suffixes": [".txt"],
+          "available": True, "reason": None}, ...]
     """
+    listing: List[Dict[str, Any]] = []
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         factory = InstrumentFactory()
         for instrument, settings in find_all_instruments().items():
             if instrument not in LOADERS_NOT_READY_FOR_PROD:
                 factory.register_builder(instrument, settings)
-        loaders = factory.create_all(quiet=True)
 
-    listing: List[Dict[str, Any]] = []
-    for loader_id, models in loaders.items():
-        suffixes = sorted(
-            {
-                f".{str(ext).lstrip('.')}"
-                for inst in models.values()
-                if (ext := getattr(inst, "raw_ext", None))
-            }
-        )
-        listing.append(
-            {
-                "id": loader_id,
-                "label": _instrument_label(loader_id),
-                "models": list(models.keys()),
-                "suffixes": suffixes,
-            }
-        )
+        for loader_id in factory.get_registered_builders():
+            try:
+                models = factory.create_models(loader_id)
+            except Exception as e:
+                message = f"Could not create loader for {loader_id}: {e}"
+                logger.debug(message)
+                if factory._is_expected_discovery_skip(loader_id, e):
+                    continue
+                listing.append(
+                    {
+                        "id": loader_id,
+                        "label": _instrument_label(loader_id),
+                        "models": [],
+                        "suffixes": [],
+                        "available": False,
+                        "reason": str(e),
+                    }
+                )
+                continue
+
+            suffixes = sorted(
+                {
+                    f".{str(ext).lstrip('.')}"
+                    for inst in models.values()
+                    if (ext := getattr(inst, "raw_ext", None))
+                }
+            )
+            reason = None
+            if loader_id == "arbin_res":
+                from cellpy.readers.instruments.arbin_res import (
+                    mdb_export_unavailable_reason,
+                )
+
+                reason = mdb_export_unavailable_reason()
+            listing.append(
+                {
+                    "id": loader_id,
+                    "label": _instrument_label(loader_id),
+                    "models": list(models.keys()),
+                    "suffixes": suffixes,
+                    "available": reason is None,
+                    "reason": reason,
+                }
+            )
     return sorted(listing, key=lambda entry: entry["id"])
 
 

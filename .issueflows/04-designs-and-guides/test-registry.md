@@ -158,6 +158,12 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_dependency_budget.py::test_ipykernel_lives_in_the_notebook_extra | yes | yes | pyproject notebook extra | #937 | |
 | tests/test_dependency_budget.py::test_matplotlib_stays_in_the_dev_group | yes | yes | pyproject dev group | #937 | CI uv sync |
 | tests/test_dependency_budget.py::test_require_matplotlib_names_the_extra | yes | yes | plotting.backends.mpl.require_matplotlib | #937 | OptionalDependencyError |
+| tests/test_instrument_registering.py::test_require_mdb_export_names_mdbtools | yes | yes | arbin_res.require_mdb_export | #938 | OptionalDependencyError |
+| tests/test_instrument_registering.py::test_require_mdb_export_ignores_windows_path | yes | yes | arbin_res.require_mdb_export | #938 | bundled exe path |
+| tests/test_instrument_registering.py::test_list_instruments_shape_and_known_entry | yes | yes | data_structures.list_instruments | #938 | additive available/reason |
+| tests/test_instrument_registering.py::test_list_instruments_is_quiet | yes | yes | data_structures.list_instruments | #786 | WARNING contract |
+| tests/test_instrument_registering.py::test_list_instruments_includes_failed_sql_create | yes | yes | data_structures.list_instruments | #938 | import-fail row |
+| tests/test_instrument_registering.py::test_list_instruments_marks_arbin_res_when_mdb_export_missing | yes | yes | data_structures.list_instruments | #938 | mdbtools probe |
 
 **Columns**
 
