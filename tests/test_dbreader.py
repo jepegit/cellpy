@@ -218,6 +218,20 @@ def test_nom_cap_specifics_column_reaches_pages(db_reader):
     assert pages["nom_cap_specifics"] == ["areal", "areal"]
 
 
+@pytest.mark.essential
+def test_simple_db_engine_skip_file_search_excel_reader(db_reader):
+    """skip_file_search=True yields one row per cell with unset file columns (#1017)."""
+    from cellpy.batch import _dbengine
+    from cellpy.parameters.internal_settings import get_headers_journal
+
+    hdr = get_headers_journal()
+    ids = [test_serial_number_one, test_serial_number_two]
+    pages = _dbengine.simple_db_engine(db_reader, ids, skip_file_search=True)
+    assert len(pages) == len(ids)
+    assert pages[hdr["raw_file_names"]].tolist() == [None, None]
+    assert pages[hdr["cellpy_file_name"]].tolist() == [None, None]
+
+
 #
 # def test_get_all(db_reader):
 #     assert True

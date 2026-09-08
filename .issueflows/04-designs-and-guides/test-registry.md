@@ -175,6 +175,8 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_incremental_update.py::test_empty_tail_is_noop | yes | yes | CellpyCellCore.update_core_data | #778 | strict xfail → core#147 |
 | tests/test_dbreader.py::test_missing_column_warns_once | yes | yes | readers.dbreader.Reader._pick_info | #1008 | warn-once per missing header |
 | tests/test_dbreader.py::test_nom_cap_specifics_column_reaches_pages | yes | yes | batch._dbengine._create_pages_dict | #1008 | db value → pages |
+| tests/test_dbreader.py::test_simple_db_engine_skip_file_search_excel_reader | yes | yes | batch._dbengine.simple_db_engine / find_files | #1017 | skip_file_search frames one row per cell |
+| tests/test_batch.py::test_find_files_skip_file_search_pads_missing_columns | no | – | batch._dbengine.find_files | #1017 | unit detail; engine test covers the gate |
 | tests/test_batch_v3_facade.py::test_load_warns_when_journal_autoload_shadows_db | yes | yes | batch.facade.load | #1008 | cached journal + db args |
 | tests/test_batch_v3_facade.py::test_load_autoload_without_db_args_is_quiet | yes | yes | batch.facade.load | #1008 | no false warning |
 

@@ -308,6 +308,24 @@ def test_find_files_skip_file_search():
     assert out[hdr_journal["cellpy_file_name"]] == ["/path/to/cell_a.h5"]
 
 
+def test_find_files_skip_file_search_pads_missing_columns():
+    """skip_file_search=True pads empty/missing file columns to one None per cell (#1017)."""
+
+    info_dict = {
+        hdr_journal["filename"]: ["cell_a", "cell_b"],
+        hdr_journal["file_name_indicator"]: ["cell_a", "cell_b"],
+        hdr_journal["raw_file_names"]: [],
+        hdr_journal["instrument"]: [None, None],
+    }
+    out = _dbengine.find_files(info_dict, skip_file_search=True)
+    assert out[hdr_journal["raw_file_names"]] == [None, None]
+    assert out[hdr_journal["cellpy_file_name"]] == [None, None]
+
+    empty = _dbengine.find_files({hdr_journal["filename"]: []}, skip_file_search=True)
+    assert empty[hdr_journal["raw_file_names"]] == []
+    assert empty[hdr_journal["cellpy_file_name"]] == []
+
+
 # --- auto_use_file_list wiring (#900) -------------------------------------
 
 

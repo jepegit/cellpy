@@ -15,6 +15,11 @@
 * Golden equality test for incremental updates (L6): head + tail through
   `update_core_data` must equal a full load on raw/steps/summary. (#778)
 
+* `journal_from_db(..., skip_file_search=True)` works with the Excel db reader
+  (and JSON readers that do not carry paths) instead of raising
+  `ValueError: All arrays must be of the same length`; `raw_file_names` /
+  `cellpy_file_name` are `None` per cell until filled. (#1017)
+
 ## [2.1.4] - 2026-09-08
 
 Patch release — the last of the `v2.1.x` reactive stream before Stage 5 (2.2)

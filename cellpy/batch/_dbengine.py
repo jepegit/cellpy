@@ -155,8 +155,10 @@ def find_files(
     """Find raw/cellpy files for each cell using `filefinder`.
 
     Populates ``raw_file_names`` and ``cellpy_file_name`` in ``info_dict``.
-    When ``skip_file_search`` is True the dict is returned unchanged (e.g.
-    when a custom JSON db already carries the paths).
+    When ``skip_file_search`` is True no search runs: file columns the reader
+    already filled (e.g. a custom JSON db carrying the paths) are kept, and
+    missing or empty ones are padded with ``None`` per cell so the dict still
+    frames as one row per cell (#1017).
 
     When ``config.batch.auto_use_file_list`` is True and the caller did not
     supply ``file_list``, the raw-file directory is dumped **once** (scoped to
@@ -165,6 +167,15 @@ def find_files(
     False, so nothing changes unless it is switched on.
     """
     if skip_file_search:
+        number_of_cells = len(
+            info_dict.get(
+                hdr_journal["file_name_indicator"],
+                info_dict.get(hdr_journal["filename"], []),
+            )
+        )
+        for key in (hdr_journal["raw_file_names"], hdr_journal["cellpy_file_name"]):
+            if not info_dict.get(key):
+                info_dict[key] = [None] * number_of_cells
         return info_dict
 
     from cellpy.internals.progress import emit
