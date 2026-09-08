@@ -12,8 +12,9 @@ legacy-bridge stripping of `test_id` on steps/summary and the legacy-schema
 `merge_data` story; releasing against `0.2.1` would have frozen the #507
 workaround.
 
-**Current pin (master).** `cellpycore==0.2.4` in `[project.dependencies]` /
-`uv.lock` (EFC summary columns from core #138/#141). Keep an exact
+**Current pin (master).** `cellpycore==0.2.5` in `[project.dependencies]` /
+`uv.lock` (since cellpy v2.1.4, 2026-09-08; core #143 legacy `cycle_mode`
+unwrapping on top of the 0.2.4 EFC columns, core #138/#141). Keep an exact
 `==` pin on every release commit; bump only via the F9 order (core release →
 cellpy re-pin → cellpy release).
 
