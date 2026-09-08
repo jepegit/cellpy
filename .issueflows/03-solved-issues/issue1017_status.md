@@ -2,7 +2,7 @@
 
 `journal_from_db(skip_file_search=True)` crashes with the Excel reader.
 
-- [ ] Done
+- [x] Done
 
 PR: https://github.com/jepegit/cellpy/pull/1020 (#1020, draft)
 Branch: `cursor/1017-journal-from-db-skip-file-search-3975`
@@ -24,6 +24,8 @@ Branch: `cursor/1017-journal-from-db-skip-file-search-3975`
   (`tests/test_arbin_variants_two_stage.py` ignored locally — `pyodbc` needs
   `libodbc.so.2`, missing on this VM; unrelated to the change).
 
+- `HISTORY.md` `[Unreleased]` bullet; `test-registry.md` rows.
+
 ## Remaining work
 
-- `HISTORY.md` `[Unreleased]` bullet (at `/iflow-close`).
+- None. Merge PR #1020 when CI is green (no version bump requested).
