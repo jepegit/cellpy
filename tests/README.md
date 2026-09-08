@@ -150,10 +150,9 @@ single full `cellpy.get` (all columns, order-insensitive, dtype-insensitive). He
 prototype of the future `CellpyCell.update()` (L3, #164) — it also re-applies the
 cellpy-side summary extras and scaled columns.
 
-Cut points are derived from the full step table (mid-step, step end, cycle end). Two
-strict `xfail`s pin known cellpycore gaps: gap-append mid-step
-(cellpy/cellpy-core#148) and empty-tail no-op (cellpy/cellpy-core#147). When those are
-fixed the xfails turn into failures — drop the markers then.
+Cut points are derived from the full step table (mid-step, step end, cycle end).
+Gap-append mid-step (cellpy/cellpy-core#148) and empty-tail no-op
+(cellpy/cellpy-core#147) pass on `cellpycore>=0.2.6`.
 
 ```bash
 uv run pytest tests/test_incremental_update.py

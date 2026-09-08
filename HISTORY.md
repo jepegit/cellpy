@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+* Pin `cellpycore==0.2.6` (empty-tail no-op, core#147; gap-append mid-step
+  trim, core#148). Drop the two strict xfails on
+  `test_empty_tail_is_noop` and `test_gap_append_mid_step_equals_full_load`.
+
 * `batch.load` warns when a cached `cellpy_batch_<name>.json` is reused while
   db arguments were passed (the database is not re-read; use
   `allow_from_journal=False`). The Excel db reader warns once per configured
@@ -9,9 +13,7 @@
   returning empty values. (#1008)
 
 * Golden equality test for incremental updates (L6): head + tail through
-  `update_core_data` must equal a full load on raw/steps/summary. Two strict
-  xfails pin cellpycore gaps (core#147 empty-tail no-op, core#148 gap-append
-  mid-step). Test-only. (#778)
+  `update_core_data` must equal a full load on raw/steps/summary. (#778)
 
 ## [2.1.4] - 2026-09-08
 
