@@ -611,22 +611,30 @@ def echo_missing_modules():
 
 
 # -- write toml --
+def _setup_toml_path(dst_file, test_user=None):
+    """Where ``cellpy setup`` writes ``cellpy.toml``.
+
+    Test-user (DEV) mode lands next to the legacy dest path instead of the
+    real platform config dir.
+    """
+    from cellpy.config import loader as config_loader
+
+    if test_user:
+        return pathlib.Path(dst_file).with_name("cellpy.toml")
+    return config_loader.user_config_path()
+
+
 def _write_toml_config_file(dst_file, dry_run, test_user=None):
-    """Write the ``cellpy.toml`` twin generated from the config models.
+    """Write the user ``cellpy.toml`` generated from the config models.
 
     The TOML is the single source of truth going forward (config plan Step 5):
     it is *generated* from the resolved ``CellpyConfig`` models (secrets
-    excluded), so adding a field is a one-file change in the models. In
-    test-user (DEV) mode the file lands next to the legacy conf instead of the
-    real platform config dir.
+    excluded), so adding a field is a one-file change in the models.
     """
     from cellpy import config as cellpy_config
     from cellpy.config import loader as config_loader
 
-    if test_user:
-        toml_path = pathlib.Path(dst_file).with_name("cellpy.toml")
-    else:
-        toml_path = config_loader.user_config_path()
+    toml_path = _setup_toml_path(dst_file, test_user)
 
     ui = _ui()
     if dry_run:
@@ -1176,44 +1184,6 @@ def _check(dry_run=False, full_check=True) -> int:
 
     ui.summary(len(checks) - failed, len(checks))
     return failed
-
-
-def _write_config_file(user_dir, dst_file, init_filename, dry_run):
-    """Write the user config file, reporting one line per real action (#891)."""
-    from cellpy.exceptions import ConfigFileNotWritten
-
-    ui = _ui()
-    _debug(f"user directory: {user_dir}")
-
-    if dry_run:
-        ui.step(f"dry-run: would write {dst_file}")
-        return
-
-    if os.path.isfile(dst_file):
-        _debug(f"{dst_file} exists - keeping the settings it already holds")
-
-    try:
-        save_prm_file(dst_file)
-    except ConfigFileNotWritten:
-        ui.warn(
-            "configuration file",
-            f"could not write {dst_file}",
-            hint=f"retrying as {prmreader.DEFAULT_FILENAME}",
-        )
-        try:
-            user_dir, dst_file = prmreader.get_user_dir_and_dst(init_filename)
-            save_prm_file(dst_file)
-        except ConfigFileNotWritten as exc:
-            ui.fail(
-                "configuration file",
-                f"could not write {dst_file} ({exc})",
-                hint="check the directory permissions, then report this at "
-                "https://github.com/jepegit/cellpy/issues",
-            )
-            return
-
-    ui.ok("configuration file", str(dst_file))
-    ui.hint("edit it with:  cellpy edit config")
 
 
 def _write_env_file(user_dir, dst_file, dry_run):
@@ -1803,8 +1773,9 @@ def setup_config(
             dst_file = get_dst_file(user_dir, init_filename)
             _debug(f"test user {test_user}: user_dir={user_dir} dst_file={dst_file}")
 
-        if not pathlib.Path(dst_file).is_file():
-            ui.step(f"no configuration file yet - writing {dst_file}")
+        toml_path = _setup_toml_path(dst_file, test_user)
+        if not pathlib.Path(toml_path).is_file() and not pathlib.Path(dst_file).is_file():
+            ui.step(f"no configuration file yet - writing {toml_path}")
             reset = True
 
         if not pathlib.Path(env_file).is_file():
@@ -1819,7 +1790,6 @@ def setup_config(
                 reset=reset,
                 interactive=True,
             )
-            _write_config_file(user_dir, dst_file, init_filename, dry_run)
             _write_toml_config_file(dst_file, dry_run, test_user=test_user)
             _write_env_file(user_dir, env_file, dry_run)
         else:
@@ -1833,7 +1803,6 @@ def setup_config(
                     interactive=False,
                     silent=silent,
                 )
-            _write_config_file(user_dir, dst_file, init_filename, dry_run)
             _write_toml_config_file(dst_file, dry_run, test_user=test_user)
             _write_env_file(user_dir, env_file, dry_run)
 

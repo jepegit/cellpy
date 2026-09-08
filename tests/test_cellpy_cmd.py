@@ -39,8 +39,9 @@ def isolated_filesystem():
     setup`` writes into it — and that is all this provides.
 
     Note what it does **not** provide: a throwaway *user* directory. ``cellpy
-    setup`` reads and writes ``~/.cellpy_prms_<user>.conf``, not the cwd, so a
-    test that asserts on setup's output also needs ``isolated_user_dir``.
+    setup`` writes ``cellpy.toml`` (and ``.env_cellpy``) into the user config
+    location, not the cwd, so a test that asserts on setup's output also needs
+    ``isolated_user_dir``.
     """
     previous = os.getcwd()
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
@@ -56,7 +57,7 @@ def isolated_user_dir(tmp_path, monkeypatch, config_guard):
     """Point ``cellpy setup`` at a throwaway user directory.
 
     Without this, setup finds (or does not find) the *developer's* real config
-    and behaves differently: with one present it writes three files, with none
+    and behaves differently: with one present it writes toml + env, with none
     it also resets the paths and reports ten directories it would create. A
     test counting those lines therefore passes on one machine and fails on the
     next — which is how ``test_cli_setup`` came to pass locally and fail on CI
@@ -353,16 +354,19 @@ def test_cli_setup_help():
     assert result.exit_code == 0
 
 
+@pytest.mark.essential
 def test_cli_setup(isolated_user_dir):
     runner = CliRunner()
     with isolated_filesystem():
         result = runner.invoke(cli.cli, ["setup", "--dry-run"])
         print(result.output)
         assert result.exit_code == 0
-        # one line per file it would write (config, toml, env) and no claim
-        # that anything was written (#891)
-        assert result.output.count("dry-run: would write") == 3
+        # one line per file it would write (toml, env) and no claim
+        # that anything was written (#891, #960)
+        assert result.output.count("dry-run: would write") == 2
         assert "written" not in result.output
+        assert "cellpy.toml" in result.output
+        assert ".cellpy_prms_" not in result.output
 
 
 def test_cli_setup_interactive(isolated_user_dir):
@@ -389,7 +393,10 @@ def test_cli_setup_custom_dir(isolated_user_dir):
         assert result.exit_code == 0
 
 
+@pytest.mark.essential
 def test_cli_setup_creates_dirs_and_files(isolated_user_dir):
+    import tomllib
+
     runner = CliRunner()
     test_user = "inventory_user"
     # was assigning config.paths.env_file directly and never putting it back,
@@ -421,9 +428,12 @@ def test_cli_setup_creates_dirs_and_files(isolated_user_dir):
 
     conf_name = prmreader.create_custom_init_filename(test_user)
     conf_path = tmp_path / conf_name
-    assert conf_path.is_file()
-    parsed = prmreader._read_prm_file_without_updating(conf_path)
-    assert "Paths" in parsed
+    assert not conf_path.is_file(), "setup must not write a legacy .conf (#960)"
+
+    toml_path = tmp_path / "cellpy.toml"
+    assert toml_path.is_file()
+    data = tomllib.loads(toml_path.read_text(encoding="utf-8"))
+    assert "paths" in data
 
     env_path = tmp_path / ".env_cellpy"
     assert env_path.is_file()
@@ -582,7 +592,7 @@ def test_cli_new_different_and_missing_default(tmp_path):
 
 
 def test_setup_writes_toml_twin(tmp_path):
-    """The setup TOML twin is generated from the config models (#454).
+    """The setup TOML is generated from the config models (#454, #960).
 
     The helper is exercised directly: the full ``cellpy setup`` flow is
     interactive when a custom root dir is given, which a CliRunner cannot

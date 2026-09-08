@@ -26,7 +26,9 @@ cellpy setup -i -d /Users/you/cellpy_data
 
 `cellpy setup` writes (or refreshes) a user **`cellpy.toml`**, tries to create
 the usual directory layout, and creates a `.env_cellpy` file for secrets /
-remote credentials (edit that file before using SSH remotes).
+remote credentials (edit that file before using SSH remotes). It does **not**
+write a new legacy `.cellpy_prms_*.conf` — convert an existing one with
+`cellpy setup migrate`.
 
 Typical directories:
 

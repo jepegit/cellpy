@@ -62,8 +62,8 @@ def test_setup_states_a_dry_run_fact_once(isolated_home):
     )
     assert result.exit_code == 0
     assert "skipping actual saving" not in result.output
-    # one line per file it would write: the conf, the toml and the env file
-    assert result.output.count("dry-run: would write") == 3
+    # one line per file it would write: the toml and the env file (#960)
+    assert result.output.count("dry-run: would write") == 2
 
 
 @pytest.mark.essential
