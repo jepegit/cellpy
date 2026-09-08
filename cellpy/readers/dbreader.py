@@ -63,6 +63,7 @@ class Reader(core.BaseSimpleDbReader):
 
         self.db_sheet_cols = DbSheetCols()
         self.selected_batch = None
+        self._missing_columns_warned = set()
 
         if not db_datadir:
             self.db_datadir = config.paths.rawdatadir
@@ -365,13 +366,35 @@ class Reader(core.BaseSimpleDbReader):
         try:
             x = self._select_col(row, column_name)
         except KeyError:
-            logging.debug(f"your database is missing the following key: {column_name}")
+            self._warn_missing_column(column_name)
             return None
         else:
             x = x.values
             if len(x) == 1:
                 x = x[0]
             return x
+
+    def _warn_missing_column(self, column_name):
+        """Warn once per missing sheet column (values silently become ``None``, #1008)."""
+        if column_name in self._missing_columns_warned:
+            return
+        self._missing_columns_warned.add(column_name)
+        key = next(
+            (
+                k
+                for k in self.db_sheet_cols.keys
+                if getattr(self.db_sheet_cols, k) == column_name
+            ),
+            None,
+        )
+        via = f" (config.db_cols.{key})" if key else ""
+        warnings.warn(
+            f"cellpy db {self.db_filename!r} has no column {column_name!r}{via}; "
+            "the corresponding journal values will be empty. Rename the sheet header "
+            "or set the matching key under [db_cols] in cellpy.toml.",
+            UserWarning,
+            stacklevel=4,
+        )
 
     def select_serial_number_row(self, serial_number):
         """Select row for identification number serial_number

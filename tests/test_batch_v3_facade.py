@@ -245,6 +245,37 @@ def test_batch_from_db(db_env):
     assert set(b.cell_names) == _DB_CELLS
 
 
+def _stale_journal(tmp_path):
+    """A pre-existing ``cellpy_batch_t.json`` in ``tmp_path`` (autoload target)."""
+    return _one_cell_batch().save(tmp_path / "cellpy_batch_t.json")
+
+
+@pytest.mark.essential
+def test_load_warns_when_journal_autoload_shadows_db(db_env, tmp_path):
+    """Explicit db args + cached journal: the journal wins, so say so (#1008)."""
+    _stale_journal(tmp_path)
+    with pytest.warns(UserWarning, match="database was not read"):
+        b = load(
+            "t",
+            "p",
+            db_reader="simple_excel_reader",
+            journal_dir=tmp_path,
+            save_cellpy=False,
+            progress=False,
+        )
+    assert b.cell_names == ["c45"]
+
+
+@pytest.mark.essential
+def test_load_autoload_without_db_args_is_quiet(db_env, tmp_path):
+    _stale_journal(tmp_path)
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        b = load("t", "p", journal_dir=tmp_path, save_cellpy=False, progress=False)
+    assert b.cell_names == ["c45"]
+    assert not [w for w in caught if "database was not read" in str(w.message)]
+
+
 def test_create_journal_reads_db(db_env):
     # the legacy init() -> create_journal() flow via deferred _db config
     b = Batch(

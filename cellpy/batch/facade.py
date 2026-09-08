@@ -1036,6 +1036,16 @@ def _load_after_progress(
             candidate = _journal_path(name, journal_dir)
             if candidate.is_file():
                 _log.info("loading journal %s", candidate)
+                if db is not None or db_reader is not None or db_kwargs:
+                    # The caller asked for a db read, but the cached journal wins;
+                    # stale journals then show up as empty/old meta (#1008).
+                    warnings.warn(
+                        f"batch.load: reusing journal {candidate} — the database was "
+                        "not read. Pass allow_from_journal=False (or delete the "
+                        "journal file) to rebuild the journal from the database.",
+                        UserWarning,
+                        stacklevel=3,
+                    )
                 batch = Batch(read_journal(candidate), policy=resolved)
                 journal_path = candidate
 
