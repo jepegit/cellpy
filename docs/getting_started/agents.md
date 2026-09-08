@@ -284,7 +284,8 @@ Dropping cells:
   no `update()` required. Call `b.save()` to persist the thinner journal.
 - Next `batch.load(...)` (default `drop_bad_cells=True`) drops
   `session["bad_cells"]` **before** it loads, so a saved mark is enough if
-  you reload instead of dropping in the same session.
+  you reload instead of dropping in the same session. Saved journals include
+  a top-level `version` (missing on old files means 1).
 
 Building a batch from cells you already hold (a GUI, a notebook, a file
 picker) goes through `from_cells`, which takes cells — not paths:

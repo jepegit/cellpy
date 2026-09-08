@@ -50,6 +50,8 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_batch_v3_runner.py::test_newest_passes_both_paths | yes | yes | batch.runner._get_kwargs NEWEST | #825 | freshness check |
 | tests/test_batch_v3_runner.py::test_recalc_remakes_steps_and_summary | yes | yes | batch.runner.load_cell recalc | #825 | force_recalc |
 | tests/test_batch_v3_runner.py::test_no_recalc_skips_remake | yes | yes | batch.runner.load_cell | #825 | |
+| tests/test_batch_v3.py::test_journal_missing_version_is_version_one | yes | yes | batch.journal.read_journal | #1000 | missing version → 1 |
+| tests/test_batch_v3.py::test_journal_newer_version_warns_and_still_loads | yes | yes | batch.journal.read_journal | #1000 | future version warns |
 | tests/test_batch.py::test_persist_skips_rewrite_when_loaded_from_cellpy | yes | yes | batch.facade._persist_cells | #825 | skip redundant save |
 | tests/test_batch.py::test_persist_rewrites_when_loaded_from_raw | yes | yes | batch.facade._persist_cells | #825 | |
 | tests/test_batch.py::test_export_project_writes_cells_and_relative_journal | yes | yes | batch.facade.Batch.export_project | #878 | relative posix journal paths |
