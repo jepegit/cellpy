@@ -38,7 +38,10 @@ def journal_from_db(
     ``sub_folders``) are forwarded to
     `simple_db_engine` /
     `find_files`. Pass ``skip_file_search=True``
-    when the JSON already carries ``raw_file_names`` / ``cellpy_file_name``.
+    when the JSON already carries ``raw_file_names`` / ``cellpy_file_name``,
+    or to build the journal without touching the file system (any reader):
+    file columns the reader did not fill are then ``None`` per cell, and
+    ``update()`` marks those cells ``FAILED`` until paths are filled in.
 
     ``project`` also scopes the one-shot raw-file-directory dump used when
     ``config.batch.auto_use_file_list`` is True (default False).
