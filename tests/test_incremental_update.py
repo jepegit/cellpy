@@ -69,24 +69,15 @@ def test_gap_append_on_boundary_equals_full_load(tmp_path, full, cut_points, cut
 
 
 @pytest.mark.essential
-@pytest.mark.xfail(
-    strict=True,
-    reason="cellpy/cellpy-core#148: gap-append keeps the partial trailing step, so the "
-    "step spanning the cut is split in two (extra step row, C-rate drift). Until fixed, "
-    "L3 (#164) must re-read from the start of the last step.",
-)
 def test_gap_append_mid_step_equals_full_load(tmp_path, full, cut_points):
+    """Gap-append mid-step equals a full load (cellpycore 0.2.6 / core#148)."""
     updated = _run(tmp_path, full, cut_points["mid_step"], overlap=0)
     assert_cell_frames_equal(updated, full)
 
 
 @pytest.mark.essential
-@pytest.mark.xfail(
-    strict=True,
-    reason="cellpy/cellpy-core#147: empty new_raw short-circuits update_data but "
-    "refresh_derived still re-joins the C-rate columns (*_right duplicates).",
-)
 def test_empty_tail_is_noop(tmp_path, full, cut_points):
+    """Empty new_raw leaves frames unchanged (cellpycore 0.2.6 / core#147)."""
     head = _head(tmp_path, cut_points["mid_step"])
     before = {k: getattr(head.data, k).copy() for k in ("raw", "steps", "summary")}
     updated = incremental_update(head, full.data.raw.iloc[0:0])

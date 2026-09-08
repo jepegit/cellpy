@@ -437,7 +437,7 @@ docs = [
 
 [package.metadata]
 requires-dist = [
-    { name = "cellpycore", specifier = "==0.2.5" },
+    { name = "cellpycore", specifier = "==0.2.6" },
     { name = "charset-normalizer" },
     { name = "cookiecutter" },
     { name = "dateparser" },
@@ -515,16 +515,16 @@ docs = [
 
 [[package]]
 name = "cellpycore"
-version = "0.2.5"
+version = "0.2.6"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "pandas" },
     { name = "polars" },
     { name = "pyarrow" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/cd/84/90f17fb223c80ce5b8460bc19e5436443b057a2e06561dce66091f9ed181/cellpycore-0.2.5.tar.gz", hash = "sha256:f3d5b612f98ca59f56b482f2e62149ad9ef90273df759a9ea376cbea3b269829", size = 883414, upload-time = "2026-09-08T07:59:34.883Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/a9/db/8f05e83f927d3ea0d002855068b434cf3cc26877ffb9cde388cc6373feae/cellpycore-0.2.6.tar.gz", hash = "sha256:e447cd8d7c0fb3ecff2a8220598c401bc472bb2c58f11962736dc48a6e66c33d", size = 889148, upload-time = "2026-09-08T17:23:19.702Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/0b/d4/f114496d86d86c4b1f0b34f82831d5cb542fc44dd0ad5a56fa7ac428b0af/cellpycore-0.2.5-py3-none-any.whl", hash = "sha256:e2c02c207a9c7a3f87a3b65a6dcc635d324b0f441ece6e22444a0c879ec1ee84", size = 92750, upload-time = "2026-09-08T07:59:33.195Z" },
+    { url = "https://files.pythonhosted.org/packages/9f/96/5aa2a78f6e30ba7db99cfbc9e8a93dfecf88191561bd2eb377cf63ac22d2/cellpycore-0.2.6-py3-none-any.whl", hash = "sha256:4fe693c061b21314117743edc31facc122c64814604a917715e90b23c81dbf14", size = 93461, upload-time = "2026-09-08T17:23:18.017Z" },
 ]
 
 [[package]]
