@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+## [2.1.4] - 2026-09-08
+
+Patch release — the last of the `v2.1.x` reactive stream before Stage 5 (2.2)
+work starts. Additive, no breaking changes; one behaviour change on load
+(#989, below). Ships on `cellpycore==0.2.5` (legacy `cycle_mode` list
+unwrapping, core #143).
+
 * Batch journal JSON files have a top-level `version` (missing means 1).
   New writes store 1; a newer file version warns and still loads. (#1000)
 
