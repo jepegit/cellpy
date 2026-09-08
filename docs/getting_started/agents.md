@@ -271,6 +271,10 @@ fig = b.plot()                   # cycle-life summary (cap / CE)
 fig = b.plot(ir=True, rate=True, direction="discharge")
 # If filefinder found no raw files, those cells are FAILED (not empty
 # LOADED). Check b.result.report() / the UserWarning from load.
+# A cellpy_batch_<name>.json in cwd (or journal_dir) is reused as-is: the
+# database is NOT re-read (a UserWarning fires if you also passed db args).
+# Use allow_from_journal=False to rebuild the journal from the db.
+b = batch.load(name="my_experiment", project="my_project", allow_from_journal=False)
 ```
 
 Dropping cells:

@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+* `batch.load` warns when a cached `cellpy_batch_<name>.json` is reused while
+  db arguments were passed (the database is not re-read; use
+  `allow_from_journal=False`). The Excel db reader warns once per configured
+  `db_cols` header that is missing from the sheet instead of silently
+  returning empty values. (#1008)
+
 * Golden equality test for incremental updates (L6): head + tail through
   `update_core_data` must equal a full load on raw/steps/summary. Two strict
   xfails pin cellpycore gaps (core#147 empty-tail no-op, core#148 gap-append

@@ -191,6 +191,33 @@ def test_get_total_mass(db_reader):
     assert pytest.approx(output, 0.1) == test_total_mass
 
 
+@pytest.mark.essential
+def test_missing_column_warns_once(db_reader):
+    """The test db has no nominal_capacity_specifics column: warn once, return None (#1008)."""
+    import warnings
+
+    col = db_reader.db_sheet_cols.nom_cap_specifics
+    assert col not in db_reader.table.columns
+    with pytest.warns(UserWarning, match=f"no column {col!r}.*db_cols.nom_cap_specifics"):
+        assert db_reader.get_nom_cap_specifics(test_serial_number_one) is None
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", UserWarning)
+        assert db_reader.get_nom_cap_specifics(test_serial_number_two) is None
+
+
+@pytest.mark.essential
+def test_nom_cap_specifics_column_reaches_pages(db_reader):
+    """A present specifics column flows into the journal pages dict (#1008)."""
+    from cellpy.batch import _dbengine
+
+    frame = db_reader.table.copy()
+    frame[db_reader.db_sheet_cols.nom_cap_specifics] = "areal"
+    reader = type(db_reader)(db_frame=frame)
+    ids = [test_serial_number_one, test_serial_number_two]
+    pages = _dbengine._create_pages_dict(reader, ids)
+    assert pages["nom_cap_specifics"] == ["areal", "areal"]
+
+
 #
 # def test_get_all(db_reader):
 #     assert True

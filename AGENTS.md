@@ -323,6 +323,10 @@ Quick facts:
 - Batch: `batch.load(name=..., project=...)`; `executor="threads"` speeds up
   reopening local `.cellpy` files (first remote load stays serial on the wire).
   `progress=None` auto-shows tqdm (TTY / Jupyter); `False` off.
+  An existing `cellpy_batch_<name>.json` in cwd/`journal_dir` is reused and
+  the db is not re-read (warns when db args were passed);
+  `allow_from_journal=False` rebuilds from the db. A configured `db_cols`
+  header missing from the sheet warns once (values become empty).
   After load: `b.summaries`, `b.cells[label]`, `b.plot()`, `b.result.report()`.
   Text in the cellpy_db `group` column becomes journal `group_label` (default
   legend for `summary_collector(..., group_it=True)`); `custom_group_labels=`
