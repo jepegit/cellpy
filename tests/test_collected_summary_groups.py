@@ -8,7 +8,7 @@ import pytest
 from cellpy.collect.collection import Collection, CollectionMeta
 from cellpy.plotting.collected import _plain_axis_title
 
-_COLUMNS = ("cap_charge", "cap_discharge", "ce")
+_COLUMNS = ("cap_a", "cap_b", "ce")
 
 
 def _grouped_collection(
@@ -68,10 +68,10 @@ def _facet_labels(fig) -> list[str]:
 @pytest.mark.essential
 def test_grouped_summary_facets_follow_the_collected_column_order():
     pytest.importorskip("plotly", reason="plotting extras (batch) not installed")
-    columns = ("cap_charge", "cap_discharge", "ce")
+    columns = ("cap_a", "cap_b", "ce")
     fig = _grouped_collection(columns).plot(y_label_mapper=_identity_mapper(*columns))
     # The old frame was sorted by ``variable``, so the facets came out
-    # alphabetically (cap_charge, cap_discharge, ce happens to differ from the
+    # alphabetically (cap_a, cap_b, ce happens to differ from the
     # requested order below).
     assert _facet_labels(fig) == list(columns)
 
@@ -79,7 +79,7 @@ def test_grouped_summary_facets_follow_the_collected_column_order():
 @pytest.mark.essential
 def test_grouped_summary_facet_order_is_the_requested_one_not_alphabetical():
     pytest.importorskip("plotly", reason="plotting extras (batch) not installed")
-    columns = ("cap_charge", "ce", "cap_discharge")
+    columns = ("cap_a", "ce", "cap_b")
     fig = _grouped_collection(columns).plot(y_label_mapper=_identity_mapper(*columns))
     assert _facet_labels(fig) == list(columns)
 
@@ -88,22 +88,22 @@ def test_grouped_summary_facet_order_is_the_requested_one_not_alphabetical():
 def test_order_variables_keeps_variables_outside_the_requested_list():
     """A derived series (retention, CV split) must not lose its facet (#923)."""
     pytest.importorskip("plotly", reason="plotting extras (batch) not installed")
-    columns = ("cap_charge", "cap_discharge")
+    columns = ("cap_a", "cap_b")
     collection = _grouped_collection(columns, extra_variable="cap_retention")
     fig = collection.plot(
         y_label_mapper=_identity_mapper(*columns, "cap_retention")
     )
-    assert _facet_labels(fig) == ["cap_charge", "cap_discharge", "cap_retention"]
+    assert _facet_labels(fig) == ["cap_a", "cap_b", "cap_retention"]
 
 
 @pytest.mark.essential
 def test_explicit_order_variables_wins_over_the_collected_columns():
     pytest.importorskip("plotly", reason="plotting extras (batch) not installed")
     fig = _grouped_collection().plot(
-        order_variables=["ce", "cap_charge", "cap_discharge"],
+        order_variables=["ce", "cap_a", "cap_b"],
         y_label_mapper=_identity_mapper(*_COLUMNS),
     )
-    assert _facet_labels(fig) == ["ce", "cap_charge", "cap_discharge"]
+    assert _facet_labels(fig) == ["ce", "cap_a", "cap_b"]
 
 
 @pytest.mark.essential
@@ -133,7 +133,7 @@ def test_spread_plot_legend_uses_custom_group_labels():
 @pytest.mark.essential
 def test_spread_plot_facets_follow_the_collected_column_order():
     pytest.importorskip("plotly", reason="plotting extras (batch) not installed")
-    columns = ("cap_charge", "ce", "cap_discharge")
+    columns = ("cap_a", "ce", "cap_b")
     fig = _grouped_collection(columns).plot(
         spread=True, y_label_mapper=_identity_mapper(*columns)
     )
@@ -170,7 +170,7 @@ def test_ungrouped_summary_legend_title_stays_cell():
             "cycle_num": [1, 2, 1, 2],
             "group": [1, 1, 2, 2],
             "sub_group": [1, 1, 1, 1],
-            "cap_charge": [100.0, 101.0, 90.0, 91.0],
+            "cap_a": [100.0, 101.0, 90.0, 91.0],
         }
     )
     collection = Collection(
@@ -197,7 +197,7 @@ def test_custom_group_labels_match_int_and_str_group_ids(keys):
         def __init__(self, scale):
             self.data = SimpleNamespace(
                 summary=pl.DataFrame(
-                    {"cycle_num": [1, 2], "cap_charge": [10.0 * scale, 20.0 * scale]}
+                    {"cycle_num": [1, 2], "cap_a": [10.0 * scale, 20.0 * scale]}
                 ),
                 steps=None,
             )
@@ -214,7 +214,7 @@ def test_custom_group_labels_match_int_and_str_group_ids(keys):
     collection = collect_summaries(
         batch,
         group_it=True,
-        columns=("cap_charge",),
+        columns=("cap_a",),
         custom_group_labels={first: "alpha", second: "beta"},
     )
     assert set(collection.data["group_label"].to_list()) == {"alpha", "beta"}
@@ -275,12 +275,14 @@ def test_summary_collector_plot_uses_custom_group_labels_and_units():
     """Issue #947 snippet: legend labels + unit-bearing y-titles."""
     pytest.importorskip("plotly", reason="plotting extras (batch) not installed")
     fig = _labelled_summary_collector().plot()
-    assert {trace.name for trace in fig.data} == {"run-14", "run-15"}
-    assert _facet_labels(fig) == [
-        "Charge Capacity (mAh/g)",
-        "Discharge Capacity (mAh/g)",
-        "Coulombic Efficiency (%)",
-    ]
+    series = [trace for trace in fig.data if trace.legend != "legend2"]
+    assert {trace.name for trace in series} == {"run-14", "run-15"}
+    # charge / discharge share the capacity panel (#1009)
+    assert _facet_labels(fig) == ["Capacity (mAh/g)", "Coulombic Efficiency (%)"]
+    assert {trace.name for trace in fig.data if trace.legend == "legend2"} == {
+        "Charge",
+        "Discharge",
+    }
 
 
 @pytest.mark.essential
@@ -288,7 +290,8 @@ def test_summary_collector_spread_plot_keeps_custom_group_labels():
     """Issue #948: `spread=True` must not fall back to group ids."""
     pytest.importorskip("plotly", reason="plotting extras (batch) not installed")
     fig = _labelled_summary_collector().plot(spread=True)
-    assert {trace.name for trace in fig.data if trace.showlegend} == {
-        "run-14",
-        "run-15",
-    }
+    assert {
+        trace.name
+        for trace in fig.data
+        if trace.showlegend and trace.legend != "legend2"
+    } == {"run-14", "run-15"}

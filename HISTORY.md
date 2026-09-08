@@ -6,6 +6,15 @@
   trim, core#148). Drop the two strict xfails on
   `test_empty_tail_is_noop` and `test_gap_append_mid_step_equals_full_load`.
 
+* Collected summary plots (`summary_collector(...).plot()`) draw charge and
+  discharge of the same quantity in one panel: charge solid, discharge dashed,
+  one legend entry per cell/group plus a separate "Direction" legend.
+  `combine_directions=False` restores one facet per variable. The
+  `fullcell_standard_*` families also collected the CV split of every column
+  (10–12 facets instead of 4); `summary_options` now requests the declared
+  columns literally and `collect_summaries` takes a column list that names a
+  `*_cv` / `*_non_cv` column literally. (#1009)
+
 * `batch.load` warns when a cached `cellpy_batch_<name>.json` is reused while
   db arguments were passed (the database is not re-read; use
   `allow_from_journal=False`). The Excel db reader warns once per configured

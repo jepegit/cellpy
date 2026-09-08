@@ -522,14 +522,18 @@ def _source_column(name: str) -> str:
 def test_every_summary_family_is_collectable_with_its_own_options(
     real_batch, real_cell
 ):
-    """A family's own options must satisfy the columns the family declares.
+    """A family's own options must collect exactly the columns it declares.
 
     The only columns allowed to stay missing are those whose source is absent
     from the cell's summary in the first place (this cell has no ``*_absolute``
-    metrics) — that is a data limit, not a menu the app cannot reach.
+    metrics) — that is a data limit, not a menu the app cannot reach. Nothing
+    beyond the declared columns (plus journal keys) may come along: the
+    ``fullcell_standard*`` families used to drag in the CV split of every
+    requested column and drew 10 facets instead of 4 (#1009).
     """
     hdr = real_cell.schema.summary
     available = set(real_cell.data.summary.columns)
+    keys = {"cell", "group", "sub_group", "group_label", "label", "cycle_num"}
 
     for family in registry.iter_families(entry_point="summary_plot"):
         options = family.summary_options(hdr)
@@ -540,6 +544,36 @@ def test_every_summary_family_is_collectable_with_its_own_options(
             name for name in declared if _source_column(name) not in available
         }
         assert missing == unavailable, family.name
+        extra = collected - set(declared) - keys
+        assert not extra, f"{family.name}: undeclared columns {sorted(extra)}"
+
+
+@pytest.mark.essential
+def test_collect_summaries_literal_cv_column_list(real_batch):
+    """Naming a ``*_cv`` column keeps the list literal; no base / non_cv tag along (#1009)."""
+    col = collect_summaries(
+        real_batch,
+        columns=("charge_capacity_cv", "discharge_capacity", "coulombic_efficiency"),
+        partition_by_cv=True,
+    )
+    value_columns = [c for c in col.data.columns if "capacity" in c or "efficiency" in c]
+    assert value_columns == [
+        "charge_capacity_cv",
+        "discharge_capacity",
+        "coulombic_efficiency",
+    ]
+
+
+@pytest.mark.essential
+def test_summary_options_requests_declared_cv_columns_literally(real_cell):
+    hdr = real_cell.schema.summary
+    options = registry.get("fullcell_standard_gravimetric").summary_options(hdr)
+    assert options.columns == (
+        "charge_capacity_gravimetric_cv",
+        "discharge_capacity_gravimetric",
+        "coulombic_efficiency",
+    )
+    assert options.partition_by_cv
 
 
 @pytest.mark.essential

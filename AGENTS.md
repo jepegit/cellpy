@@ -333,6 +333,9 @@ Quick facts:
   still overrides. Numeric group ids stay unlabeled.
   `b.plot(ir=True, direction="discharge")` uses `ir_discharge`, or `ir_charge`
   with a warning if that column is missing.
+  `summary_collector(b, family=...).plot()` puts charge (solid) and discharge
+  (dashed) of one quantity in the same panel with a separate "Direction"
+  legend; `combine_directions=False` gives one facet per variable.
   `mark_as_bad` is a session flag (unknown cell name → `ValueError`); `drop` /
   `drop_cells_marked_bad` remove now
   (plot/summaries work without `update()`). `save()` then next `load` (default

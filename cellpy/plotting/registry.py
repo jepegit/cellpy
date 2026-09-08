@@ -63,8 +63,11 @@ class PlotFamily:
         family needs to produce its own `columns` is derived here, so an
         app building a plot menu never needs out-of-band knowledge.
 
-        * ``*_cv`` / ``*_non_cv`` columns are requested by their base name and
-          turn on ``partition_by_cv`` (as does ``supports_cv_split``).
+        * Declared columns are requested **literally**. A ``*_cv`` /
+          ``*_non_cv`` name turns on ``partition_by_cv`` (as does
+          ``supports_cv_split``) so the split gets computed, but only the
+          declared variant is kept — not the base column and both parts
+          (#1009).
         * A declared ``mod_01_*`` column is a marker, not a summary column — it
           becomes a transform that writes exactly that column from its
           prefix-stripped source, normalized on the source maximum (matching
@@ -88,23 +91,19 @@ class PlotFamily:
         partition_by_cv = self.supports_cv_split
 
         for name in declared:
-            base = name
-            for suffix in ("_non_cv", "_cv"):
-                if base.endswith(suffix):
-                    base = base[: -len(suffix)]
-                    partition_by_cv = True
-                    break
-            if _MOD_MARKER.match(base):
-                source = _MOD_MARKER.sub("", base)
+            if name.endswith(("_non_cv", "_cv")):
+                partition_by_cv = True
+            if _MOD_MARKER.match(name):
+                source = _MOD_MARKER.sub("", name)
                 if source not in columns:
                     columns.append(source)
                 transforms.append(
-                    normalize_column(source, norm_factor, out=base)
+                    normalize_column(source, norm_factor, out=name)
                     if norm_factor is not None
-                    else normalize_column_on_max(source, out=base)
+                    else normalize_column_on_max(source, out=name)
                 )
-            elif base not in columns:
-                columns.append(base)
+            elif name not in columns:
+                columns.append(name)
 
         return SummaryOptions(
             columns=tuple(columns),
