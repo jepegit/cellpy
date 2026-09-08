@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+* Batch journal JSON files have a top-level `version` (missing means 1).
+  New writes store 1; a newer file version warns and still loads. (#1000)
+
 * Text in the cellpy_db `group` column is kept as journal `group_label`, so
   `summary_collector(..., group_it=True)` uses those names as default legend
   labels. Numeric group ids stay unlabeled; `custom_group_labels=` still

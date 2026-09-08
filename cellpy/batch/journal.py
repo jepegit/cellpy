@@ -7,14 +7,16 @@ class mixing data model, three file formats, path fixing, selection state and
 folder generation). Folder layout lives in `layout`.
 
 The on-disk JSON format is preserved for compatibility: a top-level object with
-``info_df`` (pages, pandas ``to_json`` "columns" orient), ``metadata`` and
-``session``. Pages follow the keys-in-columns law (polars report section 1.3):
-the cell label lives in the ``filename`` *column*, never in an index.
+``version`` (missing means 1), ``info_df`` (pages, pandas ``to_json`` "columns"
+orient), ``metadata`` and ``session``. Pages follow the keys-in-columns law
+(polars report section 1.3): the cell label lives in the ``filename`` *column*,
+never in an index.
 """
 
 from __future__ import annotations
 
 import json
+import warnings
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -50,6 +52,7 @@ class Journal:
         session: mutable session state (starred/bad_cells/bad_cycles/notes).
         meta: free-form metadata carried through save/load (name, project,
             time_stamp, project_dir, ...).
+        version: on-disk journal format version (missing file key → 1).
     """
 
     name: str | None = None
@@ -57,6 +60,7 @@ class Journal:
     pages: pl.DataFrame = field(default_factory=pl.DataFrame)
     session: dict = field(default_factory=_empty_session)
     meta: dict = field(default_factory=dict)
+    version: int = JOURNAL_FORMAT_VERSION
 
     @property
     def cell_names(self) -> list[str]:
@@ -125,6 +129,23 @@ def _pages_to_info_df(pages: pl.DataFrame) -> dict:
     return json.loads(pdf.to_json(default_handler=str))
 
 
+def _journal_file_version(raw: dict) -> int:
+    """Format version of a journal JSON object.
+
+    A missing ``version`` key is version 1 (files written before #1000).
+    """
+    value = raw.get("version", 1)
+    if value is None:
+        return 1
+    try:
+        version = int(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"journal version must be an integer, got {value!r}") from exc
+    if version < 1:
+        raise ValueError(f"journal version must be >= 1, got {version}")
+    return version
+
+
 def read_journal(path: Path | str) -> Journal:
     """Load a journal into the `Journal` model.
 
@@ -140,6 +161,15 @@ def read_journal(path: Path | str) -> Journal:
     if "info_df" not in raw:
         raise ValueError(f"not a cellpy journal (missing 'info_df'): {path}")
 
+    version = _journal_file_version(raw)
+    if version > JOURNAL_FORMAT_VERSION:
+        warnings.warn(
+            f"journal file {path} is version {version}; this cellpy reads "
+            f"version {JOURNAL_FORMAT_VERSION}. Newer fields may be ignored.",
+            UserWarning,
+            stacklevel=2,
+        )
+
     meta = raw.get("metadata") or {}
     session = raw.get("session") or _empty_session()
     for key in keys_journal_session:
@@ -152,6 +182,7 @@ def read_journal(path: Path | str) -> Journal:
         pages=pages,
         session=session,
         meta=meta,
+        version=version,
     )
 
 
@@ -237,6 +268,7 @@ def write_journal(journal: Journal, path: Path | str) -> Path:
     meta.setdefault("name", journal.name)
     meta.setdefault("project", journal.project)
     top_level = {
+        "version": JOURNAL_FORMAT_VERSION,
         "info_df": _pages_to_info_df(journal.pages),
         "metadata": meta,
         "session": journal.session,

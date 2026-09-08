@@ -332,7 +332,8 @@ Quick facts:
   `mark_as_bad` is a session flag (unknown cell name → `ValueError`); `drop` /
   `drop_cells_marked_bad` remove now
   (plot/summaries work without `update()`). `save()` then next `load` (default
-  `drop_bad_cells=True`) drops marked cells before update. Missing raw files
+  `drop_bad_cells=True`) drops marked cells before update. Journal JSON has a
+  top-level `version` (missing means 1; this cellpy writes 1). Missing raw files
   (filefinder miss) mark the cell `FAILED` and warn; see `b.result.report()`.
 - In-memory batch: `from_cells({label: cell})` takes cells, not paths — a
   non-cell value raises `ValueError` naming the offending keys. When

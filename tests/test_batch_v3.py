@@ -1,5 +1,6 @@
 """Unit tests for the batch v3 package (#698): journal model + layout."""
 
+import json
 import pathlib
 
 import polars as pl
@@ -15,7 +16,7 @@ from cellpy.batch import (
     read_journal,
     write_journal,
 )
-from cellpy.batch.journal import FILENAME
+from cellpy.batch.journal import FILENAME, JOURNAL_FORMAT_VERSION
 
 FIXTURES = pathlib.Path(__file__).parent / "fixtures"
 
@@ -34,6 +35,7 @@ def test_read_journal_json(parameters):
     assert len(j.cell_names) == 5
     # session always carries the four canonical keys
     assert set(j.session) >= {"starred", "bad_cells", "bad_cycles", "notes"}
+    assert j.version == 1
 
 
 def test_journal_json_roundtrip(parameters, tmp_path):
@@ -43,6 +45,9 @@ def test_journal_json_roundtrip(parameters, tmp_path):
     assert returned == out and out.is_file()
 
     j2 = read_journal(out)
+    dumped = json.loads(out.read_text(encoding="utf-8"))
+    assert dumped["version"] == JOURNAL_FORMAT_VERSION
+    assert j2.version == JOURNAL_FORMAT_VERSION
     # value parity on the pages after a write -> read cycle
     assert j2.cell_names == j1.cell_names
     assert set(j2.pages.columns) == set(j1.pages.columns)
@@ -72,6 +77,45 @@ def test_read_journal_rejects_non_journal(tmp_path):
     bad.write_text('{"hello": "world"}', encoding="utf-8")
     with pytest.raises(ValueError, match="not a cellpy journal"):
         read_journal(bad)
+
+
+@pytest.mark.essential
+def test_journal_missing_version_is_version_one(tmp_path):
+    """Files written before #1000 have no version key and load as 1."""
+    path = tmp_path / "legacy.json"
+    path.write_text(
+        json.dumps(
+            {
+                "info_df": {FILENAME: {"0": "cell_a"}},
+                "metadata": {"name": "legacy"},
+                "session": {},
+            }
+        ),
+        encoding="utf-8",
+    )
+    j = read_journal(path)
+    assert j.version == 1
+    assert j.cell_names == ["cell_a"]
+
+
+@pytest.mark.essential
+def test_journal_newer_version_warns_and_still_loads(tmp_path):
+    path = tmp_path / "future.json"
+    path.write_text(
+        json.dumps(
+            {
+                "version": JOURNAL_FORMAT_VERSION + 1,
+                "info_df": {FILENAME: {"0": "cell_a"}},
+                "metadata": {"name": "future"},
+                "session": {},
+            }
+        ),
+        encoding="utf-8",
+    )
+    with pytest.warns(UserWarning, match="version"):
+        j = read_journal(path)
+    assert j.version == JOURNAL_FORMAT_VERSION + 1
+    assert j.cell_names == ["cell_a"]
 
 
 # ---- custom JSON (#345) -------------------------------------------------
