@@ -140,6 +140,25 @@ allowed to differ; unlisted mismatches always fail.
 uv run pytest tests/test_value_parity.py -m essential
 ```
 
+## Incremental-update golden equality (L6, #778)
+
+[`test_incremental_update.py`](test_incremental_update.py) loads a truncated head of
+`testdata/data/neware_uio.csv`, appends the tail through
+`CellpyCellCore.update_core_data`, and asserts `raw` / `steps` / `summary` equal a
+single full `cellpy.get` (all columns, order-insensitive, dtype-insensitive). Helpers in
+[`incremental_support.py`](incremental_support.py); `incremental_update` is a test-side
+prototype of the future `CellpyCell.update()` (L3, #164) — it also re-applies the
+cellpy-side summary extras and scaled columns.
+
+Cut points are derived from the full step table (mid-step, step end, cycle end). Two
+strict `xfail`s pin known cellpycore gaps: gap-append mid-step
+(cellpy/cellpy-core#148) and empty-tail no-op (cellpy/cellpy-core#147). When those are
+fixed the xfails turn into failures — drop the markers then.
+
+```bash
+uv run pytest tests/test_incremental_update.py
+```
+
 ## `essential` marker
 
 Fast smoke tests — read → step table → summary pipeline and cellpy/cellpy-core parity —
