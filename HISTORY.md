@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+* Golden equality test for incremental updates (L6): head + tail through
+  `update_core_data` must equal a full load on raw/steps/summary. Two strict
+  xfails pin cellpycore gaps (core#147 empty-tail no-op, core#148 gap-append
+  mid-step). Test-only. (#778)
+
 ## [2.1.4] - 2026-09-08
 
 Patch release — the last of the `v2.1.x` reactive stream before Stage 5 (2.2)

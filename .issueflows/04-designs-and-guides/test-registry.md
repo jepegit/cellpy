@@ -169,6 +169,10 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_instrument_registering.py::test_list_instruments_is_quiet | yes | yes | data_structures.list_instruments | #786 | WARNING contract |
 | tests/test_instrument_registering.py::test_list_instruments_includes_failed_sql_create | yes | yes | data_structures.list_instruments | #938 | import-fail row |
 | tests/test_instrument_registering.py::test_list_instruments_marks_arbin_res_when_mdb_export_missing | yes | yes | data_structures.list_instruments | #938 | mdbtools probe |
+| tests/test_incremental_update.py::test_overlap_reread_equals_full_load | yes | yes | CellpyCellCore.update_core_data (L6 oracle) | #778 | 3 cut points; full raw/steps/summary equality |
+| tests/test_incremental_update.py::test_gap_append_on_boundary_equals_full_load | yes | yes | CellpyCellCore.update_core_data | #778 | step/cycle boundary cuts |
+| tests/test_incremental_update.py::test_gap_append_mid_step_equals_full_load | yes | yes | cellpycore.merge.update_data | #778 | strict xfail → core#148 |
+| tests/test_incremental_update.py::test_empty_tail_is_noop | yes | yes | CellpyCellCore.update_core_data | #778 | strict xfail → core#147 |
 
 **Columns**
 
