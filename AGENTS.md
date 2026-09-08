@@ -377,8 +377,9 @@ resolves from PyPI). No manual install is normally needed.
   `uv-dynamic-versioning`, so a shallow/tagless checkout reports a `0.0.0`-style dev
   version — harmless for dev).
 - **CLI smoke check:** `uv run cellpy setup --silent` then `uv run cellpy info --check`.
-  `cellpy setup` writes a runtime `.env_cellpy` in the repo root and a
-  `~/.cellpy_prms_*.conf` in $HOME — these are local runtime files, do not commit them.
+  `cellpy setup` writes a runtime `.env_cellpy` and a user `cellpy.toml`
+  (legacy installs may still have `~/.cellpy_prms_*.conf`) — these are local
+  runtime files, do not commit them.
 - **Example data** (`cellpy.utils.example_data`, e.g. `raw_file()`) downloads small
   fixtures from GitHub on first use, so those helpers need network access.
 - **Dual-repo dev** with a sibling `../cellpy-core` checkout is optional (see

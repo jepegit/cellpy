@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+* `cellpy setup` writes (or refreshes) `cellpy.toml` only. It no longer
+  creates a new legacy `.cellpy_prms_*.conf`; convert an existing one with
+  `cellpy setup migrate`. (#960)
+
 * Missing `mdb-export` on Linux/macOS raises `OptionalDependencyError` naming
   mdbtools (`apt` / `brew`). `list_instruments()` still lists loaders that
   fail to import, with `available=False` and a `reason` a UI can show, and
