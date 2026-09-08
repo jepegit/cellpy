@@ -55,6 +55,8 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_batch.py::test_export_project_writes_cells_and_relative_journal | yes | yes | batch.facade.Batch.export_project | #878 | relative posix journal paths |
 | tests/test_batch.py::test_export_project_force_rewrites_existing_cellpy | yes | yes | batch.facade._persist_cells force_rewrite | #878 | export overwrites |
 | tests/test_batch.py::test_export_project_raises_on_unloaded_cells | yes | yes | batch.facade.Batch.export_project | #878 | fail fast |
+| tests/test_batch.py::test_group_labels_from_raw_keeps_text_and_drops_numbers | yes | yes | batch._dbengine.group_labels_from_raw | #982 | db group text → group_label |
+| tests/test_batch.py::test_fix_groups_renumbers_text_but_labels_keep_the_names | yes | yes | batch._dbengine.fix_groups | #982 | numbering vs labels |
 | tests/test_cli_light_import.py::test_info_version_avoids_cellreader_import | yes | yes | cellpy.__init__ / cli / cli_api light path | #837 | subprocess; cellreader must stay out of sys.modules |
 | tests/test_cli_light_import.py::test_setup_default_avoids_cellreader_and_optional_deps | yes | yes | cli_api.setup_config default light | #839 | no cellreader / lmfit |
 | tests/test_cli_light_import.py::test_setup_check_imports_cellreader | yes | yes | cli_api.setup_config --check | #839 | opt-in check loads readers |

@@ -231,7 +231,9 @@ def summary_collector(
         group_it (bool, optional): Average per journal group -> tidy long frame
             ``(group, cycle_num, variable, mean, std)``.
         custom_group_labels (mapping, optional): ``group id -> display label``,
-            used for the plot legend (int or str keys both match).
+            used for the plot legend (int or str keys both match). When omitted,
+            text in the cellpy_db ``group`` column (stored as journal
+            ``group_label``) is the default.
         rate (float, optional): Keep only cycles run at this C-rate (see
             ``rate_on`` / ``rate_std`` / ``rate_inverted`` on
             `SummaryOptions`).

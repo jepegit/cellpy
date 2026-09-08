@@ -226,6 +226,35 @@ def find_files(
     return info_dict
 
 
+def _group_label_from_raw(value):
+    """Keep a display label when the db ``group`` cell is text, not a number.
+
+    ``fix_groups`` renumbers every distinct value to 1..N, so a name such as
+    ``"Si-rich"`` would otherwise vanish. Numeric cells (``1``, ``1.0``,
+    ``"2"``) stay unlabeled so plots keep showing the group id.
+    """
+    if value is None:
+        return None
+    try:
+        if pd.isna(value):
+            return None
+    except (TypeError, ValueError):
+        pass
+    text = str(value).strip()
+    if not text or text.lower() in ("none", "nan"):
+        return None
+    try:
+        float(text)
+    except ValueError:
+        return text
+    return None
+
+
+def group_labels_from_raw(groups):
+    """Map a raw db ``group`` column to journal ``group_label`` values."""
+    return [_group_label_from_raw(g) for g in groups]
+
+
 def fix_groups(groups):
     """Renumber arbitrary group labels to consecutive ints starting at 1."""
     _groups = []
@@ -448,6 +477,7 @@ def simple_db_engine(
     del reader
 
     _groups = pages_dict[hdr_journal["group"]]
+    pages_dict[hdr_journal["group_label"]] = group_labels_from_raw(_groups)
     groups = fix_groups(_groups)
     pages_dict[hdr_journal["group"]] = groups
 

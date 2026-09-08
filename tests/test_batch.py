@@ -705,6 +705,25 @@ def test_query():
     assert ";" in out[1]
 
 
+@pytest.mark.essential
+def test_group_labels_from_raw_keeps_text_and_drops_numbers():
+    """Db ``group`` text survives as group_label; numeric ids stay unlabeled (#982)."""
+    labels = _dbengine.group_labels_from_raw(
+        ["Si-rich", "Si-rich", "graphite", 1, 2.0, "3", None]
+    )
+    assert labels == ["Si-rich", "Si-rich", "graphite", None, None, None, None]
+
+
+@pytest.mark.essential
+def test_fix_groups_renumbers_text_but_labels_keep_the_names():
+    raw = ["high loading", "low loading", "high loading"]
+    numbered = _dbengine.fix_groups(raw)
+    labels = _dbengine.group_labels_from_raw(raw)
+    assert set(numbered) == {1, 2}
+    assert numbered[0] == numbered[2]
+    assert labels == ["high loading", "low loading", "high loading"]
+
+
 @pytest.mark.skip(reason="shaky test - fails intermittently in CI")
 def test_cycling_summary_plotter(populated_batch):
     populated_batch.combine_summaries()

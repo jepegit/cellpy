@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+* Text in the cellpy_db `group` column is kept as journal `group_label`, so
+  `summary_collector(..., group_it=True)` uses those names as default legend
+  labels. Numeric group ids stay unlabeled; `custom_group_labels=` still
+  overrides. (#982)
+
 * `cellpy setup` writes (or refreshes) `cellpy.toml` only. It no longer
   creates a new legacy `.cellpy_prms_*.conf`; convert an existing one with
   `cellpy setup migrate`. (#960)

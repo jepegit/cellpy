@@ -324,6 +324,9 @@ Quick facts:
   reopening local `.cellpy` files (first remote load stays serial on the wire).
   `progress=None` auto-shows tqdm (TTY / Jupyter); `False` off.
   After load: `b.summaries`, `b.cells[label]`, `b.plot()`, `b.result.report()`.
+  Text in the cellpy_db `group` column becomes journal `group_label` (default
+  legend for `summary_collector(..., group_it=True)`); `custom_group_labels=`
+  still overrides. Numeric group ids stay unlabeled.
   `b.plot(ir=True, direction="discharge")` uses `ir_discharge`, or `ir_charge`
   with a warning if that column is missing.
   `mark_as_bad` is a session flag (unknown cell name → `ValueError`); `drop` /

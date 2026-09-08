@@ -262,6 +262,8 @@ from cellpy import batch
 
 b = batch.load(name="my_experiment", project="my_project")
 summaries = b.summaries          # polars frame across cells
+# Text in the cellpy_db group column is journal group_label (legend default
+# for summary_collector(..., group_it=True)). custom_group_labels= overrides.
 c = b.cells["my_cell_01"]        # a CellpyCell
 fig = b.plot()                   # cycle-life summary (cap / CE)
 # ir=True is the default. direction="discharge" uses ir_discharge, and

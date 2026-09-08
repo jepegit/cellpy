@@ -228,7 +228,7 @@ The *collectors* in `cellpy.collect` are meant to simplify plotting and exportin
     [collect API reference](../../api/collect.md).
 
 ### Summaries
-`summary_collector` collects and shows summaries, including, e.g., the option to show statistical variations in the data (`spread=True`). Facet rows follow `columns=` top → bottom; default y-axis titles include units. `custom_group_labels=` is what the legend shows when `group_it=True`:
+`summary_collector` collects and shows summaries, including, e.g., the option to show statistical variations in the data (`spread=True`). Facet rows follow `columns=` top → bottom; default y-axis titles include units. When `group_it=True`, the legend uses journal `group_label` (text from the cellpy_db `group` column) unless you pass `custom_group_labels=`:
 
 
 ```python
