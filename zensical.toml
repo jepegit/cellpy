@@ -56,6 +56,7 @@ nav = [
         "guides/index.md",
         { "Work with remote files" = "getting_started/remote_paths.md" },
         { "Units, mass, area and C-rates" = "guides/units.md" },
+        { "Plot one cell" = "guides/plotting.md" },
         { "Compute ICA / DVA" = "guides/ica.md" },
         { "Write an instrument loader plugin" = "other/writing_a_loader_plugin.md" },
     ] },

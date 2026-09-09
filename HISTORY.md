@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+* Docs: new how-to guide **Plot one cell** — what `summary_plot`,
+  `cycles_plot`, `raw_plot` and `cycle_info_plot` are each for, the
+  returns-a-figure vs shows-it-itself split, discovering plot families with
+  `cellpy.plotting.families()`, backend choice, `return_data=True`, and saving
+  figures (`write_image`, `write_html`, `savefig`). (#1023)
+
 * Docs: new how-to guide **Units, mass, area and C-rates** — `raw_units` vs
   `cellpy_units`, the default unit table, changing units per load (`units=`),
   per session (`[units]` in `cellpy.toml`) and on a loaded cell
