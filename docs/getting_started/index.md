@@ -13,6 +13,8 @@ through these pages in order, or jump to what you need.
   `cellpy setup`
 - [Check your installation](checkup.md) — version, paths, and useful CLI
   checks
+- [Your first hour](first_hour.md) — a guided run-through on data that
+  ships with cellpy: load, inspect, plot, export, then your own file
 - [Basic usage](basic_usage.md) — load a cell and inspect the main tables
 - [Using cellpy from an agent](agents.md) — recipes for coding agents and
   app/GUI builders

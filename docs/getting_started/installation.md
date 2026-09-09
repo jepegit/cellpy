@@ -157,11 +157,32 @@ Conda and `environment.yml` / the project lockfile (`uv.lock`, driven by
 | Need | Packages / notes |
 | --- | --- |
 | Core science stack | `numpy`, `scipy`, `pandas` |
-| cellpy files (HDF5 path) | `tables` (PyTables) |
-| Fitting helpers | `lmfit` (`cellpy[fit]`) |
 | Templates | `jinja2-time`, and `git` on `PATH` |
-| Tutorials / notebooks | `cellpy[notebook]` (`ipykernel`); conda still ships Jupyter |
-| Matplotlib plots | `cellpy[plotting-mpl]` (plotly lives in `cellpy[batch]`) |
+
+### Optional extras
+
+A plain `pip install cellpy` is deliberately lean: it reads files and computes
+summaries, but it cannot plot, and it cannot open cellpy 1.x HDF5 files. Add
+what you need:
+
+```console
+python -m pip install "cellpy[batch]"
+```
+
+| Extra | Installs | You need it for |
+| --- | --- | --- |
+| `batch` | `plotly`, `seaborn`, `kaleido`, `jupyter`, `ipython` | plotting (the default backend), saving figures as PNG/SVG/PDF, and the notebook workflow |
+| `plotting-mpl` | `matplotlib` | the matplotlib plotting backend, for static publication figures |
+| `legacy-files` | `tables` (PyTables) | reading and writing the old `.h5` cellpy file format |
+| `notebook` | `ipykernel`, `ipython` | running the tutorial notebooks (a subset of `batch`) |
+| `fit` | `lmfit` | the fitting helpers |
+| `all` | everything above | the lot |
+
+Extras combine: `pip install "cellpy[batch,plotting-mpl]"`.
+
+cellpy raises an `OptionalDependencyError` naming the extra when you reach for
+a feature you have not installed, so you can start lean and add as you go. The
+conda-forge package ships a fuller set already.
 
 Optional extras and plotting backends evolve with the release — prefer the
 conda-forge package or the repo env file over hand-picking versions.

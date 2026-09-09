@@ -28,7 +28,9 @@ c.data.summary[c.schema.summary.charge_capacity]
 
 ## Where to start
 
-- **New here?** Install it, point it at a file, and see what comes back —
+- **Never used it?** A guided first hour on data that ships with cellpy —
+  [Your first hour](getting_started/first_hour.md).
+- **Installing it?** Platform notes and optional extras —
   [Getting started](getting_started/index.md).
 - **Have data to load?** Worked examples, from a single file to a whole batch —
   [Tutorials](examples/index.md).
