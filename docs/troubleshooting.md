@@ -8,7 +8,8 @@ Things that commonly go wrong, and what to do about them. Find your symptom in
 the list below — most entries are one or two lines of code away from a fix.
 
 If your problem is not here, jump to [Reporting a problem](#reporting-a-problem)
-at the end.
+at the end. If nothing is broken and you just cannot find how to do something,
+try [How do I…?](how_do_i.md) instead.
 
 ---
 
