@@ -36,16 +36,24 @@ Typical subcommands:
 | --- | --- |
 | `setup` | Create / refresh `cellpy.toml` and folders |
 | `info` | Version, config location, checks |
-| `migrate` | Convert a legacy `.conf` to `cellpy.toml` |
-| `pull` | Download examples or tests (needs git) |
+| `edit` | Open the config, database or environment file |
+| `new` | Start a batch experiment from a template |
+| `run` | Run a batch job from the shell |
 | `serve` | Start Jupyter |
-| `edit` / `new` / `run` | Config/db editing, batch setup, batch runs |
+| `pull` | Download examples or tests (needs git) |
+| `convert` | Upgrade a legacy cellpy file |
+| `mcp` | Run cellpy as an MCP server |
 
 Help for a subcommand:
 
 ```console
 cellpy info --help
 ```
+
+Every sub-command and option is listed in the
+[command-line reference](../reference/cli.md). Note that
+`cellpy setup migrate` (legacy `.conf` → `cellpy.toml`) is a sub-command of
+`setup`, not a top-level command.
 
 ## Upgrade
 

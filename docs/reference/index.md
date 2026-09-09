@@ -6,6 +6,7 @@ icon: material/book-open-page-variant
 
 Lookup material — settings, deprecations, column names, and the generated API.
 
+- [Command line](cli.md) — every `cellpy` sub-command and its options
 - [Configuration settings](../getting_started/configuration_reference.md) —
   every config key, defaults, and environment-variable forms
 - [Deprecations](deprecations.md) — what is scheduled for removal and what

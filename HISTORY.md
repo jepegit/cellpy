@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+* Docs: new **command-line reference** covering every `cellpy` sub-command
+  and option (`setup` incl. `setup migrate`, `info`, `edit`, `new`, `run`,
+  `serve`, `pull`, `convert`, `mcp`) plus the global `-q` / `--verbose` /
+  `--no-color` flags. The Check-your-installation page's sub-command table was
+  incomplete and listed `migrate` as a top-level command. (#1023)
+
 * Docs: new how-to guide **Set up the cellpy database** — which of the
   example sheet's 67 columns actually have to be filled in, that `exists > 0`
   gates batch selection, that `cell_type` becomes the cell's `cycle_mode`, how
