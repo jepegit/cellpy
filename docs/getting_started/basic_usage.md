@@ -91,3 +91,5 @@ More extractors (`get_current`, `get_voltage`, `split`, `merge`, …) are on
   (tutorial) and [Compute ICA / DVA](../guides/ica.md) (short recipe)
 - [Using cellpy from an agent](agents.md) if you are wiring a GUI or app
 - [Check your installation](checkup.md) if something failed to load
+- [Troubleshooting](../troubleshooting.md) if a file will not load or a
+  number looks wrong

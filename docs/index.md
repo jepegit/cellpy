@@ -36,6 +36,8 @@ c.data.summary[c.schema.summary.charge_capacity]
   frames relate — [Concepts](fundamentals/index.md).
 - **Looking for a signature?** Generated from the docstrings —
   [API reference](api/index.md).
+- **Something not working?** Symptom-by-symptom fixes —
+  [Troubleshooting](troubleshooting.md).
 
 ## Coming from cellpy 1.x
 

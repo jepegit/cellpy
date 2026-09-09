@@ -64,3 +64,8 @@ conda update -c conda-forge cellpy
 ```console
 python -m pip install --pre cellpy
 ```
+
+## Still not working?
+
+[Troubleshooting](../troubleshooting.md) is indexed by symptom —
+error messages, files that will not load, and numbers that look wrong.

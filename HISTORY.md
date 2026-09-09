@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+* Docs: new symptom-indexed **Troubleshooting** page covering the
+  `get`-returns-`None` trap, choosing the right loader, Arbin `.res` drivers,
+  legacy `.h5` files, the 1.0 mg default mass, the `anode` default
+  `cycle_mode`, the gravimetric/areal/absolute capacity columns, optional
+  plotting dependencies and batch journal reuse. Linked from the landing page,
+  Getting started, Basic usage and Check your installation. Also fixes an
+  unrecognised `cycle_mode="full-cell"` spelling in the loading tutorial.
+  (#1023)
+
 * Pin `cellpycore==0.2.6` (empty-tail no-op, core#147; gap-append mid-step
   trim, core#148). Drop the two strict xfails on
   `test_empty_tail_is_noop` and `test_gap_append_mid_step_equals_full_load`.
