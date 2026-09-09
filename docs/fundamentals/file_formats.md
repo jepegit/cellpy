@@ -34,5 +34,7 @@ Full support matrix and convert recipes:
 
 ## Tabular exports
 
-Simple exports to CSV (`c.to_csv(out_folder)`) or Excel
-(`c.to_excel(out_folder)`) are also available.
+Simple exports to CSV (`c.to_csv(out_folder)` — a **directory**) or Excel
+(`c.to_excel("cell.xlsx")` — a **file**) are also available, along with a
+Battery Data Format export (`c.to_bdf(...)`) for sharing. What each one keeps
+and what it drops: [Get your data out](../guides/exporting.md).

@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+* Docs: new how-to guide **Get your data out** — a chooser table plus
+  per-format detail for `save` (.cellpy), `to_excel`, `to_csv`, `to_bdf`,
+  the raw pandas frames, `b.summaries` and `b.export_project`, with a
+  what-survives-which-format matrix. Flags that batch frames are polars while
+  per-cell frames are pandas. Fixes `c.to_excel(out_folder)` in the file-formats
+  page — `to_excel` takes a file name, `to_csv` takes a directory. (#1023)
+
 * Docs: new **command-line reference** covering every `cellpy` sub-command
   and option (`setup` incl. `setup migrate`, `info`, `edit`, `new`, `run`,
   `serve`, `pull`, `convert`, `mcp`) plus the global `-q` / `--verbose` /
