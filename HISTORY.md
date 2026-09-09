@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+* Docs: new reference page **Summary columns** documenting all 58 columns of
+  a default `c.data.summary` — identity, capacities, the `cycle_mode`-dependent
+  coulombic efficiency/difference, losses, shifted capacities, the RIC family,
+  rate/throughput/equivalent-full-cycles, end-of-cycle potentials, and the
+  schema fields the engine does not populate. Formulas verified numerically.
+  Also corrects the units guide and Troubleshooting: the **bare**
+  `charge_capacity` column is in `raw_units` (the tester's unit) while
+  `charge_capacity_absolute` is in `cellpy_units` — for an Arbin `.res` file
+  that is a factor of 1000. (#1023)
+
 * Docs: new how-to guide **Get your data out** — a chooser table plus
   per-format detail for `save` (.cellpy), `to_excel`, `to_csv`, `to_bdf`,
   the raw pandas frames, `b.summaries` and `b.export_project`, with a

@@ -234,12 +234,17 @@ You can also change the default for every load — see `cycle_mode` in the
 
 The summary carries the same quantity in several normalisations:
 
-| Column | Meaning | Typical unit |
+| Column | Meaning | Unit |
 | --- | --- | --- |
-| `charge_capacity` | as recorded, not normalised | mAh |
-| `charge_capacity_gravimetric` | per active mass | mAh/g |
-| `charge_capacity_areal` | per electrode area | mAh/cm² |
-| `charge_capacity_absolute` | not normalised, explicit name | mAh |
+| `charge_capacity` | as recorded, not normalised | **the tester's unit** (`c.data.raw_units`) |
+| `charge_capacity_absolute` | not normalised | your unit (`c.cellpy_units`), e.g. mAh |
+| `charge_capacity_gravimetric` | per active mass | e.g. mAh/g |
+| `charge_capacity_areal` | per electrode area | e.g. mAh/cm² |
+
+The bare name is **not** the one in your units. An Arbin `.res` file records
+charge in Ah, so `charge_capacity` comes out in Ah while
+`charge_capacity_absolute` is in mAh — a factor of 1000 apart. Use
+`_absolute` when you want an un-normalised capacity in the unit you configured.
 
 The same split exists for discharge, capacity loss, coulombic difference and
 the cumulated variants. `c.schema.summary` gives you the **base** name; add the
