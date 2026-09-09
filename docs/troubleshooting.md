@@ -311,6 +311,8 @@ error names the extra to install:
 | kaleido (static PNG/SVG/PDF export) | `pip install "cellpy[batch]"` |
 | PyTables / HDF5 | `pip install "cellpy[legacy-files]"` |
 
+[Plot one cell](guides/plotting.md) covers what each extra actually buys you.
+
 ---
 
 ## Batch processing

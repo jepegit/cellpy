@@ -11,6 +11,8 @@ something specific.
   and cellpy files over SSH / SFTP
 - [Units, mass, area and C-rates](units.md) — what a capacity is divided
   by, and how to change it
+- [Plot one cell](plotting.md) — capacity fade, voltage curves, raw traces,
+  and how to save the figure
 - [Compute incremental capacity and differential voltage](ica.md) — dQ/dV
   (`dqdv`) and dV/dQ (`dvdq`), plus plot and collect
 - [Write an instrument loader plugin](../other/writing_a_loader_plugin.md) —
