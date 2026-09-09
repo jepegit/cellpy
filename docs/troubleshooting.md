@@ -350,6 +350,12 @@ The batch needs to know which database (Excel sheet) to read. Either pass
 `db_file=` explicitly, or set the database path and filename in your
 configuration — see [Setup and configuration](getting_started/configuration.md).
 
+### A cell in my spreadsheet never turns up in the batch
+
+Batch selection needs **both** a matching batch name and `exists > 0` on that
+row. An empty `exists` column silently drops the cell. See
+[Set up the cellpy database](guides/batch_database.md).
+
 ---
 
 ## Installation and the command line
