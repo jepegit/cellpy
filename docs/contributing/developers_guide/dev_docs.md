@@ -87,6 +87,13 @@ source statically — the docs build never imports cellpy. Pages live in
 `docs/api/` and are a list of `::: module.path` directives; add a directive to
 document something new.
 
+The "View source on GitHub" link under every module, class and function comes
+from small template overrides in `docs/.templates/python/material/` (wired up
+through `custom_templates` and `extra.source_url_base` in `zensical.toml`).
+They only replace the `source` / `docstring` blocks of the stock
+mkdocstrings-python templates; everything else renders as upstream does. The
+folder is dot-prefixed so it is not copied into the built site.
+
 ### Example notebooks (Jupyter)
 
 The notebooks live in the top-level `examples/` folder — one maintained copy,
