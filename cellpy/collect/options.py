@@ -34,7 +34,11 @@ class SummaryOptions:
       ``custom_group_labels``): average per journal group, emitting a tidy
       long frame ``(group, cycle_num, variable, mean, std)``.
     * **CV partition** (``partition_by_cv``): split each capacity metric into
-      ``*_non_cv`` / ``*_cv`` contributions.
+      ``*_non_cv`` / ``*_cv`` contributions. With ``columns`` set, every
+      requested metric is kept together with its two parts — unless the list
+      itself names a ``*_cv`` / ``*_non_cv`` column, in which case it is
+      taken literally (this is how plot families ask for "the CV part of the
+      charge capacity" only; #1009).
     """
 
     # --- column selection -------------------------------------------------

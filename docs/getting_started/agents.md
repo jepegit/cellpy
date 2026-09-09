@@ -269,6 +269,11 @@ fig = b.plot()                   # cycle-life summary (cap / CE)
 # ir=True is the default. direction="discharge" uses ir_discharge, and
 # falls back to ir_charge with a UserWarning if that column is missing.
 fig = b.plot(ir=True, rate=True, direction="discharge")
+# Named plot families via the collector: charge (solid) and discharge (dashed)
+# of one quantity share a panel; a second "Direction" legend explains the dash.
+# combine_directions=False gives one facet per variable instead.
+from cellpy.collect import summary_collector
+fig = summary_collector(b, family="fullcell_standard_gravimetric").plot()
 # If filefinder found no raw files, those cells are FAILED (not empty
 # LOADED). Check b.result.report() / the UserWarning from load.
 # A cellpy_batch_<name>.json in cwd (or journal_dir) is reused as-is: the

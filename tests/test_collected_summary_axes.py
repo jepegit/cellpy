@@ -286,6 +286,9 @@ def test_spread_mean_traces_have_hovertemplate():
         if name.startswith("Upper Bound") or name.startswith("Lower Bound"):
             assert trace.hoverinfo == "skip"
             continue
+        if trace.legend == "legend2":  # direction style entries (#1009)
+            assert trace.hoverinfo == "skip"
+            continue
         tmpl = trace.hovertemplate or ""
         mean_templates.append(tmpl)
         assert "mean=%{y}" in tmpl
