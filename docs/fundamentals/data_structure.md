@@ -174,15 +174,22 @@ full list.
 
 #### Step types
 
-Step-type labels are written to the **`step_type`** column. Typical values:
+Step-type labels are written to the **`step_type`** column. The built-in
+classifier emits these:
 
 ```python
 ['charge', 'discharge',
  'cv_charge', 'cv_discharge',
- 'charge_cv', 'discharge_cv',
- 'ocvrlx_up', 'ocvrlx_down', 'ir',
- 'rest', 'not_known']
+ 'ocvrlx_up', 'ocvrlx_down',
+ 'rest', 'ir',
+ '']            # '' = uncategorized (no rule matched)
 ```
+
+The schema defines four more (`taper_charge`, `taper_discharge`, `charge_cv`,
+`discharge_cv`) plus `not_known`, but the classifier never produces them — they
+come from explicit step specifications, overrides, or older data. How the
+classification works, and how to correct it, is in
+[Understand the step table](../guides/step_table.md).
 
 Example:
 

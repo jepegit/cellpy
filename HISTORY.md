@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+* Docs: new how-to guide **Understand the step table** — what a step row
+  holds, the step types the classifier actually emits (uncategorized is `""`,
+  not `not_known`), the ordered classification rules and the `raw_limits`
+  thresholds behind them, and the three ways to correct a misclassification
+  (`override_raw_limits`, `override_step_types`, `step_specifications` — the
+  last of which replaces the classifier rather than extending it). Corrects the
+  stale step-type list in the data-structure page. (#1023)
+
 * Docs: new reference page **Summary columns** documenting all 58 columns of
   a default `c.data.summary` — identity, capacities, the `cycle_mode`-dependent
   coulombic efficiency/difference, losses, shifted capacities, the RIC family,

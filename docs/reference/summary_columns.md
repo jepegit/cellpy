@@ -218,5 +218,7 @@ and, for the schema-resolved names your code should use:
   normalisation machinery
 - [The data structure](../fundamentals/data_structure.md) — the raw and step
   frames
+- [Understand the step table](../guides/step_table.md) — where these
+  numbers come from
 - [Legacy header map](../other/header_migration_map.md) — the 1.x names
 - [Troubleshooting](../troubleshooting.md) — when a number looks wrong

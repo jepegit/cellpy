@@ -15,6 +15,8 @@ something specific.
   and how to save the figure
 - [Set up the cellpy database](batch_database.md) — the Excel sheet the
   batch utility reads, and which columns you actually have to fill in
+- [Understand the step table](step_table.md) — how cellpy decides what a
+  step is, and how to correct it when it gets it wrong
 - [Get your data out](exporting.md) — cellpy files, Excel, CSV, BDF, and
   batch bundles
 - [Compute incremental capacity and differential voltage](ica.md) — dQ/dV
