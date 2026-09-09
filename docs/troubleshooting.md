@@ -252,7 +252,8 @@ c.data.summary[grav].head()
 ```
 
 The areal columns need an electrode area (`area=` on `cellpy.get`, in cm²) to
-mean anything.
+mean anything. [Units, mass, area and C-rates](guides/units.md) explains the
+whole normalisation story, including how to change the units themselves.
 
 ### My capacity used to look twice as large in cellpy 1.x
 
