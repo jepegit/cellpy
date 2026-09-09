@@ -194,12 +194,26 @@ cheaper than a full `make_summary()`.
 Every capacity-like quantity in the summary exists in several normalisations,
 distinguished by a postfix:
 
-| Column | Normalised by | Unit (defaults) |
+| Column | Normalised by | Unit |
 | --- | --- | --- |
-| `charge_capacity` | nothing | mAh |
-| `charge_capacity_gravimetric` | `mass` | mAh/g |
-| `charge_capacity_areal` | `area` | mAh/cm² |
-| `charge_capacity_absolute` | nothing (explicit name) | mAh |
+| `charge_capacity` | nothing | **`raw_units`** — what the tester wrote |
+| `charge_capacity_absolute` | nothing | `cellpy_units`, e.g. mAh |
+| `charge_capacity_gravimetric` | `mass` | e.g. mAh/g |
+| `charge_capacity_areal` | `area` | e.g. mAh/cm² |
+
+!!! warning "The bare column name is in the tester's units"
+    Only the three postfixed columns get the raw → cellpy unit conversion; the
+    base column is left as the summary engine produced it. For an Arbin `.res`
+    file (Ah) with the default cellpy unit (mAh), `charge_capacity` and
+    `charge_capacity_absolute` are a factor of 1000 apart:
+
+    ```python
+    print(c.data.raw_units.charge, "->", c.cellpy_units.charge)   # Ah -> mAh
+    print(c.get_converter_to_specific(mode="absolute"))           # 1000.0
+    ```
+
+    Reach for `_absolute` whenever you want an un-normalised capacity in the
+    unit you configured.
 
 The same postfixes apply to `discharge_capacity`, the `*_loss` columns, the
 `coulombic_difference` columns and their `test_cumulated_*` counterparts.

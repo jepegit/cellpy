@@ -207,7 +207,8 @@ Specific (mass-/area-normalized) columns still use postfixes such as
 **base** name only, so build the specific one from it —
 `f"{c.schema.summary.charge_capacity}_gravimetric"`. Which postfix means what,
 and what each is divided by, is covered in
-[Units, mass, area and C-rates](../guides/units.md). The summary frame has more
+[Units, mass, area and C-rates](../guides/units.md); every summary column is
+listed in [Summary columns](../reference/summary_columns.md). The summary frame has more
 native-only columns than 1.x (durations, energies, per-direction stats); see
 the migration map.
 
