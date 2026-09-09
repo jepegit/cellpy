@@ -32,6 +32,7 @@ nav = [
         { "Installation" = "getting_started/installation.md" },
         { "Setup and configuration" = "getting_started/configuration.md" },
         { "Check your installation" = "getting_started/checkup.md" },
+        { "Your first hour" = "getting_started/first_hour.md" },
         { "Basic usage" = "getting_started/basic_usage.md" },
         { "Using cellpy from an agent" = "getting_started/agents.md" },
         { "Coming from cellpy 1.x" = "getting_started/migration_v1_to_v2.md" },

@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+* Docs: new **Your first hour with cellpy** on-ramp — a linear, verified
+  walkthrough on the bundled example data (install, check, load, read the
+  summary, plot, one cycle's curve, save/export) that ends by switching to the
+  reader's own file with the three arguments the example supplied for free
+  (`instrument`, `mass`, `cycle_mode`). Installation gains a full optional-extras
+  table (`batch`, `plotting-mpl`, `legacy-files`, `notebook`, `fit`, `all`) with
+  what each one is needed for. (#1023)
+
 * Docs: new how-to guide **Understand the step table** — what a step row
   holds, the step types the classifier actually emits (uncategorized is `""`,
   not `not_known`), the ordered classification rules and the `raw_limits`
