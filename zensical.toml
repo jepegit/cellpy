@@ -37,6 +37,7 @@ nav = [
         { "Coming from cellpy 1.x" = "getting_started/migration_v1_to_v2.md" },
         { "Coming from cellpy 2.0" = "getting_started/migration_v2.0_to_2.1.md" },
     ] },
+    { "Troubleshooting" = "troubleshooting.md" },
     { "Tutorials" = [
         "examples/index.md",
         { "Loading data" = "examples/01_loading_data.md" },

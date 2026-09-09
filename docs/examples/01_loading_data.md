@@ -37,7 +37,7 @@ Use `cellpy.get()` to load the rawdatafile(s):
 
 
 ```python
-c = cellpy.get(filepaths, mass=1.2, cycle_mode="full-cell")
+c = cellpy.get(filepaths, mass=1.2, cycle_mode="full_cell")
 ```
 
 **Note:** Without any further specifications, ``cellpy.get()`` will use the standard instrument loader as defined in your config file (here the one for loading arbin .res files). For loading different data formats, have a look at [Loading different formats](06_loading_different_formats.ipynb) or [Custom loaders](07_custom_loaders.ipynb).
