@@ -58,6 +58,7 @@ nav = [
         { "Units, mass, area and C-rates" = "guides/units.md" },
         { "Plot one cell" = "guides/plotting.md" },
         { "Set up the cellpy database" = "guides/batch_database.md" },
+        { "Get your data out" = "guides/exporting.md" },
         { "Compute ICA / DVA" = "guides/ica.md" },
         { "Write an instrument loader plugin" = "other/writing_a_loader_plugin.md" },
     ] },

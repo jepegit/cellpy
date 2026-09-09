@@ -69,7 +69,9 @@ c.to_csv("out/csv_export")
 
 Frames are pandas DataFrames, so you can also use `DataFrame.to_excel` /
 `to_csv` on `c.data.raw`, `.steps`, or `.summary` directly. `CellpyCell`
-also exposes `to_excel` for a packaged export.
+also exposes `to_excel("cell.xlsx")` for a packaged multi-sheet export, and
+`to_bdf` for the Battery Data Format. See
+[Get your data out](../guides/exporting.md).
 
 ## Cycles and curves
 
