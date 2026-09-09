@@ -38,6 +38,8 @@ c.data.summary[c.schema.summary.charge_capacity]
   frames relate — [Concepts](fundamentals/index.md).
 - **Looking for a signature?** Generated from the docstrings —
   [API reference](api/index.md).
+- **Know what you want, not where it is?** One page, indexed by question —
+  [How do I…?](how_do_i.md).
 - **Something not working?** Symptom-by-symptom fixes —
   [Troubleshooting](troubleshooting.md).
 

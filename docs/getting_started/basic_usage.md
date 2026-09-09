@@ -80,7 +80,7 @@ cycles = c.get_cycle_numbers()
 print(f"{len(cycles)} cycles")
 
 cap = c.get_cap(5)  # capacity–voltage for cycle 5
-ocv = c.get_ocv(ocv_type="ocvrlx_up", cycle_number=44)
+ocv = c.get_ocv(cycles=5, direction="up")  # direction: "up" or "down"
 ```
 
 More extractors (`get_current`, `get_voltage`, `split`, `merge`, …) are on

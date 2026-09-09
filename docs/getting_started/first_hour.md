@@ -274,4 +274,5 @@ Depending on what you are actually trying to do:
 | find out why a number looks wrong | [Troubleshooting](../troubleshooting.md) |
 
 Longer worked examples, with real analysis rather than a tour, are in
-[Tutorials](../examples/index.md).
+[Tutorials](../examples/index.md). For a shorter answer to a specific question,
+[How do I…?](../how_do_i.md) is indexed by exactly that.

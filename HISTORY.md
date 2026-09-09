@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+* Docs: new top-level **How do I…?** page — the whole documentation set
+  indexed by question, with the shortest working snippet under each and a link
+  to the detail. Fixes `c.get_ocv(ocv_type=..., cycle_number=...)` in Basic
+  usage: the real signature is `get_ocv(cycles=..., direction="up"|"down", …)`,
+  so the documented call raised `TypeError`. (#1023)
+
 * Docs: new **Your first hour with cellpy** on-ramp — a linear, verified
   walkthrough on the bundled example data (install, check, load, read the
   summary, plot, one cycle's curve, save/export) that ends by switching to the

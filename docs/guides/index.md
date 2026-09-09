@@ -5,7 +5,8 @@ icon: material/wrench
 # How-to guides
 
 Task-focused recipes for when you already know the basics and need to do
-something specific.
+something specific. If you just want the one-liner, start with
+[How do I…?](../how_do_i.md).
 
 - [Work with remote files](../getting_started/remote_paths.md) — load raw data
   and cellpy files over SSH / SFTP
