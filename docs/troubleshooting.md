@@ -38,7 +38,8 @@ cellpy info --config
 
 Look for the `filelogdir` entry in the output. See
 [Setup and configuration](getting_started/configuration.md) if you want to move
-it somewhere more convenient.
+it somewhere more convenient, and the
+[command-line reference](reference/cli.md) for the rest of `cellpy info`.
 
 **Check that the installation itself is healthy:**
 

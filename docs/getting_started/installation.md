@@ -5,7 +5,8 @@ the scientific stack and awkward native deps handled for you; use **pip** when
 you want a lean install and can manage system packages yourself.
 
 After installing, continue to [Setup and configuration](configuration.md) and
-[Check your installation](checkup.md).
+[Check your installation](checkup.md). The `cellpy` command you get with the
+package is documented in the [command-line reference](../reference/cli.md).
 
 ## Install by platform
 

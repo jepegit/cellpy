@@ -69,6 +69,7 @@ nav = [
     ] },
     { "Reference" = [
         "reference/index.md",
+        { "Command line" = "reference/cli.md" },
         { "Configuration settings" = "getting_started/configuration_reference.md" },
         { "Deprecations" = "reference/deprecations.md" },
         { "Legacy header map" = "other/header_migration_map.md" },
