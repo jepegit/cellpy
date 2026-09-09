@@ -1,8 +1,0 @@
-{#- Adds a "View source on GitHub" link under every module docstring (#1015). -#}
-{% extends "_base/module.html.jinja" %}
-{% from "_source_link.html.jinja" import source_link %}
-
-{% block docstring scoped %}
-  {{ super() }}
-  {{ source_link(module, config) }}
-{% endblock docstring %}

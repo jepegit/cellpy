@@ -2,20 +2,16 @@
 
 ## Goal
 
-API reference pages link every documented object to its source on GitHub.
-Beyond the ask: iterate on the docs from a user's point of view (battery
-scientist with limited Python), one PR per iteration.
+API reference pages let the reader see the code behind each documented
+object. Beyond the ask: iterate on the docs from a user's point of view
+(battery scientist with limited Python), one PR per iteration.
 
-## Iteration 1 (this PR): source links
+## Iteration 1 (this PR): inline source
 
-mkdocstrings-python has no built-in GitHub link, only inline `show_source`.
-Override the `source` block (functions, classes) and append to the `docstring`
-block (modules) with a `docs/.templates/python/material/` template set that
-renders `View source on GitHub` → `<repo>/blob/master/<path>#L<start>-L<end>`
-from Griffe's `relative_filepath` / `lineno` / `endlineno`. Base URL comes from
-`extra.source_url_base` in `zensical.toml`; templates wired via
-`custom_templates`. Dot-prefixed folder so zensical does not copy it into
-`site/` (`exclude_docs` is not honoured).
+Set mkdocstrings-python `show_source = true` in `zensical.toml`. Every class
+and function gets a collapsible "Source code in `<file>`" block with line
+numbers. A GitHub-link variant (template overrides) was prototyped and
+dropped: inline source answers the need without custom templates.
 
 ## Later iterations (not started)
 

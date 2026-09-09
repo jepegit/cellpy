@@ -20,9 +20,9 @@
   `ValueError: All arrays must be of the same length`; `raw_file_names` /
   `cellpy_file_name` are `None` per cell until filled. (#1017)
 
-* Docs: every module, class and function in the API reference now has a
-  "View source on GitHub" link pointing at the defining lines on `master`
-  (mkdocstrings template overrides in `docs/.templates/`). (#1015)
+* Docs: every class and function in the API reference now has a collapsible
+  "Source code in …" block showing its implementation (mkdocstrings
+  `show_source`). (#1015)
 
 ## [2.1.4] - 2026-09-08
 

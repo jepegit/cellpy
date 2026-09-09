@@ -1,8 +1,0 @@
-{#- Adds a "View source on GitHub" link under every class (#1015). -#}
-{% extends "_base/class.html.jinja" %}
-{% from "_source_link.html.jinja" import source_link %}
-
-{% block source scoped %}
-  {{ source_link(class, config) }}
-  {{ super() }}
-{% endblock source %}

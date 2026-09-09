@@ -1,8 +1,0 @@
-{#- Adds a "View source on GitHub" link under every function/method (#1015). -#}
-{% extends "_base/function.html.jinja" %}
-{% from "_source_link.html.jinja" import source_link %}
-
-{% block source scoped %}
-  {{ source_link(function, config) }}
-  {{ super() }}
-{% endblock source %}
