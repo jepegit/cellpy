@@ -261,6 +261,21 @@ The areal columns need an electrode area (`area=` on `cellpy.get`, in cm²) to
 mean anything. [Units, mass, area and C-rates](guides/units.md) explains the
 whole normalisation story, including how to change the units themselves.
 
+### A capacity is missing or too small for some cycles
+
+cellpy works out charge and discharge capacities from the **step table**, so a
+step it could not classify contributes nothing. Count the labels:
+
+```python
+sc = c.schema.steps
+print(c.data.steps[sc.step_type].value_counts())
+print((c.data.steps[sc.step_type] == "").sum())   # uncategorized steps
+```
+
+An empty `step_type` means no classification rule matched. The fixes —
+threshold overrides, per-step overrides, or a full schedule specification — are
+in [Understand the step table](guides/step_table.md).
+
 ### My capacity used to look twice as large in cellpy 1.x
 
 That is deliberate. Some testers do not reset their cumulative capacity column
