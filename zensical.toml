@@ -208,5 +208,6 @@ separate_signature = true
 show_root_heading = true
 show_root_full_path = false
 show_signature_annotations = true
-show_source = false
+# Collapsible "Source code in <file>" block under every object (#1015).
+show_source = true
 heading_level = 2
