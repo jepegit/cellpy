@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+* Docs: new how-to guide **Units, mass, area and C-rates** — `raw_units` vs
+  `cellpy_units`, the default unit table, changing units per load (`units=`),
+  per session (`[units]` in `cellpy.toml`) and on a loaded cell
+  (`refresh_after`), the `units_label` / `with_cellpy_unit` label helpers,
+  mass / area / loading, the gravimetric-areal-absolute column split, and
+  nominal capacity with `nom_cap_specifics`. Fixes a wrong schema name in the
+  data-structure page (`cumulated_capacity_throughput` →
+  `test_cumulated_capacity_throughput`). (#1023)
+
 * Docs: new symptom-indexed **Troubleshooting** page covering the
   `get`-returns-`None` trap, choosing the right loader, Arbin `.res` drivers,
   legacy `.h5` files, the 1.0 mg default mass, the `anode` default

@@ -200,11 +200,16 @@ discharge_steps = c.data.steps.query(
 | charge / discharge capacity | `charge_capacity` / `discharge_capacity` |
 | coulombic efficiency | `coulombic_efficiency` |
 | C-rates | `charge_c_rate` / `discharge_c_rate` |
-| capacity throughput / EFC | `cumulated_capacity_throughput` / `equivalent_full_cycles` |
+| capacity throughput / EFC | `test_cumulated_capacity_throughput` / `equivalent_full_cycles` |
 
 Specific (mass-/area-normalized) columns still use postfixes such as
-`_gravimetric` and `_areal`. The summary frame has more native-only columns
-than 1.x (durations, energies, per-direction stats); see the migration map.
+`_gravimetric`, `_areal` and `_absolute`. `c.schema.summary` resolves the
+**base** name only, so build the specific one from it —
+`f"{c.schema.summary.charge_capacity}_gravimetric"`. Which postfix means what,
+and what each is divided by, is covered in
+[Units, mass, area and C-rates](../guides/units.md). The summary frame has more
+native-only columns than 1.x (durations, energies, per-direction stats); see
+the migration map.
 
 ### Batch journal columns
 
