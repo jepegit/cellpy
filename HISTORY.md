@@ -2,6 +2,45 @@
 
 ## [Unreleased]
 
+## [2.1.5] - 2026-09-09
+
+Patch release — docs on-ramp and How-do-I index (#1023),
+`cellpycore==0.2.6`, collected-summary direction layout, batch
+journal/db warnings, and the `skip_file_search` journal crash.
+Additive, no breaking changes. Ships on `cellpycore==0.2.6`
+(empty-tail no-op, core #147; gap-append mid-step trim, core #148).
+
+* Drop the two strict xfails on `test_empty_tail_is_noop` and
+  `test_gap_append_mid_step_equals_full_load` now that core lands the
+  empty-tail no-op and gap-append mid-step trim.
+
+* Collected summary plots (`summary_collector(...).plot()`) draw charge and
+  discharge of the same quantity in one panel: charge solid, discharge dashed,
+  one legend entry per cell/group plus a separate "Direction" legend.
+  `combine_directions=False` restores one facet per variable. The
+  `fullcell_standard_*` families also collected the CV split of every column
+  (10–12 facets instead of 4); `summary_options` now requests the declared
+  columns literally and `collect_summaries` takes a column list that names a
+  `*_cv` / `*_non_cv` column literally. (#1009)
+
+* `batch.load` warns when a cached `cellpy_batch_<name>.json` is reused while
+  db arguments were passed (the database is not re-read; use
+  `allow_from_journal=False`). The Excel db reader warns once per configured
+  `db_cols` header that is missing from the sheet instead of silently
+  returning empty values. (#1008)
+
+* `journal_from_db(..., skip_file_search=True)` works with the Excel db reader
+  (and JSON readers that do not carry paths) instead of raising
+  `ValueError: All arrays must be of the same length`; `raw_file_names` /
+  `cellpy_file_name` are `None` per cell until filled. (#1017)
+
+* Golden equality test for incremental updates (L6): head + tail through
+  `update_core_data` must equal a full load on raw/steps/summary. (#778)
+
+* Docs: every class and function in the API reference now has a collapsible
+  "Source code in …" block showing its implementation (mkdocstrings
+  `show_source`). (#1015)
+
 * Docs: new top-level **How do I…?** page — the whole documentation set
   indexed by question, with the shortest working snippet under each and a link
   to the detail. Fixes `c.get_ocv(ocv_type=..., cycle_number=...)` in Basic
@@ -78,37 +117,6 @@
   Getting started, Basic usage and Check your installation. Also fixes an
   unrecognised `cycle_mode="full-cell"` spelling in the loading tutorial.
   (#1023)
-
-* Pin `cellpycore==0.2.6` (empty-tail no-op, core#147; gap-append mid-step
-  trim, core#148). Drop the two strict xfails on
-  `test_empty_tail_is_noop` and `test_gap_append_mid_step_equals_full_load`.
-
-* Collected summary plots (`summary_collector(...).plot()`) draw charge and
-  discharge of the same quantity in one panel: charge solid, discharge dashed,
-  one legend entry per cell/group plus a separate "Direction" legend.
-  `combine_directions=False` restores one facet per variable. The
-  `fullcell_standard_*` families also collected the CV split of every column
-  (10–12 facets instead of 4); `summary_options` now requests the declared
-  columns literally and `collect_summaries` takes a column list that names a
-  `*_cv` / `*_non_cv` column literally. (#1009)
-
-* `batch.load` warns when a cached `cellpy_batch_<name>.json` is reused while
-  db arguments were passed (the database is not re-read; use
-  `allow_from_journal=False`). The Excel db reader warns once per configured
-  `db_cols` header that is missing from the sheet instead of silently
-  returning empty values. (#1008)
-
-* Golden equality test for incremental updates (L6): head + tail through
-  `update_core_data` must equal a full load on raw/steps/summary. (#778)
-
-* `journal_from_db(..., skip_file_search=True)` works with the Excel db reader
-  (and JSON readers that do not carry paths) instead of raising
-  `ValueError: All arrays must be of the same length`; `raw_file_names` /
-  `cellpy_file_name` are `None` per cell until filled. (#1017)
-
-* Docs: every class and function in the API reference now has a collapsible
-  "Source code in …" block showing its implementation (mkdocstrings
-  `show_source`). (#1015)
 
 ## [2.1.4] - 2026-09-08
 
