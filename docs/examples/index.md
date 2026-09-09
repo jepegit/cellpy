@@ -25,6 +25,8 @@ folder](https://github.com/jepegit/cellpy/tree/master/examples) in the cellpy Gi
 - [Incremental capacity analysis](04_incremental_capacity_analysis.md)
 - [GITT](05_GITT.md)
 - [Batch processing](batch_utility/cellpy_batch_processing.md)
+  (the sheet it reads is documented in
+  [Set up the cellpy database](../guides/batch_database.md))
 - [Templates](templates/tutorial_templates.md)
 
 ## About these pages

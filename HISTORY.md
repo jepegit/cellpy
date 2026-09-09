@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+* Docs: new how-to guide **Set up the cellpy database** — which of the
+  example sheet's 67 columns actually have to be filled in, that `exists > 0`
+  gates batch selection, that `cell_type` becomes the cell's `cycle_mode`, how
+  `b01`-`b07` batch columns work, how `file_name_indicator` is globbed into raw
+  paths, the `argument` column's `key=value;key=value` form, the db-column →
+  journal-column map, and why cached-journal reuse makes spreadsheet edits look
+  like they did nothing. (#1023)
+
 * Docs: new how-to guide **Plot one cell** — what `summary_plot`,
   `cycles_plot`, `raw_plot` and `cycle_info_plot` are each for, the
   returns-a-figure vs shows-it-itself split, discovering plot families with
