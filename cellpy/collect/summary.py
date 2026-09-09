@@ -103,8 +103,10 @@ def collect_summaries(
     if opts.columns and frame.height:
         keep = [c for c in _KEYS if c in frame.columns]
         wanted = list(opts.columns)
-        if opts.partition_by_cv:
-            # keep the derived CV split alongside each requested metric
+        names_a_cv_variant = any(c.endswith(("_non_cv", "_cv")) for c in wanted)
+        if opts.partition_by_cv and not names_a_cv_variant:
+            # keep the derived CV split alongside each requested metric; a list
+            # that spells out ``*_cv`` / ``*_non_cv`` itself is literal (#1009)
             wanted = [
                 name
                 for col in wanted

@@ -10,7 +10,9 @@ from __future__ import annotations
 import functools
 import logging
 import math
+import re
 import warnings
+from collections import Counter
 from typing import Any, Optional
 
 import numpy as np
@@ -199,85 +201,37 @@ def spread_plot(curves, plotly_arguments=None, y_label_mapper=None, **kwargs):
         vertical_spacing=plotly_arguments.get("plotly_vertical_spacing", 0.01),
     )
     y_labels = {}
+    has_direction = "direction" in curves.columns
     for i, (cell, data) in enumerate(g):
         color = color_list[i % len(color_list)]
+        show_legend = True
 
         for row_number, variable in enumerate(selected_variables):
             y_label = y_label_mapper.get(variable, variable)
             y_labels[row_number] = y_label
-            if row_number == 0:
-                show_legend = True
-            else:
+            panel_data = data[data["variable"] == variable]
+            # One trace per direction so charge / discharge share the panel
+            # but differ in dash (#1009).
+            directions = list(pd.unique(panel_data["direction"])) if has_direction else [None]
+            for direction in directions:
+                sub_data = (
+                    panel_data
+                    if direction is None
+                    else panel_data[panel_data["direction"] == direction]
+                )
+                _add_spread_traces(
+                    fig,
+                    row_number + 1,
+                    cell,
+                    series_col,
+                    variable,
+                    sub_data,
+                    mode=mode,
+                    color=color,
+                    dash=_DIRECTION_DASH.get(direction or "", "solid"),
+                    show_legend=show_legend,
+                )
                 show_legend = False
-            sub_data = data[data["variable"] == variable]
-            mean_kwargs = dict(
-                name=cell,
-                x=sub_data["cycle"],
-                y=sub_data["mean"],
-                mode=mode,
-                line=dict(color=color[0]),
-                legendgroup=cell,
-                legendgrouptitle=None,
-                showlegend=show_legend,
-            )
-            # Hover parity with group_it px path (#875); std via customdata.
-            if "std" in sub_data.columns:
-                mean_kwargs["customdata"] = sub_data["std"]
-                mean_kwargs["hovertemplate"] = (
-                    f"{series_col}={cell}<br>"
-                    f"variable={variable}<br>"
-                    "Cycle (n.)=%{x}<br>"
-                    "mean=%{y}<br>"
-                    "std=%{customdata}<extra></extra>"
-                )
-            else:
-                mean_kwargs["hovertemplate"] = (
-                    f"{series_col}={cell}<br>"
-                    f"variable={variable}<br>"
-                    "Cycle (n.)=%{x}<br>"
-                    "mean=%{y}<extra></extra>"
-                )
-            fig.add_trace(
-                go.Scatter(**mean_kwargs),
-                row=row_number + 1,
-                col=1,
-            )
-            fig.add_trace(
-                go.Scatter(
-                    name=f"Upper Bound {cell}",
-                    x=sub_data["cycle"],
-                    y=sub_data["mean"] + sub_data["std"],
-                    mode="lines",
-                    marker=dict(
-                        color=color[1],
-                    ),
-                    line=dict(width=0),
-                    showlegend=False,
-                    legendgroup=cell,
-                    hoverinfo="skip",
-                ),
-                row=row_number + 1,
-                col=1,
-            )
-            fig.add_trace(
-                go.Scatter(
-                    name=f"Lower Bound {cell}",
-                    x=sub_data["cycle"],
-                    y=sub_data["mean"] - sub_data["std"],
-                    mode="lines",
-                    marker=dict(
-                        color=color[1],
-                    ),
-                    line=dict(width=0),
-                    fillcolor=color[1],
-                    fill="tonexty",
-                    showlegend=False,
-                    legendgroup=cell,
-                    hoverinfo="skip",
-                ),
-                row=row_number + 1,
-                col=1,
-            )
     for row_number, y_label in y_labels.items():
         fig.update_yaxes(title_text=y_label, row=row_number + 1, col=1)
 
@@ -295,6 +249,72 @@ def spread_plot(curves, plotly_arguments=None, y_label_mapper=None, **kwargs):
         fig.update_layout(hovermode=hover_mode)
 
     return fig
+
+
+def _add_spread_traces(
+    fig, row, cell, series_col, variable, sub_data, *, mode, color, dash, show_legend
+):
+    """Add the mean line plus its ±std band for one series / panel / direction."""
+    mean_kwargs = dict(
+        name=cell,
+        x=sub_data["cycle"],
+        y=sub_data["mean"],
+        mode=mode,
+        line=dict(color=color[0], dash=dash),
+        legendgroup=cell,
+        legendgrouptitle=None,
+        showlegend=show_legend,
+    )
+    # Hover parity with group_it px path (#875); std via customdata.
+    if "std" in sub_data.columns:
+        mean_kwargs["customdata"] = sub_data["std"]
+        mean_kwargs["hovertemplate"] = (
+            f"{series_col}={cell}<br>"
+            f"variable={variable}<br>"
+            "Cycle (n.)=%{x}<br>"
+            "mean=%{y}<br>"
+            "std=%{customdata}<extra></extra>"
+        )
+    else:
+        mean_kwargs["hovertemplate"] = (
+            f"{series_col}={cell}<br>"
+            f"variable={variable}<br>"
+            "Cycle (n.)=%{x}<br>"
+            "mean=%{y}<extra></extra>"
+        )
+    fig.add_trace(go.Scatter(**mean_kwargs), row=row, col=1)
+    fig.add_trace(
+        go.Scatter(
+            name=f"Upper Bound {cell}",
+            x=sub_data["cycle"],
+            y=sub_data["mean"] + sub_data["std"],
+            mode="lines",
+            marker=dict(color=color[1]),
+            line=dict(width=0),
+            showlegend=False,
+            legendgroup=cell,
+            hoverinfo="skip",
+        ),
+        row=row,
+        col=1,
+    )
+    fig.add_trace(
+        go.Scatter(
+            name=f"Lower Bound {cell}",
+            x=sub_data["cycle"],
+            y=sub_data["mean"] - sub_data["std"],
+            mode="lines",
+            marker=dict(color=color[1]),
+            line=dict(width=0),
+            fillcolor=color[1],
+            fill="tonexty",
+            showlegend=False,
+            legendgroup=cell,
+            hoverinfo="skip",
+        ),
+        row=row,
+        col=1,
+    )
 
 
 def _normalize_direction(direction: Optional[str]) -> str:
@@ -1017,6 +1037,122 @@ def _pretty_print_facet_strips(fig: Any) -> None:
             fig.layout.annotations[i].text = pretty
 
 
+#: Direction tokens recognised in summary column names (#1009).
+_DIRECTION_TOKENS = ("charge", "discharge")
+#: Plotly dash per direction; direction-less series (CE, ...) are solid.
+_DIRECTION_DASH = {"charge": "solid", "discharge": "dash", "": "solid"}
+
+
+def split_direction(variable: str) -> tuple[str, Optional[str]]:
+    """Split a summary variable into ``(panel, direction)`` (#1009).
+
+    The first ``_``-separated token equal to ``charge`` / ``discharge`` is the
+    direction; the remaining tokens form the panel key. Works for prefix
+    (``charge_capacity_gravimetric_cv`` → ``capacity_gravimetric_cv``), suffix
+    (``potential_end_charge`` → ``potential_end``) and mid-name
+    (``test_cumulated_discharge_capacity_loss`` →
+    ``test_cumulated_capacity_loss``) forms. A name without a direction token
+    is its own panel with direction ``None``.
+    """
+    name = str(variable)
+    parts = name.split("_")
+    for i, part in enumerate(parts):
+        if part in _DIRECTION_TOKENS:
+            panel = "_".join(parts[:i] + parts[i + 1 :])
+            return (panel or name), part
+    return name, None
+
+
+def _panel_key(variable: str) -> str:
+    return split_direction(variable)[0]
+
+
+def _panel_mapping(variables) -> dict[str, str]:
+    """``variable → panel`` for the variables present (#1009).
+
+    Variables that meet another one on the same panel key are renamed to that
+    key (``charge_x`` + ``discharge_x`` → ``x``); a variable alone on its key
+    keeps its own name so the label still says which direction it is.
+    """
+    panels = {v: _panel_key(v) for v in variables}
+    counts = Counter(panels.values())
+    return {v: (p if counts[p] > 1 else v) for v, p in panels.items()}
+
+
+def _combine_direction_panels(
+    curves: pd.DataFrame, g: str = "variable"
+) -> tuple[pd.DataFrame, list[str], dict[str, str]]:
+    """Merge charge / discharge variables into shared panels (#1009).
+
+    Adds a ``direction`` column (``charge`` / ``discharge`` / ``""``) and
+    rewrites ``g`` per `_panel_mapping`. Returns the frame, the directions
+    present (charge/discharge order; empty when no variable carries a direction
+    token, in which case the frame is returned untouched) and the
+    ``variable → panel`` mapping.
+    """
+    present = list(pd.unique(curves[g].dropna()))
+    split = {v: split_direction(v) for v in present}
+    directions = [d for d in _DIRECTION_TOKENS if any(s[1] == d for s in split.values())]
+    if not directions:
+        return curves, [], {}
+    mapping = _panel_mapping(present)
+    curves = curves.copy()
+    curves["direction"] = curves[g].map(lambda v: split[v][1] or "")
+    curves[g] = curves[g].map(mapping)
+    return curves, directions, mapping
+
+
+def _dedupe_direction_names(fig: Any) -> None:
+    """Drop direction tokens from Plotly trace names; one legend entry per series.
+
+    ``px.line(..., line_dash="direction")`` names traces ``"cell, charge"`` /
+    ``"cell, discharge"``. Both belong to the same series, so the name becomes
+    ``"cell"``, the traces share a legend group and only the first one shows.
+    The direction itself is read from the dash style (see `_add_direction_legend`).
+    """
+    seen: set[str] = set()
+    for trace in fig.data:
+        parts = [p.strip() for p in str(trace.name).split(",")]
+        kept = [p for p in parts if p and p not in _DIRECTION_TOKENS]
+        name = ", ".join(kept) if kept else str(trace.name)
+        show = trace.showlegend is not False and name not in seen
+        if show:
+            seen.add(name)
+        trace.update(
+            name=name,
+            legendgroup=trace.legendgroup or name,
+            legendgrouptitle_text=None,
+            showlegend=show,
+        )
+
+
+def _add_direction_legend(fig: Any, directions: list[str]) -> None:
+    """Add a second Plotly legend (``legend2``, "Direction") with style-only entries."""
+    for direction in directions:
+        fig.add_trace(
+            go.Scatter(
+                x=[None],
+                y=[None],
+                mode="lines",
+                name=direction.capitalize(),
+                line=dict(color="grey", dash=_DIRECTION_DASH[direction]),
+                legend="legend2",
+                showlegend=True,
+                hoverinfo="skip",
+            )
+        )
+    fig.update_layout(
+        legend2=dict(
+            title_text="Direction",
+            orientation="v",
+            x=1.02,
+            xanchor="left",
+            y=0.0,
+            yanchor="bottom",
+        )
+    )
+
+
 def _ordered_variables(curves: pd.DataFrame) -> list:
     """Return ``variable`` values in facet order (categorical, else appearance)."""
     series = curves["variable"]
@@ -1047,29 +1183,39 @@ def _cellpy_units_from(units: Any):
     return get_cellpy_units()
 
 
+#: ``mod_01_<column>`` marks a family's derived (normalized) series.
+_MOD_MARKER = re.compile(r"^mod_\d{2}_")
+
+
+_MODE_SUFFIXES = ("gravimetric", "areal", "volumetric")
+
+
+def _strip_cv_suffix(parts: list[str]) -> tuple[list[str], Optional[str]]:
+    """Split off a trailing ``cv`` / ``non_cv`` token pair, if any."""
+    if len(parts) >= 2 and parts[-2:] == ["non", "cv"]:
+        return parts[:-2], "non_cv"
+    if parts and parts[-1] == "cv":
+        return parts[:-1], "cv"
+    return parts, None
+
+
 def _mode_from_variable(variable: str) -> Optional[str]:
-    v = str(variable)
-    if v.endswith("_areal") or v.endswith("_areal_cv"):
-        return "areal"
-    if v.endswith("_gravimetric") or v.endswith("_gravimetric_cv"):
-        return "gravimetric"
-    if v.endswith("_volumetric") or v.endswith("_volumetric_cv"):
-        return "volumetric"
+    parts, _ = _strip_cv_suffix(str(variable).split("_"))
+    if parts and parts[-1] in _MODE_SUFFIXES:
+        return parts[-1]
     return None
 
 
 def _pretty_variable_name(variable: str) -> str:
     """Title-case a summary ``variable``, stripping mode suffixes."""
-    v = str(variable)
-    parts = v.split("_")
-    mode_suffixes = {"gravimetric", "areal", "volumetric"}
-    if parts and parts[-1] == "cv" and len(parts) >= 2 and parts[-2] in mode_suffixes:
-        parts = parts[:-2] + ["cv"]
-    elif parts and parts[-1] in mode_suffixes:
+    parts, cv = _strip_cv_suffix(str(variable).split("_"))
+    if parts and parts[-1] in _MODE_SUFFIXES:
         parts = parts[:-1]
     label = " ".join(parts).title()
-    if label.endswith("Cv"):
-        label = label.replace("Cv", "CV")
+    if cv == "cv":
+        label = f"{label} CV"
+    elif cv == "non_cv":
+        label = f"{label} non-CV"
     return label
 
 
@@ -1085,16 +1231,22 @@ def _pretty_variable_label(variable: str, units: Any = None) -> str:
     from cellpy.units import with_cellpy_unit
 
     v = str(variable)
+    if _MOD_MARKER.match(v):
+        # ``mod_NN_<source>`` is the family's normalized-on-max series (#1009).
+        return f"Normalized {_pretty_variable_name(_MOD_MARKER.sub('', v))} (%)"
     label = _pretty_variable_name(v)
     if v == "coulombic_efficiency" or v.endswith("_coulombic_efficiency"):
         return f"{label} (%)"
     if "_norm" in v:
         return f"{label} (normalized)"
 
+    # Token match so a direction-less panel key (``capacity_gravimetric``,
+    # #1009) is recognised like ``charge_capacity_gravimetric``.
+    tokens = v.split("_")
     property_name = None
-    if "_capacity" in v:
+    if "capacity" in tokens:
         property_name = "charge"
-    elif "_energy" in v:
+    elif "energy" in tokens:
         property_name = "energy"
     if property_name is None:
         return label
@@ -1161,24 +1313,26 @@ def _yaxis_key_for_variable(
     key = _yaxis_key_for_facet_label(fig, f"{facet}={variable}")
     if key is not None:
         return key
-    pretty = _pretty_variable_label(variable)
-    bare = _pretty_variable_name(variable)
-    for layout_key in fig.layout:
-        key_s = str(layout_key)
-        if not key_s.startswith("yaxis"):
-            continue
-        title = getattr(fig.layout[layout_key].title, "text", None)
-        if not title:
-            continue
-        plain = _plain_axis_title(title)
-        if (
-            plain == pretty
-            or plain == bare
-            or plain.startswith(f"{bare} (")
-            or title == pretty
-            or title.startswith(f"{bare} (")
-        ):
-            return key_s
+    for name in dict.fromkeys((variable, _panel_key(variable))):
+        # a merged charge/discharge panel is titled by its panel key (#1009)
+        pretty = _pretty_variable_label(name)
+        bare = _pretty_variable_name(name)
+        for layout_key in fig.layout:
+            key_s = str(layout_key)
+            if not key_s.startswith("yaxis"):
+                continue
+            title = getattr(fig.layout[layout_key].title, "text", None)
+            if not title:
+                continue
+            plain = _plain_axis_title(title)
+            if (
+                plain == pretty
+                or plain == bare
+                or plain.startswith(f"{bare} (")
+                or title == pretty
+                or title.startswith(f"{bare} (")
+            ):
+                return key_s
     return None
 
 
@@ -1413,6 +1567,18 @@ def summary_plotter(collected_curves, cycles_to_plot=None, backend="plotly", **k
       collection carries one (``custom_group_labels=``), else by ``group``, and
       its legend title defaults to ``"Group"`` instead of ``"Cell"``.
       ``legend_title=`` still overrides.
+
+    Charge / discharge panels (#1009):
+
+    - ``combine_directions`` (default ``True``): variables that differ only by
+      a ``charge`` / ``discharge`` token (``charge_capacity_gravimetric`` and
+      ``discharge_capacity_gravimetric``, ``potential_end_charge`` /
+      ``potential_end_discharge``, ...) share one panel keyed by the name with
+      that token removed (``capacity_gravimetric``). Charge is drawn solid,
+      discharge dashed, with one legend entry per cell / group and a second
+      legend ("Direction") for the dash styles. ``order_variables`` and
+      ``y_ranges`` may use either the original variable names or the panel
+      key. ``combine_directions=False`` restores one facet per variable.
     """
 
     # start_cell is used to determine the starting cell for the subplots (plotly)
@@ -1524,6 +1690,30 @@ def summary_plotter(collected_curves, cycles_to_plot=None, backend="plotly", **k
     explicit_y_label_mapper = kwargs.pop("y_label_mapper", None)
     # order the variables by a given order:
     order_variables = kwargs.pop("order_variables", None)
+
+    # Charge and discharge of one quantity share a panel; the direction is the
+    # dash style (#1009). Keys that name the original variables (order,
+    # y_ranges, explicit labels) are translated to the panel key.
+    combine_directions = kwargs.pop("combine_directions", True)
+    directions: list[str] = []
+    if combine_directions:
+        collected_curves, directions, panel_of = _combine_direction_panels(
+            collected_curves, g
+        )
+    if directions:
+        if order_variables:
+            order_variables = list(
+                dict.fromkeys(panel_of.get(v, v) for v in order_variables)
+            )
+        y_ranges = {panel_of.get(k, k): v for k, v in y_ranges.items()}
+        if explicit_y_label_mapper:
+            explicit_y_label_mapper = {
+                panel_of.get(k, k): v for k, v in explicit_y_label_mapper.items()
+            }
+        if backend == "plotly" and not kwargs.get("spread"):
+            kwargs.setdefault("line_dash", "direction")
+            kwargs.setdefault("line_dash_map", dict(_DIRECTION_DASH))
+
     if order_variables:
         # Variables that are not in the requested order (derived series such as
         # the CV split or a normalized retention curve) keep their own order
@@ -1536,7 +1726,8 @@ def summary_plotter(collected_curves, cycles_to_plot=None, backend="plotly", **k
         collected_curves[g] = collected_curves[g].astype(
             pd.CategoricalDtype(categories=categories, ordered=True)
         )
-        collected_curves = collected_curves.sort_values(by=[g, z, x])
+        sort_by = [g, z] + (["direction"] if directions else []) + [x]
+        collected_curves = collected_curves.sort_values(by=sort_by)
 
     variables = list(collected_curves[g].unique())
     if explicit_y_label_mapper is not None:
@@ -1573,6 +1764,11 @@ def summary_plotter(collected_curves, cycles_to_plot=None, backend="plotly", **k
     )
 
     if backend == "plotly":
+        if fig is not None and directions:
+            if not kwargs.get("spread"):
+                _dedupe_direction_names(fig)
+            _add_direction_legend(fig, directions)
+
         # TODO: implement having different heights of the subplots
 
         if len(height_fractions) > 0:

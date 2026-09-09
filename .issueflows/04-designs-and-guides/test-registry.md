@@ -179,6 +179,17 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_batch.py::test_find_files_skip_file_search_pads_missing_columns | no | – | batch._dbengine.find_files | #1017 | unit detail; engine test covers the gate |
 | tests/test_batch_v3_facade.py::test_load_warns_when_journal_autoload_shadows_db | yes | yes | batch.facade.load | #1008 | cached journal + db args |
 | tests/test_batch_v3_facade.py::test_load_autoload_without_db_args_is_quiet | yes | yes | batch.facade.load | #1008 | no false warning |
+| tests/test_collect.py::test_every_summary_family_is_collectable_with_its_own_options | yes | yes | plotting.registry.PlotFamily.summary_options + collect_summaries | #868/#1009 | now also rejects undeclared (extra) columns |
+| tests/test_collect.py::test_collect_summaries_literal_cv_column_list | yes | yes | collect.summary.collect_summaries | #1009 | `*_cv` in list → literal, no expansion |
+| tests/test_collect.py::test_summary_options_requests_declared_cv_columns_literally | yes | yes | plotting.registry.PlotFamily.summary_options | #1009 | fullcell columns tuple |
+| tests/test_collected_summary_directions.py::test_split_direction_prefix_suffix_midname_and_none | yes | yes | plotting.collected.split_direction | #1009 | panel/direction split |
+| tests/test_collected_summary_directions.py::test_pretty_labels_for_panel_keys | yes | yes | plotting.collected._pretty_variable_label | #1009 | panel-key labels, non-CV, mod_01 |
+| tests/test_collected_summary_directions.py::test_charge_and_discharge_share_a_panel_with_dash_styles | yes | yes | plotting.collected.summary_plotter | #1009 | 2 panels, dash, legend2 |
+| tests/test_collected_summary_directions.py::test_combine_directions_false_keeps_one_facet_per_variable | yes | yes | plotting.collected.summary_plotter | #1009 | opt-out |
+| tests/test_collected_summary_directions.py::test_lone_direction_keeps_its_own_label_but_gets_the_dash | yes | yes | plotting.collected._panel_mapping | #1009 | no merge partner |
+| tests/test_collected_summary_directions.py::test_no_direction_tokens_means_no_direction_legend | yes | yes | plotting.collected.summary_plotter | #1009 | untouched frame |
+| tests/test_collected_summary_directions.py::test_y_ranges_accept_original_variable_names | yes | yes | plotting.collected.summary_plotter | #1009 | key translation |
+| tests/test_collected_summary_directions.py::test_order_variables_accept_original_variable_names | yes | yes | plotting.collected.summary_plotter | #1009 | key translation |
 
 **Columns**
 
