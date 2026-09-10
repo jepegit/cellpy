@@ -2,6 +2,18 @@
 
 ## [Unreleased]
 
+* Fix the capacity doubling that came back for Arbin data: the per-cycle
+  rebase in `normalize_reset_granularity` only ran for loaders that declared
+  a `reset_granularity`, and no Arbin loader does. It now handles every
+  cumulative capacity/energy column present, treating undeclared columns as
+  `PER_CYCLE` with a forgotten-reset guard: a cycle whose first value exceeds
+  1 % of the column's largest magnitude (`CYCLE_START_RTOL`) is rebased to
+  start at 0, legitimate first-sample increments are left alone, and one
+  `UserWarning` reports the columns and how many cycles carried over. Kit
+  check 7 now asserts the cycle-starts-at-0 property. `.cellpy` files written
+  by ≤ 2.1.5 keep the un-rebased raw; regenerate them from raw
+  (`force_raw_file=True`). (#989)
+
 ## [2.1.5] - 2026-09-09
 
 Patch release — docs on-ramp and How-do-I index (#1023),

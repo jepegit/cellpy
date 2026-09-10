@@ -42,16 +42,36 @@ reset, `get_cap` / cycle plots showed doubled capacity. Both 1.x and 2.x
 still take the cycle's last point for per-cycle summary capacity.
 
 2.x `harmonize()` always runs `normalize_reset_granularity` so **each
-cycle starts at 0**:
+cycle starts at 0**. It handles every cumulative column present in the frame
+(capacity + energy, both directions); an undeclared column counts as
+`PER_CYCLE`:
 
-- `PER_CYCLE` — already cycle-cumulative, untouched (silent).
+- `PER_CYCLE` (declared or default) — *forgotten-reset guard*: a cycle whose
+  first value exceeds `CYCLE_START_RTOL` (1 %) of the column's largest
+  magnitude did not start at 0; subtract that first value for that cycle
+  only. Cycles already starting at ~0 are untouched.
 - `PER_TEST` — subtract the first value of each cycle (that first point
   becomes 0).
 - `PER_STEP` — re-accumulate completed steps within the cycle.
 
-When a `PER_TEST` / `PER_STEP` rebase actually changes values, one
-`UserWarning` names the columns. Identity rebases (already starting at 0
-each cycle) stay silent.
+When a rebase actually changes values, one `UserWarning` names the columns
+(guard entries add "N of M cycles carried over"). Identity rebases stay
+silent. Kit check 7 (`testing.check_reset_granularity`) asserts the
+cycle-starts-at-0 property on every conforming loader.
+
+**Round 2 (2026-09-10).** The first fix assumed the rebase always ran. It did
+not: the function returned early when a loader declared no granularity, and
+no Arbin loader declares any (Arbin resets per cycle by schedule). A schedule
+that skipped the reset on every other cycle produced doubled summary capacity
+on 405 of 902 cycles. Why the guard rather than declaring `PER_TEST` for
+Arbin: the real-world failure is *mixed* (reset on some cycles, not on
+others), so an unconditional first-value subtraction would also eat the
+legitimate first-sample increment on every well-behaved cycle and warn on
+every file. `cellpycore`'s `TEST` mode (diff + cum_sum) assumes *never*
+resets and is wrong for the mixed case too.
+
+Persisted `.cellpy` files are never rewritten on read; files made by ≤ 2.1.5
+must be regenerated from raw.
 
 This is cellpy-only (loader declarations). Do not confuse with
 `cellpycore.summarizers.normalize_capacity_granularity`.

@@ -40,6 +40,23 @@ from cellpy.readers.instruments.declarations import LoaderDeclarations, ResetGra
 
 _NS_PER_SECOND = 1_000_000_000
 
+#: Forgotten-reset guard: a cycle whose first cumulative value exceeds this
+#: fraction of the column's largest magnitude did not start at 0 and is rebased.
+#: A legitimate first-sample increment (``I * dt``) is far below this for any
+#: realistic sampling rate; a carried-over cycle is about the whole previous
+#: cycle (#989).
+CYCLE_START_RTOL = 1e-2
+
+
+def _cumulative_columns(schema) -> tuple[str, ...]:
+    """The native columns that carry a reset-granularity convention."""
+    return (
+        schema.cumulative_charge_capacity,
+        schema.cumulative_discharge_capacity,
+        schema.cumulative_charge_energy,
+        schema.cumulative_discharge_energy,
+    )
+
 
 def normalize_reset_granularity(
     raw: pl.DataFrame,
@@ -54,10 +71,15 @@ def normalize_reset_granularity(
     datapoint — so a wrong granularity here corrupts every capacity downstream
     without raising anything.
 
-    Conversions:
+    Every cumulative column present in the frame is handled; a column the
+    loader did not declare is treated as ``PER_CYCLE``. Conversions:
 
-    ``PER_CYCLE``
-        Already the target. Left untouched.
+    ``PER_CYCLE`` (declared or default)
+        Nominally the target, but a tester that forgot to reset at a cycle
+        boundary carries the previous cycle over. Any cycle whose first value
+        exceeds ``CYCLE_START_RTOL`` of the column's largest magnitude is
+        rebased to start at 0; cycles that already start at (or near) 0 are
+        left untouched.
     ``PER_TEST``
         Never resets, so the whole history is baked in. Subtract the value the
         column held entering each cycle.
@@ -65,10 +87,11 @@ def normalize_reset_granularity(
         Resets each step, so within a cycle we must re-accumulate: add the
         running total of the *completed* steps of that cycle.
 
-    When a ``PER_TEST`` / ``PER_STEP`` rebase actually changes values, a
-    ``UserWarning`` names the columns. A no-op (already cycle-cumulative) is
-    silent. 1.x kept the tester column as-is, so a forgotten reset looked
-    like doubled capacity; 2.x resets each cycle to start at 0 (#989).
+    When a rebase actually changes values, one ``UserWarning`` names the
+    columns (and, for the forgotten-reset guard, how many cycles carried over).
+    A no-op (already cycle-cumulative) is silent. 1.x kept the tester column
+    as-is, so a forgotten reset looked like doubled capacity; 2.x resets each
+    cycle to start at 0 (#989).
 
     Args:
         raw: frame already renamed to native columns.
@@ -80,9 +103,18 @@ def normalize_reset_granularity(
     schema = default_schema().raw
     cycle_column = schema.cycle_num
 
-    if not declarations.reset_granularity:
+    granularities = {
+        column: declarations.reset_granularity.get(column, ResetGranularity.PER_CYCLE)
+        for column in _cumulative_columns(schema)
+        if column in raw.columns
+    }
+    if not granularities:
         return raw
     if cycle_column not in raw.columns:
+        if all(g is ResetGranularity.PER_CYCLE for g in granularities.values()):
+            # Nothing declared and no cycle column to guard on; validation
+            # downstream reports the missing required column.
+            return raw
         raise LoaderError(
             f"reset-granularity normalization needs {cycle_column!r}, which the "
             f"loader did not produce; declare it in column_map."
@@ -90,12 +122,29 @@ def normalize_reset_granularity(
 
     out = raw
     rebased: list[str] = []
-    for column, granularity in declarations.reset_granularity.items():
-        if column not in out.columns:
-            # Declared but absent: the file simply did not carry it.
-            continue
-
+    for column, granularity in granularities.items():
         if granularity is ResetGranularity.PER_CYCLE:
+            scale = out.get_column(column).abs().max()
+            if scale is None or scale <= 0:
+                continue
+            threshold = CYCLE_START_RTOL * scale
+            starts = out.group_by(cycle_column, maintain_order=True).agg(
+                pl.col(column).first().alias("_start")
+            )
+            carried = starts.filter(pl.col("_start") > threshold).height
+            if not carried:
+                continue
+            offset = pl.col(column).first().over(cycle_column)
+            out = out.with_columns(
+                (
+                    pl.col(column)
+                    - pl.when(offset > threshold).then(offset).otherwise(0.0)
+                ).alias(column)
+            )
+            rebased.append(
+                f"{column} ({carried} of {starts.height} cycles carried over "
+                f"from the previous cycle)"
+            )
             continue
 
         before = out.get_column(column)
@@ -143,8 +192,8 @@ def normalize_reset_granularity(
         warnings.warn(
             "cellpy rebased vendor capacity/energy so each cycle starts at 0: "
             + ", ".join(rebased)
-            + ". 1.x kept the tester column as-is (a forgotten reset then "
-            "looks like doubled capacity).",
+            + ". The tester did not reset at those cycle boundaries; 1.x kept "
+            "the column as-is, so this looked like doubled capacity (#989).",
             UserWarning,
             stacklevel=2,
         )

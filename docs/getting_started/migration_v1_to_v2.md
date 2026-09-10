@@ -127,8 +127,18 @@ cycle plots showed doubled capacity. Both 1.x and 2.x still take the
 cycle's last point for per-cycle summary capacity.
 
 2.x additionally rebases vendor capacity/energy so **each cycle starts at
-0** (`normalize_reset_granularity`). When that rebase actually changes
-values, a `UserWarning` names the columns. Identity rebases stay silent.
+0** (`normalize_reset_granularity`). This runs for every loader, declared
+granularity or not: a cycle whose first value exceeds 1 % of the column's
+largest magnitude (`CYCLE_START_RTOL`) was not reset by the tester and is
+rebased; a legitimate first-sample increment stays untouched. When the
+rebase actually changes values, a `UserWarning` names the columns and how
+many cycles carried over. Identity rebases stay silent.
+
+`.cellpy` files written by cellpy ≤ 2.1.5 still hold the un-rebased raw
+(the guard did not run for loaders without a granularity declaration, e.g.
+all Arbin loaders). Regenerate them from raw
+(`batch.load(..., force_raw_file=True)`); loading a `.cellpy` file never
+rewrites its raw.
 
 ## Configuration: `prms` → `cellpy.config`
 

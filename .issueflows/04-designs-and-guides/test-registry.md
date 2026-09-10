@@ -158,6 +158,11 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_harmonize.py::test_per_step_accumulates_completed_steps_within_the_cycle | yes | yes | instruments.harmonize.normalize_reset_granularity | #989 | PER_STEP warns |
 | tests/test_harmonize.py::test_per_cycle_capacity_is_the_cycle_last_value | yes | yes | instruments.harmonize.normalize_reset_granularity | #989 | summary last-datapoint invariant |
 | tests/test_harmonize.py::test_per_test_already_cycle_cumulative_is_silent | yes | yes | instruments.harmonize.normalize_reset_granularity | #989 | identity PER_TEST no UserWarning |
+| tests/test_harmonize.py::test_undeclared_column_with_a_forgotten_reset_is_rebased | yes | yes | instruments.harmonize.normalize_reset_granularity | #989 | undeclared column, guard rebases only the carried cycle, warns "N of M" |
+| tests/test_harmonize.py::test_legit_first_sample_increment_is_left_alone_and_silent | yes | yes | instruments.harmonize.normalize_reset_granularity | #989 | I*dt first sample below CYCLE_START_RTOL untouched |
+| tests/test_harmonize.py::test_guard_rebases_energy_columns_too | yes | yes | instruments.harmonize.normalize_reset_granularity | #989 | energies handled, untouched column not named |
+| tests/test_harmonize.py::test_guard_without_a_cycle_column_is_a_silent_no_op | yes | yes | instruments.harmonize.normalize_reset_granularity | #989 | no cycle_num + nothing declared -> no-op |
+| tests/test_harmonize.py::test_kit_check_rejects_a_cycle_that_does_not_start_at_zero | yes | yes | instruments.testing.check_reset_granularity | #989 | kit check 7 has teeth |
 | tests/test_dependency_budget.py::test_matplotlib_and_ipykernel_left_the_required_set | yes | yes | pyproject required deps | #937 | pip extras |
 | tests/test_dependency_budget.py::test_matplotlib_lives_in_the_plotting_mpl_extra | yes | yes | pyproject plotting-mpl extra | #937 | |
 | tests/test_dependency_budget.py::test_ipykernel_lives_in_the_notebook_extra | yes | yes | pyproject notebook extra | #937 | |

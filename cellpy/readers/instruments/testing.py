@@ -145,13 +145,16 @@ def check_reset_granularity(result: LoaderResult) -> None:
     rescales capacities (loader plan §5). The full value-parity property test
     lives in ``tests/test_harmonize.py``; this kit check is the cheap structural
     gate every conforming loader must pass: when cumulative capacity columns
-    are present, the last value of each cycle is finite and the per-cycle
-    series has one row per distinct ``cycle_num``.
+    are present, the last value of each cycle is finite, the per-cycle series
+    has one row per distinct ``cycle_num``, and every cycle starts at 0 (within
+    ``harmonize.CYCLE_START_RTOL`` of the column's largest magnitude, #989).
     """
     import math
 
     import polars as pl
     from cellpycore.config import default_schema
+
+    from cellpy.readers.instruments.harmonize import CYCLE_START_RTOL
 
     schema = default_schema().raw
     raw = result.raw
@@ -163,7 +166,8 @@ def check_reset_granularity(result: LoaderResult) -> None:
         return
 
     per_cycle = raw.group_by(cycle, maintain_order=True).agg(
-        *[pl.col(column).last().alias(column) for column in present]
+        *[pl.col(column).last().alias(column) for column in present],
+        *[pl.col(column).first().alias(f"{column}__first") for column in present],
     )
     assert per_cycle.height == raw[cycle].n_unique(), (
         "reset-granularity check: per-cycle aggregation lost or duplicated cycles"
@@ -172,6 +176,17 @@ def check_reset_granularity(result: LoaderResult) -> None:
         values = per_cycle[column].to_list()
         assert all(v is not None and not (isinstance(v, float) and math.isnan(v)) for v in values), (
             f"reset-granularity check: {column} has non-finite per-cycle lasts"
+        )
+        scale = raw[column].abs().max() or 0.0
+        carried = [
+            cyc
+            for cyc, first in zip(per_cycle[cycle].to_list(), per_cycle[f"{column}__first"].to_list())
+            if first is not None and first > CYCLE_START_RTOL * scale
+        ]
+        assert not carried, (
+            f"reset-granularity check: {column} does not start at 0 in cycle(s) "
+            f"{carried[:5]}{'...' if len(carried) > 5 else ''}; the harmonized "
+            f"frame must be cycle-cumulative (#989)"
         )
 
 
