@@ -245,6 +245,122 @@ def test_per_test_already_cycle_cumulative_is_silent():
     ]
 
 
+# -- forgotten-reset guard (#989, round 2) --------------------------------------
+#
+# Arbin loaders declare no granularity at all (the vendor resets per cycle by
+# schedule), so the guard must act on *undeclared* columns too: a cycle that
+# starts where the previous one ended was not reset by the tester.
+
+
+def _undeclared() -> LoaderDeclarations:
+    return LoaderDeclarations(
+        column_map={
+            "cyc": SCHEMA.cycle_num,
+            "stp": SCHEMA.step_num,
+            "cap": SCHEMA.cumulative_charge_capacity,
+        },
+        raw_units=CellpyUnits(),
+    )
+
+
+@pytest.mark.essential
+def test_undeclared_column_with_a_forgotten_reset_is_rebased():
+    # Cycle 1: 0->3 (reset ok). Cycle 2: tester forgot to reset, 3->8.
+    # Cycle 3: reset ok, 0->2. Only cycle 2 changes.
+    frame = _frame(
+        cycles=[1, 1, 1, 2, 2, 2, 3, 3],
+        steps=[1, 1, 2, 1, 1, 2, 1, 2],
+        values=[0.0, 1.0, 3.0, 3.0, 5.0, 8.0, 0.0, 2.0],
+    )
+    with pytest.warns(UserWarning, match=r"1 of 3 cycles carried over") as record:
+        out = normalize_reset_granularity(frame, _undeclared())
+    assert len(record) == 1
+    assert SCHEMA.cumulative_charge_capacity in str(record[0].message)
+    assert out[SCHEMA.cumulative_charge_capacity].to_list() == [
+        0.0,
+        1.0,
+        3.0,
+        0.0,
+        2.0,
+        5.0,
+        0.0,
+        2.0,
+    ]
+
+
+@pytest.mark.essential
+def test_legit_first_sample_increment_is_left_alone_and_silent():
+    # The first datapoint of a cycle often already carries I*dt (here 0.001 of
+    # a 3.0 cycle). That is not a forgotten reset and must not be touched.
+    frame = _frame(
+        cycles=[1, 1, 1, 2, 2, 2],
+        steps=[1, 1, 2, 1, 1, 2],
+        values=[0.0, 1.0, 3.0, 0.003, 2.0, 5.0],
+    )
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", UserWarning)
+        out = normalize_reset_granularity(frame, _undeclared())
+    assert out.equals(frame)
+
+
+@pytest.mark.essential
+def test_guard_rebases_energy_columns_too():
+    frame = pl.DataFrame(
+        {
+            SCHEMA.cycle_num: [1, 1, 2, 2],
+            SCHEMA.cumulative_charge_energy: [0.0, 10.0, 10.0, 25.0],
+            SCHEMA.cumulative_discharge_energy: [0.0, 4.0, 0.0, 4.0],
+        }
+    )
+    declarations = LoaderDeclarations(
+        column_map={
+            "cyc": SCHEMA.cycle_num,
+            "e_c": SCHEMA.cumulative_charge_energy,
+            "e_d": SCHEMA.cumulative_discharge_energy,
+        },
+        raw_units=CellpyUnits(),
+    )
+    with pytest.warns(UserWarning, match="rebased vendor capacity/energy") as record:
+        out = normalize_reset_granularity(frame, declarations)
+    message = str(record[0].message)
+    assert SCHEMA.cumulative_charge_energy in message
+    assert SCHEMA.cumulative_discharge_energy not in message
+    assert out[SCHEMA.cumulative_charge_energy].to_list() == [0.0, 10.0, 0.0, 15.0]
+    assert out[SCHEMA.cumulative_discharge_energy].to_list() == [0.0, 4.0, 0.0, 4.0]
+
+
+@pytest.mark.essential
+def test_guard_without_a_cycle_column_is_a_silent_no_op():
+    # Nothing declared and nothing to group on: leave it to validate_raw_frame
+    # to report the missing required column.
+    frame = pl.DataFrame({SCHEMA.cumulative_charge_capacity: [0.0, 1.0, 2.0]})
+    declarations = LoaderDeclarations(
+        column_map={"cap": SCHEMA.cumulative_charge_capacity},
+        raw_units=CellpyUnits(),
+    )
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", UserWarning)
+        assert normalize_reset_granularity(frame, declarations).equals(frame)
+
+
+@pytest.mark.essential
+def test_kit_check_rejects_a_cycle_that_does_not_start_at_zero():
+    from cellpy.readers.instruments.testing import check_reset_granularity
+
+    class _Result:
+        raw = _frame(
+            cycles=[1, 1, 2, 2],
+            steps=[1, 1, 1, 1],
+            values=[0.0, 3.0, 3.0, 6.0],
+        )
+
+    with pytest.raises(AssertionError, match="does not start at 0 in cycle"):
+        check_reset_granularity(_Result())
+
+    _Result.raw = normalize_reset_granularity(_Result.raw, _undeclared())
+    check_reset_granularity(_Result())
+
+
 # -- harmonize -----------------------------------------------------------------
 
 

@@ -121,9 +121,11 @@ Useful methods on `CellpyCell` (non-exhaustive):
 
 - `get_cycle_numbers()` — list of cycle indices
 - `get_cap(...)` / capacity–voltage style extracts (see API / examples).
-  After `get`, each cycle's raw capacity starts at 0. Testers that forgot
-  a reset (1.x plotted doubled capacity) are rebased on load; a
-  `UserWarning` names the columns when that happens (#989).
+  After a raw load, each cycle's raw capacity starts at 0. Testers that forgot
+  a reset (1.x plotted doubled capacity) are rebased on load for every loader;
+  a `UserWarning` names the columns and how many cycles carried over (#989).
+  `.cellpy` files written by cellpy ≤ 2.1.5 keep the un-rebased raw —
+  regenerate them from raw (`batch.load(..., force_raw_file=True)`).
 - ICA / DVA — `from cellpy import ica` then `ica.dqdv(c)` / `ica.dvdq(c)`
   (see [Compute ICA / DVA](../guides/ica.md))
 - `make_step_table()` / `make_summary()` — usually already run by `get`
