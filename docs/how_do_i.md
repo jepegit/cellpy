@@ -314,6 +314,17 @@ b.summaries.to_pandas().to_excel("summaries.xlsx")
 **…set up the database the batch utility reads?**
 → [Set up the cellpy database](guides/batch_database.md)
 
+**…use a spreadsheet whose column names are not the defaults?**
+
+```toml
+[db_cols]
+cell_name = "sample"              # cellpy field = your Excel header
+file_name_indicator = "raw_stem"
+```
+
+→ [If you renamed a column](guides/batch_database.md#if-you-renamed-a-column)
+and the [`[db_cols]` example](getting_started/configuration.md#example-cellpytoml)
+
 **…load a batch?**
 
 ```python

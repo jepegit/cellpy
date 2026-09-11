@@ -72,6 +72,30 @@ own lab or reserved for later. Leaving them blank is fine.
     for half cells and `full_cell` for full cells — not a material name. See
     [Units, mass, area and C-rates](units.md) for what it changes.
 
+## If you renamed a column
+
+The table above uses the **default sheet headers** (what the example
+workbook ships). Those strings are not hard-coded. `[db_cols]` in
+`cellpy.toml` maps each *cellpy field* (left) to the *header in row 1*
+(right):
+
+```toml
+[db_cols]
+cell_name = "sample"      # you renamed "cell" → "sample"
+file_name_indicator = "raw_stem"
+```
+
+You do not have to rename the sheet back, or edit notebooks that call
+`batch.load`. Only list the columns that differ; omitted keys keep the
+defaults (`cell_name` → `cell`, `mass_active` → `mass_active_material`,
+…). Full table:
+[configuration reference — db_cols](../getting_started/configuration_reference.md#db_cols).
+A worked snippet lives in
+[Setup and configuration](../getting_started/configuration.md#example-cellpytoml).
+
+A configured header that is missing from the sheet warns once and comes
+back empty rather than failing the load.
+
 ## Batch columns — how cells are grouped into a batch
 
 `b01` through `b07` are seven independent selectors, so the same cell can

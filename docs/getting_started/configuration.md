@@ -116,10 +116,22 @@ env_file = "/home/you/.env_cellpy"
 [reader]
 cycle_mode = "anode"
 sep = ";"
+
+# Left-hand keys are cellpy's names; values are the exact headers in row 1
+# of your Excel db. Omit any key whose sheet header still matches the default.
+[db_cols]
+cell_name = "sample"                  # sheet used to say "cell"
+file_name_indicator = "raw_stem"
+mass_active = "mass_active_material"  # default — you can leave this out
 ```
 
 `rawdatadir` (and optionally `cellpydatadir`) may be a remote URI — see
 [Work with remote files](remote_paths.md).
+
+If you renamed a column in an older workbook, point `[db_cols]` at the new
+header instead of renaming the sheet back. The full key list is under
+[`db_cols`](configuration_reference.md#db_cols). How the sheet is read:
+[Set up the cellpy database](../guides/batch_database.md).
 
 ## Runtime overrides
 

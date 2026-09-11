@@ -95,7 +95,7 @@ Settings for the simple database.
 
 ## db_cols
 
-Column names for the simple excel database reader.
+Maps cellpy field names to Excel header strings for the simple reader.
 
 | Setting | Type | Default |
 | --- | --- | --- |
