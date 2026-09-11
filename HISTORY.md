@@ -14,6 +14,11 @@
   by ≤ 2.1.5 keep the un-rebased raw; regenerate them from raw
   (`force_raw_file=True`). (#989)
 
+* `cellpy setup` creates missing configured local folders (including `raw/`)
+  on a re-run, not only on first-time `--reset`. Remote `OtherPath` URIs are
+  still skipped, and `setup -i` with an existing config no longer crashes on
+  `instrumentdir`. (#1037)
+
 ## [2.1.5] - 2026-09-09
 
 Patch release — docs on-ramp and How-do-I index (#1023),

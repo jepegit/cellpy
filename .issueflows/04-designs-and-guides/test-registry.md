@@ -80,6 +80,9 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_cli_setup_output.py (module) | yes | yes | cli_api.setup_config / cli_api._ui / cli.pull / cli.edit | #891 | no parameter dump, real --silent, usage exit 2 |
 | tests/test_cellpy_cmd.py::test_cli_setup | yes | yes | cli.setup dry-run reporting | #891 #960 | toml+env only; no legacy .conf |
 | tests/test_cellpy_cmd.py::test_cli_setup_creates_dirs_and_files | yes | yes | cli.setup writes cellpy.toml | #960 | no new .conf; toml + env + dirs |
+| tests/test_cellpy_cmd.py::test_cli_setup_rerun_creates_missing_raw | yes | yes | cli_api.setup_config re-run mkdir | #1037 | existing toml used to skip _update_paths |
+| tests/test_cellpy_cmd.py::test_cli_setup_does_not_mkdir_remote_raw | yes | yes | cli_api._join_under_home / _create_dir | #1037 | sftp URI must not become a local path |
+| tests/test_cellpy_cmd.py::test_cli_setup_interactive_existing_config_uses_instrumentdir | yes | yes | cli_api._update_paths instrumentdir | #1037 | instrumentsdir typo crashed setup -i |
 | tests/test_cli_info.py::test_check_does_not_shout_or_draw_banners | yes | yes | cli_api._check rendering | #891 | no ===/---/!!!! |
 | tests/test_cli_info.py::test_check_keeps_the_probe_narration_for_verbose | yes | yes | cli_api._debug gating | #891 | diagnostics only under --verbose |
 | tests/test_cli_info.py::test_quiet_reports_only_what_is_broken | yes | yes | check rendering under --quiet | #891 | failures survive quiet |

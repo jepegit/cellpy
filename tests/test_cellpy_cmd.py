@@ -440,6 +440,65 @@ def test_cli_setup_creates_dirs_and_files(isolated_user_dir):
     assert "CELLPY_PASSWORD" in env_path.read_text(encoding="utf-8")
 
 
+@pytest.mark.essential
+def test_cli_setup_rerun_creates_missing_raw(isolated_user_dir):
+    """A later ``cellpy setup`` used to skip mkdir when toml already existed (#1037)."""
+    runner = CliRunner()
+    test_user = "rerun_raw_user"
+    tmp_path = isolated_user_dir
+
+    first = runner.invoke(
+        cli.cli, ["setup", "--test_user", test_user, "--silent"]
+    )
+    assert first.exit_code == 0
+
+    raw = tmp_path / "cellpy_data" / "raw"
+    assert raw.is_dir()
+    raw.rmdir()
+    assert not raw.exists()
+
+    second = runner.invoke(
+        cli.cli, ["setup", "--test_user", test_user, "--silent"]
+    )
+    assert second.exit_code == 0
+    assert raw.is_dir(), "re-run setup must create a missing configured raw/"
+
+
+@pytest.mark.essential
+def test_cli_setup_does_not_mkdir_remote_raw(isolated_user_dir):
+    """Remote rawdatadir must stay a no-op, not become ~/sftp:/… (#1037)."""
+    from cellpy.internals.otherpath import OtherPath
+
+    tmp_path = isolated_user_dir
+    (tmp_path / "cellpy.toml").write_text("[paths]\n", encoding="utf-8")
+    remote = "sftp://example.invalid/data/raw"
+    config.paths.rawdatadir = remote
+
+    result = CliRunner().invoke(
+        cli.cli, ["setup", "--test_user", "remote_raw_user", "--silent"]
+    )
+    assert result.exit_code == 0
+    assert OtherPath(config.paths.rawdatadir).is_external
+    junk = [p for p in tmp_path.rglob("*") if "sftp:" in p.as_posix()]
+    assert junk == [], f"setup mkdir'd a remote URI locally: {junk}"
+
+
+@pytest.mark.essential
+def test_cli_setup_interactive_existing_config_uses_instrumentdir(
+    isolated_user_dir,
+):
+    """Non-reset ``-i`` read ``instrumentsdir`` and crashed (#1037)."""
+    tmp_path = isolated_user_dir
+    (tmp_path / "cellpy.toml").write_text("[paths]\n", encoding="utf-8")
+
+    result = CliRunner().invoke(
+        cli.cli,
+        ["setup", "-i", "--dry-run", "--test_user", "typo_user"],
+        input=NUMBER_OF_DIRS * "\n",
+    )
+    assert result.exit_code == 0, result.exception
+
+
 @pytest.mark.slowtest
 def test_cli_new_list():
     logging.debug("\nSTARTING TEST")
