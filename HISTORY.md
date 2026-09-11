@@ -19,6 +19,11 @@
   still skipped, and `setup -i` with an existing config no longer crashes on
   `instrumentdir`. (#1037)
 
+* Docs: `[db_cols]` in `cellpy.toml` maps cellpy field names to the Excel
+  db's row-1 headers, so a renamed (or never-default) column is a config
+  edit rather than a sheet rewrite. Worked snippet, batch-database
+  subsection, and a How-do-I entry. (#1038)
+
 ## [2.1.5] - 2026-09-09
 
 Patch release — docs on-ramp and How-do-I index (#1023),

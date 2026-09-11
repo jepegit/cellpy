@@ -131,7 +131,7 @@ class DbConfig(BaseModel):
 
 
 class DbColsConfig(BaseModel):
-    """Column names for the simple excel database reader."""
+    """Maps cellpy field names to Excel header strings for the simple reader."""
 
     id: str = "id"
     exists: str = "exists"
