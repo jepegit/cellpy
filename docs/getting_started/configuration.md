@@ -24,11 +24,12 @@ Optional root folder for the directory tree:
 cellpy setup -i -d /Users/you/cellpy_data
 ```
 
-`cellpy setup` writes (or refreshes) a user **`cellpy.toml`**, tries to create
-the usual directory layout, and creates a `.env_cellpy` file for secrets /
-remote credentials (edit that file before using SSH remotes). It does **not**
-write a new legacy `.cellpy_prms_*.conf` — convert an existing one with
-`cellpy setup migrate`.
+`cellpy setup` writes (or refreshes) a user **`cellpy.toml`**, creates any
+missing *configured* local folders (including `raw/`), and creates a
+`.env_cellpy` file for secrets / remote credentials (edit that file before
+using SSH remotes). Remote `rawdatadir` / `cellpydatadir` URIs are left
+alone. It does **not** write a new legacy `.cellpy_prms_*.conf` — convert an
+existing one with `cellpy setup migrate`.
 
 Typical directories:
 
@@ -46,7 +47,9 @@ templates/
 ```
 
 !!! tip
-    Re-run setup after upgrading cellpy if paths or defaults changed.
+    Re-run setup after upgrading cellpy if paths or defaults changed. A
+    re-run creates any missing configured local folders. Use `--reset` to
+    rebuild the default `cellpy_data` tree (including `raw/`).
 
 Where is my config?
 

@@ -531,6 +531,21 @@ def _using_echo(echo: Optional[Echo] = None):
         _echo_var.reset(token)
 
 
+def _join_under_home(home, path):
+    """Join ``path`` onto ``home`` unless it is already a remote ``OtherPath``.
+
+    ``pathlib.Path / OtherPath`` stringifies the right-hand side. A remote
+    URI then becomes a junk local path (``~/sftp:/host/raw``) and would be
+    mkdir'd. Leave remotes untouched so ``_create_dir`` can skip them.
+    Absolute local paths are unchanged by ``home / path`` already.
+    """
+    from cellpy.internals.otherpath import OtherPath
+
+    if isinstance(path, OtherPath) and path.is_external:
+        return path
+    return home / path
+
+
 def _create_dir(path, confirm=True, parents=True, exist_ok=True):
     from cellpy.internals.otherpath import OtherPath
 
@@ -745,7 +760,7 @@ def _update_paths(
         notebookdir = pathlib.Path(config.paths.notebookdir)
         batchfiledir = pathlib.Path(config.paths.batchfiledir)
         templatedir = pathlib.Path(config.paths.templatedir)
-        instrumentdir = pathlib.Path(config.paths.instrumentsdir)
+        instrumentdir = pathlib.Path(config.paths.instrumentdir)
     else:
         outdatadir = "out"
         rawdatadir = "raw"
@@ -759,16 +774,16 @@ def _update_paths(
         templatedir = "templates"
         instrumentdir = "instruments"
 
-    outdatadir = h / outdatadir
-    rawdatadir = h / rawdatadir
-    cellpydatadir = h / cellpydatadir
-    filelogdir = h / filelogdir
-    examplesdir = h / examplesdir
-    db_path = h / db_path
-    notebookdir = h / notebookdir
-    batchfiledir = h / batchfiledir
-    templatedir = h / templatedir
-    instrumentdir = h / instrumentdir
+    outdatadir = _join_under_home(h, outdatadir)
+    rawdatadir = _join_under_home(h, rawdatadir)
+    cellpydatadir = _join_under_home(h, cellpydatadir)
+    filelogdir = _join_under_home(h, filelogdir)
+    examplesdir = _join_under_home(h, examplesdir)
+    db_path = _join_under_home(h, db_path)
+    notebookdir = _join_under_home(h, notebookdir)
+    batchfiledir = _join_under_home(h, batchfiledir)
+    templatedir = _join_under_home(h, templatedir)
+    instrumentdir = _join_under_home(h, instrumentdir)
 
     _debug(f"base directory: {h}")
 
@@ -1800,6 +1815,17 @@ def setup_config(
                     default_dir=folder_name,
                     dry_run=dry_run,
                     reset=True,
+                    interactive=False,
+                    silent=silent,
+                )
+            else:
+                # Existing config: still create any missing *configured*
+                # local folders (e.g. raw/). Do not pass custom_dir — that
+                # forces reset=True and would rebuild the default tree (#1037).
+                _update_paths(
+                    default_dir=folder_name,
+                    dry_run=dry_run,
+                    reset=False,
                     interactive=False,
                     silent=silent,
                 )

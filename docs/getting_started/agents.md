@@ -373,7 +373,8 @@ Other measured knobs for a slow first batch load:
   never assume repo `testdata/` exists for end users.
 - **Committing secrets / local config** — `cellpy setup` writes
   `.env_cellpy` and a user `cellpy.toml` (legacy installs may still have
-  `~/.cellpy_prms_*.conf`); do not commit those.
+  `~/.cellpy_prms_*.conf`) and creates any missing configured local
+  folders (remote path URIs are skipped); do not commit those.
 - **Plot backends in headless CI** — set `MPLBACKEND=Agg` when running tests
   or batch plot export without a display.
 

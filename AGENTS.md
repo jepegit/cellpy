@@ -426,8 +426,9 @@ resolves from PyPI). No manual install is normally needed.
   version — harmless for dev).
 - **CLI smoke check:** `uv run cellpy setup --silent` then `uv run cellpy info --check`.
   `cellpy setup` writes a runtime `.env_cellpy` and a user `cellpy.toml`
-  (legacy installs may still have `~/.cellpy_prms_*.conf`) — these are local
-  runtime files, do not commit them.
+  (legacy installs may still have `~/.cellpy_prms_*.conf`) and creates any
+  missing configured local folders (remote path URIs are skipped) — these
+  are local runtime files, do not commit them.
 - **Example data** (`cellpy.utils.example_data`, e.g. `raw_file()`) downloads small
   fixtures from GitHub on first use, so those helpers need network access.
 - **Dual-repo dev** with a sibling `../cellpy-core` checkout is optional (see
