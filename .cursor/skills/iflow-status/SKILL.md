@@ -65,7 +65,7 @@ When `.issueflows/04-designs-and-guides/multi-repo-workspaces.md` exists, read i
 1. **Context / preflight.** Detect the default branch (`gh repo view --json defaultBranchRef -q .defaultBranchRef.name`; fall back to `git symbolic-ref --quiet --short refs/remotes/origin/HEAD | sed 's|^origin/||'`, else `main`). Report current branch, clean/dirty tree (`git status --porcelain`), and ahead/behind vs `origin/<default>`. If the branch matches `^(\d+)-.+`, treat the leading digits as the focus issue `N`.
 
 2. **Focus issue** (`.issueflows/01-current-issues/`). For the focus group, read its title from `issue<n>_original.md` and classify the lifecycle stage with the `/iflow` first-match logic:
-   - **init** — no `issue<n>_original.md` → `/iflow-init`.
+   - **init** — no `issue<n>_original.md` → `/iflow-capture`.
    - **plan** — original exists, no `issue<n>_plan.md` → `/iflow-plan`.
    - **build** — plan exists, status missing or `- [x] Done` unchecked → `/iflow-build`.
    - **close** — status contains `- [x] Done` (case-insensitive) → `/iflow-close`.

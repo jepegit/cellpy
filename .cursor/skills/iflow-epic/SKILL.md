@@ -9,7 +9,7 @@ issue-flow-version: 0.4.2a4
 
 # issue-flow — epic planning (`/iflow-epic`)
 
-Follow this skill to plan a change that is **too large for one issue**: divide it into sequential **stages**, each stage into **manageable issues** that flow through the normal lifecycle (`/iflow-init` → `/iflow-plan` → `/iflow-build` → `/iflow-close`).
+Follow this skill to plan a change that is **too large for one issue**: divide it into sequential **stages**, each stage into **manageable issues** that flow through the normal lifecycle (`/iflow-capture` → `/iflow-plan` → `/iflow-build` → `/iflow-close`).
 
 The surface has two actions. **Drafting** (the default) is write-free on GitHub: its deliverable is `.issueflows/05-epics/epic<N>_plan.md`, and it never creates GitHub issues, labels, or milestones. **`publish`** is the single exception — it turns a *confirmed* plan into real GitHub issues, stage by stage, behind one consolidated confirm.
 

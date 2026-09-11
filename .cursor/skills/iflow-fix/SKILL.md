@@ -69,7 +69,7 @@ When `.issueflows/04-designs-and-guides/multi-repo-workspaces.md` exists, read i
 1. **Preflight.** Detect the default branch (`gh repo view --json defaultBranchRef -q .defaultBranchRef.name`; fall back to `git symbolic-ref --quiet --short refs/remotes/origin/HEAD`, else `main`). Run `git fetch --prune`. Report current branch + clean/dirty tree (`git status --porcelain`); if dirty with unrelated changes, ask to commit/stash first.
 2. **Create the GitHub issue (always, with confirmation).** Show the proposed title (e.g. `Iterative fixes: <name>`, or `Iterative small fixes`) and a body noting it is an interactive `/iflow-fix` session whose individual fixes are recorded in the status markdown and landed together via `/iflow-close`. Create it with `gh issue create` (add `--repo owner/repo` if ambiguous). Capture the returned number `N`. A fresh issue is created each time. Set the chat tab title to `Issue <N> <session name>`.
 3. **Create the branch (with confirmation).** Slug from the name (kebab-case; default `iterative-small-fixes`); branch name `<N>-<slug>`. On the default branch → `git switch -c <N>-<slug>`. On a non-default branch → **ask** whether to branch from the current branch or the default. Require a clean tree before switching.
-4. **Capture locally.** Delegate to the `/iflow-init` flow (or the `iflow-init` skill) for `<N>`: write `.issueflows/01-current-issues/issue<N>_original.md` and run its archive sweep. Do not duplicate that logic.
+4. **Capture locally.** Delegate to the `/iflow-capture` flow (or the `iflow-capture` skill) for `<N>`: write `.issueflows/01-current-issues/issue<N>_original.md` and run its archive sweep. Do not duplicate that logic.
 5. **Seed the status file.** Create `.issueflows/01-current-issues/issue<N>_status.md` with a short header (interactive `/iflow-fix` session), an unchecked `- [ ] Done`, and an empty **`## Iterative fixes log`** section.
 
 ### Phase 2 — the fix loop (repeat)
@@ -95,4 +95,4 @@ When the user is done fixing, follow `.cursor/skills/iflow-close/SKILL.md` to la
 - GitHub only (`gh`); GitLab is not supported.
 - Branch off the detected default (or the current branch when chosen); never force-push or delete branches from this skill.
 - Keep `- [ ] Done` unchecked during the session; `/iflow-close` flips it.
-- Delegate local capture to `/iflow-init` and finishing to `/iflow-close`; one fix per loop iteration, implemented only on explicit confirmation.
+- Delegate local capture to `/iflow-capture` and finishing to `/iflow-close`; one fix per loop iteration, implemented only on explicit confirmation.

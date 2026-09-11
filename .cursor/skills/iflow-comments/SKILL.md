@@ -11,7 +11,7 @@ issue-flow-version: 0.4.2a4
 
 Follow this skill to turn a GitHub issue's comment thread into a short, decision-useful summary that lives next to the original issue body under `.issueflows/01-current-issues/issue<N>_original.md`.
 
-It is the playbook that `/iflow-init` (and the `iflow-init` skill) delegate to for anything beyond fetching raw comments. It also covers re-triage of an already-captured issue when new comments arrive (the issue body text stays unchanged; only the curated section is rewritten).
+It is the playbook that `/iflow-capture` (and the `iflow-capture` skill) delegate to for anything beyond fetching raw comments. It also covers re-triage of an already-captured issue when new comments arrive (the issue body text stays unchanged; only the curated section is rewritten).
 
 
 ### MODEL & EXECUTION DIRECTIVE
@@ -98,4 +98,4 @@ Formatting rules:
 ## Constraints
 
 - This skill only writes into the `## Comments (curated summary)` section of `issue<N>_original.md`. It never touches the issue body, the status file, or the plan file.
-- It never calls `gh` or the network itself — it expects the caller (`/iflow-init` or similar) to provide the comments JSON.
+- It never calls `gh` or the network itself — it expects the caller (`/iflow-capture` or similar) to provide the comments JSON.

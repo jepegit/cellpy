@@ -1,15 +1,17 @@
 ---
 name: iflow-init
 description: >-
-  Capture a GitHub issue locally as issue<number>_original.md and archive
-  other current issues by done status.
+  Cold-start or check the issue-flow harness: guide issue-flow init when the
+  scaffold is missing; point at update / doctor / iflow-capture when it exists.
 disable-model-invocation: true
 issue-flow-version: 0.4.2a4
 ---
 
-# issue-flow — issue init (`/iflow-init`)
+# issue-flow — harness init (`/iflow-init`)
 
-Follow this skill to **capture a GitHub issue locally** under `.issueflows/01-current-issues/`.
+Follow this skill to **cold-start or check the issue-flow harness** in a project — the editor-facing counterpart of the CLI's `issue-flow init`.
+
+This is **not** the step that pulls a GitHub issue into `.issueflows/`. That is **`/iflow-capture`** (chat: `iflow capture`). `/iflow-init` is **off-path**: `/iflow` never auto-dispatches here.
 
 
 **Invoke:** type `iflow init` in chat, or `/iflow-init` from the slash menu (`iflow-init` also works).
@@ -52,59 +54,34 @@ After resolution, treat the result as `<project_root>` and `<owner/repo>`:
 
 When `.issueflows/04-designs-and-guides/multi-repo-workspaces.md` exists, read it for layout and cross-repo guidance.
 
+
 ## Instructions
 
-> **CLI fast path (optional).** If the `issue-flow` CLI is on `PATH`:
-> - **Resolve root + repo (step 0):** `issue-flow agent resolve [--from-file <active-file>] [--json]` — use `project_root` and `repo` for all steps below.
-> - **Fetch + write (steps 3 & 5):** `issue-flow agent capture <N> -C <project_root>` (use `--repo owner/repo` to override the resolved remote, `--force` to overwrite). It writes the `## Original issue text` body deterministically and prints the comments payload — you still triage comments (step 3a) and add the curated section yourself.
-> - **Archive (step 4):** `issue-flow agent sweep --except <N> -C <project_root>` (add `--dry-run` to preview).
->
-> The CLI is optional: if it is missing or errors, fall back to the manual
-> instructions below. (`issue-flow` is only present when the user installed it,
-> e.g. `uv tool install issue-flow`.)
+1. **Detect harness state** under `<project_root>`:
+   - `.issueflows/` present?
+   - Agent skills present? Prefer the marker `.cursor/skills/iflow-init/SKILL.md` (or any `iflow-*` skill under `.cursor/skills/`).
+   - Optional: `issue-flow agent resolve -C <project_root> --json` / `issue-flow doctor -C <project_root> --json` when the CLI is on `PATH`.
 
-1. **Folders** — Ensure `.issueflows/00-tools/`, `.issueflows/01-current-issues/`, `.issueflows/02-partly-solved-issues/`, and `.issueflows/03-solved-issues/` exist (create only if the user allows; never delete issue markdown).
+2. **Scaffold missing** (no `.issueflows/` and/or no issue-flow skills):
+   - Tell the user the harness is not initialised.
+   - Show the exact cold-start command from the project root, e.g. `issue-flow init .` or `uvx issue-flow init .` (add `--editor <id>` when they named an editor).
+   - If `issue-flow` is on `PATH`, **offer** to run it after a yes; never run without confirm. Do **not** re-implement scaffolding in this skill.
+   - After a successful init, remind them to pick an issue with `/iflow-pick` or capture one with `/iflow-capture <N>`.
 
-2. **Resolve the reference**
-   - **URL** — Parse `owner`, `repo`, issue number.
-   - **Number only** — After resolving `<project_root>`, run `git -C <project_root> remote get-url origin` (HTTPS or SSH) to derive `owner/repo`. If parsing fails, ask for a full URL or `owner/repo`.
-   - **Empty / whitespace** — Run `git -C <project_root> branch --show-current`. If empty or `main`/`master` (case-insensitive), **stop** and ask for a number, URL, or `owner/repo/#n`. If the branch is an **issue-style branch** matching `^\d+-.+`, ask: "You have not provided an issue reference. Should I use issue #NN from the current branch `<branchname>`?" Do not proceed without a clear yes/no.
-   - **Archived-issue guard** — Before writing, check `.issueflows/02-partly-solved-issues/` and `.issueflows/03-solved-issues/` for existing `issue<n>_*` files. If the issue is already archived, warn and require a second explicit confirmation before re-opening it in `.issueflows/01-current-issues/`.
+3. **Harness already present**:
+   - Say so briefly.
+   - Point at:
+     - `issue-flow update .` — refresh templates after upgrading the CLI.
+     - `issue-flow update --editor <id>` / `/iflow-doctor` — add a missing editor scaffold (`missing_editor_scaffold`).
+     - **`/iflow-capture <N>`** — pull a GitHub issue into `.issueflows/01-current-issues/`.
+     - `/iflow-pick` — front door when no issue is chosen yet.
+   - Do not run `init --force` unless the user explicitly asks to re-scaffold.
 
-3. **Fetch** — `gh issue view <n> --repo owner/repo --json title,body,url,number,comments`. The `comments` field returns an array of `{author.login, body, createdAt, ...}` that step 3a consumes. On failure, report the error and suggest `gh auth login`. After confirming `owner/repo`, change the chat/agent tab title to reflect the issue topic on the form "Issue <issue number> <short description of issue>" (e.g. "Issue 74 cell info").
-
-3a. **Triage comments** (skip if `comments` is empty). Follow the [`iflow-comments`](../iflow-comments/SKILL.md) skill — it owns the triage rules (chronological precedence, three buckets, noise filtering) and the exact shape of the `## Comments (curated summary)` section.
-
-3.5 **Branch status preflight** (report only) — Run `git fetch --prune`. Report current branch, clean/dirty working tree, and ahead/behind counts vs `origin/<default>` (detect default via `gh repo view --json defaultBranchRef -q .defaultBranchRef.name`, else `git symbolic-ref --quiet --short refs/remotes/origin/HEAD`, else `main`). If the current branch matches `^(\d+)-.+` and files for that issue already live in `.issueflows/02-partly-solved-issues/` or `.issueflows/03-solved-issues/`, note that the branch looks stale. Never delete or move anything at this step.
-
-4. **Archive** — In `.issueflows/01-current-issues/`, group files by issue number (`issue121_*`). For each group **other than** the issue being created: move the whole group to `.issueflows/03-solved-issues/` only if a status file for that issue contains a checked **Done** line matching `- [x] Done` (case-insensitive on "done"). Otherwise move to `.issueflows/02-partly-solved-issues/`. If no status file or checkbox is unclear, treat as **not done**.
-
-5. **Write** — Create `.issueflows/01-current-issues/issue<number>_original.md` with:
-
-   ```markdown
-   # Issue #<number>: <title>
-
-   Source: <url>
-
-   ## Original issue text
-
-   <body exactly as returned by GitHub>
-
-   ## Comments (curated summary)
-
-   - **Additional tasks**: <bullets distilled from comments that add real work>
-   - **Clarifications / constraints**: <bullets the agent should honour>
-   - **Superseded / retracted**: <earlier points later contradicted or walked back>
-
-   _Note: this section is an interpretive summary of the comment thread, not a verbatim dump. Source comments: <count>, last comment by @<login> on <date>._
-   ```
-
-   Preserve the body **text** faithfully as returned by GitHub — don't paraphrase or edit it, but don't waste effort on trailing newlines or CRLF vs LF either (no second-pass byte-diffing). The `## Comments (curated summary)` section is **optional** — include it only when step 3a produced at least one bullet, and drop any of the three bullet groups that have no content.
-
-6. **Conflicts** — If `issue<number>_original.md` already exists, do not overwrite silently; ask the user.
-
-7. **Report** — Summarize number, `owner/repo`, branch inference (if used), path written, comment triage counts (fetched vs surfaced vs superseded, or "section omitted" when skipped), archive moves (source → destination), and success or failure.
+4. **Report** — missing vs present, commands shown or run, and the next suggested lifecycle step (usually `/iflow-pick` or `/iflow-capture`).
 
 ## Constraints
 
-- Allowed file operations: create/update the target `*_original.md`, and move pre-existing issue groups per the archive rules. Do not modify unrelated project files.
+- Off-path: never auto-dispatched by `/iflow`.
+- Never capture a GitHub issue, write `issue<N>_*.md`, or create an issue branch from this skill — that is `/iflow-capture` / `/iflow-pick`.
+- Never invent a second scaffolder; only guide or confirm-run `issue-flow init` / `update`.
+- Never `init --force` or delete scaffold files without an explicit user request.

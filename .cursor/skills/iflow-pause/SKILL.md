@@ -71,7 +71,7 @@ When `.issueflows/04-designs-and-guides/multi-repo-workspaces.md` exists, read i
    - **Switch to default branch** — detect default (prefer `gh repo view --json defaultBranchRef -q .defaultBranchRef.name`, else `git symbolic-ref --quiet --short refs/remotes/origin/HEAD`, else `main`) and run `git switch <default>`. Only after the WIP commit if the tree is dirty.
    - **Stay put** — leave branch and working tree untouched.
 
-5. **Report.** Summarize the status update, the issue-group moves, working-tree actions taken, and remind the user how to resume (running `/iflow-init <N>` re-opens the archived issue after its archived-issue guard, or they can simply switch back to the issue branch).
+5. **Report.** Summarize the status update, the issue-group moves, working-tree actions taken, and remind the user how to resume (running `/iflow-capture <N>` re-opens the archived issue after its archived-issue guard, or they can simply switch back to the issue branch).
 
 ## Constraints
 

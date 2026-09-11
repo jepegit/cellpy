@@ -2,14 +2,14 @@
 name: iflow-issue
 description: >-
   Create one well-specified normal GitHub issue, then optionally branch and
-  run /iflow-init into the standard lifecycle.
+  run /iflow-capture into the standard lifecycle.
 disable-model-invocation: true
 issue-flow-version: 0.4.2a4
 ---
 
 # issue-flow — create a normal issue (`/iflow-issue`)
 
-Follow this skill to **author and create one well-specified GitHub issue** (a single deliverable), then optionally set up the normal lifecycle (branch + `/iflow-init` → hand off to `/iflow-plan`).
+Follow this skill to **author and create one well-specified GitHub issue** (a single deliverable), then optionally set up the normal lifecycle (branch + `/iflow-capture` → hand off to `/iflow-plan`).
 
 Do **not** use this skill from `/iflow`, `/iflow-build`, or `/iflow-close`. `/iflow-issue` is explicit-only because it creates GitHub issues (and optionally branches).
 
@@ -18,6 +18,7 @@ Do **not** use this skill from `/iflow`, `/iflow-build`, or `/iflow-close`. `/if
 - **`/iflow-pick fix`** — one-shot *general-fixes chore bucket* into plan/start.
 - **`/iflow-fix`** — iterative small-fixes *session* that stays in a loop.
 - **`/iflow-epic`** — staged multi-issue work; use `/iflow-issue` first when the epic **anchor** does not exist yet.
+- **`/iflow-split`** — cut an *existing* over-large issue into linked children. Do not use `/iflow-issue` for that.
 
 ## Input
 
@@ -77,7 +78,7 @@ When `.issueflows/04-designs-and-guides/multi-repo-workspaces.md` exists, read i
    - **Spec** (what to change)
    - **Acceptance criteria**
    - **Out of scope** (optional; omit the heading when empty)
-   Refine with the user until they confirm the text. If the draft is clearly over-large for one PR, **mention** splitting via `/iflow-epic` — do **not** auto-create sub-issues.
+   Refine with the user until they confirm the text. If the draft is clearly over-large for one PR, **offer** `/iflow-split` (flat parent/child) or `/iflow-epic` (staged) — do **not** auto-create sub-issues.
 4. **Create (confirm first).** Show the final title and body (and, in epic-anchor mode, the planned `epic` label when present). On yes: `gh issue create --repo <owner/repo>` (add `--label epic` only when epic-anchor mode is on **and** `gh label list` shows `epic`). Capture number `N`. Set the chat tab title to `Issue <N> <short title>`. Optional labels/milestones other than the epic-anchor label: only if the user asked for them in this turn — do not invent them.
 
 ### Phase 2 — optional lifecycle setup
@@ -85,9 +86,9 @@ When `.issueflows/04-designs-and-guides/multi-repo-workspaces.md` exists, read i
 5. **Offer branch + init (default path).** Ask whether to start work now. On yes (require a clean tree; if dirty, stop and ask to commit/stash):
    - Slug from the title (kebab-case); branch `<N>-<slug>`. Confirm a non-obvious slug.
    - On the default branch → `git switch -c <N>-<slug>`. On a non-default branch → **ask** whether to branch from current or default.
-   - Run `/iflow-init` (or the `iflow-init` skill) for `<N>`. Do not duplicate its fetch/archive logic.
+   - Run `/iflow-capture` (or the `iflow-capture` skill) for `<N>`. Do not duplicate its fetch/archive logic.
    - **Ask** whether to continue with `/iflow-plan`. Do **not** auto-run it.
-6. **Create-only.** If the user declines Phase 2, stop after create. Remind them they can pick it up later with `/iflow-pick` / `/iflow-init`.
+6. **Create-only.** If the user declines Phase 2, stop after create. Remind them they can pick it up later with `/iflow-pick` / `/iflow-capture`.
 
 ## Constraints
 
@@ -95,5 +96,5 @@ When `.issueflows/04-designs-and-guides/multi-repo-workspaces.md` exists, read i
 - Never create a GitHub issue or branch without explicit confirmation; show what will be created first.
 - GitHub only (`gh`); GitLab is not supported.
 - Branch off the detected default (or the current branch when chosen); never force-push or delete branches from this skill.
-- Delegate local capture to `/iflow-init`; do not write `issue<N>_plan.md` here.
+- Delegate local capture to `/iflow-capture`; do not write `issue<N>_plan.md` here.
 - Do not merge with `/iflow-fix` or `/iflow-pick fix` — different intents.

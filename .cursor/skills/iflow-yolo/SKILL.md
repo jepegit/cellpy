@@ -1,7 +1,7 @@
 ---
 name: iflow-yolo
 description: >-
-  Chain init → plan → build → close yolo for a small, low-risk issue under
+  Chain capture → plan → build → close yolo for a small, low-risk issue under
   one consolidated confirm. Stops on any ambiguity.
 disable-model-invocation: true
 issue-flow-version: 0.4.2a4
@@ -68,11 +68,11 @@ When `.issueflows/04-designs-and-guides/multi-repo-workspaces.md` exists, read i
 
 Once preflight has passed and the user confirmed:
 
-1. **`/iflow-init`** — capture the issue (or skip if `*_original.md` already exists for the focus issue).
+1. **`/iflow-capture`** — capture the issue (or skip if `*_original.md` already exists for the focus issue).
 2. **`/iflow-plan`** — write a **short** `issue<N>_plan.md` (Goal + Approach + Files to touch + Test strategy). Auto-confirm — the consolidated confirm above covered it. If the scope check reveals the change is not actually small, **abort the yolo chain** and tell the user to run the commands individually.
 3. **`/iflow-build`** — implement the plan without an additional plan-mode prompt. Forward `early` / `pr` / `noearly` when present. When early PR is on (baked `early_pr` or trailing `early`/`pr`), build may open a **draft** PR after the first push; close will list-before-create, mark ready (unless `draft`), then merge.
 4. **Re-run tests.** `uv run pytest` again. On failure, **stop** before commit / push / PR.
-5. **`/iflow-close yolo`** — run the close flow with the `yolo` token (plus forwarded `bump` / `log` / `nohistory` / `draft` / `stay` tokens). The `yolo` token makes close hands-off: changelog bullet written without a confirm prompt; PR listed/reused via `gh pr list` (including an early draft), marked ready when not `draft`, then **merged** via `gh pr merge --squash` (on pending checks: `gh pr checks --watch --fail-fast` for up to **15** minutes, then retry merge; `--squash --auto` only as last resort when the cap elapses or checks never register), then default-branch switch + `git pull --ff-only`. `draft` conflicts with auto-merge — when passed, skip the merge and say so. Do **not** chain `/iflow-cleanup` automatically — local branch deletion stays a user decision.
+5. **`/iflow-close yolo`** — run the close flow with the `yolo` token (plus forwarded `bump` / `log` / `nohistory` / `draft` / `stay` tokens). The `yolo` token makes close hands-off: changelog bullet written without a confirm prompt; PR listed/reused via `gh pr list` (including an early draft), marked ready when not `draft`, then **merged** via `gh pr merge --squash` (on pending checks: `gh pr checks --watch --fail-fast` for up to **15** minutes, then retry merge; `--squash --auto` only as last resort when the cap elapses or checks never register; on a `CONFLICTING` / `DIRTY` refusal it re-syncs with the default branch via `issue-flow agent sync-branch`, which keeps both `HISTORY.md` bullet sets when that is the only conflict, then force-with-lease pushes and retries the merge once — any other conflict stops the run), then default-branch switch + `git pull --ff-only`. `draft` conflicts with auto-merge — when passed, skip the merge and say so. Do **not** chain `/iflow-cleanup` automatically — local branch deletion stays a user decision.
 
 ## Post-run
 
@@ -80,6 +80,6 @@ Report the PR URL, the merge result (merged, or queued via `--auto`), and the fi
 
 ## Constraints
 
-- Do not override downstream commands' own constraints (no `-D`, no force-push, etc.). `/iflow-yolo` is a chain, not a free pass.
+- Do not override downstream commands' own constraints (never `git branch -D` — the squash-landed force-delete confirm belongs to an interactive `/iflow-cleanup`, no force-push beyond close's own `--force-with-lease` after a sync, etc.). `/iflow-yolo` is a chain, not a free pass.
 - If **any** downstream step requires a human decision (unrelated changes in `git status`, ambiguous version bump, merge conflict, failed test), **stop** and hand back to the user.
 - Never run `/iflow-cleanup` from this skill. Branch deletion always needs the user to see the merged PR first.

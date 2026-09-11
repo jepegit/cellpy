@@ -76,6 +76,22 @@ Only runs when step 2 of `/iflow-close` actually changed `pyproject.toml` to a n
 
 6. Write the change without a confirm prompt (`confirm_changelog_update` is false). Still report what was written.
 
+## Conflict resolution — keep both bullet sets
+
+When an unrelated PR lands on the default branch while this issue is in flight, both branches add a bullet to the **same** `## [Unreleased]` section and git cannot merge it. That is bookkeeping, not a design decision, so it has exactly one documented answer — used by `/iflow-close`'s sync step and by `/iflow-cycle`'s parallel coordinator, so every agent produces the same file.
+
+**Resolvable only when all of these hold:**
+
+1. the conflicted file is `HISTORY.md` and **nothing else** is conflicted;
+2. every conflict region sits under `## [Unreleased]`;
+3. both sides contain **only** list items (plus blank / wrapped continuation lines).
+
+**Resolution:** keep **all** bullets. The bullets already on the default branch keep their positions; this issue's bullet goes **last** — identical to mode A's append, so a resolved conflict looks exactly like having written the bullet after the other one landed. Byte-identical bullets collapse to one.
+
+**Refuse and stop** (a human decides) when the conflict touches any other file, an existing bullet was edited or deleted, a heading was renamed, or a `## [Unreleased]` section was promoted to a release section on either side.
+
+**Fast path:** `issue-flow agent sync-branch --json` applies exactly this rule during the rebase in `/iflow-close` step 6 and aborts on anything else. Prefer it over hand-editing conflict markers.
+
 ## Staging
 
 When `/iflow-close` reaches its commit step:

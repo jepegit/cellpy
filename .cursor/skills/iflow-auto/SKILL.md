@@ -169,7 +169,7 @@ When `.issueflows/04-designs-and-guides/multi-repo-workspaces.md` exists, read i
 
 12. **Report.** Epic, stage, cycle results (if any), adversarial outcome +
     issue numbers, `loop_count` / `budget`, gate result, `auto_status.md`
-    path. Remind `/iflow-cleanup` after merges.
+    path.
 
 ## Constraints
 

@@ -40,6 +40,10 @@ The exact semantics and the default rule live in `.cursor/skills/iflow-version-b
 
 - **`yolo`** (used by `/iflow-yolo`) → close the loop without user input: write the `HISTORY.md` bullet without a confirm prompt (step 3), **merge the PR** right after opening/updating it (step 8a), then switch back to the default branch and `git pull --ff-only` (step 9, unless `stay` was also passed).
 
+## Ops / no-PR token (command input)
+
+- **`ops`**, **`nopr`**, or **`no-pr`** (used by `/iflow-ops`) → finish **without** a PR: skip version-bump prompts, skip `HISTORY.md` by default (same as `nohistory`; honour explicit `log "..."` / `note "..."` if the user insists on a bullet), skip sync/push/PR/yolo-merge. Still update local tracking, optionally commit `.issueflows/`-only changes (default branch allowed with confirm), run an ops checklist confirm, and `gh issue close`. **Mutually exclusive** with `yolo` and `draft` on the same invocation — if combined, stop and ask. When this token is present, follow **Ops close path** below instead of steps 1–11.
+
 
 **Invoke:** type `iflow close` in chat, or `/iflow-close` from the slash menu (`iflow-close` also works).
 
@@ -81,6 +85,21 @@ After resolution, treat the result as `<project_root>` and `<owner/repo>`:
 
 When `.issueflows/04-designs-and-guides/multi-repo-workspaces.md` exists, read it for layout and cross-repo guidance.
 
+
+## Ops close path (`ops` / `nopr` / `no-pr`)
+
+Use this path **only** when the command input included `ops`, `nopr`, or `no-pr`.
+
+1. **Safeguard — dirty tree.** Prefer `issue-flow agent preflight --json` (`dirty_paths`, `issueflows_only`). If any dirty path is outside `.issueflows/`, **stop**: refuse silent no-PR; tell the user to use normal close or stash/discard product changes. `.issueflows/`-only dirty is OK.
+2. **Safeguard — unique commits.** If on an issue-style branch `^\d+-.+` that has commits not reachable from `origin/<default>` **and** those commits touch product files (anything outside `.issueflows/`), **abort** ops close — that work needs a normal PR (or explicit discard). Tracking-only unique commits may proceed after confirm.
+3. **Ops checklist confirm (always).** Show: what ran / where (env) / result / residual risk. Require an explicit yes before finishing. Include intent to `gh issue close <N>` and whether to commit `.issueflows/` tracking updates (on current branch, including default when that is where you stand).
+4. **Skip** full pytest when the tree is clean or issueflows-only dirty. Never take this path when product files changed (already refused above). Skip version bump. Skip `HISTORY.md` unless the user passed `log "..."` / `note "..."` (then write that bullet under `## [Unreleased]` with confirm unless they also passed nothing conflicting — still no PR).
+5. **Issue tracking.** Update `issue<N>_status.md` (`- [x] Done` when fully resolved). Move the issue group to `03-solved-issues/` or `02-partly-solved-issues/` per the Done checkbox.
+6. **Optional commit.** If there are staged/unstaged `.issueflows/` (or intentional ops-doc) changes worth keeping, commit on the **current** branch after confirm — default branch is allowed for ops. Never open a PR for this commit.
+7. **Close on GitHub.** `gh issue close <N> --repo <owner/repo>` (covered by the checklist confirm).
+8. **Branch hygiene (light).** If on `<N>-*` with **no** unique commits vs `origin/<default>`, offer switch to default (no delete). Unique commits already aborted in step 2 when they touch product files.
+9. **Output.** Summarize checklist, local archive path, whether a tracking commit was made, GitHub close result, and that **no PR** was opened. Do not remind `/iflow-cleanup` for a non-existent PR merge.
+
 ## Instructions
 
 1. **Sanity check** — Run the project test suite (e.g. `uv run pytest`) and any checks the repo relies on.
@@ -115,9 +134,12 @@ Marker: `@pytest.mark.essential`. Contract:
 
 5. **Commit** — First check `git status`; if any changes are **not relevant** to this issue, tell the user which ones and ask whether to include them — do not auto-include or drop silently. Then stage intentionally (include `pyproject.toml` and `uv.lock` if changed after a bump, and `HISTORY.md` if step 3 updated it); write a commit message in full sentences describing what changed and why.
 
-6. **Branch hygiene before push** — Run `git fetch --prune`, then sync with the default branch using `git pull --ff-only` (rebase or merge per project preference). Use `--ff-only` so unrelated history never gets pulled in silently; if it refuses, stop and ask how to reconcile. Resolve merge conflicts before pushing.
+6. **Sync with the default branch before push** — The issue branch must carry whatever landed on `<default>` while this issue was in flight; otherwise the PR only fails later, at merge time, as `mergeable: CONFLICTING`. A plain `git pull --ff-only` on the issue branch cannot do this — it only follows that branch's own upstream.
+   - **CLI fast path (preferred).** `issue-flow agent sync-branch --json` does the whole step deterministically: refuses while the tree is dirty or you are on the default branch, fetches, replays the branch onto `origin/<default>`, and **auto-resolves a changelog-only conflict** (both sides appending bullets under `## [Unreleased]` — all bullets kept, the in-flight issue's last). Any other conflict aborts the rebase, leaves the branch exactly as it was, and exits 1: report its `notes` and **stop**. When the payload reports `needs_force_push: true`, the branch was rewritten — push with `--force-with-lease` in step 7.
+   - **Manual fallback.** `git fetch --prune`, then `git rebase origin/<default>`. If it conflicts **only** in `HISTORY.md` and both sides merely added `## [Unreleased]` bullets, keep them all (already-landed bullets first, this issue's bullet last — see `.cursor/skills/iflow-history-update/SKILL.md`), `git add HISTORY.md`, `git rebase --continue`. For **anything else** — a code conflict, an edited existing bullet, a renamed or promoted heading — run `git rebase --abort` and **stop**; that needs a human decision.
+   - Never rebase, force-push, or otherwise rewrite the **default** branch. Only the issue branch is ever rewritten.
 
-7. **Push** — Push to the remote the project uses (typically `origin`).
+7. **Push** — Push to the remote the project uses (typically `origin`). If step 6 rewrote the branch (rebase), use `git push --force-with-lease` — never a bare `--force`, and never against the default branch.
 
 8. **Pull request** — Against the default branch; always pass `--repo <owner/repo>`.
    - **List before create.** Run `gh pr list --repo <owner/repo> --head <branch> --state open --json number,url,title,isDraft`. If an open PR already exists for this head (including a draft from `/iflow-build` early PR), **update** it (title/body as needed; prefer `Closes #n` when shipping) instead of opening a second one. Otherwise `gh pr create` — add `--draft` when the user passed the `draft` token. Body should explain the change, how to test, and link the GitHub issue (`Closes #n` / `Refs #n`).
@@ -131,6 +153,7 @@ Marker: `@pytest.mark.essential`. Contract:
    4. Watch succeeds (exit 0) within the cap → retry `gh pr merge <number> --squash`.
    5. Watch fails (red / `--fail-fast`) → stop hands-off behaviour, leave the PR open, report failing check links.
    6. Cap elapses while still pending, or checks never register / watch unavailable → last resort `gh pr merge <number> --squash --auto`, report the merge as queued, continue. If even `--auto` fails, stop hands-off, report the error, leave the PR open.
+   7. **Refused as conflicted** (`mergeable: CONFLICTING` / `mergeStateStatus: DIRTY` — something merged into `<default>` after step 6): re-run step 6's sync (`issue-flow agent sync-branch --json`). If it resolved a changelog-only conflict, `git push --force-with-lease`, then re-watch checks under the same budget and retry the merge **once**. If the sync exits 1, or the retry is refused again, stop hands-off and leave the PR open with the reason. Never reach for `--admin` and never skip checks to get past a conflict — a rebased branch needs a fresh check run.
 
 9. **Switch back when safe** — If the input included `stay`, `stay on branch`, `don't switch`, or `dont switch to main`, stay on the issue branch and report that opt-out. Otherwise, after the PR is open or updated:
    - **CLI fast path (preferred).** If the `issue-flow` CLI is on `PATH`, run `issue-flow agent switchback --json`. It performs this whole step deterministically: refuses while the working tree is dirty (listing the paths), else switches to the detected default branch and runs `git pull --ff-only`. On exit 1, report its `notes` to the user and stop — do not force anything.
@@ -147,4 +170,6 @@ Marker: `@pytest.mark.essential`. Contract:
 - Do not skip failing tests without the user's explicit agreement.
 - Prefer focused commits; do not rewrite unrelated history unless asked.
 - Never delete branches from `/iflow-close`. Branch deletion belongs to `/iflow-cleanup`.
+- **Conflicts:** only a `HISTORY.md`-only conflict of two additive `## [Unreleased]` bullet lists is resolved automatically (step 6). Every other conflict aborts the sync and stops the flow. Never `gh pr merge --admin`, never skip CI, never force-push anything but the issue branch (`--force-with-lease`).
+- The `ops` / `nopr` / `no-pr` token takes the **Ops close path** above and must not open a PR.
 - **Changelog timing:** unless `nohistory`, the `HISTORY.md` bullet must be written in step 3 and staged in the close commit that feeds (or updates) the PR — including when a draft was opened earlier via `/iflow-build` early PR. Never offer a HISTORY/CHANGELOG update after close has finished or after merge.
