@@ -24,6 +24,12 @@
   edit rather than a sheet rewrite. Worked snippet, batch-database
   subsection, and a How-do-I entry. (#1038)
 
+* `cycles_plot(..., backend="matplotlib")` no longer raises
+  `ValueError: arange: cannot compute length` when every selected cycle is a
+  formation cycle (e.g. `cycles=[1, 2, 3]` with the default
+  `formation_cycles=3`); the formation cycles are drawn, and with
+  `show_formation=False` an empty axes is returned with a warning. (#1026)
+
 ## [2.1.5] - 2026-09-09
 
 Patch release — docs on-ramp and How-do-I index (#1023),
