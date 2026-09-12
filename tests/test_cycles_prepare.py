@@ -41,6 +41,33 @@ def test_cycles_plot_backend_matplotlib(cell):
 
 
 @pytest.mark.essential
+def test_cycles_plot_matplotlib_only_formation_cycles(cell):
+    # #1026: every selected cycle is a formation cycle (formation_cycles=3),
+    # so rest_cycles is empty; the backend must draw the formation cycles
+    # instead of raising ``ValueError: arange: cannot compute length``.
+    fig = cycles_plot(cell, backend="matplotlib", cycles=[1, 2, 3], return_figure=True)
+    ax = fig.get_axes()[0]
+    assert len(ax.get_lines()) == 3
+
+
+@pytest.mark.essential
+def test_cycles_plot_matplotlib_only_formation_cycles_hidden(cell, caplog):
+    # #1026: same selection with show_formation=False leaves nothing to
+    # draw; must not raise, and should say why the axes are empty.
+    with caplog.at_level("WARNING"):
+        fig = cycles_plot(
+            cell,
+            backend="matplotlib",
+            cycles=[1, 2, 3],
+            show_formation=False,
+            return_figure=True,
+        )
+    ax = fig.get_axes()[0]
+    assert len(ax.get_lines()) == 0
+    assert "nothing to draw" in caplog.text
+
+
+@pytest.mark.essential
 def test_cycles_plot_interactive_and_range_shims_removed(cell):
     # interactive=/xlim/ylim were removed in 2.1 (E1, #713); canonical spellings only.
     import inspect

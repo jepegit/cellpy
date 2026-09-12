@@ -1050,39 +1050,48 @@ class MatplotlibBackend:
                 anchor=(0.0, 0.0),
             )
             cbar_formation.set_label("Form. Cycle", rotation=270, labelpad=12)
-
-        norm = Normalize(
-            vmin=rest_cycles[ccols.cycle_num].min(),
-            vmax=rest_cycles[ccols.cycle_num].max(),
-        )
-        if cut_colorbar:
-            cycle_sequence = np.arange(
-                rest_cycles[ccols.cycle_num].min(),
-                rest_cycles[ccols.cycle_num].max() + 1,
-                1,
+        elif rest_cycles.empty:
+            logging.warning(
+                "cycles_plot: no non-formation cycles selected and formation "
+                "cycles are hidden; nothing to draw (lower formation_cycles or "
+                "set show_formation=True)"
             )
-            n = int(np.round(1.2 * rest_cycles[ccols.cycle_num].max()))
-            c_m = ListedColormap(plt.get_cmap(colormap, n)(cycle_sequence))
-        else:
-            c_m = plt.get_cmap(colormap)
 
-        s_m = matplotlib.cm.ScalarMappable(cmap=c_m, norm=norm)
-        for name, group in rest_cycles.groupby(ccols.cycle_num):
-            ax.plot(
-                group["capacity"],
-                group[ccols.potential],
-                lw=1,
-                color=s_m.to_rgba(name),
-                label=f"Cycle {name}",
+        # All selected cycles may be formation cycles (#1026); min()/max() on
+        # an empty frame give NaN and np.arange(NaN, ...) raises.
+        if not rest_cycles.empty:
+            norm = Normalize(
+                vmin=rest_cycles[ccols.cycle_num].min(),
+                vmax=rest_cycles[ccols.cycle_num].max(),
             )
-        cbar = fig.colorbar(
-            s_m,
-            ax=ax,
-            label="Cycle",
-            aspect=cbar_aspect,
-            location="right",
-        )
-        cbar.set_label("Cycle", rotation=270, labelpad=12)
+            if cut_colorbar:
+                cycle_sequence = np.arange(
+                    rest_cycles[ccols.cycle_num].min(),
+                    rest_cycles[ccols.cycle_num].max() + 1,
+                    1,
+                )
+                n = int(np.round(1.2 * rest_cycles[ccols.cycle_num].max()))
+                c_m = ListedColormap(plt.get_cmap(colormap, n)(cycle_sequence))
+            else:
+                c_m = plt.get_cmap(colormap)
+
+            s_m = matplotlib.cm.ScalarMappable(cmap=c_m, norm=norm)
+            for name, group in rest_cycles.groupby(ccols.cycle_num):
+                ax.plot(
+                    group["capacity"],
+                    group[ccols.potential],
+                    lw=1,
+                    color=s_m.to_rgba(name),
+                    label=f"Cycle {name}",
+                )
+            cbar = fig.colorbar(
+                s_m,
+                ax=ax,
+                label="Cycle",
+                aspect=cbar_aspect,
+                location="right",
+            )
+            cbar.set_label("Cycle", rotation=270, labelpad=12)
 
         ax.set_xlabel(capacity_label)
         ax.set_ylabel(voltage_label)
