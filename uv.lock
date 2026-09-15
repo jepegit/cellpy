@@ -1431,7 +1431,7 @@ wheels = [
 
 [[package]]
 name = "issue-flow"
-version = "0.4.9.post1"
+version = "0.4.15"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "jinja2" },
@@ -1440,9 +1440,9 @@ dependencies = [
     { name = "tomlkit" },
     { name = "typer" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/a5/f8/70d58c66cd57b75eef727016fb5f74cf20963c0e2f9d12ee2ff30038de50/issue_flow-0.4.9.post1.tar.gz", hash = "sha256:9a8f4cf925762dc10461e73926d2c14259ba5fe859e5a230dc5b09a3a910c6e6", size = 211375, upload-time = "2026-07-30T12:22:32.594Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/50/18/c4dc758ef66c53008655c5672ceb49a804a94c014296d8a7618be81760dc/issue_flow-0.4.15.tar.gz", hash = "sha256:cb840a34ccd49f83f1bf1e6d09e6267706553421d86cdd69351390be11ba6511", size = 294039, upload-time = "2026-09-12T10:32:20.161Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/04/dc/d865f6190700a366e79204a444f7f329d76603f2dbf9f4a999571e9124aa/issue_flow-0.4.9.post1-py3-none-any.whl", hash = "sha256:303d6da71021e4af83805297a30ee13e0de2ea26f08c51f92e676641a822ad36", size = 271949, upload-time = "2026-07-30T12:22:30.929Z" },
+    { url = "https://files.pythonhosted.org/packages/b5/d2/cf1c35432b03a0cfde6403c1e2004c009f2b075de04f7c6cb81103c3fc82/issue_flow-0.4.15-py3-none-any.whl", hash = "sha256:1150d6d3510668142304ea1b2486a89518129dd16de930adb35a93c6c990d9a7", size = 364090, upload-time = "2026-09-12T10:32:18.736Z" },
 ]
 
 [[package]]
