@@ -87,9 +87,10 @@ Optional free-form text after the command:
    > **Why the extra buckets:** this project merges PRs with **squash**, which lands a *new* commit on the default branch. A squash-merged branch tip is therefore never an ancestor of the default, so `git branch -d` refuses it forever — `-d` alone can never prune landed branches here.
 
 5. **Consolidated confirm (Phase A1 — local)** — one yes/no prompt listing every action:
-   - `git switch <default>`
+   - `git switch <default>` (home only; skip if already on default)
    - `git pull --ff-only`
    - `git fetch --prune`
+   - `issue-flow agent worktree-list --json` — for each **linked** worktree whose branch is **`reachable`**, `issue-flow agent worktree-remove <path>` (or the issue number) **before** deleting the branch. Git cannot `-d` a branch that is still checked out in a worktree. Never remove a worktree whose branch is `unique_work`.
    - `git branch -d <branch>` for each **`reachable`** branch, listed explicitly by name first. If `-d` still refuses, report that branch and move on.
    - **Planned release tag (tag-derived projects only).** When `/iflow-close` planned a tag it did not create — check the focus issue's status file and the newest `HISTORY.md` release section for a version whose tag is missing from `git tag -l` — include creating it here: `git tag <planned>` then `git push origin <planned>` (or `gh release create <planned> --generate-notes`). Run it **after** the pull so the tag lands on the merged squash commit.
 
@@ -98,7 +99,7 @@ Optional free-form text after the command:
    - List **`squash_landed`** as `<name>  <tip>` with the evidence (every commit patch-equivalent to the default; merged PR number when known).
    - List **`merged_pr_divergent`** *separately*, each with its `<tip>`, merged PR link, and unique-commit subjects — these are landed per GitHub but their tips differ, so the user should eyeball the subjects before agreeing.
    - Show the recovery line: any deletion is undone with `git branch <name> <tip>`.
-   - On yes, try `git branch -d <name>` first and only fall back to `git branch -D <name>` when it refuses — `-d` also accepts a branch merged into its own upstream, so it sometimes still works while the remote-tracking ref survives. Report each `<name> <tip>` and which flag was used, so the SHAs stay in the transcript. On no, leave every branch in place.
+   - On yes, `worktree-remove` each linked worktree whose branch is in these buckets (clean trees only; never `unique_work`), **then** try `git branch -d <name>` first and only fall back to `git branch -D <name>` when it refuses — `-d` also accepts a branch merged into its own upstream, so it sometimes still works while the remote-tracking ref survives. Report each `<name> <tip>` and which flag was used, so the SHAs stay in the transcript. On no, leave every branch and worktree in place.
    - **Never** include a `unique_work` or `skipped` branch in this prompt, even if the user asks to "delete them all" — point at the branch's unique commits instead and let them delete it by hand.
 
 7. **Optional folder sweep** (safe; no destructive git). In `.issueflows/01-current-issues/`, for each `issue<N>_*` group whose status file contains `- [x] Done` (case-insensitive on `done`), move the group to `.issueflows/03-solved-issues/`. Leave groups without a checked `Done` in place — routing them to `.issueflows/02-partly-solved-issues/` is `/iflow-pause`'s job.
@@ -114,7 +115,7 @@ Optional free-form text after the command:
      - Optional: create a findings issue with `gh issue create --repo <owner/repo>` after showing the draft title/body (deletable list + unique-work summaries). Suggested title: `chore: remote branch audit (<YYYY-MM-DD>)`. Create only on yes.
    - Phase B is **read-only until that second confirm**. Declining leaves remotes untouched.
 
-10. **Report.** Summarize: default branch, PR/merge status, Phase A1 commands and `-d` deletions, Phase A2 `-D` deletions with their tip SHAs (or "declined" / "none offered"), branches left alone as unique work, folder sweep, epic stage-gate offer, and (when run) Phase B bucket counts, remote deletes, findings issue URL or "skipped". If `issue-flow agent resolve --json` reports `sibling_roots`, list them and remind the user that **each scaffolded repo needs its own `/iflow-cleanup`** — do not loop automatically in this step.
+10. **Report.** Summarize: default branch, PR/merge status, Phase A1 commands and `-d` deletions, Phase A2 `-D` deletions with their tip SHAs (or "declined" / "none offered"), branches left alone as unique work, folder sweep, epic stage-gate offer, and (when run) Phase B bucket counts, remote deletes, findings issue URL or "skipped". If `issue-flow agent resolve --json` reports `sibling_roots`, list them and remind the user that **each scaffolded repo needs its own `/iflow-cleanup`** — do not loop automatically in this step. If other open PRs still show `DIRTY` / CONFLICTING (often `HISTORY.md`), **offer** `/iflow-pr-sync` — do not auto-run it.
 
 ## Constraints
 

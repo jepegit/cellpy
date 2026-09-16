@@ -14,7 +14,7 @@ This repo uses Cursor **Agent Skills** under `.cursor/skills/` that line up with
 
 It also seeds `.issueflows/00-tools/README.md` — the index of the project's **shared toolbox**. Drop reusable helper scripts there during issue work and add a one-line index entry; check the folder before writing a new one-off helper. Like the project brief, this README is never overwritten by `issue-flow update`, so its index grows over time.
 
-**Multi-root workspaces:** when several sibling repos share one editor workspace, resolve the target repo first (`root:` / `repo:` hints, or `issue-flow agent resolve`). A workspace-root `issueflow-workspace.toml` (create it with `issue-flow workspace init`) can name a **default member repo** used when a command runs from outside any single scaffold. Never let `git` or `gh` infer the repository from cwd alone. See `.issueflows/04-designs-and-guides/multi-repo-workspaces.md` when present. For parallel agents, prefer **separate editor windows** per worktree/member (`issue-flow agent open-workspace`; see `04-designs-and-guides/separate-workspaces.md`) instead of packing workers into one multi-root session.
+**Multi-root workspaces:** when several sibling repos share one editor workspace, resolve the target repo first (`root:` / `repo:` hints, or `issue-flow agent resolve`). A workspace-root `issueflow-workspace.toml` (create it with `issue-flow workspace init`) can name a **default member repo** used when a command runs from outside any single scaffold. Never let `git` or `gh` infer the repository from cwd alone. See `.issueflows/04-designs-and-guides/multi-repo-workspaces.md` when present. `/iflow-pick` / `/iflow-issue` / `/iflow-fix` start in a sibling worktree (`issue-flow agent worktree-add`) so the home checkout stays on default; `open-workspace` prints the path (see `04-designs-and-guides/separate-workspaces.md`). Token `inplace` keeps the old in-place `git switch -c`.
 
 
 | Entry point | File | Role |
@@ -341,11 +341,11 @@ The bump runs **after** tests and **before** issue-folder moves and **before** c
 
 **When:** You have a bucket of small, iterative fixes (little bugs, typos, chores, polish) to knock out on one branch, rather than a single well-defined deliverable.
 
-**What you pass:** An optional session name (used for the issue title and branch slug). No name → defaults to `iterative-small-fixes`. During an active session, a `/iflow-fix <description>` (or just describing a fix) means "run the next fix".
+**What you pass:** An optional session name (used for the issue title and branch slug). No name → defaults to `iterative-small-fixes` (or asks once if inventing a better slug; baked `fix_auto_name = false`). During an active session, a `/iflow-fix <description>` (or just describing a fix) means "run the next fix". Toggle with `fix_auto_name` under `[issueflow]` (re-run `issue-flow update`).
 
 **What the assistant does:**
 
-1. **Set up (once).** Preflight (default branch, `git fetch --prune`, clean tree); create a GitHub issue with `gh issue create` (always, after confirmation) and capture `N`; create branch `<N>-<slug>` (off the default, or — when already on a non-default branch — ask whether to branch from current or default); delegate local capture to `/iflow-capture`; seed `issue<N>_status.md` with an unchecked `- [ ] Done` and an empty **`## Iterative fixes log`**.
+1. **Set up (once).** Preflight (default branch, `git fetch --prune`, clean tree); resolve the session name; create a GitHub issue with `gh issue create` (always, after confirmation) and capture `N`; create branch `<N>-<slug>` (off the default, or — when already on a non-default branch — ask whether to branch from current or default); delegate local capture to `/iflow-capture`; seed `issue<N>_status.md` with an unchecked `- [ ] Done` and an empty **`## Iterative fixes log`**.
 2. **Loop.** For each proposed fix: restate it, write a short inline plan, implement **only on confirmation**, and append a dated bullet to the **Iterative fixes log**. A fix that turns out to be a real feature is split out into its own issue instead.
 3. **Finish.** Tells you to run `/iflow-close` to land the session (it never auto-runs it).
 

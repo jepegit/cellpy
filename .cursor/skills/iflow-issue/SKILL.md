@@ -85,8 +85,16 @@ When `.issueflows/04-designs-and-guides/multi-repo-workspaces.md` exists, read i
 
 5. **Offer branch + init (default path).** Ask whether to start work now. On yes (require a clean tree; if dirty, stop and ask to commit/stash):
    - Slug from the title (kebab-case); branch `<N>-<slug>`. Confirm a non-obvious slug.
-   - On the default branch → `git switch -c <N>-<slug>`. On a non-default branch → **ask** whether to branch from current or default.
-   - Run `/iflow-capture` (or the `iflow-capture` skill) for `<N>`. Do not duplicate its fetch/archive logic.
+**Worktree-first start (default, issue #255).** After the dirty-tree gate and slug confirm — unless the user passed `inplace` / `no worktree`, or ops chose stay-on-current/default:
+
+1. Home stays on the **default** branch. Fast-forward it (`git pull --ff-only`). Do **not** `git switch -c` on home.
+2. `issue-flow agent worktree-add <N> --slug <slug> -C <home> --json` — path is `../<repo>-<N>`. On error, **stop and ask**; never silently fall back to inplace.
+3. `issue-flow agent open-workspace <path> --json` (print-only). Tell the user the worktree path. Do **not** ask to open a window.
+4. Run `/iflow-capture` (and later plan/build/close) with `-C <worktree-path>`. Continue the session in that folder.
+5. Token `inplace` / `no worktree` keeps legacy `git switch -c <N>-<slug>` on home.
+
+   - On a non-default **home** branch → **ask** whether to FF/switch home to default first (required for worktree-add) or use `inplace` from current.
+   - Run `/iflow-capture` (or the `iflow-capture` skill) for `<N>` with `-C <worktree>` (or home if `inplace`). Do not duplicate its fetch/archive logic.
    - **Ask** whether to continue with `/iflow-plan`. Do **not** auto-run it.
 6. **Create-only.** If the user declines Phase 2, stop after create. Remind them they can pick it up later with `/iflow-pick` / `/iflow-capture`.
 
