@@ -82,7 +82,7 @@ class FileNamesConfig(BaseModel):
     file_list_location: str | None = None
     file_list_type: str | None = None
     file_list_name: str | None = None
-    cellpy_file_extension: str = "h5"
+    cellpy_file_extension: str = "cellpy"
 
 
 class ReaderConfig(BaseModel):

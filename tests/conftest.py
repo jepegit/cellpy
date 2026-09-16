@@ -78,10 +78,10 @@ def default_file_names(config_guard):
     A test that asserts on a generated file name is otherwise reading the
     developer's own ``cellpy.toml``: ``filefinder.search_for_files`` falls back
     to ``config.file_names.cellpy_file_extension`` when the caller passes no
-    extension, so a machine that sets ``cellpy_file_extension = "cellpy"``
-    produced ``runA.cellpy`` where the test expected ``runA.h5``. CI has no
-    user config and stayed green, which made it look like a real regression on
-    whatever branch happened to be checked out.
+    extension. The packaged default is ``cellpy`` (``runA.cellpy``). A machine
+    that still sets ``cellpy_file_extension = "h5"`` would produce ``runA.h5``
+    and fail those asserts. CI has no user config; this fixture keeps local
+    runs on the packaged defaults too.
     """
 
     from cellpy import config

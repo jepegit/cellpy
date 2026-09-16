@@ -198,6 +198,8 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_collected_summary_directions.py::test_no_direction_tokens_means_no_direction_legend | yes | yes | plotting.collected.summary_plotter | #1009 | untouched frame |
 | tests/test_collected_summary_directions.py::test_y_ranges_accept_original_variable_names | yes | yes | plotting.collected.summary_plotter | #1009 | key translation |
 | tests/test_collected_summary_directions.py::test_order_variables_accept_original_variable_names | yes | yes | plotting.collected.summary_plotter | #1009 | key translation |
+| tests/test_filefinder.py::test_search_for_files_recursive | no | no | filefinder.search_for_files default ext | #1028 | constructed name; inventory already essential |
+| tests/test_cell_readers.py::test_search_for_files | no | no | filefinder.search_for_files default ext | #1028 | same; leave unmarked |
 
 **Columns**
 
