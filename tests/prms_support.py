@@ -22,7 +22,7 @@ EXPECTED_PRMS_INVENTORY: list[tuple[str, str, object]] = [
     ("Paths", "outdatadir", "/cellpy_inventory_root"),
     ("Paths", "rawdatadir", "/cellpy_inventory_root"),
     ("Paths", "templatedir", "/cellpy_inventory_root"),
-    ("FileNames", "cellpy_file_extension", "h5"),
+    ("FileNames", "cellpy_file_extension", "cellpy"),
     ("FileNames", "file_list_location", None),
     ("FileNames", "file_list_name", None),
     ("FileNames", "file_list_type", None),

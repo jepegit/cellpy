@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+* Packaged default for `file_names.cellpy_file_extension` is now `cellpy`
+  (was `h5`), so a fresh install looks for and writes `<run>.cellpy`.
+  Existing `cellpy.toml` / legacy conf that set the key are unchanged.
+  (#1028)
+
 * Fix the capacity doubling that came back for Arbin data: the per-cycle
   rebase in `normalize_reset_granularity` only ran for loaders that declared
   a `reset_granularity`, and no Arbin loader does. It now handles every

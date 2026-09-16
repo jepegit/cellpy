@@ -29,7 +29,7 @@ def test_search_for_files_with_dirs(parameters, default_file_names):
     )
 
     assert parameters.res_file_path in raw_files
-    assert os.path.basename(cellpy_file) == parameters.cellpy_file_name
+    assert os.path.basename(cellpy_file) == f"{parameters.run_name}.cellpy"
 
 
 def test_search_for_files_default_dirs(env, parameters):
@@ -112,7 +112,7 @@ def test_search_for_files_recursive(raw_tree, default_file_names):
     names = sorted(pathlib.Path(f).name for f in raw_files)
     assert names == ["runA_01.res", "runA_02.res", "runA_03.res"]
     # the default extension, pinned by the fixture - not the developer's own
-    assert cellpy_file.endswith("runA.h5")
+    assert cellpy_file.endswith("runA.cellpy")
 
 
 def test_search_for_files_no_sub_folders(raw_tree):

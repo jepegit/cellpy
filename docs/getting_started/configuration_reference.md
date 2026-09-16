@@ -46,7 +46,7 @@ Settings for file names and file handling.
 | `file_list_location` | `str | None` | — |
 | `file_list_type` | `str | None` | — |
 | `file_list_name` | `str | None` | — |
-| `cellpy_file_extension` | `str` | `h5` |
+| `cellpy_file_extension` | `str` | `cellpy` |
 
 
 ## reader
