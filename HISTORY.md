@@ -35,6 +35,9 @@
   `formation_cycles=3`); the formation cycles are drawn, and with
   `show_formation=False` an empty axes is returned with a warning. (#1026)
 
+* Custom loader raises `LoaderError` naming a declared-but-absent column
+  instead of silently dropping it. (#761)
+
 ## [2.1.5] - 2026-09-09
 
 Patch release — docs on-ramp and How-do-I index (#1023),

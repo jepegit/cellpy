@@ -200,6 +200,7 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_collected_summary_directions.py::test_order_variables_accept_original_variable_names | yes | yes | plotting.collected.summary_plotter | #1009 | key translation |
 | tests/test_filefinder.py::test_search_for_files_recursive | no | no | filefinder.search_for_files default ext | #1028 | constructed name; inventory already essential |
 | tests/test_cell_readers.py::test_search_for_files | no | no | filefinder.search_for_files default ext | #1028 | same; leave unmarked |
+| tests/test_bad_fixtures.py::test_missing_column_raises_loader_error | yes | yes | custom.DataLoader.validate | #761 | declared-but-absent vendor column |
 
 **Columns**
 
