@@ -281,6 +281,7 @@ Before you trust a specific capacity, check that:
 
 ## See also
 
+- [Glossary](../fundamentals/glossary.md) — lab terms as cellpy spells them
 - [Plot one cell](plotting.md) — where these labels end up
 - [Troubleshooting](../troubleshooting.md) — when the numbers still look wrong
 - [The data structure](../fundamentals/data_structure.md) — what else is in the
