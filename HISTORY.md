@@ -5,6 +5,9 @@
 * Docs: glossary mapping battery-lab terms (CE, C-rate, OCV, IR, areal,
   SOC, …) onto cellpy names, wired into Concepts, How-do-I, units, and
   the data-structure page. (#1023)
+* Docs: connect Cursor, VS Code, Claude, and other stdio MCP clients to
+  cellpy — `docs/getting_started/mcp.md`, with WSL vs Windows `mcp.json`
+  and `cellpy mcp install --list-clients` through the shim. (#1051)
 
 * Packaged default for `file_names.cellpy_file_extension` is now `cellpy`
   (was `h5`), so a fresh install looks for and writes `<run>.cellpy`.

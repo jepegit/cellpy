@@ -691,9 +691,22 @@ def mcp_install(
             help="Print the configuration instead of writing it.",
         ),
     ] = False,
+    list_clients: Annotated[
+        bool,
+        typer.Option(
+            "--list-clients",
+            help="List known clients and where each keeps its config.",
+        ),
+    ] = False,
 ):
     """Register the MCP server with a chat client."""
-    if cli_api.mcp_install(root=root, client=client, dry_run=dry_run, echo=_echo()):
+    if cli_api.mcp_install(
+        root=root,
+        client=client,
+        dry_run=dry_run,
+        list_clients=list_clients,
+        echo=_echo(),
+    ):
         raise typer.Exit(code=1)
 
 

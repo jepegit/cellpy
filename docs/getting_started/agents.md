@@ -8,6 +8,11 @@ For contributing to the cellpy *codebase*, start at
 [AGENTS.md](https://github.com/jepegit/cellpy/blob/master/AGENTS.md) in the
 repo root and the [developers guide](../contributing/developers_guide/index.md).
 
+To **connect Cursor, VS Code, Claude, or another MCP client** so the agent
+can load cells without writing Python, see
+[Connect an agent IDE to cellpy](mcp.md). This page is the import-the-library
+guide.
+
 !!! tip "Findability"
     Root `AGENTS.md` points here. Prefer this chapter for usage recipes; keep
     `AGENTS.md` short (commands + link).
