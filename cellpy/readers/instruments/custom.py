@@ -19,6 +19,8 @@ from pathlib import Path
 import pandas as pd
 
 from cellpy import prms
+from cellpy.exceptions import LoaderError
+from cellpy.parameters.internal_settings import headers_normal
 from cellpy.readers.instruments.base import find_delimiter_and_start, AutoLoader
 from cellpy.readers.instruments.configurations import (
     register_local_configuration_from_yaml_file,
@@ -67,6 +69,28 @@ class DataLoader(AutoLoader, ABC):
         self.config_params = register_local_configuration_from_yaml_file(
             self.local_instrument_file
         )
+
+    def validate(self, data):
+        """Require every declared renaming column to exist after rename.
+
+        ``DataFrame.rename`` silently drops source names that are absent from
+        the file. Surface that as a load-time ``LoaderError`` naming the
+        vendor header(s) (#761).
+        """
+        missing_vendor = []
+        renaming = self.config_params.normal_headers_renaming_dict
+        for key, vendor_header in renaming.items():
+            try:
+                cellpy_header = headers_normal[key]
+            except KeyError:
+                continue
+            if cellpy_header not in data.raw.columns:
+                missing_vendor.append(vendor_header)
+        if missing_vendor:
+            raise LoaderError(
+                f"Missing declared column(s) in raw file: {missing_vendor}"
+            )
+        return data
 
     # TODO: rewrite this:
     def parse_loader_parameters(self, **kwargs):

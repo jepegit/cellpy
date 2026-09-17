@@ -5,9 +5,8 @@ each isolate one defect in the custom-CSV loader path. These tests pin how
 cellpy *currently* behaves on each, so a future change that makes cellpy crash
 (or silently corrupt) where it used to cope — or vice versa — is caught.
 
-Where the current behavior is a genuine robustness gap (silent data loss) it is
-recorded with an ``xfail`` asserting the *desired* behavior, so the day someone
-fixes it the xfail flips to a visible pass.
+A declared-but-absent column used to be a silent drop (#761). That case now
+raises ``LoaderError`` at load time.
 """
 
 from __future__ import annotations
@@ -18,6 +17,7 @@ import numpy as np
 import pytest
 
 from cellpy import cellreader
+from cellpy.exceptions import LoaderError
 
 from . import fdv
 
@@ -83,29 +83,12 @@ def test_truncated_file_is_tolerated():
     assert len(raw) >= 59  # the intact rows survive; partial row parsed w/ NaNs
 
 
-def test_missing_required_column_omits_it_silently():
-    """CURRENT behavior: a declared column absent from the file is silently
-    dropped; the failure only surfaces downstream when the column is accessed.
-
-    Pinned so the silent-omission gap is visible; the desired behavior is
-    asserted (xfail) in ``test_missing_column_should_surface_a_clear_error``.
-    """
-    c = _load_bad(fdv.bad_missing_column_path)
-    raw = c.data.raw
-    assert len(raw) == 60
-    assert VOLTAGE not in raw.columns
-    with pytest.raises(KeyError):
-        _ = raw[VOLTAGE]
-
-
-@pytest.mark.xfail(
-    reason="loader silently omits a declared-but-absent column instead of "
-    "raising/warning; robustness gap tracked in #761",
-    strict=False,
-)
-def test_missing_column_should_surface_a_clear_error():
-    """DESIRED behavior: loading a file that lacks a declared column should
-    raise or warn a clear error naming the column, not drop it silently."""
-    with pytest.warns(Warning, match="voltage"):
-        c = _load_bad(fdv.bad_missing_column_path)
-        assert VOLTAGE in c.data.raw.columns
+@pytest.mark.essential
+def test_missing_column_raises_loader_error():
+    """A declared column absent from the file is a load-time error (#761)."""
+    cell = cellreader.CellpyCell(native_schema=False)
+    cell.set_instrument(
+        instrument="custom", instrument_file=fdv.bad_custom_instrument_path
+    )
+    with pytest.raises(LoaderError, match="voltage"):
+        cell.from_raw(fdv.bad_missing_column_path)
