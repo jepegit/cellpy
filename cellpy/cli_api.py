@@ -2074,6 +2074,11 @@ def create_project(
 #   cellpy_mcp.__version__
 #   cellpy_mcp.serve(root=None)                      -> None (blocks on stdio)
 #   cellpy_mcp.install(root=None, client=None, dry_run=False) -> str
+#   cellpy_mcp.describe()                            -> dict
+#
+# Listing clients (`cellpy mcp install --list-clients`) is optional: prefer
+# `cellpy_mcp.list_clients()` when present, else `cellpy_mcp.clients`. It is
+# not part of the four-name contract above.
 #
 # `status` is the exception and is implemented here, because its whole job is
 # to answer "is it installed?" — a question that cannot be delegated to the
@@ -2122,6 +2127,7 @@ def mcp_install(
     root=None,
     client: Optional[str] = None,
     dry_run: bool = False,
+    list_clients: bool = False,
     echo: Optional[Echo] = None,
 ):
     """Register the server with a chat client. Returns true on failure."""
@@ -2129,6 +2135,9 @@ def mcp_install(
         module = _import_mcp()
         if module is None:
             return True
+
+        if list_clients:
+            return _mcp_list_clients(module)
 
         ui = _ui()
         try:
@@ -2141,6 +2150,49 @@ def mcp_install(
         if not dry_run:
             ui.hint("restart the client to pick it up")
         return False
+
+
+def _mcp_list_clients(module) -> bool:
+    """Print known clients and their config paths. Returns true on failure.
+
+    Never calls ``module.install``: listing must not write a config. Prefer
+    ``list_clients()`` on the package when it exists; otherwise use the
+    ``cellpy_mcp.clients`` helpers the server already ships. A build that
+    has neither gets a hint, not a hardcoded path table that will drift.
+    """
+    ui = _ui()
+    lister = getattr(module, "list_clients", None)
+    if callable(lister):
+        result = lister()
+        if isinstance(result, dict):
+            ui.title("mcp clients")
+            for key, value in result.items():
+                ui.detail(str(key), str(value))
+        elif result:
+            ui.ok("clients", str(result))
+        return False
+
+    try:
+        clients = importlib.import_module(f"{MCP_MODULE}.clients")
+        known = clients.CLIENTS
+        manual = clients.MANUAL
+        config_path = clients.config_path
+        command_for = clients.command_for
+    except (ImportError, AttributeError):
+        ui.fail(
+            "mcp install",
+            "this cellpy-mcp build cannot list clients.",
+            hint="python -m cellpy_mcp install --list-clients",
+        )
+        return True
+
+    ui.title("mcp clients")
+    for name, spec in sorted(known.items()):
+        note = getattr(spec, "note", "") or None
+        ui.detail(name, str(config_path(name)), note=note)
+    for name in sorted(manual):
+        ui.detail(name, f"run: {command_for(name)}")
+    return False
 
 
 def mcp_status(echo: Optional[Echo] = None):

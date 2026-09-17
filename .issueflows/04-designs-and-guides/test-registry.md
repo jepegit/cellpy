@@ -201,6 +201,11 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_filefinder.py::test_search_for_files_recursive | no | no | filefinder.search_for_files default ext | #1028 | constructed name; inventory already essential |
 | tests/test_cell_readers.py::test_search_for_files | no | no | filefinder.search_for_files default ext | #1028 | same; leave unmarked |
 | tests/test_bad_fixtures.py::test_missing_column_raises_loader_error | yes | yes | custom.DataLoader.validate | #761 | declared-but-absent vendor column |
+| tests/test_cli_mcp.py::test_install_help_lists_list_clients | yes | yes | cli.mcp_install --list-clients | #1051 | advertised flag must exist |
+| tests/test_cli_mcp.py::test_list_clients_calls_the_package_and_does_not_write | yes | yes | cli_api.mcp_install list_clients | #1051 | must not call install() |
+| tests/test_cli_mcp.py::test_list_clients_without_helpers_fails_and_does_not_write | yes | yes | cli_api._mcp_list_clients | #1051 | no invented path table |
+| tests/test_cli_mcp.py::test_list_clients_absent_package_uses_the_install_hint | yes | yes | cli_api.mcp_install | #1051 | same pip hint as serve |
+| tests/test_cli_mcp.py::test_cli_list_clients_does_not_write | yes | yes | cli mcp install --list-clients | #1051 | CLI path; no restart hint |
 
 **Columns**
 

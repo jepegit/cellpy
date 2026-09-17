@@ -344,6 +344,9 @@ GUI/app around cycling data) should read the usage chapter:
 
 **[`docs/getting_started/agents.md`](docs/getting_started/agents.md)**
 
+To wire Cursor or another MCP client (no Python in the chat), see
+[`docs/getting_started/mcp.md`](docs/getting_started/mcp.md).
+
 Quick facts:
 
 - Product: Python library + `cellpy` CLI — not a hosted GUI server.

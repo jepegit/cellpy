@@ -40,6 +40,15 @@ cellpy info --check
 
 → [Check your installation](getting_started/checkup.md)
 
+**…connect Cursor / Copilot / Claude to my cells?**
+
+```console
+python -m pip install cellpy-mcp
+cellpy mcp install --client cursor
+```
+
+→ [Connect an agent IDE to cellpy](getting_started/mcp.md)
+
 **…find my configuration file?**
 
 ```console
@@ -159,6 +168,9 @@ The name with **no** postfix is in the tester's units, not yours.
 
 **…know what a summary column means?**
 → [Summary columns](reference/summary_columns.md)
+
+**…look up what cellpy calls a lab term (CE, C-rate, OCV, IR, areal…)?**
+→ [Glossary](fundamentals/glossary.md)
 
 **…look up a column name without hard-coding it?**
 

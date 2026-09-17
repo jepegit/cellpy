@@ -265,11 +265,14 @@ again.
 ## `cellpy mcp`
 
 Runs cellpy as an [MCP](https://modelcontextprotocol.io/) server, so a chat
-client can load and inspect cell data.
+client can load and inspect cell data. Walkthrough (Cursor, VS Code, Claude,
+WSL): [Connect an agent IDE to cellpy](../getting_started/mcp.md).
 
 ```console
 cellpy mcp status
-cellpy mcp install
+cellpy mcp install --list-clients
+cellpy mcp install --client cursor --dry-run
+cellpy mcp install --client cursor
 cellpy mcp serve
 ```
 
@@ -278,6 +281,11 @@ cellpy mcp serve
 | `status` | whether the server is installed, and what it would serve |
 | `install` | register the server with a chat client |
 | `serve` | run the server over stdio (clients normally do this themselves) |
+
+`install` flags: `--client` / `-c` (`claude-desktop`, `cursor`, `vscode`),
+`--root` / `-r` (the only directory the server may read or write),
+`--dry-run` / `-dr` (print the target file, do not write),
+`--list-clients` (paths or commands on this machine; does not write).
 
 The server itself lives in a separate package:
 
