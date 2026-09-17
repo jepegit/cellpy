@@ -40,6 +40,15 @@ cellpy info --check
 
 → [Check your installation](getting_started/checkup.md)
 
+**…connect Cursor / Copilot / Claude to my cells?**
+
+```console
+python -m pip install cellpy-mcp
+cellpy mcp install --client cursor
+```
+
+→ [Connect an agent IDE to cellpy](getting_started/mcp.md)
+
 **…find my configuration file?**
 
 ```console

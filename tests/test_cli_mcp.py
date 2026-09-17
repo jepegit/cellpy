@@ -160,6 +160,35 @@ def test_install_failure_is_reported_not_raised(stub, monkeypatch, capsys):
     assert "not valid json" in capsys.readouterr().err
 
 
+def test_list_clients_calls_the_package_and_does_not_write(stub, capsys):
+    """`--list-clients` must not call `install` — that writes a config."""
+
+    def list_clients():
+        stub.calls.append(("list_clients",))
+        return "claude-desktop  /tmp/claude.json"
+
+    stub.list_clients = list_clients
+    assert cli_api.mcp_install(list_clients=True, echo=print) is False
+    assert stub.calls == [("list_clients",)]
+    printed = capsys.readouterr().out
+    assert "claude-desktop" in printed
+    assert "restart" not in printed.lower()
+
+
+def test_list_clients_without_helpers_fails_and_does_not_write(stub, capsys):
+    """A stub (or old package) with no lister must not invent a path table."""
+    assert cli_api.mcp_install(list_clients=True, echo=print) is True
+    assert stub.calls == []
+    printed = capsys.readouterr().err
+    assert "python -m cellpy_mcp install --list-clients" in printed
+
+
+def test_list_clients_absent_package_uses_the_install_hint(absent, capsys):
+    assert cli_api.mcp_install(list_clients=True, echo=print) is True
+    printed = capsys.readouterr().err
+    assert f"pip install {cli_api.MCP_DISTRIBUTION}" in printed
+
+
 def test_status_reports_both_versions(stub, capsys):
     cli_api.mcp_status(echo=print)
     printed = capsys.readouterr().out
@@ -183,6 +212,12 @@ def test_the_command_group_exposes_three_verbs():
         assert verb in result.output
 
 
+def test_install_help_lists_list_clients():
+    result = CliRunner().invoke(cli.cli, ["mcp", "install", "--help"])
+    assert result.exit_code == 0
+    assert "--list-clients" in result.output
+
+
 def test_serve_exits_non_zero_when_the_package_is_missing(absent):
     result = CliRunner().invoke(cli.cli, ["mcp", "serve"])
     assert result.exit_code == 1
@@ -192,3 +227,11 @@ def test_status_exits_zero_when_the_package_is_missing(absent):
     result = CliRunner().invoke(cli.cli, ["mcp", "status"])
     assert result.exit_code == 0
     assert "not installed" in result.output
+
+
+def test_cli_list_clients_does_not_write(stub):
+    stub.list_clients = lambda: stub.calls.append(("list_clients",)) or "ok"
+    result = CliRunner().invoke(cli.cli, ["mcp", "install", "--list-clients"])
+    assert result.exit_code == 0
+    assert stub.calls == [("list_clients",)]
+    assert "restart" not in result.output.lower()

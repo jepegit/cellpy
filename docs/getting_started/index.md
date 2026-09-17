@@ -18,6 +18,8 @@ through these pages in order, or jump to what you need.
 - [Basic usage](basic_usage.md) — load a cell and inspect the main tables
 - [Using cellpy from an agent](agents.md) — recipes for coding agents and
   app/GUI builders
+- [Connect an agent IDE to cellpy](mcp.md) — Cursor, VS Code, Claude, and
+  other MCP clients
 - [Coming from cellpy 1.x](migration_v1_to_v2.md) — what changed in 2.x and
   how to migrate
 - [Troubleshooting](../troubleshooting.md) — what to do when a file will
