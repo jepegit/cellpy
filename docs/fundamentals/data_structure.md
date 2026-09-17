@@ -6,6 +6,8 @@ How cellpy 2.x organises a loaded run: the **`CellpyCell`** facade, the
 
 Coming from 1.x? Start with the
 [migration guide](../getting_started/migration_v1_to_v2.md).
+Looking up a lab word (CE, C-rate, OCV, IR)? See the
+[glossary](glossary.md).
 
 ## CellpyCell — main structure
 

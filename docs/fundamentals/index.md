@@ -10,5 +10,6 @@ How cellpy organises data — objects, frames, and file formats.
   and the processing pipeline
 - [The data structure](data_structure.md) — `CellpyCell`, `Data`, and the main
   tables
+- [Glossary](glossary.md) — lab terms as cellpy spells them
 - [File formats](file_formats.md) — raw instrument files and the cellpy file
   format

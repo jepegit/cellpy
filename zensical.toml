@@ -69,6 +69,7 @@ nav = [
         "fundamentals/index.md",
         { "How cellpy is organised" = "fundamentals/fundamentals.md" },
         { "The data structure" = "fundamentals/data_structure.md" },
+        { "Glossary" = "fundamentals/glossary.md" },
         { "File formats" = "fundamentals/file_formats.md" },
     ] },
     { "Reference" = [

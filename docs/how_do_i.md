@@ -160,6 +160,9 @@ The name with **no** postfix is in the tester's units, not yours.
 **…know what a summary column means?**
 → [Summary columns](reference/summary_columns.md)
 
+**…look up what cellpy calls a lab term (CE, C-rate, OCV, IR, areal…)?**
+→ [Glossary](fundamentals/glossary.md)
+
 **…look up a column name without hard-coding it?**
 
 ```python

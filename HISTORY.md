@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+* Docs: glossary mapping battery-lab terms (CE, C-rate, OCV, IR, areal,
+  SOC, …) onto cellpy names, wired into Concepts, How-do-I, units, and
+  the data-structure page. (#1023)
+
 * Packaged default for `file_names.cellpy_file_extension` is now `cellpy`
   (was `h5`), so a fresh install looks for and writes `<run>.cellpy`.
   Existing `cellpy.toml` / legacy conf that set the key are unchanged.
