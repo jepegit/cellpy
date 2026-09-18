@@ -1,6 +1,6 @@
 # CLI plugins (`cellpy.cli_plugins`)
 
-**Issue:** #1055 · **Epic:** #1042
+**Issue:** #1055 (discover) · #1058 (mount) · **Epic:** #1042
 
 ## Context
 
@@ -20,7 +20,7 @@ shared contract for Stage 2 (mount) and cellpy-connectors#3 (what to declare).
 | Duplicate names | first wins; later entries warn + skip |
 | When the group is scanned | first `discover()`, not `import cellpy` or `import cellpy.cli_plugins` |
 | When `EntryPoint.load()` runs | `load_plugin` / `load_all` only |
-| Live CLI mount | Stage 2 — not this module |
+| Live CLI mount | #1058 — `CellpyCLIGroup` attaches `LazyPluginGroup` stubs; `load()` on invoke / plugin help |
 
 Do **not** import `cellpy.cli_plugins` from `cellpy/__init__.py` (keeps
 `import cellpy` off typer/click plugin scan; [cli-light-startup.md](cli-light-startup.md)).
