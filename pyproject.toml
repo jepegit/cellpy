@@ -96,6 +96,8 @@ dev = [
     "pytest-benchmark",
     "pytest-timeout",
     "issue-flow>=0.4.2",
+    # Temporary git pin until cellpy-connectors is on PyPI (#1060).
+    "cellpy-connectors @ git+https://github.com/cellpy/cellpy-connectors.git",
 ]
 docs = [
     "ipykernel>=7.3.0",

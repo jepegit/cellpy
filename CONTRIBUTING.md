@@ -81,6 +81,10 @@ Ready to contribute? Here's how to set up ``cellpy`` for local development.
    breaks Dependabot ``uv.lock`` updates. Regenerate the lock from PyPI pins with
    ``UV_NO_SOURCES=1 uv lock`` before pushing lockfile changes.
 
+   The ``dev`` group currently pulls ``cellpy-connectors`` from GitHub (not PyPI)
+   so CI can exercise the live ``cellpy connectors`` plugin (#1060). When that
+   package is published, replace the git URL with a version pin.
+
    Or create a plain virtual environment manually:
 
     ```shell
