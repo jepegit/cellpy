@@ -206,6 +206,7 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_cli_mcp.py::test_list_clients_without_helpers_fails_and_does_not_write | yes | yes | cli_api._mcp_list_clients | #1051 | no invented path table |
 | tests/test_cli_mcp.py::test_list_clients_absent_package_uses_the_install_hint | yes | yes | cli_api.mcp_install | #1051 | same pip hint as serve |
 | tests/test_cli_mcp.py::test_cli_list_clients_does_not_write | yes | yes | cli mcp install --list-clients | #1051 | CLI path; no restart hint |
+| tests/test_cli_plugins.py (whole file) | yes | yes | cellpy.cli_plugins discover / load | #1055 | lazy scan, fail-soft, first-wins; no live CLI mount |
 
 **Columns**
 

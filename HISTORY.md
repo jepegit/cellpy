@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+* Discover CLI plugins via the `cellpy.cli_plugins` entry-point group
+  without mounting them on the live CLI. (#1055)
+
 * Docs: glossary mapping battery-lab terms (CE, C-rate, OCV, IR, areal,
   SOC, …) onto cellpy names, wired into Concepts, How-do-I, units, and
   the data-structure page. (#1023)
