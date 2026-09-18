@@ -60,7 +60,20 @@ def build_surface() -> dict:
     snapshot meaningful across the framework change.
     """
     from cellpy.cli import cli
+    from cellpy import cli_plugins
 
+    # Built-in surface only (#1058): ignore third-party CLI plugins.
+    cli_plugins.clear()
+    _iter = cli_plugins._iter_entry_points
+    cli_plugins._iter_entry_points = lambda: []
+    try:
+        return _build_surface_from_cli(cli)
+    finally:
+        cli_plugins._iter_entry_points = _iter
+        cli_plugins.clear()
+
+
+def _build_surface_from_cli(cli) -> dict:
     command = cli
     if not hasattr(command, "commands"):
         import typer.main
@@ -72,9 +85,7 @@ def build_surface() -> dict:
         # surface too: `cellpy -q info` is a call a user can have in a script,
         # and describing only subcommands would let one vanish unnoticed (#891).
         "root": _describe(command, "cellpy"),
-        "commands": [
-            _describe(sub, name) for name, sub in sorted(command.commands.items())
-        ],
+        "commands": [_describe(sub, name) for name, sub in sorted(command.commands.items())],
     }
 
 

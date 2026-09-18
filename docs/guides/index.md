@@ -24,3 +24,5 @@ something specific. If you just want the one-liner, start with
   (`dqdv`) and dV/dQ (`dvdq`), plus plot and collect
 - [Write an instrument loader plugin](../other/writing_a_loader_plugin.md) —
   add support for a cycler cellpy does not ship
+- [Write a CLI plugin](../other/writing_a_cli_plugin.md) — add commands under
+  `cellpy` via the `cellpy.cli_plugins` entry-point group

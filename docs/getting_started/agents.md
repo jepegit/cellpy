@@ -23,7 +23,7 @@ guide.
 | --- | --- |
 | A Python library that loads battery-tester files into a consistent shape | A GUI or web server product |
 | Builds **step** and **summary** tables from raw time-series | A plotting-first dashboard (helpers exist; bring your own UI) |
-| Ships a `cellpy` CLI (`setup`, `info`, `serve` → Jupyter) | Long-running app hosting — `serve` only launches Jupyter |
+| Ships a `cellpy` CLI (`setup`, `info`, `serve` → Jupyter). Third-party commands via `[project.entry-points."cellpy.cli_plugins"]` | Long-running app hosting — `serve` only launches Jupyter |
 
 Primary object: **`CellpyCell`**. Measurement frames live on **`c.data`**
 (`raw`, `steps`, `summary`). Column names for the active schema are on
