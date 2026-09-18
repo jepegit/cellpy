@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+* Exercise the live cellpy-connectors CLI plugin from a GitHub dev
+  dependency. (#1060)
+
 * Third-party packages can add `cellpy` subcommands via the
   `cellpy.cli_plugins` entry-point group. `--help` lists the name without
   importing the plugin; built-in command names win. (#1058)

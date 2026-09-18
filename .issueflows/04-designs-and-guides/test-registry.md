@@ -209,6 +209,9 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_cli_plugins.py (whole file) | yes | yes | cellpy.cli_plugins discover / load | #1055 | lazy scan, fail-soft, first-wins; no live CLI mount |
 | tests/test_cli_plugin_mount.py (whole file) | yes | yes | cli.py CellpyCLIGroup / LazyPluginGroup | #1058 | --help lists stub; invoke loads; built-in wins |
 | tests/test_cli_light_import.py::test_help_and_info_version_do_not_import_a_cli_plugin | yes | yes | cli plugin stub attach | #1058 | canary module must stay out of sys.modules |
+| tests/test_cli_connectors_plugin.py::test_help_lists_installed_connectors_without_importing_it | yes | yes | live cellpy-connectors stub | #1060 | skip if dist missing (conda) |
+| tests/test_cli_connectors_plugin.py::test_connectors_ping_runs_the_installed_plugin | yes | yes | cellpy connectors ping | #1060 | skip if dist missing (conda) |
+| tests/test_cli_connectors_plugin.py::test_import_cellpy_does_not_import_connectors | yes | yes | import cellpy isolation | #1060 | skip if dist missing (conda) |
 
 **Columns**
 
