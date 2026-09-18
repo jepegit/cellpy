@@ -82,6 +82,11 @@ plugin.
 → [Writing a custom loader](examples/07_custom_loaders.md) ·
 [Loader plugin](other/writing_a_loader_plugin.md)
 
+**…add my own `cellpy` subcommands?**
+Declare a `[project.entry-points."cellpy.cli_plugins"]` entry. The entry-point
+name is the command.
+→ [Writing a CLI plugin](other/writing_a_cli_plugin.md)
+
 **…load several raw files as one cell?**
 
 ```python

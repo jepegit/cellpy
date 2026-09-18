@@ -9,12 +9,14 @@ from typing import Annotated, Any, Callable, Optional
 import typer
 
 from cellpy import cli_ui
+from cellpy.cli_plugins import CellpyCLIGroup
 
 cli = typer.Typer(
     name="cellpy",
     help="cellpy - command line interface.",
     # Click did not offer these, and the CLI surface is a contract (#569).
     add_completion=False,
+    cls=CellpyCLIGroup,
 )
 
 setup_app = typer.Typer()
@@ -49,14 +51,10 @@ def main(
         # reporter knows nothing about. NO_COLOR is the switch both honour, so
         # setting it keeps the promise for every line the process prints.
         os.environ["NO_COLOR"] = "1"
-    cli_ui.set_reporter(
-        cli_ui.make_reporter(quiet=quiet, verbose=verbose, no_color=no_color)
-    )
+    cli_ui.set_reporter(cli_ui.make_reporter(quiet=quiet, verbose=verbose, no_color=no_color))
 
 
-def _echo(
-    *, silent: bool = False, debug: bool = False, payload: bool = False
-) -> Callable[[str], None]:
+def _echo(*, silent: bool = False, debug: bool = False, payload: bool = False) -> Callable[[str], None]:
     """The reporter's echo for this invocation.
 
     A per-command ``--silent`` / ``--debug`` adjusts only this command, leaving
@@ -156,9 +154,7 @@ def setup(
     ] = None,
     test_user: Annotated[
         Optional[str],
-        typer.Option(
-            "--test_user", "-t", help="Fake name for fake user (for testing)"
-        ),
+        typer.Option("--test_user", "-t", help="Fake name for fake user (for testing)"),
     ] = None,
     silent: Annotated[
         bool,
@@ -208,9 +204,7 @@ def setup(
     )
 
 
-@setup_app.command(
-    "migrate", short_help="Convert the legacy .conf (YAML) to cellpy.toml."
-)
+@setup_app.command("migrate", short_help="Convert the legacy .conf (YAML) to cellpy.toml.")
 def setup_migrate(
     src: Annotated[
         Optional[Path],
@@ -241,9 +235,7 @@ def setup_migrate(
     The old file is left untouched (it keeps working through the v2.0
     deprecation window); the generated TOML takes precedence once present.
     """
-    cli_api.migrate_config(
-        src=src, dst=dst, dry_run=dry_run, force=force, echo=_echo()
-    )
+    cli_api.migrate_config(src=src, dst=dst, dry_run=dry_run, force=force, echo=_echo())
 
 
 # Re-exports used by tests / callers that imported helpers from cellpy.cli
@@ -267,12 +259,8 @@ def edit(
         Optional[str],
         typer.Option("--default-editor", "-e", help="try to use this editor instead"),
     ] = None,
-    debug: Annotated[
-        bool, typer.Option("--debug", "-d", help="Run in debug mode.")
-    ] = False,
-    silent: Annotated[
-        bool, typer.Option("--silent", "-s", help="Run in silent mode.")
-    ] = False,
+    debug: Annotated[bool, typer.Option("--debug", "-d", help="Run in debug mode.")] = False,
+    silent: Annotated[bool, typer.Option("--silent", "-s", help="Run in silent mode.")] = False,
 ):
     """Edit your cellpy config or database files.
 
@@ -315,18 +303,12 @@ def edit(
 
 @cli.command()
 def info(
-    version: Annotated[
-        bool, typer.Option("--version", "-v", help="Print version information.")
-    ] = False,
+    version: Annotated[bool, typer.Option("--version", "-v", help="Print version information.")] = False,
     configloc: Annotated[
         bool,
-        typer.Option(
-            "--configloc", "-l", help="Print full path to the config file."
-        ),
+        typer.Option("--configloc", "-l", help="Print full path to the config file."),
     ] = False,
-    params: Annotated[
-        bool, typer.Option("--params", "-p", help="Dump all parameters to screen.")
-    ] = False,
+    params: Annotated[bool, typer.Option("--params", "-p", help="Dump all parameters to screen.")] = False,
     show_config: Annotated[
         bool,
         typer.Option(
@@ -368,9 +350,7 @@ def run(
     name: Annotated[str, typer.Argument()] = "NONE",
     journal: Annotated[
         bool,
-        typer.Option(
-            "--journal", "-j", help="Run a batch job defined in the given journal-file"
-        ),
+        typer.Option("--journal", "-j", help="Run a batch job defined in the given journal-file"),
     ] = False,
     key: Annotated[
         bool,
@@ -378,9 +358,7 @@ def run(
     ] = False,
     folder: Annotated[
         bool,
-        typer.Option(
-            "--folder", "-f", help="Run all batch jobs iteratively in a given folder"
-        ),
+        typer.Option("--folder", "-f", help="Run all batch jobs iteratively in a given folder"),
     ] = False,
     cellpy_project: Annotated[
         bool,
@@ -394,26 +372,14 @@ def run(
             "so you can't use backslash ('\\') as normal in windows (use either '/' or '\\\\' instead).",
         ),
     ] = False,
-    debug: Annotated[
-        bool, typer.Option("--debug", "-d", help="Run in debug mode.")
-    ] = False,
-    silent: Annotated[
-        bool, typer.Option("--silent", "-s", help="Run in silent mode.")
-    ] = False,
-    raw: Annotated[
-        bool, typer.Option("--raw", help="Force loading raw-file(s).")
-    ] = False,
-    cellpyfile: Annotated[
-        bool, typer.Option("--cellpyfile", help="Force cellpy-file(s).")
-    ] = False,
-    minimal: Annotated[
-        bool, typer.Option("--minimal", help="Minimal processing.")
-    ] = False,
+    debug: Annotated[bool, typer.Option("--debug", "-d", help="Run in debug mode.")] = False,
+    silent: Annotated[bool, typer.Option("--silent", "-s", help="Run in silent mode.")] = False,
+    raw: Annotated[bool, typer.Option("--raw", help="Force loading raw-file(s).")] = False,
+    cellpyfile: Annotated[bool, typer.Option("--cellpyfile", help="Force cellpy-file(s).")] = False,
+    minimal: Annotated[bool, typer.Option("--minimal", help="Minimal processing.")] = False,
     nom_cap: Annotated[
         Optional[float],
-        typer.Option(
-            "--nom-cap", help="nominal capacity (used in calculating rates etc)"
-        ),
+        typer.Option("--nom-cap", help="nominal capacity (used in calculating rates etc)"),
     ] = None,
     batch_col: Annotated[
         Optional[str],
@@ -421,13 +387,9 @@ def run(
     ] = None,
     project: Annotated[
         Optional[str],
-        typer.Option(
-            "--project", help="name of the project (if selecting running from db)"
-        ),
+        typer.Option("--project", help="name of the project (if selecting running from db)"),
     ] = None,
-    list_: Annotated[
-        bool, typer.Option("--list", "-l", help="List batch-files.")
-    ] = False,
+    list_: Annotated[bool, typer.Option("--list", "-l", help="List batch-files.")] = False,
 ):
     """Run a cellpy process (for example a batch-job).
 
@@ -495,10 +457,7 @@ def run(
     else:
         # Was a flag dump plus "sorry, I am not allowed to run this on my own",
         # printed to stdout with a success exit code.
-        raise typer.BadParameter(
-            "say what to run with NAME: --journal, --key, --folder "
-            "or --cellpy-project."
-        )
+        raise typer.BadParameter("say what to run with NAME: --journal, --key, --folder " "or --cellpy-project.")
 
 
 # ----------------------- pull ---------------------------------------
@@ -506,16 +465,12 @@ def run(
 
 @cli.command()
 def pull(
-    tests: Annotated[
-        bool, typer.Option("--tests", "-t", help="Download test-files from repo.")
-    ] = False,
+    tests: Annotated[bool, typer.Option("--tests", "-t", help="Download test-files from repo.")] = False,
     examples: Annotated[
         bool,
         typer.Option("--examples", "-e", help="Download example-files from repo."),
     ] = False,
-    clone: Annotated[
-        bool, typer.Option("--clone", "-c", help="Clone the full repo.")
-    ] = False,
+    clone: Annotated[bool, typer.Option("--clone", "-c", help="Clone the full repo.")] = False,
     directory: Annotated[
         Optional[str],
         typer.Option("--directory", "-d", help="Save into custom directory DIR"),
@@ -545,24 +500,18 @@ def pull(
 
 @cli.command()
 def new(
-    template: Annotated[
-        Optional[str], typer.Option("--template", "-t", help="Provide template name.")
-    ] = None,
+    template: Annotated[Optional[str], typer.Option("--template", "-t", help="Provide template name.")] = None,
     directory: Annotated[
         Optional[str],
         typer.Option("--directory", "-d", help="Create in custom directory."),
     ] = None,
     project: Annotated[
         Optional[str],
-        typer.Option(
-            "--project", "-p", help="Provide project name (i.e. sub-directory name)."
-        ),
+        typer.Option("--project", "-p", help="Provide project name (i.e. sub-directory name)."),
     ] = None,
     experiment: Annotated[
         Optional[str],
-        typer.Option(
-            "--experiment", "-e", help="Provide experiment name (i.e. lookup-value)."
-        ),
+        typer.Option("--experiment", "-e", help="Provide experiment name (i.e. lookup-value)."),
     ] = None,
     local_user_template: Annotated[
         bool,
@@ -572,9 +521,7 @@ def new(
             help="Use local template from the templates directory.",
         ),
     ] = False,
-    serve_: Annotated[
-        bool, typer.Option("--serve", "-s", help="Run Jupyter.")
-    ] = False,
+    serve_: Annotated[bool, typer.Option("--serve", "-s", help="Run Jupyter.")] = False,
     run_: Annotated[
         bool,
         typer.Option(
@@ -587,9 +534,7 @@ def new(
     ] = False,
     lab: Annotated[
         bool,
-        typer.Option(
-            "--lab", "-j", help="Use Jupyter Lab instead of Notebook when serving."
-        ),
+        typer.Option("--lab", "-j", help="Use Jupyter Lab instead of Notebook when serving."),
     ] = False,
     jupyter_executable: Annotated[
         Optional[str],
@@ -639,9 +584,7 @@ def serve(
     ] = None,
 ):
     """Start a Jupyter server."""
-    cli_api.start_jupyter(
-        lab=lab, directory=directory, executable=executable, echo=_echo()
-    )
+    cli_api.start_jupyter(lab=lab, directory=directory, executable=executable, echo=_echo())
 
 
 # ----------------------- mcp ----------------------------------------

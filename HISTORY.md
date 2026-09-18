@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+* Third-party packages can add `cellpy` subcommands via the
+  `cellpy.cli_plugins` entry-point group. `--help` lists the name without
+  importing the plugin; built-in command names win. (#1058)
+
 * Discover CLI plugins via the `cellpy.cli_plugins` entry-point group
   without mounting them on the live CLI. (#1055)
 

@@ -207,6 +207,8 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_cli_mcp.py::test_list_clients_absent_package_uses_the_install_hint | yes | yes | cli_api.mcp_install | #1051 | same pip hint as serve |
 | tests/test_cli_mcp.py::test_cli_list_clients_does_not_write | yes | yes | cli mcp install --list-clients | #1051 | CLI path; no restart hint |
 | tests/test_cli_plugins.py (whole file) | yes | yes | cellpy.cli_plugins discover / load | #1055 | lazy scan, fail-soft, first-wins; no live CLI mount |
+| tests/test_cli_plugin_mount.py (whole file) | yes | yes | cli.py CellpyCLIGroup / LazyPluginGroup | #1058 | --help lists stub; invoke loads; built-in wins |
+| tests/test_cli_light_import.py::test_help_and_info_version_do_not_import_a_cli_plugin | yes | yes | cli plugin stub attach | #1058 | canary module must stay out of sys.modules |
 
 **Columns**
 

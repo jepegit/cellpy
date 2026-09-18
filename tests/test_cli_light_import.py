@@ -24,8 +24,7 @@ def _run_script(script: str) -> subprocess.CompletedProcess[str]:
 
 @pytest.mark.essential
 def test_info_version_avoids_cellreader_import():
-    completed = _run_script(
-        """
+    completed = _run_script("""
         import sys
         from typer.testing import CliRunner
 
@@ -41,16 +40,14 @@ def test_info_version_avoids_cellreader_import():
         assert "cellpy.readers.cellreader" not in sys.modules, sorted(
             m for m in sys.modules if m.startswith("cellpy")
         )
-        """
-    )
+        """)
     assert completed.returncode == 0, completed.stdout + completed.stderr
 
 
 @pytest.mark.essential
 def test_setup_default_avoids_cellreader_and_optional_deps():
     """Default setup must not import cellreader or probe lmfit (#839)."""
-    completed = _run_script(
-        """
+    completed = _run_script("""
         import sys
         import tempfile
         from pathlib import Path
@@ -71,16 +68,14 @@ def test_setup_default_avoids_cellreader_and_optional_deps():
         )
         assert "lmfit" not in sys.modules
         assert "sqlalchemy_access" not in sys.modules
-        """
-    )
+        """)
     assert completed.returncode == 0, completed.stdout + completed.stderr
 
 
 @pytest.mark.essential
 def test_setup_check_imports_cellreader():
     """``setup --check`` still exercises the reader import path (#839)."""
-    completed = _run_script(
-        """
+    completed = _run_script("""
         import sys
         import tempfile
         from pathlib import Path
@@ -98,16 +93,14 @@ def test_setup_check_imports_cellreader():
         )
         assert result.exit_code == 0, result.output
         assert "cellpy.readers.cellreader" in sys.modules
-        """
-    )
+        """)
     assert completed.returncode == 0, completed.stdout + completed.stderr
 
 
 @pytest.mark.essential
 def test_importing_cli_ui_does_not_import_rich():
     """``cli_ui`` defers rich to first output, so importing it stays cheap (#891)."""
-    completed = _run_script(
-        """
+    completed = _run_script("""
         import sys
 
         import cellpy.cli_ui
@@ -115,16 +108,52 @@ def test_importing_cli_ui_does_not_import_rich():
         assert not [m for m in sys.modules if m.startswith("rich")], sorted(
             m for m in sys.modules if m.startswith("rich")
         )
-        """
-    )
+        """)
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+
+
+@pytest.mark.essential
+def test_help_and_info_version_do_not_import_a_cli_plugin():
+    """Root --help and info --version must not call plugin load() (#1058)."""
+    completed = _run_script("""
+        import sys
+        import types
+        from dataclasses import dataclass, field
+        from types import SimpleNamespace
+
+        from typer.testing import CliRunner
+
+        import cellpy.cli
+        from cellpy import cli_plugins
+
+        @dataclass
+        class _EP:
+            name: str = "canary"
+            value: str = "pkg:canary"
+            dist: object = field(default_factory=lambda: SimpleNamespace(name="canary-dist"))
+
+            def load(self):
+                sys.modules["canary_plugin_mod"] = types.ModuleType("canary_plugin_mod")
+                raise ImportError("canary must not load on help")
+
+        cli_plugins._iter_entry_points = lambda: [_EP()]
+        cli_plugins.clear()
+        runner = CliRunner()
+        help_result = runner.invoke(cellpy.cli.cli, ["--help"])
+        assert help_result.exit_code == 0, help_result.output
+        assert "canary" in help_result.output
+        assert "canary_plugin_mod" not in sys.modules
+        version = runner.invoke(cellpy.cli.cli, ["info", "--version"])
+        assert version.exit_code == 0, version.output
+        assert "canary_plugin_mod" not in sys.modules
+        """)
     assert completed.returncode == 0, completed.stdout + completed.stderr
 
 
 @pytest.mark.essential
 def test_setup_deps_probes_optional_modules():
     """``setup --deps`` opts into optional-extra probing (#839)."""
-    completed = _run_script(
-        """
+    completed = _run_script("""
         import sys
         from typer.testing import CliRunner
 
@@ -135,6 +164,5 @@ def test_setup_deps_probes_optional_modules():
         )
         assert result.exit_code == 0, result.output
         assert "lmfit" in sys.modules or "checking dependencies" in result.output
-        """
-    )
+        """)
     assert completed.returncode == 0, completed.stdout + completed.stderr
