@@ -15,7 +15,9 @@ guide.
 
 !!! tip "Findability"
     Root `AGENTS.md` points here. Prefer this chapter for usage recipes; keep
-    `AGENTS.md` short (commands + link).
+    `AGENTS.md` short (commands + link). Site-root indexes for crawlers:
+    [`llms.txt`](https://cellpy.readthedocs.io/en/latest/llms.txt) and
+    [`llms-short.txt`](https://cellpy.readthedocs.io/en/latest/llms-short.txt).
 
 ## What cellpy is (and is not)
 

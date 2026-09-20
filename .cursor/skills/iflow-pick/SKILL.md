@@ -103,13 +103,14 @@ When `.issueflows/04-designs-and-guides/multi-repo-workspaces.md` exists, read i
    - **Mixed / code dirty** — **stop**; list non-`.issueflows/` paths;
      ask commit / stash / abort. Do **not** auto-offer “commit everything”.
 2. **Issue worktree (default)** — confirm a non-obvious slug (`<N>-<short-slug>`).
-**Worktree-first start (default, issue #255).** After the dirty-tree gate and slug confirm — unless the user passed `inplace` / `no worktree`, or ops chose stay-on-current/default:
+**Worktree-first start (default, issue #255 / #303).** After the dirty-tree gate and slug confirm — unless the user passed `inplace` / `no worktree`, or ops chose stay-on-current/default:
 
-1. Home stays on the **default** branch. Fast-forward it (`git pull --ff-only`). Do **not** `git switch -c` on home.
-2. `issue-flow agent worktree-add <N> --slug <slug> -C <home> --json` — path is `../<repo>-<N>`. On error, **stop and ask**; never silently fall back to inplace.
-3. `issue-flow agent open-workspace <path> --json` (print-only). Tell the user the worktree path. Do **not** ask to open a window.
-4. Run `/iflow-capture` (and later plan/build/close) with `-C <worktree-path>`. Continue the session in that folder.
-5. Token `inplace` / `no worktree` keeps legacy `git switch -c <N>-<slug>` on home.
+1. Home stays on the **default** branch. `git fetch --prune`. Do **not** `git switch -c` on home.
+2. Run `issue-flow agent default-sync --json -C <home>`. If `action` is `even` or `ff_only`, `git pull --ff-only`. If home is ahead or diverged, **print** the classification and **still continue** — starting work must not wait for home to be ff-able.
+3. `issue-flow agent worktree-add <N> --slug <slug> -C <home> --json` — path is `../<repo>-<N>`. Starts from fetched `origin/<default>`, not local default HEAD. On error, **stop and ask**; never silently fall back to inplace.
+4. `issue-flow agent open-workspace <path> --json` (print-only). Tell the user the worktree path. Do **not** ask to open a window.
+5. Run `/iflow-capture` (and later plan/build/close) with `-C <worktree-path>`. Continue the session in that folder.
+6. Token `inplace` / `no worktree` keeps legacy `git switch -c <N>-<slug>` on home.
 
    **Ops exception:** when Phase 1 confirmed ops routing, ask whether to create the issue worktree/branch or stay on current/default; default branch is allowed (no worktree).
 3. **Run `/iflow-capture`** for the now-known `<N>` by following the `iflow-capture` skill. Do not duplicate its fetch/archive logic.

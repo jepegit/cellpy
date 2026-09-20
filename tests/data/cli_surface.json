@@ -135,6 +135,7 @@
       "name": "mcp",
       "params": [],
       "subcommands": [
+        "check",
         "install",
         "serve",
         "status"

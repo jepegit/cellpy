@@ -593,7 +593,8 @@ def serve(
 # Jupyter, and for an audience defined by not being comfortable in a terminal,
 # one letter between two unrelated commands is a trap. The server itself lives
 # in the separate `cellpy-mcp` distribution — see `cli_api` for why, and for
-# the contract these three wrap.
+# the contract `serve` / `install` wrap. `status` and `check` are cellpy's own:
+# "is it installed?" and "does it answer when spawned like a client would?"
 
 
 @mcp_app.command("serve")
@@ -659,6 +660,30 @@ def mcp_status():
     # Deliberately never exits non-zero: "not installed" is a true answer, and
     # this is the command you script to find that out.
     cli_api.mcp_status(echo=_echo(payload=True))
+
+
+@mcp_app.command("check")
+def mcp_check(
+    client: Annotated[
+        Optional[str],
+        typer.Option(
+            "--client",
+            "-c",
+            help="Spawn the command registered in this client's config (cursor, vscode, claude-desktop).",
+        ),
+    ] = None,
+    root: Annotated[
+        Optional[str],
+        typer.Option("--root", "-r", help="Root directory for the spawned server (without --client)."),
+    ] = None,
+    timeout: Annotated[
+        float,
+        typer.Option("--timeout", help="Seconds to wait for each answer."),
+    ] = 60.0,
+):
+    """Spawn the MCP server as a chat client would and talk to it."""
+    if cli_api.mcp_check(client=client, root=root, timeout=timeout, echo=_echo()):
+        raise typer.Exit(code=1)
 
 
 # ----------------------- groups --------------------------------------

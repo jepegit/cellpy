@@ -153,6 +153,7 @@ changes the public CLI surface.
 - Depends on: stage 1 issue 1
 - yolo: no — touches the live CLI, #569 surface snapshot, and light-startup
   essential tests; not mechanical.
+- Published: #1058
 
 ## Later (unstaged)
 
