@@ -2,33 +2,6 @@
 
 ## [Unreleased]
 
-## [2.1.5.post3] - 2026-09-20
-
-* Docs: add site-root `llms.txt` and `llms-short.txt` for agent crawlers.
-  (#1054)
-
-* Docs: drop repeated stdio JSON and VS Code `servers` copy from the MCP
-  getting-started chapter. (#1053)
-
-* `cellpy mcp check [--client cursor]` spawns the MCP server the way a chat
-  client does (from the client's own `mcp.json` with `--client`), runs the
-  MCP handshake, lists the tools and calls `list_instruments`; exits 1 with
-  the decisive line (missing interpreter, banner on stdout, last stderr
-  line) when it cannot. `cellpy mcp install` hints at upgrading `cellpy-mcp`
-  when the installed build does not know the requested client. Docs: an
-  "Ask your agent to do it" checklist on the MCP page, so "install cellpy
-  MCP and test it" is something an agent can carry out end to end.
-
-* Exercise the live cellpy-connectors CLI plugin from a GitHub dev
-  dependency. (#1060)
-
-* Third-party packages can add `cellpy` subcommands via the
-  `cellpy.cli_plugins` entry-point group. `--help` lists the name without
-  importing the plugin; built-in command names win. (#1058)
-
-* Discover CLI plugins via the `cellpy.cli_plugins` entry-point group
-  without mounting them on the live CLI. (#1055)
-
 * Docs: glossary mapping battery-lab terms (CE, C-rate, OCV, IR, areal,
   SOC, …) onto cellpy names, wired into Concepts, How-do-I, units, and
   the data-structure page. (#1023)
@@ -71,6 +44,33 @@
 
 * Custom loader raises `LoaderError` naming a declared-but-absent column
   instead of silently dropping it. (#761)
+
+## [2.1.5.post3] - 2026-09-20
+
+* Docs: add site-root `llms.txt` and `llms-short.txt` for agent crawlers.
+  (#1054)
+
+* Docs: drop repeated stdio JSON and VS Code `servers` copy from the MCP
+  getting-started chapter. (#1053)
+
+* `cellpy mcp check [--client cursor]` spawns the MCP server the way a chat
+  client does (from the client's own `mcp.json` with `--client`), runs the
+  MCP handshake, lists the tools and calls `list_instruments`; exits 1 with
+  the decisive line (missing interpreter, banner on stdout, last stderr
+  line) when it cannot. `cellpy mcp install` hints at upgrading `cellpy-mcp`
+  when the installed build does not know the requested client. Docs: an
+  "Ask your agent to do it" checklist on the MCP page, so "install cellpy
+  MCP and test it" is something an agent can carry out end to end.
+
+* Exercise the live cellpy-connectors CLI plugin from a GitHub dev
+  dependency. (#1060)
+
+* Third-party packages can add `cellpy` subcommands via the
+  `cellpy.cli_plugins` entry-point group. `--help` lists the name without
+  importing the plugin; built-in command names win. (#1058)
+
+* Discover CLI plugins via the `cellpy.cli_plugins` entry-point group
+  without mounting them on the live CLI. (#1055)
 
 ## [2.1.5] - 2026-09-09
 
