@@ -2,48 +2,10 @@
 
 ## [Unreleased]
 
-* Docs: glossary mapping battery-lab terms (CE, C-rate, OCV, IR, areal,
-  SOC, …) onto cellpy names, wired into Concepts, How-do-I, units, and
-  the data-structure page. (#1023)
-* Docs: connect Cursor, VS Code, Claude, and other stdio MCP clients to
-  cellpy — `docs/getting_started/mcp.md`, with WSL vs Windows `mcp.json`
-  and `cellpy mcp install --list-clients` through the shim. (#1051)
+## [2.1.5.post4] - 2026-09-20
 
-* Packaged default for `file_names.cellpy_file_extension` is now `cellpy`
-  (was `h5`), so a fresh install looks for and writes `<run>.cellpy`.
-  Existing `cellpy.toml` / legacy conf that set the key are unchanged.
-  (#1028)
-
-* Fix the capacity doubling that came back for Arbin data: the per-cycle
-  rebase in `normalize_reset_granularity` only ran for loaders that declared
-  a `reset_granularity`, and no Arbin loader does. It now handles every
-  cumulative capacity/energy column present, treating undeclared columns as
-  `PER_CYCLE` with a forgotten-reset guard: a cycle whose first value exceeds
-  1 % of the column's largest magnitude (`CYCLE_START_RTOL`) is rebased to
-  start at 0, legitimate first-sample increments are left alone, and one
-  `UserWarning` reports the columns and how many cycles carried over. Kit
-  check 7 now asserts the cycle-starts-at-0 property. `.cellpy` files written
-  by ≤ 2.1.5 keep the un-rebased raw; regenerate them from raw
-  (`force_raw_file=True`). (#989)
-
-* `cellpy setup` creates missing configured local folders (including `raw/`)
-  on a re-run, not only on first-time `--reset`. Remote `OtherPath` URIs are
-  still skipped, and `setup -i` with an existing config no longer crashes on
-  `instrumentdir`. (#1037)
-
-* Docs: `[db_cols]` in `cellpy.toml` maps cellpy field names to the Excel
-  db's row-1 headers, so a renamed (or never-default) column is a config
-  edit rather than a sheet rewrite. Worked snippet, batch-database
-  subsection, and a How-do-I entry. (#1038)
-
-* `cycles_plot(..., backend="matplotlib")` no longer raises
-  `ValueError: arange: cannot compute length` when every selected cycle is a
-  formation cycle (e.g. `cycles=[1, 2, 3]` with the default
-  `formation_cycles=3`); the formation cycles are drawn, and with
-  `show_formation=False` an empty axes is returned with a warning. (#1026)
-
-* Custom loader raises `LoaderError` naming a declared-but-absent column
-  instead of silently dropping it. (#761)
+* Changelog: move leftover Unreleased notes onto the 2.1.5 / post1 / post2
+  headings they already shipped in.
 
 ## [2.1.5.post3] - 2026-09-20
 
@@ -71,6 +33,54 @@
 
 * Discover CLI plugins via the `cellpy.cli_plugins` entry-point group
   without mounting them on the live CLI. (#1055)
+
+## [2.1.5.post2] - 2026-09-17
+
+* Docs: glossary mapping battery-lab terms (CE, C-rate, OCV, IR, areal,
+  SOC, …) onto cellpy names, wired into Concepts, How-do-I, units, and
+  the data-structure page. (#1023)
+
+* Docs: connect Cursor, VS Code, Claude, and other stdio MCP clients to
+  cellpy — `docs/getting_started/mcp.md`, with WSL vs Windows `mcp.json`
+  and `cellpy mcp install --list-clients` through the shim. (#1051)
+
+* Packaged default for `file_names.cellpy_file_extension` is now `cellpy`
+  (was `h5`), so a fresh install looks for and writes `<run>.cellpy`.
+  Existing `cellpy.toml` / legacy conf that set the key are unchanged.
+  (#1028)
+
+* `cellpy setup` creates missing configured local folders (including `raw/`)
+  on a re-run, not only on first-time `--reset`. Remote `OtherPath` URIs are
+  still skipped, and `setup -i` with an existing config no longer crashes on
+  `instrumentdir`. (#1037)
+
+* Docs: `[db_cols]` in `cellpy.toml` maps cellpy field names to the Excel
+  db's row-1 headers, so a renamed (or never-default) column is a config
+  edit rather than a sheet rewrite. Worked snippet, batch-database
+  subsection, and a How-do-I entry. (#1038)
+
+* `cycles_plot(..., backend="matplotlib")` no longer raises
+  `ValueError: arange: cannot compute length` when every selected cycle is a
+  formation cycle (e.g. `cycles=[1, 2, 3]` with the default
+  `formation_cycles=3`); the formation cycles are drawn, and with
+  `show_formation=False` an empty axes is returned with a warning. (#1026)
+
+* Custom loader raises `LoaderError` naming a declared-but-absent column
+  instead of silently dropping it. (#761)
+
+## [2.1.5.post1] - 2026-09-10
+
+* Fix the capacity doubling that came back for Arbin data: the per-cycle
+  rebase in `normalize_reset_granularity` only ran for loaders that declared
+  a `reset_granularity`, and no Arbin loader does. It now handles every
+  cumulative capacity/energy column present, treating undeclared columns as
+  `PER_CYCLE` with a forgotten-reset guard: a cycle whose first value exceeds
+  1 % of the column's largest magnitude (`CYCLE_START_RTOL`) is rebased to
+  start at 0, legitimate first-sample increments are left alone, and one
+  `UserWarning` reports the columns and how many cycles carried over. Kit
+  check 7 now asserts the cycle-starts-at-0 property. `.cellpy` files written
+  by ≤ 2.1.5 keep the un-rebased raw; regenerate them from raw
+  (`force_raw_file=True`). (#989)
 
 ## [2.1.5] - 2026-09-09
 
