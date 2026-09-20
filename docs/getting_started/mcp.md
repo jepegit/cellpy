@@ -122,11 +122,11 @@ Restart Cursor. Then ask:
 
 ## Cursor (detailed)
 
-`cellpy mcp install --client cursor` writes the **global** file
-`~/.cursor/mcp.json`. A project file `.cursor/mcp.json` (next to the repo
-root) **wins** if both define a server named `cellpy`. The installer writes
-global on purpose: “where my cells live” is not a property of whichever
-repository happens to be open.
+The Fast path install writes the **global** file `~/.cursor/mcp.json`. A
+project file `.cursor/mcp.json` (next to the repo root) **wins** if both
+define a server named `cellpy`. The installer writes global on purpose:
+“where my cells live” is not a property of whichever repository happens to
+be open.
 
 Both files use the top-level key `mcpServers`:
 
@@ -222,11 +222,12 @@ table in a README.
 | --- | --- | --- |
 | Claude Desktop | `cellpy mcp install` | `mcpServers` in the Claude desktop config |
 | Cursor | `cellpy mcp install --client cursor` | `~/.cursor/mcp.json` or `.cursor/mcp.json` |
-| VS Code / Copilot | `cellpy mcp install --client vscode` | user `mcp.json`, key **`servers`** (not `mcpServers`) |
+| VS Code / Copilot | `cellpy mcp install --client vscode` | user `mcp.json` |
 | Claude Code | `claude mcp add …` (the installer refuses to edit `~/.claude.json`) | CLI-managed |
 | Anything else that speaks stdio (Windsurf, Cline, Continue, Codex, Gemini CLI, Zed, …) | by-hand JSON, same block, client-specific file | almost always `mcpServers` |
 
-There is **no** `--client windsurf` (or Cline, Codex, …). Use the JSON below.
+There is **no** `--client windsurf` (or Cline, Codex, …). Use the same JSON
+block as [Cursor (detailed)](#cursor-detailed).
 
 **VS Code names the key `servers`.** The wrong key parses, saves, and does
 nothing — it looks like a broken server rather than an unregistered one.
@@ -243,20 +244,8 @@ as Cursor.
 
 ### By-hand JSON (any stdio client)
 
-```json
-{
-  "mcpServers": {
-    "cellpy": {
-      "command": "/full/path/to/python",
-      "args": ["-m", "cellpy_mcp"],
-      "env": { "CELLPY_MCP_ROOT": "/path/to/cells" }
-    }
-  }
-}
-```
-
-For VS Code, the top-level key is `servers` instead of `mcpServers`. Restart
-the client afterwards — none of them re-read the file while running.
+Same block as [Cursor (detailed)](#cursor-detailed). Restart the client
+afterwards — none of them re-read the file while running.
 
 You can skip cellpy’s shim entirely (`cellpy` 2.1.3.post3+ is what
 `cellpy-mcp` requires):
@@ -304,7 +293,7 @@ script) runs to prove the install before anyone restarts an editor.
 | `cellpy mcp check --client cursor` → “names an interpreter that does not exist” | `mcp.json` was written from another env / machine; re-run `install` from the one that has `cellpy-mcp` |
 | Client shows the server as failed | `command` is not the interpreter that has `cellpy-mcp` (bare `python`, wrong venv) |
 | Cursor on Windows never lists `cellpy` after a WSL install | Different `~/.cursor/mcp.json` — see [WSL and Windows](#wsl-and-windows-which-mcpjson) |
-| VS Code ignores a file that looks correct | Top-level key is `mcpServers` instead of `servers` |
+| VS Code ignores a file that looks correct | Wrong top-level key — see [Other clients](#other-clients) |
 | `cellpy mcp serve` “does nothing” / client parse error | Banner or logs on **stdout**; that channel is the protocol |
 | Tools missing after a successful install | Client not restarted |
 
