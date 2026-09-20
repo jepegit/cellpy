@@ -19,6 +19,7 @@ that separation is load-bearing.
 
 from __future__ import annotations
 
+import json
 import logging
 import sys
 import types
@@ -42,16 +43,16 @@ def _plain_output(monkeypatch):
 
 @pytest.fixture()
 def absent(monkeypatch):
-    """`cellpy_mcp` is not importable, however the machine is actually set up."""
-    monkeypatch.delitem(sys.modules, cli_api.MCP_MODULE, raising=False)
-    real_import = __import__
+    """`cellpy_mcp` is not importable, however the machine is actually set up.
 
-    def _import(name, *args, **kwargs):
-        if name == cli_api.MCP_MODULE:
-            raise ImportError(f"No module named {name!r}")
-        return real_import(name, *args, **kwargs)
-
-    monkeypatch.setattr("builtins.__import__", _import)
+    ``None`` in ``sys.modules`` makes both ``import`` and
+    ``importlib.import_module`` raise ``ImportError`` — patching
+    ``builtins.__import__`` alone leaves ``importlib`` finding a real install.
+    """
+    monkeypatch.setitem(sys.modules, cli_api.MCP_MODULE, None)
+    for name in list(sys.modules):
+        if name.startswith(f"{cli_api.MCP_MODULE}."):
+            monkeypatch.setitem(sys.modules, name, None)
 
 
 @pytest.fixture()
@@ -75,6 +76,8 @@ def stub(monkeypatch):
     module.install = install
     module.describe = describe
     monkeypatch.setitem(sys.modules, cli_api.MCP_MODULE, module)
+    # A real install's submodules must not leak through the stub.
+    monkeypatch.setitem(sys.modules, f"{cli_api.MCP_MODULE}.clients", None)
     return module
 
 
@@ -202,14 +205,184 @@ def test_status_reports_both_versions(stub, capsys):
     assert "/data/cells" in printed
 
 
+def test_install_unknown_client_hints_at_an_old_server_build(stub, capsys):
+    """cellpy-mcp 0.1.0 knows only Claude Desktop; `--client cursor` is not a typo."""
+
+    def old_build(root=None, client=None, dry_run=False):
+        raise ValueError("Unknown client 'cursor'. Known clients: claude-desktop.")
+
+    stub.install = old_build
+    assert cli_api.mcp_install(client="cursor", echo=print) is True
+    printed = capsys.readouterr().err
+    assert "Unknown client 'cursor'" in printed
+    assert "upgrade" in printed
+
+
+# -- check: spawn the server like a client would ---------------------------------
+
+# A stand-in server: answers the three requests the probe makes, over stdio,
+# with newline-delimited JSON-RPC — exactly what the MCP SDK does.
+FAKE_SERVER = """
+import json, sys
+mode = sys.argv[1] if len(sys.argv) > 1 else "ok"
+if mode == "banner":
+    print("cellpy-mcp starting up...", flush=True)
+if mode == "exit":
+    print("could not import cellpy", file=sys.stderr)
+    sys.exit(3)
+for line in sys.stdin:
+    message = json.loads(line)
+    if "id" not in message:
+        continue
+    method = message["method"]
+    if method == "initialize":
+        result = {"protocolVersion": "2025-06-18", "capabilities": {},
+                  "serverInfo": {"name": "fake-cellpy-mcp", "version": "9.9"}}
+    elif method == "tools/list":
+        result = {"tools": []} if mode == "notools" else {
+            "tools": [{"name": "list_instruments"}, {"name": "load_cell"}]}
+    elif method == "tools/call":
+        result = {"content": [{"type": "text",
+                  "text": json.dumps({"instruments": [{"id": "arbin_res"}, {"id": "neware_txt"}]})}]}
+    print(json.dumps({"jsonrpc": "2.0", "id": message["id"], "result": result}), flush=True)
+"""
+
+
+@pytest.fixture()
+def fake_server(tmp_path):
+    script = tmp_path / "fake_server.py"
+    script.write_text(FAKE_SERVER, encoding="utf-8")
+    return script
+
+
+def test_probe_completes_the_handshake_and_lists_tools(fake_server):
+    report = cli_api._mcp_probe([sys.executable, str(fake_server)], timeout=30)
+    assert report["server"] == {"name": "fake-cellpy-mcp", "version": "9.9"}
+    assert report["tools"] == ["list_instruments", "load_cell"]
+    assert report["instruments"] == 2
+
+
+def test_probe_names_a_banner_on_stdout(fake_server):
+    """The classic mistake: something friendly printed on the protocol channel."""
+    with pytest.raises(cli_api._McpProbeFailed, match="stdout is not JSON-RPC"):
+        cli_api._mcp_probe([sys.executable, str(fake_server), "banner"], timeout=30)
+
+
+def test_probe_quotes_stderr_when_the_server_dies(fake_server):
+    with pytest.raises(cli_api._McpProbeFailed, match="exited with code 3.*could not import cellpy"):
+        cli_api._mcp_probe([sys.executable, str(fake_server), "exit"], timeout=30)
+
+
+def test_probe_gives_up_after_the_timeout(fake_server):
+    silent = [sys.executable, "-c", "import time; time.sleep(30)"]
+    with pytest.raises(cli_api._McpProbeFailed, match="no answer to initialize within"):
+        cli_api._mcp_probe(silent, timeout=1)
+
+
+def test_check_without_a_client_spawns_this_interpreter(stub, monkeypatch, capsys):
+    seen = {}
+
+    def probe(command, env=None, timeout=60.0):
+        seen.update(command=command, env=env)
+        return {"server": {"name": "cellpy"}, "protocol": "2025-06-18", "tools": ["load_cell"], "instruments": 3}
+
+    monkeypatch.setattr(cli_api, "_mcp_probe", probe)
+    assert cli_api.mcp_check(root="/data/cells", echo=print) is False
+    assert seen["command"] == [sys.executable, "-m", cli_api.MCP_MODULE]
+    assert seen["env"]["CELLPY_MCP_ROOT"] == "/data/cells"
+    printed = capsys.readouterr().out
+    assert "load_cell" in printed
+    assert "3 instruments" in printed
+
+
+def test_check_absent_package_uses_the_install_hint(absent, capsys):
+    assert cli_api.mcp_check(echo=print) is True
+    assert f"pip install {cli_api.MCP_DISTRIBUTION}" in capsys.readouterr().err
+
+
+@pytest.fixture()
+def cursor_config(stub, monkeypatch, tmp_path):
+    """A stubbed `cellpy_mcp.clients` that points Cursor's config at tmp_path."""
+    clients = types.ModuleType(f"{cli_api.MCP_MODULE}.clients")
+    target = tmp_path / "mcp.json"
+    clients.CLIENTS = {"cursor": types.SimpleNamespace(key="mcpServers")}
+
+    def config_path(name):
+        if name != "cursor":
+            raise ValueError(f"Unknown client {name!r}. Known clients: cursor.")
+        return target
+
+    clients.config_path = config_path
+    monkeypatch.setitem(sys.modules, clients.__name__, clients)
+    return target
+
+
+def _register(target, command, args, env=None):
+    target.write_text(
+        json.dumps({"mcpServers": {"cellpy": {"command": command, "args": args, "env": env or {}}}}),
+        encoding="utf-8",
+    )
+
+
+def test_check_client_runs_the_registered_command(cursor_config, fake_server, capsys):
+    """What Cursor will spawn is what gets tested — not what this env would write."""
+    _register(cursor_config, sys.executable, [str(fake_server)], {"CELLPY_MCP_ROOT": "/data/cells"})
+    assert cli_api.mcp_check(client="cursor", echo=print) is False
+    printed = capsys.readouterr().out
+    assert str(cursor_config) in printed
+    assert "fake-cellpy-mcp 9.9" in printed
+    assert "2 (list_instruments, load_cell)" in printed
+    assert "restart cursor" in printed
+
+
+def test_check_client_not_registered_says_how(cursor_config, capsys):
+    assert cli_api.mcp_check(client="cursor", echo=print) is True
+    printed = capsys.readouterr().err
+    assert "no MCP config yet" in printed
+    assert "cellpy mcp install --client cursor" in printed
+
+
+def test_check_client_names_a_missing_interpreter(cursor_config, capsys):
+    """The number one reason a client shows the server as failed."""
+    _register(cursor_config, "/nowhere/bin/python", ["-m", "cellpy_mcp"])
+    assert cli_api.mcp_check(client="cursor", echo=print) is True
+    printed = capsys.readouterr().err
+    assert "/nowhere/bin/python" in printed
+    assert "does not exist" in printed
+    assert "re-run" in printed
+
+
+def test_check_client_reports_a_server_without_tools(cursor_config, fake_server, capsys):
+    _register(cursor_config, sys.executable, [str(fake_server), "notools"])
+    assert cli_api.mcp_check(client="cursor", echo=print) is True
+    assert "lists no tools" in capsys.readouterr().err
+
+
+def test_check_unknown_client_is_reported(cursor_config, capsys):
+    assert cli_api.mcp_check(client="windsurf", echo=print) is True
+    assert "Unknown client 'windsurf'" in capsys.readouterr().err
+
+
 # -- through the command line ----------------------------------------------------
 
 
-def test_the_command_group_exposes_three_verbs():
+def test_the_command_group_exposes_four_verbs():
     result = CliRunner().invoke(cli.cli, ["mcp", "--help"])
     assert result.exit_code == 0
-    for verb in ("serve", "install", "status"):
+    for verb in ("serve", "install", "status", "check"):
         assert verb in result.output
+
+
+def test_check_help_lists_client_and_timeout():
+    result = CliRunner().invoke(cli.cli, ["mcp", "check", "--help"])
+    assert result.exit_code == 0
+    assert "--client" in result.output
+    assert "--timeout" in result.output
+
+
+def test_check_exits_non_zero_when_the_package_is_missing(absent):
+    result = CliRunner().invoke(cli.cli, ["mcp", "check"])
+    assert result.exit_code == 1
 
 
 def test_install_help_lists_list_clients():

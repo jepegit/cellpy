@@ -351,7 +351,11 @@ GUI/app around cycling data) should read the usage chapter:
 **[`docs/getting_started/agents.md`](docs/getting_started/agents.md)**
 
 To wire Cursor or another MCP client (no Python in the chat), see
-[`docs/getting_started/mcp.md`](docs/getting_started/mcp.md).
+[`docs/getting_started/mcp.md`](docs/getting_started/mcp.md). Asked to
+"install cellpy MCP and test it": follow that page's *Ask your agent to do
+it* checklist — `cellpy mcp install --client cursor`, then
+`cellpy mcp check --client cursor` proves the registered command answers
+MCP (exit 1 = broken, with the reason); the user must restart Cursor after.
 
 Quick facts:
 
