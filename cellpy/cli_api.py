@@ -23,11 +23,13 @@ from __future__ import annotations
 
 import getpass
 import importlib
+import json
 import logging
 import os
 import pathlib
 import platform
 import subprocess
+import sys
 import time
 from contextlib import contextmanager
 from contextvars import ContextVar
@@ -2143,7 +2145,15 @@ def mcp_install(
         try:
             where = module.install(root=root, client=client, dry_run=dry_run)
         except Exception as exc:  # noqa: BLE001 - the reason belongs on screen
-            ui.fail("mcp install", str(exc))
+            hint = None
+            if "Unknown client" in str(exc):
+                # cellpy-mcp 0.1.0 knows only Claude Desktop. The person asking
+                # for Cursor is on the released package, not a typo.
+                hint = (
+                    f"this {MCP_DISTRIBUTION} build predates that client: upgrade it "
+                    "or write the client's JSON by hand (docs: Connect an agent IDE)"
+                )
+            ui.fail("mcp install", str(exc), hint=hint)
             return True
 
         ui.ok("registered" if not dry_run else "would register", str(where))
@@ -2235,4 +2245,224 @@ def mcp_status(echo: Optional[Echo] = None):
         if callable(describe):
             for key, value in describe().items():
                 ui.detail(key, str(value))
+        return False
+
+
+# `check` is also implemented here rather than delegated: its job is to act as
+# the *client* — spawn the server the way Cursor would and talk MCP to it over
+# stdin/stdout — and a server cannot vouch for itself from the inside. The
+# handshake is a few lines of JSON-RPC, so it needs no SDK and works against
+# any cellpy-mcp build, including one registered from a different interpreter.
+
+#: The tool the probe calls after listing them. Cheap, needs no file, and its
+#: answer (which loaders can run here) is useful on its own.
+MCP_PROBE_TOOL = "list_instruments"
+MCP_PROTOCOL_VERSION = "2025-06-18"
+
+
+class _McpProbeFailed(RuntimeError):
+    """The spawned server did not behave like an MCP server."""
+
+
+def _mcp_registered_entry(module, client: str):
+    """The ``cellpy`` block a client would spawn, and the file it came from.
+
+    Reads the *client's* config rather than what this interpreter would write:
+    the point is to test what Cursor will actually run, and the most common
+    failure is that the two differ.
+    """
+    clients = importlib.import_module(f"{MCP_MODULE}.clients")
+    target = pathlib.Path(clients.config_path(client))
+    key = getattr(getattr(clients, "CLIENTS", {}).get(client), "key", "mcpServers")
+    if not target.exists():
+        raise _McpProbeFailed(f"{client} has no MCP config yet ({target}).")
+    try:
+        config = json.loads(target.read_text(encoding="utf-8") or "{}")
+    except json.JSONDecodeError as exc:
+        raise _McpProbeFailed(f"{target} is not valid JSON ({exc}).") from exc
+    entry = (config.get(key) or {}).get("cellpy") if isinstance(config, dict) else None
+    if not isinstance(entry, dict) or not entry.get("command"):
+        raise _McpProbeFailed(f"'cellpy' is not registered in {target}.")
+    return entry, target
+
+
+def _mcp_probe(command, env=None, timeout: float = 60.0) -> dict:
+    """Spawn ``command`` and run the MCP handshake against it.
+
+    Returns what a client learns: ``serverInfo``, the tool names, and the
+    instruments ``list_instruments`` reports. Raises ``_McpProbeFailed`` with
+    the decisive line when it cannot — stdout that is not JSON (a banner on
+    the protocol channel), an early exit (the last line on stderr), or
+    silence past ``timeout``.
+    """
+    import queue
+    import threading
+
+    try:
+        process = subprocess.Popen(
+            command,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            encoding="utf-8",
+            env=env,
+        )
+    except OSError as exc:
+        raise _McpProbeFailed(f"could not start {command[0]!r}: {exc}") from exc
+
+    # Reader threads: a pipe cannot be read with a timeout portably, and the
+    # server must never block on a full stderr pipe while we wait on stdout.
+    lines: "queue.Queue[Optional[str]]" = queue.Queue()
+    errors: list[str] = []
+
+    def _pump(stream, sink, end=None):
+        for line in stream:
+            sink(line)
+        if end is not None:
+            end()
+
+    threading.Thread(target=_pump, args=(process.stdout, lines.put, lambda: lines.put(None)), daemon=True).start()
+    threading.Thread(target=_pump, args=(process.stderr, errors.append), daemon=True).start()
+    deadline = time.monotonic() + timeout
+
+    def _last_error() -> str:
+        for line in reversed(errors):
+            if line.strip():
+                return f" — {line.strip()}"
+        return ""
+
+    def _send(message: dict) -> None:
+        try:
+            process.stdin.write(json.dumps(message) + "\n")
+            process.stdin.flush()
+        except (BrokenPipeError, OSError) as exc:
+            raise _McpProbeFailed(f"server closed stdin{_last_error()}") from exc
+
+    def _request(request_id: int, method: str, params: Optional[dict] = None) -> dict:
+        _send({"jsonrpc": "2.0", "id": request_id, "method": method, "params": params or {}})
+        while True:
+            remaining = deadline - time.monotonic()
+            try:
+                line = lines.get(timeout=max(remaining, 0))
+            except queue.Empty:
+                raise _McpProbeFailed(f"no answer to {method} within {timeout:g} s{_last_error()}")
+            if line is None:
+                code = process.wait()
+                raise _McpProbeFailed(f"server exited with code {code} before answering {method}{_last_error()}")
+            if not line.strip():
+                continue
+            try:
+                message = json.loads(line)
+            except ValueError:
+                raise _McpProbeFailed(f"stdout is not JSON-RPC (stdout is the protocol channel): {line.strip()[:80]!r}")
+            if not isinstance(message, dict) or message.get("id") != request_id:
+                continue  # notifications and unrelated messages
+            if "error" in message:
+                raise _McpProbeFailed(f"{method} failed: {message['error'].get('message', message['error'])}")
+            return message.get("result") or {}
+
+    try:
+        initialized = _request(
+            1,
+            "initialize",
+            {
+                "protocolVersion": MCP_PROTOCOL_VERSION,
+                "capabilities": {},
+                "clientInfo": {"name": "cellpy mcp check", "version": "1"},
+            },
+        )
+        _send({"jsonrpc": "2.0", "method": "notifications/initialized"})
+        tools = [tool.get("name", "?") for tool in _request(2, "tools/list").get("tools", [])]
+        instruments = None
+        if MCP_PROBE_TOOL in tools:
+            called = _request(3, "tools/call", {"name": MCP_PROBE_TOOL, "arguments": {}})
+            if called.get("isError"):
+                raise _McpProbeFailed(f"{MCP_PROBE_TOOL} returned an error: {called.get('content')}")
+            text = "".join(part.get("text", "") for part in called.get("content", []) if isinstance(part, dict))
+            try:
+                instruments = len(json.loads(text).get("instruments", []))
+            except (ValueError, AttributeError):
+                instruments = None
+        return {
+            "server": initialized.get("serverInfo") or {},
+            "protocol": initialized.get("protocolVersion"),
+            "tools": tools,
+            "instruments": instruments,
+        }
+    finally:
+        try:
+            process.stdin.close()
+        except OSError:
+            pass
+        try:
+            process.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            process.kill()
+
+
+def mcp_check(
+    client: Optional[str] = None,
+    root=None,
+    timeout: float = 60.0,
+    echo: Optional[Echo] = None,
+):
+    """Spawn the server as a client would and talk to it. Returns true on failure.
+
+    Without ``client``, runs this interpreter's ``python -m cellpy_mcp`` — does
+    the server work at all. With ``client`` (``cursor``, ``vscode``,
+    ``claude-desktop``), runs the exact ``command`` registered in that
+    client's config — will *Cursor* be able to start it after a restart.
+    """
+    import shutil
+
+    with _using_echo(echo):
+        ui = _ui()
+        module = _import_mcp()
+        if module is None:
+            return True
+
+        ui.title("cellpy mcp check")
+        source = None
+        hint = None
+        try:
+            if client:
+                hint = f"cellpy mcp install --client {client}"
+                entry, source = _mcp_registered_entry(module, client)
+                command = [str(entry["command"]), *map(str, entry.get("args", []))]
+                env = {**os.environ, **{k: str(v) for k, v in (entry.get("env") or {}).items()}}
+                executable = command[0]
+                is_path = "/" in executable or os.sep in executable
+                if not (pathlib.Path(executable).exists() if is_path else shutil.which(executable)):
+                    hint = f"re-run `{hint}` from the environment that has {MCP_DISTRIBUTION}"
+                    raise _McpProbeFailed(f"{source} names an interpreter that does not exist: {executable}")
+                hint = None
+            else:
+                command = [sys.executable, "-m", MCP_MODULE]
+                env = dict(os.environ)
+                if root:
+                    env["CELLPY_MCP_ROOT"] = str(root)
+            report = _mcp_probe(command, env=env, timeout=timeout)
+        except ValueError as exc:  # an unknown client name, said by cellpy_mcp.clients
+            ui.fail("mcp check", str(exc))
+            return True
+        except _McpProbeFailed as exc:
+            ui.fail("mcp check", str(exc), hint=hint)
+            return True
+
+        if source is not None:
+            ui.detail("config", str(source))
+        ui.detail("command", " ".join(command))
+        server = report["server"]
+        ui.ok("handshake", f"{server.get('name', 'server')} {server.get('version', '')}".strip())
+        tools = report["tools"]
+        shown = ", ".join(tools[:6]) + (", …" if len(tools) > 6 else "")
+        ui.ok("tools", f"{len(tools)} ({shown})" if tools else "none listed")
+        if report["instruments"] is not None:
+            ui.ok(MCP_PROBE_TOOL, f"{report['instruments']} instruments")
+        if not tools:
+            ui.fail("mcp check", "the server lists no tools.")
+            return True
+        if client:
+            ui.hint(f"restart {client} if it does not show these tools yet")
         return False
