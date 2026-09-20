@@ -1,0 +1,32 @@
+# cellpy
+
+> Python library and CLI for battery cell cycling data. Not a hosted GUI. Load tester files, build step and summary tables, plot, and persist `.cellpy` archives.
+
+- Product: `import cellpy` and the `cellpy` CLI
+- Entry: `c = cellpy.get(path, mass=..., instrument=...)`
+- Frames: `c.data.raw` / `.steps` / `.summary`; column names via `c.schema`
+- Chat without Python: the separate `cellpy-mcp` package, wired from the MCP chapter
+
+## Getting started
+
+- [Installation](https://cellpy.readthedocs.io/en/latest/getting_started/installation/)
+- [Setup and configuration](https://cellpy.readthedocs.io/en/latest/getting_started/configuration/)
+- [Your first hour](https://cellpy.readthedocs.io/en/latest/getting_started/first_hour/)
+- [Using cellpy from an agent](https://cellpy.readthedocs.io/en/latest/getting_started/agents/)
+- [Connect an agent IDE (MCP)](https://cellpy.readthedocs.io/en/latest/getting_started/mcp/)
+
+## How-tos
+
+- [How do I…?](https://cellpy.readthedocs.io/en/latest/how_do_i/)
+- [Compute ICA / DVA](https://cellpy.readthedocs.io/en/latest/guides/ica/)
+- [Batch processing](https://cellpy.readthedocs.io/en/latest/examples/batch_utility/cellpy_batch_processing/)
+
+## Reference
+
+- [Command line](https://cellpy.readthedocs.io/en/latest/reference/cli/)
+- [API](https://cellpy.readthedocs.io/en/latest/api/)
+
+## Optional
+
+- [AGENTS.md (contributors)](https://github.com/jepegit/cellpy/blob/master/AGENTS.md)
+- [Short variant](https://cellpy.readthedocs.io/en/latest/llms-short.txt)

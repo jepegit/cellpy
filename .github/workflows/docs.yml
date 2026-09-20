@@ -45,6 +45,11 @@ jobs:
           set -o pipefail
           uvx --with mkdocstrings-python zensical build --clean 2>&1 | tee build.log
 
+      - name: Site-root llms indexes
+        run: |
+          test -f site/llms.txt
+          test -f site/llms-short.txt
+
       - name: Fail on broken links
         run: |
           # zensical reports broken links and missing anchors as warnings and
