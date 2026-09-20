@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [2.1.5.post3] - 2026-09-20
+
 * Docs: add site-root `llms.txt` and `llms-short.txt` for agent crawlers.
   (#1054)
 
