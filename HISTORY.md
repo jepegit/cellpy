@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+* Docs: drop repeated stdio JSON and VS Code `servers` copy from the MCP
+  getting-started chapter. (#1053)
+
 * `cellpy mcp check [--client cursor]` spawns the MCP server the way a chat
   client does (from the client's own `mcp.json` with `--client`), runs the
   MCP handshake, lists the tools and calls `list_instruments`; exits 1 with
