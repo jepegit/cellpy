@@ -45,9 +45,11 @@ cellpy info --check
 ```console
 python -m pip install cellpy-mcp
 cellpy mcp install --client cursor
+cellpy mcp check --client cursor
 ```
 
-→ [Connect an agent IDE to cellpy](getting_started/mcp.md)
+Or ask the agent itself — the page has the prompt and the checklist it
+should follow. → [Connect an agent IDE to cellpy](getting_started/mcp.md)
 
 **…find my configuration file?**
 

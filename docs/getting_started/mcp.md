@@ -22,6 +22,70 @@ Do not run `cellpy mcp serve` “in the background and connect”. The client
 starts the process. Running `serve` by hand is only useful to see that it
 starts — and it must print **nothing** on stdout (stdout *is* the protocol).
 
+## Ask your agent to do it
+
+You do not have to run the commands below yourself. In Cursor (or any agent
+that can run a terminal), paste:
+
+> Install the cellpy MCP server, register it with Cursor, and run
+> `cellpy mcp check --client cursor` to prove it works. Follow
+> https://cellpy.readthedocs.io/en/latest/getting_started/mcp/.
+
+The rest of this section is the checklist that agent should follow. Every
+step is a command with a checkable outcome; nothing needs the Cursor UI until
+the last line.
+
+1. **Install cellpy and the server into one environment.** Without an
+   existing Python environment, `uv` (or `pipx`) gives one that stays put:
+
+    ```console
+    uv tool install cellpy --with cellpy-mcp
+    ```
+
+    Into an environment you already use: `python -m pip install cellpy cellpy-mcp`
+    (or `pipx install cellpy && pipx inject cellpy cellpy-mcp`).
+
+2. **Give cellpy its folders**, so the server has roots to read and write:
+
+    ```console
+    cellpy setup --silent
+    ```
+
+3. **Confirm both packages are there:** `cellpy mcp status` must show a
+   **server** version, not “not installed”.
+
+4. **Register with Cursor:**
+
+    ```console
+    cellpy mcp install --client cursor
+    ```
+
+    If this says `Unknown client 'cursor'`, the installed `cellpy-mcp` is
+    the 0.1.0 release, which only knows Claude Desktop. Until a newer release
+    is on PyPI, install the server from GitHub and retry:
+    `python -m pip install "cellpy-mcp @ git+https://github.com/cellpy/cellpy-mcp"`
+    (with `uv tool`: `uv tool install --force cellpy --with "cellpy-mcp @ git+https://github.com/cellpy/cellpy-mcp"`).
+    Or write the [by-hand JSON](#by-hand-json-any-stdio-client) into
+    `~/.cursor/mcp.json`.
+
+5. **Prove the registration works** — this spawns the exact command Cursor
+   will spawn, from Cursor's own `mcp.json`, and talks MCP to it:
+
+    ```console
+    cellpy mcp check --client cursor
+    ```
+
+    Success prints the handshake, the tool names (`load_cell`,
+    `search_api`, …) and how many instruments the server can see. A failure
+    names the cause: an interpreter path that does not exist, a server that
+    printed to stdout, or one that died (its last stderr line is quoted).
+
+6. **Restart Cursor.** Nothing re-reads `mcp.json` while running. Then ask
+   the chat: “Load the bundled example cell and plot charge capacity versus
+   cycle.” If the agent cannot see a `cellpy` tool, look under
+   [See it in Cursor](#see-it-in-cursor) and, on Windows + WSL, at
+   [which `mcp.json`](#wsl-and-windows-which-mcpjson).
+
 ## Prerequisites
 
 ```console
@@ -223,17 +287,31 @@ whole filesystem.
 
 ## Verify and troubleshoot
 
+```console
+cellpy mcp check                    # this interpreter's server answers MCP
+cellpy mcp check --client cursor    # the command in Cursor's mcp.json does
+```
+
+`check` acts as the client: it spawns the server, runs the MCP handshake,
+lists the tools, and calls `list_instruments`. It exits non-zero and quotes
+the decisive line when any of that fails, so it is the command an agent (or a
+script) runs to prove the install before anyone restarts an editor.
+
 | Symptom | Likely cause |
 | --- | --- |
 | `cellpy mcp status` → server “not installed” | `pip install cellpy-mcp` into *this* env |
+| `cellpy mcp install --client cursor` → `Unknown client 'cursor'` | `cellpy-mcp` 0.1.0 knows only Claude Desktop — see step 4 of [Ask your agent to do it](#ask-your-agent-to-do-it) |
+| `cellpy mcp check --client cursor` → “names an interpreter that does not exist” | `mcp.json` was written from another env / machine; re-run `install` from the one that has `cellpy-mcp` |
 | Client shows the server as failed | `command` is not the interpreter that has `cellpy-mcp` (bare `python`, wrong venv) |
 | Cursor on Windows never lists `cellpy` after a WSL install | Different `~/.cursor/mcp.json` — see [WSL and Windows](#wsl-and-windows-which-mcpjson) |
 | VS Code ignores a file that looks correct | Top-level key is `mcpServers` instead of `servers` |
 | `cellpy mcp serve` “does nothing” / client parse error | Banner or logs on **stdout**; that channel is the protocol |
 | Tools missing after a successful install | Client not restarted |
 
-`cellpy mcp status` is the command you script. It exits 0 even when the
-server package is missing — “not installed” is a true answer.
+`cellpy mcp status` is the command you script for “is it installed?”. It
+exits 0 even when the server package is missing — “not installed” is a true
+answer. `cellpy mcp check` is the one you script for “does it work?”; that
+one does exit 1 on failure.
 
 ## See also
 

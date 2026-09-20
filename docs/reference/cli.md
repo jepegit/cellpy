@@ -273,19 +273,29 @@ cellpy mcp status
 cellpy mcp install --list-clients
 cellpy mcp install --client cursor --dry-run
 cellpy mcp install --client cursor
+cellpy mcp check --client cursor
 cellpy mcp serve
 ```
 
 | Sub-command | Effect |
 | --- | --- |
-| `status` | whether the server is installed, and what it would serve |
+| `status` | whether the server is installed, and what it would serve (always exits 0) |
 | `install` | register the server with a chat client |
+| `check` | spawn the server as a client would and run the MCP handshake; exits 1 on failure |
 | `serve` | run the server over stdio (clients normally do this themselves) |
 
 `install` flags: `--client` / `-c` (`claude-desktop`, `cursor`, `vscode`),
 `--root` / `-r` (the only directory the server may read or write),
 `--dry-run` / `-dr` (print the target file, do not write),
 `--list-clients` (paths or commands on this machine; does not write).
+
+`check` flags: `--client` / `-c` (spawn the exact `command` registered in
+that client's config instead of this interpreter's `python -m cellpy_mcp`),
+`--root` / `-r` (root for the spawned server, without `--client`),
+`--timeout` (seconds to wait for each answer; default 60). It reports the
+handshake, the tool names, and how many instruments `list_instruments`
+returns; on failure it names a missing interpreter, non-JSON output on
+stdout, or the server's last stderr line.
 
 The server itself lives in a separate package:
 
