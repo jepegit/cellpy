@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+* `cellpy mcp check [--client cursor]` spawns the MCP server the way a chat
+  client does (from the client's own `mcp.json` with `--client`), runs the
+  MCP handshake, lists the tools and calls `list_instruments`; exits 1 with
+  the decisive line (missing interpreter, banner on stdout, last stderr
+  line) when it cannot. `cellpy mcp install` hints at upgrading `cellpy-mcp`
+  when the installed build does not know the requested client. Docs: an
+  "Ask your agent to do it" checklist on the MCP page, so "install cellpy
+  MCP and test it" is something an agent can carry out end to end.
+
 * Exercise the live cellpy-connectors CLI plugin from a GitHub dev
   dependency. (#1060)
 
