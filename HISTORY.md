@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+* Docs: add site-root `llms.txt` and `llms-short.txt` for agent crawlers.
+  (#1054)
+
 * Docs: drop repeated stdio JSON and VS Code `servers` copy from the MCP
   getting-started chapter. (#1053)
 

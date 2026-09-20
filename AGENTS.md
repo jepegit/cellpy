@@ -349,6 +349,8 @@ Coding agents that **call cellpy as a library** (e.g. a researcher’s small
 GUI/app around cycling data) should read the usage chapter:
 
 **[`docs/getting_started/agents.md`](docs/getting_started/agents.md)**
+(site-root indexes: [`llms.txt`](https://cellpy.readthedocs.io/en/latest/llms.txt),
+[`llms-short.txt`](https://cellpy.readthedocs.io/en/latest/llms-short.txt))
 
 To wire Cursor or another MCP client (no Python in the chat), see
 [`docs/getting_started/mcp.md`](docs/getting_started/mcp.md). Asked to

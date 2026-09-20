@@ -1,0 +1,13 @@
+# cellpy
+
+> Python library + `cellpy` CLI for battery cycling data. Not a hosted GUI.
+
+- Entry: `import cellpy` then `c = cellpy.get(path, mass=..., instrument=...)`
+- Frames: `c.data.raw` / `.steps` / `.summary`; columns via `c.schema`
+- Batch is the multi-cell journal API; MCP is a chat client over `cellpy-mcp`; this file is the library-import path
+
+- [Using cellpy from an agent](https://cellpy.readthedocs.io/en/latest/getting_started/agents/)
+- [Connect an agent IDE (MCP)](https://cellpy.readthedocs.io/en/latest/getting_started/mcp/)
+- [Your first hour](https://cellpy.readthedocs.io/en/latest/getting_started/first_hour/)
+- [Command line](https://cellpy.readthedocs.io/en/latest/reference/cli/)
+- [Full llms.txt](https://cellpy.readthedocs.io/en/latest/llms.txt)
