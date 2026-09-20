@@ -88,11 +88,25 @@ Optional free-form text after the command:
 
 5. **Consolidated confirm (Phase A1 — local)** — one yes/no prompt listing every action:
    - `git switch <default>` (home only; skip if already on default)
-   - `git pull --ff-only`
+   - `git pull --ff-only` — if it fails, **stop** A1 steps that assume default is current (apply-changelog, release tag) and recover via `default-sync` (see below).
+
    - `git fetch --prune`
    - `issue-flow agent worktree-list --json` — for each **linked** worktree whose branch is **`reachable`**, `issue-flow agent worktree-remove <path>` (or the issue number) **before** deleting the branch. Git cannot `-d` a branch that is still checked out in a worktree. Never remove a worktree whose branch is `unique_work`.
    - `git branch -d <branch>` for each **`reachable`** branch, listed explicitly by name first. If `-d` still refuses, report that branch and move on.
    - **Planned release tag (tag-derived projects only).** When `/iflow-close` planned a tag it did not create — check the focus issue's status file and the newest `HISTORY.md` release section for a version whose tag is missing from `git tag -l` — include creating it here: `git tag <planned>` then `git push origin <planned>` (or `gh release create <planned> --generate-notes`). Run it **after** the pull so the tag lands on the merged squash commit.
+
+If `git pull --ff-only` fails on default (or home default is **ahead** of origin), run `issue-flow agent default-sync --json` (classify-only; never mutates). Print ahead/behind, unique commit onelines + paths, and the recommended `action`. Do **not** only dump `fatal: Not possible to fast-forward`.
+
+| `action` | What to offer |
+| --- | --- |
+| `even` / `ff_only` | Pull is safe; retry `git pull --ff-only`. |
+| `report_ahead` | Print unique commits. Do not silent-push default. |
+| `tracking_pr` | Merge `origin/<default>` **or** cherry-pick onto a chore branch, then open a tiny PR. Never push default. |
+| `replay_tracking` | Replay the tracking commit onto `origin/<default>` (chore branch + PR). Do not stack another merge. |
+| `stop_product` | Stop. User decides. Do not merge onto default. |
+
+Never: rebase default, `push --force` default, or push default to skip CI.
+
 
 6. **Force-delete confirm (Phase A2 — only when `squash_landed` or `merged_pr_divergent` is non-empty).** A **separate** yes/no prompt; Phase A1's yes never implies it. Skip this step entirely when both buckets are empty.
    - State plainly that these branches need `git branch -D` because a squash merge leaves no reachable tip, and that `-D` skips git's own safety check.
@@ -119,10 +133,11 @@ Optional free-form text after the command:
 
 ## Constraints
 
-- Never use `git push --force`.
+- Never use `git push --force`. Never rebase default, force-push default, or push default to skip CI.
 - `git branch -D` is allowed **only** for `squash_landed` / `merged_pr_divergent` branches, **only** after the Phase A2 confirm, and **only** with their tip SHAs reported. Never `-D` a branch holding unique work, a branch you could not classify, or the current branch. In Phase A1, a `-d` refusal is reported and left alone — it is never a licence to force-delete.
 - Never delete the default branch (local or remote).
 - Remote deletes and findings-issue creation require the **Phase B** confirm; the Phase A1 and A2 yeses must not imply them (nor each other).
 - If anything is ambiguous (detached HEAD, multiple remotes, missing tracking info), report and stop rather than guess.
 - Do not open or update PRs. Do not bump version fields — pyproject bumps belong to `/iflow-close`. The only version action allowed here is creating a release tag that `/iflow-close` **planned** (tag-derived strategy), inside the Phase A consolidated confirm.
 - Do **not** offer to update `HISTORY.md` / CHANGELOG here — that belongs in `/iflow-close` before the PR.
+

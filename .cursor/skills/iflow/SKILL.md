@@ -101,7 +101,7 @@ When `.issueflows/04-designs-and-guides/multi-repo-workspaces.md` exists, read i
 
 ## Constraints
 
-- Never auto-dispatch to `/iflow-setup`, `/iflow-pick`, `/iflow-init`, `/iflow-pause`, `/iflow-cleanup`, `/iflow-yolo`, `/iflow-ops`, `/iflow-fix`, `/iflow-issue`, `/iflow-split`, `/iflow-review`, `/iflow-epic`, `/iflow-cycle`, or `/iflow-auto`.
+- Never auto-dispatch to `/iflow-setup`, `/iflow-pick`, `/iflow-init`, `/iflow-pause`, `/iflow-cleanup`, `/iflow-yolo`, `/iflow-ops`, `/iflow-fix`, `/iflow-issue`, `/iflow-split`, `/iflow-review`, `/iflow-epic`, `/iflow-cycle`, `/iflow-auto`, or `/iflow-drive`.
 - Epic gap (step 1a) only **suggests** `/iflow-pick`; it never runs pick or silently picks a candidate.
 - If the focus issue cannot be resolved (multiple groups, branch ambiguous), stop and ask.
 - Do not modify files beyond what the downstream command would normally modify. `/iflow` itself writes nothing — all file changes come from the dispatched command.

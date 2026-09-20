@@ -131,7 +131,8 @@ Turn one stage of a **confirmed** plan into real GitHub issues. Requires `Status
 3. **Consolidated confirm** (destructive-ish — outward-facing writes; normal prose, never shortened). One prompt covering exactly: which issues get created, with which labels, and that the anchor issue's task list will be updated. Do not proceed without a clear yes.
 4. **Create, in dependency order within the stage.** For each spec: `gh issue create --repo <owner/repo>` with the self-contained body (context, scope, acceptance criteria, **Goal:** and **Model:** lines when present in the plan, resolved `Depends on: #<M>` lines, and a closing `Part of epic #<N>.` line). Immediately record the new number in the plan file as `- Published: #<M>` under that spec.
 5. **Update the anchor issue's task list** (append/patch only — never rewrite the user's own body text): fetch the body, append a `## Stage <k> — <title>` section (or extend it) with one `- [ ] #<M>` line per created issue, and write it back via `gh issue edit <N> --body-file`.
-6. **Report.** Created issues (numbers + titles + labels), skipped already-published specs, unresolved placeholders, and the reminder that the next stage publishes only after this one's issues close.
+6. **Commit `Published:` lines off default.** The plan-file edits in step 4 must not sit as unpushed commits on home default. If you are on default (or would commit there), use a chore/issue branch (or a tiny dedicated PR). Never leave `Published: #<M>` unpushed on home default — that is what later makes `git pull --ff-only` diverge after a squash (issue #303).
+7. **Report.** Created issues (numbers + titles + labels), skipped already-published specs, unresolved placeholders, and the reminder that the next stage publishes only after this one's issues close.
 
 ## Constraints
 

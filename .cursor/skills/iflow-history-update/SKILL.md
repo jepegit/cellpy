@@ -9,7 +9,7 @@ issue-flow-version: 0.4.2a4
 
 # issue-flow — history update
 
-Use this skill to update the project's changelog file (default **`HISTORY.md`**, overridable via `ISSUEFLOW_HISTORY_FILE` in `.env`) as part of `/iflow-close`. It never runs on its own schedule; it is driven by the "update HISTORY" step, and does not run when the user passed `nohistory` / `skip history`.
+Use this skill to decide the changelog bullet as part of `/iflow-close`. It never runs on its own schedule; it is driven by the "update HISTORY" step, and does not run when the user passed `nohistory` / `skip history`. The write happens now, on the issue branch, so the bullet lands in the PR commit.
 
 
 ### MODEL & EXECUTION DIRECTIVE
@@ -29,6 +29,7 @@ Keep scope tight to what this step requires.
 
 1. The changelog file (`HISTORY.md`) exists at the **project root**. If it does not, **skip** this step, print "no `HISTORY.md` — skipping changelog update" and continue the rest of `/iflow-close`. Never create the file from this skill.
 2. The file is in **Keep a Changelog** shape: a top-level `## [Unreleased]` heading, with released versions below as `## [x.y.z] - YYYY-MM-DD` headings. If the shape does not match, **stop and report the mismatch** instead of guessing — let the user fix the file or pass `nohistory`.
+
 
 ## Inputs from `/iflow-close`
 
@@ -55,6 +56,7 @@ Keep scope tight to what this step requires.
 4. Write the change without a confirm prompt (`confirm_changelog_update` is false; same as the `yolo` token's history behaviour). Still report what was written.
 
 
+
 ### B. Version bump happened — promote `[Unreleased]` to a new release section
 
 Only runs when step 2 of `/iflow-close` actually changed `pyproject.toml` to a new version `NEW_VERSION`.
@@ -75,6 +77,7 @@ Only runs when step 2 of `/iflow-close` actually changed `pyproject.toml` to a n
    ```
 
 6. Write the change without a confirm prompt (`confirm_changelog_update` is false). Still report what was written.
+
 
 ## Conflict resolution — keep both bullet sets
 
@@ -104,6 +107,7 @@ When `/iflow-close` reaches its commit step:
 - Read/write only `HISTORY.md` at the project root. Do not touch any other file from this skill.
 - Never create `HISTORY.md` from scratch — scaffolding a starter changelog is out of scope for `issue-flow init` / `update`.
 - **Timing:** this skill runs only from `/iflow-close` step 3 (before commit / push / PR update). Write even when a draft PR already exists from `/iflow-build` early PR. **Never** propose updating `HISTORY.md` after close has finished or after merge.
+
 
 - Preserve existing formatting conventions (bullet style, sentence case, trailing punctuation). Match the style of the nearest existing entries when in doubt.
 - The new bullet's `(#<N>)` suffix is always GitHub issue `#N`, matching the focus issue's number in `.issueflows/01-current-issues/issue<N>_original.md`.
