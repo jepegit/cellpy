@@ -29,9 +29,11 @@ that can run a terminal), paste the same prompt as
 [Copy-paste prompts for your agent](agent_prompts.md#how-to-install-cellpy-mcp):
 
 <!-- agent-doc: getting_started/mcp.md -->
-> Install the cellpy MCP server, register it with Cursor, and run
-> `cellpy mcp check --client cursor` to prove it works. Follow
-> https://cellpy.readthedocs.io/en/latest/getting_started/mcp/.
+```text
+Install the cellpy MCP server, register it with Cursor, and run
+`cellpy mcp check --client cursor` to prove it works. Follow
+https://cellpy.readthedocs.io/en/latest/getting_started/mcp/.
+```
 
 The rest of this section is the checklist that agent should follow. Every
 step is a command with a checkable outcome; nothing needs the Cursor UI until
