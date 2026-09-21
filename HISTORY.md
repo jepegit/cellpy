@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [2.1.5.post5] - 2026-09-21
+
 * Docs: add copy-paste prompts for LLM agents, with tracked `latest` RTD
   links. (#1064)
 
