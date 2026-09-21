@@ -18,6 +18,8 @@ guide.
     `AGENTS.md` short (commands + link). Site-root indexes for crawlers:
     [`llms.txt`](https://cellpy.readthedocs.io/en/latest/llms.txt) and
     [`llms-short.txt`](https://cellpy.readthedocs.io/en/latest/llms-short.txt).
+    Copy-paste prompts a human can give the agent:
+    [Copy-paste prompts for your agent](agent_prompts.md).
 
 ## What cellpy is (and is not)
 

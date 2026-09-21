@@ -8,6 +8,7 @@
 
 - [Using cellpy from an agent](https://cellpy.readthedocs.io/en/latest/getting_started/agents/)
 - [Connect an agent IDE (MCP)](https://cellpy.readthedocs.io/en/latest/getting_started/mcp/)
+- [Copy-paste prompts for your agent](https://cellpy.readthedocs.io/en/latest/getting_started/agent_prompts/)
 - [Your first hour](https://cellpy.readthedocs.io/en/latest/getting_started/first_hour/)
 - [Command line](https://cellpy.readthedocs.io/en/latest/reference/cli/)
 - [Full llms.txt](https://cellpy.readthedocs.io/en/latest/llms.txt)

@@ -25,8 +25,10 @@ starts — and it must print **nothing** on stdout (stdout *is* the protocol).
 ## Ask your agent to do it
 
 You do not have to run the commands below yourself. In Cursor (or any agent
-that can run a terminal), paste:
+that can run a terminal), paste the same prompt as
+[Copy-paste prompts for your agent](agent_prompts.md#how-to-install-cellpy-mcp):
 
+<!-- agent-doc: getting_started/mcp.md -->
 > Install the cellpy MCP server, register it with Cursor, and run
 > `cellpy mcp check --client cursor` to prove it works. Follow
 > https://cellpy.readthedocs.io/en/latest/getting_started/mcp/.
