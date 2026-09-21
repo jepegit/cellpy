@@ -13,6 +13,8 @@
 - `zensical build` — No issues found. Checker green against `site/`.
 - `uv run pytest -m essential` — 899 passed, 70 skipped.
 - HISTORY Unreleased bullet. Design note: `agent-prompt-links.md`.
+- Follow-up: prompts are fenced `text` blocks so `content.code.copy` shows
+  a copy button (blockquotes had none).
 
 ## Remaining work
 

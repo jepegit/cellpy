@@ -3,8 +3,10 @@
 **Context.** Issue #1064. Humans paste a short prompt into a coding agent;
 the prompt must include a durable `latest` Read the Docs URL.
 
-**Decision.** Catalog lives at `docs/getting_started/agent_prompts.md`. Each
-hard `https://cellpy.readthedocs.io/en/latest/…` URL is preceded by
+**Decision.** Catalog lives at `docs/getting_started/agent_prompts.md`.
+Prompts are fenced `text` blocks so Material/Zensical `content.code.copy`
+shows a copy button (blockquotes do not). Each hard
+`https://cellpy.readthedocs.io/en/latest/…` URL is preceded by
 `<!-- agent-doc: <path-under-docs.md> -->`. After `zensical build`,
 `.issueflows/00-tools/check_rtd_latest_links.py` (wired in `docs.yml`)
 asserts every `latest` URL exists under `site/` and each comment matches

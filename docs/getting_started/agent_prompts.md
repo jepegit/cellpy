@@ -1,9 +1,9 @@
 # Copy-paste prompts for your agent
 
 Paste one of these into Cursor, VS Code, Claude, or another coding agent.
-Each prompt names a checkable outcome and a **latest** docs URL. The HTML
-`agent-doc` comment above a URL is for maintainers: it names the source
-page so a move fails
+Use the copy button on the prompt. Each names a checkable outcome and a
+**latest** docs URL. The HTML `agent-doc` comment above a URL is for
+maintainers: it names the source page so a move fails
 [docs CI](https://github.com/jepegit/cellpy/blob/master/.github/workflows/docs.yml)
 instead of leaving a stale link in the quote.
 
@@ -14,65 +14,85 @@ To **wire an MCP client**, start at [Connect an agent IDE to cellpy](mcp.md)
 ## How to install cellpy MCP
 
 <!-- agent-doc: getting_started/mcp.md -->
-> Install the cellpy MCP server, register it with Cursor, and run
-> `cellpy mcp check --client cursor` to prove it works. Follow
-> https://cellpy.readthedocs.io/en/latest/getting_started/mcp/.
+```text
+Install the cellpy MCP server, register it with Cursor, and run
+`cellpy mcp check --client cursor` to prove it works. Follow
+https://cellpy.readthedocs.io/en/latest/getting_started/mcp/.
+```
 
 ## How to install cellpy and prove it works
 
 <!-- agent-doc: getting_started/installation.md -->
-> Install cellpy with pip or conda on this machine, then run
-> `cellpy info --check` so the CLI is on PATH. Follow
-> https://cellpy.readthedocs.io/en/latest/getting_started/installation/.
+```text
+Install cellpy with pip or conda on this machine, then run
+`cellpy info --check` so the CLI is on PATH. Follow
+https://cellpy.readthedocs.io/en/latest/getting_started/installation/.
+```
 
 ## How to load a cycler file
 
 <!-- agent-doc: getting_started/basic_usage.md -->
-> Load the user's cycler file with `cellpy.get`, set mass and instrument,
-> and print `c.data.summary.head()`. Follow
-> https://cellpy.readthedocs.io/en/latest/getting_started/basic_usage/.
+```text
+Load the user's cycler file with `cellpy.get`, set mass and instrument,
+and print `c.data.summary.head()`. Follow
+https://cellpy.readthedocs.io/en/latest/getting_started/basic_usage/.
+```
 
 ## How to try cellpy without a data file
 
 <!-- agent-doc: getting_started/first_hour.md -->
-> Load the bundled example cell with `example_data.raw_file()` and show the
-> first summary rows. Follow
-> https://cellpy.readthedocs.io/en/latest/getting_started/first_hour/.
+```text
+Load the bundled example cell with `example_data.raw_file()` and show the
+first summary rows. Follow
+https://cellpy.readthedocs.io/en/latest/getting_started/first_hour/.
+```
 
 ## How to run a batch from the Excel database
 
 <!-- agent-doc: guides/batch_database.md -->
-> Set up the Excel cellpy database and load a batch with `batch.load`. Follow
-> https://cellpy.readthedocs.io/en/latest/guides/batch_database/.
+```text
+Set up the Excel cellpy database and load a batch with `batch.load`. Follow
+https://cellpy.readthedocs.io/en/latest/guides/batch_database/.
+```
 
 ## How to plot one cell
 
 <!-- agent-doc: guides/plotting.md -->
-> Plot one loaded cell with the plotting families (cycles or summary). Follow
-> https://cellpy.readthedocs.io/en/latest/guides/plotting/.
+```text
+Plot one loaded cell with the plotting families (cycles or summary). Follow
+https://cellpy.readthedocs.io/en/latest/guides/plotting/.
+```
 
 ## How to compute ICA / DVA
 
 <!-- agent-doc: guides/ica.md -->
-> Compute ICA/DVA with `cellpy.ica` (`dqdv` / `dvdq`) and plot it. Follow
-> https://cellpy.readthedocs.io/en/latest/guides/ica/.
+```text
+Compute ICA/DVA with `cellpy.ica` (`dqdv` / `dvdq`) and plot it. Follow
+https://cellpy.readthedocs.io/en/latest/guides/ica/.
+```
 
 ## How to fix capacities or units that look wrong
 
 <!-- agent-doc: troubleshooting.md -->
-> The capacities or units look wrong. Diagnose from the troubleshooting
-> page (charge/discharge swap, rebase, units). Follow
-> https://cellpy.readthedocs.io/en/latest/troubleshooting/.
+```text
+The capacities or units look wrong. Diagnose from the troubleshooting
+page (charge/discharge swap, rebase, units). Follow
+https://cellpy.readthedocs.io/en/latest/troubleshooting/.
+```
 
 ## How to use schema names instead of hardcoded headers
 
 <!-- agent-doc: getting_started/agents.md -->
-> Use `c.schema` for column names, not hardcoded header strings. Follow
-> https://cellpy.readthedocs.io/en/latest/getting_started/agents/.
+```text
+Use `c.schema` for column names, not hardcoded header strings. Follow
+https://cellpy.readthedocs.io/en/latest/getting_started/agents/.
+```
 
 ## How to fetch the agent docs map
 
 <!-- agent-doc: getting_started/agents.md -->
-> Fetch the agent-facing docs map (`llms.txt` / this chapter) before changing
-> cellpy usage. Follow
-> https://cellpy.readthedocs.io/en/latest/getting_started/agents/.
+```text
+Fetch the agent-facing docs map (`llms.txt` / this chapter) before changing
+cellpy usage. Follow
+https://cellpy.readthedocs.io/en/latest/getting_started/agents/.
+```
