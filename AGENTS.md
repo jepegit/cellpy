@@ -358,6 +358,8 @@ To wire Cursor or another MCP client (no Python in the chat), see
 it* checklist — `cellpy mcp install --client cursor`, then
 `cellpy mcp check --client cursor` proves the registered command answers
 MCP (exit 1 = broken, with the reason); the user must restart Cursor after.
+Ready-made paste prompts (MCP, load, batch, plot, ICA, …):
+[`docs/getting_started/agent_prompts.md`](docs/getting_started/agent_prompts.md).
 
 Quick facts:
 

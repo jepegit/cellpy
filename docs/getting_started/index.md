@@ -20,6 +20,8 @@ through these pages in order, or jump to what you need.
   app/GUI builders
 - [Connect an agent IDE to cellpy](mcp.md) — Cursor, VS Code, Claude, and
   other MCP clients
+- [Copy-paste prompts for your agent](agent_prompts.md) — prompts to paste
+  into Cursor or another coding agent
 - [Coming from cellpy 1.x](migration_v1_to_v2.md) — what changed in 2.x and
   how to migrate
 - [Troubleshooting](../troubleshooting.md) — what to do when a file will

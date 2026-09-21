@@ -14,6 +14,8 @@ on:
       - ".readthedocs.yaml"
       - "dev/render_example_notebooks.py"
       - ".github/workflows/docs.yml"
+      - ".issueflows/00-tools/check_rtd_latest_links.py"
+      - "AGENTS.md"
   pull_request:
     paths:
       - "docs/**"
@@ -21,6 +23,8 @@ on:
       - ".readthedocs.yaml"
       - "dev/render_example_notebooks.py"
       - ".github/workflows/docs.yml"
+      - ".issueflows/00-tools/check_rtd_latest_links.py"
+      - "AGENTS.md"
 
 jobs:
   build:
@@ -49,6 +53,9 @@ jobs:
         run: |
           test -f site/llms.txt
           test -f site/llms-short.txt
+
+      - name: Latest RTD URLs exist in site/
+        run: python3 .issueflows/00-tools/check_rtd_latest_links.py
 
       - name: Fail on broken links
         run: |

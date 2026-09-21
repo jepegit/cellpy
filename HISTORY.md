@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+* Docs: add copy-paste prompts for LLM agents, with tracked `latest` RTD
+  links. (#1064)
+
 ## [2.1.5.post4] - 2026-09-20
 
 * Changelog: move leftover Unreleased notes onto the 2.1.5 / post1 / post2

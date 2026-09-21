@@ -51,6 +51,11 @@ cellpy mcp check --client cursor
 Or ask the agent itself — the page has the prompt and the checklist it
 should follow. → [Connect an agent IDE to cellpy](getting_started/mcp.md)
 
+**…paste a prompt to my agent?**
+Copy one of the ready-made paragraphs (MCP install, load a file, batch,
+plot, ICA, troubleshooting, schema names).
+→ [Copy-paste prompts for your agent](getting_started/agent_prompts.md)
+
 **…find my configuration file?**
 
 ```console
