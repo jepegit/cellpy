@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+* Parse `<date>_<project><number>` cell filenames. (#1075)
+
 ## [2.1.5.post5] - 2026-09-21
 
 * Docs: add copy-paste prompts for LLM agents, with tracked `latest` RTD
