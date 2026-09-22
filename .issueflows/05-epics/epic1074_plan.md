@@ -117,6 +117,7 @@ matches from configured dirs and **stops**. Existing `load_cell` / `collect` /
 - Model: default
 - Depends on: stage 1 issue 2
 - yolo: no — tool contract and sandbox/remote honesty
+- Published: #1080
 
 ## Stage 3 — Scenario 2: offer raw, then rough-view load
 
