@@ -128,6 +128,10 @@ hits = filefinder.find_by_project("SAL", 10, 15, kind="cellpy")
 raw_hits = filefinder.find_by_project("SAL", 10, 15, kind="raw")
 ```
 
+MCP equivalent: `find_cells` (same arguments). Empty `kind=cellpy` returns
+`offer_raw: true` and does not search raw. See
+[Connect an agent IDE to cellpy](mcp.md).
+
 ## Core mental model for app code
 
 ```text

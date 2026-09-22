@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+* Docs: MCP `find_cells` (project + number range; empty cellpy offers raw,
+  never a silent crawl) and a SAL 10–15 agent prompt. (#1080)
+
 * `filefinder.find_by_project` lists cellpy or raw files by project token
   and inclusive number range. (#1076)
 

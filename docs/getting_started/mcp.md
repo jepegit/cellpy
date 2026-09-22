@@ -79,7 +79,7 @@ the last line.
     cellpy mcp check --client cursor
     ```
 
-    Success prints the handshake, the tool names (`load_cell`,
+    Success prints the handshake, the tool names (`find_cells`, `load_cell`,
     `search_api`, …) and how many instruments the server can see. A failure
     names the cause: an interpreter path that does not exist, a server that
     printed to stdout, or one that died (its last stderr line is quoted).

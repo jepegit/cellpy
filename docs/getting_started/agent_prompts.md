@@ -88,6 +88,18 @@ Use `c.schema` for column names, not hardcoded header strings. Follow
 https://cellpy.readthedocs.io/en/latest/getting_started/agents/.
 ```
 
+## How to summary-plot SAL cells 10–15
+
+<!-- agent-doc: getting_started/mcp.md -->
+```text
+Using cellpy MCP, find project SAL cells numbered 10–15 (names like
+<date>_SAL<number>), load them, and write a summary plot. Call find_cells
+first (kind=cellpy). If found is 0 and offer_raw is true, ask before
+searching raw — do not crawl rawdatadir yourself. Then load_cell, collect
+kind=summary with a plot family, and render. Follow
+https://cellpy.readthedocs.io/en/latest/getting_started/mcp/.
+```
+
 ## How to fetch the agent docs map
 
 <!-- agent-doc: getting_started/agents.md -->
