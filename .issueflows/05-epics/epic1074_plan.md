@@ -140,6 +140,7 @@ Only after Stage 2’s empty shape exists. Two small issues so the mechanical
 - Model: fast
 - Depends on: none
 - yolo: yes — one-parameter pass-through, existing get() contract
+- Published: #1088
 
 ### Issue: MCP raw search after confirm, including OtherPath
 
@@ -161,6 +162,7 @@ Only after Stage 2’s empty shape exists. Two small issues so the mechanical
 - Model: deep
 - Depends on: stage 2 issue 1; stage 3 issue 1
 - yolo: no — confirm-gated crawl, OtherPath vs sandbox
+- Published: #1089
 
 ## Later (unstaged)
 
