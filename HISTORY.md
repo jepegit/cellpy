@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+* `filefinder.find_by_project` lists cellpy or raw files by project token
+  and inclusive number range. (#1076)
+
 * Parse `<date>_<project><number>` cell filenames. (#1075)
 
 ## [2.1.5.post5] - 2026-09-21

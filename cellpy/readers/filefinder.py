@@ -59,6 +59,61 @@ def parse_project_run_number(
     return int(match.group("number"))
 
 
+def find_by_project(
+    project: str,
+    number_min: int,
+    number_max: int,
+    *,
+    kind: str = "cellpy",
+    root: Union[OtherPath, pathlib.Path, str, None] = None,
+) -> List[dict]:
+    """List cellpy or raw files matching a project token and number range.
+
+    Walks ``config.paths.cellpydatadir`` or ``config.paths.rawdatadir``
+    (override with *root*) using :func:`find_in_raw_file_directory`, then
+    keeps names that :func:`parse_project_run_number` accepts with *project*
+    and whose number lies in ``[number_min, number_max]`` inclusive.
+
+    *kind* ``"cellpy"`` filters to ``config.file_names.cellpy_file_extension``.
+    *kind* ``"raw"`` keeps any file the parser accepts. The other configured
+    directory is never searched. Zero matches return ``[]``, not an error.
+
+    Returns:
+        List of ``{path, name, number, kind}`` dicts, sorted by number then name.
+    """
+    if kind not in ("cellpy", "raw"):
+        raise ValueError(f"kind must be 'cellpy' or 'raw', got {kind!r}")
+
+    if root is None:
+        root = (
+            config.paths.cellpydatadir
+            if kind == "cellpy"
+            else config.paths.rawdatadir
+        )
+
+    extension = None
+    if kind == "cellpy":
+        extension = config.file_names.cellpy_file_extension
+        if extension and str(extension).startswith("."):
+            extension = str(extension)[1:]
+
+    hits: List[dict] = []
+    for path in find_in_raw_file_directory(raw_file_dir=root, extension=extension):
+        number = parse_project_run_number(path, project)
+        if number is None or number < number_min or number > number_max:
+            continue
+        hits.append(
+            {
+                "path": path,
+                "name": pathlib.Path(path).name,
+                "number": number,
+                "kind": kind,
+            }
+        )
+    hits.sort(key=lambda item: (item["number"], item["name"]))
+    return hits
+
+
 def find_in_raw_file_directory(
     raw_file_dir: Union[OtherPath, pathlib.Path, str, None] = None,
     project_dir: Union[OtherPath, pathlib.Path, str, None] = None,

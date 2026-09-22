@@ -116,6 +116,18 @@ Reload a `.cellpy` file the same way:
 c = cellpy.get("out/my_cell.cellpy")
 ```
 
+Find local files by project token and inclusive number range (paths from
+config, not a hardcoded folder). Empty is `[]`; `kind="cellpy"` does not
+search `rawdatadir`:
+
+```python
+from cellpy import filefinder
+
+hits = filefinder.find_by_project("SAL", 10, 15, kind="cellpy")
+# [{path, name, number, kind}, ...] from config.paths.cellpydatadir
+raw_hits = filefinder.find_by_project("SAL", 10, 15, kind="raw")
+```
+
 ## Core mental model for app code
 
 ```text

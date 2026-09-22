@@ -25,6 +25,70 @@ def test_parse_project_run_number(name, project, expected):
     assert filefinder.parse_project_run_number(name, project) == expected
 
 
+def _sal_tree(tmp_path):
+    cellpy_dir = tmp_path / "cellpyfiles"
+    raw_dir = tmp_path / "raw"
+    cellpy_dir.mkdir()
+    raw_dir.mkdir()
+    for n in (9, 10, 12, 15, 16):
+        (cellpy_dir / f"20240922_SAL{n}.cellpy").write_text("x")
+    (cellpy_dir / "20240922_BAT11.cellpy").write_text("x")
+    (raw_dir / "20240922_SAL12.res").write_text("x")
+    (raw_dir / "20240922_SAL14.res").write_text("x")
+    return cellpy_dir, raw_dir
+
+
+@pytest.mark.essential
+def test_find_by_project_cellpy_range(tmp_path, config_guard):
+    config_guard("paths")
+    cellpy_dir, raw_dir = _sal_tree(tmp_path)
+    config.paths.cellpydatadir = str(cellpy_dir)
+    config.paths.rawdatadir = str(raw_dir)
+    hits = filefinder.find_by_project("SAL", 10, 15, kind="cellpy")
+    assert [h["number"] for h in hits] == [10, 12, 15]
+    assert all(h["kind"] == "cellpy" for h in hits)
+    assert all(h["name"].endswith(".cellpy") for h in hits)
+
+
+@pytest.mark.essential
+def test_find_by_project_empty(tmp_path, config_guard):
+    config_guard("paths")
+    empty = tmp_path / "empty_cellpy"
+    empty.mkdir()
+    config.paths.cellpydatadir = str(empty)
+    assert filefinder.find_by_project("SAL", 10, 15, kind="cellpy") == []
+
+
+@pytest.mark.essential
+def test_find_by_project_raw_ignores_cellpy_dir(tmp_path, config_guard):
+    config_guard("paths")
+    cellpy_dir, raw_dir = _sal_tree(tmp_path)
+    config.paths.cellpydatadir = str(cellpy_dir)
+    config.paths.rawdatadir = str(raw_dir)
+    hits = filefinder.find_by_project("SAL", 10, 15, kind="raw")
+    assert [h["number"] for h in hits] == [12, 14]
+    assert all(h["kind"] == "raw" for h in hits)
+    assert all(h["name"].endswith(".res") for h in hits)
+
+
+@pytest.mark.essential
+def test_find_by_project_unknown_kind():
+    with pytest.raises(ValueError, match="kind"):
+        filefinder.find_by_project("SAL", 10, 15, kind="journal")
+
+
+@pytest.mark.essential
+def test_find_by_project_otherpath_local(tmp_path, config_guard):
+    from cellpy.internals.connections import OtherPath
+
+    config_guard("paths")
+    cellpy_dir, _raw_dir = _sal_tree(tmp_path)
+    hits = filefinder.find_by_project(
+        "sal", 10, 15, kind="cellpy", root=OtherPath(cellpy_dir)
+    )
+    assert [h["number"] for h in hits] == [10, 12, 15]
+
+
 @pytest.fixture
 def env(parameters, config_guard):
     from cellpy.parameters import prms
