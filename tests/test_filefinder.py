@@ -7,6 +7,24 @@ from cellpy import config, filefinder, log
 log.setup_logging(default_level="DEBUG", testing=True)
 
 
+@pytest.mark.essential
+@pytest.mark.parametrize(
+    "name, project, expected",
+    [
+        ("20240922_SAL12", "SAL", 12),
+        ("20240922_SAL12_cc.cellpy", "SAL", 12),
+        ("20240922_sal15.res", "SAL", 15),
+        ("/data/cells/20240922_SAL12.cellpy", "sal", 12),
+        ("20240922_SAL9", "BAT", None),
+        ("notes_SAL12.txt", "SAL", None),
+        ("20240922_SALAMANDER12", "SAL", None),
+        ("20240922_SAL12", "", None),
+    ],
+)
+def test_parse_project_run_number(name, project, expected):
+    assert filefinder.parse_project_run_number(name, project) == expected
+
+
 @pytest.fixture
 def env(parameters, config_guard):
     from cellpy.parameters import prms

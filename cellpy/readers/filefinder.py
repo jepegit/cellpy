@@ -5,6 +5,7 @@ import glob
 import logging
 import os
 import pathlib
+import re
 import sys
 import time
 from typing import Optional, Union, List, Tuple
@@ -26,6 +27,36 @@ import cellpy.config as config
 
 # Warn when auto_use_file_list dumps a huge shared tree (issue #690).
 _LARGE_FILE_LIST_WARN = 5000
+
+# ``<date>_<project><number>`` then optional ``_suffix`` / extension (#1075).
+_PROJECT_RUN_NAME = re.compile(
+    r"^(?P<date>\d+)_(?P<project>.+?)(?P<number>\d+)(?:[_.].*)?$"
+)
+
+
+def parse_project_run_number(
+    name: Union[str, os.PathLike],
+    project: str,
+) -> Optional[int]:
+    """Return the run number if *name* matches ``<date>_<project><number>``.
+
+    The date prefix is digits (typically ``YYYYMMDD``). *project* is matched
+    case-insensitively and must sit immediately before the number so ``SAL``
+    does not match ``SALAMANDER12``. An optional suffix (``_cc``, extension)
+    is allowed after the number. Directories are stripped; no I/O.
+
+    Returns:
+        The integer run number, or ``None`` if *name* does not match.
+    """
+    if not project:
+        return None
+    stem = pathlib.Path(name).name
+    match = _PROJECT_RUN_NAME.fullmatch(stem)
+    if match is None:
+        return None
+    if match.group("project").casefold() != project.casefold():
+        return None
+    return int(match.group("number"))
 
 
 def find_in_raw_file_directory(
