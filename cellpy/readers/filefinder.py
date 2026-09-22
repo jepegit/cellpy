@@ -70,8 +70,8 @@ def find_by_project(
     """List cellpy or raw files matching a project token and number range.
 
     Walks ``config.paths.cellpydatadir`` or ``config.paths.rawdatadir``
-    (override with *root*) using :func:`find_in_raw_file_directory`, then
-    keeps names that :func:`parse_project_run_number` accepts with *project*
+    (override with *root*) using `find_in_raw_file_directory`, then
+    keeps names that `parse_project_run_number` accepts with *project*
     and whose number lies in ``[number_min, number_max]`` inclusive.
 
     *kind* ``"cellpy"`` filters to ``config.file_names.cellpy_file_extension``.
