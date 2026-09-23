@@ -68,6 +68,11 @@ fig = summary_plot(c, y="capacities_gravimetric_coulombic_efficiency")
 fig.show()
 ```
 
+<figure markdown>
+  ![summary_plot: coulombic efficiency above, gravimetric capacity below, formation cycles in their own panel](figures/summary_plot.png){ loading=lazy }
+  <figcaption>Formation cycles (1–3) get their own narrow panel. The drop at cycle 18 is real: the test stopped part-way through that cycle. Drawn from the bundled example data with the matplotlib backend; the default plotly backend shows the same content, interactively.</figcaption>
+</figure>
+
 The `y` argument names a **family** — a pre-composed set of panels — rather
 than a single column. To see what is available:
 
@@ -123,6 +128,11 @@ that a large first-cycle capacity does not squash the rest of the curve.
 cycles_plot(c, cycles=[1, 5, 10, 15])
 ```
 
+<figure markdown>
+  ![cycles_plot: voltage against gravimetric capacity for cycles 1, 5, 10 and 15](figures/cycles_plot.png){ loading=lazy }
+  <figcaption>Formation cycles get their own colour (yellow); later cycles are shaded by cycle number.</figcaption>
+</figure>
+
 Potential against capacity, one coloured curve per cycle. Useful options:
 
 ```python
@@ -153,6 +163,11 @@ fig = raw_plot(c, plot_type="voltage-current")
 fig.show()
 ```
 
+<figure markdown>
+  ![raw_plot: voltage and current against time for the whole test](figures/raw_plot.png){ loading=lazy }
+  <figcaption>The whole test as the tester recorded it.</figcaption>
+</figure>
+
 `plot_type` picks what goes on the axes:
 
 | `plot_type` | Shows |
@@ -177,6 +192,11 @@ You can also restrict it to a few cycles: `raw_plot(c, cycles=[3, 4])`.
 ```python
 cycle_info_plot(c, cycle=3)
 ```
+
+<figure markdown>
+  ![cycle_info_plot for cycle 3: step numbers and step types drawn over the voltage and current traces](figures/cycle_info_plot.png){ loading=lazy }
+  <figcaption>Top band: step numbers. Middle band: the step type cellpy assigned, with the changes it measured. Bottom: voltage and current.</figcaption>
+</figure>
 
 Raw traces for a single cycle, annotated with the step numbers and step types
 that `make_step_table` assigned. This is the plot to reach for when you suspect

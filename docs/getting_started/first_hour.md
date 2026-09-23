@@ -65,7 +65,8 @@ That downloads a small Arbin `.res` file the first time (so you need network
 once), reads it, and builds everything derived from it.
 
 `c` is now a **cell object**. Almost everything you do goes through it. The name
-`c` is just a variable — call it whatever you like.
+`c` is just a variable — call it whatever you like. (One picture of what is
+inside it: [How cellpy is organised](../fundamentals/fundamentals.md).)
 
 How many cycles did we get?
 

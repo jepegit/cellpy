@@ -128,6 +128,19 @@ The script also shapes each page for readers (#1023):
 Give every notebook `##` section headings: they become the page's table of
 contents.
 
+### Figures in the how-to guides
+
+The PNGs under `docs/guides/figures/` are drawn from the bundled example data by
+a script, with the same calls the guides show:
+
+```shell
+MPLBACKEND=Agg uv run --extra batch --group docs python dev/render_guide_figures.py
+```
+
+It uses the matplotlib backend, because exporting plotly figures needs kaleido
+and a Chrome install. Re-run it when a plot's look changes, and commit the
+PNGs.
+
 ### Doc-strings
 
 - Use Google-style doc-strings
