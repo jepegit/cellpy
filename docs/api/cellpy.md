@@ -1,9 +1,12 @@
 # cellpy
 
-The top-level entry points — what most scripts need. These are re-exported
-lazily as `cellpy.get`, `cellpy.merge_cells`, and `cellpy.print_instruments`
-(PEP 562); mkdocstrings documents the defining module because Griffe cannot
-resolve `__getattr__` aliases.
+The top-level entry points — what most scripts need: `cellpy.get`,
+`cellpy.merge_cells` and `cellpy.print_instruments`. `cellpy.get` returns a
+[cell object](cell.md).
+
+<!-- These are re-exported lazily from cellpy/__init__.py (PEP 562);
+mkdocstrings documents the defining module because Griffe cannot resolve
+__getattr__ aliases. -->
 
 ::: cellpy.readers.cellreader.get
 

@@ -1,8 +1,7 @@
 # Readers
 
-The cell object, its frames, and the cellpy-file I/O behind them.
-
-::: cellpy.readers.cellreader.CellpyCell
+The data containers behind the cell object, and how cellpy resolves metadata.
+The cell object itself (`CellpyCell`) has [its own page](cell.md).
 
 ::: cellpy.readers.data_structures
 
