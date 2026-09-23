@@ -59,14 +59,14 @@ When `.issueflows/04-designs-and-guides/multi-repo-workspaces.md` exists, read i
 > **CLI fast path (optional).** If the `issue-flow` CLI is on `PATH`, run
 > `issue-flow agent state --json` to resolve the focus issue, its lifecycle
 > stage, the suggested `next_command`, and (when there is no focus)
-> `epic_hint` in one deterministic step (covers instructions 1–2), then
+> `epic_hint` / `epic_session` in one deterministic step (covers instructions 1–2), then
 > dispatch — or stop for the epic gap. The CLI is optional: if it is not
 > installed or it errors, fall back to the manual instructions below.
 > (`issue-flow` is only present when the user installed it, e.g.
 > `uv tool install issue-flow`.)
 
 1. **Resolve the focus issue number `N`.**
-   - Prefer `issue-flow agent state --json` when the CLI is on `PATH` (fields `focus`, `next_command`, `epic_hint`).
+   - Prefer `issue-flow agent state --json` when the CLI is on `PATH` (fields `focus`, `next_command`, `epic_hint`, `epic_session`).
    - Manual fallback: `git branch --show-current`. If it matches `^(\d+)-.+`, the leading digits are the **authoritative** `N`.
    - List `issue<n>_*` groups in `.issueflows/01-current-issues/`, and also check `.issueflows/02-partly-solved-issues/` and `.issueflows/03-solved-issues/` for archived groups matching `N`.
    - Pick `N` by precedence:
@@ -76,8 +76,10 @@ When `.issueflows/04-designs-and-guides/multi-repo-workspaces.md` exists, read i
      4. No branch-derived `N`, multiple groups → **stop and ask**.
 
 1a. **Epic gap (no focus)** — when step 1 finds no focus (`focus` is null / empty `01-current-issues/` and no `^\d+-.+` branch):
-   - Prefer `epic_hint` from `issue-flow agent state --json` (lists epics with non-empty `next_candidates`). Fallback: scan `.issueflows/05-epics/epic*_plan.md` and run `issue-flow agent epic-status <N> --json` per plan.
-   - If **any** `next_candidates`: **stop**. Print epic + stage + candidate numbers/titles. Recommend **`/iflow-pick`** (or `iflow pick`). Do **not** dispatch `/iflow-capture` yet — even when only one candidate (never pick silently). If the user's trailing text is already an explicit issue number `N`, then dispatch `/iflow-capture` with that `N` instead of stopping.
+   - Prefer `epic_hint` and `epic_session` from `issue-flow agent state --json` (lists epics with non-empty `next_candidates`). Fallback: scan `.issueflows/05-epics/epic*_plan.md` and run `issue-flow agent epic-status <N> --json` per plan. Read `.issueflows/01-current-issues/epic_session.md` if state omitted it (`epic:` / `mode: one-and-ask`; unknown mode → treat as missing).
+   - If the user's trailing text is already an explicit issue number `N`, then dispatch `/iflow-capture` with that `N` instead of stopping.
+   - **Session present** + that epic has `next_candidates`: **stop**. Ask: next `#<M>` (`<M>` = first `next_candidates` entry for the session epic) — **continue** / switch to cycle|auto|drive / **stop**. This turn writes nothing and creates no branch. Continue on a **later turn** follows `/iflow-pick` for `#<M>` (user said continue / `yes` / the number). Never silent-pick. `stop`/`abort` → `/iflow-epic stop`. cycle|auto|drive → name the handoff; do not run it until that confirm.
+   - Else if **any** `next_candidates` (no session): **stop**. Print epic + stage + candidate numbers/titles. Recommend **`/iflow-pick`** (or `iflow pick`). Do **not** dispatch `/iflow-capture` yet — even when only one candidate (never pick silently).
    - If **no** epic candidates → continue to state **A** (`/iflow-capture`, which asks for a number).
 
 2. **Detect state and choose the dispatch target** (first match wins):
@@ -95,14 +97,14 @@ When `.issueflows/04-designs-and-guides/multi-repo-workspaces.md` exists, read i
 5. **Report.** Summarize: focus issue `N` and how it was resolved, which command was dispatched and why, the downstream output, and a one-line hint when an off-path command is the natural next step:
    - mid-stream context switch needed → "to park this work, run `/iflow-pause`"
    - tiny fix that would benefit from a single-shot chain → "consider `/iflow-yolo` next time"
-   - state **D** / between issues, and an active epic still has `next_candidates` → "epic #<E> stage still has #<…> — run `/iflow-pick` when ready"
+   - state **D** / between issues, and an active epic still has `next_candidates` → session present: "epic #<E> stage still has #<…> — run `/iflow`"; else "run `/iflow-pick` when ready"
    - `graphify-out/GRAPH_REPORT.md` looks stale (large refactor, new modules) → "consider `/iflow-graphify` to refresh the graph"
 
 
 ## Constraints
 
 - Never auto-dispatch to `/iflow-setup`, `/iflow-pick`, `/iflow-init`, `/iflow-pause`, `/iflow-cleanup`, `/iflow-yolo`, `/iflow-ops`, `/iflow-fix`, `/iflow-issue`, `/iflow-split`, `/iflow-review`, `/iflow-epic`, `/iflow-cycle`, `/iflow-auto`, or `/iflow-drive`.
-- Epic gap (step 1a) only **suggests** `/iflow-pick`; it never runs pick or silently picks a candidate.
+- Epic gap (step 1a) without a session only **suggests** `/iflow-pick`; it never runs pick or silently picks a candidate. With a session it **asks** (one-and-ask) before the pick chain; it never silent-picks.
 - If the focus issue cannot be resolved (multiple groups, branch ambiguous), stop and ask.
 - Do not modify files beyond what the downstream command would normally modify. `/iflow` itself writes nothing — all file changes come from the dispatched command.
 - Dispatch to at most one command per `/iflow` invocation.

@@ -14,7 +14,7 @@ This repo uses Cursor **Agent Skills** under `.cursor/skills/` that line up with
 
 It also seeds `.issueflows/00-tools/README.md` — the index of the project's **shared toolbox**. Drop reusable helper scripts there during issue work and add a one-line index entry; check the folder before writing a new one-off helper. Like the project brief, this README is never overwritten by `issue-flow update`, so its index grows over time.
 
-**Multi-root workspaces:** parent folder of git siblings — `issue-flow workspace bootstrap --yes --default <member>` (first time), `workspace init` (toml only), `workspace update` (refresh). Public recipe: https://issue-flow.readthedocs.io/how-to/workspaces/. When several sibling repos share one editor workspace, resolve the target repo first (`root:` / `repo:` hints, or `issue-flow agent resolve`). A workspace-root `issueflow-workspace.toml` names a **default member repo** used when a command runs from outside any single scaffold. Never let `git` or `gh` infer the repository from cwd alone. See `.issueflows/04-designs-and-guides/multi-repo-workspaces.md` when present. `/iflow-pick` / `/iflow-issue` / `/iflow-fix` start in a sibling worktree (`issue-flow agent worktree-add`) so the home checkout stays on default; starting does **not** require home default to fast-forward (`issue-flow agent default-sync`; see `04-designs-and-guides/default-branch-diverge.md`). `open-workspace` prints the path (see `04-designs-and-guides/separate-workspaces.md`). Token `inplace` keeps the old in-place `git switch -c`.
+**Multi-root workspaces:** parent folder of git siblings — `issue-flow workspace bootstrap --yes --default <member>` (first time), `workspace init` (toml only), `workspace update` (refresh). Public recipe: https://issue-flow.readthedocs.io/how-to/workspaces/. When several sibling repos share one editor workspace, resolve the target repo first (`root:` / `repo:` hints, or `issue-flow agent resolve`). A workspace-root `issueflow-workspace.toml` names a **default member repo** used when a command runs from outside any single scaffold. Never let `git` or `gh` infer the repository from cwd alone. See `.issueflows/04-designs-and-guides/multi-repo-workspaces.md` when present. `/iflow-pick` / `/iflow-issue` / `/iflow-fix` start in a sibling worktree (`issue-flow agent worktree-add`) so the home checkout stays on default; starting does **not** require home default to fast-forward (`issue-flow agent default-sync`; see `04-designs-and-guides/default-branch-diverge.md`). `open-workspace` prints the path (see `04-designs-and-guides/separate-workspaces.md`). Tokens `inplace` / `no worktree` keep the in-place path; token `worktree` forces a sibling worktree. Knob: `worktree_first` (default true).
 
 
 | Entry point | File | Role |
@@ -38,7 +38,7 @@ It also seeds `.issueflows/00-tools/README.md` — the index of the project's **
 | `/iflow-doctor` | `iflow-doctor/SKILL.md` | **Off-path.** Audit `.issueflows/` for dirty conditions; optional safe repair (mkdir + sweep). |
 | `/iflow-review` | `iflow-review/SKILL.md` | **Off-path.** Review open GitHub issues and apply labels (extendable kinds; v1: yolo → configured `yolo_label`). Confirm before writes. |
 | `/iflow-archive` | `iflow-archive/SKILL.md` | **Off-path, destructive (gated).** Condense old solved issue groups into a dated `YYYY-MM-DD_archived_issues.md` summary (recording the pre-archive git ref for recovery), then delete the original files after one consolidated confirm. |
-| `/iflow-epic` | `iflow-epic/SKILL.md` | **Off-path.** Plan a larger change as a staged epic: `05-epics/epic<N>_plan.md` divides the work into stages of manageable issue specs (dependencies + per-issue yolo judgment). Drafting writes nothing on GitHub; `publish [stage <k>]` creates a confirmed stage's issues behind one consolidated confirm and maintains a task list on the anchor issue. |
+| `/iflow-epic` | `iflow-epic/SKILL.md` | **Off-path.** Plan a larger change as a staged epic: `05-epics/epic<N>_plan.md` divides the work into stages of manageable issue specs (dependencies + per-issue yolo judgment). Drafting writes nothing on GitHub; `publish [stage <k>]` creates a confirmed stage's issues behind one consolidated confirm and maintains a task list on the anchor issue. `start [N]` / `stop` is a one-and-ask session so `/iflow` asks before the next child (never silent-pick). |
 | `/iflow-cycle` | `iflow-cycle/SKILL.md` | **Off-path.** Process a queue of yolo-fit issues hands-off in a row under one up-front confirm — the batch equivalent of `/iflow-yolo`. Resolves the queue via `issue-flow agent queue`, runs each issue through the full yolo chain (PR auto-merged), and stops only when input is strictly necessary. **All yolo-labelled issues:** `/iflow-cycle yolo` (alias for `label:yolo`). |
 | `/iflow-auto` | `iflow-auto/SKILL.md` | **Off-path.** Unattended large-change orchestrator over a confirmed epic: cycle a stage via `/iflow-cycle`, record `auto_status.md`, run adversarial review (`review`; may reopen/create). Loop budget **2** (`[issueflow].auto_adversarial_loops`); override `loops:<n>`. See `.issueflows/04-designs-and-guides/advanced-auto-mode.md`. |
 | `/iflow-drive` | `iflow-drive/SKILL.md` | **Off-path.** Compose-only path from an existing issue: draft epic (auto-confirm unless grill-me) → publish all stages → `/iflow-auto` each epoch → final review (create leftover findings) → local cleanup **`-d` only** → `/iflow-status`. See `.issueflows/04-designs-and-guides/drive-mode.md`. |
@@ -72,7 +72,7 @@ It also seeds `.issueflows/00-tools/README.md` — the index of the project's **
 | `iflow-status` | `iflow status`, `iflow-status`, `/iflow-status` | Read-only issue overview. Off-path. |
 | `iflow-doctor` | `iflow doctor`, `iflow-doctor`, `/iflow-doctor` | Audit/repair dirty `.issueflows/`. Off-path. |
 | `iflow-review` | `iflow review`, `iflow-review`, `/iflow-review` | Review open issues and apply labels (v1: yolo). Off-path. |
-| `iflow-epic` | `iflow epic`, `iflow-epic`, `/iflow-epic` | Staged epic plan + publish. Off-path. |
+| `iflow-epic` | `iflow epic`, `iflow-epic`, `/iflow-epic` | Staged epic plan + publish + start session. Off-path. |
 | `iflow-cycle` | `iflow cycle`, `iflow-cycle`, `/iflow-cycle` | Batch yolo queue (`yolo` / `label:<L>` / numbers / epic). Off-path. |
 | `iflow-auto` | `iflow auto`, `iflow-auto`, `/iflow-auto` | Unattended epic orchestration (cycle stage + adversarial `review`). Off-path. |
 | `iflow-drive` | `iflow drive`, `iflow-drive`, `/iflow-drive` | Compose epic → publish → auto-all → final review → local `-d` cleanup → status. Off-path. |
@@ -129,6 +129,7 @@ All workflows that touch git also run a short **branch-status preflight**: `git 
 
 | State of the focus issue | Dispatches to |
 |--------------------------|---------------|
+| No focus, session present (`epic_session`) + that epic has `next_candidates` | **Stop** — ask next `#<M>` continue / cycle\|auto\|drive / stop (never silent-pick) |
 | No focus, but an active epic has `next_candidates` (`agent state` → `epic_hint`) | **Stop** — list candidates; recommend `/iflow-pick` (never auto-pick) |
 | No `issue<N>_original.md` (or no focus / no epic candidates) | `/iflow-capture` |
 | `original` exists, no `issue<N>_plan.md` | `/iflow-plan` |
@@ -137,9 +138,9 @@ All workflows that touch git also run a short **branch-status preflight**: `git 
 
 **Focus-issue resolution:** prefer the leading digits of the current branch when it matches `^<N>-.+`; else the single group in `.issueflows/01-current-issues/`; else the epic gap check; else ask. See `04-designs-and-guides/iflow-epic-awareness.md`.
 
-**Not auto-dispatched:** `/iflow-setup`, `/iflow-init`, `/iflow-pause`, `/iflow-cleanup`, `/iflow-yolo`, `/iflow-ops`, `/iflow-fix`, `/iflow-issue`, `/iflow-split`, `/iflow-status`, `/iflow-doctor`, `/iflow-review`, `/iflow-epic`, `/iflow-cycle`, `/iflow-auto`, `/iflow-drive`, and `/iflow-archive`. `/iflow` never picks them for you and, with `remind_cleanup = false`, does not nudge `/iflow-cleanup`. The epic gap only **recommends** `/iflow-pick`.
+**Not auto-dispatched:** `/iflow-setup`, `/iflow-init`, `/iflow-pause`, `/iflow-cleanup`, `/iflow-yolo`, `/iflow-ops`, `/iflow-fix`, `/iflow-issue`, `/iflow-split`, `/iflow-status`, `/iflow-doctor`, `/iflow-review`, `/iflow-epic`, `/iflow-cycle`, `/iflow-auto`, `/iflow-drive`, and `/iflow-archive`. `/iflow` never picks them for you and, with `remind_cleanup = false`, does not nudge `/iflow-cleanup`. The epic gap without a session only **recommends** `/iflow-pick`; with a session it **asks** (never silent-pick).
 
-**Result:** One of the four linear commands runs (with its own checkpoints), or a stop with epic candidates listed.
+**Result:** One of the four linear commands runs (with its own checkpoints), or a stop with epic candidates listed (recommend-pick, or one-and-ask when a session is on).
 
 ---
 
@@ -454,7 +455,7 @@ iflow cycle yolo
 
 **When:** The work is too big for one PR. You want a staged plan anchored to a GitHub issue, then publish one stage at a time as real issues.
 
-**What you pass:** `/iflow-epic <N>` to draft (or revise) `.issueflows/05-epics/epic<N>_plan.md`. Later: `/iflow-epic <N> publish [stage <k>]` to create that stage's issues on GitHub. No anchor yet → create one with `/iflow-issue epic <intent>`, then pass the new number.
+**What you pass:** `/iflow-epic <N>` to draft (or revise) `.issueflows/05-epics/epic<N>_plan.md`. Later: `/iflow-epic <N> publish [stage <k>]` to create that stage's issues on GitHub. **`/iflow-epic start [N]`** writes a one-and-ask session; **`/iflow-epic stop`** clears it. No anchor yet → create one with `/iflow-issue epic <intent>`, then pass the new number.
 
 **What the assistant does (draft):**
 
@@ -470,6 +471,11 @@ iflow cycle yolo
 3. Creates issues in dependency order (`gh issue create`), records `Published: #<M>` in the plan, updates the anchor issue's task list.
 4. Re-runs are idempotent (already-published specs are skipped).
 
+**What the assistant does (start / stop):**
+
+1. `start [N]`: resolve N (preselect the sole live epic, still confirm; zero live → list drafts + `/iflow-issue epic`). Confirm replace if another session exists. Print `epic-status`. One confirm: stay one-and-ask / cycle this stage / auto / drive / abort. Writes `epic_session.md` only after confirm. Never silent-pick.
+2. `stop` / `abort`: delete `epic_session.md`.
+
 **Example:**
 
 ```text
@@ -478,13 +484,15 @@ iflow epic 144
 # → you confirm → Status: confirmed
 iflow epic 144 publish stage 1
 # → creates stage-1 issues (yolo labels per judgment), task list on #144
+iflow epic start 144
+# → writes epic_session.md (one-and-ask); next /iflow asks before pick
 issue-flow agent epic-status 144 --json
 # → current stage + next_candidates for /iflow-pick / /iflow-cycle
 ```
 
 **Off-path:** `/iflow` never auto-dispatches to `/iflow-epic`. Epics decompose into the normal single-issue lifecycle; they do not replace it.
 
-**Result:** A durable epic plan file; published stages become ordinary issues you pick/yolo/cycle as usual.
+**Result:** A durable epic plan file; published stages become ordinary issues you pick/yolo/cycle as usual; an optional session makes `/iflow` ask before the next child.
 
 ---
 

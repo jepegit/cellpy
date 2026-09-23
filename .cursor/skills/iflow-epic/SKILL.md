@@ -11,13 +11,17 @@ issue-flow-version: 0.4.2a4
 
 Follow this skill to plan a change that is **too large for one issue**: divide it into sequential **stages**, each stage into **manageable issues** that flow through the normal lifecycle (`/iflow-capture` → `/iflow-plan` → `/iflow-build` → `/iflow-close`).
 
-The surface has two actions. **Drafting** (the default) is write-free on GitHub: its deliverable is `.issueflows/05-epics/epic<N>_plan.md`, and it never creates GitHub issues, labels, or milestones. **`publish`** is the single exception — it turns a *confirmed* plan into real GitHub issues, stage by stage, behind one consolidated confirm.
+The surface has three actions. **Drafting** (the default when the first token is a number) is write-free on GitHub: its deliverable is `.issueflows/05-epics/epic<N>_plan.md`, and it never creates GitHub issues, labels, or milestones. **`publish`** turns a *confirmed* plan into real GitHub issues, stage by stage, behind one consolidated confirm. **`start [N]` / `stop`** is a session router (issue #333) — it writes or clears `epic_session.md` so `/iflow` can **ask** before the next child; it never silent-picks and never becomes a fifth executor.
 
 ## Input
 
-- **`<N>`** — the GitHub issue number of the **epic anchor** (an umbrella issue describing the large change). Required: an epic without an anchor has nowhere to track progress. If no anchor issue exists yet, stop and point the user at **`/iflow-issue epic <intent>`** (creates the anchor with an `Epic:` title and the `epic` label when present) — then re-run `/iflow-epic <N>` with the new number.
-- **`publish [stage <k>]`** — run the publish action (below) instead of drafting. Without a stage number, the earliest stage with unpublished specs is chosen.
-- Optional free text — extra context, constraints, or a proposed stage split to seed the draft.
+Parse the first token **before** the draft path:
+
+- **`start [N]`** — session action (below). Optional `N` is the epic anchor. Never drafts or publishes.
+- **`stop`** / **`abort`** — clear `.issueflows/01-current-issues/epic_session.md` and report. No confirm.
+- **`<N>`** — the GitHub issue number of the **epic anchor** (an umbrella issue describing the large change). Required for draft/publish: an epic without an anchor has nowhere to track progress. If no anchor issue exists yet, stop and point the user at **`/iflow-issue epic <intent>`** (creates the anchor with an `Epic:` title and the `epic` label when present) — then re-run `/iflow-epic <N>` with the new number.
+- **`publish [stage <k>]`** — run the publish action (below) instead of drafting. Requires `<N>` first (`/iflow-epic <N> publish`). Without a stage number, the earliest stage with unpublished specs is chosen.
+- Optional free text — extra context, constraints, or a proposed stage split to seed the draft. Ignored by `start` / `stop`.
 
 
 **Invoke:** type `iflow epic` in chat, or `/iflow-epic` from the slash menu (`iflow-epic` also works).
@@ -122,6 +126,37 @@ When `.issueflows/04-designs-and-guides/multi-repo-workspaces.md` exists, read i
 
 6. **Stop.** Creating the GitHub issues is the `publish` action below, with its own consolidated confirm — never create them from the drafting flow, even if asked to "just create them": run `/iflow-epic <N> publish` explicitly so the confirm gates stay distinct.
 
+## Action: start
+
+Opt-in one-and-ask session so `/iflow` asks before the next epic child. Compose only — hand off to `/iflow-pick` (Continue), `/iflow-cycle`, `/iflow-auto`, `/iflow-drive`. Never silent-pick. Never silent-publish. Never silent `worktree-add`. See `.issueflows/04-designs-and-guides/epic-start.md`.
+
+1. **Resolve `N`.** Explicit number wins. Else scan `.issueflows/05-epics/epic*_plan.md` and run `issue-flow agent epic-status <E> --json` per plan.
+   - **Live** = `Status: confirmed` (or already in flight) **and** work left (`next_candidates` non-empty **or** unpublished specs).
+   - Exactly one live epic → **preselect it, still confirm**.
+   - Several live → numbered list, wait.
+   - Zero live → list draft plans (if any) **and** offer `/iflow-issue epic` to create a new anchor. Stop until they pick.
+2. **Replace check.** If `.issueflows/01-current-issues/epic_session.md` exists for a **different** epic, confirm replace before writing. Same epic → refresh / continue the menu.
+3. **Prepare (deterministic only).** Print `issue-flow agent epic-status <N> --json` (stage, blockers, `next_candidates`, unpublished). No GitHub writes.
+4. **State-dependent offer** (one confirm writes the session and/or names the handoff — do **not** run cycle/auto/drive until that confirm):
+   - Stay **one-and-ask** → write the session file (step 5) and stop. Next `/iflow` will ask.
+   - This stage, yolo each issue → `/iflow-cycle epic <N> [stage k]`.
+   - Rest of epic, review between stages → `/iflow-auto` / `/iflow-drive`.
+   - **Abort** → write nothing (or run stop if they want the file gone).
+   Offer only what the prepare payload supports (no plan / draft / unpublished stage / `next_candidates` / budget ask). Do not invent a new batcher.
+5. **Write session** (only after the confirm in step 4 chooses one-and-ask, or they confirmed start-then-handoff that still wants the session):
+
+   ```text
+   epic: <N>
+   mode: one-and-ask
+   ```
+
+   Path: `.issueflows/01-current-issues/epic_session.md`. v1 writes **`one-and-ask` only**. This file is not an `issue<N>_*` group — sweep/doctor ignore it.
+6. **Report.** Epic, mode, first `next_candidates` entry if any, and the named handoff (or “run `/iflow`”).
+
+## Action: stop
+
+Delete `.issueflows/01-current-issues/epic_session.md` if present and report. Tokens: `stop` / `abort`. No confirm. Missing file → say so and stop.
+
 ## Action: publish
 
 Turn one stage of a **confirmed** plan into real GitHub issues. Requires `Status: confirmed` in `epic<N>_plan.md` — refuse drafts and point at the review step instead.
@@ -138,5 +173,6 @@ Turn one stage of a **confirmed** plan into real GitHub issues. Requires `Status
 
 - **Drafting writes nothing on GitHub**: no `gh issue create`, no label or milestone writes, no task-list edits on the anchor issue. Reading with `gh issue view` / `gh issue list` is always fine. The `publish` action is the single exception and never runs without its consolidated confirm.
 - **Off-path**: `/iflow` never auto-dispatches to `/iflow-epic`; the user opts in explicitly.
+- **`start` never silent-picks.** Continue is today’s `/iflow-pick` chain on a later turn. Child `yolo` / `ops` labels still apply via pick.
 - Epics decompose **into** the normal single-issue lifecycle, never around it — no issue spec may assume work happens outside a normal issue branch + PR.
 - The plan file is user-owned working state under `.issueflows/`: `issue-flow update` never touches it.
