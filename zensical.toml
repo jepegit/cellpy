@@ -117,7 +117,7 @@ nav = [
             { "Conda packages" = "contributing/developers_guide/dev_conda_package.md" },
             { "Various" = "contributing/developers_guide/dev_various.md" },
         ] },
-        { "Issue workflow" = "issue-workflow.md" },
+        { "Issue workflow (maintainers)" = "issue-workflow.md" },
     ] },
     { "About" = [
         "other/index.md",
@@ -215,6 +215,8 @@ custom_checkbox = true
 [project.markdown_extensions.pymdownx.snippets]
 base_path = ["."]
 check_paths = true
+# Hover tooltips for battery abbreviations on every page (#1023).
+auto_append = ["docs/.snippets/abbreviations.md"]
 
 # ----------------------------------------------------------------------------
 # Redirects for pages that moved (#1023), so old links and bookmarks still work.
