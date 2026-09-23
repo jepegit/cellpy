@@ -117,6 +117,7 @@ matches from configured dirs and **stops**. Existing `load_cell` / `collect` /
 - Model: default
 - Depends on: stage 1 issue 2
 - yolo: no — tool contract and sandbox/remote honesty
+- Published: #1080
 
 ## Stage 3 — Scenario 2: offer raw, then rough-view load
 
@@ -139,6 +140,7 @@ Only after Stage 2’s empty shape exists. Two small issues so the mechanical
 - Model: fast
 - Depends on: none
 - yolo: yes — one-parameter pass-through, existing get() contract
+- Published: #1088
 
 ### Issue: MCP raw search after confirm, including OtherPath
 
@@ -160,6 +162,7 @@ Only after Stage 2’s empty shape exists. Two small issues so the mechanical
 - Model: deep
 - Depends on: stage 2 issue 1; stage 3 issue 1
 - yolo: no — confirm-gated crawl, OtherPath vs sandbox
+- Published: #1089
 
 ## Later (unstaged)
 

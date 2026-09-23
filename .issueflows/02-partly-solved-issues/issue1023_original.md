@@ -67,15 +67,12 @@ A series of small, focused pull requests. Each iteration:
 ## Comments (curated summary)
 
 - **Additional tasks**:
-  - Tutorial-notebook pass: `examples/*.ipynb` (rendered into docs; different workflow than the hand-written pages).
-  - Glossary of battery-science terms as cellpy spells them.
-  - Experienced-Python persona pass (typing, extending, plugin surface) — the first ten iterations under-served this reader.
+  - Tutorial-notebook pass: the pages under `docs/examples/` are rendered from `examples/*.ipynb` via `dev/render_example_notebooks.py` — different workflow from the hand-written pages in #1024–#1035.
+  - Experienced-Python pass later (typing, extending, plugin surface); those ten iterations deliberately under-served that persona.
 - **Clarifications / constraints**:
-  - Ten iterations already shipped as separate PRs (#1024–#1035). Do not redo `troubleshooting.md`, `guides/units.md`, `guides/plotting.md`, `guides/batch_database.md`, `reference/cli.md`, `guides/exporting.md`, `reference/summary_columns.md`, `guides/step_table.md`, `getting_started/first_hour.md`, or `how_do_i.md`.
-  - Issue stays open; this capture is the next pass, not a restart of the first-pass gap list.
-  - Code bugs found while writing docs were filed separately (#1026, #1028) — out of scope here.
-  - Every snippet must be executed against bundled example data (and the example database for batch pages), not written from source and hoped for.
-- **Superseded / retracted**:
-  - Original first-pass gaps (no troubleshooting, no units page, no CLI reference, no task index, thin column reference) are already filled by those ten PRs.
+  - Iterations 1–10 already shipped (#1024–#1035): troubleshooting, units, plotting, batch database, CLI, exporting, summary columns, step table, first hour, how-do-I.
+  - Iteration 11 (glossary) also shipped on this open issue (`docs/fundamentals/glossary.md`); do not redo it.
+  - Bugs found while writing those pages were fixed in-docs or filed separately (#1026, #1028).
+  - Issue stays open; each iteration is its own PR.
 
 _Note: this section is an interpretive summary of the comment thread, not a verbatim dump. Source comments: 1, last comment by @jepegit on 2026-09-09._

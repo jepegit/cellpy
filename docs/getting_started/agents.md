@@ -116,6 +116,24 @@ Reload a `.cellpy` file the same way:
 c = cellpy.get("out/my_cell.cellpy")
 ```
 
+Find local files by project token and inclusive number range (paths from
+config, not a hardcoded folder). Empty is `[]`; `kind="cellpy"` does not
+search `rawdatadir`:
+
+```python
+from cellpy import filefinder
+
+hits = filefinder.find_by_project("SAL", 10, 15, kind="cellpy")
+# [{path, name, number, kind}, ...] from config.paths.cellpydatadir
+raw_hits = filefinder.find_by_project("SAL", 10, 15, kind="raw")
+```
+
+MCP equivalent: `find_cells` (same arguments). Empty `kind=cellpy` returns
+`offer_raw: true` and does not search raw. `kind=raw` lists matching raw
+files (local paths or configured remote URIs) and sets
+`needs_metadata: ["mass", "nominal_capacity"]`. See
+[Connect an agent IDE to cellpy](mcp.md).
+
 ## Core mental model for app code
 
 ```text

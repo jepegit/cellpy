@@ -2,7 +2,22 @@
 
 ## [Unreleased]
 
+* MCP `find_cells(kind=raw)` lists raw files (including configured remote
+  URIs), sets `needs_metadata`, and `load_cell` opens those URIs only when
+  they sit under the configured root. (#1089)
+
+* MCP `load_cell` forwards optional `nominal_capacity` to `cellpy.get`. (#1088)
+
+* Docs: MCP `find_cells` (project + number range; empty cellpy offers raw,
+  never a silent crawl) and a SAL 10–15 agent prompt. (#1080)
+
+* `filefinder.find_by_project` lists cellpy or raw files by project token
+  and inclusive number range. (#1076)
+
 * Parse `<date>_<project><number>` cell filenames. (#1075)
+
+* Docs: tutorials 01–02 use `full_cell`, `refresh_after`, and native `.cellpy`
+  save/reload; How-do-I and first-hour link the numbered tutorials. (#1023)
 
 ## [2.1.5.post5] - 2026-09-21
 

@@ -534,11 +534,15 @@ c.cell_name = "20210210_FC"
 ```
 
 !!! note
-    If you change variables that are used in calculating summary values (such as for example `cycle_mode`, `mass`, `active_electrode_area`), you need to re-make the summary for it to be updated:
+    If you change variables that are used in calculating summary values
+    (`cycle_mode`, `mass`, `active_electrode_area`), refresh the scaled
+    columns. Prefer `c.refresh_after("mass")` (or `"area"` / `"cycle_mode"`)
+    when a summary already exists. `c.make_summary()` rebuilds the whole
+    table and is the fallback.
 
-    ```python
-    c.make_summary()
-    ```
+    Use `cycle_mode="full_cell"` (underscore). `"full-cell"` is not a
+    recognised spelling — cellpy falls back to the default half-cell
+    convention and logs a warning.
 
 
 To check the units that are used within cellpy:
@@ -574,11 +578,11 @@ Metadata can also be included by the use of a database file containing the requi
 
 ## Saving & exporting data
 
-You can easily save all of this in the cellpy .HDF5 format:
+You can easily save all of this in the native `.cellpy` format:
 
 
 ```python
-c.save(filedir / "out" / "20210210_FC")
+c.save(filedir / "out" / "20210210_FC.cellpy")
 ```
 
 or export to csv or excel
@@ -600,13 +604,15 @@ To load saved files, you can use the `cellpy.get()` function again:
 
 ```python
 candidates = [
+    filedir / "20210210_FC.cellpy",
+    filedir / "out" / "20210210_FC.cellpy",
     filedir / "20210210_FC.h5",
     filedir / "out" / "20210210_FC.h5",
 ]
 cellpy_path = next((p for p in candidates if p.exists()), None)
 if cellpy_path is None:
     raise FileNotFoundError(
-        "Could not find 20210210_FC.h5 in data/ or data/out/. "
+        "Could not find 20210210_FC.cellpy (or a legacy .h5) in data/ or data/out/. "
         "Run the save cell above, or place the file in examples/data/."
     )
 c = cellpy.get(cellpy_path)

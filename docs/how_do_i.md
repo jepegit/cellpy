@@ -75,7 +75,8 @@ cellpy edit config
 c = cellpy.get("my_cell.res", instrument="arbin_res", mass=0.85)
 ```
 
-→ [Basic usage](getting_started/basic_usage.md)
+→ [Basic usage](getting_started/basic_usage.md) ·
+[Loading, saving and exporting (tutorial)](examples/01_loading_data.md)
 
 **…see which instruments cellpy supports?**
 
@@ -201,6 +202,8 @@ curve = c.get_cap(5)                       # potential, capacity
 curve = c.get_cap(5, mode="absolute")      # not normalised
 ```
 
+→ [Capacity vs voltage (tutorial)](examples/03_capacity_vs_voltage.md)
+
 **…get the OCV relaxation after a cycle?**
 
 ```python
@@ -218,7 +221,8 @@ ica_frame = ica.dqdv(c, cycles=[2, 3])
 dva_frame = ica.dvdq(c, cycles=2, direction="charge")
 ```
 
-→ [Compute ICA / DVA](guides/ica.md)
+→ [Compute ICA / DVA](guides/ica.md) ·
+[ICA tutorial](examples/04_incremental_capacity_analysis.md)
 
 **…pick out only the cycles run at a given C-rate?**
 
@@ -240,6 +244,9 @@ c.data.steps.query(f"{c.schema.steps.step_type}=='discharge'")
 ---
 
 ## Plot
+
+**…inspect a loaded cell and plot the obvious things?**
+→ [Initial data inspection (tutorial)](examples/02_Initial_data_inspection.md)
 
 **…plot capacity against cycle number?**
 
@@ -266,6 +273,8 @@ from cellpy.utils.plotutils import cycles_plot
 
 cycles_plot(c, cycles=[5, 10, 15])
 ```
+
+→ [Capacity vs voltage (tutorial)](examples/03_capacity_vs_voltage.md)
 
 **…check how cellpy labelled the steps in a cycle?**
 
