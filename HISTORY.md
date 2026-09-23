@@ -19,6 +19,9 @@
 * Docs: tutorials 01–02 use `full_cell`, `refresh_after`, and native `.cellpy`
   save/reload; How-do-I and first-hour link the numbered tutorials. (#1023)
 
+* `cellpy.get` / batch recalc default `find_ir=True`, so `b.plot(ir=True)`
+  gets `ir_charge` / `ir_discharge` without a second `make_summary`. (#949)
+
 ## [2.1.5.post5] - 2026-09-21
 
 * Docs: add copy-paste prompts for LLM agents, with tracked `latest` RTD

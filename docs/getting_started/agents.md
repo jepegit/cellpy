@@ -156,6 +156,7 @@ Useful methods on `CellpyCell` (non-exhaustive):
 - ICA / DVA — `from cellpy import ica` then `ica.dqdv(c)` / `ica.dvdq(c)`
   (see [Compute ICA / DVA](../guides/ica.md))
 - `make_step_table()` / `make_summary()` — usually already run by `get`
+  (`find_ir=True` so `ir_charge` / `ir_discharge` exist for `b.plot(ir=True)`)
 - `refresh_after(("mass",))` — after editing mass / area / `nominal_capacity` /
   `cycle_mode` on a cell that already has a summary, rebuild only the
   meta-dependent columns (cheaper than a full `make_summary()`). See
@@ -295,8 +296,9 @@ summaries = b.summaries          # polars frame across cells
 # for summary_collector(..., group_it=True)). custom_group_labels= overrides.
 c = b.cells["my_cell_01"]        # a CellpyCell
 fig = b.plot()                   # cycle-life summary (cap / CE)
-# ir=True is the default. direction="discharge" uses ir_discharge, and
-# falls back to ir_charge with a UserWarning if that column is missing.
+# ir=True is the default. A normal get/batch load includes IR columns
+# (find_ir=True). direction="discharge" uses ir_discharge, and falls
+# back to ir_charge with a UserWarning if that column is missing.
 fig = b.plot(ir=True, rate=True, direction="discharge")
 # Named plot families via the collector: charge (solid) and discharge (dashed)
 # of one quantity share a panel; a second "Direction" legend explains the dash.

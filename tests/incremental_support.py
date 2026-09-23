@@ -43,7 +43,7 @@ def _to_pandas(frame):
     return frame.to_pandas() if hasattr(frame, "to_pandas") else frame
 
 
-def incremental_update(cell, new_raw: pd.DataFrame, find_ir: bool = False):
+def incremental_update(cell, new_raw: pd.DataFrame, find_ir: bool = True):
     """Append ``new_raw`` to ``cell`` in place via ``update_core_data``.
 
     Mirrors the cellpy-side orchestration in ``make_step_table`` /
