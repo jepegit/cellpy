@@ -398,7 +398,8 @@ Quick facts:
   legend for `summary_collector(..., group_it=True)`); `custom_group_labels=`
   still overrides. Numeric group ids stay unlabeled.
   `b.plot(ir=True, direction="discharge")` uses `ir_discharge`, or `ir_charge`
-  with a warning if that column is missing.
+  with a warning if that column is missing. A normal `cellpy.get` /
+  `batch.load` summary includes those columns (`find_ir=True`).
   `summary_collector(b, family=...).plot()` puts charge (solid) and discharge
   (dashed) of one quantity in the same panel with a separate "Direction"
   legend; `combine_directions=False` gives one facet per variable.
