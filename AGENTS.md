@@ -370,7 +370,8 @@ Quick facts:
 - Find by project + number range: `from cellpy import filefinder` then
   `filefinder.find_by_project("SAL", 10, 15, kind="cellpy")` (or `kind="raw"`).
   Uses `cellpydatadir` / `rawdatadir`; empty list if none match.
-  MCP: `find_cells` (empty cellpy → `offer_raw`, no silent raw crawl).
+  MCP: `find_cells` (empty cellpy → `offer_raw`, no silent raw crawl;
+  `kind=raw` lists raw and sets `needs_metadata`).
 - Metadata peek (no frames): `cellpy.read_meta(path)` → dict with `cell` / `tests`.
 - Ingestion form fields: `cellpy.instrument_meta_schema(instrument)` → `fields` / `units`.
 - Frames: `c.data.raw` / `.steps` / `.summary`; columns via `c.schema.*`.

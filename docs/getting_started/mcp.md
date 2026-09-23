@@ -273,10 +273,17 @@ separated the way `PATH` is on that OS:
 CELLPY_MCP_ROOT=/data/cells:/data/out cellpy mcp serve
 ```
 
-Remote URIs (`scp://…`, `sftp://…`) are dropped: containment is
-`pathlib`-based and cannot express “inside that share”. If cellpy has no
-configured local paths, the single root is `~/cellpy_mcp` — never your
-whole filesystem.
+Remote URIs (`scp://…`, `sftp://…`) are **not** added as pathlib roots —
+containment cannot express “inside that share”, so they are dropped from
+the local root list. `find_cells(kind="raw")` still lists files under a
+configured remote `rawdatadir` (via `filefinder.find_by_project`) and
+returns the URIs plus `needs_metadata: ["mass", "nominal_capacity"]`.
+`load_cell` will open such a URI only when it sits under that configured
+root (no `..` escape, no invented host). `cellpy.get` copies the remote
+file to a local temp; the pathlib sandbox is not widened to `/`.
+
+If cellpy has no configured local paths, the single root is
+`~/cellpy_mcp` — never your whole filesystem.
 
 ## Verify and troubleshoot
 
