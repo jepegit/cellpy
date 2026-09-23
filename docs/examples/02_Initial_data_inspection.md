@@ -24,6 +24,8 @@ Either load raw data or your saved cellpy files:
 ```python
 filedir = pathlib.Path("data")  # foldername within the same directory
 candidates = [
+    filedir / "20210210_FC.cellpy",
+    filedir / "out" / "20210210_FC.cellpy",
     filedir / "20210210_FC.h5",
     filedir / "out" / "20210210_FC.h5",
 ]

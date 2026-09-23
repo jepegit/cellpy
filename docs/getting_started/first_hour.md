@@ -268,7 +268,10 @@ Depending on what you are actually trying to do:
 | understand the numbers you just saw | [Summary columns](../reference/summary_columns.md) |
 | get capacities per area, or change units | [Units, mass, area and C-rates](../guides/units.md) |
 | make better figures | [Plot one cell](../guides/plotting.md) |
-| do dQ/dV | [Compute ICA / DVA](../guides/ica.md) |
+| do dQ/dV | [Compute ICA / DVA](../guides/ica.md) · [ICA tutorial](../examples/04_incremental_capacity_analysis.md) |
+| walk a longer load / save / export example | [Loading data](../examples/01_loading_data.md) |
+| inspect and plot a cell you already saved | [Initial data inspection](../examples/02_Initial_data_inspection.md) |
+| plot capacity vs voltage for selected cycles | [Capacity vs voltage](../examples/03_capacity_vs_voltage.md) |
 | work on many cells at once | [Set up the cellpy database](../guides/batch_database.md) |
 | get data into Excel or a repository | [Get your data out](../guides/exporting.md) |
 | find out why a number looks wrong | [Troubleshooting](../troubleshooting.md) |
