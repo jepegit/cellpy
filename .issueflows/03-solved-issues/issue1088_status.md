@@ -1,13 +1,15 @@
 # Issue #1088 status
 
-- [ ] Done
+- [x] Done
 
 ## What's done
 
-- Captured #1088; worktrees `cellpy-1088` and `cellpy-mcp-1088` on `1088-mcp-nom-cap`.
-- Plan written (yolo auto-confirm).
+- MCP `load_cell` accepts optional `nominal_capacity` (number or unit string)
+  and forwards it to `cellpy.get`. Result includes applied value +
+  `nominal_capacity_was_supplied`.
+- Tests in `cellpy-mcp` (`test_cell_tools.py`): forward, omit, string-with-unit.
+- README tool row updated.
 
 ## Remaining work
 
-- Implement `load_cell` pass-through + tests in cellpy-mcp.
-- HISTORY + close yolo (cellpy-mcp PR + cellpy tracker PR).
+None.
