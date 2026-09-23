@@ -16,6 +16,9 @@
 
 * Parse `<date>_<project><number>` cell filenames. (#1075)
 
+* Docs: tutorials 01–02 use `full_cell`, `refresh_after`, and native `.cellpy`
+  save/reload; How-do-I and first-hour link the numbered tutorials. (#1023)
+
 ## [2.1.5.post5] - 2026-09-21
 
 * Docs: add copy-paste prompts for LLM agents, with tracked `latest` RTD

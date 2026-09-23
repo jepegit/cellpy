@@ -1,104 +1,78 @@
-# Issue #1023 — plan (iteration 11: glossary)
+# Issue #1023 — plan (iteration 12: tutorial-notebook pass)
 
 ## Goal
 
-Add a scientist-facing glossary that maps battery-science vocabulary onto the
-names cellpy actually uses, then wire it into navigation and the pages a
-reader is already on. One focused PR. Issue stays open for later iterations.
+Role-play a battery scientist walking the numbered tutorials on RTD latest,
+fix whatever is missing, wrong, or unfindable in the **source notebooks**,
+re-render the committed docs pages, and leave the issue open.
 
 ## Constraints
 
-- Docs-only. No product-code, schema, or CLI changes.
-- Do not redo pages shipped in #1024–#1035 (`troubleshooting.md`,
-  `guides/units.md`, `guides/plotting.md`, `guides/batch_database.md`,
-  `reference/cli.md`, `guides/exporting.md`, `reference/summary_columns.md`,
-  `guides/step_table.md`, `getting_started/first_hour.md`, `how_do_i.md`
-  as a whole). New links *into* those pages are fine.
-- Out of this PR: tutorial-notebook render pass (`examples/*.ipynb` +
-  `dev/render_example_notebooks.py`); experienced-Python pass (typing,
-  extending, plugin surface). Those stay on the open issue.
-- Every identifier and unit string must be checked against source or
-  executed against bundled example data — no hoped-for names.
+- Docs + example notebooks only. No product-code, schema, or CLI changes.
+- Do not redo pages shipped in #1024–#1035 or the iteration-11 glossary.
+  New links *into* those pages are fine.
+- Out of this PR: experienced-Python pass (typing, extending, plugin surface).
+- `docs/examples/*.md` are generated. Edit `examples/*.ipynb`, then
+  `uv run --group docs python dev/render_example_notebooks.py`.
+  The renderer does **not** execute notebooks; it converts committed outputs.
+- Every identifier checked against source or executed (`uv run`) against
+  bundled example data — no hoped-for names.
 - Writing: task-first, scientist with limited Python. No unexplained idioms.
 - Docs live on `master` ([docs-on-master.md](../04-designs-and-guides/docs-on-master.md)).
 - Docs build must stay link-clean.
 
 ### Prior art
 
-- Toolbox (`00-tools/`): nothing docs-related.
-- Graph: `graphify-out/` not present in this worktree — skipped.
-- Existing term coverage (link, do not duplicate):
-  - [docs/guides/units.md](../../docs/guides/units.md) — mass / area / nom_cap / gravimetric–areal–absolute.
-  - [docs/reference/summary_columns.md](../../docs/reference/summary_columns.md) — per-column summary meanings.
-  - [docs/guides/step_table.md](../../docs/guides/step_table.md) — step types and `c_rate`.
-  - [docs/fundamentals/data_structure.md](../../docs/fundamentals/data_structure.md) — `CellpyCell` / `Data` / frames / `c.schema`.
-  - [docs/how_do_i.md](../../docs/how_do_i.md) — already has “know what a summary column means?”.
-  - [docs/other/header_migration_map.md](../../docs/other/header_migration_map.md) — 1.x → 2.x header strings, not battery vocab.
-- Convention: one new markdown page + `zensical.toml` nav entry + cross-links
-  from the pages the persona is already on (same pattern as #1024–#1035).
+- Toolbox: `check_rtd_latest_links.py` — use if we add hard RTD `latest` URLs.
+  No notebook helper in `00-tools/`.
+- Graph: `graphify-out/` not in this worktree — skipped.
+- Renderer: [dev/render_example_notebooks.py](../../dev/render_example_notebooks.py)
+  (issue #571 / #869). Plotly HTML stripped; static PNG kept.
+- Existing 2.1 note on [docs/examples/index.md](../../docs/examples/index.md):
+  numbered tutorials + batch already claim `c.schema` / 2.1 names.
+- Cookiecutter notebooks under `examples/cellpy project template/` are
+  **out of scope** (separate tree, still `cellpy import prms` in places).
 
 ## Approach
 
-Persona / trigger: battery scientist who knows “coulombic efficiency”,
-“C-rate”, “areal capacity”, “IR”, “OCV”, “step”, “SOC” and is staring at
-`c.data.summary` / `c.schema` names.
+Persona / trigger: scientist who finished [first_hour.md](../../docs/getting_started/first_hour.md)
+and [how_do_i.md](../../docs/how_do_i.md), then opened **Loading data** /
+**First look** / **Capacity vs voltage** / **ICA**.
 
-New page `docs/fundamentals/glossary.md` under Concepts (vocabulary, not API
-reference). Each entry is: **lab term → cellpy name(s) → one-line meaning →
-link** to the page that already explains it.
+Walk those four numbered tutorials (01–04) plus the examples index. For each:
 
-Seed list (trim or add only after checking source / `c.schema` /
-`example_data.raw_file()`):
+1. Try to follow using only published docs + the tutorial page.
+2. Fix stale 1.x APIs, wrong parameter names, or missing “what do I type next?”
+   in the `.ipynb` (then re-render).
+3. Add one `how_do_i.md` question if the path from a real task to that tutorial
+   is missing.
 
-| Lab term | Likely cellpy landing |
-|---|---|
-| cycle | `cycle_num` (`c.schema`) |
-| step | `step` / `step_type` / step table |
-| charge / discharge / rest | `step_type` values the classifier actually emits |
-| OCV | `get_ocv`, rest-after-charge/discharge |
-| coulombic efficiency | `coulombic_efficiency` (+ inversion note → troubleshooting) |
-| C-rate | `c_rate` / `nominal_capacity` |
-| gravimetric / areal / specific / absolute | suffix family + `guides/units.md` |
-| IR / internal resistance | `ir_charge` / `ir_discharge` |
-| mass / loading / area | `mass=`, `area=` on `get` |
-| raw / steps / summary | the three frames |
-| ICA / DVA | `cellpy.ica` (`dqdv` / `dvdq`) |
-| batch / journal | `batch.load` / journal JSON |
-| CellpyCell / Data / schema | objects, not lab terms — short block at top |
-| SOC / DOD | only if cellpy has a real name; otherwise “not a column — compute from capacity” |
-
-No invented columns. If a lab term has no cellpy object, say so in one
-sentence rather than stretching a nearby name.
-
-Wire-in:
-
-- `zensical.toml` Concepts nav, after data structure.
-- `docs/fundamentals/index.md` bullet.
-- `docs/how_do_i.md` one question (“…look up what cellpy calls X?”).
-- One-line “see also” on `data_structure.md` and `guides/units.md`.
+Do **not** expand into 06–09 / custom loaders / GITT / batch unless a broken
+cross-link forces a one-line fix. Those stay for a later iteration.
 
 ## Files to touch
 
-- `docs/fundamentals/glossary.md` — new page.
-- `zensical.toml` — Concepts nav entry.
-- `docs/fundamentals/index.md` — link.
-- `docs/how_do_i.md` — one index question + link.
-- `docs/fundamentals/data_structure.md` — see-also.
-- `docs/guides/units.md` — see-also.
+- `examples/01_loading_data.ipynb` … `examples/04_incremental_capacity_analysis.ipynb`
+  — source edits.
+- `docs/examples/01_loading_data.md` … `04_*.md` — re-rendered only.
+- `docs/examples/index.md` — only if the walk finds a discoverability hole
+  (hand-written; not generated).
+- `docs/how_do_i.md` — at most a few index questions.
 - `HISTORY.md` — Unreleased docs bullet (close step).
 
 ## Test strategy
 
-- Execute any snippet on the new page against `example_data.raw_file()`
-  (`uv run`).
+- Execute any new snippet against `example_data.raw_file()` (`uv run`).
+- `uv run --group docs python dev/render_example_notebooks.py`
 - `uv run --group docs zensical build` — no broken links / missing anchors.
-- `uv run pytest -m essential` — docs-only change; expect existing suite green.
+- `uv run pytest -m essential` — docs-only; expect existing suite green.
   No new pytest.
 
 ## Open questions
 
-1. **This iteration = glossary?** Recommended yes. Alternative remaining
-   passes (notebooks, experienced-Python) wait for later PRs on the same
-   open issue.
-2. **Placement:** Concepts (`fundamentals/glossary.md`) vs Reference.
-   Recommended Concepts.
+1. **This iteration = tutorial notebooks 01–04?** Recommended yes.
+   Alternative: experienced-Python pass, or widen to all `examples/*.ipynb`.
+2. **Re-run notebooks** to refresh outputs, or only edit markdown cells /
+   comments and re-render existing outputs? Recommended: edit text + API
+   calls as needed; re-execute a notebook only when a snippet is actually
+   wrong (kaleido/`batch` extra if plotly PNGs must be backfilled).
