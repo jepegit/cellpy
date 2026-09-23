@@ -4410,7 +4410,10 @@ def get(
         auto_summary (bool): (re-) create summary.
         units (dict): update cellpy units (used after the file is loaded, e.g. when creating summary).
         step_kwargs (dict): sent to make_steps.
-        summary_kwargs (dict): sent to make_summary.
+        summary_kwargs (dict): sent to make_summary. ``find_ir`` defaults to
+            True so a normal ``get`` (and ``b.plot(ir=True)``) includes
+            ``ir_charge`` / ``ir_discharge`` when the raw data has resistance.
+            Pass ``summary_kwargs={"find_ir": False}`` to skip.
         selector (dict): passed to load (when loading cellpy-files).
         testing (bool): set to True if testing (will for example prevent making .log files)
         refuse_copying (bool): set to True if you do not want to copy the raw-file before loading.
@@ -4480,7 +4483,8 @@ def get(
     db_readers = list(DB_READER_INSTRUMENTS)
 
     step_kwargs = step_kwargs or {}
-    summary_kwargs = summary_kwargs or {}
+    summary_kwargs = dict(summary_kwargs or {})
+    summary_kwargs.setdefault("find_ir", True)
     load_cellpy_file = False
     logging_mode = "DEBUG" if testing else logging_mode
     log.setup_logging(

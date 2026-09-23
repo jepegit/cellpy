@@ -108,7 +108,7 @@ def load_cell(spec: CellSpec, policy: LoadPolicy | None = None) -> CellResult:
         if policy.recalc and cell is not None:
             # Summary C-rates are derived from the step table; remake both.
             cell.make_step_table()
-            cell.make_summary()
+            cell.make_summary(find_ir=True)
     except Exception as error:  # noqa: BLE001 - errors are data (accept_errors)
         if not policy.accept_errors:
             raise

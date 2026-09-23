@@ -86,7 +86,8 @@ def _select_ir_column(available, direction: str, *, ir: bool):
         return picked
     warnings.warn(
         "b.plot(ir=True) found neither ir_charge nor ir_discharge in the "
-        "summary; skipping the IR panel.",
+        "summary; skipping the IR panel. Remake with "
+        "c.make_summary(find_ir=True) if the raw data has internal resistance.",
         UserWarning,
         stacklevel=3,
     )
