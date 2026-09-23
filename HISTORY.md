@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+* Docs usability pass: tutorials get an "In this tutorial" box, working
+  cross-links and shorter output; navigation regrouped (top tabs, "Use with AI
+  agents", "Upgrading", tutorials split into core path and other instruments)
+  with redirects for moved pages; new landing page, cheat sheet, guide figures,
+  pipeline diagram, and a `CellpyCell` API page grouped by task. `to_csv`
+  documents that its folder must exist. (#1023)
+
 * MCP `find_cells(kind=raw)` lists raw files (including configured remote
   URIs), sets `needs_metadata`, and `load_cell` opens those URIs only when
   they sit under the configured root. (#1089)

@@ -22,6 +22,31 @@ How-to guides → Concepts → Reference), and *Your first hour*, *How do I…?*
 Each recommendation below lists the problem, the evidence and the fix.
 Priorities are **P1** (do first, cheap and high impact), **P2** and **P3**.
 
+## Implementation status (branch `1023-docs-usability`, 2026-09-23)
+
+Done: 1.1–1.5, 2.1–2.4, 3.1–3.7, 4.1–4.5, 5.1, 5.2, 5.4, 6.1 (labelled as
+maintainer-only, kept in nav), 7.2, §8 P1.
+
+Partly done or changed on the way:
+
+- **3.2** Notebooks were not re-executed, so 01/02/05 still read files from
+  `examples/data/`. The new header says which data each tutorial uses and how
+  to get it (`cellpy pull --examples`).
+- **3.3** No Binder/Colab badge: the notebooks need their data files and a
+  cellpy install, so a one-click launch would fail. There is a GitHub link
+  instead.
+- **5.1** `show_source` stays on (the #1015 decision). The cell page is about
+  1 MB because of the source blocks.
+- **5.3** The "8 members without docstrings" count was wrong: those are
+  property *setters*, and the getters are documented. Examples were added to
+  the ~10 most-used methods, and the thin wrappers now carry full argument
+  docs. No docstring linting was added to CI.
+- **6.2** Not merged: `contributing.md` is a single-source include of
+  `CONTRIBUTING.md`, which is worth keeping.
+
+Not done: 7.1 (version banner: check RTD addons in the admin), 7.3 (page
+descriptions), 7.4 (feedback widget), §8 P2/P3.
+
 ---
 
 ## 1. Landing page (`docs/index.md`)
