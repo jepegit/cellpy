@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+* MCP `load_cell` forwards optional `nominal_capacity` to `cellpy.get`. (#1088)
+
 * Docs: MCP `find_cells` (project + number range; empty cellpy offers raw,
   never a silent crawl) and a SAL 10–15 agent prompt. (#1080)
 
