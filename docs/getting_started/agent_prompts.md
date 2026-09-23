@@ -95,7 +95,9 @@ https://cellpy.readthedocs.io/en/latest/getting_started/agents/.
 Using cellpy MCP, find project SAL cells numbered 10–15 (names like
 <date>_SAL<number>), load them, and write a summary plot. Call find_cells
 first (kind=cellpy). If found is 0 and offer_raw is true, ask before
-searching raw — do not crawl rawdatadir yourself. Then load_cell, collect
+searching raw — do not crawl rawdatadir yourself. If the user says yes,
+call find_cells again with kind=raw. Use needs_metadata: ask for mass and
+nominal capacity; do not guess. Then load_cell with those values, collect
 kind=summary with a plot family, and render. Follow
 https://cellpy.readthedocs.io/en/latest/getting_started/mcp/.
 ```

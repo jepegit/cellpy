@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+* MCP `find_cells(kind=raw)` lists raw files (including configured remote
+  URIs), sets `needs_metadata`, and `load_cell` opens those URIs only when
+  they sit under the configured root. (#1089)
+
 * MCP `load_cell` forwards optional `nominal_capacity` to `cellpy.get`. (#1088)
 
 * Docs: MCP `find_cells` (project + number range; empty cellpy offers raw,
