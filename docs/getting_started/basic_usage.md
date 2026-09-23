@@ -1,100 +1,111 @@
-# Basic usage
+---
+icon: material/card-text
+---
 
-A short path from install to a loaded cell. For plots and longer workflows,
-use the [Tutorials](../examples/index.md). Example notebooks and data also live
-in the [examples folder on GitHub](https://github.com/jepegit/cellpy/tree/master/examples)
-(`cellpy pull` can download them).
+# Cheat sheet
 
-## Load a cell
+The calls you'll use most, one block each. New to cellpy? Start with
+[Your first hour](first_hour.md), which explains what each of these does. For
+anything not listed here, see [How do I…?](../how_do_i.md).
 
-Prefer bundled example data when trying the library for the first time
-(needs network on first download):
-
-```python
-from cellpy.utils import example_data
-
-c = example_data.raw_file()  # Arbin .res → CellpyCell with steps + summary
-```
-
-Or load a path you already have:
+## Load
 
 ```python
 import cellpy
 
-c = cellpy.get(
-    "path/to/my_cell.res",
-    mass=0.982,  # active material mass in mg
-    instrument="arbin_res",  # optional; often inferred from the suffix
-)
+c = cellpy.get("my_cell.res", instrument="arbin_res", mass=0.85)  # mass in mg
+c = cellpy.get(["run_01.res", "run_02.res"], mass=0.85)          # continued runs
+c = cellpy.get("my_cell.cellpy")                                   # a saved cell
+
+from cellpy.utils import example_data
+c = example_data.raw_file()                                        # bundled data
 ```
 
-`cellpy.get` loads the file, builds the step table, and creates the per-cycle
-summary (unless you opt out with keyword arguments).
+`cellpy.get` reads the file, builds the step table and makes the per-cycle
+summary. `cellpy.print_instruments()` lists the `instrument=` names.
 
-When you pass `instrument=` for a raw `.h5` / `.hdf5` file, that loader wins
-over suffix auto-pick of the native cellpy format. Omit `instrument` (or use a
-`.cellpy` / `.cpy` path) when you want the native reader.
-
-## Inspect frames and schema
-
-Measurement tables live on `c.data`. Prefer **`c.schema`** for column names
-so code tracks the active schema (native cellpy-core names in 2.x):
+## Set the cell up
 
 ```python
-print(c.data.summary.head())
-print(c.get_cycle_numbers()[:5])
+c = cellpy.get("my_cell.res", mass=0.704, area=1.77)               # mg, cm²
+c = cellpy.get("my_cell.res", nominal_capacity="3579 mAh/g")       # for C-rates
+c = cellpy.get("my_cell.res", cycle_mode="full_cell")              # not a half cell
 
-potential = c.data.raw[c.schema.raw.potential]
-charge_cap = c.data.summary[c.schema.summary.charge_capacity]
+c.mass = 0.704            # changed your mind after loading?
+c.refresh_after("mass")   # …then recompute what depends on it
 ```
 
-Hard-coding 1.x header strings is brittle — see
-[Coming from cellpy 1.x](migration_v1_to_v2.md) and the
-[legacy header map](../other/header_migration_map.md).
+→ [Units, mass, area and C-rates](../guides/units.md)
+
+## Look at the tables
+
+```python
+c.data.raw        # every data point the tester wrote
+c.data.steps      # one row per step: charge, discharge, rest, …
+c.data.summary    # one row per cycle
+
+c.get_cycle_numbers()
+```
+
+All three are pandas DataFrames. What each column means:
+[Summary columns](../reference/summary_columns.md) ·
+[The step table](../guides/step_table.md).
+
+## Get the numbers
+
+```python
+c.data.summary["charge_capacity_gravimetric"]   # mAh/g
+c.data.summary["charge_capacity_areal"]         # mAh/cm²
+c.data.summary["charge_capacity_absolute"]      # mAh
+c.data.summary[c.schema.summary.coulombic_efficiency]
+```
+
+!!! warning
+    The bare `charge_capacity` column is in the **tester's** units, not yours.
+    For an Arbin file that means Ah, a factor of 1000 off from mAh.
+
+## Curves for one cycle
+
+```python
+curve = c.get_cap(5)                           # capacity vs potential
+ocv = c.get_ocv(cycles=5, direction="up")      # relaxation after the cycle
+
+from cellpy import ica
+ica_frame = ica.dqdv(c, cycles=[2, 3])         # dQ/dV
+dva_frame = ica.dvdq(c, cycles=2, direction="charge")   # dV/dQ
+```
+
+## Plot
+
+```python
+from cellpy.utils.plotutils import summary_plot, cycles_plot
+
+fig = summary_plot(c, y="capacities_gravimetric_coulombic_efficiency")
+fig.show()                        # summary_plot returns the figure…
+cycles_plot(c, cycles=[5, 10, 15])   # …cycles_plot shows it itself
+```
+
+Plotting needs the `batch` extra (`pip install "cellpy[batch]"`).
+→ [Plot one cell](../guides/plotting.md)
 
 ## Save and export
 
-Save a tester-agnostic cellpy file (2.x default is the v9 zip-of-parquet
-`.cellpy` format; HDF5 remains readable):
-
 ```python
-c.save("out/my_cell.cellpy")
+c.save("my_cell.cellpy")          # everything, reloadable with cellpy.get
+c.to_excel("my_cell.xlsx")        # summary, steps and metadata as sheets
+c.to_csv("out_folder")            # one CSV per table (the folder must exist)
 ```
 
-CSV export:
+→ [Get your data out](../guides/exporting.md)
+
+## Many cells
 
 ```python
-c.to_csv("out/csv_export")
+from cellpy.utils import batch
+
+b = batch.load(name="paper01", project="cool_project", batch_col="b01")
+# every row in the cellpy database sheet whose "b01" column says "paper01"
 ```
 
-Frames are pandas DataFrames, so you can also use `DataFrame.to_excel` /
-`to_csv` on `c.data.raw`, `.steps`, or `.summary` directly. `CellpyCell`
-also exposes `to_excel("cell.xlsx")` for a packaged multi-sheet export, and
-`to_bdf` for the Battery Data Format. See
-[Get your data out](../guides/exporting.md).
-
-## Cycles and curves
-
-```python
-cycles = c.get_cycle_numbers()
-print(f"{len(cycles)} cycles")
-
-cap = c.get_cap(5)  # capacity–voltage for cycle 5
-ocv = c.get_ocv(cycles=5, direction="up")  # direction: "up" or "down"
-```
-
-More extractors (`get_current`, `get_voltage`, `split`, `merge`, …) are on
-`CellpyCell` — see the [API reference](../api/cellpy.md) and
-[Tutorials](../examples/index.md).
-
-## Next steps
-
-- [Incremental capacity analysis](../examples/04_incremental_capacity_analysis.md)
-  (tutorial) and [Compute ICA / DVA](../guides/ica.md) (short recipe)
-- [Units, mass, area and C-rates](../guides/units.md) before you trust a
-  specific capacity
-- [Plot one cell](../guides/plotting.md) to see what you just loaded
-- [Using cellpy from an agent](../agents/index.md) if you are wiring a GUI or app
-- [Check your installation](checkup.md) if something failed to load
-- [Troubleshooting](../troubleshooting.md) if a file will not load or a
-  number looks wrong
+→ [Batch processing](../examples/batch_utility/cellpy_batch_processing.md) ·
+[Set up the cellpy database](../guides/batch_database.md)

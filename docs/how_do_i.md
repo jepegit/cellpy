@@ -75,7 +75,7 @@ cellpy edit config
 c = cellpy.get("my_cell.res", instrument="arbin_res", mass=0.85)
 ```
 
-→ [Basic usage](getting_started/basic_usage.md) ·
+→ [Cheat sheet](getting_started/basic_usage.md) ·
 [Loading, saving and exporting (tutorial)](examples/01_loading_data.md)
 
 **…see which instruments cellpy supports?**

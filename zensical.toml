@@ -142,9 +142,13 @@ features = [
     "navigation.indexes",
     "navigation.instant",
     "navigation.instant.prefetch",
+    "navigation.sections",
+    "navigation.tabs",
     "navigation.top",
     "navigation.tracking",
     "search.highlight",
+    "search.share",
+    "search.suggest",
 ]
 
 [[project.theme.palette]]

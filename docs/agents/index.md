@@ -172,7 +172,7 @@ Useful methods on `CellpyCell` (non-exhaustive):
 - `save` / `to_csv` / Excel helpers — persist for the user's workflow
 
 Deeper shape docs: [Data structure](../fundamentals/data_structure.md).
-Human tutorial path: [Basic usage](../getting_started/basic_usage.md),
+Human tutorial path: [Cheat sheet](../getting_started/basic_usage.md),
 [Examples](../examples/index.md).
 
 ## Recipe: researcher GUI / app around cellpy
