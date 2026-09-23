@@ -54,7 +54,7 @@ what to do about it.
 
 If cellpy does not read your instrument's files yet, you can add a loader from
 your own package without patching cellpy: see
-[writing an instrument loader plugin](other/writing_a_loader_plugin.md).
+[writing an instrument loader plugin](guides/writing_a_loader_plugin.md).
 
 ## History
 

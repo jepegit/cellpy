@@ -89,7 +89,7 @@ You do not have to rename the sheet back, or edit notebooks that call
 `batch.load`. Only list the columns that differ; omitted keys keep the
 defaults (`cell_name` → `cell`, `mass_active` → `mass_active_material`,
 …). Full table:
-[configuration reference — db_cols](../getting_started/configuration_reference.md#db_cols).
+[configuration reference — db_cols](../reference/configuration.md#db_cols).
 A worked snippet lives in
 [Setup and configuration](../getting_started/configuration.md#example-cellpytoml).
 
@@ -248,7 +248,7 @@ The Excel sheet is only the default. `batch.load` takes `db_reader=` /
 `reader=` to select another reader, and `reader_path=` to point at its file —
 a JSON-backed database, for instance. The column names cellpy looks for in the
 Excel sheet are themselves configurable, under `[db_cols]` in `cellpy.toml`;
-see the [configuration reference](../getting_started/configuration_reference.md#db_cols).
+see the [configuration reference](../reference/configuration.md#db_cols).
 A configured column that is missing from your sheet warns once and comes back
 empty rather than failing the load.
 

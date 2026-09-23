@@ -53,6 +53,7 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
+from urllib.parse import quote
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
@@ -79,6 +80,111 @@ HEAVY_MIMETYPES = (
 #: Drop ``text/html`` larger than this (bytes); plotly blobs are multi-MB.
 _HEAVY_HTML_BYTES = 100_000
 
+#: Show at most this many body rows of a DataFrame table (#1023).
+MAX_TABLE_ROWS = 10
+
+#: Shorten text outputs (prints, reprs) longer than this many lines (#1023).
+MAX_TEXT_LINES = 40
+
+#: Where readers get the notebooks and their data.
+GITHUB_EXAMPLES = "https://github.com/jepegit/cellpy/blob/master/examples"
+
+#: Per-tutorial header injected under the H1 (#1023): what the reader learns
+#: and which data it needs. Keyed by the notebook path relative to ``examples/``.
+#: ``full_text: True`` keeps long text outputs uncut for that notebook.
+TUTORIALS: dict[str, dict[str, object]] = {
+    "01_loading_data.ipynb": {
+        "learn": [
+            "load one or several raw files into a cell object with `cellpy.get`",
+            "look at the summary, step table and metadata",
+            "save a `.cellpy` file, export to Excel/CSV, and load it again",
+        ],
+        "data": "the four `20210210_FC_01_cc_0*.res` Arbin files in `examples/data/`",
+    },
+    "02_Initial_data_inspection.ipynb": {
+        "learn": [
+            "open a saved cellpy file and check what it contains",
+            "plot raw traces and per-cycle information",
+            "draw the standard summary plots (capacity fade, efficiency)",
+        ],
+        "data": "`20210210_FC.cellpy` in `examples/data/` (made by the previous "
+        "tutorial), or the bundled example data",
+    },
+    "03_capacity_vs_voltage.ipynb": {
+        "learn": [
+            "get capacity–voltage curves for chosen cycles with `get_cap`",
+            "choose between the ways of splitting charge and discharge",
+        ],
+        "data": "the bundled example data (`cellpy.utils.example_data`), "
+        "downloaded automatically",
+    },
+    "04_incremental_capacity_analysis.ipynb": {
+        "learn": [
+            "compute dQ/dV for selected cycles with `ica.dqdv`",
+            "tune the smoothing and resolution",
+            "compute dV/dQ with `ica.dvdq` and plot both",
+        ],
+        "data": "the bundled example data (`cellpy.utils.example_data`), "
+        "downloaded automatically",
+    },
+    "05_GITT.ipynb": {
+        "learn": [
+            "find the GITT cycles in a test",
+            "pick the relaxation steps out of the step table",
+            "read off the (pseudo-)OCV points, plot them and save them",
+        ],
+        "data": "`20210210_FC.h5` in `examples/data/`",
+    },
+    "06_loading_different_formats.ipynb": {
+        "learn": [
+            "load PEC, Maccor and Neware files",
+            "pick the right instrument name and model for your tester",
+        ],
+        "data": "the bundled example data (`cellpy.utils.example_data`), "
+        "downloaded automatically",
+    },
+    "07_custom_loaders.ipynb": {
+        # The printed YAML files are the point of this tutorial.
+        "full_text": True,
+        "learn": [
+            "describe a new file layout in a YAML file",
+            "load it with the `custom` and `local_instrument` loaders",
+        ],
+        "data": "the bundled example data (`cellpy.utils.example_data`), "
+        "downloaded automatically",
+    },
+    "08_batmo_bdf.ipynb": {
+        "learn": [
+            "load a BatMo BDF CSV file with the `batmo_bdf` loader",
+            "inspect it, plot voltage–capacity curves and export it",
+        ],
+        "data": "`batmo_bdf.csv` from the cellpy test data (`cellpy pull --tests`)",
+    },
+    "09_loading_pec_data.ipynb": {
+        "learn": [
+            "load a PEC CSV export with the `pec_csv` loader",
+            "merge several PEC tests of the same cell",
+        ],
+        "data": "`pec.csv` and `pec_multiple_tests/` in `examples/data/` "
+        "(falls back to the bundled example data)",
+    },
+    "batch_utility/cellpy_batch_processing.ipynb": {
+        "learn": [
+            "set up the database sheet the batch utility reads",
+            "load and summarise many cells as one job",
+            "compare summaries, cycles and ICA across cells",
+        ],
+        "data": "`cellpy_db.xlsx` and the files in `examples/batch_utility/data/`",
+    },
+    "templates/tutorial_templates.ipynb": {
+        "learn": [
+            "start a new analysis project from a cookiecutter template",
+            "run the notebooks the template gives you",
+        ],
+        "data": "none — the template makes the project folder for you",
+    },
+}
+
 
 def _html_as_str(value: str | list[str]) -> str:
     """Join a notebook HTML payload into one string."""
@@ -96,6 +202,10 @@ def _is_keepable_html(html: str) -> bool:
     """
     lower = html.lower()
     if "<script" in lower or "plotly" in lower:
+        return False
+    # The CellpyCell rich repr: ~1000 lines of nested tables whose <h2> also
+    # lands in the page's table of contents. The text/plain repr stays (#1023).
+    if "cellpycell-object" in lower:
         return False
     if len(html) > _HEAVY_HTML_BYTES:
         return False
@@ -117,7 +227,121 @@ def prepare_dataframe_html(html: str) -> str:
     # Pandas wraps tables in a bare ``<div>`` — reuse that node as our wrapper.
     if cleaned.startswith("<div>") and cleaned.endswith("</div>"):
         cleaned = cleaned[len("<div>") : -len("</div>")].strip()
-    return f'<div class="cellpy-dataframe">\n{cleaned}\n</div>'
+    cleaned, hidden = truncate_table_rows(cleaned)
+    note = (
+        f'\n<p class="cellpy-dataframe-note">… {hidden} more rows not shown '
+        f"— run the notebook to see them all.</p>"
+        if hidden
+        else ""
+    )
+    return f'<div class="cellpy-dataframe">\n{cleaned}{note}\n</div>'
+
+
+_TBODY_RE = re.compile(r"(<tbody>)(.*?)(</tbody>)", re.DOTALL | re.IGNORECASE)
+_ROW_RE = re.compile(r"<tr\b.*?</tr>", re.DOTALL | re.IGNORECASE)
+
+
+def truncate_table_rows(html: str, limit: int = MAX_TABLE_ROWS) -> tuple[str, int]:
+    """Keep the first *limit* body rows of an HTML table; return the hidden count.
+
+    A wall of numbers is not what a reader comes to a tutorial for, and one
+    long table can make a page thousands of lines long (#1023).
+    """
+    hidden = 0
+
+    def _repl(match: re.Match[str]) -> str:
+        nonlocal hidden
+        rows = _ROW_RE.findall(match.group(2))
+        if len(rows) <= limit:
+            return match.group(0)
+        hidden += len(rows) - limit
+        kept = "\n".join(rows[:limit])
+        return f"{match.group(1)}\n{kept}\n{match.group(3)}"
+
+    return _TBODY_RE.sub(_repl, html, count=1), hidden
+
+
+def truncate_text(text: str, limit: int = MAX_TEXT_LINES) -> str:
+    """Shorten a long text output to its first lines plus a marker."""
+    lines = text.splitlines(keepends=True)
+    if len(lines) <= limit:
+        return text
+    keep = limit - 5
+    return "".join(lines[:keep]) + f"… ({len(lines) - keep} more lines)\n"
+
+
+def truncate_text_outputs(notebook: dict) -> tuple[dict, int]:
+    """Apply :func:`truncate_text` to stream and ``text/plain`` outputs."""
+    shortened = 0
+    for cell in notebook.get("cells", []):
+        for output in cell.get("outputs", []) or []:
+            targets = [(output, "text")]
+            if output.get("data"):
+                targets.append((output["data"], "text/plain"))
+            for holder, key in targets:
+                value = holder.get(key)
+                if value is None:
+                    continue
+                text = "".join(value) if isinstance(value, list) else value
+                short = truncate_text(text)
+                if short != text:
+                    holder[key] = short
+                    shortened += 1
+    return notebook, shortened
+
+
+_IPYNB_LINK_RE = re.compile(r"\]\((\./)?([^)\s#]+?)\.ipynb(#[^)\s]*)?\)")
+
+
+def rewrite_notebook_links(markdown: str, notebook_path: Path) -> tuple[str, int]:
+    """Point links at sibling notebooks to their rendered pages (#1023).
+
+    Notebooks link to each other as ``07_custom_loaders.ipynb``; the site has
+    no ``.ipynb`` files, only the rendered ``.md`` pages. A link to a notebook
+    that is not rendered goes to its copy on GitHub instead.
+    """
+    rewritten = 0
+
+    def _repl(match: re.Match[str]) -> str:
+        nonlocal rewritten
+        target, anchor = match.group(2), match.group(3) or ""
+        source = (notebook_path.parent / f"{target}.ipynb").resolve()
+        rewritten += 1
+        if source in {path.resolve() for path in notebooks()}:
+            return f"]({target}.md{anchor})"
+        rel = source.relative_to(SOURCE.resolve()).as_posix()
+        return f"]({GITHUB_EXAMPLES}/{rel}{anchor})"
+
+    return _IPYNB_LINK_RE.sub(_repl, markdown), rewritten
+
+
+def tutorial_header(notebook_path: Path) -> str:
+    """The "In this tutorial" box placed under the page title (#1023)."""
+    rel = notebook_path.resolve().relative_to(SOURCE.resolve()).as_posix()
+    meta = TUTORIALS.get(rel)
+    if meta is None:
+        return ""
+    learn = "\n".join(f"    - {item}" for item in meta["learn"])
+    return (
+        '!!! abstract "In this tutorial"\n\n'
+        "    You will learn how to:\n\n"
+        f"{learn}\n\n"
+        f"    **Data:** {meta['data']}.\n\n"
+        f"    [:material-github: Open the notebook on GitHub]({GITHUB_EXAMPLES}/"
+        f"{quote(rel)}){{ .md-button }} — or get every notebook and its data "
+        "with `cellpy pull --examples`.\n"
+    )
+
+
+def insert_header(markdown: str, header: str) -> str:
+    """Insert *header* right after the first H1 line (or at the top)."""
+    if not header:
+        return markdown
+    lines = markdown.split("\n")
+    for index, line in enumerate(lines):
+        if line.startswith("# "):
+            return "\n".join(lines[: index + 1] + ["", header] + lines[index + 1 :])
+    return header + "\n" + markdown
 
 
 # CSI / OSC / other common terminal escape sequences from rich, click, etc.
@@ -285,6 +509,10 @@ def render(notebook_path: Path, output_dir: Path) -> None:
         notebook, stripped = strip_heavy_outputs(notebook)
         notebook, coalesced = coalesce_text_display_outputs(notebook)
         notebook, ansi = strip_ansi_outputs(notebook)
+        rel = notebook_path.relative_to(SOURCE.resolve()).as_posix()
+        shortened = 0
+        if not TUTORIALS.get(rel, {}).get("full_text"):
+            notebook, shortened = truncate_text_outputs(notebook)
         staged.write_text(json.dumps(notebook), encoding="utf-8")
 
         subprocess.run(
@@ -307,8 +535,9 @@ def render(notebook_path: Path, output_dir: Path) -> None:
     rendered = output_dir / f"{notebook_path.stem}.md"
     md = rendered.read_text(encoding="utf-8")
     md, myst = convert_myst_admonitions(md)
-    if myst:
-        rendered.write_text(md, encoding="utf-8")
+    md, links = rewrite_notebook_links(md, notebook_path)
+    md = insert_header(md, tutorial_header(notebook_path))
+    rendered.write_text(md, encoding="utf-8")
 
     # Screenshots the notebook links to relatively must sit beside the page too.
     assets = notebook_path.parent / ASSET_DIR
@@ -321,7 +550,8 @@ def render(notebook_path: Path, output_dir: Path) -> None:
         f"{rendered.relative_to(REPO_ROOT)}: "
         f"{size_kb:.0f} KB (stripped {stripped} interactive outputs, "
         f"coalesced {coalesced} text groups, {ansi} ANSI escapes, "
-        f"{myst} MyST admonitions)"
+        f"{myst} MyST admonitions, shortened {shortened} text outputs, "
+        f"rewrote {links} notebook links)"
     )
 
 

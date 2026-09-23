@@ -12,7 +12,7 @@ to the features implemented in `cellpy`.
 (`Collection.data`), converting to `pandas` at the plotting seam, and the v9
 cellpy-file stores its tables as parquet. Only the per-cell Data frames
 (`c.data.raw` / `.steps` / `.summary`) are `pandas` at the public surface — see
-the frame-type note in the [agents guide](../getting_started/agents.md) for where
+the frame-type note in the [agents guide](../agents/index.md) for where
 that boundary sits and how to cross it explicitly.
 
 The core of `cellpy` is the **CellpyCell** object ([illustration of the CellpyCell object](#the-fundamentals-of-cellpy)) that contains

@@ -348,18 +348,18 @@ If a `graphify-out/` folder exists in the project root, the project has the opti
 Coding agents that **call cellpy as a library** (e.g. a researcher’s small
 GUI/app around cycling data) should read the usage chapter:
 
-**[`docs/getting_started/agents.md`](docs/getting_started/agents.md)**
+**[`docs/agents/index.md`](docs/agents/index.md)**
 (site-root indexes: [`llms.txt`](https://cellpy.readthedocs.io/en/latest/llms.txt),
 [`llms-short.txt`](https://cellpy.readthedocs.io/en/latest/llms-short.txt))
 
 To wire Cursor or another MCP client (no Python in the chat), see
-[`docs/getting_started/mcp.md`](docs/getting_started/mcp.md). Asked to
+[`docs/agents/mcp.md`](docs/agents/mcp.md). Asked to
 "install cellpy MCP and test it": follow that page's *Ask your agent to do
 it* checklist — `cellpy mcp install --client cursor`, then
 `cellpy mcp check --client cursor` proves the registered command answers
 MCP (exit 1 = broken, with the reason); the user must restart Cursor after.
 Ready-made paste prompts (MCP, load, batch, plot, ICA, …):
-[`docs/getting_started/agent_prompts.md`](docs/getting_started/agent_prompts.md).
+[`docs/agents/prompts.md`](docs/agents/prompts.md).
 
 Quick facts:
 
@@ -417,7 +417,7 @@ Quick facts:
     Collected figure bytes: `collection.to_image("png")` / `cellpy.plotting.write_image(fig, "svg")` (needs `cellpy[batch]` / kaleido). Matplotlib plots need `cellpy[plotting-mpl]` (#937).
 - Prefer schema-resolved names over hard-coded 1.x header strings.
 - When changing public get/save/schema/CLI surface, update
-  `docs/getting_started/agents.md` and this section in the same PR.
+  `docs/agents/index.md` and this section in the same PR.
 
 ## Local toolchain
 

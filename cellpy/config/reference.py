@@ -23,7 +23,7 @@ from pydantic import BaseModel
 from cellpy.config.credentials import ENV_VARS
 from cellpy.config.models import CellpyConfig
 
-DOC_PATH = Path("docs") / "getting_started" / "configuration_reference.md"
+DOC_PATH = Path("docs") / "reference" / "configuration.md"
 
 _HEADER = """# Configuration reference
 

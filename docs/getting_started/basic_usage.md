@@ -94,7 +94,7 @@ More extractors (`get_current`, `get_voltage`, `split`, `merge`, …) are on
 - [Units, mass, area and C-rates](../guides/units.md) before you trust a
   specific capacity
 - [Plot one cell](../guides/plotting.md) to see what you just loaded
-- [Using cellpy from an agent](agents.md) if you are wiring a GUI or app
+- [Using cellpy from an agent](../agents/index.md) if you are wiring a GUI or app
 - [Check your installation](checkup.md) if something failed to load
 - [Troubleshooting](../troubleshooting.md) if a file will not load or a
   number looks wrong

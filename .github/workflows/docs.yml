@@ -15,6 +15,7 @@ on:
       - "dev/render_example_notebooks.py"
       - ".github/workflows/docs.yml"
       - ".issueflows/00-tools/check_rtd_latest_links.py"
+      - ".issueflows/00-tools/check_docs_relative_links.py"
       - "AGENTS.md"
   pull_request:
     paths:
@@ -24,6 +25,7 @@ on:
       - "dev/render_example_notebooks.py"
       - ".github/workflows/docs.yml"
       - ".issueflows/00-tools/check_rtd_latest_links.py"
+      - ".issueflows/00-tools/check_docs_relative_links.py"
       - "AGENTS.md"
 
 jobs:
@@ -53,6 +55,11 @@ jobs:
         run: |
           test -f site/llms.txt
           test -f site/llms-short.txt
+
+      # Zensical only checks links between pages; a link to an .ipynb, a
+      # spreadsheet or an image is copied through unchecked (#1023).
+      - name: Relative links to non-page files resolve
+        run: python3 .issueflows/00-tools/check_docs_relative_links.py
 
       - name: Latest RTD URLs exist in site/
         run: python3 .issueflows/00-tools/check_rtd_latest_links.py

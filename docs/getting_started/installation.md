@@ -8,6 +8,14 @@ After installing, continue to [Setup and configuration](configuration.md) and
 [Check your installation](checkup.md). The `cellpy` command you get with the
 package is documented in the [command-line reference](../reference/cli.md).
 
+## Quick install
+
+--8<-- "docs/.snippets/quick-install.md"
+
+Then continue with [Setup and configuration](configuration.md). The sections
+below cover platform details: Arbin `.res` drivers, system packages, and a
+path for people new to Python.
+
 ## Install by platform
 
 === ":fontawesome-brands-windows: Windows"

@@ -29,4 +29,5 @@ to grow over time.
 | `scan_member_usage.py` | AST scan for `Data` / `CellpyCell` `.member` access in given package paths | Stage-0/1 consumer inventory reports (e.g. issue #435) |
 | `scan_hardcoded_headers.py` | AST scan for canonical header string literals in column-access contexts | Stage-0 header inventory / migration planning |
 | `check_rtd_latest_links.py` | After `zensical build`, assert `https://cellpy.readthedocs.io/en/latest/…` URLs exist under `site/` and `<!-- agent-doc: … -->` comments match the next URL | Docs CI / when adding copy-paste agent prompts with hard RTD links |
+| `check_docs_relative_links.py` | Fail on relative links in `docs/**/*.md` whose target file is missing (catches `.ipynb`/asset links Zensical does not check) | Docs CI / after re-rendering the tutorial notebooks |
 | `migrate_prms_calls.py` | Bulk replace `prms.<Section>` → `config.<section>` and add imports | Issue #453 M2 mechanical migration (review arbin/SQL/module-level edge cases manually) |

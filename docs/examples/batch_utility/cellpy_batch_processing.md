@@ -1,4 +1,17 @@
 # Batch processing
+
+!!! abstract "In this tutorial"
+
+    You will learn how to:
+
+    - set up the database sheet the batch utility reads
+    - load and summarise many cells as one job
+    - compare summaries, cycles and ICA across cells
+
+    **Data:** `cellpy_db.xlsx` and the files in `examples/batch_utility/data/`.
+
+    [:material-github: Open the notebook on GitHub](https://github.com/jepegit/cellpy/blob/master/examples/batch_utility/cellpy_batch_processing.ipynb){ .md-button } — or get every notebook and its data with `cellpy pull --examples`.
+
 The batch processing routines allow for convenient processing and comparison of multiple datasets simultaneously. These rely on a proper configuration of cellpy, including a properly working config file and a database file. A basic introduction on how to setup and use the batch processing routines is given here.
 
 ## Setting up things properly
@@ -76,7 +89,7 @@ b = batch.init(name, project, batch_col=batch_col)
 ```
 
     =========================== INITIALISATION OF BATCH ============================
-    
+
 
 Setting some parameters on automatic export of selected files:
 
@@ -228,7 +241,7 @@ The *collectors* in `cellpy.collect` are meant to simplify plotting and exportin
     [collect API reference](../../api/collect.md).
 
 ### Summaries
-`summary_collector` collects and shows summaries, including, e.g., the option to show statistical variations in the data (`spread=True`). Facet rows follow `columns=` top → bottom; default y-axis titles include units. When `group_it=True`, the legend uses journal `group_label` (text from the cellpy_db `group` column) unless you pass `custom_group_labels=`:
+`summary_collector` collects and shows summaries, including, e.g., the option to show statistical variations in the data (`spread=True`):
 
 
 ```python
@@ -369,7 +382,7 @@ print(cell_labels)
         '20180420_sf036_3_cc',
         '20180420_sf036_4_cc'
     ]
-    
+
 
 Select one cell to look at:
 

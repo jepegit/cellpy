@@ -105,7 +105,8 @@ def main(argv: list[str] | None = None) -> int:
             if not src_file.is_file():
                 comment_errors.append(f"{rel}: agent-doc source missing: {src}")
                 continue
-            expected = src.removesuffix(".md")
+            # ``agents/index.md`` is served at ``/agents/``.
+            expected = src.removesuffix(".md").removesuffix("index").rstrip("/")
             rest = text[comment.end() :]
             next_url = RTD_LATEST.search(rest)
             if next_url is None:

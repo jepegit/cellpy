@@ -29,7 +29,7 @@ unreleased).
   stdout ("banner on the protocol channel"), early exit (last stderr line),
   or timeout. `status` keeps exiting 0 — different question.
 - `install` adds an upgrade hint when the package raises `Unknown client`.
-- Docs: `docs/getting_started/mcp.md` gained an *Ask your agent to do it*
+- Docs: `docs/getting_started/mcp.md` (now `docs/agents/mcp.md`) gained an *Ask your agent to do it*
   checklist (prompt to paste + numbered commands with checkable outcomes,
   including the 0.1.0 fallback via a GitHub install). `AGENTS.md` points at it.
 

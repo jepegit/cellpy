@@ -1,4 +1,17 @@
 # Incremental capacity analysis (dQ/dV)
+
+!!! abstract "In this tutorial"
+
+    You will learn how to:
+
+    - compute dQ/dV for selected cycles with `ica.dqdv`
+    - tune the smoothing and resolution
+    - compute dV/dQ with `ica.dvdq` and plot both
+
+    **Data:** the bundled example data (`cellpy.utils.example_data`), downloaded automatically.
+
+    [:material-github: Open the notebook on GitHub](https://github.com/jepegit/cellpy/blob/master/examples/04_incremental_capacity_analysis.ipynb){ .md-button } — or get every notebook and its data with `cellpy pull --examples`.
+
 In this notebook we illustrate how to extract dQ/dV data for selected cycles.
 
 Prefer `from cellpy import ica` (`cellpy.utils.ica` is the same module). The
@@ -20,10 +33,12 @@ In all three cases it returns the same tidy frame: `cycle`, `direction`, `voltag
     [2.0 → 2.1 migration guide](../getting_started/migration_v2.0_to_2.1.md).
 
 
+
 ```python
 import cellpy
 from cellpy import ica
 from cellpy.utils import example_data
+
 ```
 
 <div class="alert alert-block alert-info">
@@ -547,24 +562,6 @@ ica_curves = ica.dqdv(vcaps)
 ica_curves.head(2)
 ```
 
-## Differential voltage (dV/dQ) and plotting
-
-`ica.dvdq` is the DVA sibling — same sources and `IcaOptions`, columns
-`cycle`, `direction`, `capacity`, `voltage`, `dvdq`. For a figure without
-building the frame yourself:
-
-```python
-from cellpy.utils.plotutils import ica_plot, dva_plot
-
-fig = ica_plot(c, cycles=[2, 3], voltage_resolution=0.005)
-fig = dva_plot(c, cycles=2, direction="charge")
-```
-
-Multi-cell: `collect_ica(batch, options=opts, cycles=…)` / `collect_dva(batch, …)`
-use the same `IcaOptions` as `dqdv` / `dvdq`. See the
-[how-to](../guides/ica.md) and the [API](../api/ica.md).
-
-
 
 
 
@@ -602,6 +599,7 @@ use the same `IcaOptions` as `dqdv` / `dvdq`. See the
 </div>
 
 
+
 ## Differential voltage (dV/dQ) and plotting
 
 `ica.dvdq` is the DVA sibling — same sources and `IcaOptions`, columns
@@ -618,5 +616,4 @@ fig = dva_plot(c, cycles=2, direction="charge")
 Multi-cell: `collect_ica(batch, options=opts, cycles=…)` / `collect_dva(batch, …)`
 use the same `IcaOptions` as `dqdv` / `dvdq`. See the
 [how-to](../guides/ica.md) and the [API](../api/ica.md).
-
 

@@ -1,6 +1,18 @@
-# Different data formats
+# Other file formats
 
-This notebook shows some examples for loading file formats from different battery testers as well as some "tweaking" possibilities provided by `cellpy`. Instrument coverage is still expanding. Loading non-supported ("custom") file formats is explained in more detail [here](./07_custom_loaders.ipynb).
+!!! abstract "In this tutorial"
+
+    You will learn how to:
+
+    - load PEC, Maccor and Neware files
+    - pick the right instrument name and model for your tester
+
+    **Data:** the bundled example data (`cellpy.utils.example_data`), downloaded automatically.
+
+    [:material-github: Open the notebook on GitHub](https://github.com/jepegit/cellpy/blob/master/examples/06_loading_different_formats.ipynb){ .md-button } — or get every notebook and its data with `cellpy pull --examples`.
+
+
+This notebook shows some examples for loading file formats from different battery testers as well as some "tweaking" possibilities provided by `cellpy`. Instrument coverage is still expanding. Loading non-supported ("custom") file formats is explained in more detail [here](07_custom_loaders.md).
 
 
 ```python
@@ -217,38 +229,7 @@ print(config["maccor_txt"]["THREE"])
                 'current_hard': 1e-13,
                 'current_soft': 1e-05,
                 'stable_current_hard': 2.0,
-                'stable_current_soft': 4.0,
-                'stable_voltage_hard': 2.0,
-                'stable_voltage_soft': 4.0,
-                'stable_charge_hard': 0.001,
-                'stable_charge_soft': 5.0,
-                'ir_change': 1e-05
-            },
-            formatters={
-                'skiprows': 2,
-                'sep': '\t',
-                'header': 0,
-                'encoding': 'ISO-8859-1',
-                'decimal': ',',
-                'thousands': None
-            },
-            meta_keys={},
-            pre_processors={'remove_empty_lines': True},
-            post_processors={
-                'split_capacity': True,
-                'split_current': True,
-                'set_index': True,
-                'rename_headers': True,
-                'set_cycle_number_not_zero': True,
-                'remove_last_if_bad': True,
-                'convert_date_time_to_datetime': True,
-                'convert_step_time_to_timedelta': True,
-                'convert_test_time_to_timedelta': True
-            },
-            prefixes={}
-        ),
-        'doc': 'Class for loading data from Maccor txt files.'
-    }
+    … (32 more lines)
 
 
 Especially the `formatters` give valuable hints if a model is promising for your specific file or not:
@@ -410,47 +391,7 @@ print(config["neware_txt"]["ONE"])
                 'current': 'A',
                 'charge': 'Ah',
                 'mass': 'g',
-                'voltage': 'V',
-                'energy': 'Wh',
-                'power': 'W',
-                'resistance': 'Ohm'
-            },
-            raw_limits={
-                'current_hard': 1e-13,
-                'current_soft': 1e-05,
-                'stable_current_hard': 2.0,
-                'stable_current_soft': 4.0,
-                'stable_voltage_hard': 2.0,
-                'stable_voltage_soft': 4.0,
-                'stable_charge_hard': 0.001,
-                'stable_charge_soft': 5.0,
-                'ir_change': 1e-05
-            },
-            formatters={
-                'skiprows': 0,
-                'sep': None,
-                'header': 0,
-                'encoding': 'ISO-8859-1',
-                'decimal': '.',
-                'thousands': None
-            },
-            meta_keys={},
-            pre_processors={},
-            post_processors={
-                'split_capacity': False,
-                'split_current': False,
-                'cumulate_capacity_within_cycle': True,
-                'set_index': True,
-                'rename_headers': True,
-                'set_cycle_number_not_zero': False,
-                'convert_date_time_to_datetime': True,
-                'convert_step_time_to_timedelta': True,
-                'convert_test_time_to_timedelta': True
-            },
-            prefixes={}
-        ),
-        'doc': 'Class for loading data from Neware txt files.'
-    }
+    … (41 more lines)
 
 
 
@@ -520,4 +461,4 @@ plotutils.summary_plot(
 
 ## Other
 
-The `cellpy` team is working actively on implementing support for more instruments. If the file format is not too challenging, consider using a custom loader (see [custom loaders](07_custom_loaders.ipynb)).
+The `cellpy` team is working actively on implementing support for more instruments. If the file format is not too challenging, consider using a custom loader (see [custom loaders](07_custom_loaders.md)).

@@ -68,7 +68,7 @@ So a gravimetric capacity is `charge / specific_gravimetric` = **mAh/g**, and
 an areal capacity is `charge / specific_areal` = **mAh/cm²**, out of the box.
 
 The full list, including everything else that lives in the configuration file,
-is in the [configuration reference](../getting_started/configuration_reference.md#units).
+is in the [configuration reference](../reference/configuration.md#units).
 
 ### Changing units for one load
 
@@ -286,5 +286,5 @@ Before you trust a specific capacity, check that:
 - [Troubleshooting](../troubleshooting.md) — when the numbers still look wrong
 - [The data structure](../fundamentals/data_structure.md) — what else is in the
   frames
-- [Configuration reference](../getting_started/configuration_reference.md#units)
+- [Configuration reference](../reference/configuration.md#units)
   — every unit setting and its default

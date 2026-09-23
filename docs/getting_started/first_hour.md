@@ -18,14 +18,9 @@ than a cellpy idea, it is called out.
 
 ## Before you start
 
-```console
-python -m pip install "cellpy[batch]"
-```
+--8<-- "docs/.snippets/quick-install.md"
 
-The `[batch]` part pulls in the plotting stack. Plain `pip install cellpy` works
-too, but then step 5 will not draw anything. Conda users:
-`conda install -c conda-forge cellpy`. Full details:
-[Installation](installation.md).
+Full details, including Arbin `.res` drivers: [Installation](installation.md).
 
 Then, once:
 

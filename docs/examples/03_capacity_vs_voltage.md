@@ -1,5 +1,17 @@
 # Capacity vs voltage
 
+!!! abstract "In this tutorial"
+
+    You will learn how to:
+
+    - get capacity–voltage curves for chosen cycles with `get_cap`
+    - choose between the ways of splitting charge and discharge
+
+    **Data:** the bundled example data (`cellpy.utils.example_data`), downloaded automatically.
+
+    [:material-github: Open the notebook on GitHub](https://github.com/jepegit/cellpy/blob/master/examples/03_capacity_vs_voltage.ipynb){ .md-button } — or get every notebook and its data with `cellpy pull --examples`.
+
+
 
 ```python
 import cellpy

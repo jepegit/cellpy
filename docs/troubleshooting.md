@@ -116,7 +116,7 @@ shows a worked example per instrument.
 If your cycler is not on the list at all, you can describe its file format
 yourself — see [Writing a custom loader](examples/07_custom_loaders.md) — or
 package a loader properly as a
-[loader plugin](other/writing_a_loader_plugin.md).
+[loader plugin](guides/writing_a_loader_plugin.md).
 
 ### Arbin `.res` files will not open
 
@@ -229,7 +229,7 @@ c.refresh_after("cycle_mode")
 ```
 
 You can also change the default for every load — see `cycle_mode` in the
-[configuration reference](getting_started/configuration_reference.md).
+[configuration reference](reference/configuration.md).
 
 ### Which capacity column do I actually want?
 

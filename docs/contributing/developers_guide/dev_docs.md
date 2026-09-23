@@ -113,6 +113,21 @@ uv run --extra batch --group docs python dev/backfill_notebook_plotly_pngs.py
 It renders the outputs already stored in the notebooks; it does **not** execute
 them.
 
+The script also shapes each page for readers (#1023):
+
+- an **"In this tutorial"** box under the title — what the reader learns, which
+  data it needs, and a link to the notebook on GitHub. The text lives in the
+  `TUTORIALS` table at the top of the script; add an entry when you add a
+  notebook, and keep the notebook's `#` title the same as its nav label in
+  `zensical.toml`;
+- links between notebooks (`07_custom_loaders.ipynb`) are rewritten to the
+  rendered pages;
+- DataFrame tables are cut to 10 rows and text outputs to 40 lines, and the
+  `CellpyCell` rich HTML repr is dropped (its text repr stays).
+
+Give every notebook `##` section headings: they become the page's table of
+contents.
+
 ### Doc-strings
 
 - Use Google-style doc-strings
