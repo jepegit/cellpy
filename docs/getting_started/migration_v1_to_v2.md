@@ -12,7 +12,7 @@ the 2.0 release date (decision #438-6). Feature work lands only on 2.x.
 
 **Remote paths:** if `scp://` / `sftp://` short SSH `Host` aliases stop
 resolving, use a real hostname + `CELLPY_KEY_FILENAME` — see
-[Remote paths](remote_paths.md) (#687).
+[Remote paths](../guides/remote_paths.md) (#687).
 
 ## Support matrix (files)
 
@@ -144,7 +144,7 @@ rewrites its raw.
 
 - Runtime config is the pydantic-settings stack under **`cellpy.config`**
   (TOML: `cellpy.toml`). See [configuration](configuration.md) and the
-  generated [configuration reference](configuration_reference.md).
+  generated [configuration reference](../reference/configuration.md).
 - Legacy **`prms.Section.field`** still forwards through a shim with a
   one-shot `DeprecationWarning` per name; prefer `cellpy.config` for new code.
 - **`import cellpy` no longer performs config file I/O** — first access /
@@ -259,7 +259,7 @@ fallback. Practical deltas:
   (`cumulative_charge_energy`), not power — same values, corrected name.
 
 Custom / out-of-tree loaders: see
-[Writing an instrument loader](../other/writing_a_loader_plugin.md) for
+[Writing an instrument loader](../guides/writing_a_loader_plugin.md) for
 `harmonize()` cast behaviour and `duration_columns`.
 
 ## If you used 2.0.0a5

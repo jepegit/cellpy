@@ -97,7 +97,7 @@ print(cellpy.config.sources())
 Environment variables use `CELLPY_<SECTION>__<FIELD>` (two underscores), e.g.
 `CELLPY_READER__AUTO_DIRS=0`.
 
-Full key list: [Configuration settings](configuration_reference.md).
+Full key list: [Configuration settings](../reference/configuration.md).
 
 ## Example `cellpy.toml`
 
@@ -126,11 +126,11 @@ mass_active = "mass_active_material"  # default — you can leave this out
 ```
 
 `rawdatadir` (and optionally `cellpydatadir`) may be a remote URI — see
-[Work with remote files](remote_paths.md).
+[Work with remote files](../guides/remote_paths.md).
 
 If you renamed a column in an older workbook, point `[db_cols]` at the new
 header instead of renaming the sheet back. The full key list is under
-[`db_cols`](configuration_reference.md#db_cols). How the sheet is read:
+[`db_cols`](../reference/configuration.md#db_cols). How the sheet is read:
 [Set up the cellpy database](../guides/batch_database.md).
 
 ## Runtime overrides
@@ -165,7 +165,7 @@ file:
 | Setting | Environment variable |
 | --- | --- |
 | password | `CELLPY_PASSWORD` |
-| ssh key file | `CELLPY_KEY_FILENAME` (required for reliable remotes; see [Remote paths](remote_paths.md) / #687) |
+| ssh key file | `CELLPY_KEY_FILENAME` (required for reliable remotes; see [Remote paths](../guides/remote_paths.md) / #687) |
 | host | `CELLPY_HOST` |
 | user | `CELLPY_USER` |
 

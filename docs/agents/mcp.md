@@ -5,7 +5,7 @@ cellpy so a chat agent can load cells, plot, and look up the API **without
 writing Python**.
 
 To **import cellpy as a library** from an agent (a GUI, a script, a notebook),
-use [Using cellpy from an agent](agents.md) instead.
+use [Using cellpy from an agent](index.md) instead.
 
 The server itself is the separate
 [`cellpy-mcp`](https://github.com/cellpy/cellpy-mcp) package. Cellpy ships the
@@ -26,13 +26,13 @@ starts — and it must print **nothing** on stdout (stdout *is* the protocol).
 
 You do not have to run the commands below yourself. In Cursor (or any agent
 that can run a terminal), paste the same prompt as
-[Copy-paste prompts for your agent](agent_prompts.md#how-to-install-cellpy-mcp):
+[Copy-paste prompts for your agent](prompts.md#how-to-install-cellpy-mcp):
 
-<!-- agent-doc: getting_started/mcp.md -->
+<!-- agent-doc: agents/mcp.md -->
 ```text
 Install the cellpy MCP server, register it with Cursor, and run
 `cellpy mcp check --client cursor` to prove it works. Follow
-https://cellpy.readthedocs.io/en/latest/getting_started/mcp/.
+https://cellpy.readthedocs.io/en/latest/agents/mcp/.
 ```
 
 The rest of this section is the checklist that agent should follow. Every
@@ -317,7 +317,7 @@ one does exit 1 on failure.
 
 - [cellpy-mcp](https://github.com/cellpy/cellpy-mcp) — tools, prompts, and
   limits (`load_cell` blocks, no quota, one client per process).
-- [Using cellpy from an agent](agents.md) — import the library, do not chat
+- [Using cellpy from an agent](index.md) — import the library, do not chat
   to it.
 - [Command-line reference — `cellpy mcp`](../reference/cli.md#cellpy-mcp)
-- [Setup and configuration](configuration.md) — what `cellpy setup` writes
+- [Setup and configuration](../getting_started/configuration.md) — what `cellpy setup` writes

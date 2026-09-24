@@ -3,7 +3,7 @@
 The loader contract, the registry that finds loaders, and the normalization
 stage that turns a vendor file into cellpy's harmonized raw format.
 
-See [Write an instrument loader plugin](../other/writing_a_loader_plugin.md)
+See [Write an instrument loader plugin](../guides/writing_a_loader_plugin.md)
 for the guide version of this.
 
 ## The contract

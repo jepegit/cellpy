@@ -1,4 +1,17 @@
-# Initial data inspection and plotting
+# First look at your data
+
+!!! abstract "In this tutorial"
+
+    You will learn how to:
+
+    - open a saved cellpy file and check what it contains
+    - plot raw traces and per-cycle information
+    - draw the standard summary plots (capacity fade, efficiency)
+
+    **Data:** `20210210_FC.cellpy` in `examples/data/` (made by the previous tutorial), or the bundled example data.
+
+    [:material-github: Open the notebook on GitHub](https://github.com/jepegit/cellpy/blob/master/examples/02_Initial_data_inspection.ipynb){ .md-button } — or get every notebook and its data with `cellpy pull --examples`.
+
 
 
 

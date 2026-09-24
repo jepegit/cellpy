@@ -7,17 +7,17 @@ maintainers: it names the source page so a move fails
 [docs CI](https://github.com/jepegit/cellpy/blob/master/.github/workflows/docs.yml)
 instead of leaving a stale link in the quote.
 
-To **import cellpy as a library**, start at [Using cellpy from an agent](agents.md).
+To **import cellpy as a library**, start at [Using cellpy from an agent](index.md).
 To **wire an MCP client**, start at [Connect an agent IDE to cellpy](mcp.md)
 (the first prompt below is the same text as that page's "Ask your agent" box).
 
 ## How to install cellpy MCP
 
-<!-- agent-doc: getting_started/mcp.md -->
+<!-- agent-doc: agents/mcp.md -->
 ```text
 Install the cellpy MCP server, register it with Cursor, and run
 `cellpy mcp check --client cursor` to prove it works. Follow
-https://cellpy.readthedocs.io/en/latest/getting_started/mcp/.
+https://cellpy.readthedocs.io/en/latest/agents/mcp/.
 ```
 
 ## How to install cellpy and prove it works
@@ -82,15 +82,15 @@ https://cellpy.readthedocs.io/en/latest/troubleshooting/.
 
 ## How to use schema names instead of hardcoded headers
 
-<!-- agent-doc: getting_started/agents.md -->
+<!-- agent-doc: agents/index.md -->
 ```text
 Use `c.schema` for column names, not hardcoded header strings. Follow
-https://cellpy.readthedocs.io/en/latest/getting_started/agents/.
+https://cellpy.readthedocs.io/en/latest/agents/.
 ```
 
 ## How to summary-plot SAL cells 10–15
 
-<!-- agent-doc: getting_started/mcp.md -->
+<!-- agent-doc: agents/mcp.md -->
 ```text
 Using cellpy MCP, find project SAL cells numbered 10–15 (names like
 <date>_SAL<number>), load them, and write a summary plot. Call find_cells
@@ -99,14 +99,14 @@ searching raw — do not crawl rawdatadir yourself. If the user says yes,
 call find_cells again with kind=raw. Use needs_metadata: ask for mass and
 nominal capacity; do not guess. Then load_cell with those values, collect
 kind=summary with a plot family, and render. Follow
-https://cellpy.readthedocs.io/en/latest/getting_started/mcp/.
+https://cellpy.readthedocs.io/en/latest/agents/mcp/.
 ```
 
 ## How to fetch the agent docs map
 
-<!-- agent-doc: getting_started/agents.md -->
+<!-- agent-doc: agents/index.md -->
 ```text
 Fetch the agent-facing docs map (`llms.txt` / this chapter) before changing
 cellpy usage. Follow
-https://cellpy.readthedocs.io/en/latest/getting_started/agents/.
+https://cellpy.readthedocs.io/en/latest/agents/.
 ```

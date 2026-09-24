@@ -3,7 +3,7 @@
 **Context.** Issue #1064. Humans paste a short prompt into a coding agent;
 the prompt must include a durable `latest` Read the Docs URL.
 
-**Decision.** Catalog lives at `docs/getting_started/agent_prompts.md`.
+**Decision.** Catalog lives at `docs/agents/prompts.md` (moved from `docs/getting_started/agent_prompts.md` in #1023).
 Prompts are fenced `text` blocks so Material/Zensical `content.code.copy`
 shows a copy button (blockquotes do not). Each hard
 `https://cellpy.readthedocs.io/en/latest/…` URL is preceded by

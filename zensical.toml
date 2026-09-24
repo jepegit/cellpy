@@ -33,39 +33,46 @@ nav = [
         { "Setup and configuration" = "getting_started/configuration.md" },
         { "Check your installation" = "getting_started/checkup.md" },
         { "Your first hour" = "getting_started/first_hour.md" },
-        { "Basic usage" = "getting_started/basic_usage.md" },
-        { "Using cellpy from an agent" = "getting_started/agents.md" },
-        { "Connect an agent IDE (MCP)" = "getting_started/mcp.md" },
-        { "Copy-paste prompts for your agent" = "getting_started/agent_prompts.md" },
-        { "Coming from cellpy 1.x" = "getting_started/migration_v1_to_v2.md" },
-        { "Coming from cellpy 2.0" = "getting_started/migration_v2.0_to_2.1.md" },
+        { "Cheat sheet" = "getting_started/basic_usage.md" },
+        { "Upgrading" = [
+            { "From cellpy 1.x" = "getting_started/migration_v1_to_v2.md" },
+            { "From cellpy 2.0" = "getting_started/migration_v2.0_to_2.1.md" },
+        ] },
     ] },
     { "How do I…?" = "how_do_i.md" },
     { "Troubleshooting" = "troubleshooting.md" },
     { "Tutorials" = [
         "examples/index.md",
-        { "Loading data" = "examples/01_loading_data.md" },
-        { "Other file formats" = "examples/06_loading_different_formats.md" },
-        { "BatMo BDF files" = "examples/08_batmo_bdf.md" },
-        { "PEC data" = "examples/09_loading_pec_data.md" },
-        { "Writing a custom loader" = "examples/07_custom_loaders.md" },
+        { "Loading and saving data" = "examples/01_loading_data.md" },
         { "First look at your data" = "examples/02_Initial_data_inspection.md" },
         { "Capacity vs voltage" = "examples/03_capacity_vs_voltage.md" },
         { "Incremental capacity analysis" = "examples/04_incremental_capacity_analysis.md" },
-        { "GITT" = "examples/05_GITT.md" },
+        { "GITT analysis" = "examples/05_GITT.md" },
         { "Batch processing" = "examples/batch_utility/cellpy_batch_processing.md" },
-        { "Templates" = "examples/templates/tutorial_templates.md" },
+        { "Project templates" = "examples/templates/tutorial_templates.md" },
+        { "Other instruments" = [
+            { "Other file formats" = "examples/06_loading_different_formats.md" },
+            { "BatMo BDF files" = "examples/08_batmo_bdf.md" },
+            { "PEC CSV data" = "examples/09_loading_pec_data.md" },
+            { "Writing a custom loader" = "examples/07_custom_loaders.md" },
+        ] },
     ] },
     { "How-to guides" = [
         "guides/index.md",
-        { "Work with remote files" = "getting_started/remote_paths.md" },
         { "Units, mass, area and C-rates" = "guides/units.md" },
         { "Plot one cell" = "guides/plotting.md" },
-        { "Set up the cellpy database" = "guides/batch_database.md" },
         { "Understand the step table" = "guides/step_table.md" },
-        { "Get your data out" = "guides/exporting.md" },
         { "Compute ICA / DVA" = "guides/ica.md" },
-        { "Write an instrument loader plugin" = "other/writing_a_loader_plugin.md" },
+        { "Get your data out" = "guides/exporting.md" },
+        { "Set up the cellpy database" = "guides/batch_database.md" },
+        { "Work with remote files" = "guides/remote_paths.md" },
+        { "Write an instrument loader plugin" = "guides/writing_a_loader_plugin.md" },
+        { "Write a CLI plugin" = "guides/writing_a_cli_plugin.md" },
+    ] },
+    { "Use with AI agents" = [
+        "agents/index.md",
+        { "Connect an agent IDE (MCP)" = "agents/mcp.md" },
+        { "Copy-paste prompts" = "agents/prompts.md" },
     ] },
     { "Concepts" = [
         "fundamentals/index.md",
@@ -77,13 +84,14 @@ nav = [
     { "Reference" = [
         "reference/index.md",
         { "Command line" = "reference/cli.md" },
-        { "Configuration settings" = "getting_started/configuration_reference.md" },
+        { "Configuration settings" = "reference/configuration.md" },
         { "Summary columns" = "reference/summary_columns.md" },
         { "Deprecations" = "reference/deprecations.md" },
         { "Legacy header map" = "other/header_migration_map.md" },
         { "API" = [
             "api/index.md",
             { "cellpy" = "api/cellpy.md" },
+            { "The cell object" = "api/cell.md" },
             { "Batch" = "api/batch.md" },
             { "Collect" = "api/collect.md" },
             { "ICA and DVA" = "api/ica.md" },
@@ -109,7 +117,7 @@ nav = [
             { "Conda packages" = "contributing/developers_guide/dev_conda_package.md" },
             { "Various" = "contributing/developers_guide/dev_various.md" },
         ] },
-        { "Issue workflow" = "issue-workflow.md" },
+        { "Issue workflow (maintainers)" = "issue-workflow.md" },
     ] },
     { "About" = [
         "other/index.md",
@@ -135,9 +143,13 @@ features = [
     "navigation.indexes",
     "navigation.instant",
     "navigation.instant.prefetch",
+    "navigation.sections",
+    "navigation.tabs",
     "navigation.top",
     "navigation.tracking",
     "search.highlight",
+    "search.share",
+    "search.suggest",
 ]
 
 [[project.theme.palette]]
@@ -203,6 +215,20 @@ custom_checkbox = true
 [project.markdown_extensions.pymdownx.snippets]
 base_path = ["."]
 check_paths = true
+# Hover tooltips for battery abbreviations on every page (#1023).
+auto_append = ["docs/.snippets/abbreviations.md"]
+
+# ----------------------------------------------------------------------------
+# Redirects for pages that moved (#1023), so old links and bookmarks still work.
+# ----------------------------------------------------------------------------
+[project.plugins.redirects.redirect_maps]
+"getting_started/agents.md" = "agents/index.md"
+"getting_started/mcp.md" = "agents/mcp.md"
+"getting_started/agent_prompts.md" = "agents/prompts.md"
+"getting_started/remote_paths.md" = "guides/remote_paths.md"
+"getting_started/configuration_reference.md" = "reference/configuration.md"
+"other/writing_a_loader_plugin.md" = "guides/writing_a_loader_plugin.md"
+"other/writing_a_cli_plugin.md" = "guides/writing_a_cli_plugin.md"
 
 # ----------------------------------------------------------------------------
 # API reference (mkdocstrings)

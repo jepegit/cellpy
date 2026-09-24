@@ -1,4 +1,17 @@
-# Loading, saving and exporting data
+# Loading and saving data
+
+!!! abstract "In this tutorial"
+
+    You will learn how to:
+
+    - load one or several raw files into a cell object with `cellpy.get`
+    - look at the summary, step table and metadata
+    - save a `.cellpy` file, export to Excel/CSV, and load it again
+
+    **Data:** the four `20210210_FC_01_cc_0*.res` Arbin files in `examples/data/`.
+
+    [:material-github: Open the notebook on GitHub](https://github.com/jepegit/cellpy/blob/master/examples/01_loading_data.ipynb){ .md-button } — or get every notebook and its data with `cellpy pull --examples`.
+
 
 
 ```python
@@ -40,7 +53,7 @@ Use `cellpy.get()` to load the rawdatafile(s):
 c = cellpy.get(filepaths, mass=1.2, cycle_mode="full_cell")
 ```
 
-**Note:** Without any further specifications, ``cellpy.get()`` will use the standard instrument loader as defined in your config file (here the one for loading arbin .res files). For loading different data formats, have a look at [Loading different formats](06_loading_different_formats.ipynb) or [Custom loaders](07_custom_loaders.ipynb).
+**Note:** Without any further specifications, ``cellpy.get()`` will use the standard instrument loader as defined in your config file (here the one for loading arbin .res files). For loading different data formats, have a look at [Loading different formats](06_loading_different_formats.md) or [Custom loaders](07_custom_loaders.md).
 
 Now you have created your **CellpyCell** object and can start to explore it further. The ``cellpy.get()`` function conveniently created a so-called *step-table* and a *summary* for you (both are pandas dataframes):
 

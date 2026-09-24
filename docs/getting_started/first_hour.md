@@ -18,14 +18,9 @@ than a cellpy idea, it is called out.
 
 ## Before you start
 
-```console
-python -m pip install "cellpy[batch]"
-```
+--8<-- "docs/.snippets/quick-install.md"
 
-The `[batch]` part pulls in the plotting stack. Plain `pip install cellpy` works
-too, but then step 5 will not draw anything. Conda users:
-`conda install -c conda-forge cellpy`. Full details:
-[Installation](installation.md).
+Full details, including Arbin `.res` drivers: [Installation](installation.md).
 
 Then, once:
 
@@ -70,7 +65,8 @@ That downloads a small Arbin `.res` file the first time (so you need network
 once), reads it, and builds everything derived from it.
 
 `c` is now a **cell object**. Almost everything you do goes through it. The name
-`c` is just a variable — call it whatever you like.
+`c` is just a variable — call it whatever you like. (One picture of what is
+inside it: [How cellpy is organised](../fundamentals/fundamentals.md).)
 
 How many cycles did we get?
 

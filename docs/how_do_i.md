@@ -49,12 +49,12 @@ cellpy mcp check --client cursor
 ```
 
 Or ask the agent itself — the page has the prompt and the checklist it
-should follow. → [Connect an agent IDE to cellpy](getting_started/mcp.md)
+should follow. → [Connect an agent IDE to cellpy](agents/mcp.md)
 
 **…paste a prompt to my agent?**
 Copy one of the ready-made paragraphs (MCP install, load a file, batch,
 plot, ICA, troubleshooting, schema names).
-→ [Copy-paste prompts for your agent](getting_started/agent_prompts.md)
+→ [Copy-paste prompts for your agent](agents/prompts.md)
 
 **…find my configuration file?**
 
@@ -75,7 +75,7 @@ cellpy edit config
 c = cellpy.get("my_cell.res", instrument="arbin_res", mass=0.85)
 ```
 
-→ [Basic usage](getting_started/basic_usage.md) ·
+→ [Cheat sheet](getting_started/basic_usage.md) ·
 [Loading, saving and exporting (tutorial)](examples/01_loading_data.md)
 
 **…see which instruments cellpy supports?**
@@ -88,12 +88,12 @@ cellpy.print_instruments()
 Describe it in a YAML file and pass `instrument_file=`, or write a loader
 plugin.
 → [Writing a custom loader](examples/07_custom_loaders.md) ·
-[Loader plugin](other/writing_a_loader_plugin.md)
+[Loader plugin](guides/writing_a_loader_plugin.md)
 
 **…add my own `cellpy` subcommands?**
 Declare a `[project.entry-points."cellpy.cli_plugins"]` entry. The entry-point
 name is the command.
-→ [Writing a CLI plugin](other/writing_a_cli_plugin.md)
+→ [Writing a CLI plugin](guides/writing_a_cli_plugin.md)
 
 **…load several raw files as one cell?**
 
@@ -109,7 +109,7 @@ c = cellpy.get("my_cell.res", dataset_number=1)
 
 **…load files from a server?**
 Use an `scp://` path in `rawdatadir` or in `cellpy.get`.
-→ [Work with remote files](getting_started/remote_paths.md)
+→ [Work with remote files](guides/remote_paths.md)
 
 **…see a cellpy file's metadata without loading the data?**
 

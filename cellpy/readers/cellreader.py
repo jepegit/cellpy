@@ -724,6 +724,8 @@ class CellpyCell:
     def register_instrument_readers(self):
         """Register instrument readers.
 
+        Wraps the implementation. See `cellpy.readers.slicing.with_cycles`.
+
         Builds the default factory only when none is set — an injected
         ``instrument_factory`` (DI) is kept as-is. Set
         ``self.instrument_factory = None`` first to force a rebuild.
@@ -1040,7 +1042,21 @@ class CellpyCell:
                 return True
 
     def _check_raw(self, file_names, abort_on_missing=False):
-        """Get the file-ids for the res_files."""
+        """Select a subset of cycles from the experiment (CellpyCell object).
+
+        This method should only be used for quick selection of cycles (e.g. for plotting).
+
+        Args:
+            cycles (int or iterable of ints): cycle number(s) to keep.
+
+        Returns:
+            A new CellpyCell object containing only the selected cycles.
+
+        Examples:
+            ```python
+            first_three = c.with_cycles([1, 2, 3])
+            ```
+        """
 
         strip_file_names = True
         check_on = self.filestatuschecker
@@ -1726,6 +1742,11 @@ class CellpyCell:
         Returns:
             None
 
+        Examples:
+            ```python
+            c.save("my_cell.cellpy")
+            c = cellpy.get("my_cell.cellpy")   # load it again
+            ```
         """
         from cellpy.readers.cellpy_file import v9 as cellpy_file_v9
 
@@ -2566,7 +2587,26 @@ class CellpyCell:
         get_cap_kwargs=None,
         to_excel_kwargs=None,
     ):
-        """Saves the data as .xlsx file(s). See `cellpy.exporters.tabular.to_excel`."""
+        """Saves the data as .xlsx file(s).
+
+        Wraps the implementation. See `cellpy.exporters.tabular.to_excel`.
+
+        Args:
+            filename: name of the Excel file.
+            cycles: (None, bool, or list of ints) export voltage-capacity curves if given.
+            raw: (bool) export raw-data if True.
+            steps: (bool) export steps if True.
+            nice: (bool) use nice formatting if True.
+            get_cap_kwargs: (dict) kwargs for CellpyCell.get_cap method.
+            to_excel_kwargs: (dict) kwargs for pandas.DataFrame.to_excel method.
+
+        Examples:
+            ```python
+            c.to_excel("my_cell.xlsx")   # summary, steps and metadata as sheets
+            ```
+
+            See [Get your data out](../guides/exporting.md).
+        """
         return exporters_tabular.to_excel(
             self,
             filename=filename,
@@ -2590,7 +2630,41 @@ class CellpyCell:
         shift=0.0,
         last_cycle=None,
     ):
-        """Saves the data as .csv file(s). See `cellpy.exporters.tabular.to_csv`."""
+        """Saves the data as .csv file(s).
+
+        Wraps the implementation. See `cellpy.exporters.tabular.to_csv`.
+
+        Args:
+            datadir: folder where to save the data (uses current folder if not
+                given).
+            sep: the separator to use in the csv file
+                (defaults to CellpyCell.sep).
+            cycles: (bool) export voltage-capacity curves if True.
+            raw: (bool) export raw-data if True.
+            summary: (bool) export summary if True.
+            shifted (bool): export with cumulated shift.
+            method (str): how the curves are given:
+
+                - "back-and-forth" - standard back and forth; discharge (or charge)
+                  reversed from where charge (or discharge) ends.
+                - "forth" - discharge (or charge) continues along x-axis.
+                - "forth-and-forth" - discharge (or charge) also starts at 0
+                  (or shift if not shift=0.0)
+
+            shift: start-value for charge (or discharge)
+            last_cycle: process only up to this cycle (if not None).
+
+        Returns:
+            None
+
+        Examples:
+            ```python
+            from pathlib import Path
+
+            Path("out_folder").mkdir(exist_ok=True)
+            c.to_csv("out_folder")   # raw, steps and summary as separate files
+            ```
+        """
         return exporters_tabular.to_csv(
             self,
             datadir=datadir,
@@ -3089,7 +3163,79 @@ class CellpyCell:
         dynamic=False,
         **kwargs,
     ):
-        """Gets the capacity for the run. See `cellpy.readers.capacity_curves.get_cap`."""
+        """Gets the capacity for the run.
+
+        Wraps the implementation. See `cellpy.readers.capacity_curves.get_cap`.
+
+        Args:
+            cycle (int, list): cycle number (s).
+            cycles (list): list of cycle numbers.
+            method (str): how the curves are given
+
+                - "back-and-forth" - standard back and forth; discharge
+                  (or charge) reversed from where charge (or discharge) ends.
+                - "forth" - discharge (or charge) continues along x-axis.
+                - "forth-and-forth" - discharge (or charge) also starts at 0
+                  (or shift if not shift=0.0)
+
+            insert_nan (bool): insert a externals.numpy.nan between the charge and discharge curves.
+                Defaults to True for "forth-and-forth", else False
+            shift: start-value for charge (or discharge) (typically used when
+                plotting shifted-capacity).
+            categorical_column: add a categorical column showing if it is
+                charge or discharge.
+            label_cycle_number (bool): add column for cycle number
+                (tidy format).
+            split (bool): return a list of c and v instead of the default
+                that is to return them combined in a DataFrame. This is only
+                possible for some specific combinations of options (neither
+                categorical_column=True or label_cycle_number=True are
+                allowed).
+            interpolated (bool): set to True if you would like to get
+                interpolated data (typically if you want to save disk space
+                or memory). Defaults to False.
+            dx (float): the step used when interpolating.
+            number_of_points (int): number of points to use (over-rides dx)
+                for interpolation (i.e. the length of the interpolated data).
+            ignore_errors (bool): don't break out of loop if an error occurs.
+            inter_cycle_shift (bool): cumulative shifts between consecutive
+                cycles. Defaults to True.
+            interpolate_along_cap (bool): interpolate along capacity axis instead
+                of along the voltage axis. Defaults to False.
+            capacity_then_voltage (bool): return capacity and voltage instead of
+                voltage and capacity. Defaults to False.
+            mode (str): 'gravimetric', 'areal', 'volumetric' or 'absolute'. Defaults
+                to 'gravimetric'.
+            mass (float): mass of active material (in set cellpy unit, typically mg).
+            area (float): area of electrode (in set cellpy units, typically cm2).
+            volume (float): volume of electrode (in set cellpy units, typically cm3).
+            cycle_mode (str): if 'anode' the first step is assumed to be the discharge,
+                else charge (defaults to ``CellpyCell.cycle_mode``).
+            dynamic: for dynamic retrieving data from cellpy-file.
+                [NOT IMPLEMENTED YET]
+            **kwargs: sent to ``get_ccap`` and ``get_dcap``.
+
+        Returns:
+            ``pandas.DataFrame`` ((cycle) voltage, capacity, (direction (-1, 1)))
+            unless split is explicitly set to True. Then it returns a tuple
+            with capacity and voltage.
+
+        Note:
+            Raw capacity columns are cycle-cumulative after load: each cycle
+            starts at 0. Testers that never reset (or reset per step) are
+            rebased in ``normalize_reset_granularity``; a ``UserWarning`` names
+            the columns when values actually change. 1.x kept the tester column
+            as-is, so a forgotten reset looked like doubled capacity (#989).
+
+        Examples:
+            ```python
+            curve = c.get_cap(5)                     # potential and capacity, mAh/g
+            curve = c.get_cap(5, mode="absolute")    # not normalised
+            curves = c.get_cap([2, 3], label_cycle_number=True)  # tidy, with a cycle column
+            ```
+
+            See [Capacity vs voltage](../examples/03_capacity_vs_voltage.md).
+        """
         return capacity_curves.get_cap(
             self,
             cycle=cycle,
@@ -3150,7 +3296,33 @@ class CellpyCell:
         dx=None,
         number_of_points=None,
     ):
-        """Get the open circuit voltage relaxation curves. See `cellpy.readers.capacity_curves.get_ocv`."""
+        """Get the open circuit voltage relaxation curves.
+
+        Wraps the implementation. See `cellpy.readers.capacity_curves.get_ocv`.
+
+        Args:
+            cycles (list of ints or None): the cycles to extract from
+                (selects all if not given).
+            direction ("up", "down", or "both"): extract only relaxations that
+                is performed during discharge for "up" (because then the
+                voltage relaxes upwards) etc.
+            remove_first: remove the first relaxation curve (typically,
+                the first curve is from the initial rest period between
+                assembling the data to the actual testing/cycling starts)
+            interpolated (bool): set to True if you want the data to be
+                interpolated (e.g. for creating smaller files)
+            dx (float): the step used when interpolating.
+            number_of_points (int): number of points to use (over-rides dx)
+                for interpolation (i.e. the length of the interpolated data).
+
+        Returns:
+            ``pandas.DataFrame`` with cycle-number, step-number, step-time, and voltage columns.
+
+        Examples:
+            ```python
+            ocv = c.get_ocv(cycles=5, direction="up")   # relaxation after the discharge
+            ```
+        """
         return capacity_curves.get_ocv(
             self,
             cycles=cycles,
@@ -3241,6 +3413,13 @@ class CellpyCell:
 
         Returns:
             numpy.ndarray of cycle numbers.
+
+        Examples:
+            ```python
+            cycles = c.get_cycle_numbers()
+            # only cycles run at C/16 (needs a nominal capacity)
+            c.get_cycle_numbers(rate=0.061, rate_on="charge", rate_std=0.005)
+            ```
         """
 
         # TODO: add support for selecting cycles based on other criteria (for example, based on the
@@ -3796,6 +3975,12 @@ class CellpyCell:
 
         Raises:
             ValueError: If ``fields`` contains an unknown name.
+
+        Examples:
+            ```python
+            c.mass = 0.704
+            c.refresh_after("mass")
+            ```
         """
         normalize_summary_meta_fields(fields)  # validate early
         try:
@@ -3916,6 +4101,12 @@ class CellpyCell:
 
         Returns:
             cellpy.CellpyData: cellpy object with the summary added to it.
+
+        Examples:
+            ```python
+            c.make_step_table()   # the summary is built on the step table
+            c.make_summary()
+            ```
         """
         if any(
             v is not None

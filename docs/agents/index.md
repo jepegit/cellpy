@@ -1,3 +1,7 @@
+---
+icon: material/robot
+---
+
 # Using cellpy from an agent
 
 This page is for **coding agents** (and humans directing them) that need to
@@ -8,10 +12,13 @@ For contributing to the cellpy *codebase*, start at
 [AGENTS.md](https://github.com/jepegit/cellpy/blob/master/AGENTS.md) in the
 repo root and the [developers guide](../contributing/developers_guide/index.md).
 
-To **connect Cursor, VS Code, Claude, or another MCP client** so the agent
-can load cells without writing Python, see
-[Connect an agent IDE to cellpy](mcp.md). This page is the import-the-library
-guide.
+This section has three pages:
+
+| Page | Use it when |
+| --- | --- |
+| This page | your agent writes Python that imports cellpy |
+| [Connect an agent IDE (MCP)](mcp.md) | you want Cursor, VS Code, Claude or another MCP client to load cells *without* writing Python |
+| [Copy-paste prompts](prompts.md) | you just want a prompt to paste into your agent |
 
 !!! tip "Findability"
     Root `AGENTS.md` points here. Prefer this chapter for usage recipes; keep
@@ -19,7 +26,7 @@ guide.
     [`llms.txt`](https://cellpy.readthedocs.io/en/latest/llms.txt) and
     [`llms-short.txt`](https://cellpy.readthedocs.io/en/latest/llms-short.txt).
     Copy-paste prompts a human can give the agent:
-    [Copy-paste prompts for your agent](agent_prompts.md).
+    [Copy-paste prompts for your agent](prompts.md).
 
 ## What cellpy is (and is not)
 
@@ -165,7 +172,7 @@ Useful methods on `CellpyCell` (non-exhaustive):
 - `save` / `to_csv` / Excel helpers — persist for the user's workflow
 
 Deeper shape docs: [Data structure](../fundamentals/data_structure.md).
-Human tutorial path: [Basic usage](basic_usage.md),
+Human tutorial path: [Cheat sheet](../getting_started/basic_usage.md),
 [Examples](../examples/index.md).
 
 ## Recipe: researcher GUI / app around cellpy
@@ -253,7 +260,7 @@ def cycle_table(c):
 Instrument strings and formats: see
 [Loading different formats](../examples/06_loading_different_formats.md) and
 the instruments API. Coming from cellpy 1.x:
-[migration guide](migration_v1_to_v2.md).
+[migration guide](../getting_started/migration_v1_to_v2.md).
 
 ## Recipe: incremental capacity and differential voltage
 
@@ -379,7 +386,7 @@ Other measured knobs for a slow first batch load:
   into the v3 journal path is tracked in
   [#900](https://github.com/jepegit/cellpy/issues/900); either way, pointing
   `rawdatadir` at the project folder is the cheapest fix. See
-  [Remote paths](remote_paths.md#behaviour-notes).
+  [Remote paths](../guides/remote_paths.md#behaviour-notes).
 - **Saving `.cellpy` files.** First load writes one file per cell. Pass
   `save_cellpy=False` if the app only needs the frames in memory.
 - **`pyarrow` installed twice.** A pip `pyarrow` on top of a conda
@@ -411,7 +418,7 @@ Other measured knobs for a slow first batch load:
 
 | Need | Page |
 | --- | --- |
-| Install / config / CLI checkup | [Installation](installation.md), [Configuration](configuration.md), [Checkup](checkup.md) |
+| Install / config / CLI checkup | [Installation](../getting_started/installation.md), [Configuration](../getting_started/configuration.md), [Checkup](../getting_started/checkup.md) |
 | Frames and `schema` | [Data structure](../fundamentals/data_structure.md) |
 | Tutorials | [Examples](../examples/index.md) |
 | ICA / DVA | [How-to](../guides/ica.md), [API](../api/ica.md) |

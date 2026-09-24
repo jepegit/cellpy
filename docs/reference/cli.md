@@ -266,7 +266,7 @@ again.
 
 Runs cellpy as an [MCP](https://modelcontextprotocol.io/) server, so a chat
 client can load and inspect cell data. Walkthrough (Cursor, VS Code, Claude,
-WSL): [Connect an agent IDE to cellpy](../getting_started/mcp.md).
+WSL): [Connect an agent IDE to cellpy](../agents/mcp.md).
 
 ```console
 cellpy mcp status
@@ -311,7 +311,7 @@ python -m pip install cellpy-mcp
   of `cellpy info`
 - [Setup and configuration](../getting_started/configuration.md) — what
   `cellpy setup` writes, and how to change it afterwards
-- [Configuration reference](../getting_started/configuration_reference.md) —
+- [Configuration reference](configuration.md) —
   every setting
 - [Troubleshooting](../troubleshooting.md) — including
   `cellpy: command not found`

@@ -1,4 +1,17 @@
 # GITT analysis
+
+!!! abstract "In this tutorial"
+
+    You will learn how to:
+
+    - find the GITT cycles in a test
+    - pick the relaxation steps out of the step table
+    - read off the (pseudo-)OCV points, plot them and save them
+
+    **Data:** `20210210_FC.h5` in `examples/data/`.
+
+    [:material-github: Open the notebook on GitHub](https://github.com/jepegit/cellpy/blob/master/examples/05_GITT.ipynb){ .md-button } — or get every notebook and its data with `cellpy pull --examples`.
+
 In this notebook we will use cellpy to extract the open circuit voltages (OCV) from a GITT measurement. The extracted OCVs will be plotted, and the results saved in .csv format.
 
 
@@ -12,6 +25,8 @@ import cellpy
 from cellpy.utils import plotutils
 
 ```
+
+## Load the data
 
 Set filepath and load the datafile:
 
@@ -32,6 +47,8 @@ c = cellpy.get(cellpy_path)
 
 ```
 
+## Find the GITT cycles
+
 Produce an overview plot to identify cycle numbers for the GITT experiment (for an interactive version of this plot, you have to have `plotly` installed):
 
 
@@ -48,6 +65,8 @@ plotutils.cycle_info_plot(c, cycle=cycles)
 ![png](05_GITT_files/05_GITT_5_1.png)
     
 
+
+## Pick out the relaxation steps
 
 From the overview plot above, we can identify the GITT cycles to be cycle number 4 and 5. In the following, we will focus on cycle 5 only.
 
@@ -322,6 +341,8 @@ cap_dch = (
 
 ```
 
+## Plot the OCV points on the voltage curve
+
 To plot our results, we additionally get the entire voltage vs capacity curves for the selected GITT cycle, employing the `.get_ccap` and `.get_dcap` methods. The cell mass is used to convert from gravimetric capacity (mAh/g) to capacity (mAh).
 
 
@@ -391,7 +412,7 @@ fig.show()
     
 
 
-### Saving the data
+## Save the OCV points
 Concatenate the OCV voltages and capacities into a dataframe, and save as a .csv file.
 
 

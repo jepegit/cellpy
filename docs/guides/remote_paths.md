@@ -125,7 +125,7 @@ Use `cellpy.utils.helpers.check_connection()` (or
 - **Batch load executor.** `batch.load(..., executor="threads")` overlaps cell
   loads and mainly helps *reopening* local `.cellpy` files; a first load of
   remote raw files does not overlap on the wire. See
-  [Using cellpy from an agent](agents.md#recipe-loading-many-cells-batch-and-its-speed-knobs).
+  [Using cellpy from an agent](../agents/index.md#recipe-loading-many-cells-batch-and-its-speed-knobs).
 
 ## Live SFTP tests (Docker)
 

@@ -113,6 +113,34 @@ uv run --extra batch --group docs python dev/backfill_notebook_plotly_pngs.py
 It renders the outputs already stored in the notebooks; it does **not** execute
 them.
 
+The script also shapes each page for readers (#1023):
+
+- an **"In this tutorial"** box under the title — what the reader learns, which
+  data it needs, and a link to the notebook on GitHub. The text lives in the
+  `TUTORIALS` table at the top of the script; add an entry when you add a
+  notebook, and keep the notebook's `#` title the same as its nav label in
+  `zensical.toml`;
+- links between notebooks (`07_custom_loaders.ipynb`) are rewritten to the
+  rendered pages;
+- DataFrame tables are cut to 10 rows and text outputs to 40 lines, and the
+  `CellpyCell` rich HTML repr is dropped (its text repr stays).
+
+Give every notebook `##` section headings: they become the page's table of
+contents.
+
+### Figures in the how-to guides
+
+The PNGs under `docs/guides/figures/` are drawn from the bundled example data by
+a script, with the same calls the guides show:
+
+```shell
+MPLBACKEND=Agg uv run --extra batch --group docs python dev/render_guide_figures.py
+```
+
+It uses the matplotlib backend, because exporting plotly figures needs kaleido
+and a Chrome install. Re-run it when a plot's look changes, and commit the
+PNGs.
+
 ### Doc-strings
 
 - Use Google-style doc-strings

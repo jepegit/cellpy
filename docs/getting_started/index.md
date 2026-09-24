@@ -4,27 +4,31 @@ icon: material/rocket-launch
 
 # Getting started
 
-Install cellpy, point it at a file, and get a first look at the data. Work
-through these pages in order, or jump to what you need.
+Install cellpy, check that it works, and load your first cell. It takes about
+an hour. Most of that is the guided tour in step 3.
 
-- [Installation](installation.md) — install with pip or conda, on Windows,
-  Linux, or macOS
-- [Setup and configuration](configuration.md) — folders, config file, and
-  `cellpy setup`
-- [Check your installation](checkup.md) — version, paths, and useful CLI
-  checks
-- [Your first hour](first_hour.md) — a guided run-through on data that
-  ships with cellpy: load, inspect, plot, export, then your own file
-- [Basic usage](basic_usage.md) — load a cell and inspect the main tables
-- [Using cellpy from an agent](agents.md) — recipes for coding agents and
-  app/GUI builders
-- [Connect an agent IDE to cellpy](mcp.md) — Cursor, VS Code, Claude, and
-  other MCP clients
-- [Copy-paste prompts for your agent](agent_prompts.md) — prompts to paste
-  into Cursor or another coding agent
-- [Coming from cellpy 1.x](migration_v1_to_v2.md) — what changed in 2.x and
-  how to migrate
-- [Troubleshooting](../troubleshooting.md) — what to do when a file will
-  not load or the numbers look wrong
-- [Coming from cellpy 2.0](migration_v2.0_to_2.1.md) — removed shims, including
-  the old ICA helpers
+| Step | Page | Time |
+| --- | --- | --- |
+| 1 | [Installation](installation.md): pip or conda, on Windows, Linux or macOS | 5–10 min |
+| 2 | [Setup and configuration](configuration.md) and [Check your installation](checkup.md): run `cellpy setup`, then `cellpy info --check` | 5 min |
+| 3 | [Your first hour](first_hour.md): load, inspect, plot and export a cell from bundled data, then your own file | 45 min |
+
+After that, keep the [Cheat sheet](basic_usage.md) open while you work. It has
+the dozen calls you'll use most, one block each.
+
+## Where to go next
+
+- **Have a question like "how do I get areal capacity?"** →
+  [How do I…?](../how_do_i.md)
+- **Something failed or a number looks wrong** →
+  [Troubleshooting](../troubleshooting.md)
+- **Want a longer worked example** → [Tutorials](../examples/index.md)
+- **Using an AI coding agent or an MCP client** →
+  [Use with AI agents](../agents/index.md)
+
+## Upgrading
+
+- [From cellpy 1.x](migration_v1_to_v2.md): new frames, column names and file
+  format, and what to change in your scripts.
+- [From cellpy 2.0](migration_v2.0_to_2.1.md): the shims removed in 2.1,
+  including the old ICA helpers.

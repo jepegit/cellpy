@@ -72,3 +72,21 @@ table.dataframe tbody th {
 .cellpy-dataframe table {
   font-size: 0.72rem;
 }
+
+/* Landing page: the logo already says "cellpy"; keep the H1 for the page
+   title and screen readers only (#1023). */
+.cellpy-visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* "… N more rows not shown" under truncated tutorial tables (#1023). */
+.cellpy-dataframe-note {
+  font-size: 0.75rem;
+  opacity: 0.7;
+  margin-top: 0.25rem;
+}

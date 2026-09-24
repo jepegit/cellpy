@@ -92,7 +92,7 @@ During the v2 window, `cellpy setup` may still dual-write legacy YAML and
 `cellpy.toml`. When a user TOML is present, it wins over `.cellpy_prms_*.conf`.
 
 See also [Setup and configuration](../../getting_started/configuration.md),
-[Configuration reference](../../getting_started/configuration_reference.md),
+[Configuration reference](../../reference/configuration.md),
 and [Coming from cellpy 1.x](../../getting_started/migration_v1_to_v2.md).
 
 ## Installing pyodbc on Mac without conda
