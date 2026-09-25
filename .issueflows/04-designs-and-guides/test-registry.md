@@ -184,6 +184,11 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_incremental_update.py::test_gap_append_on_boundary_equals_full_load | yes | yes | CellpyCellCore.update_core_data | #778 | step/cycle boundary cuts |
 | tests/test_incremental_update.py::test_gap_append_mid_step_equals_full_load | yes | yes | cellpycore.merge.update_data | #778 | strict xfail → core#148 |
 | tests/test_incremental_update.py::test_empty_tail_is_noop | yes | yes | CellpyCellCore.update_core_data | #778 | strict xfail → core#147 |
+| tests/test_incremental_protocol.py::test_load_since_alone_matches_only_the_incremental_protocol | yes | yes | instruments.contract.SupportsIncrementalLoad | #779 | methods-only; not InstrumentLoader |
+| tests/test_incremental_protocol.py::test_full_read_loader_is_not_incremental | yes | yes | instruments.contract.SupportsIncrementalLoad | #779 | GoodLoader omits load_since |
+| tests/test_incremental_protocol.py::test_loader_can_match_both_protocols | yes | yes | instruments.contract.SupportsIncrementalLoad | #779 | optional second protocol |
+| tests/test_incremental_protocol.py::test_marker_and_chunk_are_frozen | yes | yes | instruments.contract.LoadMarker | #779 | frozen dataclasses |
+| tests/test_incremental_protocol.py::test_conformance_kit_ignores_a_missing_load_since | yes | yes | instruments.testing.check_loader | #779 | full-read kit unchanged |
 | tests/test_dbreader.py::test_missing_column_warns_once | yes | yes | readers.dbreader.Reader._pick_info | #1008 | warn-once per missing header |
 | tests/test_dbreader.py::test_nom_cap_specifics_column_reaches_pages | yes | yes | batch._dbengine._create_pages_dict | #1008 | db value → pages |
 | tests/test_dbreader.py::test_simple_db_engine_skip_file_search_excel_reader | yes | yes | batch._dbengine.simple_db_engine / find_files | #1017 | skip_file_search frames one row per cell |
