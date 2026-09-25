@@ -942,18 +942,83 @@ class TxtLoader(AutoLoader, ABC):
         )
 
     # override this if using other query functions
-    def query_file(self, name):
+    def query_file(self, name, skiprows=None):
+        """Read the file with ``pd.read_csv`` using the resolved formatter parameters.
+
+        Args:
+            name: path to read.
+            skiprows: override for ``self.skiprows`` (an int, or a callable on
+                the 0-based line index as ``pd.read_csv`` accepts). Used by the
+                incremental read to skip already-consumed data rows while
+                keeping the header line.
+        """
+        if skiprows is None:
+            skiprows = self.skiprows
         logging.critical(f"parsing with pandas.read_csv: {name}")
         logging.critical(
-            f"parameters: {self.sep=}, {self.skiprows=}, {self.header=}, {self.encoding=}, {self.decimal=}"
+            f"parameters: {self.sep=}, {skiprows=}, {self.header=}, {self.encoding=}, {self.decimal=}"
         )
         data_df = pd.read_csv(
             name,
             sep=self.sep,
-            skiprows=self.skiprows,
+            skiprows=skiprows,
             header=self.header,
             encoding=self.encoding,
             decimal=self.decimal,
             thousands=self.thousands,
         )
         return data_df
+
+    def _load_since_rows(self, source, marker=None):
+        """Incremental read for text sources: data rows from ``marker.row_count`` on.
+
+        Shared implementation behind the ``load_since`` of the text loaders
+        that opt into `SupportsIncrementalLoad` (neware_txt, maccor_txt).
+        Formatter parameters are resolved exactly as ``parse()`` resolves
+        them, the header line is kept, and the rows are harmonized with this
+        loader's declarations so ``new_raw`` is the same frame a full
+        ``harmonize(parse())`` yields for those rows.
+
+        The returned marker's ``row_count`` is the file data-row index of the
+        first row of the last cycle read (see
+        ``cellpy.readers.instruments.incremental``), so the next call re-reads
+        that cycle whole. A marker at or past the end of the file gives an
+        empty ``new_raw`` and the marker back unchanged.
+        """
+        import polars as pl
+
+        from cellpy.readers.instruments.contract import IncrementalChunk, LoadMarker
+        from cellpy.readers.instruments.harmonize import harmonize
+        from cellpy.readers.instruments.incremental import last_cycle_start, vendor_column
+
+        start = 0 if marker is None or marker.row_count is None else int(marker.row_count)
+        if marker is None:
+            marker = LoadMarker()
+
+        self.name = source
+        if not self.is_db:
+            self.copy_to_temporary()
+        if self.pre_processors:
+            self._pre_process()
+        self.parse_loader_parameters()
+
+        leading = max(int(self.skiprows or 0), 0)
+        header_lines = (int(self.header) + 1) if isinstance(self.header, int) else 0
+        first_data_line = leading + header_lines
+
+        def skip(line_index: int) -> bool:
+            if line_index < leading:
+                return True
+            return first_data_line <= line_index < first_data_line + start
+
+        vendor = self.query_file(self.temp_file_path, skiprows=skip)
+        self._parsed_frame = None
+        self._parsed = True
+        if len(vendor) == 0:
+            return IncrementalChunk(new_raw=pl.DataFrame(), marker=marker)
+
+        vendor_pl = pl.from_pandas(vendor)
+        declarations = self.declarations()
+        new_raw = harmonize(vendor_pl, declarations, strict=False)
+        rewind = last_cycle_start(vendor_pl, vendor_column(declarations, "cycle_num"))
+        return IncrementalChunk(new_raw=new_raw, marker=LoadMarker(row_count=start + rewind))

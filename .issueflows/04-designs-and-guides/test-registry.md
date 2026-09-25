@@ -189,6 +189,17 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_incremental_protocol.py::test_loader_can_match_both_protocols | yes | yes | instruments.contract.SupportsIncrementalLoad | #779 | optional second protocol |
 | tests/test_incremental_protocol.py::test_marker_and_chunk_are_frozen | yes | yes | instruments.contract.LoadMarker | #779 | frozen dataclasses |
 | tests/test_incremental_protocol.py::test_conformance_kit_ignores_a_missing_load_since | yes | yes | instruments.testing.check_loader | #779 | full-read kit unchanged |
+| tests/test_load_since.py::test_only_the_four_cheap_partial_loaders_are_incremental | yes | yes | neware_txt / maccor_txt / arbin_res / arbin_sql load_since | #780 | protocol membership; others stay full-read |
+| tests/test_load_since.py::test_last_cycle_start_finds_the_trailing_run | yes | yes | instruments.incremental.last_cycle_start | #780 | rewind helper |
+| tests/test_load_since.py::test_neware_load_since_none_equals_full_harmonized_read | yes | yes | TxtLoader._load_since_rows | #780 | chunk == harmonize(parse()) |
+| tests/test_load_since.py::test_neware_load_since_marker_rereads_from_last_cycle_start | yes | yes | TxtLoader._load_since_rows | #780 | row_count marker rewinds to cycle start |
+| tests/test_load_since.py::test_neware_head_cell_plus_chunk_equals_full_load | yes | yes | load_since + update_core_data | #780 | #778 oracle with a real chunk |
+| tests/test_load_since.py::test_marker_past_end_of_file_gives_empty_chunk_and_same_marker | yes | yes | TxtLoader._load_since_rows | #780 | empty new_raw contract |
+| tests/test_load_since.py::test_load_since_does_not_poison_the_parse_cache | yes | yes | TxtLoader._load_since_rows / loader | #780 | `_parsed_frame` cleared |
+| tests/test_load_since.py::test_maccor_load_since_matches_full_read_and_row_marker | yes | yes | maccor_txt.load_since | #780 | multi-line header; mid-cycle caller marker caveat |
+| tests/test_load_since.py::test_arbin_res_load_since_seeks_on_datapoint_and_rewinds_to_cycle_start | yes | yes | arbin_res.load_since | #780 | skip without mdbtools |
+| tests/test_load_since.py::test_arbin_sql_load_since_filters_on_datapoint | yes | yes | arbin_sql.load_since | #780 | mocked `_query_sql` |
+| tests/test_load_since.py::test_arbin_sql_query_gets_a_datapoint_clause | yes | yes | arbin_sql._query_sql | #780 | SQL clause on the fully qualified table |
 | tests/test_dbreader.py::test_missing_column_warns_once | yes | yes | readers.dbreader.Reader._pick_info | #1008 | warn-once per missing header |
 | tests/test_dbreader.py::test_nom_cap_specifics_column_reaches_pages | yes | yes | batch._dbengine._create_pages_dict | #1008 | db value → pages |
 | tests/test_dbreader.py::test_simple_db_engine_skip_file_search_excel_reader | yes | yes | batch._dbengine.simple_db_engine / find_files | #1017 | skip_file_search frames one row per cell |

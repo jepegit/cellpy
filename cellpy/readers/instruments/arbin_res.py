@@ -894,6 +894,42 @@ class DataLoader(BaseLoader):
         self._parsed = True
         return frame
 
+    def load_since(self, source, marker=None):
+        """Rows with ``Data_Point`` above the marker (`SupportsIncrementalLoad`, #780).
+
+        Seeks on ``LoadMarker.last_source_datapoint_num`` through the
+        ``data_points`` filter the normal-table read already has. The
+        returned marker is one below the first ``Data_Point`` of the last
+        cycle read, so the next call re-reads that cycle whole (see
+        ``cellpy.readers.instruments.incremental``). Scoped to a single test
+        like ``parse()``.
+        """
+        import polars as pl
+
+        from cellpy.readers.instruments.contract import IncrementalChunk, LoadMarker
+        from cellpy.readers.instruments.harmonize import harmonize
+        from cellpy.readers.instruments.incremental import last_cycle_start, vendor_column
+
+        since = None if marker is None else marker.last_source_datapoint_num
+        if marker is None:
+            marker = LoadMarker()
+        data_points = None if since is None else (int(since) + 1, None)
+
+        vendor = self.parse(source, data_points=data_points)
+        self._parsed_data = None
+        if vendor.height == 0:
+            return IncrementalChunk(new_raw=pl.DataFrame(), marker=marker)
+
+        declarations = self.declarations()
+        new_raw = harmonize(vendor, declarations, strict=False)
+        rewind = last_cycle_start(vendor, vendor_column(declarations, "cycle_num"))
+        datapoint_column = vendor_column(declarations, "datapoint_num")
+        cycle_start = int(vendor.get_column(datapoint_column)[rewind])
+        return IncrementalChunk(
+            new_raw=new_raw,
+            marker=LoadMarker(last_source_datapoint_num=cycle_start - 1),
+        )
+
     def declarations(self):
         """Declarations for arbin's normal table.
 

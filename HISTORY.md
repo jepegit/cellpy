@@ -6,6 +6,11 @@
   `LoadMarker` and `IncrementalChunk`, hosted in cellpy. Shipped loaders
   stay full-read until they opt in. (#779)
 
+* `load_since()` on `arbin_res`, `arbin_sql`, `neware_txt`, and
+  `maccor_txt`: returns the harmonized rows read since a marker plus the
+  next marker, which rewinds to the start of the last cycle so cycle-local
+  capacity normalisation stays correct. Other loaders stay full-read. (#780)
+
 ## [2.1.5.post6] - 2026-09-25
 
 * `summary_collector(...).plot()` keeps a lone charge or discharge series

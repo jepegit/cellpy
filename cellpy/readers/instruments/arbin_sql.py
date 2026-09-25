@@ -249,9 +249,42 @@ class DataLoader(BaseLoader):
 
         self.name = source
         self.is_db = True
-        data_df, _ = self._query_sql(self.name)
+        data_df, _ = self._query_sql(self.name, since_data_point=kwargs.pop("since_data_point", None))
         self._parsed = True
         return pl.from_pandas(data_df.reset_index(drop=True))
+
+    def load_since(self, source, marker=None):
+        """Rows with ``Data_Point`` above the marker (`SupportsIncrementalLoad`, #780).
+
+        Seeks on ``LoadMarker.last_source_datapoint_num`` with one extra
+        ``WHERE`` clause on the normal-table query. The returned marker is one
+        below the first ``Data_Point`` of the last cycle read, so the next
+        call re-reads that cycle whole (see
+        ``cellpy.readers.instruments.incremental``).
+        """
+        import polars as pl
+
+        from cellpy.readers.instruments.contract import IncrementalChunk, LoadMarker
+        from cellpy.readers.instruments.harmonize import harmonize
+        from cellpy.readers.instruments.incremental import last_cycle_start, vendor_column
+
+        since = None if marker is None else marker.last_source_datapoint_num
+        if marker is None:
+            marker = LoadMarker()
+
+        vendor = self.parse(source, since_data_point=since)
+        if vendor.height == 0:
+            return IncrementalChunk(new_raw=pl.DataFrame(), marker=marker)
+
+        declarations = self.declarations()
+        new_raw = harmonize(vendor, declarations, strict=False)
+        rewind = last_cycle_start(vendor, vendor_column(declarations, "cycle_num"))
+        datapoint_column = vendor_column(declarations, "datapoint_num")
+        cycle_start = int(vendor.get_column(datapoint_column)[rewind])
+        return IncrementalChunk(
+            new_raw=new_raw,
+            marker=LoadMarker(last_source_datapoint_num=cycle_start - 1),
+        )
 
     def declarations(self):
         """Declarations for Arbin SQL Server.
@@ -400,7 +433,15 @@ class DataLoader(BaseLoader):
 
         return data
 
-    def _query_sql(self, name):
+    def _query_sql(self, name, since_data_point=None):
+        """Query the normal and statistics tables for test ``name``.
+
+        Args:
+            name: the Arbin test name.
+            since_data_point: when given, only normal-table rows with
+                ``Data_Point`` strictly above this value are returned
+                (incremental read, #780). The statistics table is unfiltered.
+        """
         # TODO: refactor and include optional SQL arguments
         name_str = f"('{name}', '')"
         con_str = (
@@ -437,6 +478,8 @@ class DataLoader(BaseLoader):
                 "WHERE ArbinPro8MasterInfo.dbo.TestList_Table.Test_Name IN "
                 + str(name_str)
             )
+            if since_data_point is not None:
+                data_query += f" AND {row['Database_Name']}.dbo.IV_Basic_Table.Data_Point > {int(since_data_point)}"
 
             stat_query = (
                 "SELECT "
