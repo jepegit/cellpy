@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [2.1.5.post6] - 2026-09-25
+
 * `summary_collector(...).plot()` keeps a lone charge or discharge series
   solid and drops the extra Direction legend; dash + that legend stay only
   when both directions share a panel. (#1096)
