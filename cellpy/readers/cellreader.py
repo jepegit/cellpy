@@ -37,6 +37,7 @@ import cellpy.internals.connections as internals
 
 from cellpy.exceptions import (
     DeprecatedFeature,
+    LoaderError,
     MixedCycleModesError,
     NoDataFound,
 )
@@ -121,6 +122,29 @@ _SUMMARY_META_FIELD_ALIASES = {
     "nom_cap": "nominal_capacity",
     "cycle_mode": "cycle_mode",
 }
+
+
+def _frame_to_pandas(frame):
+    """pandas view of a core (polars) frame; pandas passes through."""
+    return frame.to_pandas() if hasattr(frame, "to_pandas") else frame
+
+
+def _align_dtypes(chunk, existing):
+    """Cast the shared columns of a polars ``chunk`` to ``existing``'s dtypes.
+
+    A freshly harmonized chunk can carry narrower integer types (Int32 for a
+    literal ``test_id``, for example) than the raw frame it is appended to;
+    core's vertical concat requires an exact dtype match.
+    """
+    import polars as pl
+
+    target = existing if isinstance(existing, pl.DataFrame) else pl.from_pandas(existing)
+    casts = [
+        pl.col(name).cast(dtype)
+        for name, dtype in target.schema.items()
+        if name in chunk.columns and chunk.schema[name] != dtype
+    ]
+    return chunk.with_columns(casts) if casts else chunk
 
 
 def normalize_summary_meta_fields(fields=None):
@@ -338,6 +362,9 @@ class CellpyCell:
             self.tester = tester
 
         self.loader = None  # this will be set in the function set_instrument
+        #: Incremental-load position for ``update()`` (#164); derived from
+        #: the raw frame when None, so it is never persisted.
+        self._load_marker = None
         self.debug = debug
         logging.debug("created CellpyCell instance")
 
@@ -1869,6 +1896,235 @@ class CellpyCell:
         return cellpy_file_fids.convert2fid_list(tbl)
 
     # -------------------- cellpy file handling end ----------------------
+
+    # -------------------- incremental refresh (#164) --------------------
+
+    def update(self, force=False, **loader_kwargs):
+        """Refresh this cell from its raw source(s) if they have grown.
+
+        The headline live/incremental feature (Epic L, cellpy 2.2). Works on a
+        cell loaded from raw and on a cell loaded from a cellpy-file (the
+        raw-file ids stored there name the source).
+
+        Flow:
+
+        1. Change detection on the recorded raw files (size and mtime, as in
+           ``check_file_ids``). Unchanged and not ``force`` → no-op.
+        2. Single source whose loader implements ``SupportsIncrementalLoad``
+           (arbin_res, arbin_sql, neware_txt, maccor_txt): read only the rows
+           since the load marker and append them through core
+           ``update_core_data`` (overlap trimmed, affected steps rebuilt,
+           summary refreshed). The marker is derived from the loaded raw when
+           this cell has none yet, so a cellpy-file round trip needs no extra
+           state.
+        3. Otherwise, or when the incremental path rejects the chunk (for
+           example the head held a single cycle): full reload of every raw
+           file, then step table and summary. Cell metadata (mass, nominal
+           capacity, area, cycle mode, name) is kept.
+
+        Args:
+            force: refresh even when the file stats did not change.
+            **loader_kwargs: forwarded to ``set_instrument`` when the loader has
+                to be (re)created from the stored provenance, e.g.
+                ``model="UIO"`` for a neware export.
+
+        Returns:
+            bool: ``True`` when the frames changed, ``False`` for a no-op.
+
+        Raises:
+            NoDataFound: if the cell has no recorded raw source.
+
+        Examples:
+            ```python
+            c = cellpy.get("running_test.csv", instrument="neware_txt")
+            ...  # the tester keeps writing
+            if c.update():
+                print(c.data.summary.tail(1))
+            ```
+        """
+        data = self.data
+        fids = [f for f in (data.raw_data_files or []) if f is not None]
+        if not fids:
+            raise NoDataFound("cannot update: no raw source recorded on this cell")
+
+        if not force and not self._raw_sources_changed(fids):
+            logging.info("update: raw source(s) unchanged")
+            return False
+
+        self._ensure_loader_for_update(**loader_kwargs)
+
+        from cellpy.readers.instruments.contract import SupportsIncrementalLoad
+
+        loader = self.loader_class
+        can_go_incremental = (
+            len(fids) == 1
+            and self.native_schema
+            and getattr(config.reader, "use_harmonized_raw", True)
+            and isinstance(loader, SupportsIncrementalLoad)
+        )
+        if can_go_incremental:
+            try:
+                return self._update_incremental(fids[0], loader)
+            except (ValueError, LoaderError) as exc:
+                logging.info(f"update: incremental path declined ({exc}); reloading")
+        return self._update_full_reload(fids, **loader_kwargs)
+
+    def _raw_sources_changed(self, fids) -> bool:
+        """True if any recorded raw file differs from disk in size or mtime.
+
+        Sources without file stats (databases, missing files) count as changed
+        so the caller still tries to refresh them.
+        """
+        for fid in fids:
+            if getattr(fid, "is_db", False) or not fid.full_name:
+                return True
+            current = ds.FileID(fid.full_name)
+            if current.name is None:
+                return True
+            if fid.size is None or fid.last_modified is None:
+                return True
+            if int(current.size) != int(fid.size):
+                return True
+            if float(current.last_modified) != float(fid.last_modified):
+                return True
+        return False
+
+    def _ensure_loader_for_update(self, **loader_kwargs):
+        """Recreate the loader from stored provenance when the tester changed.
+
+        A cell loaded from a cellpy-file carries the default instrument, not
+        the one that read the raw file; ``_provenance['source_type']``
+        remembers it.
+        """
+        provenance = getattr(self.data, "_provenance", None) or {}
+        source_type = provenance.get("source_type")
+        if loader_kwargs or (source_type and source_type != self.tester):
+            instrument = source_type or self.tester
+            logging.debug(f"update: setting instrument {instrument} ({loader_kwargs})")
+            self.set_instrument(instrument=instrument, **loader_kwargs)
+            self.tester = instrument
+
+    def _marker_from_raw(self):
+        """Derive a `LoadMarker` from the loaded raw when none is stored.
+
+        Both seek fields are filled so any implementing loader can read the
+        one it uses: ``row_count`` = row index of the first row of the last
+        cycle (text loaders); ``last_source_datapoint_num`` = the datapoint
+        just before that row (arbin). Rewinding to the cycle start mirrors the
+        loaders' own marker policy (see ``instruments/incremental.py``).
+        """
+        import polars as pl
+
+        from cellpy.readers.instruments.contract import LoadMarker
+        from cellpy.readers.instruments.incremental import last_cycle_start
+
+        raw = self.data.raw
+        frame = raw if isinstance(raw, pl.DataFrame) else pl.from_pandas(raw)
+        if frame.height == 0:
+            return None
+        cycle_column = self.schema.raw.cycle_num
+        start_row = last_cycle_start(frame, cycle_column)
+        datapoint_column = self.schema.raw.datapoint_num
+        datapoint = int(frame.get_column(datapoint_column)[start_row])
+        return LoadMarker(last_source_datapoint_num=datapoint - 1, row_count=start_row)
+
+    def _update_incremental(self, fid, loader) -> bool:
+        import polars as pl
+
+        marker = getattr(self, "_load_marker", None) or self._marker_from_raw()
+        if marker is None:
+            raise ValueError("no raw rows to derive a load marker from")
+        source = fid.full_name if not getattr(fid, "is_db", False) else fid.name
+        chunk = loader.load_since(source, marker)
+        self._load_marker = chunk.marker
+        if chunk.new_raw is None or chunk.new_raw.height == 0:
+            self._refresh_fid(fid)
+            return False
+
+        test_id_column = self.schema.raw.test_id
+        new_raw = chunk.new_raw.with_columns(pl.lit(int(self.data.active_test_id)).alias(test_id_column))
+        new_raw = _align_dtypes(new_raw, self.data.raw)
+        self._update_from_raw_rows(new_raw, find_ir=self._summary_has_ir())
+        self._refresh_fid(fid)
+        logging.info(f"update: appended {chunk.new_raw.height} raw rows (incremental)")
+        return True
+
+    def _update_from_raw_rows(self, new_raw, find_ir=True):
+        """Append ``new_raw`` (native schema) through core ``update_core_data``.
+
+        Mirrors the cellpy-side orchestration in ``make_step_table`` /
+        ``make_summary`` (by-value nominal capacity, current factor, raw
+        limits) and re-applies the summary extras and the scaled (mass/area)
+        columns, so the result compares with a full ``cellpy.get``. Raises
+        ``ValueError`` when core rejects the chunk (full reload territory).
+        """
+        from cellpy.readers.native_core import _add_summary_extras
+
+        data = self.data
+        factor = core_units.calculate_current_conversion_factor(
+            data.raw_units["current"], to_units=self.cellpy_units
+        )
+        nom_cap_abs = self._resolve_nom_cap_abs(data)
+        out = self.core.update_core_data(
+            data,
+            new_raw,
+            nom_cap_abs=nom_cap_abs,
+            current_conversion_factor=factor,
+            find_ir=find_ir,
+            raw_limits=self.raw_limits,
+        )
+        # ``update_core_data`` returns a bare cellpycore ``Data``; copy the
+        # frames back so cellpy's metadata-bearing ``Data`` stays the owner.
+        data.raw = _frame_to_pandas(out.raw)
+        data.steps = _frame_to_pandas(out.steps)
+        data.summary = _add_summary_extras(_frame_to_pandas(out.summary), self.core.schema)
+        self._refresh_scaled_summary_columns()
+        return self
+
+    def _summary_has_ir(self) -> bool:
+        summary = getattr(self.data, "summary", None)
+        if summary is None or getattr(summary, "empty", True):
+            return True
+        return self.schema.summary.ir_charge in summary.columns
+
+    def _refresh_fid(self, fid):
+        """Re-stat the raw source and record the new tail on its `FileID`."""
+        if not getattr(fid, "is_db", False) and fid.full_name:
+            current = ds.FileID(fid.full_name)
+            if current.name is not None:
+                fid.size = current.size
+                fid.last_modified = current.last_modified
+                fid.last_accessed = current.last_accessed
+                fid.last_info_changed = current.last_info_changed
+        raw = self.data.raw
+        datapoint_column = self.schema.raw.datapoint_num
+        if datapoint_column in raw.columns and len(raw):
+            fid.last_data_point = int(raw[datapoint_column].max())
+        if self.data.raw_data_files_length:
+            self.data.raw_data_files_length[-1] = len(raw)
+
+    def _update_full_reload(self, fids, **loader_kwargs) -> bool:
+        sources = [f.name if getattr(f, "is_db", False) else f.full_name for f in fids]
+        old = self.data
+        keep_meta = copy.deepcopy(old.meta_common)
+        keep_cycle_mode = self.cycle_mode
+        keep_name = self._cell_name
+        find_ir = self._summary_has_ir()
+        is_a_file = self.tester not in DB_READER_INSTRUMENTS
+
+        self.from_raw(file_names=sources, is_a_file=is_a_file)
+        self.data.meta_common = keep_meta
+        if keep_cycle_mode is not None:
+            self.cycle_mode = keep_cycle_mode
+        if keep_name is not None:
+            self._cell_name = keep_name
+        self.make_step_table()
+        self.make_summary(find_ir=find_ir)
+        self._load_marker = None
+        logging.info("update: full reload")
+        return True
+
+    # -------------------- incremental refresh end -----------------------
 
     def merge(self, cells, mode="campaign", renumber_cycles=True, **kwargs):
         """Merge other cells/datasets into this one.

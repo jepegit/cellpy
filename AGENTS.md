@@ -374,6 +374,9 @@ Quick facts:
   `kind=raw` lists raw and sets `needs_metadata`).
 - Metadata peek (no frames): `cellpy.read_meta(path)` → dict with `cell` / `tests`.
 - Ingestion form fields: `cellpy.instrument_meta_schema(instrument)` → `fields` / `units`.
+- Live/running test: `c.update()` re-reads only the new raw rows (incremental
+  loaders) or reloads fully, returns `True` when frames changed; `False` if
+  the raw file did not change on disk. Also works after `cellpy.get(".cellpy")`.
 - Frames: `c.data.raw` / `.steps` / `.summary`; columns via `c.schema.*`.
   After a raw load, each cycle's raw capacity starts at 0. A forgotten tester
   reset that 1.x plotted as doubled capacity is rebased on load for every

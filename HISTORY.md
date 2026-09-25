@@ -11,6 +11,13 @@
   next marker, which rewinds to the start of the last cycle so cycle-local
   capacity normalisation stays correct. Other loaders stay full-read. (#780)
 
+* `CellpyCell.update()`: refresh a cell from a raw file that grew. Detects
+  changes from file size/mtime, reads only the new rows for incremental
+  loaders (arbin_res, arbin_sql, neware_txt, maccor_txt) and appends them
+  through cellpy-core, otherwise reloads fully while keeping mass, area,
+  nominal capacity, cycle mode and cell name. Works on cells loaded from a
+  cellpy-file. Returns `True` when the frames changed. (#164)
+
 ## [2.1.5.post6] - 2026-09-25
 
 * `summary_collector(...).plot()` keeps a lone charge or discharge series
