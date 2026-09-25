@@ -400,9 +400,10 @@ Quick facts:
   `b.plot(ir=True, direction="discharge")` uses `ir_discharge`, or `ir_charge`
   with a warning if that column is missing. A normal `cellpy.get` /
   `batch.load` summary includes those columns (`find_ir=True`).
-  `summary_collector(b, family=...).plot()` puts charge (solid) and discharge
-  (dashed) of one quantity in the same panel with a separate "Direction"
-  legend; `combine_directions=False` gives one facet per variable.
+  `summary_collector(b, family=...).plot()` puts charge and discharge of one
+  quantity in the same panel. Both on that panel: charge solid, discharge
+  dashed, plus a "Direction" legend. Only one of them: solid line, no
+  Direction legend. `combine_directions=False` gives one facet per variable.
   `mark_as_bad` is a session flag (unknown cell name → `ValueError`); `drop` /
   `drop_cells_marked_bad` remove now
   (plot/summaries work without `update()`). `save()` then next `load` (default

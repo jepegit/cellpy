@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+* `summary_collector(...).plot()` keeps a lone charge or discharge series
+  solid and drops the extra Direction legend; dash + that legend stay only
+  when both directions share a panel. (#1096)
+
 * Docs usability pass: tutorials get an "In this tutorial" box, working
   cross-links and shorter output; navigation regrouped (top tabs, "Use with AI
   agents", "Upgrading", tutorials split into core path and other instruments)

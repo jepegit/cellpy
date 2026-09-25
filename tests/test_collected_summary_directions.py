@@ -99,13 +99,63 @@ def test_combine_directions_false_keeps_one_facet_per_variable():
     assert "legend2" not in fig.layout.to_plotly_json()
 
 
+def _series_traces(fig):
+    return [t for t in fig.data if getattr(t, "legend", None) != "legend2"]
+
+
 @pytest.mark.essential
-def test_lone_direction_keeps_its_own_label_but_gets_the_dash():
-    """Only ``charge_x`` present: no merge partner, so the panel stays "Charge …"."""
-    fig = _plot(_frame(variables=("charge_capacity_gravimetric", "coulombic_efficiency")))
+@pytest.mark.parametrize(
+    "variable,word",
+    [
+        ("charge_capacity_gravimetric", "Charge"),
+        ("discharge_capacity_gravimetric", "Discharge"),
+    ],
+)
+def test_lone_direction_stays_solid_without_direction_legend(variable, word):
+    """One direction in the frame: keep its y-title, solid line, no Direction legend."""
+    fig = _plot(_frame(variables=(variable, "coulombic_efficiency")))
     titles = [fig.layout[k].title.text for k in _yaxes(fig)]
-    assert any(t.startswith("Charge Capacity") for t in titles)
-    assert [t.name for t in fig.data if t.legend == "legend2"] == ["Charge"]
+    assert any(t.startswith(f"{word} Capacity") for t in titles)
+    assert {t.line.dash for t in _series_traces(fig)} <= {None, "solid"}
+    assert not [t for t in fig.data if getattr(t, "legend", None) == "legend2"]
+    assert "legend2" not in fig.layout.to_plotly_json()
+
+
+@pytest.mark.essential
+def test_unpaired_direction_stays_solid_beside_a_combined_panel():
+    """``ir_discharge`` alone stays solid even when capacity overlays both directions."""
+    fig = _plot(
+        _frame(
+            variables=(
+                "charge_capacity_gravimetric",
+                "discharge_capacity_gravimetric",
+                "ir_discharge",
+            )
+        )
+    )
+    assert [t.name for t in fig.data if t.legend == "legend2"] == ["Charge", "Discharge"]
+    ir_keys = [k for k in _yaxes(fig) if "Ir" in (fig.layout[k].title.text or "")]
+    assert len(ir_keys) == 1
+    suffix = ir_keys[0].removeprefix("yaxis")
+    trace_axis = "y" if suffix == "" else f"y{suffix}"
+    ir_traces = [t for t in _series_traces(fig) if t.yaxis == trace_axis]
+    assert ir_traces
+    assert {t.line.dash for t in ir_traces} <= {None, "solid"}
+
+
+@pytest.mark.essential
+def test_lone_discharge_spread_stays_solid():
+    pytest.importorskip("plotly", reason="plotting extras (batch) not installed")
+    from cellpy.plotting import theme
+    from cellpy.plotting.collected import summary_plotter
+
+    theme.make_collector_templates()
+    frame = _frame(variables=("discharge_capacity_gravimetric",)).assign(mean=1.0, std=0.1)
+    # ``mean`` marks a grouped frame, which sets ``group_cells`` itself.
+    fig = summary_plotter(frame, backend="plotly", spread=True)
+    dashes = {t.line.dash for t in fig.data if getattr(t.line, "dash", None)}
+    assert "dash" not in dashes
+    assert not [t for t in fig.data if getattr(t, "legend", None) == "legend2"]
 
 
 @pytest.mark.essential

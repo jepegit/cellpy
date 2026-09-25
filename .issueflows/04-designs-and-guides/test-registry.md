@@ -197,7 +197,9 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_collected_summary_directions.py::test_pretty_labels_for_panel_keys | yes | yes | plotting.collected._pretty_variable_label | #1009 | panel-key labels, non-CV, mod_01 |
 | tests/test_collected_summary_directions.py::test_charge_and_discharge_share_a_panel_with_dash_styles | yes | yes | plotting.collected.summary_plotter | #1009 | 2 panels, dash, legend2 |
 | tests/test_collected_summary_directions.py::test_combine_directions_false_keeps_one_facet_per_variable | yes | yes | plotting.collected.summary_plotter | #1009 | opt-out |
-| tests/test_collected_summary_directions.py::test_lone_direction_keeps_its_own_label_but_gets_the_dash | yes | yes | plotting.collected._panel_mapping | #1009 | no merge partner |
+| tests/test_collected_summary_directions.py::test_lone_direction_stays_solid_without_direction_legend | yes | yes | plotting.collected.summary_plotter | #1096 | lone direction: solid, no legend2 |
+| tests/test_collected_summary_directions.py::test_unpaired_direction_stays_solid_beside_a_combined_panel | yes | yes | plotting.collected.summary_plotter | #1096 | lone panel beside a combined one |
+| tests/test_collected_summary_directions.py::test_lone_discharge_spread_stays_solid | yes | yes | plotting.collected.spread_plot | #1096 | discharge-only spread stays solid |
 | tests/test_collected_summary_directions.py::test_no_direction_tokens_means_no_direction_legend | yes | yes | plotting.collected.summary_plotter | #1009 | untouched frame |
 | tests/test_collected_summary_directions.py::test_y_ranges_accept_original_variable_names | yes | yes | plotting.collected.summary_plotter | #1009 | key translation |
 | tests/test_collected_summary_directions.py::test_order_variables_accept_original_variable_names | yes | yes | plotting.collected.summary_plotter | #1009 | key translation |

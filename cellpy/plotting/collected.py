@@ -212,12 +212,21 @@ def spread_plot(curves, plotly_arguments=None, y_label_mapper=None, **kwargs):
             panel_data = data[data["variable"] == variable]
             # One trace per direction so charge / discharge share the panel
             # but differ in dash (#1009).
-            directions = list(pd.unique(panel_data["direction"])) if has_direction else [None]
+            directions = (
+                list(pd.unique(panel_data["direction"])) if has_direction else [None]
+            )
+            # Dash only when this panel actually overlays both directions
+            # (#1096). A discharge-only summary stays solid.
+            present = {d for d in directions if d}
+            both = {"charge", "discharge"} <= present
             for direction in directions:
                 sub_data = (
                     panel_data
                     if direction is None
                     else panel_data[panel_data["direction"] == direction]
+                )
+                dash = (
+                    _DIRECTION_DASH.get(direction or "", "solid") if both else "solid"
                 )
                 _add_spread_traces(
                     fig,
@@ -228,7 +237,7 @@ def spread_plot(curves, plotly_arguments=None, y_label_mapper=None, **kwargs):
                     sub_data,
                     mode=mode,
                     color=color,
-                    dash=_DIRECTION_DASH.get(direction or "", "solid"),
+                    dash=dash,
                     show_legend=show_legend,
                 )
                 show_legend = False
@@ -1102,6 +1111,31 @@ def _combine_direction_panels(
     return curves, directions, mapping
 
 
+def _panels_with_both_directions(curves: pd.DataFrame, g: str = "variable") -> set[str]:
+    """Panel keys whose rows include both charge and discharge (#1096)."""
+    if "direction" not in curves.columns:
+        return set()
+    mixed: set[str] = set()
+    for panel, sub in curves.groupby(g, observed=True):
+        present = {d for d in pd.unique(sub["direction"].dropna()) if d}
+        if {"charge", "discharge"} <= present:
+            mixed.add(panel)
+    return mixed
+
+
+def _styled_directions(curves: pd.DataFrame, g: str = "variable") -> list[str]:
+    """Directions that share a panel, charge then discharge (#1096)."""
+    mixed = _panels_with_both_directions(curves, g)
+    if not mixed:
+        return []
+    present = {
+        d
+        for d in pd.unique(curves.loc[curves[g].isin(mixed), "direction"].dropna())
+        if d
+    }
+    return [d for d in _DIRECTION_TOKENS if d in present]
+
+
 def _dedupe_direction_names(fig: Any) -> None:
     """Drop direction tokens from Plotly trace names; one legend entry per series.
 
@@ -1574,11 +1608,13 @@ def summary_plotter(collected_curves, cycles_to_plot=None, backend="plotly", **k
       a ``charge`` / ``discharge`` token (``charge_capacity_gravimetric`` and
       ``discharge_capacity_gravimetric``, ``potential_end_charge`` /
       ``potential_end_discharge``, ...) share one panel keyed by the name with
-      that token removed (``capacity_gravimetric``). Charge is drawn solid,
-      discharge dashed, with one legend entry per cell / group and a second
-      legend ("Direction") for the dash styles. ``order_variables`` and
-      ``y_ranges`` may use either the original variable names or the panel
-      key. ``combine_directions=False`` restores one facet per variable.
+      that token removed (``capacity_gravimetric``). When a panel draws both
+      directions, charge is solid and discharge dashed, with one legend entry
+      per cell / group and a second legend ("Direction") for the dash styles.
+      A panel that has only one direction stays solid and does not add that
+      legend (#1096). ``order_variables`` and ``y_ranges`` may use either the
+      original variable names or the panel key. ``combine_directions=False``
+      restores one facet per variable.
     """
 
     # start_cell is used to determine the starting cell for the subplots (plotly)
@@ -1696,6 +1732,7 @@ def summary_plotter(collected_curves, cycles_to_plot=None, backend="plotly", **k
     # y_ranges, explicit labels) are translated to the panel key.
     combine_directions = kwargs.pop("combine_directions", True)
     directions: list[str] = []
+    styled: list[str] = []
     if combine_directions:
         collected_curves, directions, panel_of = _combine_direction_panels(
             collected_curves, g
@@ -1710,9 +1747,17 @@ def summary_plotter(collected_curves, cycles_to_plot=None, backend="plotly", **k
             explicit_y_label_mapper = {
                 panel_of.get(k, k): v for k, v in explicit_y_label_mapper.items()
             }
-        if backend == "plotly" and not kwargs.get("spread"):
-            kwargs.setdefault("line_dash", "direction")
-            kwargs.setdefault("line_dash_map", dict(_DIRECTION_DASH))
+        # Dash and the Direction legend only when a panel draws both (#1096).
+        styled = _styled_directions(collected_curves, g)
+        if styled:
+            mixed = _panels_with_both_directions(collected_curves, g)
+            lone = ~collected_curves[g].isin(mixed)
+            if bool(lone.any()):
+                collected_curves = collected_curves.copy()
+                collected_curves.loc[lone, "direction"] = ""
+            if backend == "plotly" and not kwargs.get("spread"):
+                kwargs.setdefault("line_dash", "direction")
+                kwargs.setdefault("line_dash_map", dict(_DIRECTION_DASH))
 
     if order_variables:
         # Variables that are not in the requested order (derived series such as
@@ -1764,10 +1809,10 @@ def summary_plotter(collected_curves, cycles_to_plot=None, backend="plotly", **k
     )
 
     if backend == "plotly":
-        if fig is not None and directions:
+        if fig is not None and styled:
             if not kwargs.get("spread"):
                 _dedupe_direction_names(fig)
-            _add_direction_legend(fig, directions)
+            _add_direction_legend(fig, styled)
 
         # TODO: implement having different heights of the subplots
 
