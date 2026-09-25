@@ -24,6 +24,12 @@ framework, because the loader is not in a position to know it. A draft
 ``TestMeta`` arriving with ``source_uri`` already set is a contract violation,
 and the conformance kit rejects it (architecture plan §5.1.3).
 
+An optional second protocol, `SupportsIncrementalLoad`, lets a loader
+re-read from a `LoadMarker`. It is not part of `InstrumentLoader`. Loaders
+that cannot do a cheap partial read omit it, and a later ``update()`` falls
+back to a full reload. cellpycore never sees the marker; overlap trimming
+stays in ``update_data``.
+
 See also
 --------
 ``cellpy.readers.instruments.registry`` (discovery and routing) and
@@ -142,5 +148,68 @@ class InstrumentLoader(Protocol):
         Raises:
             LoaderError: wrapping any vendor parse failure. Never return a
                 partial or empty result to signal failure (conventions §1).
+        """
+        ...
+
+
+@dataclass(frozen=True, slots=True)
+class LoadMarker:
+    """Where a previous incremental read stopped.
+
+    Every field is optional. ``load_since(..., marker=None)`` and a marker
+    with every field unset both mean "nothing stored yet": return every row.
+    A loader sets the one field its source can seek on.
+
+    Attributes:
+        last_source_datapoint_num: last raw ``source_datapoint_num`` already
+            stored. Core ``update_data`` trims overlap on this column, then
+            on ``datapoint_num``.
+        byte_offset: byte position for a text or csv re-read.
+        row_count: rows already consumed, for sources that seek by row.
+    """
+
+    last_source_datapoint_num: int | None = None
+    byte_offset: int | None = None
+    row_count: int | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class IncrementalChunk:
+    """Rows read since a marker, plus the marker for the next call.
+
+    Attributes:
+        new_raw: native-schema raw rows. May overlap the tail of the
+            existing raw frame. Overlap is trimmed by ``update_data``, not
+            by the loader.
+        marker: position to store for the next ``load_since``.
+        complete: loader hint that the test has ended. Not a guarantee.
+    """
+
+    new_raw: "pl.DataFrame"
+    marker: LoadMarker
+    complete: bool = False
+
+
+@runtime_checkable
+class SupportsIncrementalLoad(Protocol):
+    """Optional capability: re-read a source from a marker.
+
+    Not part of `InstrumentLoader`. A loader that cannot do a cheap partial
+    read omits this protocol. Structural, like `InstrumentLoader`: no base
+    class is required, and the Protocol stays methods-only so
+    ``issubclass`` works.
+    """
+
+    def load_since(self, source: Path, marker: LoadMarker | None) -> IncrementalChunk:
+        """Return rows appended since ``marker``.
+
+        Args:
+            source: a local path. Remote sources are resolved before this
+                call, same as `InstrumentLoader.load`.
+            marker: previous position, or ``None`` when nothing has been
+                read yet (return every row).
+
+        Returns:
+            The new rows (tail overlap allowed) and the marker to persist.
         """
         ...
