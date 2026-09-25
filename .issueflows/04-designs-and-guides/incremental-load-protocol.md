@@ -105,12 +105,26 @@ The public consumer of the protocol, in `cellpy/readers/cellreader.py`
   delegates to `CellpyCell._update_from_raw_rows`, so the equality tests
   cover the shipped engine.
 
+## `live.poll()` (#781)
+
+`cellpy/utils/live.py`. A loop over `update()` with injectable `sleep`
+(tests use a fake clock that grows the file on chosen ticks). Stop
+conditions, checked before each sleep: `cell.source_complete` (set by
+`update()` from `IncrementalChunk.complete`; no shipped loader sets it yet),
+`until(cell)`, `max_polls`, `timeout`. `on_update(cell)` fires only on
+ticks that changed the frames (and for the initial load when a path is
+passed). Errors from `update`/`on_update` end the loop with
+`stopped_by="error"` unless `raise_errors=True`; `KeyboardInterrupt` ends it
+with `"interrupted"`. Run bookkeeping lives on `cell.poll_status`
+(`PollStatus`). Only `model=` from the `get` kwargs is forwarded to
+`update()` (the one loader kwarg that is not persisted).
+
+`utils/processor.py` (thread-pool `cellpy.get` fan-out sketch) is deleted;
+`batch.runner` already has `executor="threads"`. The `batch_core.py`
+`lstrip` bug is moot: `utils/batch_tools/` is gone since batch v3.
+
 ## Link
 
 Design §3 in `cellpy-design-and-development/active/cellpy2-live-incremental-design.md`.
-Tests: `tests/test_load_since.py` (#780), `tests/test_cell_update.py` (#164).
-Consumers: `live.py` poll loop (#781), batch live refresh (#782).
-## Link
-
-Design §3 in `cellpy-design-and-development/active/cellpy2-live-incremental-design.md`.
-`CellpyCell.update()` is #164. Tests: `tests/test_load_since.py`.
+Tests: `tests/test_load_since.py` (#780), `tests/test_cell_update.py` (#164),
+`tests/test_live_poll.py` (#781). Consumer: batch live refresh (#782).

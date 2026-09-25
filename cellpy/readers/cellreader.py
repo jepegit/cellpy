@@ -365,6 +365,9 @@ class CellpyCell:
         #: Incremental-load position for ``update()`` (#164); derived from
         #: the raw frame when None, so it is never persisted.
         self._load_marker = None
+        #: Set by ``update()`` from the loader's ``IncrementalChunk.complete``
+        #: flag; ``live.poll(stop_when_complete=True)`` reads it.
+        self.source_complete = False
         self.debug = debug
         logging.debug("created CellpyCell instance")
 
@@ -2037,6 +2040,7 @@ class CellpyCell:
         source = fid.full_name if not getattr(fid, "is_db", False) else fid.name
         chunk = loader.load_since(source, marker)
         self._load_marker = chunk.marker
+        self.source_complete = bool(getattr(chunk, "complete", False))
         if chunk.new_raw is None or chunk.new_raw.height == 0:
             self._refresh_fid(fid)
             return False

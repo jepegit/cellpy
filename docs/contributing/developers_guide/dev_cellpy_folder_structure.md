@@ -115,8 +115,7 @@ The `cellpy` source code is structured as follows:
     ├── 🐍 ica.py
     ├── 🐍 live.py
     ├── 🐍 ocv_rlx.py
-    ├── 🐍 plotutils.py
-    └── 🐍 processor.py
+    └── 🐍 plotutils.py
     ...
 ```
 

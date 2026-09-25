@@ -209,6 +209,14 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_cell_update.py::test_update_force_reloads_an_unchanged_source | yes | yes | CellpyCell.update(force=True) | #164 | |
 | tests/test_cell_update.py::test_update_without_raw_source_raises | yes | yes | CellpyCell.update | #164 | NoDataFound |
 | tests/test_cell_update.py::test_update_uses_full_reload_for_non_incremental_loader | yes | yes | CellpyCell.update (protocol gate) | #164 | loader without load_since → full reload |
+| tests/test_live_poll.py::test_poll_updates_on_growth_and_stops_at_max_polls | yes | yes | utils.live.poll | #781 | fake clock grows file; result == full load |
+| tests/test_live_poll.py::test_poll_from_path_fires_on_update_for_the_initial_load | yes | yes | utils.live.poll (path input) | #781 | |
+| tests/test_live_poll.py::test_poll_stops_on_until | yes | yes | utils.live._should_stop | #781 | |
+| tests/test_live_poll.py::test_poll_stops_when_source_complete | yes | yes | utils.live.poll / CellpyCell.source_complete | #781 | |
+| tests/test_live_poll.py::test_poll_stops_on_timeout | yes | yes | utils.live._should_stop | #781 | monotonic patched |
+| tests/test_live_poll.py::test_poll_records_update_errors_unless_raise_errors | yes | yes | utils.live.poll | #781 | |
+| tests/test_live_poll.py::test_poll_keyboard_interrupt_returns_the_cell | yes | yes | utils.live.poll | #781 | |
+| tests/test_live_poll.py::test_processor_module_is_gone | yes | yes | utils.processor (deleted) | #781 | guards against resurrection |
 | tests/test_dbreader.py::test_missing_column_warns_once | yes | yes | readers.dbreader.Reader._pick_info | #1008 | warn-once per missing header |
 | tests/test_dbreader.py::test_nom_cap_specifics_column_reaches_pages | yes | yes | batch._dbengine._create_pages_dict | #1008 | db value → pages |
 | tests/test_dbreader.py::test_simple_db_engine_skip_file_search_excel_reader | yes | yes | batch._dbengine.simple_db_engine / find_files | #1017 | skip_file_search frames one row per cell |
