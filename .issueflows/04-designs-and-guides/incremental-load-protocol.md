@@ -123,8 +123,24 @@ with `"interrupted"`. Run bookkeeping lives on `cell.poll_status`
 `batch.runner` already has `executor="threads"`. The `batch_core.py`
 `lstrip` bug is moot: `utils/batch_tools/` is gone since batch v3.
 
+## Batch live refresh (#782)
+
+`cellpy/batch/facade.py`. `Batch.refresh(labels=None, raise_errors=False,
+**update_kwargs) -> {label: bool | Exception}` calls `c.update()` on the
+**loaded** cells of the lazy store only (a refresh never triggers a first
+load) and clears the combined-summary cache when any cell changed.
+`Batch.update(live=True, **kw)` is the spec'd spelling: it delegates to
+`refresh` and returns the existing `BatchResult` unchanged (no reload, no
+runner). `Batch.poll(...)` mirrors `live.poll` (same `PollStatus`, same
+stop conditions; "complete" = every loaded cell has `source_complete`), and
+on a changed tick rebuilds `summaries`, recomputes the QC `report()` into
+`last_report`, and calls `on_update(batch, outcome)`. A failing cell ends
+the poll with `stopped_by="error"` unless `raise_errors=True`. Persisting
+refreshed cells to `.cellpy` is left to the caller (`c.save`); not folded
+into `refresh`.
+
 ## Link
 
 Design §3 in `cellpy-design-and-development/active/cellpy2-live-incremental-design.md`.
 Tests: `tests/test_load_since.py` (#780), `tests/test_cell_update.py` (#164),
-`tests/test_live_poll.py` (#781). Consumer: batch live refresh (#782).
+`tests/test_live_poll.py` (#781), `tests/test_batch_live.py` (#782).

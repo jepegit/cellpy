@@ -377,6 +377,8 @@ Quick facts:
 - Live/running test: `c.update()` re-reads only the new raw rows (incremental
   loaders) or reloads fully, returns `True` when frames changed; `False` if
   the raw file did not change on disk. Also works after `cellpy.get(".cellpy")`.
+  Follow on an interval: `cellpy.utils.live.poll(c, interval=60, on_update=cb)`;
+  batch: `b.refresh()` / `b.poll(interval=, on_update=)`.
 - Frames: `c.data.raw` / `.steps` / `.summary`; columns via `c.schema.*`.
   After a raw load, each cycle's raw capacity starts at 0. A forgotten tester
   reset that 1.x plotted as doubled capacity is rebased on load for every

@@ -334,6 +334,10 @@ fig = summary_collector(b, family="fullcell_standard_gravimetric").plot()
 # database is NOT re-read (a UserWarning fires if you also passed db args).
 # Use allow_from_journal=False to rebuild the journal from the db.
 b = batch.load(name="my_experiment", project="my_project", allow_from_journal=False)
+# Tests still running? Pick up appended raw rows without a reload:
+changed = b.refresh()            # {label: True/False} via c.update() per cell
+# or keep following them; summaries and b.last_report are rebuilt on change
+status = b.poll(interval=120, max_polls=30, on_update=lambda b, out: print(out))
 ```
 
 Dropping cells:
