@@ -81,6 +81,14 @@ class DataLoader(TxtLoader):
     default_model = config.instruments.Neware.default_model  # Required
     supported_models = SUPPORTED_MODELS  # Required
 
+    def load_since(self, source, marker=None):
+        """Rows appended since ``marker`` (`SupportsIncrementalLoad`, #780).
+
+        Seeks by data row (``LoadMarker.row_count``) and re-reads from the
+        start of the last cycle seen; see ``TxtLoader._load_since_rows``.
+        """
+        return self._load_since_rows(source, marker)
+
     @staticmethod
     def get_headers_aux(raw):
         """Defines the so-called auxiliary table column headings"""
