@@ -18,6 +18,13 @@
   nominal capacity, cycle mode and cell name. Works on cells loaded from a
   cellpy-file. Returns `True` when the frames changed. (#164)
 
+* `cellpy.utils.live.poll(cell_or_path, interval, on_update=, until=,
+  max_polls=, timeout=, stop_when_complete=True)`: follow a running test by
+  calling `c.update()` on an interval; the run is recorded on
+  `c.poll_status`. The unused `cellpy.utils.processor` module is removed
+  (its thread-pool fan-out lives in `batch.runner`'s `executor="threads"`).
+  (#781)
+
 ## [2.1.5.post6] - 2026-09-25
 
 * `summary_collector(...).plot()` keeps a lone charge or discharge series

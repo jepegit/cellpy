@@ -178,6 +178,12 @@ Useful methods on `CellpyCell` (non-exhaustive):
   mass / area / nominal capacity / cycle mode. Works on a cell loaded from a
   `.cellpy` file too (the raw path is stored in it); pass loader kwargs
   such as `model="UIO"` when the instrument needs them.
+  To follow a running test on an interval use
+  `from cellpy.utils import live` then
+  `live.poll(c_or_path, interval=60, on_update=callback, max_polls=..., until=...)`;
+  it calls `update()` each tick, runs `on_update(c)` when frames changed,
+  and records the run on `c.poll_status`. Pass `sleep=` to drive it from
+  your own scheduler. `Ctrl-C` stops it cleanly and returns the cell.
 - `save` / `to_csv` / Excel helpers — persist for the user's workflow
 
 Deeper shape docs: [Data structure](../fundamentals/data_structure.md).
