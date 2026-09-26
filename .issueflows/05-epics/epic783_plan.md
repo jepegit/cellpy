@@ -153,6 +153,7 @@ clients (ife-bat/batbase#390, #391 closed); `cellpy-connectors` shared base
 - Depends on: none
 - yolo: yes — well specified, on the shipped connector base, no cellpy change
 - Published: cellpy/cellpy-connectors#1 (external repo)
+- Status: shipped 2026-09-26 via cellpy/cellpy-connectors#8 (squash-merged).
 
 ### Issue: M1 MetadataSource protocol and resolver hook
 
