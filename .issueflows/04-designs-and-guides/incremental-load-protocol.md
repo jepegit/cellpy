@@ -110,3 +110,7 @@ The public consumer of the protocol, in `cellpy/readers/cellreader.py`
 Design §3 in `cellpy-design-and-development/active/cellpy2-live-incremental-design.md`.
 Tests: `tests/test_load_since.py` (#780), `tests/test_cell_update.py` (#164).
 Consumers: `live.py` poll loop (#781), batch live refresh (#782).
+## Link
+
+Design §3 in `cellpy-design-and-development/active/cellpy2-live-incremental-design.md`.
+`CellpyCell.update()` is #164. Tests: `tests/test_load_since.py`.
