@@ -4,11 +4,9 @@ The oracle: loading a *head* of a raw file and then appending the *tail* through
 ``update_core_data`` must produce the same ``raw`` / ``steps`` / ``summary`` as a
 single full load.
 
-``incremental_update`` is a test-side prototype of what L3 (#164) will expose as
-``CellpyCell.update()``: it drives ``update_core_data`` with the cellpy-owned
-by-value inputs (nominal capacity, current factor, instrument raw limits) and then
-re-applies the cellpy-side summary extras and the scaled (mass/area) columns.
-Replace this helper with the public API once L3 lands.
+``incremental_update`` feeds a tail frame through the same code path L3 (#164)
+uses inside ``CellpyCell.update()`` (``CellpyCell._update_from_raw_rows``), so
+these tests stay the oracle for the shipped implementation.
 """
 
 from __future__ import annotations
@@ -17,9 +15,6 @@ from pathlib import Path
 
 import pandas as pd
 import pandas.testing as pdt
-from cellpycore import units as core_units
-
-from cellpy.readers.native_core import _add_summary_extras
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 NEWARE_UIO = REPO_ROOT / "testdata" / "data" / "neware_uio.csv"
@@ -39,33 +34,9 @@ def tail_rows(raw: pd.DataFrame, datapoint_col: str, since: int, overlap: int = 
     return raw[raw[datapoint_col] > since - overlap]
 
 
-def _to_pandas(frame):
-    return frame.to_pandas() if hasattr(frame, "to_pandas") else frame
-
-
 def incremental_update(cell, new_raw: pd.DataFrame, find_ir: bool = True):
-    """Append ``new_raw`` to ``cell`` in place via ``update_core_data``.
-
-    Mirrors the cellpy-side orchestration in ``make_step_table`` /
-    ``make_summary`` so the result is comparable with a full ``cellpy.get``.
-    """
-    factor = core_units.calculate_current_conversion_factor(cell.data.raw_units["current"], to_units=cell.cellpy_units)
-    nom_cap_abs = cell._resolve_nom_cap_abs(cell.data)
-    out = cell.core.update_core_data(
-        cell.data,
-        new_raw,
-        nom_cap_abs=nom_cap_abs,
-        current_conversion_factor=factor,
-        find_ir=find_ir,
-        raw_limits=cell.raw_limits,
-    )
-    # ``update_core_data`` returns a bare cellpycore ``Data``; copy the frames back
-    # so cellpy's metadata-bearing ``Data`` stays the owner.
-    cell.data.raw = _to_pandas(out.raw)
-    cell.data.steps = _to_pandas(out.steps)
-    cell.data.summary = _add_summary_extras(_to_pandas(out.summary), cell.core.schema)
-    cell._refresh_scaled_summary_columns()
-    return cell
+    """Append ``new_raw`` to ``cell`` in place through ``CellpyCell.update()``'s engine."""
+    return cell._update_from_raw_rows(new_raw, find_ir=find_ir)
 
 
 def _normalize(frame: pd.DataFrame, sort_by) -> pd.DataFrame:

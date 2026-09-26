@@ -169,6 +169,15 @@ Useful methods on `CellpyCell` (non-exhaustive):
   meta-dependent columns (cheaper than a full `make_summary()`). See
   `cellpy.readers.cellreader.SUMMARY_META_DEPENDENCIES` for the map GUIs
   can use for messaging.
+- `update()` — refresh a cell from a raw file that is still being written
+  (a running test). Returns `True` if the frames changed, `False` when the
+  file's size/mtime are unchanged (`force=True` overrides). With
+  `arbin_res` / `arbin_sql` / `neware_txt` / `maccor_txt` only the new rows
+  are read and appended (the last cycle is re-read whole); other loaders,
+  or a head too short to append to, fall back to a full reload that keeps
+  mass / area / nominal capacity / cycle mode. Works on a cell loaded from a
+  `.cellpy` file too (the raw path is stored in it); pass loader kwargs
+  such as `model="UIO"` when the instrument needs them.
 - `save` / `to_csv` / Excel helpers — persist for the user's workflow
 
 Deeper shape docs: [Data structure](../fundamentals/data_structure.md).

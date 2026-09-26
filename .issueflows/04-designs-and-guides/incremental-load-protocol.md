@@ -61,6 +61,55 @@ expose `load_since`).
   cycle-local rebase may differ from a full load. Only loader-made markers
   carry the equality guarantee.
 
+## `CellpyCell.update()` (#164)
+
+The public consumer of the protocol, in `cellpy/readers/cellreader.py`
+(section "incremental refresh"). Returns `bool` (frames changed).
+
+- **Change detection** compares a fresh `FileID(fid.full_name)` size and
+  mtime with the stored `raw_data_files` entry (same stats
+  `check_file_ids` uses). Databases (`is_db`) and unreadable stats always
+  count as changed. `force=True` skips the check.
+- **Loader recovery.** A cell loaded from a cellpy-file carries the config
+  default tester; `data._provenance["source_type"]` (persisted) names the
+  loader that read the raw. `update()` calls `set_instrument` from it (and
+  forwards `**loader_kwargs`, e.g. `model=`, since the model is not
+  persisted). Decision: no new cellpy-file field.
+- **Marker without state.** The marker is not persisted either. When the
+  cell has no in-memory `_load_marker`, `_marker_from_raw` derives one from
+  `data.raw` with **both** seek fields filled (`row_count` = index of the
+  first row of the last cycle; `last_source_datapoint_num` = the datapoint
+  before it), so text and arbin loaders each find their field. Rewinding to
+  the cycle start mirrors the loaders' own policy above. Alternative
+  rejected: storing the marker in the cellpy-file (extra schema, and the
+  derived one is exact for loader-made markers anyway).
+- **Incremental path** only when: one raw file, `native_schema`,
+  `config.reader.use_harmonized_raw`, and
+  `isinstance(loader_class, SupportsIncrementalLoad)`. The chunk gets
+  `test_id = active_test_id` and its dtypes cast to the existing raw's
+  (`_align_dtypes`; harmonize can yield Int32 where raw has Int64), then
+  goes through `_update_from_raw_rows` → `core.update_core_data` with the
+  by-value inputs cellpy owns (`nom_cap_abs`, current factor, raw limits),
+  `_add_summary_extras`, and `_refresh_scaled_summary_columns`.
+  `find_ir` follows whether the current summary has `ir_charge`.
+- **Fallback = full reload** on `ValueError` / `LoaderError` from the
+  incremental path (typically core refusing a chunk whose start is at or
+  before the first kept row, i.e. a single-cycle head), for multi-file
+  cells, and for non-incremental loaders. `from_raw` on all recorded
+  sources, then `meta_common` (deep copy), `cycle_mode`, and `cell_name`
+  are restored before `make_step_table()` / `make_summary(find_ir=...)`.
+- **FileID refresh** after either path: size / mtimes, `last_data_point`
+  (max datapoint), `raw_data_files_length[-1]`. A second `update()` on the
+  same file is then a no-op.
+- `tests/incremental_support.incremental_update` (the #778 oracle) now
+  delegates to `CellpyCell._update_from_raw_rows`, so the equality tests
+  cover the shipped engine.
+
+## Link
+
+Design §3 in `cellpy-design-and-development/active/cellpy2-live-incremental-design.md`.
+Tests: `tests/test_load_since.py` (#780), `tests/test_cell_update.py` (#164).
+Consumers: `live.py` poll loop (#781), batch live refresh (#782).
 ## Link
 
 Design §3 in `cellpy-design-and-development/active/cellpy2-live-incremental-design.md`.

@@ -200,6 +200,15 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_load_since.py::test_arbin_res_load_since_seeks_on_datapoint_and_rewinds_to_cycle_start | yes | yes | arbin_res.load_since | #780 | skip without mdbtools |
 | tests/test_load_since.py::test_arbin_sql_load_since_filters_on_datapoint | yes | yes | arbin_sql.load_since | #780 | mocked `_query_sql` |
 | tests/test_load_since.py::test_arbin_sql_query_gets_a_datapoint_clause | yes | yes | arbin_sql._query_sql | #780 | SQL clause on the fully qualified table |
+| tests/test_cell_update.py::test_update_on_unchanged_source_is_a_noop | yes | yes | CellpyCell.update / _raw_sources_changed | #164 | size+mtime unchanged → False |
+| tests/test_cell_update.py::test_update_after_growth_equals_full_load | yes | yes | CellpyCell.update (incremental) | #164 | head + grown tail == full cellpy.get |
+| tests/test_cell_update.py::test_update_twice_tracks_the_marker | yes | yes | CellpyCell._marker_from_raw / _load_marker | #164 | two growths; marker rewinds |
+| tests/test_cell_update.py::test_update_refreshes_file_id | yes | yes | CellpyCell._refresh_fid | #164 | size / last_data_point / lengths; second update no-op |
+| tests/test_cell_update.py::test_update_after_cellpy_file_round_trip | yes | yes | CellpyCell._ensure_loader_for_update | #164 | loader from provenance; mass kept |
+| tests/test_cell_update.py::test_update_falls_back_to_full_reload_and_keeps_meta | yes | yes | CellpyCell._update_full_reload | #164 | single-cycle head → core rejects → reload |
+| tests/test_cell_update.py::test_update_force_reloads_an_unchanged_source | yes | yes | CellpyCell.update(force=True) | #164 | |
+| tests/test_cell_update.py::test_update_without_raw_source_raises | yes | yes | CellpyCell.update | #164 | NoDataFound |
+| tests/test_cell_update.py::test_update_uses_full_reload_for_non_incremental_loader | yes | yes | CellpyCell.update (protocol gate) | #164 | loader without load_since → full reload |
 | tests/test_dbreader.py::test_missing_column_warns_once | yes | yes | readers.dbreader.Reader._pick_info | #1008 | warn-once per missing header |
 | tests/test_dbreader.py::test_nom_cap_specifics_column_reaches_pages | yes | yes | batch._dbengine._create_pages_dict | #1008 | db value → pages |
 | tests/test_dbreader.py::test_simple_db_engine_skip_file_search_excel_reader | yes | yes | batch._dbengine.simple_db_engine / find_files | #1017 | skip_file_search frames one row per cell |
