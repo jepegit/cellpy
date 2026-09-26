@@ -11,7 +11,13 @@ batch can refresh or poll on top of that.
 
 Done for this planned slice when #779, #780, #164, #781, and #782 are closed
 and `uv run pytest -m essential` is green on `master`. #778 (the golden
-equality anchor) is already closed.
+equality anchor) is already closed. **Epic L shipped 2026-09-26** (#1016,
+#1100–#1104).
+
+Revision 2026-09-26: Stage 4 added — the **Epic M read path** (#784, BatBase
+metadata) is pulled forward because the maintainer wants to interact with
+BatBase as soon as possible. Push/write-back stays in 2.3 (Stage 6 plan in
+`cellpy-design-and-development/roadmap/stages/stage6-github-issues.md`).
 
 ## Constraints
 
@@ -124,6 +130,57 @@ Both sit on `c.update()`. L5 does not need the L4 poll helper.
 - yolo: no — public batch API
 - Published: #782
 
+## Stage 4 — BatBase read path (Epic M, cross-repo)
+
+Prerequisites exist: BatBase OAuth2 client-credentials + self-service API
+clients (ife-bat/batbase#390, #391 closed); `cellpy-connectors` shared base
+(cellpy/cellpy-connectors#3, #4 closed).
+
+- Goal: `cellpy.get(...)` / `batch.load(...)` can take cell/test metadata from
+  BatBase through the `MetaResolver` JOURNAL/DB layer, read-only; an
+  unreachable source degrades to an empty layer.
+
+### Issue: M0 BatBaseClient and CLI passthrough
+
+- Spec: see cellpy/cellpy-connectors#1. Client-credentials token fetch with
+  in-memory expiry cache, one re-auth on 401, keyring/env credentials,
+  `cellpy connectors configure batbase`, `scope="read"` default,
+  `BatBaseAuthError`. Add `get(path, **params)` and
+  `cellpy connectors batbase get <endpoint>` so the API can be explored at once.
+- Goal: a configured user can call any BatBase read endpoint from Python or
+  the CLI without handling tokens.
+- Model: fast
+- Depends on: none
+- yolo: yes — well specified, on the shipped connector base, no cellpy change
+- Published: cellpy/cellpy-connectors#1 (external repo)
+- Status: shipped 2026-09-26 via cellpy/cellpy-connectors#8 (squash-merged).
+
+### Issue: M1 MetadataSource protocol and resolver hook
+
+- Spec: see #784 (read scope only). `MetadataSource` Protocol
+  (`fetch(key) -> MetaRecord | None`), `cellpy.metadata_sources` entry-point
+  registry, `MetaResolver` JOURNAL/DB-layer precedence with provenance naming
+  the source, null-object on failure, `CellMeta.uuid` + `external_id` /
+  `source_uri` back-link. No push.
+- Goal: cellpy has a source-agnostic slot for external metadata; the BatBase
+  adapter plugs in without importing a cellpy base class.
+- Model: deep
+- Depends on: none (M2 needs it)
+- yolo: no — public Protocol and resolver precedence
+- Published: #784
+
+### Issue: M2 BatBase MetadataSource adapter
+
+- Spec: see cellpy/cellpy-connectors#2. Map `/api/test-cellpy-tag/` (+ batch
+  and cell rows) to `MetaRecord`; decide the query key (cellpy tag vs cell
+  name); offline ⇒ empty layer; registered via the entry point.
+- Goal: a BatBase-tagged cell loads with BatBase mass / area / nominal
+  capacity / project without journal edits.
+- Model: deep
+- Depends on: M0, M1
+- yolo: no — mapping decisions against an unsettled API
+- Published: cellpy/cellpy-connectors#2 (external repo)
+
 ## Later (unstaged)
 
 Not sequenced into issues here. The anchor already tracks them.
@@ -132,5 +189,5 @@ Not sequenced into issues here. The anchor already tracks them.
   #888 (RPT filters) is cellpy-only.
 - Epic I — #270, #338, #306, #761, #827.
 - Epic R — #687, then #691.
-- Deferred to 2.3: versioned headers, #73 GITT/PITT, #889 Fredrik ICA.
-  Design-only after 2.2: #206.
+- Deferred to 2.3 (Stage 6 draft): versioned headers, #73 GITT/PITT, #889
+  Fredrik ICA, #206 phase 1, loader-shell retirement, Epic M push (M3).
