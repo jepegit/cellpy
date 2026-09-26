@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+* Move the installable package from `cellpy/` to `src/cellpy/`. (#1109)
+
 * Pluggable external metadata sources (read path). New
   `cellpy.readers.metadata_sources`: a `MetadataSource` Protocol
   (`name`, `fetch(MetaQuery) -> tuple[MetaRecord, ...]`), the

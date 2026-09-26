@@ -17,7 +17,7 @@ from cellpy.utils.plotutils import dva_plot, ica_plot
 
 @pytest.mark.essential
 def test_prepare_ica_module_does_not_import_converter():
-    source = Path("cellpy/plotting/prepare/ica.py").read_text(encoding="utf-8")
+    source = Path("src/cellpy/plotting/prepare/ica.py").read_text(encoding="utf-8")
     tree = ast.parse(source)
     imported_names: set[str] = set()
     for node in ast.walk(tree):

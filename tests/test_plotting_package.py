@@ -87,7 +87,7 @@ def test_collectors_has_no_import_time_plotly_calls():
     import pathlib
 
     source = (
-        pathlib.Path(__file__).resolve().parents[1] / "cellpy" / "utils" / "collectors.py"
+        pathlib.Path(__file__).resolve().parents[1] / "src" / "cellpy" / "utils" / "collectors.py"
     ).read_text(encoding="utf-8")
 
     plotly_aliases = {"go", "pio", "px", "plotly"}

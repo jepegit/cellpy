@@ -1773,7 +1773,7 @@ def _cell_and_output_path():
     this_file = pathlib.Path(__file__)
     # p = this_file.parent.parent.parent / "testdata/hdf5/20160805_test001_45_cc.h5"
     p = pathlib.Path(r"C:\scripting\cellpy\local\20240516_nor000_01_fccc_01.h5")
-    out = this_file.parent.parent.parent / "tmp"
+    out = this_file.resolve().parents[3] / "tmp"
 
     print(f"{p=}")
     print(f"{out=}")

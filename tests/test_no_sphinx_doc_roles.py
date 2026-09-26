@@ -9,7 +9,7 @@ from __future__ import annotations
 import pathlib
 import re
 
-CELLPY_SRC = pathlib.Path(__file__).resolve().parents[1] / "cellpy"
+CELLPY_SRC = pathlib.Path(__file__).resolve().parents[1] / "src" / "cellpy"
 
 ROLE_RE = re.compile(
     r":(?:class|meth|func|mod|attr|data|exc|obj|paramref):`[^`]+`"

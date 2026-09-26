@@ -52,7 +52,7 @@ See also [testing-and-coverage.md](testing-and-coverage.md) and [ci-tiers.md](ci
 
 ## Entry points
 
-- Main package: `cellpy/` (Python library).
+- Main package: `src/cellpy/` (Python library).
 - Issue-flow: `.issueflows/` (current issue under `01-current-issues/`).
 - **cellpy 2 plans:** sibling repo `../cellpy-design-and-development/` (start at `CURRENT.md`; not `code-reviews/`).
 - v2 epic: [cellpy-v2-epic.md](cellpy-v2-epic.md).

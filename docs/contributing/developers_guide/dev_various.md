@@ -76,7 +76,7 @@ Session config lives in **`cellpy.config`** (pydantic models + layered TOML).
 do not hand-edit `.cellpy_prms_default.conf` as the source of defaults.
 
 1. Add the field (with type and default) on the right section model in
-   [`cellpy/config/models.py`](https://github.com/jepegit/cellpy/blob/master/cellpy/config/models.py).
+   [`src/cellpy/config/models.py`](https://github.com/jepegit/cellpy/blob/master/src/cellpy/config/models.py).
 2. Read it as `cellpy.config.<section>.<field>` (or via `get_config()`).
 3. Regenerate the user-facing reference:
 
