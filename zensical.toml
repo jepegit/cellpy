@@ -236,7 +236,7 @@ auto_append = ["docs/.snippets/abbreviations.md"]
 # https://zensical.org/docs/setup/extensions/mkdocstrings/
 # ----------------------------------------------------------------------------
 [project.plugins.mkdocstrings.handlers.python]
-paths = ["."]
+paths = ["src"]
 inventories = ["https://docs.python.org/3/objects.inv"]
 
 [project.plugins.mkdocstrings.handlers.python.options]

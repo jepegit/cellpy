@@ -19,3 +19,7 @@ Non-Python files that ship in the wheel stay next to the modules
 
 Helpers that walk up from a source file to the **repo root** need three
 parents from `src/cellpy/<subdir>/file.py` (`parents[3]`), not two.
+
+Docs: mkdocstrings/Griffe inventories from `src/` (`zensical.toml`
+`[project.plugins.mkdocstrings.handlers.python] paths = ["src"]`), same as
+cellpy-core. The Docs workflow does not install cellpy.
