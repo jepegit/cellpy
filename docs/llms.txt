@@ -20,6 +20,7 @@
 
 - [How do I…?](https://cellpy.readthedocs.io/en/latest/how_do_i/)
 - [Compute ICA / DVA](https://cellpy.readthedocs.io/en/latest/guides/ica/)
+- [Pull cell metadata from a lab database](https://cellpy.readthedocs.io/en/latest/guides/metadata_sources/)
 - [Batch processing](https://cellpy.readthedocs.io/en/latest/examples/batch_utility/cellpy_batch_processing/)
 
 ## Reference

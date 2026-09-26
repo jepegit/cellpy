@@ -66,6 +66,7 @@ nav = [
         { "Get your data out" = "guides/exporting.md" },
         { "Set up the cellpy database" = "guides/batch_database.md" },
         { "Work with remote files" = "guides/remote_paths.md" },
+        { "Pull cell metadata from a lab database" = "guides/metadata_sources.md" },
         { "Write an instrument loader plugin" = "guides/writing_a_loader_plugin.md" },
         { "Write a CLI plugin" = "guides/writing_a_cli_plugin.md" },
     ] },

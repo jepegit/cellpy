@@ -164,6 +164,15 @@ c = cellpy.get("my_cell.res", nominal_capacity="3579 mAh/g")
 
 → all four: [Units, mass, area and C-rates](guides/units.md)
 
+**…get mass, area and nominal capacity from our lab database instead of typing them?**
+
+```python
+c.fetch_meta("batbase")      # needs the cellpy-connectors package + credentials
+c.refresh_after()
+```
+
+→ [Pull cell metadata from a lab database](guides/metadata_sources.md)
+
 ---
 
 ## Find the numbers
