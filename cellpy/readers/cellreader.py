@@ -687,6 +687,9 @@ class CellpyCell:
             new_cell.data._extra_tests = dict(cell.data._extra_tests)
             new_cell.data._active_test_id = cell.data._active_test_id
             new_cell.data._provenance = dict(cell.data._provenance)
+            new_cell.data.external_links = dict(
+                getattr(cell.data, "external_links", None) or {}
+            )
 
             new_cell.data.raw_data_files = cell.data.raw_data_files
             new_cell.data.raw_data_files_length = cell.data.raw_data_files_length
@@ -2129,6 +2132,111 @@ class CellpyCell:
         return True
 
     # -------------------- incremental refresh end -----------------------
+
+    # -------------------- external metadata sources (#784) ---------------
+
+    @property
+    def external_links(self) -> dict:
+        """Back-links to external metadata sources, keyed by source name.
+
+        Each value is an ``ExternalLink`` (``external_id``, ``source_uri``,
+        ``fetched_at``, ``fields`` supplied). Empty until `fetch_meta` has
+        applied a record; survives ``save()`` / load of v9 cellpy-files.
+        """
+        return dict(getattr(self.data, "external_links", None) or {})
+
+    def fetch_meta(
+        self,
+        source: str,
+        key: Optional[str] = None,
+        *,
+        kind: str = "cell_name",
+        project: Optional[str] = None,
+        apply: bool = True,
+        strict: bool = False,
+        **extra,
+    ) -> tuple:
+        """Pull cell/test metadata from an external source and apply it.
+
+        Read-only towards the source. The record is merged the way a batch
+        journal row would be — above what the instrument file wrote, below
+        anything you set explicitly afterwards — and a back-link is kept in
+        `external_links` so the fetch is reproducible.
+
+        Args:
+            source: registered source name (``"batbase"``); see
+                ``cellpy.readers.metadata_sources.names()``.
+            key: lookup value; defaults to this cell's ``cell_name``.
+            kind: what ``key`` is (``"cell_name"``, ``"tag"``, ``"serial"``,
+                ``"external_id"``, ...). Sources document what they accept.
+            project: optional project scope.
+            apply: write the first record's fields onto this cell. With
+                ``False`` the records are only returned.
+            strict: raise when the source is unknown or unreachable instead
+                of returning ``()`` (an auth failure raises either way).
+            **extra: source-specific filters.
+
+        Returns:
+            The matching ``MetaRecord`` tuple — possibly empty, in which case
+            nothing was changed.
+
+        Example:
+            >>> c = cellpy.get("cell_042.res")
+            >>> c.fetch_meta("batbase", kind="tag", key="SAL_010")
+            >>> c.data.meta_common.mass
+        """
+        from cellpy.readers.metadata_sources import MetaQuery, fetch_meta
+
+        if key is None:
+            key = self.cell_name
+        query = MetaQuery(key=key, kind=kind, project=project, extra=extra)
+        records = fetch_meta(source, query, strict=strict)
+        if not records:
+            logging.info(f"fetch_meta: {source!r} had nothing for {query.describe()}")
+            return records
+        if apply:
+            if len(records) > 1:
+                logging.warning(
+                    f"fetch_meta: {source!r} returned {len(records)} records for "
+                    f"{query.describe()}; applying the first "
+                    f"(external_id={records[0].external_id!r})"
+                )
+            self._apply_meta_record(records[0])
+        return records
+
+    def _apply_meta_record(self, record) -> None:
+        """Write one ``MetaRecord`` onto the legacy meta boxes and link it."""
+        from cellpycore.metadata.models import CellMeta, TestMeta
+
+        from cellpy.readers.meta_resolver import resolve_cell_meta, resolve_test_meta
+
+        cell_record, cell_res = resolve_cell_meta(CellMeta(), external=record)
+        test_record, test_res = resolve_test_meta(TestMeta(), external=record)
+        test_record.cell = cell_record
+        test_record.test_id = self.data.active_test_id
+        # ``test_meta`` here is the helper module imported at the top.
+        test_meta.apply_test_meta_to_legacy(
+            test_record, self.data.meta_common, self.data.meta_test_dependent
+        )
+        applied = tuple(
+            sorted(
+                set(cell_res.fields_from_origin(record.source_name))
+                | set(test_res.fields_from_origin(record.source_name))
+            )
+        )
+        if "cell_name" in applied and test_record.cell_name:
+            self._cell_name = test_record.cell_name
+        link = record.link()
+        from dataclasses import replace
+
+        link = replace(link, fields=applied)
+        if not hasattr(self.data, "external_links") or self.data.external_links is None:
+            self.data.external_links = {}
+        self.data.external_links[record.source_name] = link
+        logging.info(
+            f"fetch_meta: applied {len(applied)} field(s) from {record.source_name!r} "
+            f"(external_id={record.external_id!r}): {', '.join(applied) or '-'}"
+        )
 
     def merge(self, cells, mode="campaign", renumber_cycles=True, **kwargs):
         """Merge other cells/datasets into this one.

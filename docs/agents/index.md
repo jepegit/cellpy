@@ -184,6 +184,18 @@ Useful methods on `CellpyCell` (non-exhaustive):
   it calls `update()` each tick, runs `on_update(c)` when frames changed,
   and records the run on `c.poll_status`. Pass `sleep=` to drive it from
   your own scheduler. `Ctrl-C` stops it cleanly and returns the cell.
+- `fetch_meta(source, key=None, kind="cell_name", apply=True, strict=False)`
+  — pull cell/test metadata (mass, area, nominal capacity, project, …) from
+  an external source such as a lab database. `source` is a registered name
+  (`from cellpy.readers.metadata_sources import names`); the BatBase adapter
+  comes with the `cellpy-connectors` package. Returns the matching
+  `MetaRecord`s and, with `apply=True`, writes the first one onto the cell the
+  way a journal row would (above the raw file, below explicit user values);
+  `c.external_links[source]` then holds the back-link (`external_id`,
+  `source_uri`, `fields`) and survives `save()`. An unreachable or unknown
+  source returns `()` and changes nothing (`strict=True` raises); a rejected
+  credential always raises `MetadataSourceAuthError`. Call
+  `refresh_after(("mass",))` afterwards if a summary already exists.
 - `save` / `to_csv` / Excel helpers — persist for the user's workflow
 
 Deeper shape docs: [Data structure](../fundamentals/data_structure.md).

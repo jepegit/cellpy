@@ -12,3 +12,16 @@ The cell object itself (`CellpyCell`) has [its own page](cell.md).
 ::: cellpy.readers.provenance
 
 ::: cellpy.readers.journal_layer
+
+## External metadata sources
+
+Pluggable lab databases / APIs as a journal-level metadata layer (#784).
+Adapters satisfy the `MetadataSource` Protocol and declare a
+`cellpy.metadata_sources` entry point; `CellpyCell.fetch_meta` pulls a record
+onto a cell.
+
+::: cellpy.readers.metadata_sources.contract
+
+::: cellpy.readers.metadata_sources.registry
+
+::: cellpy.readers.metadata_sources.testing

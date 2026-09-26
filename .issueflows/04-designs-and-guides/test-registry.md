@@ -256,6 +256,14 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_cli_connectors_plugin.py::test_help_lists_installed_connectors_without_importing_it | yes | yes | live cellpy-connectors stub | #1060 | skip if dist missing (conda) |
 | tests/test_cli_connectors_plugin.py::test_connectors_ping_runs_the_installed_plugin | yes | yes | cellpy connectors ping | #1060 | skip if dist missing (conda) |
 | tests/test_cli_connectors_plugin.py::test_import_cellpy_does_not_import_connectors | yes | yes | import cellpy isolation | #1060 | skip if dist missing (conda) |
+| tests/test_metadata_sources.py::test_protocol_is_structural | yes | yes | metadata_sources.contract Protocols | #784 | public contract shape |
+| tests/test_metadata_sources.py::test_fetch_meta_returns_validated_records_with_timestamp | yes | | metadata_sources.registry.fetch_meta | #784 | |
+| tests/test_metadata_sources.py::test_fetch_meta_unknown_source_is_empty_layer_unless_strict | yes | yes | fetch_meta null object | #784 | cellpy law: empty layer, cell still loads |
+| tests/test_metadata_sources.py::test_fetch_meta_auth_error_is_never_swallowed | yes | yes | fetch_meta | #784 | security posture |
+| tests/test_metadata_sources.py::test_external_beats_raw_file_and_defaults_but_not_journal_or_kwargs | yes | yes | MetaResolver external= precedence | #784 | precedence + origins provenance |
+| tests/test_metadata_sources.py::test_cell_fetch_meta_applies_record_and_links | yes | | CellpyCell.fetch_meta / external_links | #784 | uses `cell` fixture |
+| tests/test_metadata_sources.py::test_external_links_survive_save_and_load | no | | v9 meta.json external_links | #784 | save/get round-trip |
+| tests/test_metadata_sources.py (other 29) | no | | contract validation, registry discovery, conformance kit, resolver ordering | #784 | offline |
 
 **Columns**
 

@@ -538,6 +538,10 @@ class Data:
         # loaded_datetime). Filled by CellpyCell.from_raw; merged into the
         # derived TestMeta record; NOT persisted in cellpy-file v8 (#510).
         self._provenance: Dict[str, Any] = {}
+        # Back-links to external metadata sources (#784): source name ->
+        # ExternalLink (external id, uri, fetched_at, fields supplied).
+        # Filled by CellpyCell.fetch_meta; persisted in v9 meta.json.
+        self.external_links: Dict[str, Any] = {}
         # Compact per-test grouping key of the active test (0 = single,
         # unmerged; matches the engine's test_id convention). Note: the legacy
         # ``meta_test_dependent.test_ID`` is the *tester-assigned* id (e.g.
