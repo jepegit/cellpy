@@ -169,6 +169,7 @@ def save(
     scratch._extra_tests = dict(getattr(data, "_extra_tests", {}) or {})
     scratch._active_test_id = data.active_test_id
     scratch._provenance = dict(getattr(data, "_provenance", {}) or {})
+    scratch.external_links = dict(getattr(data, "external_links", {}) or {})
     scratch.raw_units = dict(data.raw_units)
     scratch.raw_limits = dict(data.raw_limits)
     scratch.raw_data_files = list(data.raw_data_files or [])

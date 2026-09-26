@@ -379,6 +379,12 @@ Quick facts:
   the raw file did not change on disk. Also works after `cellpy.get(".cellpy")`.
   Follow on an interval: `cellpy.utils.live.poll(c, interval=60, on_update=cb)`;
   batch: `b.refresh()` / `b.poll(interval=, on_update=)`.
+- External metadata (lab DB / BatBase): `c.fetch_meta("batbase", key=None,
+  kind="cell_name")` pulls mass / area / nominal capacity / project onto the
+  cell like a journal row and records `c.external_links["batbase"]`;
+  unreachable source ⇒ `()` and no change (`strict=True` raises). Sources:
+  `cellpy.readers.metadata_sources.names()`; the BatBase adapter is in
+  `cellpy-connectors`.
 - Frames: `c.data.raw` / `.steps` / `.summary`; columns via `c.schema.*`.
   After a raw load, each cycle's raw capacity starts at 0. A forgotten tester
   reset that 1.x plotted as doubled capacity is rebased on load for every

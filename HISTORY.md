@@ -2,6 +2,21 @@
 
 ## [Unreleased]
 
+* Pluggable external metadata sources (read path). New
+  `cellpy.readers.metadata_sources`: a `MetadataSource` Protocol
+  (`name`, `fetch(MetaQuery) -> tuple[MetaRecord, ...]`), the
+  `cellpy.metadata_sources` entry-point registry (`register`, `names`,
+  `get_source`), and a null-object `fetch_meta` (unreachable or unknown
+  source ⇒ empty layer; auth errors still raise). `MetaResolver` takes
+  `external=` records into the journal/db layer *below* the journal row and
+  `Resolution.origin_of()` / `explain()` name the source that won a field.
+  `CellpyCell.fetch_meta(source, key=None, kind=, apply=, strict=)` pulls a
+  record onto the cell and records an `ExternalLink` in
+  `c.external_links`, persisted in v9 `meta.json` (`"external_links"`).
+  `metadata_sources.testing.check_metadata_source` is the conformance kit
+  for adapters. No push. The BatBase adapter ships in `cellpy-connectors`.
+  (#784)
+
 * Optional `SupportsIncrementalLoad` protocol (`load_since`) with
   `LoadMarker` and `IncrementalChunk`, hosted in cellpy. Shipped loaders
   stay full-read until they opt in. (#779)

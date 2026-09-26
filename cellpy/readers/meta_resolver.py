@@ -50,10 +50,18 @@ class Resolution:
 
     #: field name -> the layer that supplied the winning value
     sources: dict[str, Layer] = field(default_factory=dict)
+    #: field name -> which *contributor* inside the layer won, when the layer
+    #: has more than one (the journal/db layer: an external metadata source
+    #: such as ``"batbase"``, or ``"journal"`` for the batch journal row).
+    origins: dict[str, str] = field(default_factory=dict)
 
     def source_of(self, name: str) -> Layer | None:
         """Which layer supplied ``name``, or None if nothing did."""
         return self.sources.get(name)
+
+    def origin_of(self, name: str) -> str | None:
+        """Which contributor supplied ``name`` (e.g. ``"batbase"``), if known."""
+        return self.origins.get(name)
 
     def fields_from(self, layer: Layer) -> tuple[str, ...]:
         """Every field this layer won."""
@@ -61,15 +69,48 @@ class Resolution:
             sorted(name for name, won in self.sources.items() if won is layer)
         )
 
+    def fields_from_origin(self, origin: str) -> tuple[str, ...]:
+        """Every field a named contributor (external source) won."""
+        return tuple(
+            sorted(name for name, who in self.origins.items() if who == origin)
+        )
+
     def explain(self) -> str:
         """Human-readable per-field provenance, for logs and debugging."""
         if not self.sources:
             return "no metadata resolved"
-        lines = [
-            f"  {name}: {layer.label}"
-            for name, layer in sorted(self.sources.items(), key=lambda kv: kv[0])
-        ]
+        lines = []
+        for name, layer in sorted(self.sources.items(), key=lambda kv: kv[0]):
+            origin = self.origins.get(name)
+            suffix = f" ({origin})" if origin else ""
+            lines.append(f"  {name}: {layer.label}{suffix}")
         return "resolved metadata:\n" + "\n".join(lines)
+
+
+def _iter_external(external: Any) -> Iterable[tuple[str, Mapping[str, Any]]]:
+    """Yield ``(source_name, field mapping)`` per external record, in order.
+
+    Accepts a `MetaRecord`, an iterable of them, or plain ``(name, mapping)``
+    pairs. Cell and test drafts are merged into one mapping — the resolver's
+    ``target_fields`` filter keeps each ``into`` to its own fields.
+    """
+    if external is None:
+        return
+    if _looks_like_record(external):
+        external = (external,)
+    for item in external:
+        if _looks_like_record(item):
+            yield item.source_name, {**item.cell, **item.test}
+        elif isinstance(item, tuple) and len(item) == 2:
+            yield str(item[0]), _as_mapping(item[1])
+        else:
+            raise TypeError(
+                f"external= expects MetaRecord(s) or (name, mapping) pairs, got {item!r}"
+            )
+
+
+def _looks_like_record(obj: Any) -> bool:
+    return hasattr(obj, "source_name") and hasattr(obj, "cell") and hasattr(obj, "test")
 
 
 def _as_mapping(source: Any) -> Mapping[str, Any]:
@@ -113,6 +154,7 @@ class MetaResolver:
         *,
         kwargs: Any = None,
         journal: Any = None,
+        external: Any = None,
         raw_file: Any = None,
         config_defaults: Any = None,
         into: Any = None,
@@ -122,6 +164,11 @@ class MetaResolver:
         Args:
             kwargs: what the user passed explicitly. Wins over everything.
             journal: batch journal or database row.
+            external: records from external metadata sources (#784) — one
+                `MetaRecord`, or an iterable of them in **priority order**
+                (first wins). They join the journal/db layer *below* the
+                journal row: a mass the user corrected in the journal beats
+                what the lab database says, and both beat the raw file.
             raw_file: the loader's draft — what the instrument file knew.
             config_defaults: the session's ``ScienceDefaults``-style values.
             into: the object to populate (mutated and returned). Required.
@@ -132,15 +179,23 @@ class MetaResolver:
         if into is None:
             raise ValueError("resolve() needs an object to populate (into=)")
 
-        layers = (
-            (Layer.CONFIG_DEFAULT, _as_mapping(config_defaults)),
-            (Layer.RAW_FILE, _as_mapping(raw_file)),
-            (Layer.JOURNAL, _as_mapping(journal)),
-            (Layer.KWARGS, _as_mapping(kwargs)),
+        # (layer, contributor label or None, values). Within the journal/db
+        # layer, later contributors win, so externals go lowest-priority
+        # first and the journal row last.
+        contributions: list[tuple[Layer, str | None, Mapping[str, Any]]] = [
+            (Layer.CONFIG_DEFAULT, None, _as_mapping(config_defaults)),
+            (Layer.RAW_FILE, None, _as_mapping(raw_file)),
+        ]
+        externals = list(_iter_external(external))
+        for label, values in reversed(externals):
+            contributions.append((Layer.JOURNAL, label, values))
+        contributions.append(
+            (Layer.JOURNAL, "journal" if externals else None, _as_mapping(journal))
         )
+        contributions.append((Layer.KWARGS, None, _as_mapping(kwargs)))
 
         resolution = Resolution()
-        for layer, values in layers:
+        for layer, origin, values in contributions:
             for name in self._target_fields:
                 if name not in values:
                     continue
@@ -152,6 +207,10 @@ class MetaResolver:
                     continue
                 setattr(into, name, value)
                 resolution.sources[name] = layer
+                if origin is not None:
+                    resolution.origins[name] = origin
+                else:
+                    resolution.origins.pop(name, None)
 
         return into, resolution
 
@@ -161,6 +220,7 @@ def resolve_cell_meta(
     *,
     kwargs: Mapping[str, Any] | None = None,
     journal: Any = None,
+    external: Any = None,
     draft: Any = None,
     config_defaults: Any = None,
 ) -> tuple[Any, Resolution]:
@@ -169,6 +229,7 @@ def resolve_cell_meta(
     return resolver.resolve(
         kwargs=kwargs,
         journal=journal,
+        external=external,
         raw_file=draft,
         config_defaults=config_defaults,
         into=cell_meta,
@@ -180,6 +241,7 @@ def resolve_test_meta(
     *,
     kwargs: Mapping[str, Any] | None = None,
     journal: Any = None,
+    external: Any = None,
     draft: Any = None,
     config_defaults: Any = None,
 ) -> tuple[Any, Resolution]:
@@ -188,6 +250,7 @@ def resolve_test_meta(
     return resolver.resolve(
         kwargs=kwargs,
         journal=journal,
+        external=external,
         raw_file=draft,
         config_defaults=config_defaults,
         into=test_meta,
@@ -250,6 +313,7 @@ def resolve_from_loader_result(
     source_type: str,
     kwargs: Mapping[str, Any] | None = None,
     journal: Any = None,
+    external: Any = None,
     config_defaults: Any = None,
 ) -> tuple[Any, Any, Resolution, Resolution]:
     """Turn a loader's drafts into populated metadata, with provenance.
@@ -264,6 +328,7 @@ def resolve_from_loader_result(
         source_type: the loader/instrument name.
         kwargs: explicit user values.
         journal: batch journal or database row.
+        external: `MetaRecord`(s) from external metadata sources (#784).
         config_defaults: session ``ScienceDefaults``.
 
     Returns:
@@ -280,6 +345,7 @@ def resolve_from_loader_result(
         CellMeta(),
         kwargs=kwargs,
         journal=journal,
+        external=external,
         draft=cell_draft,
         config_defaults=config_defaults,
     )
@@ -288,6 +354,7 @@ def resolve_from_loader_result(
         type(test_draft)() if test_draft is not None else None,
         kwargs=kwargs,
         journal=journal,
+        external=external,
         draft=test_draft,
         config_defaults=None,
     )

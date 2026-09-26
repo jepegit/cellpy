@@ -93,6 +93,12 @@ def build_meta_document(
     }
     if frames_had_test_id is not None:
         doc["frames_had_test_id"] = dict(frames_had_test_id)
+    links = getattr(data, "external_links", None) or {}
+    if links:
+        doc["external_links"] = {
+            name: (link.to_dict() if hasattr(link, "to_dict") else dict(link))
+            for name, link in links.items()
+        }
     return doc
 
 
@@ -167,6 +173,16 @@ def apply_meta_document(data: "Data", meta_doc: Mapping[str, Any]) -> None:
 
     active_id = int(meta_doc.get("active_test_id", 0))
     data._active_test_id = active_id
+
+    links_doc = meta_doc.get("external_links") or {}
+    if isinstance(links_doc, Mapping):
+        from cellpy.readers.metadata_sources.contract import ExternalLink
+
+        data.external_links = {
+            str(name): ExternalLink.from_dict(payload)
+            for name, payload in links_doc.items()
+            if isinstance(payload, Mapping)
+        }
 
     tests_doc = meta_doc.get("tests") or {}
     cell_fallback = meta_doc.get("cell") or {}
