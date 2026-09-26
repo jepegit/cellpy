@@ -27,6 +27,9 @@ something specific. If you just want the one-liner, start with
   batch utility reads, and which columns you actually have to fill in
 - [Work with remote files](remote_paths.md) — load raw data
   and cellpy files over SSH / SFTP
+- [Pull cell metadata from a lab database](metadata_sources.md) — let
+  BatBase (or another metadata source plugin) supply mass, area, nominal
+  capacity and cell type
 
 **Extending cellpy**
 

@@ -46,6 +46,12 @@
   `b.summaries` and the QC report (`b.last_report`) on ticks that changed.
   (#782)
 
+* Docs: how-to guide "Pull cell metadata from a lab database" (BatBase via
+  `cellpy-connectors`: install, `cellpy connectors configure batbase`,
+  `fetch_meta` key kinds, `refresh_after`, `external_links`, field/unit map,
+  troubleshooting), wired into the guides index, How-do-I and `llms.txt`.
+  (#1023)
+
 ## [2.1.5.post6] - 2026-09-25
 
 * `summary_collector(...).plot()` keeps a lone charge or discharge series
