@@ -459,7 +459,7 @@ resolves from PyPI). No manual install is normally needed.
   run under `MPLBACKEND=Agg` (no file `--ignore` in Tier 1 / scheduled / release).
   Full suite is `uv run pytest` (default `addopts` deselects slow/local/unfinished
   markers).
-- **Lint/format:** `uv run flake8 cellpy` and `uv run black --check cellpy` (line
+- **Lint/format:** `uv run flake8 src/cellpy` and `uv run black --check src/cellpy` (line
   length 120). These are not wired into the Tier-1 CI gate, and the repo currently
   has pre-existing `black` reformat suggestions and some `flake8 F821` findings —
   do not treat those as regressions from your change.

@@ -453,7 +453,7 @@ if __name__ == "__main__":
     pd.set_option("display.max_columns", None)
     print(f"pandas version: {pd.__version__}")
 
-    local_dir = pathlib.Path(__file__).parent.parent.parent / "local"
+    local_dir = pathlib.Path(__file__).resolve().parents[3] / "local"
     json_file = local_dir / "cellpy_journal_table.json"
     reader = BatBaseJSONReader(json_file, store_raw_data=True)
     print(80 * "=")

@@ -165,7 +165,7 @@ def test_the_dropped_packages_left_the_other_manifests(manifest):
 def test_no_source_file_imports_the_dropped_packages():
     """The manifest tests alone would pass with a stray import still around."""
     offenders = []
-    roots = [REPO_ROOT / "cellpy", REPO_ROOT / "tests", REPO_ROOT / "dev"]
+    roots = [REPO_ROOT / "src" / "cellpy", REPO_ROOT / "tests", REPO_ROOT / "dev"]
     for py in (f for root in roots for f in root.rglob("*.py")):
         if "libs" in py.parts or py.name == "test_dependency_budget.py":
             continue

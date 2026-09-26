@@ -216,7 +216,7 @@ def test_click_is_gone_from_the_packaging_manifests(manifest):
 def test_the_cli_module_does_not_import_click():
     """A declared-dependency check alone would miss a stray `import click`."""
     source = (
-        Path(__file__).resolve().parents[1] / "cellpy" / "cli.py"
+        Path(__file__).resolve().parents[1] / "src" / "cellpy" / "cli.py"
     ).read_text(encoding="utf-8")
     offenders = [
         line.strip()

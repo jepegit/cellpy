@@ -165,6 +165,6 @@ def write_reference_md(path: str | Path) -> None:
 
 
 if __name__ == "__main__":
-    target = Path(__file__).resolve().parents[2] / DOC_PATH
+    target = Path(__file__).resolve().parents[3] / DOC_PATH
     write_reference_md(target)
     print(f"wrote {target}")

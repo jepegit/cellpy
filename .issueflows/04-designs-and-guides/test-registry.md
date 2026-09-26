@@ -133,7 +133,7 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_batch_v3_runner.py::test_load_cell_reraises_missing_files_when_not_accepting | yes | yes | batch.runner.load_cell accept_errors | #962 | |
 | tests/test_batch_v3_facade.py::test_load_warns_when_no_raw_files_were_found | yes | yes | batch.facade._finalize | #962 | batch.load warning + result.report |
 | tests/test_batch_v3_facade.py::test_batch_public_methods_have_shift_tab_docs | yes | yes | batch.facade.Batch | #963 | Shift-Tab docstrings on b.plot etc. |
-| tests/test_no_sphinx_doc_roles.py::test_no_sphinx_doc_roles_in_cellpy_source | no | no | cellpy/**/*.py docstrings | #967 | docs chrome; not a merge-gate oracle |
+| tests/test_no_sphinx_doc_roles.py::test_no_sphinx_doc_roles_in_cellpy_source | no | no | src/cellpy/**/*.py docstrings | #967 | docs chrome; not a merge-gate oracle |
 | tests/test_ica_api.py::test_an_empty_frame_says_the_cycle_is_missing | yes | yes | ica._half_cycles_from_frame | #971 | empty DataFrame() is not a missing-column error |
 | tests/test_ica_api.py::test_an_empty_frame_with_curve_columns_says_the_cycle_is_missing | yes | yes | ica._half_cycles_from_frame | #971 | empty-with-columns |
 | tests/test_ica_api.py::test_a_missing_cycle_on_a_cell_says_the_frame_is_empty | yes | yes | ica._resolve_source | #971 | CellpyCell + missing cycle |
@@ -146,7 +146,7 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_cli_api.py::test_create_project_with_no_input_creates_the_project_dir | yes | yes | cli_api._new project-dir branch | #990 | no_input must not read stdin (scriptable `cellpy new`) |
 | tests/test_cli_api.py::test_list_templates_returns_the_templates_as_data | yes | yes | cli_api.list_templates | #991 | shape contract for non-CLI callers |
 | tests/test_cli_api.py::test_the_template_listing_is_rendered_from_list_templates | yes | yes | cli_api._new list_ branch | #991 | printed listing cannot drift from the data |
-| tests/test_doc_cross_references.py::test_every_see_reference_names_an_importable_target | yes | yes | cellpy/**/*.py docstring `See `…`` targets | #993 | guards the targets; test_no_sphinx_doc_roles guards the syntax |
+| tests/test_doc_cross_references.py::test_every_see_reference_names_an_importable_target | yes | yes | src/cellpy/**/*.py docstring `See `…`` targets | #993 | guards the targets; test_no_sphinx_doc_roles guards the syntax |
 | tests/test_doc_cross_references.py::test_the_thinnest_delegates_point_at_their_documentation | yes | yes | CellpyCell.get_cap / to_csv / to_excel | #993 | the three pointers carrying the most undocumented arguments |
 | tests/test_batch_summary_ir.py::test_pick_optional_summary_prefers_then_falls_back | yes | yes | plotting.batch_summary._pick_optional_summary | #949 | |
 | tests/test_batch_summary_ir.py::test_select_ir_falls_back_and_warns | yes | yes | plotting.batch_summary._select_ir_column | #949 | discharge missing → ir_charge |
