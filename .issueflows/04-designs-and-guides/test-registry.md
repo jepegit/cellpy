@@ -217,6 +217,12 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_live_poll.py::test_poll_records_update_errors_unless_raise_errors | yes | yes | utils.live.poll | #781 | |
 | tests/test_live_poll.py::test_poll_keyboard_interrupt_returns_the_cell | yes | yes | utils.live.poll | #781 | |
 | tests/test_live_poll.py::test_processor_module_is_gone | yes | yes | utils.processor (deleted) | #781 | guards against resurrection |
+| tests/test_batch_live.py::test_refresh_reports_per_cell_and_updates_summaries | yes | yes | Batch.refresh | #782 | one of two cells grows; summaries cache cleared |
+| tests/test_batch_live.py::test_refresh_subset_and_error_capture | yes | yes | Batch.refresh(labels, raise_errors) | #782 | |
+| tests/test_batch_live.py::test_update_live_does_not_reload | yes | yes | Batch.update(live=True) | #782 | returns same BatchResult |
+| tests/test_batch_live.py::test_poll_refreshes_and_reruns_report | yes | yes | Batch.poll | #782 | fake clock; last_report rebuilt |
+| tests/test_batch_live.py::test_poll_stops_on_until_and_complete | yes | yes | Batch.poll stop conditions | #782 | |
+| tests/test_batch_live.py::test_poll_stops_on_cell_error | yes | yes | Batch.poll | #782 | |
 | tests/test_dbreader.py::test_missing_column_warns_once | yes | yes | readers.dbreader.Reader._pick_info | #1008 | warn-once per missing header |
 | tests/test_dbreader.py::test_nom_cap_specifics_column_reaches_pages | yes | yes | batch._dbengine._create_pages_dict | #1008 | db value → pages |
 | tests/test_dbreader.py::test_simple_db_engine_skip_file_search_excel_reader | yes | yes | batch._dbengine.simple_db_engine / find_files | #1017 | skip_file_search frames one row per cell |

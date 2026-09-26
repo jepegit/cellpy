@@ -234,9 +234,14 @@ class Batch:
         on_progress=None,
         executor: str = "serial",
         progress=None,
+        live: bool = False,
         **overrides
     ) -> BatchResult:
         """Load every cell, caching them in the store.
+
+        ``live=True`` does not reload: it calls ``CellpyCell.update()`` on
+        every loaded cell instead (see `refresh`) and returns the unchanged
+        ``result``; ``overrides`` are then forwarded to the cells' ``update``.
 
         ``executor`` is ``"serial"`` (default), ``"threads"`` or ``"processes"``.
         ``"threads"`` mainly speeds up *reopening* cells from local ``.cellpy``
@@ -251,6 +256,9 @@ class Batch:
         unknown (legacy) kwargs like ``testing`` are forwarded to the loader
         (``cellpy.get``) via ``loader_kwargs``.
         """
+        if live:
+            self.refresh(**overrides)
+            return self._result
         policy = self.policy
         if overrides:
             known = {f.name for f in fields(LoadPolicy)}
@@ -284,6 +292,113 @@ class Batch:
         Same kwargs as `update`.
         """
         return self.update(recalc=True, **overrides)
+
+    # -- live refresh (#782) ---------------------------------------------
+    def refresh(self, labels: Sequence[str] | None = None, raise_errors: bool = False, **update_kwargs) -> dict:
+        """Pick up appended raw data on the loaded cells via ``CellpyCell.update()``.
+
+        Only cells already in the store are touched (a lazy store never loads
+        a cell just to refresh it); use `update` / `load` for a first load.
+        The combined-summary cache is cleared when any cell changed, so
+        ``summaries`` / ``plot()`` / collectors see the new data.
+
+        Args:
+            labels: subset of cell labels (default: every loaded cell).
+            raise_errors: re-raise a cell's ``update`` error instead of
+                recording it (as the exception) in the returned map.
+            **update_kwargs: forwarded to each ``CellpyCell.update`` (for
+                example ``model=`` when the loader needs it, or ``force=True``).
+
+        Returns:
+            ``{label: changed}`` with ``True`` / ``False`` per cell, or the
+            exception object for a cell whose refresh failed.
+        """
+        targets = list(labels) if labels is not None else [lbl for lbl in self._store if self._store.is_loaded(lbl)]
+        outcome: dict[str, Any] = {}
+        any_changed = False
+        for label in targets:
+            cell = self._store[label]
+            try:
+                changed = bool(cell.update(**update_kwargs))
+            except Exception as exc:  # noqa: BLE001 - reported per cell
+                if raise_errors:
+                    raise
+                _log.error("refresh: %s failed (%s)", label, exc)
+                outcome[label] = exc
+                continue
+            outcome[label] = changed
+            any_changed = any_changed or changed
+        if any_changed:
+            self._summaries = None
+        return outcome
+
+    def poll(
+        self,
+        interval: float = 60.0,
+        on_update=None,
+        until=None,
+        max_polls: int | None = None,
+        timeout: float | None = None,
+        stop_when_complete: bool = True,
+        raise_errors: bool = False,
+        sleep=None,
+        **update_kwargs,
+    ):
+        """Repeat `refresh` on an interval; rebuild summaries and report each tick.
+
+        The batch counterpart of ``cellpy.utils.live.poll``. Every tick calls
+        `refresh`; when any cell changed, ``summaries`` are rebuilt, the QC
+        `report` is recomputed into ``last_report``, and ``on_update(batch,
+        outcome)`` runs (``outcome`` is the `refresh` map).
+
+        Stop conditions, checked before each wait: every loaded cell reports
+        ``source_complete`` (``stop_when_complete``), ``until(batch)`` is true,
+        ``max_polls`` ticks, or ``timeout`` seconds. ``KeyboardInterrupt``
+        stops cleanly. Bookkeeping in the returned ``PollStatus`` (also on
+        ``poll_status``).
+        """
+        import time
+
+        from cellpy.utils.live import PollStatus
+
+        sleep = sleep or time.sleep
+        status = PollStatus()
+        self.poll_status = status
+        started = time.monotonic()
+
+        def _all_complete() -> bool:
+            loaded = [lbl for lbl in self._store if self._store.is_loaded(lbl)]
+            return bool(loaded) and all(getattr(self._store[lbl], "source_complete", False) for lbl in loaded)
+
+        try:
+            while status.stopped_by is None:
+                if stop_when_complete and _all_complete():
+                    status.stopped_by = "complete"
+                elif until is not None and until(self):
+                    status.stopped_by = "until"
+                elif max_polls is not None and status.polls >= max_polls:
+                    status.stopped_by = "max_polls"
+                elif timeout is not None and time.monotonic() - started >= timeout:
+                    status.stopped_by = "timeout"
+                if status.stopped_by is not None:
+                    break
+                sleep(interval)
+                status.polls += 1
+                outcome = self.refresh(raise_errors=raise_errors, **update_kwargs)
+                failed = [exc for exc in outcome.values() if isinstance(exc, BaseException)]
+                if failed and not raise_errors:
+                    status.stopped_by, status.error = "error", failed[0]
+                    break
+                if any(v is True for v in outcome.values()):
+                    status.updates += 1
+                    self.combine_summaries()
+                    self.last_report = self.report()
+                    if on_update is not None:
+                        on_update(self, outcome)
+        except KeyboardInterrupt:
+            status.stopped_by = "interrupted"
+        _log.info("poll: finished %s", status)
+        return status
 
     @property
     def summaries(self) -> pl.DataFrame:

@@ -25,6 +25,12 @@
   (its thread-pool fan-out lives in `batch.runner`'s `executor="threads"`).
   (#781)
 
+* Batch live refresh: `b.refresh()` (alias `b.update(live=True)`) calls
+  `c.update()` on every loaded cell and returns `{label: changed}`;
+  `b.poll(interval=, until=, max_polls=, on_update=)` repeats it, rebuilding
+  `b.summaries` and the QC report (`b.last_report`) on ticks that changed.
+  (#782)
+
 ## [2.1.5.post6] - 2026-09-25
 
 * `summary_collector(...).plot()` keeps a lone charge or discharge series

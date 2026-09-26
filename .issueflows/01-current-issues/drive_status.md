@@ -14,3 +14,5 @@ findings:
 
 last_outcome: pending
 auto_stop: stage 2 halted on #779 (yolo: no). #780 and #164 not reached. #781 and #782 not started.
+
+manual_follow_up (2026-09-26): all Epic L issues implemented by hand; PRs #1101 → #1102 → #1103 → #1104 stacked, awaiting review/merge. Remaining drive steps (final_review, cleanup, status) are the user's call after merges.
