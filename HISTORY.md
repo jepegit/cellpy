@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+* `cellpy info --check`: missing Arbin `.res` ODBC/mdbtools is a soft
+  warning (exit 0); only imports/configuration failures exit non-zero. (#1111)
+
 * Move the installable package from `cellpy/` to `src/cellpy/`. (#1109)
 
 * Pluggable external metadata sources (read path). New
