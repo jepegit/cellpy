@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+* Scheduled CI `pip install` job installs `cellpy[legacy-files,plotting-mpl]`
+  so matplotlib is present for Agg plot-test collection (regression after
+  matplotlib left the required set in #937).
+
 * `cellpy info --check`: missing Arbin `.res` ODBC/mdbtools is a soft
   warning (exit 0); only imports/configuration failures exit non-zero. (#1111)
 

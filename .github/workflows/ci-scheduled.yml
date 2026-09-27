@@ -133,7 +133,8 @@ jobs:
     runs-on: ${{ matrix.runner }}
     # Agg keeps matplotlib headless (#594). Plotly/seaborn cases skipif when the
     # batch extra is not installed. legacy-files pulls PyTables so the suite can
-    # read v4–v8 HDF5 fixtures (plain `pip install -e .` fails those tests).
+    # read v4–v8 HDF5 fixtures; plotting-mpl pulls matplotlib for Agg plot tests
+    # (plain `pip install -e .` / `.[legacy-files]` alone fails collection after #937).
     env:
       MPLBACKEND: Agg
     strategy:
@@ -183,7 +184,7 @@ jobs:
           python -m pip install tables
 
       - name: Install cellpy
-        run: python -m pip install -e ".[legacy-files]"
+        run: python -m pip install -e ".[legacy-files,plotting-mpl]"
 
       - name: Test with pytest
         run: pytest ${{ matrix.pytest-args }}
