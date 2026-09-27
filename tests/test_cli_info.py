@@ -35,13 +35,43 @@ def fresh_reporter(monkeypatch):
 
 @pytest.fixture
 def one_failing_check(monkeypatch):
-    """Make the odbc check fail, without needing a machine that lacks it."""
+    """Make a *required* check fail (imports), without needing a broken install.
+
+    Arbin ``.res`` support is advisory (#1111): soft-failing it must not drive
+    the exit-code tests below.
+    """
+    monkeypatch.setattr(
+        cli_api,
+        "_check_import_cellpy",
+        lambda: cli_api._CheckOutcome(
+            False, "cannot import cellpy", hint="reinstall cellpy"
+        ),
+    )
+
+
+@pytest.fixture
+def soft_arbin_fail(monkeypatch):
+    """Missing Arbin tooling warns but must not fail the process (#1111)."""
     monkeypatch.setattr(
         cli_api,
         "_check_import_pyodbc",
         lambda: cli_api._CheckOutcome(
-            False, "no odbc driver", hint="install mdbtools"
+            False,
+            "no odbc driver for .res files",
+            hint="install the Microsoft Access Database Engine, or mdbtools",
+            required=False,
         ),
+    )
+    # Keep the other two green so only the soft check is off.
+    monkeypatch.setattr(
+        cli_api,
+        "_check_import_cellpy",
+        lambda: cli_api._CheckOutcome(True, "fine"),
+    )
+    monkeypatch.setattr(
+        cli_api,
+        "_check_config_file",
+        lambda: cli_api._CheckOutcome(True, "fine"),
     )
 
 
@@ -123,8 +153,8 @@ def test_a_failing_check_exits_non_zero(one_failing_check):
     result = runner.invoke(cli, ["info", "--check"])
 
     assert result.exit_code == 1
-    assert "no odbc driver" in plain(result.output)
-    assert "install mdbtools" in plain(result.output)
+    assert "cannot import cellpy" in plain(result.output)
+    assert "reinstall cellpy" in plain(result.output)
 
 
 @pytest.mark.essential
@@ -136,11 +166,22 @@ def test_a_passing_check_exits_zero(every_check_passes):
 
 
 @pytest.mark.essential
+def test_soft_arbin_miss_exits_zero(soft_arbin_fail):
+    """Missing optional Arbin .res tooling must not red-fail CI (#1111)."""
+    result = runner.invoke(cli, ["info", "--check"])
+    output = plain(result.output)
+
+    assert result.exit_code == 0, output
+    assert "no odbc driver for .res files" in output
+    assert "2 of 3 checks passed" in output
+
+
+@pytest.mark.essential
 def test_failures_reach_stderr(one_failing_check):
     """A broken setup must survive `cellpy info --check > report.txt`."""
     result = runner.invoke(cli, ["info", "--check"])
 
-    assert "no odbc driver" in plain(result.stderr)
+    assert "cannot import cellpy" in plain(result.stderr)
 
 
 @pytest.mark.essential
@@ -149,9 +190,10 @@ def test_quiet_reports_only_what_is_broken(one_failing_check):
     result = runner.invoke(cli, ["--quiet", "info", "--check"])
     output = plain(result.output)
 
-    assert "no odbc driver" in output
+    assert "cannot import cellpy" in output
     assert "checks passed" not in output
-    assert "imports" not in output
+    # Soft/ok rows are suppressed; the failing required label still shows.
+    assert "arbin .res support" not in output
 
 
 # -- the check helpers ------------------------------------------------------
