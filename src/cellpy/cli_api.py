@@ -872,12 +872,17 @@ class _CheckOutcome:
     Returning the outcome instead lets the caller render it consistently -
     verdict row first, then its detail lines - and lets the diagnostics drop to
     ``--verbose`` where they belong.
+
+    ``required`` (default True): a failed *required* check increments the
+    exit-code failure count. Soft checks (e.g. optional Arbin ``.res``
+    tooling) warn and still exit 0 when everything required is fine (#1111).
     """
 
     ok: bool
     detail: str = ""
     hint: Optional[str] = None
     details: list = field(default_factory=list)
+    required: bool = True
 
     def add(self, key: str, value: str, note: Optional[str] = None) -> None:
         """Record a key/value line to print underneath the verdict."""
@@ -985,6 +990,7 @@ def _check_import_pyodbc():
                         False,
                         "no mdbtools driver",
                         hint="brew install mdbtools",
+                        required=False,
                     )
                 _debug(f" - found it: {driver}")
                 return _CheckOutcome(True, driver)
@@ -999,11 +1005,14 @@ def _check_import_pyodbc():
                 False,
                 "mdbtools not installed",
                 hint="apt-get install mdbtools (see the docs for other systems)",
+                required=False,
             )
 
         except AssertionError:
             _debug(" - could not find any suitable driver")
-            return _CheckOutcome(False, "no suitable driver found")
+            return _CheckOutcome(
+                False, "no suitable driver found", required=False
+            )
 
     # not posix - checking for odbc drivers
     # 1) checking if you have defined one
@@ -1021,6 +1030,7 @@ def _check_import_pyodbc():
         )
 
     use_ado = False
+    dbloader = None
 
     if ODBC == "ado":
         use_ado = True
@@ -1055,6 +1065,13 @@ def _check_import_pyodbc():
                 dbloader = None
 
     _debug(" searching for odbc drivers")
+    if dbloader is None:
+        return _CheckOutcome(
+            False,
+            "no odbc driver for .res files",
+            hint="install pyodbc (or pypyodbc) and the Microsoft Access Database Engine, or mdbtools",
+            required=False,
+        )
     try:
         drivers = [
             driver
@@ -1066,7 +1083,7 @@ def _check_import_pyodbc():
         _debug(f" - odbc driver: {driver}")
         return _CheckOutcome(True, driver)
 
-    except IndexError:
+    except (IndexError, AttributeError, TypeError):
         logging.debug(" Unfortunately, it seems the list of drivers is emtpy.")
         _debug(
             "\n Could not find any odbc-drivers suitable for .res-type files. "
@@ -1087,6 +1104,7 @@ def _check_import_pyodbc():
             False,
             "no odbc driver for .res files",
             hint="install the Microsoft Access Database Engine, or mdbtools",
+            required=False,
         )
 
 
@@ -1185,7 +1203,8 @@ def _check(dry_run=False, full_check=True) -> int:
     if full_check:
         checks.append(("configuration", _check_config_file))
 
-    failed = 0
+    not_ok = 0
+    hard_failed = 0
     for label, check_func in checks:
         try:
             outcome = _as_outcome(check_func())
@@ -1193,14 +1212,20 @@ def _check(dry_run=False, full_check=True) -> int:
             outcome = _CheckOutcome(False, f"the check itself raised {exc!r}")
         if outcome.ok:
             ui.ok(label, outcome.detail)
-        else:
-            failed += 1
+        elif outcome.required:
+            hard_failed += 1
+            not_ok += 1
             ui.fail(label, outcome.detail, hint=outcome.hint)
+        else:
+            # Soft miss: warn, count against the N-of-M display, but do not
+            # fail the process (#1111 / optional Arbin .res tooling).
+            not_ok += 1
+            ui.warn(label, outcome.detail, hint=outcome.hint)
         for key, value, note in outcome.details:
             ui.detail(key, value, note=note)
 
-    ui.summary(len(checks) - failed, len(checks))
-    return failed
+    ui.summary(len(checks) - not_ok, len(checks))
+    return hard_failed
 
 
 def _write_env_file(user_dir, dst_file, dry_run):
