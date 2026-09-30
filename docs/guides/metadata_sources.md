@@ -27,6 +27,10 @@ way a batch-journal row would: **above** what the instrument file wrote,
 **below** anything you pass explicitly (`mass=…`) afterwards. If the database
 is unreachable, the cell still loads — you get a warning and no metadata layer.
 
+When BatBase also knows *where the files are*, you can drop the filename
+altogether — `cellpy.get(source="batbase", key="SAL_010", kind="tag")` — see
+[step 5](#5-let-the-database-find-the-files).
+
 ## 1. Install the connector
 
 Metadata sources are plugins. BatBase lives in the `cellpy-connectors`
@@ -176,14 +180,67 @@ not continue without it (then these become exceptions).
 **The summary still shows the old mass** — you forgot step 4
 (`c.refresh_after()`).
 
+## 5. Let the database find the files
+
+If BatBase also records *where* a test's files live (the `files` list on an
+experiment — a raw export, a `.cellpy` archive, or both), you can skip the
+filename entirely:
+
+```python
+c = cellpy.get(source="batbase", key="SAL_010", kind="tag")
+```
+
+cellpy asks BatBase for the record, opens the files it points at (a
+`.cellpy` archive is preferred when it is newer than the raw file, exactly
+like `cellpy.get(raw, cellpy_file=...)`), applies the metadata, and keeps
+the paths it used in `c.external_links["batbase"].files`. `filefinder` — the
+glob over `rawdatadir` — only runs when the record has no file pointers, in
+which case it searches for the record's cell name as usual.
+
+Two things differ from the plain `fetch_meta` call:
+
+- **Errors are loud.** With no filename to fall back on, an unreachable or
+  unknown source raises instead of returning `()`, and a key with no record
+  raises `NoDataFound`. Pass `strict=False` to get the quiet behaviour back.
+- **Your keywords still win.** `cellpy.get(source=..., mass=2.0)` loads the
+  files BatBase pointed at but keeps *your* mass.
+
+Giving both a filename and a source (`cellpy.get("cell.res", source="batbase")`)
+is the enrichment case: the file is loaded, the record (looked up by the
+file's stem) is applied on top, and a missing record is only a warning.
+`CellpyCell.from_source("batbase", "SAL_010", kind="tag")` is the same call
+spelled as a constructor.
+
 ## Batch workflows
 
 The batch utility resolves metadata through the same layers, so a journal
 built from the Excel sheet ([Set up the cellpy database](batch_database.md))
-and a record fetched from BatBase end up in the same place. Pulling a whole
-batch from BatBase in one call (`batch.from_source(...)`) and letting BatBase
-tell cellpy *where the raw files are* are planned for cellpy 2.3
-([#1107](https://github.com/jepegit/cellpy/issues/1107)).
+and a record fetched from BatBase end up in the same place.
+
+A whole batch straight from a BatBase tag:
+
+```python
+from cellpy import batch
+
+b = batch.from_source("batbase", "SAL_010")      # kind="tag" by default
+b.update()                                       # opens the pointed-at files
+b.cells["SAL_010_01"].external_links["batbase"]  # the back-link per cell
+```
+
+`from_source` builds the journal pages from the records — one row per test
+with `mass`, `area`, `loading`, `nom_cap`, `cycle_mode`, the instrument hint
+and the raw / `.cellpy` paths — and stores the back-links in the journal
+session, so a saved journal remembers where each row came from. Rows whose
+record has no file pointers go through the normal `filefinder` search
+(`file_search=False` leaves them empty instead). `project=` scopes both the
+BatBase lookup and the journal; `name=` overrides the default
+`batbase_tag_SAL_010`. Anything else (`channel=3`) is passed to the source as
+a filter.
+
+What the batch path does **not** do: re-resolve per-field provenance
+(`Resolution.origin_of`) on each cell — the journal row is the layer, the
+`ExternalLink` names the source. Using `size` / `mtime` from the pointers to
+skip stat-ing raw files on `update()` is planned for a later release.
 
 ## For developers
 

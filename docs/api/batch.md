@@ -56,6 +56,8 @@ b.result.report()   # per-cell load outcomes
 
 ::: cellpy.batch.journal.Journal
 
+::: cellpy.batch.source
+
 ## Aggregation
 
 ::: cellpy.batch.aggregate

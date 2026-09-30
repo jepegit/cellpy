@@ -131,6 +131,67 @@ class Batch:
         return cls(journal_from_db(name, project, **db_kwargs), policy=policy)
 
     @classmethod
+    def from_source(
+        cls,
+        source: str | Any,
+        key: str | None = None,
+        *,
+        kind: str = "tag",
+        project: str | None = None,
+        name: str | None = None,
+        policy: LoadPolicy | None = None,
+        file_search: bool = True,
+        file_search_kwargs: Mapping[str, Any] | None = None,
+        strict: bool = True,
+        **extra: Any,
+    ) -> "Batch":
+        """Build a batch from an external metadata source's records (#1107).
+
+        One journal row per record: cell metadata (mass, area, loading,
+        nom_cap, cycle_mode) from the record and, when the source knows them,
+        the raw / ``.cellpy`` files to open — ``filefinder`` runs only for
+        records without file pointers (``file_search=False`` skips even that
+        and leaves those paths ``None``).
+
+        Args:
+            source: registered source name (``"batbase"``) or a source object.
+            key: lookup value (a tag, a project, a cell name ...).
+            kind: what ``key`` is; ``"tag"`` by default for a batch.
+            project: journal project; also scopes the source lookup
+                (``MetaQuery.project``). Defaults to the source name.
+            name: journal name (defaults to ``<source>_<kind>_<key>``).
+            policy: `LoadPolicy` for the later ``update()``.
+            file_search: search for files when a record has no pointers.
+            file_search_kwargs: forwarded to the search (``pre_path``, ...).
+            strict: raise when the source is unknown / unreachable (default
+                True here — a batch cannot be built without the records).
+            **extra: source-specific filters (``MetaQuery.extra``).
+
+        Raises:
+            NoDataFound: the source had no record for the query.
+        """
+        from cellpy.batch.source import default_batch_name, journal_from_records
+        from cellpy.exceptions import NoDataFound
+        from cellpy.readers.metadata_sources import MetaQuery, fetch_meta
+
+        query = MetaQuery(key=key, kind=kind, project=project, extra=extra)
+        records = fetch_meta(source, query, strict=strict)
+        source_name = source if isinstance(source, str) else getattr(source, "name", str(source))
+        if not records:
+            raise NoDataFound(
+                f"metadata source {source_name!r} has no records for {query.describe()}"
+            )
+        journal = journal_from_records(
+            records,
+            source_name=source_name,
+            name=name or default_batch_name(source_name, kind, key),
+            project=project or source_name,
+            file_search=file_search,
+            file_search_kwargs=file_search_kwargs,
+        )
+        return cls(journal, policy=policy)
+
+    @classmethod
     def from_cells(
         cls,
         cells: Mapping[str, Any] | Sequence[Any],
@@ -276,7 +337,34 @@ class Batch:
             )
         self._store = _store_from_result(self._result, self.journal)
         self._summaries = None
+        self._stamp_external_links()
         return self._result
+
+    def _stamp_external_links(self) -> None:
+        """Copy ``session["external_links"]`` onto the loaded cells (#1107).
+
+        A batch built by `from_source` keeps one `ExternalLink` per label in
+        the journal session; after a load each cell gets its link so "where
+        did this mass come from?" answers the same as on the `cellpy.get`
+        source path. Values are **not** re-applied (journal precedence stays).
+        """
+        from cellpy.batch.source import SESSION_KEY
+        from cellpy.readers.metadata_sources import ExternalLink
+
+        links = (self.journal.session or {}).get(SESSION_KEY) or {}
+        if not links:
+            return
+        for label, payload in links.items():
+            if not self._store.is_loaded(label):
+                continue
+            cell = self._store[label]
+            try:
+                link = ExternalLink.from_dict(payload)
+                if getattr(cell.data, "external_links", None) is None:
+                    cell.data.external_links = {}
+                cell.data.external_links[link.source_name] = link
+            except Exception as exc:  # noqa: BLE001 - never fail a load over a link
+                logging.debug("from_source: could not stamp link on %r: %s", label, exc)
 
     def load(self, **overrides) -> BatchResult:
         """Load cells (alias of `update`, kept for the legacy surface).
@@ -717,6 +805,13 @@ def from_cells(cells, **kwargs) -> Batch:
     `from_cells`) -- feed it to ``collect_summaries`` /
     ``collect_cycles`` or call ``batch.plot()``."""
     return Batch.from_cells(cells, **kwargs)
+
+
+def from_source(source, key=None, **kwargs) -> Batch:
+    """Build a `Batch` from an external metadata source (see
+    `Batch.from_source`), e.g. ``batch.from_source("batbase", "SAL_010")``
+    for every test carrying that BatBase tag. Call ``update()`` to load."""
+    return Batch.from_source(source, key, **kwargs)
 
 
 def _journal_path(name: str, journal_dir: Path | str | None = None) -> Path:

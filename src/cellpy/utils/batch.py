@@ -25,6 +25,7 @@ from cellpy.batch import (
     read_journal,
 )
 from cellpy.batch import from_journal as _new_from_journal
+from cellpy.batch import from_source
 from cellpy.batch import load as _new_load
 from cellpy.batch.journal import Journal
 
@@ -38,6 +39,7 @@ __all__ = [
     "init",
     "naked",
     "from_journal",
+    "from_source",
     "init2",
     "from_journal2",
     "load_journal",

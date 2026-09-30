@@ -4,7 +4,7 @@ Public surface::
 
     from cellpy.readers.metadata_sources import (
         MetadataSource, SupportsMetadataPush,   # the Protocols
-        MetaQuery, MetaRecord, ExternalLink,    # the data shapes
+        MetaQuery, MetaRecord, ExternalLink, FileRef,  # the data shapes
         fetch_meta, get_source, register, names,
         MetadataSourceError, MetadataSourceAuthError, UnknownMetadataSource,
     )
@@ -16,8 +16,10 @@ conformance kit adapters run.
 """
 
 from cellpy.readers.metadata_sources.contract import (
+    FILE_KINDS,
     PROVENANCE_FIELDS,
     ExternalLink,
+    FileRef,
     MetadataSource,
     MetadataSourceAuthError,
     MetadataSourceError,
@@ -39,8 +41,10 @@ from cellpy.readers.metadata_sources.registry import (
 
 __all__ = [
     "ENTRY_POINT_GROUP",
+    "FILE_KINDS",
     "PROVENANCE_FIELDS",
     "ExternalLink",
+    "FileRef",
     "MetaQuery",
     "MetaRecord",
     "MetadataSource",

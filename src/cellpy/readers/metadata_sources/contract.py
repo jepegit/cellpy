@@ -22,12 +22,15 @@ Rules a source must keep (`testing.check_metadata_source` enforces them):
   here; leave the key out.
 - Records never pre-fill cellpy provenance (`uuid`, `source_kind`, ...); that
   is the framework's to stamp.
+- A source that knows *where the data lives* says so through
+  ``MetaRecord.files`` (`FileRef`s, #1107) — never through the provenance
+  fields ``raw_file_names`` / ``source_uri`` in the metadata mappings.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, ClassVar, Mapping, Protocol, runtime_checkable
+from typing import Any, ClassVar, Iterable, Mapping, Protocol, runtime_checkable
 
 from cellpy.exceptions import Error
 
@@ -43,6 +46,9 @@ PROVENANCE_FIELDS: frozenset[str] = frozenset(
         "loaded_datetime",
     }
 )
+
+#: What a `FileRef` may point at.
+FILE_KINDS: frozenset[str] = frozenset({"raw", "cellpy", "processed", "other"})
 
 
 class MetadataSourceError(Error):
@@ -88,6 +94,73 @@ class MetaQuery:
 
 
 @dataclass(frozen=True)
+class FileRef:
+    """A pointer to one data file the source knows about (#1107).
+
+    A source that records where a test's files live lets cellpy open them
+    directly instead of searching ``rawdatadir`` with `filefinder`.
+
+    Args:
+        kind: ``"raw"`` (cycler export), ``"cellpy"`` (a ``.cellpy``
+            archive), ``"processed"`` or ``"other"`` (``FILE_KINDS``).
+        uri: path or URL; anything ``OtherPath`` accepts (local path,
+            ``scp://host/…``, ``sftp://…``).
+        order: load order for multi-file raw sets (lowest first).
+        size: byte size when the source knows it (change detection).
+        mtime: ISO-8601 modification time when the source knows it.
+        checksum: opaque checksum string when the source knows it.
+        loader: cellpy instrument name hint (``"arbin_res"``) for raw files.
+        location: free-text location tag (a host or mount name).
+    """
+
+    kind: str
+    uri: str
+    order: int = 0
+    size: int | None = None
+    mtime: str | None = None
+    checksum: str | None = None
+    loader: str | None = None
+    location: str | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        payload: dict[str, Any] = {"kind": self.kind, "uri": self.uri, "order": self.order}
+        for key in ("size", "mtime", "checksum", "loader", "location"):
+            value = getattr(self, key)
+            if value is not None:
+                payload[key] = value
+        return payload
+
+    @classmethod
+    def from_dict(cls, payload: Mapping[str, Any]) -> "FileRef":
+        return cls(
+            kind=str(payload.get("kind", "")),
+            uri=str(payload.get("uri", "")),
+            order=int(payload.get("order") or 0),
+            size=payload.get("size"),
+            mtime=payload.get("mtime"),
+            checksum=payload.get("checksum"),
+            loader=payload.get("loader"),
+            location=payload.get("location"),
+        )
+
+
+def _coerce_files(files: Any) -> tuple[FileRef, ...]:
+    """Accept `FileRef`s or dicts (adapters often hand JSON straight through)."""
+    if not files:
+        return ()
+    out: list[FileRef] = []
+    for item in files:
+        if isinstance(item, FileRef):
+            out.append(item)
+        elif isinstance(item, Mapping):
+            out.append(FileRef.from_dict(item))
+        else:
+            # keep it; validate_record names the offender
+            out.append(item)  # type: ignore[arg-type]
+    return tuple(out)
+
+
+@dataclass(frozen=True)
 class MetaRecord:
     """One answer from a source: draft metadata plus the back-link to it.
 
@@ -103,6 +176,8 @@ class MetaRecord:
         test: ``TestMeta`` draft mapping.
         fetched_at: ISO-8601 timestamp; `fetch_meta` fills it when left None.
         raw: the source's original payload, for debugging. Not persisted.
+        files: `FileRef` pointers to the test's data files, when the source
+            knows them (#1107). Empty means "search as usual".
     """
 
     source_name: str
@@ -112,10 +187,12 @@ class MetaRecord:
     test: Mapping[str, Any] = field(default_factory=dict)
     fetched_at: str | None = None
     raw: Any = None
+    files: tuple[FileRef, ...] = ()
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "cell", dict(self.cell or {}))
         object.__setattr__(self, "test", dict(self.test or {}))
+        object.__setattr__(self, "files", _coerce_files(self.files))
 
     @property
     def fields(self) -> tuple[str, ...]:
@@ -125,13 +202,26 @@ class MetaRecord:
     def is_empty(self) -> bool:
         return not self.cell and not self.test
 
-    def link(self) -> "ExternalLink":
+    def raw_files(self) -> tuple[FileRef, ...]:
+        """The ``"raw"`` pointers in load order (by ``order``, then position)."""
+        raws = [f for f in self.files if getattr(f, "kind", None) == "raw"]
+        return tuple(sorted(raws, key=lambda f: f.order))
+
+    def cellpy_file(self) -> FileRef | None:
+        """The first ``"cellpy"`` pointer, if any."""
+        for ref in self.files:
+            if getattr(ref, "kind", None) == "cellpy":
+                return ref
+        return None
+
+    def link(self, *, files: Iterable[str] = ()) -> "ExternalLink":
         return ExternalLink(
             source_name=self.source_name,
             external_id=self.external_id,
             source_uri=self.source_uri,
             fetched_at=self.fetched_at,
             fields=self.fields,
+            files=tuple(files),
         )
 
 
@@ -150,15 +240,20 @@ class ExternalLink:
     fetched_at: str | None = None
     #: metadata fields this source supplied when it was applied
     fields: tuple[str, ...] = ()
+    #: file URIs the source pointed at and cellpy opened (#1107)
+    files: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        payload = {
             "source_name": self.source_name,
             "external_id": self.external_id,
             "source_uri": self.source_uri,
             "fetched_at": self.fetched_at,
             "fields": list(self.fields),
         }
+        if self.files:
+            payload["files"] = list(self.files)
+        return payload
 
     @classmethod
     def from_dict(cls, payload: Mapping[str, Any]) -> "ExternalLink":
@@ -168,6 +263,7 @@ class ExternalLink:
             source_uri=payload.get("source_uri"),
             fetched_at=payload.get("fetched_at"),
             fields=tuple(payload.get("fields") or ()),
+            files=tuple(payload.get("files") or ()),
         )
 
 
@@ -248,7 +344,26 @@ def validate_record(
         raise MetadataSourceError(
             f"{source}: MetaRecord carries None for {nones}; leave unknown fields out."
         )
+    _validate_files(record.files, source=source)
     return record
+
+
+def _validate_files(files: tuple[Any, ...], *, source: str) -> None:
+    seen: set[str] = set()
+    for ref in files:
+        if not isinstance(ref, FileRef):
+            raise MetadataSourceError(
+                f"{source}: MetaRecord.files must hold FileRef instances, got {type(ref)!r}"
+            )
+        if ref.kind not in FILE_KINDS:
+            raise MetadataSourceError(
+                f"{source}: FileRef.kind {ref.kind!r} is not one of {sorted(FILE_KINDS)}"
+            )
+        if not ref.uri or not str(ref.uri).strip():
+            raise MetadataSourceError(f"{source}: FileRef.uri is empty")
+        if ref.uri in seen:
+            raise MetadataSourceError(f"{source}: FileRef.uri {ref.uri!r} listed twice")
+        seen.add(ref.uri)
 
 
 def _known_meta_fields() -> tuple[frozenset[str], frozenset[str]]:
