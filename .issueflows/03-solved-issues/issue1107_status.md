@@ -6,7 +6,7 @@ Plan accepted 2026-09-30 with all recommendations (defer change detection;
 `batch.from_source` default `kind="tag"`; connectors adapter follow-up after
 merge).
 
-- [ ] Done
+- [x] Done
 
 ## What's done
 
@@ -35,8 +35,10 @@ merge).
 
 ## Remaining work
 
-- Full `uv run pytest` run (in progress at time of writing) → close.
-- Follow-ups (not this PR): change detection via `size`/`mtime` in
+- None for this issue. Full `uv run pytest`: 1986 passed, 3 failed — all
+  plotly/kaleido image-export timeouts (headless Chromium unavailable in the
+  local sandbox; unrelated, CI covers them).
+- Follow-ups (separate issues): change detection via `size`/`mtime` in
   `update()`; cellpy-connectors adapter mapping BatBase `files[]` →
   `FileRef` (file issue there after merge).
 
