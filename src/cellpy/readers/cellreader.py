@@ -147,6 +147,68 @@ def _align_dtypes(chunk, existing):
     return chunk.with_columns(casts) if casts else chunk
 
 
+#: how far apart (seconds) a source-recorded mtime and the loaded ``st_mtime``
+#: may be and still count as the same file (ISO strings often drop sub-seconds)
+SOURCE_MTIME_TOLERANCE = 1.0
+
+
+def _mtime_epoch(value):
+    """Epoch seconds for a `FileRef.mtime` (number or ISO-8601 text), else None.
+
+    A naive timestamp is taken as UTC.
+    """
+    if value is None:
+        return None
+    if isinstance(value, numbers.Real):
+        return float(value)
+    try:
+        moment = datetime.datetime.fromisoformat(str(value).strip())
+    except ValueError:
+        return None
+    if moment.tzinfo is None:
+        moment = moment.replace(tzinfo=datetime.timezone.utc)
+    return moment.timestamp()
+
+
+def _uri_basename(uri) -> str:
+    return str(uri).replace("\\", "/").rstrip("/").rsplit("/", 1)[-1]
+
+
+def _uri_is_path(uri, full_name) -> bool:
+    """Does a `FileRef.uri` name the same file as a `FileID.full_name`?"""
+    uri = str(uri)
+    if not full_name:
+        return False
+    if uri == full_name:
+        return True
+    try:
+        return internals.OtherPath(uri).full_path == full_name
+    except Exception:  # noqa: BLE001 - a URI OtherPath rejects is just not a match
+        return False
+
+
+def _source_hint_matches_loaded(ref, fid) -> bool:
+    """True when every stat the source recorded equals what cellpy loaded.
+
+    ``ref`` is a `FileRef` kept on an `ExternalLink` (#1124); ``fid`` the
+    `FileID` from the load. A ref without ``size`` and ``mtime``, an
+    unparsable mtime, or a fid without stats never matches, so the caller
+    falls back to stat-ing the file.
+    """
+    if ref.size is None and ref.mtime is None:
+        return False
+    if ref.size is not None:
+        if fid.size is None or int(ref.size) != int(fid.size):
+            return False
+    if ref.mtime is not None:
+        recorded = _mtime_epoch(ref.mtime)
+        if recorded is None or fid.last_modified is None:
+            return False
+        if abs(recorded - float(fid.last_modified)) > SOURCE_MTIME_TOLERANCE:
+            return False
+    return True
+
+
 def normalize_summary_meta_fields(fields=None):
     """Normalize meta field names for ``SUMMARY_META_DEPENDENCIES`` / ``refresh_after``.
 
@@ -1928,7 +1990,12 @@ class CellpyCell:
         Flow:
 
         1. Change detection on the recorded raw files (size and mtime, as in
-           ``check_file_ids``). Unchanged and not ``force`` → no-op.
+           ``check_file_ids``). Unchanged and not ``force`` → no-op. A cell
+           that came from a metadata-source record whose `FileRef` carries
+           ``size`` / ``mtime`` (`external_links[...].file_refs`) is compared
+           against those first and the remote ``stat`` is skipped when they
+           match what was loaded (#1124); a differing or missing value falls
+           back to the stat.
         2. Single source whose loader implements ``SupportsIncrementalLoad``
            (arbin_res, arbin_sql, neware_txt, maccor_txt): read only the rows
            since the load marker and append them through core
@@ -1992,11 +2059,17 @@ class CellpyCell:
         """True if any recorded raw file differs from disk in size or mtime.
 
         Sources without file stats (databases, missing files) count as changed
-        so the caller still tries to refresh them.
+        so the caller still tries to refresh them. A file whose metadata-source
+        record (`external_links[*].file_refs`, #1124) carries the same size /
+        mtime as the load is taken as unchanged without touching the disk.
         """
         for fid in fids:
             if getattr(fid, "is_db", False) or not fid.full_name:
                 return True
+            hint = self._source_file_hint(fid)
+            if hint is not None and _source_hint_matches_loaded(hint[1], fid):
+                logging.debug(f"update: {fid.name} unchanged per {hint[0]!r} record; stat skipped")
+                continue
             current = ds.FileID(fid.full_name)
             if current.name is None:
                 return True
@@ -2007,6 +2080,31 @@ class CellpyCell:
             if float(current.last_modified) != float(fid.last_modified):
                 return True
         return False
+
+    def _source_file_hint(self, fid):
+        """``(source_name, FileRef)`` recorded for this raw file, or None.
+
+        Matches on the URI (as given, then as ``OtherPath.full_path``); when
+        no URI matches, a single ref sharing the file name is accepted.
+        """
+        links = getattr(self.data, "external_links", None) or {}
+        by_name = []
+        for source_name, link in links.items():
+            for ref in getattr(link, "file_refs", ()) or ():
+                if _uri_is_path(ref.uri, fid.full_name):
+                    return source_name, ref
+                if fid.name and _uri_basename(ref.uri) == fid.name:
+                    by_name.append((source_name, ref))
+        if len(by_name) == 1:
+            return by_name[0]
+        return None
+
+    @staticmethod
+    def _ref_points_at(ref, full_names) -> bool:
+        if any(_uri_is_path(ref.uri, name) for name in full_names):
+            return True
+        base = _uri_basename(ref.uri)
+        return any(_uri_basename(name) == base for name in full_names)
 
     def _ensure_loader_for_update(self, **loader_kwargs):
         """Recreate the loader from stored provenance when the tester changed.
@@ -2247,6 +2345,13 @@ class CellpyCell:
         link = record.link(files=files)
         from dataclasses import replace
 
+        if not files:
+            # A re-fetch on a loaded cell: keep only the refs that point at
+            # the raw files this cell was read from, so they can serve as
+            # ``update()`` hints (#1124) without claiming files we never opened.
+            loaded = {str(f.full_name) for f in (self.data.raw_data_files or []) if f is not None and f.full_name}
+            if loaded:
+                link = replace(link, file_refs=tuple(ref for ref in link.file_refs if self._ref_points_at(ref, loaded)))
         link = replace(link, fields=applied)
         if not hasattr(self.data, "external_links") or self.data.external_links is None:
             self.data.external_links = {}

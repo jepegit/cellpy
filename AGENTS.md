@@ -388,6 +388,9 @@ Quick facts:
   `cellpy.get(source="batbase", key="SAL_010", kind="tag")` opens the
   record's file pointers (`filefinder` only as fallback);
   `batch.from_source("batbase", "SAL_010")` does the same for a whole tag.
+  Raw pointers with `size`/`mtime` stay on `external_links[src].file_refs`;
+  `update()` / `refresh()` skip the remote `stat` while they match what was
+  loaded (`force=True` or a differing value → stat/reload as usual).
 - Frames: `c.data.raw` / `.steps` / `.summary`; columns via `c.schema.*`.
   After a raw load, each cycle's raw capacity starts at 0. A forgotten tester
   reset that 1.x plotted as doubled capacity is rebased on load for every
