@@ -390,6 +390,10 @@ class Batch:
         The combined-summary cache is cleared when any cell changed, so
         ``summaries`` / ``plot()`` / collectors see the new data.
 
+        Cells of a `from_source` batch whose record carried raw-file
+        ``size`` / ``mtime`` skip the remote ``stat`` while those values match
+        what was loaded (#1124); ``force=True`` reloads regardless.
+
         Args:
             labels: subset of cell labels (default: every loaded cell).
             raise_errors: re-raise a cell's ``update`` error instead of

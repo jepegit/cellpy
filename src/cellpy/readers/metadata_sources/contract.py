@@ -215,13 +215,28 @@ class MetaRecord:
         return None
 
     def link(self, *, files: Iterable[str] = ()) -> "ExternalLink":
+        """The back-link for this record.
+
+        ``files`` are the URIs cellpy opened. The raw refs among them that
+        carry ``size`` / ``mtime`` ride along as ``file_refs`` so a later
+        ``update()`` can skip stat-ing the file (#1124); with no ``files``
+        every stat-carrying raw ref is kept.
+        """
+        files = tuple(files)
+        wanted = set(files)
+        refs = tuple(
+            ref
+            for ref in self.raw_files()
+            if (ref.size is not None or ref.mtime is not None) and (not wanted or ref.uri in wanted)
+        )
         return ExternalLink(
             source_name=self.source_name,
             external_id=self.external_id,
             source_uri=self.source_uri,
             fetched_at=self.fetched_at,
             fields=self.fields,
-            files=tuple(files),
+            files=files,
+            file_refs=refs,
         )
 
 
@@ -242,6 +257,12 @@ class ExternalLink:
     fields: tuple[str, ...] = ()
     #: file URIs the source pointed at and cellpy opened (#1107)
     files: tuple[str, ...] = ()
+    #: raw `FileRef`s with the ``size`` / ``mtime`` the source recorded (#1124);
+    #: ``update()`` skips the remote stat when they match what was loaded
+    file_refs: tuple[FileRef, ...] = ()
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "file_refs", _coerce_files(self.file_refs))
 
     def to_dict(self) -> dict[str, Any]:
         payload = {
@@ -253,6 +274,8 @@ class ExternalLink:
         }
         if self.files:
             payload["files"] = list(self.files)
+        if self.file_refs:
+            payload["file_refs"] = [ref.to_dict() for ref in self.file_refs]
         return payload
 
     @classmethod
@@ -264,7 +287,15 @@ class ExternalLink:
             fetched_at=payload.get("fetched_at"),
             fields=tuple(payload.get("fields") or ()),
             files=tuple(payload.get("files") or ()),
+            file_refs=tuple(payload.get("file_refs") or ()),
         )
+
+    def file_ref_for(self, uri: str) -> FileRef | None:
+        """The recorded ref whose URI is ``uri``, if any (exact string match)."""
+        for ref in self.file_refs:
+            if ref.uri == uri:
+                return ref
+        return None
 
 
 @runtime_checkable
