@@ -736,7 +736,7 @@ class CellpyCell:
         project=project, **kwargs)``: the record's file pointers are opened
         (``filefinder`` only when it has none) and its metadata applied.
 
-        Example:
+        Examples:
             >>> c = CellpyCell.from_source("batbase", "SAL_010", kind="tag")
         """
         return get(source=source, key=key, kind=kind, project=project, **kwargs)
@@ -2292,7 +2292,7 @@ class CellpyCell:
             The matching ``MetaRecord`` tuple — possibly empty, in which case
             nothing was changed.
 
-        Example:
+        Examples:
             >>> c = cellpy.get("cell_042.res")
             >>> c.fetch_meta("batbase", kind="tag", key="SAL_010")
             >>> c.data.meta_common.mass

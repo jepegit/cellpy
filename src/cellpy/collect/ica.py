@@ -101,7 +101,7 @@ def collect_ica(batch: Any, options: Any = None, **overrides) -> Collection:
     every iteration, so a cell missing a cycle never narrows the request for
     the cells after it.
 
-    Example:
+    Examples:
         >>> from cellpy import ica
         >>> from cellpy.collect import collect_ica
         >>> opts = ica.IcaOptions(voltage_resolution=0.005, voltage_fwhm=0.015)

@@ -347,7 +347,7 @@ class BaseSettings(DictLikeClass):
 class BaseHeaders(BaseSettings):
     """Subclass of BaseSetting including option to add postfixes.
 
-    Example:
+    Examples:
          >>> header["key_postfix"]  # returns "value_postfix"
     """
 

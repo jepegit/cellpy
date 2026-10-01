@@ -1112,14 +1112,18 @@ def load(
         name exactly or the dump raises. Leave it False unless the raw
         tree is large enough that a per-cell walk hurts.
 
-    Example:
-        First load (leave serial on the wire)::
+    Examples:
+        First load (leave serial on the wire):
 
-            b = batch.load(name="exp", project="Proj")
+        ```python
+        b = batch.load(name="exp", project="Proj")
+        ```
 
-        Later reopen from saved ``.cellpy`` files::
+        Later reopen from saved ``.cellpy`` files:
 
-            b = batch.load(name="exp", project="Proj", executor="threads")
+        ```python
+        b = batch.load(name="exp", project="Proj", executor="threads")
+        ```
 
     Returns:
         Populated `Batch`.

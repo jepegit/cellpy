@@ -466,7 +466,7 @@ def transform_half_cycle(
         NullData: If either array is missing, or has one point or fewer.
         ValueError: If *derivative* is not a known mode.
 
-    Example:
+    Examples:
         >>> capacity, voltage = c.get_ccap(5, as_frame=False)
         >>> result = transform_half_cycle(voltage, capacity)
         >>> result.x, result.y   # voltage, dQ/dV
@@ -813,7 +813,7 @@ def dqdv(
         ``capacity``, ``dqdv``. ``frame.attrs`` carries the options used, the
         resolved cycle mode, and any per-half-cycle failures.
 
-    Example:
+    Examples:
         >>> frame = dqdv(c, cycles=[1, 2], voltage_resolution=0.005)
         >>> charge = frame[frame.direction == "charge"]
     """
@@ -857,7 +857,7 @@ def dvdq(
     *positions* on the capacity axis, so rescaling the ordinate would only
     obscure the comparison between cycles.
 
-    Example:
+    Examples:
         >>> frame = dvdq(c, cycles=1, direction="charge")
         >>> frame.plot(x="capacity", y="dvdq")
     """
