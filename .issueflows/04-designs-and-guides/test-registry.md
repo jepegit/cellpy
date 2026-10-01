@@ -275,6 +275,13 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_batch_from_source.py::test_from_source_builds_pages_like_a_journal | yes | | Batch.from_source | #1107 | |
 | tests/test_batch_from_source.py::test_update_loads_pointed_files_and_stamps_links | yes | | Batch.update → _stamp_external_links | #1107 | loads testdata |
 | tests/test_batch_from_source.py (other 7) | no | | naming, duplicates, file_search=False, session round-trip, strict/no-record errors | #1107 | offline |
+| tests/test_source_file_hints.py::test_mtime_epoch | yes | yes | cellreader._mtime_epoch | #1124 | offline, parametrized |
+| tests/test_source_file_hints.py::test_hint_matches_only_when_every_recorded_stat_agrees | yes | yes | cellreader._source_hint_matches_loaded | #1124 | offline |
+| tests/test_source_file_hints.py::test_link_keeps_stat_carrying_raw_refs_and_round_trips | yes | yes | MetaRecord.link / ExternalLink.file_refs dict round trip | #1124 | byte-identical old docs |
+| tests/test_source_file_hints.py::test_matching_hint_skips_stat | yes | yes | CellpyCell._raw_sources_changed hint path | #1124 | OtherPath.stat spy, loads testdata .res |
+| tests/test_source_file_hints.py::test_differing_size_falls_back_to_stat | yes | yes | hint mismatch → stat | #1124 | proves the spy sees stat |
+| tests/test_source_file_hints.py::test_record_without_stats_behaves_as_today | yes | yes | no-hint parity | #1124 | today's behaviour kept |
+| tests/test_source_file_hints.py (other 6) | no | | mtime-only, bad mtime, force, save/load, re-fetch, batch refresh | #1124 | uses testdata .res |
 
 **Columns**
 

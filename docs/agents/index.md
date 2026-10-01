@@ -204,6 +204,12 @@ Useful methods on `CellpyCell` (non-exhaustive):
   URIs used. Same as `CellpyCell.from_source(source, key, kind=)`.
   Batch: `batch.from_source("batbase", "SAL_010")` (kind `"tag"`) builds the
   journal pages from the records, then `b.update()`.
+  When a raw pointer carries `size` / `mtime`, it is kept on
+  `c.external_links[source].file_refs` and `c.update()` / `b.refresh()` /
+  `poll()` skip the remote `stat` while those values equal what was loaded
+  (a differing or missing value falls back to the stat; `force=True`
+  always reloads). Re-run `c.fetch_meta(...)` or `batch.from_source(...)`
+  to pick up fresher values from the source.
 - `save` / `to_csv` / Excel helpers — persist for the user's workflow
 
 Deeper shape docs: [Data structure](../fundamentals/data_structure.md).

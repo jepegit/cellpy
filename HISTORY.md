@@ -72,6 +72,15 @@
   troubleshooting), wired into the guides index, How-do-I and `llms.txt`.
   (#1023)
 
+* Epic M: use `FileRef` size/mtime from the metadata source to skip stat-ing
+  raw files on `update()`. Raw pointers that carry `size` / `mtime` are kept
+  on `ExternalLink.file_refs` (persisted in v9 `meta.json`, omitted when
+  empty) and `CellpyCell.update()` / `Batch.refresh()` / `poll()` treat the
+  file as unchanged without a remote `stat` while they equal what was
+  loaded; a differing or missing value, or `force=True`, falls back to
+  today's path. A re-run of `fetch_meta` / `batch.from_source` refreshes the
+  hints. (#1124)
+
 ## [2.1.5.post6] - 2026-09-25
 
 * `summary_collector(...).plot()` keeps a lone charge or discharge series

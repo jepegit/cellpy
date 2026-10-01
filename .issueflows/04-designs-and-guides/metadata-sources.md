@@ -38,7 +38,21 @@ capacity, project without cellpy depending on one lab's API.
 | Back-link | `ExternalLink.files: tuple[str, ...]` = URIs cellpy opened because the record pointed at them; `to_dict` omits the key when empty so pre-#1107 `meta.json` documents are byte-identical. |
 | Batch path | `Batch.from_source(source, key, *, kind="tag", project, name, policy, file_search=True, file_search_kwargs, strict=True, **extra)`; module `batch.from_source` + `utils.batch` shim. `batch/source.py::pages_from_records` builds one row per record (`filename`/`label` = `test.cell_name` → `external_id` → `cell_NNN`, de-duplicated with `_2` suffixes; mass/area/loading/nom_cap/nom_cap_specifics/cycle_mode; `instrument` = first raw `loader`; `raw_file_names` / `cellpy_file_name`; `raw_file_size` / `raw_file_mtime` when known; `external_id`, `source_uri`). Rows without pointers ⇒ `_dbengine.find_files` (the `journal_from_db` call) on just those rows; `file_search=False` leaves `None` (#1017 rule). `project` defaults to the source name (no `project` field on `CellMeta`); `name` to `<source>_<kind>_<key>` slug. |
 | Batch provenance | Links kept in `journal.session["external_links"]` (`{label: ExternalLink.to_dict()}`, survives `write_journal`); `Batch.update()` → `_stamp_external_links()` copies them onto loaded cells. Values are **not** re-applied (journal precedence intact); per-field `Resolution.origin_of` stays a cell-path feature. |
-| Deferred | `size`/`mtime` short-circuit in `update()` / `refresh()` (data is carried, logic is a follow-up); cellpy-connectors adapter mapping BatBase `files[]` → `FileRef` (follow-up issue there). |
+| Deferred | cellpy-connectors adapter mapping BatBase `files[]` → `FileRef` (follow-up issue there). |
+
+## Stat skip on `update()` (#1124)
+
+| Topic | Decision |
+| --- | --- |
+| Where the hints live | `ExternalLink.file_refs: tuple[FileRef, ...]` — the record's **raw** refs that carry `size` and/or `mtime`, restricted to the URIs cellpy opened (`MetaRecord.link(files=…)`). Chosen over `Data._provenance` because the link is already the per-source persisted object that `_stamp_external_links`, `apply_meta_document` and `from_cell` copy. `to_dict` writes `"file_refs"` only when non-empty, so pre-#1124 `meta.json` stays byte-identical. `ExternalLink.file_ref_for(uri)` looks one up. |
+| Check | `CellpyCell._raw_sources_changed` asks `_source_file_hint(fid)` (URI equal to `fid.full_name`, or `OtherPath(uri).full_path` equal; else a *single* ref with the same basename) before building `ds.FileID(...)`. `_source_hint_matches_loaded(ref, fid)`: every value the ref carries must match — `size` as `int ==`, `mtime` as epoch (number, or ISO-8601 via `fromisoformat`; naive ⇒ UTC) within `SOURCE_MTIME_TOLERANCE` (1 s) of `fid.last_modified`. A ref with neither value, an unparsable mtime or a fid without stats never matches ⇒ stat as before. `force=True` bypasses the whole check (unchanged). `checksum` is never used. |
+| Re-fetch | `c.fetch_meta(source, key, kind=…)` on a loaded cell rebuilds the link; with no opened-URI list the refs are filtered to those pointing at `raw_data_files` (`_ref_points_at`), so the source's fresher `size`/`mtime` become the new hints. Batch: `pages_from_records` → session links → `_stamp_external_links` → `refresh()` / `poll()` benefit without facade changes; a new `batch.from_source(...)` is the batch-side re-fetch. |
+| Not done | `check_file_ids` (raw-vs-cellpy stat on the first `cellpy.get` / batch load) could consult the journal `raw_file_size` / `raw_file_mtime` the same way — separate follow-up. |
+
+Semantics: the source is the system of record for the file. While its
+recorded stats equal what cellpy loaded, cellpy trusts it and does not touch
+the share; a tester that keeps writing is noticed once the source re-scans
+(and cellpy re-fetches) or when `force=True`.
 
 Alternatives rejected: a new `Layer` for "source files" (files are not metadata; they select *what to load*); re-running `_apply_meta_record` per batch cell (would put the source above journal overrides); always writing `files` into `ExternalLink.to_dict()` (breaks byte-for-byte stability of old documents for no gain).
 
