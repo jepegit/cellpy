@@ -29,7 +29,7 @@ def collect_dva(batch: Any, options: Any = None, **overrides) -> Collection:
     every iteration, so a cell missing a cycle never narrows the request for
     the cells after it (mirrors `collect_ica`).
 
-    Example:
+    Examples:
         >>> from cellpy import ica
         >>> from cellpy.collect import collect_dva
         >>> opts = ica.DVA_DEFAULTS.replace(capacity_resolution=5.0)

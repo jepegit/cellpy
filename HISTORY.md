@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+* API reference: docstring examples render as highlighted code again.
+  Eleven docstrings used a singular `Example:` section title, which griffe
+  does not recognise, so the block became a markdown admonition and the
+  `>>>` prompts turned into nested blockquotes. Renamed to `Examples:`, the
+  two prose examples use fenced code blocks, the `list_templates` return
+  description is one item, and a small essential test fails on any new
+  `Example:` title. (#1128)
+
 * Docs and docstrings made instrument neutral: generic prose in
   `cellreader` no longer calls raw files "res-files" or cellpy files
   "hdf5 files"; copy-paste docstrings in the Neware xlsx and Biologic mpr

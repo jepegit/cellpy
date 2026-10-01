@@ -376,17 +376,19 @@ class BaseLoader(AtomicLoad, metaclass=abc.ABCMeta):
         Returns:
             dictionary of units (str)
 
-        Example:
-            A minimum viable implementation could look like this::
+        Examples:
+            A minimum viable implementation could look like this:
 
-                @staticmethod
-                def get_raw_units():
-                    raw_units = dict()
-                    raw_units["current"] = "A"
-                    raw_units["charge"] = "Ah"
-                    raw_units["mass"] = "g"
-                    raw_units["voltage"] = "V"
-                    return raw_units
+            ```python
+            @staticmethod
+            def get_raw_units():
+                raw_units = dict()
+                raw_units["current"] = "A"
+                raw_units["charge"] = "Ah"
+                raw_units["mass"] = "g"
+                raw_units["voltage"] = "V"
+                return raw_units
+            ```
 
         """
         # This is needed for example when converting the capacity to a specific capacity.

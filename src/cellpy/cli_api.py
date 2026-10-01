@@ -2031,11 +2031,11 @@ def list_templates() -> dict:
 
     Returns:
         dict: ``default`` (the template used when none is given), ``registered``
-        (the GitHub-hosted templates as ``{name: location}``), ``local`` (the
-        same shape for templates found in the template directory), and
-        ``templatedir`` (where the local ones are looked up).
+            (the GitHub-hosted templates as ``{name: location}``), ``local`` (the
+            same shape for templates found in the template directory), and
+            ``templatedir`` (where the local ones are looked up).
 
-    Example:
+    Examples:
         >>> templates = list_templates()
         >>> templates["default"] in templates["registered"]
         True

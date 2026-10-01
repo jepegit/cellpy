@@ -282,6 +282,7 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_source_file_hints.py::test_differing_size_falls_back_to_stat | yes | yes | hint mismatch → stat | #1124 | proves the spy sees stat |
 | tests/test_source_file_hints.py::test_record_without_stats_behaves_as_today | yes | yes | no-hint parity | #1124 | today's behaviour kept |
 | tests/test_source_file_hints.py (other 6) | no | | mtime-only, bad mtime, force, save/load, re-fetch, batch refresh | #1124 | uses testdata .res |
+| tests/test_docstring_sections.py::test_docstrings_use_plural_examples_section | yes | yes | docstring `Examples:` titles under `src/cellpy` (griffe parses only the plural) | #1128 | stdlib `ast` scan, <1 s; stops the API-docs blockquote regression |
 
 **Columns**
 
