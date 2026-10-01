@@ -22,7 +22,9 @@ c = example_data.raw_file()                                        # bundled dat
 ```
 
 `cellpy.get` reads the file, builds the step table and makes the per-cycle
-summary. `cellpy.print_instruments()` lists the `instrument=` names.
+summary. The `.res` files on this page are just the running example: any
+registered tester format works the same way, and
+`cellpy.print_instruments()` lists the `instrument=` names.
 
 ## Set the cell up
 
@@ -62,7 +64,7 @@ c.data.summary[c.schema.summary.coulombic_efficiency]
 
 !!! warning
     The bare `charge_capacity` column is in the **tester's** units, not yours.
-    For an Arbin file that means Ah, a factor of 1000 off from mAh.
+    For an Arbin `.res` file, for example, that means Ah — a factor of 1000 off from mAh.
 
 ## Curves for one cycle
 

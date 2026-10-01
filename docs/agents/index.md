@@ -447,7 +447,7 @@ Other measured knobs for a slow first batch load:
 
 - **Hard-coded column names** — use `c.schema.raw.potential` (etc.), not
   remembered 1.x header strings.
-- **Blocking the UI thread** — `get` on large `.res` / SQL dumps can take
+- **Blocking the UI thread** — `get` on large raw files (`.res`, SQL dumps, …) can take
   seconds; load off the main thread.
 - **Missing mass / instrument** — wrong capacities or wrong loader; surface
   these as required inputs in the GUI.

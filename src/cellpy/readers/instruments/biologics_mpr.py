@@ -245,7 +245,7 @@ class DataLoader(BaseLoader):
         """Loads data from BioLogics mpr files.
 
         Args:
-            file_name (str): path to .res file.
+            file_name (str): path to .mpr file.
             bad_steps (list of tuples): (c, s) tuples of steps s
              (in cycle c) to skip loading.
 

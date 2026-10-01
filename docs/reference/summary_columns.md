@@ -1,7 +1,7 @@
 # Summary columns explained
 
-`c.data.summary` has one row per cycle and — for a plain Arbin file with no
-extra options — **58 columns**. This page says what each one means, how it is
+`c.data.summary` has one row per cycle and — for a plain load from any tester
+with no extra options — **58 columns**. This page says what each one means, how it is
 computed, and which units it is in.
 
 ```python
@@ -28,8 +28,8 @@ The three postfixed columns are the base column multiplied by a conversion
 factor that includes the raw → cellpy unit change. The **base column does
 not** get that conversion.
 
-For an Arbin `.res` file, which records charge in Ah, with the default cellpy
-unit of mAh:
+For example, with an Arbin `.res` file, which records charge in Ah, and the
+default cellpy unit of mAh:
 
 ```python
 c.data.summary["charge_capacity"]            # 0.00163   <- Ah, the tester's unit

@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+* Docs and docstrings made instrument neutral: generic prose in
+  `cellreader` no longer calls raw files "res-files" or cellpy files
+  "hdf5 files"; copy-paste docstrings in the Neware xlsx and Biologic mpr
+  loaders name the right tester; unit/summary pages phrase the Arbin Ah
+  example as one tester among many. Genuinely Arbin-specific text
+  (drivers, `arbin_res`, `dataset_number`) is unchanged. (#1125)
+
 * File pointers from external metadata sources (Epic M / M4). `MetaRecord`
   gains `files: tuple[FileRef, ...]` (`kind`, `uri`, `order`, `size`,
   `mtime`, `checksum`, `loader`); `cellpy.get(source=, key=, kind=, project=)`
