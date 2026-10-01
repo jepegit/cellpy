@@ -384,7 +384,10 @@ Quick facts:
   cell like a journal row and records `c.external_links["batbase"]`;
   unreachable source ⇒ `()` and no change (`strict=True` raises). Sources:
   `cellpy.readers.metadata_sources.names()`; the BatBase adapter is in
-  `cellpy-connectors`.
+  `cellpy-connectors`. No filename needed when the source knows the files:
+  `cellpy.get(source="batbase", key="SAL_010", kind="tag")` opens the
+  record's file pointers (`filefinder` only as fallback);
+  `batch.from_source("batbase", "SAL_010")` does the same for a whole tag.
 - Frames: `c.data.raw` / `.steps` / `.summary`; columns via `c.schema.*`.
   After a raw load, each cycle's raw capacity starts at 0. A forgotten tester
   reset that 1.x plotted as doubled capacity is rebased on load for every

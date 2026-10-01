@@ -264,6 +264,17 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_metadata_sources.py::test_cell_fetch_meta_applies_record_and_links | yes | | CellpyCell.fetch_meta / external_links | #784 | uses `cell` fixture |
 | tests/test_metadata_sources.py::test_external_links_survive_save_and_load | no | | v9 meta.json external_links | #784 | save/get round-trip |
 | tests/test_metadata_sources.py (other 29) | no | | contract validation, registry discovery, conformance kit, resolver ordering | #784 | offline |
+| tests/test_metadata_source_files.py::test_file_refs_are_coerced_and_ordered | yes | yes | MetaRecord.files / FileRef | #1107 | contract shape |
+| tests/test_metadata_source_files.py::test_validate_record_rejects_bad_file_refs | yes | yes | validate_record file checks | #1107 | adapter conformance |
+| tests/test_metadata_source_files.py::test_get_from_source_opens_pointed_files_without_filefinder | yes | yes | cellpy.get(source=) | #1107 | monkeypatched filefinder raises |
+| tests/test_metadata_source_files.py::test_explicit_keywords_beat_the_source | yes | yes | get precedence kwargs > source | #1107 | |
+| tests/test_metadata_source_files.py::test_record_without_files_falls_back_to_filefinder | yes | yes | get fallback parity | #1107 | today's behaviour kept |
+| tests/test_metadata_source_files.py (other 9) | no | | strict default, NoDataFound, enrichment, save/load of ExternalLink.files, .cellpy pointer | #1107 | uses testdata .res |
+| tests/test_batch_from_source.py::test_pages_carry_metadata_and_pointers | yes | yes | batch.source.pages_from_records | #1107 | offline DictMetadataSource |
+| tests/test_batch_from_source.py::test_rows_without_pointers_use_the_journal_file_search | yes | yes | pages_from_records → _dbengine.find_files | #1107 | only rows lacking pointers |
+| tests/test_batch_from_source.py::test_from_source_builds_pages_like_a_journal | yes | | Batch.from_source | #1107 | |
+| tests/test_batch_from_source.py::test_update_loads_pointed_files_and_stamps_links | yes | | Batch.update → _stamp_external_links | #1107 | loads testdata |
+| tests/test_batch_from_source.py (other 7) | no | | naming, duplicates, file_search=False, session round-trip, strict/no-record errors | #1107 | offline |
 
 **Columns**
 

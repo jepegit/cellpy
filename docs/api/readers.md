@@ -18,7 +18,9 @@ The cell object itself (`CellpyCell`) has [its own page](cell.md).
 Pluggable lab databases / APIs as a journal-level metadata layer (#784).
 Adapters satisfy the `MetadataSource` Protocol and declare a
 `cellpy.metadata_sources` entry point; `CellpyCell.fetch_meta` pulls a record
-onto a cell.
+onto a cell. A record may carry `FileRef` pointers to the test's files
+(#1107); `cellpy.get(source=...)` / `CellpyCell.from_source` open them
+directly and `batch.from_source` builds journal pages from them.
 
 ::: cellpy.readers.metadata_sources.contract
 

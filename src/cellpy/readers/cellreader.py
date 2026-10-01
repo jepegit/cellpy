@@ -665,6 +665,19 @@ class CellpyCell:
 
         return not self._validate_cell()
 
+    @classmethod
+    def from_source(cls, source, key=None, *, kind="cell_name", project=None, **kwargs):
+        """Load a cell the way an external metadata source describes it (#1107).
+
+        Thin alias for ``cellpy.get(source=source, key=key, kind=kind,
+        project=project, **kwargs)``: the record's file pointers are opened
+        (``filefinder`` only when it has none) and its metadata applied.
+
+        Example:
+            >>> c = CellpyCell.from_source("batbase", "SAL_010", kind="tag")
+        """
+        return get(source=source, key=key, kind=kind, project=project, **kwargs)
+
     # TODO: consider moving splitting etc outside of CellpyCell
     # ------------------- SPLITTING AND DROPPING -------------------
     @classmethod
@@ -2204,8 +2217,13 @@ class CellpyCell:
             self._apply_meta_record(records[0])
         return records
 
-    def _apply_meta_record(self, record) -> None:
-        """Write one ``MetaRecord`` onto the legacy meta boxes and link it."""
+    def _apply_meta_record(self, record, files=()) -> tuple:
+        """Write one ``MetaRecord`` onto the legacy meta boxes and link it.
+
+        ``files`` are the URIs cellpy opened because the record pointed at
+        them (#1107); they are kept on the `ExternalLink`. Returns the
+        applied field names.
+        """
         from cellpycore.metadata.models import CellMeta, TestMeta
 
         from cellpy.readers.meta_resolver import resolve_cell_meta, resolve_test_meta
@@ -2226,7 +2244,7 @@ class CellpyCell:
         )
         if "cell_name" in applied and test_record.cell_name:
             self._cell_name = test_record.cell_name
-        link = record.link()
+        link = record.link(files=files)
         from dataclasses import replace
 
         link = replace(link, fields=applied)
@@ -2237,6 +2255,7 @@ class CellpyCell:
             f"fetch_meta: applied {len(applied)} field(s) from {record.source_name!r} "
             f"(external_id={record.external_id!r}): {', '.join(applied) or '-'}"
         )
+        return applied
 
     def merge(self, cells, mode="campaign", renumber_cycles=True, **kwargs):
         """Merge other cells/datasets into this one.
@@ -4935,6 +4954,12 @@ def get(
     refuse_copying=False,
     initialize=False,
     debug=False,
+    source=None,
+    key=None,
+    kind="cell_name",
+    project=None,
+    source_extra=None,
+    strict=None,
     **kwargs,
 ):
     """Create a CellpyCell object.
@@ -4979,6 +5004,23 @@ def get(
         initialize (bool): set to True if you want to initialize the CellpyCell object (probably only
             useful if you want to return a cellpy-file with no data in it).
         debug (bool): set to True if you want to debug the loader.
+        source (str or MetadataSource): an external metadata source
+            (``"batbase"``; see ``cellpy.readers.metadata_sources.names()``).
+            The matching record's metadata is applied to the cell (below any
+            explicit keyword such as ``mass=``), and when you give no
+            ``filename`` / ``cellpy_file`` the record's file pointers are
+            opened directly — ``filefinder`` only runs when the record has
+            none (#1107).
+        key (str): lookup value for ``source``; with ``kind="cell_name"`` it
+            defaults to the stem of ``filename``.
+        kind (str): what ``key`` is: ``"cell_name"`` (default), ``"tag"``,
+            ``"serial"``, ``"external_id"``, ...
+        project (str): optional project scope for the source lookup.
+        source_extra (dict): source-specific filters.
+        strict (bool): raise when the source is unknown or unreachable.
+            Defaults to True when the source is the only way to find the data
+            (no ``filename`` / ``cellpy_file`` given), else False. An auth
+            failure raises either way.
         **kwargs: sent to the loader.
 
     Transferred Parameters:
@@ -5032,6 +5074,9 @@ def get(
         >>>
         >>> # get an empty CellpyCell instance:
         >>> c = cellpy.get()  # or c = cellpy.get(initialize=True) if you want to initialize it.
+        >>>
+        >>> # let the lab database say where the files are and what the mass is:
+        >>> c = cellpy.get(source="batbase", key="SAL_010", kind="tag")
 
     """
 
@@ -5058,6 +5103,23 @@ def get(
 
     logging.debug(f"{cellpy_file=}")
     logging.debug(f"{filename=}")
+
+    source_record = None
+    source_files: tuple = ()
+    if source is not None:
+        filename, cellpy_file, instrument, source_record, source_files = (
+            _resolve_from_source(
+                source,
+                key=key,
+                kind=kind,
+                project=project,
+                extra=source_extra,
+                strict=strict,
+                filename=filename,
+                cellpy_file=cellpy_file,
+                instrument=instrument,
+            )
+        )
 
     # used if all you want is an empty CellpyCell object
     if filename is None:
@@ -5116,6 +5178,14 @@ def get(
             )
 
         cellpy_instance.load(filename, selector=selector, **kwargs)
+        if source_record is not None:
+            applied = cellpy_instance._apply_meta_record(
+                source_record, files=source_files
+            )
+            summary = getattr(cellpy_instance.data, "summary", None)
+            if applied and summary is not None and not getattr(summary, "empty", False):
+                # a loaded .cellpy already has a summary: keep it consistent
+                cellpy_instance.refresh_after()
         cellpy_instance = _update_meta(
             cellpy_instance,
             cycle_mode=cycle_mode,
@@ -5161,6 +5231,10 @@ def get(
     if nom_cap_specifics is None:
         nom_cap_specifics = summary_kwargs.pop("nom_cap_specifics", None)
 
+    if source_record is not None:
+        # below explicit keywords (applied next), above the raw file
+        cellpy_instance._apply_meta_record(source_record, files=source_files)
+
     cellpy_instance = _update_meta(
         cellpy_instance,
         cycle_mode=cycle_mode,
@@ -5181,6 +5255,102 @@ def get(
 
     logging.info("Created CellpyCell object")
     return cellpy_instance
+
+
+def _resolve_from_source(
+    source,
+    *,
+    key=None,
+    kind="cell_name",
+    project=None,
+    extra=None,
+    strict=None,
+    filename=None,
+    cellpy_file=None,
+    instrument=None,
+):
+    """Ask an external metadata source for the record — and the files (#1107).
+
+    Returns ``(filename, cellpy_file, instrument, record, used_uris)``. The
+    first three are the caller's values, filled in from the record's
+    `FileRef`s only where the caller gave nothing. When the record has no
+    pointers, ``filefinder`` is asked for the cell name as usual.
+
+    Raises:
+        NoDataFound: no record matched and no file was given, or the record
+            gave no file and ``filefinder`` found none.
+    """
+    from cellpy import filefinder
+    from cellpy.readers.metadata_sources import MetaQuery, fetch_meta
+
+    has_file = filename is not None or cellpy_file is not None
+    if strict is None:
+        strict = not has_file
+
+    if key is None and kind == "cell_name" and filename is not None:
+        first = filename[0] if isinstance(filename, (list, tuple)) else filename
+        key = internals.OtherPath(first).stem
+    query = MetaQuery(key=key, kind=kind, project=project, extra=extra or {})
+    records = fetch_meta(source, query, strict=strict)
+    label = source if isinstance(source, str) else getattr(source, "name", source)
+
+    if not records:
+        if has_file:
+            logging.warning(
+                f"cellpy.get: {label!r} had no record for {query.describe()}; "
+                "loading the file without it"
+            )
+            return filename, cellpy_file, instrument, None, ()
+        raise NoDataFound(
+            f"metadata source {label!r} has no record for {query.describe()} "
+            "and no filename was given"
+        )
+    if len(records) > 1:
+        logging.warning(
+            f"cellpy.get: {label!r} returned {len(records)} records for "
+            f"{query.describe()}; using the first (external_id={records[0].external_id!r})"
+        )
+    record = records[0]
+
+    if has_file:
+        return filename, cellpy_file, instrument, record, ()
+
+    used: list[str] = []
+    cellpy_ref = record.cellpy_file()
+    raw_refs = record.raw_files()
+    if cellpy_ref is not None:
+        cellpy_file = cellpy_ref.uri
+        used.append(cellpy_ref.uri)
+    if raw_refs:
+        uris = [ref.uri for ref in raw_refs]
+        filename = uris[0] if len(uris) == 1 else uris
+        used.extend(uris)
+        if instrument is None:
+            instrument = next((ref.loader for ref in raw_refs if ref.loader), None)
+    if cellpy_file is not None or filename is not None:
+        logging.info(
+            f"cellpy.get: opening {len(used)} file(s) pointed at by {label!r} "
+            "(filefinder skipped)"
+        )
+        return filename, cellpy_file, instrument, record, tuple(used)
+
+    cell_name = record.test.get("cell_name") or (key if kind == "cell_name" else None)
+    if not cell_name:
+        raise NoDataFound(
+            f"metadata source {label!r} record for {query.describe()} has no "
+            "file pointers and no cell_name to search for"
+        )
+    logging.info(f"cellpy.get: {label!r} gave no file pointers; searching for {cell_name!r}")
+    raw_files, cellpy_found = filefinder.search_for_files(cell_name)
+    if not raw_files and not cellpy_found:
+        raise NoDataFound(
+            f"filefinder found no raw or cellpy file for {cell_name!r} "
+            f"(record from {label!r}, {query.describe()})"
+        )
+    filename = raw_files or None
+    if isinstance(filename, list) and len(filename) == 1:
+        filename = filename[0]
+    return filename, cellpy_found or None, instrument, record, ()
 
 
 def _update_meta(

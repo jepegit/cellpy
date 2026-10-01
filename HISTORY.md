@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+* File pointers from external metadata sources (Epic M / M4). `MetaRecord`
+  gains `files: tuple[FileRef, ...]` (`kind`, `uri`, `order`, `size`,
+  `mtime`, `checksum`, `loader`); `cellpy.get(source=, key=, kind=, project=)`
+  and `CellpyCell.from_source(...)` open the pointed-at raw / `.cellpy`
+  files directly and fall back to `filefinder` only when a record has none;
+  `batch.from_source(source, key, kind="tag")` builds journal pages from the
+  records (rows without pointers use the journal file search). Explicit
+  keywords still win over the source; `ExternalLink.files` records the URIs
+  used and survives save/load. Records without `files` behave exactly as
+  before. (#1107)
+
 * Scheduled CI `pip install` job installs `cellpy[legacy-files,plotting-mpl]`
   so matplotlib is present for Agg plot-test collection (regression after
   matplotlib left the required set in #937).

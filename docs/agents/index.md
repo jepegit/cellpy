@@ -196,6 +196,14 @@ Useful methods on `CellpyCell` (non-exhaustive):
   source returns `()` and changes nothing (`strict=True` raises); a rejected
   credential always raises `MetadataSourceAuthError`. Call
   `refresh_after(("mass",))` afterwards if a summary already exists.
+- `cellpy.get(source="batbase", key="SAL_010", kind="tag")` — let the source
+  say *which files* to open (its `MetaRecord.files` pointers); `filefinder`
+  only runs when the record has none. Explicit keywords (`mass=`) still win;
+  with no filename the lookup is strict (unknown/unreachable source raises,
+  no record ⇒ `NoDataFound`). `c.external_links[source].files` lists the
+  URIs used. Same as `CellpyCell.from_source(source, key, kind=)`.
+  Batch: `batch.from_source("batbase", "SAL_010")` (kind `"tag"`) builds the
+  journal pages from the records, then `b.update()`.
 - `save` / `to_csv` / Excel helpers — persist for the user's workflow
 
 Deeper shape docs: [Data structure](../fundamentals/data_structure.md).
