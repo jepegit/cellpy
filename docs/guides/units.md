@@ -38,7 +38,7 @@ want to work in.
 | `c.cellpy_units` | the units cellpy converts to when it builds the summary | your configuration, or `units=` |
 
 ```python
-print(c.data.raw_units.charge)   # e.g. "Ah"  — what the Arbin file contained
+print(c.data.raw_units.charge)   # e.g. "Ah"  — what the tester file contained
 print(c.cellpy_units.charge)     # "mAh"      — what the summary is in
 ```
 
@@ -203,8 +203,8 @@ distinguished by a postfix:
 
 !!! warning "The bare column name is in the tester's units"
     Only the three postfixed columns get the raw → cellpy unit conversion; the
-    base column is left as the summary engine produced it. For an Arbin `.res`
-    file (Ah) with the default cellpy unit (mAh), `charge_capacity` and
+    base column is left as the summary engine produced it. For a tester that
+    records Ah (an Arbin `.res` file, say) with the default cellpy unit (mAh), `charge_capacity` and
     `charge_capacity_absolute` are a factor of 1000 apart:
 
     ```python

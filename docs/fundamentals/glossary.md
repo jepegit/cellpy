@@ -81,7 +81,7 @@ script.
 | specific capacity / gravimetric | `…_gravimetric` | Per active mass. Needs a real `mass=` (default is 1.0 mg). |
 | areal capacity | `…_areal` | Per electrode area. Needs `area=` (cm²). Stored as `c.data.active_electrode_area`. |
 | absolute / not normalised | `…_absolute` | In *your* units (`c.cellpy_units`), not divided by mass or area. |
-| the bare name (`charge_capacity`) | tester units | `c.data.raw_units` — often Ah on Arbin. Off by 1000 vs mAh if you assume the wrong set. |
+| the bare name (`charge_capacity`) | tester units | `c.data.raw_units` — depends on the tester (Ah for Arbin `.res`, for example). Off by 1000 vs mAh if you assume the wrong set. |
 | coulombic efficiency | `coulombic_efficiency` | Per cycle, on the summary. Upside-down? Check `cycle_mode`. |
 | C-rate | `c_rate` (steps); `charge_c_rate` / `discharge_c_rate` (summary) | Meaningless until you set `nominal_capacity=` (`c.data.nom_cap`). |
 | nominal / rated / nameplate capacity | `nominal_capacity=` / `c.data.nom_cap` | Used for C-rates and equivalent full cycles, not for scaling the capacity columns. |

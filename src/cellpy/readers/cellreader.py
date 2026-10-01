@@ -2,12 +2,13 @@
 """Datareader for cell testers and potentiostats.
 
 This module is used for loading data and databases created by different cell
-testers and exporting them in a common hdf5-format.
+testers and exporting them in a common ``.cellpy`` format. Any registered
+instrument loader can provide the raw files (``cellpy.print_instruments()``).
 
 Examples:
     >>> c = cellpy.get(["super_battery_run_01.res", "super_battery_run_02.res"]) # loads and merges the runs
     >>> voltage_curves = c.get_cap()
-    >>> c.save("super_battery_run.h5")
+    >>> c.save("super_battery_run.cellpy")
 """
 
 import cellpy.config as config
@@ -1052,13 +1053,13 @@ class CellpyCell:
 
     # TODO: this probably does not need to be here
     def set_raw_datadir(self, directory=None):
-        """Set the directory containing .res-files.
+        """Set the directory containing the raw data files.
 
-        Used for setting directory for looking for res-files.
+        Used for setting directory for looking for raw files from the tester.
         A valid directory name is required.
 
         Args:
-            directory (str): path to res-directory
+            directory (str): path to the raw-data directory
 
         Examples:
             >>> d = CellpyCell()
@@ -1078,18 +1079,18 @@ class CellpyCell:
 
     # TODO: this probably does not need to be here
     def set_cellpy_datadir(self, directory=None):
-        """Set the directory containing .hdf5-files.
+        """Set the directory containing the cellpy files.
 
-        Used for setting directory for looking for hdf5-files.
+        Used for setting directory for looking for ``.cellpy`` files.
         A valid directory name is required.
 
         Args:
-            directory (str): path to hdf5-directory
+            directory (str): path to the cellpy-file directory
 
         Examples:
             >>> d = CellpyCell()
-            >>> directory = "MyData/HDF5"
-            >>> d.set_raw_datadir(directory)
+            >>> directory = "MyData/cellpy-files"
+            >>> d.set_cellpy_datadir(directory)
 
         """
 
@@ -1104,17 +1105,17 @@ class CellpyCell:
     # TODO: this could be moved outside to either utility functions or to a new class:
     # ----------------- File checking -------------------------
     def check_file_ids(self, rawfiles, cellpyfile, detailed=False):
-        """Check the stats for the files (raw-data and cellpy hdf5).
+        """Check the stats for the files (raw-data and cellpy file).
 
-        This method checks if the hdf5 file and the res-files have the same
-        timestamps etc. to find out if we need to bother to load .res -files.
+        This method checks if the cellpy file and the raw files have the same
+        timestamps etc. to find out if we need to bother to load the raw files.
 
         if detailed is set to True, the method returns dict
         containing True or False for each individual raw-file. If not, it returns
-        False if the raw files are newer than the cellpy hdf5-file (i.e. update is needed), else True.
+        False if the raw files are newer than the cellpy file (i.e. update is needed), else True.
 
         Args:
-            cellpyfile (str): filename of the cellpy hdf5-file.
+            cellpyfile (str): filename of the cellpy file.
             rawfiles (list of str): name(s) of raw-data file(s).
             detailed (bool): return a dict containing True or False for each individual raw-file.
 
@@ -1221,7 +1222,7 @@ class CellpyCell:
             return None
 
         raw_data_files, _raw_data_files_length = fid_result
-        txt = "contains %i res-files" % (len(raw_data_files))
+        txt = "contains %i raw files" % (len(raw_data_files))
         logging.debug(txt)
         ids = dict()
         for fid in raw_data_files:
@@ -1303,7 +1304,7 @@ class CellpyCell:
         """Loads data for given cells (soon to be deprecated).
 
         Args:
-            raw_files (list): name of res-files
+            raw_files (list): name of raw data files
             cellpy_file (path): name of cellpy-file
             mass (float or str): mass of electrode or active material in cellpy_units
                 (default mg). Pass a string with unit (e.g. "1.14 mg") to override

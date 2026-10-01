@@ -62,9 +62,9 @@ normal_headers_renaming_dict = {
     "ref_voltage_txt": f"Reference_Voltage({unit_labels['resistance']})",  # new
     "frequency_txt": f"Frequency",  # new
     "amplitude_txt": f"Amplitude",  # new
-    "channel_id_txt": f"Channel_ID",  # new Arbin SQL Server
-    "data_flag_txt": f"Data_Flags",  # new Arbin SQL Server
-    "test_name_txt": f"Test_Name",  # new Arbin SQL Server
+    "channel_id_txt": f"Channel_ID",  # alias shared with the Arbin SQL loaders
+    "data_flag_txt": f"Data_Flags",  # alias shared with the Arbin SQL loaders
+    "test_name_txt": f"Test_Name",  # alias shared with the Arbin SQL loaders
 }
 
 # not observed yet

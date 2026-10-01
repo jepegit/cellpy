@@ -43,7 +43,7 @@ def to_datetime(n):
 
 
 class DataLoader(BaseLoader):
-    """Class for loading arbin-data from MS SQL server."""
+    """Class for loading Neware data exported as xlsx."""
 
     instrument_name = "neware_xlsx"
     raw_ext = "xlsx"
@@ -140,7 +140,7 @@ class DataLoader(BaseLoader):
     def loader(self, name, **kwargs):
         """returns a Data object with loaded data.
 
-        Loads data from arbin SQL server h5 export.
+        Loads data from a Neware xlsx export.
 
         Args:
             name (str): name of the file
