@@ -55,3 +55,24 @@ def test_refresh_after_mass_updates_gravimetric(dataset):
 def test_refresh_after_unknown_field_raises(dataset):
     with pytest.raises(ValueError, match="Unknown summary meta field"):
         dataset.refresh_after(("temperature",))
+
+
+@pytest.mark.essential
+def test_refresh_after_nominal_capacity_updates_c_rate(dataset):
+    """Doubling nominal capacity halves C-rate (rate = current / capacity)."""
+    h = dataset.schema.summary
+    col = h.charge_c_rate
+    assert col in dataset.data.summary.columns
+    before = dataset.data.summary[col].astype(float)
+    assert before.abs().max() > 0
+
+    dataset.nominal_capacity = float(dataset.nominal_capacity) * 2.0
+    dataset.refresh_after(("nominal_capacity",))
+
+    after = dataset.data.summary[col].astype(float)
+    mask = before.abs() > 1e-6
+    ratio = (before[mask] / after[mask]).dropna()
+    assert not ratio.empty
+    # Step C-rate is rounded to 5 decimals before the current-unit factor,
+    # so the ratio is 2 within that rounding, not bit-exact.
+    assert (ratio - 2.0).abs().max() < 1e-2

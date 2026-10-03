@@ -73,19 +73,25 @@ DIGITS_C_RATE = 5
 # Meta fields that drive scaled / equivalent-cycle summary columns (not the
 # base cycle-end summary from ``make_core_summary``). Used by apps after
 # post-load edits (mass / area / nom-cap / cycle mode) — see ``refresh_after``.
-# C-rate columns come from the step table and are independent of nom_cap.
+# C-rates are current / absolute nominal capacity, so mass, area, and
+# nominal_capacity refreshes recompute them from the step table.
+_C_RATE_REFRESH_FIELDS = frozenset(
+    {"mass", "active_electrode_area", "nominal_capacity"}
+)
 SUMMARY_META_DEPENDENCIES = {
     "mass": {
-        "affects": ("*_gravimetric",),
+        "affects": ("*_gravimetric", "charge_c_rate", "discharge_c_rate"),
         "notes": (
             "Gravimetric specific columns are absolute × (mass conversion factor). "
+            "When nominal capacity is gravimetric, mass also rescales C-rates. "
             "Call refresh_after(('mass',)) after changing mass."
         ),
     },
     "active_electrode_area": {
-        "affects": ("*_areal",),
+        "affects": ("*_areal", "charge_c_rate", "discharge_c_rate"),
         "notes": (
             "Areal specific columns are absolute × (area conversion factor). "
+            "When nominal capacity is areal, area also rescales C-rates. "
             "Call refresh_after(('active_electrode_area',)) after changing area."
         ),
     },
@@ -94,11 +100,13 @@ SUMMARY_META_DEPENDENCIES = {
             "normalized_cycle_index",
             "equivalent_full_cycles",
             "test_cumulated_capacity_throughput",
+            "charge_c_rate",
+            "discharge_c_rate",
         ),
         "notes": (
-            "Absolute nominal capacity rescales equivalent-cycle / EFC columns. "
-            "charge_c_rate / discharge_c_rate come from the step table and are "
-            "not derived from nominal_capacity."
+            "Absolute nominal capacity rescales equivalent-cycle / EFC columns "
+            "and recomputes charge_c_rate / discharge_c_rate from step current. "
+            "Call refresh_after(('nominal_capacity',)) after changing it."
         ),
     },
     "cycle_mode": {
@@ -4448,8 +4456,10 @@ class CellpyCell:
         area, nominal capacity, or cycle mode changed and a summary already
         exists. Re-runs the scaled / equivalent-cycle half of the summary
         pipeline (``core.add_scaled_summary_columns``) without rebuilding the
-        base cycle-end table. Falls back to ``make_summary`` when no summary
-        is present.
+        base cycle-end table. A mass, area, or nominal-capacity change also
+        recomputes step and summary C-rates from step current and the new
+        absolute nominal capacity. Falls back to ``make_summary`` when no
+        summary is present.
 
         See ``SUMMARY_META_DEPENDENCIES`` for the meta → column map apps can
         use for messaging / UI scope.
@@ -4475,7 +4485,7 @@ class CellpyCell:
             c.refresh_after("mass")
             ```
         """
-        normalize_summary_meta_fields(fields)  # validate early
+        normalized = normalize_summary_meta_fields(fields)
         try:
             data = self.data
         except NoDataFound:
@@ -4491,6 +4501,8 @@ class CellpyCell:
             nom_cap=kwargs.get("nom_cap"),
             nom_cap_specifics=kwargs.get("nom_cap_specifics"),
         )
+        if _C_RATE_REFRESH_FIELDS.intersection(normalized):
+            self._refresh_c_rates()
         return self
 
     def _resolve_nom_cap_abs(self, data, nom_cap=None, nom_cap_specifics=None):
@@ -4541,6 +4553,91 @@ class CellpyCell:
             specific_conversion_factors=specific_conversion_factors,
         )
         self.data = data
+        return data
+
+    def _refresh_c_rates(self):
+        """Recompute step and summary C-rates from the current absolute capacity.
+
+        Matches ``make_summary``: step ``c_rate`` is
+        ``abs(round(current_mean / nom_cap_abs, DIGITS_C_RATE))``, and the
+        summary charge / discharge columns take the first step of that type
+        in each cycle, scaled by the raw-current → cellpy-current factor.
+        The summary copy does not divide by nominal capacity again.
+        """
+        data = self.data
+        steps = getattr(data, "steps", None)
+        summary = getattr(data, "summary", None)
+        if steps is None or summary is None:
+            return data
+        if getattr(steps, "empty", True) or getattr(summary, "empty", True):
+            return data
+
+        sh = self.schema.steps
+        ch = self.schema.summary
+        try:
+            current_col = sh.current_mean
+            rate_col = sh.c_rate
+            type_col = sh.step_type
+            step_cycle = sh.cycle_num
+        except AttributeError:
+            logging.debug("refresh_after: step schema has no C-rate columns")
+            return data
+        if current_col not in steps.columns or type_col not in steps.columns:
+            logging.debug(
+                "refresh_after: steps missing %s or %s; skipping C-rate refresh",
+                current_col,
+                type_col,
+            )
+            return data
+
+        nom_cap_abs = self._resolve_nom_cap_abs(data)
+        if nom_cap_abs in (None, 0) or not np.isfinite(nom_cap_abs):
+            logging.warning(
+                "refresh_after: absolute nominal capacity is %r; skipping C-rate refresh",
+                nom_cap_abs,
+            )
+            return data
+
+        steps[rate_col] = (steps[current_col] / nom_cap_abs).round(DIGITS_C_RATE).abs()
+
+        try:
+            raw_current = data.raw_units["current"]
+        except (KeyError, TypeError):
+            raw_current = None
+        if raw_current:
+            factor = core_units.calculate_current_conversion_factor(
+                raw_current, to_units=self.cellpy_units
+            )
+        else:
+            factor = 1.0
+
+        step_keys = [step_cycle]
+        summary_keys = [ch.cycle_num]
+        if sh.test_id in steps.columns and ch.test_id in summary.columns:
+            step_keys = [sh.test_id, step_cycle]
+            summary_keys = [ch.test_id, ch.cycle_num]
+
+        for step_type, out_name in (
+            ("charge", ch.charge_c_rate),
+            ("discharge", ch.discharge_c_rate),
+        ):
+            if out_name not in summary.columns:
+                continue
+            subset = steps.loc[steps[type_col] == step_type]
+            if subset.empty:
+                summary[out_name] = np.nan
+                continue
+            first = subset.drop_duplicates(subset=step_keys, keep="first")
+            if len(summary_keys) == 1:
+                lookup = first.set_index(step_keys[0])[rate_col].to_dict()
+                mapped = summary[summary_keys[0]].map(lookup).to_numpy()
+            else:
+                lookup = first.set_index(step_keys)[rate_col].to_dict()
+                keys = list(zip(*(summary[key].tolist() for key in summary_keys)))
+                mapped = np.array(
+                    [lookup.get(key, np.nan) for key in keys], dtype=float
+                )
+            summary[out_name] = mapped * factor
         return data
 
     def make_summary(

@@ -55,6 +55,8 @@ def test_summary_default_independent_y_axes():
     assert fig is not None
     assert fig.layout.yaxis.matches in (None, False)
     assert fig.layout.yaxis2.matches in (None, False)
+    # Cycle number stays locked across facets when y-scales are independent.
+    assert fig.layout.xaxis2.matches == "x"
 
 
 @pytest.mark.essential
@@ -206,6 +208,7 @@ def test_spread_share_y_true_matches_axes():
     )
     assert fig is not None
     assert fig.layout.yaxis2.matches == "y"
+    assert fig.layout.xaxis2.matches == "x"
 
 
 @pytest.mark.essential
@@ -223,6 +226,7 @@ def test_spread_default_independent_y_axes():
     assert fig is not None
     assert fig.layout.yaxis.matches in (None, False)
     assert fig.layout.yaxis2.matches in (None, False)
+    assert fig.layout.xaxis2.matches == "x"
 
 
 @pytest.mark.essential

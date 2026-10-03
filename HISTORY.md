@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+## [2.1.5.post7] - 2026-10-03
+
+* Summary facet rows keep a shared cycle axis when each row has its own
+  y-scale. `share_y=False` no longer clears x-axis linking, including the
+  group-average plot with spread.
+
+* `refresh_after` recomputes step and summary C-rates after a mass, area, or
+  nominal-capacity change. The rate is step current divided by the new
+  absolute nominal capacity, using the same current-unit factor as
+  `make_summary`.
+
 * API reference: docstring examples render as highlighted code again.
   Eleven docstrings used a singular `Example:` section title, which griffe
   does not recognise, so the block became a markdown admonition and the
