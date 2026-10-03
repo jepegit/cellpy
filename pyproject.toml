@@ -119,7 +119,7 @@ pattern = "default-unprefixed"
 fallback-version = "0.0.0"
 
 [tool.hatch.build.targets.wheel]
-packages = ["cellpy"]
+packages = ["src/cellpy"]
 
 [tool.hatch.build.targets.sdist]
 exclude = [
@@ -157,12 +157,12 @@ filterwarnings = [
 line-length = 120
 
 [tool.coverage.run]
-source = ["cellpy"]
+source = ["src/cellpy"]
 branch = true
 omit = [
-    "cellpy/libs/*",
-    "cellpy/parameters/legacy/*",
-    "cellpy/_version.py",
+    "src/cellpy/libs/*",
+    "src/cellpy/parameters/legacy/*",
+    "src/cellpy/_version.py",
     "*/tests/*",
 ]
 

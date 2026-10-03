@@ -42,7 +42,7 @@ Typical subcommands:
 | `serve` | Start Jupyter |
 | `pull` | Download examples or tests (needs git) |
 | `convert` | Upgrade a legacy cellpy file |
-| `mcp` | Run cellpy as an MCP server — [connect an agent IDE](mcp.md) |
+| `mcp` | Run cellpy as an MCP server — [connect an agent IDE](../agents/mcp.md) |
 
 Help for a subcommand:
 

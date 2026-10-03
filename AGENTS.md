@@ -172,7 +172,7 @@ If the project itself is not ready yet — no git repo, no remote, `gh` not auth
 
 If you have not chosen an issue yet, run **`/iflow-pick`** (or type **`iflow pick`** in chat) — the front door that helps you select the next issue (parked work first, else ranked open GitHub issues), creates the branch, and runs `/iflow-capture`. It is off-path (never auto-dispatched).
 
-If you just want the next right step, run **`/iflow`** (or type **`iflow`** in chat) — it detects state (by file presence under `.issueflows/01-current-issues/` and the status-file `- [x] Done` marker) and dispatches to `/iflow-capture`, `/iflow-plan`, `/iflow-build`, or `/iflow-close`. With no focus issue, it checks active-epic `next_candidates` (`agent state` → `epic_hint`) and **recommends** `/iflow-pick` instead of a blind capture — it never auto-dispatches to the off-path commands (`/iflow-pick`, `/iflow-init`, `/iflow-pause`, `/iflow-cleanup`, `/iflow-yolo`, `/iflow-ops`).
+If you just want the next right step, run **`/iflow`** (or type **`iflow`** in chat) — it detects state (by file presence under `.issueflows/01-current-issues/` and the status-file `- [x] Done` marker) and dispatches to `/iflow-capture`, `/iflow-plan`, `/iflow-build`, or `/iflow-close`. With no focus issue, it checks active-epic `next_candidates` (`agent state` → `epic_hint`) and **recommends** `/iflow-pick` instead of a blind capture — or, when an `epic_session` is present, **asks** continue / switch / stop (never silent-pick) — it never auto-dispatches to the off-path commands (`/iflow-pick`, `/iflow-init`, `/iflow-pause`, `/iflow-cleanup`, `/iflow-yolo`, `/iflow-ops`).
 
 The full slash-command lifecycle is:
 
@@ -222,7 +222,7 @@ Lifecycle skills include a **`### MODEL & EXECUTION DIRECTIVE`** section that te
 `/iflow-review` reviews open GitHub issues and applies labels (extendable kinds; v1: **yolo** → configured `yolo_label`). Off-path; consolidated confirm before any label create/apply; never auto-dispatched. CLI helpers: `issue-flow agent label-candidates` / `label-apply`.
 
 
-`/iflow-epic <N>` plans a change **too large for one issue** as a staged epic: it drafts `.issueflows/05-epics/epic<N>_plan.md` (anchored to GitHub issue `<N>`), dividing the work into sequential stages of manageable issue specs with explicit dependencies and a per-issue yolo-fitness judgment. Drafting writes nothing on GitHub; **`/iflow-epic <N> publish [stage <k>]`** creates a confirmed stage's issues behind one consolidated confirm (yolo labels per the recorded judgment, task list maintained on the anchor issue, `Published: #<M>` recorded back into the plan so re-runs are idempotent). Off-path (never auto-dispatched); epics decompose into the normal single-issue lifecycle, never around it.
+`/iflow-epic <N>` plans a change **too large for one issue** as a staged epic: it drafts `.issueflows/05-epics/epic<N>_plan.md` (anchored to GitHub issue `<N>`), dividing the work into sequential stages of manageable issue specs with explicit dependencies and a per-issue yolo-fitness judgment. Drafting writes nothing on GitHub; **`/iflow-epic <N> publish [stage <k>]`** creates a confirmed stage's issues behind one consolidated confirm (yolo labels per the recorded judgment, task list maintained on the anchor issue, `Published: #<M>` recorded back into the plan so re-runs are idempotent). **`/iflow-epic start [N]`** writes a one-and-ask `epic_session.md`; **`/iflow-epic stop`** clears it — `/iflow` then asks before the next child (never silent-pick). Off-path (never auto-dispatched); epics decompose into the normal single-issue lifecycle, never around it.
 
 
 `/iflow-cycle <queue-spec>` processes **many issues hands-off in a row** under a single up-front confirmation — the batch equivalent of `/iflow-yolo`. It resolves a queue via `issue-flow agent queue` (explicit numbers, `label:<L>`, or `epic <N> [stage <k>]`), then runs each issue through the full yolo chain (PR auto-merged), interrupting you only when input is **strictly necessary** (unfixable failure, refused merge / non-fast-forward pull, ambiguous or not-actually-small spec, or anything outside the confirmed queue). It stops the whole cycle on the first such condition, leaving the repo clean on the default branch. **All yolo-labelled issues:** `/iflow-cycle yolo` (alias for `label:yolo`). Off-path (never auto-dispatched); never weakens a yolo safeguard to keep moving.
@@ -348,16 +348,18 @@ If a `graphify-out/` folder exists in the project root, the project has the opti
 Coding agents that **call cellpy as a library** (e.g. a researcher’s small
 GUI/app around cycling data) should read the usage chapter:
 
-**[`docs/getting_started/agents.md`](docs/getting_started/agents.md)**
+**[`docs/agents/index.md`](docs/agents/index.md)**
 (site-root indexes: [`llms.txt`](https://cellpy.readthedocs.io/en/latest/llms.txt),
 [`llms-short.txt`](https://cellpy.readthedocs.io/en/latest/llms-short.txt))
 
 To wire Cursor or another MCP client (no Python in the chat), see
-[`docs/getting_started/mcp.md`](docs/getting_started/mcp.md). Asked to
+[`docs/agents/mcp.md`](docs/agents/mcp.md). Asked to
 "install cellpy MCP and test it": follow that page's *Ask your agent to do
 it* checklist — `cellpy mcp install --client cursor`, then
 `cellpy mcp check --client cursor` proves the registered command answers
 MCP (exit 1 = broken, with the reason); the user must restart Cursor after.
+Ready-made paste prompts (MCP, load, batch, plot, ICA, …):
+[`docs/agents/prompts.md`](docs/agents/prompts.md).
 
 Quick facts:
 
@@ -365,8 +367,30 @@ Quick facts:
   Third-party CLI commands: `[project.entry-points."cellpy.cli_plugins"]`.
 - Entry: `import cellpy` then `c = cellpy.get(path, mass=..., instrument=...)`.
   For raw `.h5`/`.hdf5`, a set `instrument=` wins over native suffix auto-pick.
+- Find by project + number range: `from cellpy import filefinder` then
+  `filefinder.find_by_project("SAL", 10, 15, kind="cellpy")` (or `kind="raw"`).
+  Uses `cellpydatadir` / `rawdatadir`; empty list if none match.
+  MCP: `find_cells` (empty cellpy → `offer_raw`, no silent raw crawl;
+  `kind=raw` lists raw and sets `needs_metadata`).
 - Metadata peek (no frames): `cellpy.read_meta(path)` → dict with `cell` / `tests`.
 - Ingestion form fields: `cellpy.instrument_meta_schema(instrument)` → `fields` / `units`.
+- Live/running test: `c.update()` re-reads only the new raw rows (incremental
+  loaders) or reloads fully, returns `True` when frames changed; `False` if
+  the raw file did not change on disk. Also works after `cellpy.get(".cellpy")`.
+  Follow on an interval: `cellpy.utils.live.poll(c, interval=60, on_update=cb)`;
+  batch: `b.refresh()` / `b.poll(interval=, on_update=)`.
+- External metadata (lab DB / BatBase): `c.fetch_meta("batbase", key=None,
+  kind="cell_name")` pulls mass / area / nominal capacity / project onto the
+  cell like a journal row and records `c.external_links["batbase"]`;
+  unreachable source ⇒ `()` and no change (`strict=True` raises). Sources:
+  `cellpy.readers.metadata_sources.names()`; the BatBase adapter is in
+  `cellpy-connectors`. No filename needed when the source knows the files:
+  `cellpy.get(source="batbase", key="SAL_010", kind="tag")` opens the
+  record's file pointers (`filefinder` only as fallback);
+  `batch.from_source("batbase", "SAL_010")` does the same for a whole tag.
+  Raw pointers with `size`/`mtime` stay on `external_links[src].file_refs`;
+  `update()` / `refresh()` skip the remote `stat` while they match what was
+  loaded (`force=True` or a differing value → stat/reload as usual).
 - Frames: `c.data.raw` / `.steps` / `.summary`; columns via `c.schema.*`.
   After a raw load, each cycle's raw capacity starts at 0. A forgotten tester
   reset that 1.x plotted as doubled capacity is rebased on load for every
@@ -391,10 +415,12 @@ Quick facts:
   legend for `summary_collector(..., group_it=True)`); `custom_group_labels=`
   still overrides. Numeric group ids stay unlabeled.
   `b.plot(ir=True, direction="discharge")` uses `ir_discharge`, or `ir_charge`
-  with a warning if that column is missing.
-  `summary_collector(b, family=...).plot()` puts charge (solid) and discharge
-  (dashed) of one quantity in the same panel with a separate "Direction"
-  legend; `combine_directions=False` gives one facet per variable.
+  with a warning if that column is missing. A normal `cellpy.get` /
+  `batch.load` summary includes those columns (`find_ir=True`).
+  `summary_collector(b, family=...).plot()` puts charge and discharge of one
+  quantity in the same panel. Both on that panel: charge solid, discharge
+  dashed, plus a "Direction" legend. Only one of them: solid line, no
+  Direction legend. `combine_directions=False` gives one facet per variable.
   `mark_as_bad` is a session flag (unknown cell name → `ValueError`); `drop` /
   `drop_cells_marked_bad` remove now
   (plot/summaries work without `update()`). `save()` then next `load` (default
@@ -409,7 +435,7 @@ Quick facts:
     Collected figure bytes: `collection.to_image("png")` / `cellpy.plotting.write_image(fig, "svg")` (needs `cellpy[batch]` / kaleido). Matplotlib plots need `cellpy[plotting-mpl]` (#937).
 - Prefer schema-resolved names over hard-coded 1.x header strings.
 - When changing public get/save/schema/CLI surface, update
-  `docs/getting_started/agents.md` and this section in the same PR.
+  `docs/agents/index.md` and this section in the same PR.
 
 ## Local toolchain
 
@@ -439,7 +465,7 @@ resolves from PyPI). No manual install is normally needed.
   run under `MPLBACKEND=Agg` (no file `--ignore` in Tier 1 / scheduled / release).
   Full suite is `uv run pytest` (default `addopts` deselects slow/local/unfinished
   markers).
-- **Lint/format:** `uv run flake8 cellpy` and `uv run black --check cellpy` (line
+- **Lint/format:** `uv run flake8 src/cellpy` and `uv run black --check src/cellpy` (line
   length 120). These are not wired into the Tier-1 CI gate, and the repo currently
   has pre-existing `black` reformat suggestions and some `flake8 F821` findings —
   do not treat those as regressions from your change.

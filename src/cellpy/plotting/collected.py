@@ -1,0 +1,2326 @@
+"""Collected-frame plotting: multi-cell layout/kind render.
+
+Collectors own collection; this module owns drawing for already-tidy frames
+with ``cell`` / ``group`` / ``sub_group`` columns. Public entry:
+`collected_plot` → ``FigureSpec`` → backend.render.
+"""
+
+from __future__ import annotations
+
+import functools
+import logging
+import math
+import re
+import warnings
+from collections import Counter
+from typing import Any, Optional
+
+import numpy as np
+import pandas as pd
+
+from cellpycore.config import CurveCols
+from cellpy.parameters.internal_settings import get_headers_journal
+from cellpy.plotting.cycle_legend import (
+    add_plotly_cycle_colorbar,
+    pop_cycle_legend_options,
+    resolve_cycle_legend_mode,
+)
+from cellpy.plotting.labels import legend_replacer, remove_markers
+from cellpy.plotting import theme
+from cellpy.plotting.spec import FigureSpec
+
+logger = logging.getLogger(__name__)
+
+_CCOLS = CurveCols()
+hdr_journal = get_headers_journal()
+
+DEFAULT_CYCLES = [1, 10, 20]
+PLOTLY_BASE_TEMPLATE = "plotly"
+MAX_POINTS_SEABORN_FACET_GRID = 60_000
+
+supported_backends: list[str] = []
+px = None
+go = None
+pio = None
+plt = None
+sns = None
+
+try:
+    import plotly
+    import plotly.express as px
+    import plotly.graph_objects as go
+    import plotly.io as pio
+
+    supported_backends.append("plotly")
+except ImportError:
+    plotly = None  # type: ignore[assignment]
+
+try:
+    import matplotlib.pyplot as plt
+
+    # matplotlib alone is not a collectors layout backend; seaborn owns that path.
+except ImportError:
+    plt = None
+
+try:
+    import seaborn as sns
+
+    supported_backends.append("seaborn")
+except ImportError:
+    sns = None
+
+
+# Internal plotter implementations (moved from collectors.py; #657)
+
+
+
+
+def _hist_eq(trace):
+    z = histogram_equalization(trace.z)
+    trace.update(z=z)
+    return trace
+
+
+def y_axis_replacer(ax, label):
+    """Replace y-axis label in matplotlib plots."""
+    if isinstance(label, dict):
+        _label = label.get(ax.title.text, None)
+        if _label is None:
+            _label = list(label.values())[0]
+        ax.update(title_text=_label)
+    else:
+        ax.update(title_text=label)
+    return ax
+
+
+
+
+def _plotly_y_label_cleaner(y_label_mapper, split_at=20):
+    """Clean up the y-label mapper for plotly.
+
+    The y-label mapper is a dictionary that maps the variable name to the y-label. The y-labels are
+    expected to be in the form of "Variable Name (unit)". If the y-label is too long, it is
+    split into multiple lines.
+    This is done to avoid the y-labels from being too long and wrapping around.
+
+    Discharge Capacity Retention Gravimetric Norm (%) should become:
+    Discharge Capacity<br>Retention Gravimetric Norm<br>(%)
+
+    Args:
+        y_label_mapper (dict): the y-label mapper.
+
+    Returns:
+        dict: the cleaned up y-label mapper.
+
+    """
+
+    new_y_label_mapper = {}
+    for k, v in y_label_mapper.items():
+        if len(v) > split_at:
+            # First split on " (" pattern
+            v = "<br>(".join(v.split(" ("))
+
+            # Then check if any resulting line is still too long and split on spaces
+            lines = v.split("<br>")
+            final_lines = []
+            for line in lines:
+                if len(line) > split_at and " " in line:
+                    # Split long lines on spaces
+                    words = line.split(" ")
+                    current_line = ""
+                    for word in words:
+                        if len(current_line + " " + word) > split_at and current_line:
+                            final_lines.append(current_line)
+                            current_line = word
+                        else:
+                            if current_line:
+                                current_line += " " + word
+                            else:
+                                current_line = word
+                    if current_line:
+                        final_lines.append(current_line)
+                else:
+                    final_lines.append(line)
+            v = "<br>".join(final_lines)
+        new_y_label_mapper[k] = v
+    return new_y_label_mapper
+
+
+def spread_plot(curves, plotly_arguments=None, y_label_mapper=None, **kwargs):
+    """Create a spread plot (error-bands instead of error-bars).
+
+    This is an experimental feature that is not yet fully tested. It uses make_subplots to create the figure,
+    and then adds the traces one by one. This methodology will eventually replace the use of plotly.express
+    for all the summary plots.
+
+    Per-panel y-limits belong on `summary_plotter` / `Collection.plot` as
+    ``y_ranges=`` (and ``share_y=False``). Row 1 is the top facet; do not
+    reuse ``fig.update_yaxes(..., row=N)`` numbers from a non-spread figure.
+
+    """
+    from plotly.subplots import make_subplots
+
+    if y_label_mapper is None:
+        y_label_mapper = {}
+    else:
+        y_label_mapper = _plotly_y_label_cleaner(y_label_mapper)
+
+    selected_variables = _ordered_variables(curves)
+    number_of_rows = len(selected_variables)
+    # TODO: change this (only temporary fix to allow height fractions to be set by spread_plot)
+    height_fractions = kwargs.get(
+        "height_fractions_spread", [1 / number_of_rows] * number_of_rows
+    )
+
+    colors = plotly.colors.qualitative.Plotly
+    opacity = 0.2
+    color_list = []
+    for color in colors:
+        color_rgb = plotly.colors.hex_to_rgb(color)
+        color_rgb_main = f"rgb({color_rgb[0]}, {color_rgb[1]}, {color_rgb[2]})"
+        color_rgba_spread = (
+            f"rgba({color_rgb[0]}, {color_rgb[1]}, {color_rgb[2]}, {opacity})"
+        )
+        color_list.append((color_rgb_main, color_rgba_spread))
+
+    if plotly_arguments.get("markers"):
+        mode = "lines+markers"
+    else:
+        mode = "lines"
+
+    # Series key: per-cell frames use "cell"; group-averaged frames prefer
+    # ``group_label`` when present (#923 / #947), else ``group`` (#785).
+    series_col = _spread_series_column(curves)
+    g = curves.groupby(series_col)
+    fig = make_subplots(
+        rows=number_of_rows,
+        cols=1,
+        start_cell=plotly_arguments.get("plotly_start_cell", "top-left"),
+        shared_xaxes=plotly_arguments.get("plotly_shared_xaxes", True),
+        row_heights=height_fractions,
+        vertical_spacing=plotly_arguments.get("plotly_vertical_spacing", 0.01),
+    )
+    y_labels = {}
+    has_direction = "direction" in curves.columns
+    for i, (cell, data) in enumerate(g):
+        color = color_list[i % len(color_list)]
+        show_legend = True
+
+        for row_number, variable in enumerate(selected_variables):
+            y_label = y_label_mapper.get(variable, variable)
+            y_labels[row_number] = y_label
+            panel_data = data[data["variable"] == variable]
+            # One trace per direction so charge / discharge share the panel
+            # but differ in dash (#1009).
+            directions = (
+                list(pd.unique(panel_data["direction"])) if has_direction else [None]
+            )
+            # Dash only when this panel actually overlays both directions
+            # (#1096). A discharge-only summary stays solid.
+            present = {d for d in directions if d}
+            both = {"charge", "discharge"} <= present
+            for direction in directions:
+                sub_data = (
+                    panel_data
+                    if direction is None
+                    else panel_data[panel_data["direction"] == direction]
+                )
+                dash = (
+                    _DIRECTION_DASH.get(direction or "", "solid") if both else "solid"
+                )
+                _add_spread_traces(
+                    fig,
+                    row_number + 1,
+                    cell,
+                    series_col,
+                    variable,
+                    sub_data,
+                    mode=mode,
+                    color=color,
+                    dash=dash,
+                    show_legend=show_legend,
+                )
+                show_legend = False
+    for row_number, y_label in y_labels.items():
+        fig.update_yaxes(title_text=y_label, row=row_number + 1, col=1)
+
+    fig.update_layout(legend_tracegroupgap=0)
+    # fig.update_layout(hovermode="x")
+
+    if labels := plotly_arguments.get("labels"):
+        fig.update_xaxes(title=labels.get("cycle", None), row=number_of_rows)
+
+    # Hack to remove the x-axis title that appears on the top of the plot:
+    # if number_of_rows > 1:
+    #     fig.update_layout(xaxis_title=None)
+
+    if hover_mode := kwargs.pop("hovermode", None):
+        fig.update_layout(hovermode=hover_mode)
+
+    return fig
+
+
+def _add_spread_traces(
+    fig, row, cell, series_col, variable, sub_data, *, mode, color, dash, show_legend
+):
+    """Add the mean line plus its ±std band for one series / panel / direction."""
+    mean_kwargs = dict(
+        name=cell,
+        x=sub_data["cycle"],
+        y=sub_data["mean"],
+        mode=mode,
+        line=dict(color=color[0], dash=dash),
+        legendgroup=cell,
+        legendgrouptitle=None,
+        showlegend=show_legend,
+    )
+    # Hover parity with group_it px path (#875); std via customdata.
+    if "std" in sub_data.columns:
+        mean_kwargs["customdata"] = sub_data["std"]
+        mean_kwargs["hovertemplate"] = (
+            f"{series_col}={cell}<br>"
+            f"variable={variable}<br>"
+            "Cycle (n.)=%{x}<br>"
+            "mean=%{y}<br>"
+            "std=%{customdata}<extra></extra>"
+        )
+    else:
+        mean_kwargs["hovertemplate"] = (
+            f"{series_col}={cell}<br>"
+            f"variable={variable}<br>"
+            "Cycle (n.)=%{x}<br>"
+            "mean=%{y}<extra></extra>"
+        )
+    fig.add_trace(go.Scatter(**mean_kwargs), row=row, col=1)
+    fig.add_trace(
+        go.Scatter(
+            name=f"Upper Bound {cell}",
+            x=sub_data["cycle"],
+            y=sub_data["mean"] + sub_data["std"],
+            mode="lines",
+            marker=dict(color=color[1]),
+            line=dict(width=0),
+            showlegend=False,
+            legendgroup=cell,
+            hoverinfo="skip",
+        ),
+        row=row,
+        col=1,
+    )
+    fig.add_trace(
+        go.Scatter(
+            name=f"Lower Bound {cell}",
+            x=sub_data["cycle"],
+            y=sub_data["mean"] - sub_data["std"],
+            mode="lines",
+            marker=dict(color=color[1]),
+            line=dict(width=0),
+            fillcolor=color[1],
+            fill="tonexty",
+            showlegend=False,
+            legendgroup=cell,
+            hoverinfo="skip",
+        ),
+        row=row,
+        col=1,
+    )
+
+
+def _normalize_direction(direction: Optional[str]) -> str:
+    """Normalize a direction kwarg to lowercase ``charge`` / ``discharge`` / ``both``."""
+    if direction is None:
+        return "charge"
+    return str(direction).strip().lower()
+
+
+def _select_direction(curves, direction, direction_col="direction"):
+    """Select one direction from a collected curve frame.
+
+    Handles both direction encodings that reach the plotters:
+
+    - The specced ICA frame spells direction out ("charge" /
+      "discharge"), **cell-centric**.
+    - Frames straight from ``get_cap(categorical_column=True)`` still carry
+      the raw ±1 half-cycle code. For those the historical mapping is kept
+      (-1 selected as "charge") so non-ICA film plots are unchanged; the code
+      is positional, and relabelling it needs the cell's cycle_mode, which a
+      collected frame no longer knows.
+
+    ``direction="both"`` leaves the frame unchanged (#821).
+    """
+    direction = _normalize_direction(direction)
+    if direction == "both":
+        return curves
+
+    if direction_col not in curves.columns:
+        logging.debug(
+            "no %r column in the collected frame - direction filter skipped",
+            direction_col,
+        )
+        return curves
+
+    column = curves[direction_col]
+    if pd.api.types.is_numeric_dtype(column):
+        if direction == "charge":
+            return curves.loc[column < 0]
+        if direction == "discharge":
+            return curves.loc[column > 0]
+        return curves
+
+    return curves.loc[column == direction]
+
+
+def sequence_plotter(
+    collected_curves: pd.DataFrame,
+    x: str = _CCOLS.capacity,
+    y: str = _CCOLS.potential,
+    z: str = _CCOLS.cycle_num,
+    g: str = "cell",
+    standard_deviation: str = None,
+    group: str = hdr_journal.group,
+    subgroup: str = hdr_journal.sub_group,
+    x_label: str = "Capacity",
+    x_unit: str = "mAh/g",
+    y_label: str = "Voltage",
+    y_unit: str = "V",
+    z_label: str = "Cycle",
+    z_unit: str = "n.",
+    y_label_mapper: dict = None,
+    nbinsx: int = 100,
+    histfunc: str = "avg",
+    histscale: str = "abs-log",
+    direction: str = "charge",
+    direction_col: str = "direction",
+    method: str = "fig_pr_cell",
+    markers: bool = False,
+    group_cells: bool = True,
+    group_legend_muting: bool = True,
+    backend: str = "plotly",
+    cycles: list = None,
+    facetplot: bool = False,
+    cols: int = 3,
+    palette_discrete: str = None,
+    palette_continuous: str = "Viridis",
+    palette_range: tuple = None,
+    height: float = None,
+    width: float = None,
+    spread: bool = False,
+    **kwargs,
+) -> Any:
+    """Create a plot made up of sequences of data (voltage curves, dQ/dV, etc).
+
+    This method contains the "common" operations done for all the sequence plots,
+    currently supporting filtering out the specific cycles, selecting either
+    dividing into subplots by cell or by cycle, and creating the (most basic) figure object.
+
+    Args:
+        collected_curves (pd.DataFrame): collected data in long format.
+        x (str): column name for x-values.
+        y (str): column name for y-values.
+        z (str): if method is 'fig_pr_cell', column name for color (legend), else for subplot.
+        g (str): if method is 'fig_pr_cell', column name for subplot, else for color.
+        standard_deviation: str = standard deviation column (skipped if None).
+        group (str): column name for group.
+        subgroup (str): column name for subgroup.
+        x_label (str): x-label.
+        x_unit (str): x-unit (will be put in parentheses after the label).
+        y_label (str): y-label.
+        y_unit (str): y-unit (will be put in parentheses after the label).
+        z_label (str): z-label.
+        z_unit (str): z-unit (will be put in parentheses after the label).
+        y_label_mapper (dict): map the y-labels to something else.
+        nbinsx (int): number of bins to use in interpolations.
+        histfunc (str): aggregation method.
+        histscale (str): used for scaling the z-values for 2D array plots (heatmaps and similar).
+        direction (str): "charge", "discharge", or "both".
+        direction_col (str): name of columns containing information about direction ("charge" or "discharge").
+        method: 'fig_pr_cell' or 'fig_pr_cycle'.
+        markers: set to True if you want markers.
+        group_cells (bool): give each cell within a group same color.
+        group_legend_muting (bool): if True, you can click on the legend to mute the whole group (only for plotly).
+        backend (str): what backend to use.
+        cycles: what cycles to include in the plot.
+        palette_discrete: palette to use for discrete color mapping.
+        palette_continuous: palette to use for continuous color mapping.
+        palette_range (tuple): range of palette to use for continuous color mapping (from 0 to 1).
+        facetplot (bool): square layout with group horizontally and subgroup vertically.
+        cols (int): number of columns for layout.
+        height (int): plot height.
+        width (int): plot width.
+        spread (bool): plot error-bands instead of error-bars if True.
+
+        **kwargs: sent to backend (if `backend == "plotly"`, it will be
+            sent to `plotly.express` etc.). The cycle legend-vs-colorbar knobs
+            (`legend_cycle_limit`, `force_colorbar`, `force_legend` /
+            `force_nonbar`; see `cycle_legend`) are
+            consumed here: cycle-coloured layouts (`fig_pr_cell`) swap the
+            discrete legend for a colorbar above `legend_cycle_limit` cycles
+            (default 8, same as `cycles_plot`).
+
+    Returns:
+        figure object
+    """
+    logging.debug("running sequence plotter")
+
+    for k in kwargs:
+        logging.debug(f"keyword argument sent to the backend: {k}")
+    if backend not in supported_backends:
+        print(f"Backend '{backend}' not supported", end="")
+        print(f" - supported backends: {supported_backends}")
+        return
+    curves = None
+
+    # Shared legend-vs-colorbar policy for cycle-coloured figures (#928).
+    # Popped here so the knobs never leak into a backend call, whatever the
+    # method; only the cycle-coloured layouts act on the result.
+    cycle_legend_options = pop_cycle_legend_options(None, kwargs)
+    cycle_legend_mode = "legend"
+
+    # ----------------- parsing arguments -----------------------------
+
+    if method == "film":
+        labels = {
+            f"{x}": f"{x_label} ({x_unit})",
+            f"{z}": f"{z_label} ({z_unit})",
+        }
+        plotly_arguments = dict(
+            x=x,
+            y=z,
+            z=y,
+            labels=labels,
+            facet_col_wrap=cols,
+            nbinsx=nbinsx,
+            histfunc=histfunc,
+        )
+
+        seaborn_arguments = dict(x=x, y=z, z=y, labels=labels, row=g, col=subgroup)
+
+    elif method == "summary":
+        labels = {
+            f"{x}": f"{x_label} ({x_unit})",
+        }
+        plotly_arguments = dict(x=x, y=y, labels=labels, markers=markers)
+        seaborn_arguments = dict(x=x, y=y, markers=markers)
+        seaborn_arguments["labels"] = labels
+
+        if g == "variable" and len(collected_curves[g].unique()) > 1:
+            plotly_arguments["facet_row"] = g
+            seaborn_arguments["row"] = g
+        if standard_deviation:
+            plotly_arguments["error_y"] = standard_deviation
+            seaborn_arguments["error_y"] = standard_deviation
+
+    else:
+        labels = {
+            f"{x}": f"{x_label} ({x_unit})",
+            f"{y}": f"{y_label} ({y_unit})",
+        }
+        plotly_arguments = dict(x=x, y=y, labels=labels, facet_col_wrap=cols)
+        seaborn_arguments = dict(x=x, y=y, labels=labels, row=group, col=subgroup)
+
+    if method in ["fig_pr_cell", "film"]:
+        group_cells = False
+        if method == "fig_pr_cell":
+            plotly_arguments["markers"] = markers
+            plotly_arguments["color"] = z
+            seaborn_arguments["hue"] = z
+        if facetplot:
+            plotly_arguments["facet_col"] = group
+            plotly_arguments["facet_row"] = subgroup
+            plotly_arguments["hover_name"] = g
+        else:
+            plotly_arguments["facet_col"] = g
+
+        # Filter on ``z`` (cycle column) — capacity curves use ``cycle_num``,
+        # ICA uses ``cycle`` (#679). Do not hardcode ``.cycle``.
+        if cycles is not None:
+            curves = collected_curves.loc[collected_curves[z].isin(cycles), :]
+        else:
+            curves = collected_curves
+        # Line + film honour direction (#821); film used to be the only path.
+        curves = _select_direction(curves, direction, direction_col)
+        logging.debug(f"filtered_curves:\n{curves}")
+
+        if method == "film":
+            # scaling (assuming 'y' is the "value" axis):
+            if histscale == "abs-log":
+                curves[y] = curves[y].apply(np.abs).apply(np.log)
+            elif histscale == "abs":
+                curves[y] = curves[y].apply(np.abs)
+            elif histscale == "norm":
+                curves[y] = curves[y].apply(np.abs)
+
+    elif method == "fig_pr_cycle":
+        # Filter before swapping ``z``/``g`` so ``z`` is still the cycle column.
+        if cycles is not None:
+            curves = collected_curves.loc[collected_curves[z].isin(cycles), :]
+        else:
+            curves = collected_curves
+        curves = _select_direction(curves, direction, direction_col)
+
+        z, g = g, z
+        plotly_arguments["facet_col"] = g
+        seaborn_arguments["col"] = g
+
+        if group_cells:
+            plotly_arguments["color"] = group
+            plotly_arguments["symbol"] = subgroup
+            seaborn_arguments["hue"] = group
+            seaborn_arguments["style"] = subgroup
+        else:
+            plotly_arguments["markers"] = markers
+            plotly_arguments["color"] = z
+            seaborn_arguments["hue"] = z
+            seaborn_arguments["style"] = z
+
+    elif method == "summary":
+        # Summary collectors label the cycle column ``cycle``.
+        if cycles is not None:
+            curves = collected_curves.loc[collected_curves.cycle.isin(cycles), :]
+        else:
+            curves = collected_curves
+
+        if group_cells:
+            plotly_arguments["color"] = group
+            plotly_arguments["symbol"] = subgroup
+            seaborn_arguments["hue"] = group
+            seaborn_arguments["style"] = subgroup
+        else:
+            plotly_arguments["color"] = z
+            seaborn_arguments["hue"] = z
+
+    # ----------------- individual plotting calls  -----------------------------
+    # TODO: move as much as possible up to the parsing of arguments
+    #   (i.e. prepare for future refactoring)
+
+    if backend == "plotly":
+        if method == "fig_pr_cell":
+            start, end = 0.0, 1.0
+            if palette_range is not None:
+                start, end = palette_range
+            unique_cycle_numbers = curves[z].unique()
+            number_of_colors = len(unique_cycle_numbers)
+            # Same rule (and same default limit) as the single-cell
+            # ``cycles_plot`` / ``ica_plot``: a long discrete legend becomes a
+            # colorbar (#928).
+            cycle_legend_mode = resolve_cycle_legend_mode(
+                number_of_colors, **cycle_legend_options
+            )
+            if number_of_colors > 1:
+                selected_colors = px.colors.sample_colorscale(
+                    palette_continuous, number_of_colors, low=start, high=end
+                )
+                plotly_arguments["color_discrete_sequence"] = selected_colors
+        elif method == "fig_pr_cycle":
+            if palette_discrete is not None:
+                # plotly_arguments["color_discrete_sequence"] = getattr(px.colors.sequential, palette_discrete)
+                logging.debug(
+                    f"palette_discrete is not implemented yet ({palette_discrete})"
+                )
+
+        elif method == "film":
+            number_of_colors = 10
+            start, end = 0.0, 1.0
+            if palette_range is not None:
+                start, end = palette_range
+            plotly_arguments["color_continuous_scale"] = px.colors.sample_colorscale(
+                palette_continuous, number_of_colors, low=start, high=end
+            )
+
+        elif method == "summary":
+            logging.info("sequence-plotter - summary plotly")
+
+        # Must not reach px.line / spread_plot (unknown kwarg).
+        y_ranges = kwargs.pop("y_ranges", None) or {}
+
+        abs_facet_row_spacing = kwargs.pop("abs_facet_row_spacing", 20)
+        abs_facet_col_spacing = kwargs.pop("abs_facet_col_spacing", 20)
+        facet_row_spacing = kwargs.pop(
+            "facet_row_spacing", abs_facet_row_spacing / height if height else 0.1
+        )
+        facet_col_spacing = kwargs.pop(
+            "facet_col_spacing", abs_facet_col_spacing / (width or 1000)
+        )
+
+        plotly_arguments["facet_row_spacing"] = facet_row_spacing
+        plotly_arguments["facet_col_spacing"] = facet_col_spacing
+
+        # direction="both": separate traces per half-cycle so Plotly does not
+        # join charge→discharge within a cycle (#821).
+        if (
+            method in ("fig_pr_cell", "fig_pr_cycle")
+            and _normalize_direction(direction) == "both"
+            and direction_col in curves.columns
+        ):
+            plotly_arguments["line_dash"] = direction_col
+
+        logging.debug(f"{plotly_arguments=}")
+        logging.debug(f"{kwargs=}")
+
+        fig = None
+        if method in ["fig_pr_cycle", "fig_pr_cell"]:
+            fig = px.line(
+                curves,
+                **plotly_arguments,
+                **kwargs,
+            )
+
+            if method == "fig_pr_cell" and cycle_legend_mode == "colorbar":
+                # Keep the per-cycle trace colours, drop the long legend and
+                # show the scale instead (#928).
+                try:
+                    add_plotly_cycle_colorbar(
+                        fig,
+                        cycles=sorted(unique_cycle_numbers),
+                        colormap=palette_continuous,
+                        title=z_label,
+                    )
+                except (TypeError, ValueError) as e:
+                    logging.debug(f"sequence_plotter - no cycle colorbar: {e}")
+                else:
+                    fig.update_traces(showlegend=False)
+
+            if method == "fig_pr_cycle" and group_cells:
+                try:
+                    fig.for_each_trace(
+                        functools.partial(
+                            legend_replacer,
+                            df=curves,
+                            group_legends=group_legend_muting,
+                        )
+                    )
+                    if markers is not True:
+                        fig.for_each_trace(remove_markers)
+                except Exception as e:
+                    print(f"sequence_plotter - fig_pr_cycle - failed {e} [{z}]")
+
+        elif method == "film":
+            fig = px.density_heatmap(curves, **plotly_arguments, **kwargs)
+            if histscale is None:
+                color_bar_txt = f"{y_label} ({y_unit})"
+            else:
+                color_bar_txt = f"{y_label} ({histscale})"
+
+            if histscale == "hist-eq":
+                fig = fig.for_each_trace(lambda _x: _hist_eq(_x))
+
+            fig.update_layout(coloraxis_colorbar_title_text=color_bar_txt)
+
+        elif method == "summary":
+            if spread:
+                logging.info(
+                    "using spread is an experimental feature and might not work as expected"
+                )
+                fig = spread_plot(
+                    curves,
+                    plotly_arguments=plotly_arguments,
+                    y_label_mapper=y_label_mapper,
+                    **kwargs,
+                )
+            else:
+                # remove all kwargs that are only intended for spread_plot
+                _ = kwargs.pop("height_fractions_spread", None)
+                _ = plotly_arguments.pop("plotly_start_cell", None)
+                _ = plotly_arguments.pop("plotly_shared_xaxes", None)
+                _ = plotly_arguments.pop("plotly_vertical_spacing", None)
+                _ = kwargs.pop("plotly_start_cell", None)
+                _ = kwargs.pop("plotly_shared_xaxes", None)
+                _ = kwargs.pop("plotly_vertical_spacing", None)
+
+                fig = px.line(
+                    curves,
+                    **plotly_arguments,
+                    **kwargs,
+                )
+
+            if group_cells:  # all cells in same group has same color
+                try:
+                    fig.for_each_trace(
+                        functools.partial(
+                            legend_replacer,
+                            df=curves,
+                            group_legends=group_legend_muting,
+                        )
+                    )
+                    if markers is not True:
+                        fig.for_each_trace(remove_markers)
+                except Exception as e:
+                    print(f"sequence_plotter - summary - failed {e} [{group}]")
+
+            # Apply per-panel y-limits while facet annotations still spell
+            # ``variable=…`` (#804 / #801). Pretty-label cleanup clears them.
+            # Spread figures have no facet strips; lookup falls back to y-axis
+            # titles set by spread_plot (#817).
+            if y_ranges:
+                _apply_summary_y_ranges(fig, y_ranges, facet=g)
+
+            if y_label_mapper and not spread:
+                y_label_mapper = _plotly_y_label_cleaner(y_label_mapper)
+                annotations = fig.layout.annotations
+                if annotations:
+                    try:
+                        for annotation in annotations:
+                            text = annotation.text or ""
+                            if text.startswith("variable="):
+                                variable = text.split("=", 1)[1]
+                                label = y_label_mapper.get(variable)
+                            else:
+                                label = next(
+                                    (
+                                        v
+                                        for k, v in y_label_mapper.items()
+                                        if text.endswith(k)
+                                    ),
+                                    None,
+                                )
+                            if label is None:
+                                continue
+                            # Resolve the axis from the strip's own position
+                            # rather than assuming the annotation order lines
+                            # up with Plotly's row numbering (#923).
+                            key = _yaxis_key_for_facet_label(fig, text)
+                            if key is not None:
+                                y_axis_replacer(fig.layout[key], label)
+
+                        fig.update_annotations(text="")
+
+                    except Exception as e:
+                        print(
+                            f"sequence_plotter - summary - y-label mapper failed {e} [{group}]"
+                        )
+                else:
+                    try:
+                        fig.for_each_yaxis(
+                            functools.partial(y_axis_replacer, label=y_label_mapper),
+                        )
+                    except Exception as e:
+                        print(
+                            f"sequence_plotter - summary - y-label mapper - no annotations - failed {e} [{group}]"
+                        )
+                        print(f"y_label_mapper: {y_label_mapper}")
+                        print(f"annotations: {annotations}")
+
+        else:
+            print(f"method '{method}' is not supported by plotly")
+
+        # Cycles / film / ICA: pretty facet strips (keep strip; #820).
+        # Summary keeps its own clear-strip + y-title path above (#801).
+        if fig is not None and method in ("fig_pr_cell", "fig_pr_cycle", "film"):
+            _pretty_print_facet_strips(fig)
+
+        return fig
+
+    if backend == "seaborn":
+        number_of_data_points = len(curves)
+        if number_of_data_points > MAX_POINTS_SEABORN_FACET_GRID:
+            print(
+                f"WARNING! Too many data points for seaborn to plot: "
+                f"{number_of_data_points} > {MAX_POINTS_SEABORN_FACET_GRID}"
+            )
+            print(
+                f"  - Try to reduce the number of data points "
+                f"e.g. by selecting fewer cycles and interpolating "
+                f"using the `number_of_points` and `max_cycle` or `cycles_to_plot` arguments."
+            )
+            return
+
+        if method == "fig_pr_cell":
+            seaborn_arguments["height"] = kwargs.pop("height", 3)
+            seaborn_arguments["aspect"] = kwargs.pop("height", 1)
+            sns.set_theme(style="darkgrid")
+            x = seaborn_arguments.get("x", _CCOLS.capacity)
+            y = seaborn_arguments.get("y", _CCOLS.potential)
+            row = seaborn_arguments.get("row", hdr_journal.group)
+            hue = seaborn_arguments.get("hue", _CCOLS.cycle_num)
+            col = seaborn_arguments.get("col", hdr_journal.sub_group)
+            height = seaborn_arguments.get("height", 3)
+            aspect = seaborn_arguments.get("aspect", 1)
+
+            if palette_discrete is not None:
+                seaborn_arguments["palette"] = getattr(
+                    sns.color_palette, palette_discrete
+                )
+
+            number_of_columns = len(curves[col].unique())
+            if number_of_columns > 6:
+                print(
+                    f"WARNING! {number_of_columns} columns is a lot for seaborn to plot"
+                )
+                print(
+                    f"  - consider making the plot manually (use the `.data` attribute to get the data)"
+                )
+
+            legend_items = curves[hue].unique()
+            number_of_legends = len(legend_items)
+            palette = (
+                seaborn_arguments.get("palette", "viridis")
+                if number_of_legends > 10
+                else None
+            )
+
+            g = sns.FacetGrid(
+                curves,
+                hue=hue,
+                row=row,
+                col=col,
+                height=height,
+                aspect=aspect,
+                palette=palette,
+            )
+
+            g.map(plt.plot, x, y)
+
+            if number_of_legends > 10:
+                vmin = legend_items.min()
+                vmax = legend_items.max()
+
+                sm = plt.cm.ScalarMappable(
+                    cmap=palette, norm=plt.Normalize(vmin=vmin, vmax=vmax)
+                )
+                cbar = g.figure.colorbar(
+                    sm,
+                    ax=g.figure.axes,
+                    location="right",
+                    extend="max",
+                    # pad=0.05/number_of_columns,
+                )
+                cbar.ax.set_title("Cycle")
+            else:
+                g.add_legend()
+
+            fig = g.fig
+            g.set_xlabels(labels[x])
+            g.set_ylabels(labels[y])
+            return fig
+
+        if method == "fig_pr_cycle":
+            sns.set_theme(style="darkgrid")
+            seaborn_arguments["height"] = 4
+            seaborn_arguments["aspect"] = 3
+            seaborn_arguments["linewidth"] = 2.0
+            g = sns.FacetGrid(
+                curves,
+                hue=z,
+                height=seaborn_arguments["height"],
+                aspect=seaborn_arguments["aspect"],
+            )
+            g.map(plt.plot, x, y)
+            fig = g.fig
+            g.set_xlabels(x_label)
+            g.set_ylabels(y_label)
+            g.add_legend()
+            return fig
+
+        if method == "film":
+            sns.set_theme(style="darkgrid")
+            seaborn_arguments["height"] = 4
+            seaborn_arguments["aspect"] = 3
+            seaborn_arguments["linewidth"] = 2.0
+            g = sns.FacetGrid(
+                curves,
+                hue=z,
+                height=seaborn_arguments["height"],
+                aspect=seaborn_arguments["aspect"],
+            )
+            g.map(
+                sns.kdeplot,
+                y,
+                x,
+                fill=True,
+                thresh=0,
+                levels=100,
+                cmap=palette_continuous,
+            )
+            fig = g.fig
+            g.set_xlabels(x_label)
+            g.set_ylabels(y_label)
+            g.add_legend()
+            return fig
+
+        if method == "summary":
+            sns.set_theme(style="darkgrid")
+            seaborn_arguments["height"] = 4
+            seaborn_arguments["aspect"] = 3
+            seaborn_arguments["linewidth"] = 2.0
+
+            x = seaborn_arguments.get("x", "cycle")
+            y = seaborn_arguments.get("y", "mean")
+            hue = seaborn_arguments.get("hue", None)
+
+            labels = seaborn_arguments.get("labels", None)
+            x_label = labels.get(x, x)
+
+            std = seaborn_arguments.get("error_y", None)
+            marker = "o" if seaborn_arguments.get("markers", False) else None
+            row = seaborn_arguments.get("row", None)
+
+            g = sns.FacetGrid(
+                curves,
+                hue=hue,
+                height=seaborn_arguments["height"],
+                aspect=seaborn_arguments["aspect"],
+                row=row,
+            )
+
+            if std:
+                g.map(plt.errorbar, x, y, std, marker=marker, elinewidth=0.5, capsize=2)
+            else:
+                g.map(plt.plot, x, y, marker=marker)
+
+            fig = g.figure
+
+            g.set_xlabels(x_label)
+            if y_label_mapper:
+                # ``y_label_mapper`` is keyed by variable name (summary_plotter
+                # builds one by default); the FacetGrid rows are in
+                # ``g.row_names`` order. Fall back to positional keys for the
+                # legacy list/dict-by-index shape (#925).
+                row_names = list(getattr(g, "row_names", None) or [])
+                mapper = y_label_mapper if isinstance(y_label_mapper, dict) else None
+                for i, ax in enumerate(g.axes.flat):
+                    label = None
+                    if mapper is not None and i < len(row_names):
+                        label = mapper.get(row_names[i])
+                    if label is None:
+                        try:
+                            label = y_label_mapper[i]
+                        except (KeyError, IndexError, TypeError):
+                            label = None
+                    if label is not None:
+                        ax.set_ylabel(label)
+            g.add_legend()
+            return fig
+
+    elif backend == "matplotlib":
+        print(f"{backend} not implemented yet")
+
+    elif backend == "bokeh":
+        print(f"{backend} not implemented yet")
+
+    else:
+        print(f"{backend} not implemented yet")
+
+
+def _resolve_share_y(
+    *,
+    share_y: Optional[bool],
+    match_axes: Optional[bool],
+    default: bool,
+) -> bool:
+    """Resolve shared-y preference; ``share_y`` wins over ``match_axes``."""
+    if share_y is not None:
+        return bool(share_y)
+    if match_axes is not None:
+        return bool(match_axes)
+    return bool(default)
+
+
+def _pretty_facet_annotation(text: str) -> str:
+    """Humanize a Plotly Express facet-strip annotation (#820).
+
+    Cycles / ICA / film keep the strip visible (panel identity). Summary uses a
+    different path (#801): clear ``variable=…`` and put the pretty name on the
+    y-axis title.
+    """
+    if not text or "=" not in text:
+        return text
+    key, _, val = text.partition("=")
+    if key in ("cycle_num", "cycle"):
+        return f"Cycle {val}"
+    if key == "cell":
+        return val
+    return text
+
+
+def _pretty_print_facet_strips(fig: Any) -> None:
+    """Rewrite Plotly facet-strip annotation texts in place (#820)."""
+    annotations = getattr(fig.layout, "annotations", None) or ()
+    if not annotations:
+        return
+    for i, ann in enumerate(annotations):
+        text = getattr(ann, "text", None)
+        if not text:
+            continue
+        pretty = _pretty_facet_annotation(text)
+        if pretty != text:
+            fig.layout.annotations[i].text = pretty
+
+
+#: Direction tokens recognised in summary column names (#1009).
+_DIRECTION_TOKENS = ("charge", "discharge")
+#: Plotly dash per direction; direction-less series (CE, ...) are solid.
+_DIRECTION_DASH = {"charge": "solid", "discharge": "dash", "": "solid"}
+
+
+def split_direction(variable: str) -> tuple[str, Optional[str]]:
+    """Split a summary variable into ``(panel, direction)`` (#1009).
+
+    The first ``_``-separated token equal to ``charge`` / ``discharge`` is the
+    direction; the remaining tokens form the panel key. Works for prefix
+    (``charge_capacity_gravimetric_cv`` → ``capacity_gravimetric_cv``), suffix
+    (``potential_end_charge`` → ``potential_end``) and mid-name
+    (``test_cumulated_discharge_capacity_loss`` →
+    ``test_cumulated_capacity_loss``) forms. A name without a direction token
+    is its own panel with direction ``None``.
+    """
+    name = str(variable)
+    parts = name.split("_")
+    for i, part in enumerate(parts):
+        if part in _DIRECTION_TOKENS:
+            panel = "_".join(parts[:i] + parts[i + 1 :])
+            return (panel or name), part
+    return name, None
+
+
+def _panel_key(variable: str) -> str:
+    return split_direction(variable)[0]
+
+
+def _panel_mapping(variables) -> dict[str, str]:
+    """``variable → panel`` for the variables present (#1009).
+
+    Variables that meet another one on the same panel key are renamed to that
+    key (``charge_x`` + ``discharge_x`` → ``x``); a variable alone on its key
+    keeps its own name so the label still says which direction it is.
+    """
+    panels = {v: _panel_key(v) for v in variables}
+    counts = Counter(panels.values())
+    return {v: (p if counts[p] > 1 else v) for v, p in panels.items()}
+
+
+def _combine_direction_panels(
+    curves: pd.DataFrame, g: str = "variable"
+) -> tuple[pd.DataFrame, list[str], dict[str, str]]:
+    """Merge charge / discharge variables into shared panels (#1009).
+
+    Adds a ``direction`` column (``charge`` / ``discharge`` / ``""``) and
+    rewrites ``g`` per `_panel_mapping`. Returns the frame, the directions
+    present (charge/discharge order; empty when no variable carries a direction
+    token, in which case the frame is returned untouched) and the
+    ``variable → panel`` mapping.
+    """
+    present = list(pd.unique(curves[g].dropna()))
+    split = {v: split_direction(v) for v in present}
+    directions = [d for d in _DIRECTION_TOKENS if any(s[1] == d for s in split.values())]
+    if not directions:
+        return curves, [], {}
+    mapping = _panel_mapping(present)
+    curves = curves.copy()
+    curves["direction"] = curves[g].map(lambda v: split[v][1] or "")
+    curves[g] = curves[g].map(mapping)
+    return curves, directions, mapping
+
+
+def _panels_with_both_directions(curves: pd.DataFrame, g: str = "variable") -> set[str]:
+    """Panel keys whose rows include both charge and discharge (#1096)."""
+    if "direction" not in curves.columns:
+        return set()
+    mixed: set[str] = set()
+    for panel, sub in curves.groupby(g, observed=True):
+        present = {d for d in pd.unique(sub["direction"].dropna()) if d}
+        if {"charge", "discharge"} <= present:
+            mixed.add(panel)
+    return mixed
+
+
+def _styled_directions(curves: pd.DataFrame, g: str = "variable") -> list[str]:
+    """Directions that share a panel, charge then discharge (#1096)."""
+    mixed = _panels_with_both_directions(curves, g)
+    if not mixed:
+        return []
+    present = {
+        d
+        for d in pd.unique(curves.loc[curves[g].isin(mixed), "direction"].dropna())
+        if d
+    }
+    return [d for d in _DIRECTION_TOKENS if d in present]
+
+
+def _dedupe_direction_names(fig: Any) -> None:
+    """Drop direction tokens from Plotly trace names; one legend entry per series.
+
+    ``px.line(..., line_dash="direction")`` names traces ``"cell, charge"`` /
+    ``"cell, discharge"``. Both belong to the same series, so the name becomes
+    ``"cell"``, the traces share a legend group and only the first one shows.
+    The direction itself is read from the dash style (see `_add_direction_legend`).
+    """
+    seen: set[str] = set()
+    for trace in fig.data:
+        parts = [p.strip() for p in str(trace.name).split(",")]
+        kept = [p for p in parts if p and p not in _DIRECTION_TOKENS]
+        name = ", ".join(kept) if kept else str(trace.name)
+        show = trace.showlegend is not False and name not in seen
+        if show:
+            seen.add(name)
+        trace.update(
+            name=name,
+            legendgroup=trace.legendgroup or name,
+            legendgrouptitle_text=None,
+            showlegend=show,
+        )
+
+
+def _add_direction_legend(fig: Any, directions: list[str]) -> None:
+    """Add a second Plotly legend (``legend2``, "Direction") with style-only entries."""
+    for direction in directions:
+        fig.add_trace(
+            go.Scatter(
+                x=[None],
+                y=[None],
+                mode="lines",
+                name=direction.capitalize(),
+                line=dict(color="grey", dash=_DIRECTION_DASH[direction]),
+                legend="legend2",
+                showlegend=True,
+                hoverinfo="skip",
+            )
+        )
+    fig.update_layout(
+        legend2=dict(
+            title_text="Direction",
+            orientation="v",
+            x=1.02,
+            xanchor="left",
+            y=0.0,
+            yanchor="bottom",
+        )
+    )
+
+
+def _ordered_variables(curves: pd.DataFrame) -> list:
+    """Return ``variable`` values in facet order (categorical, else appearance)."""
+    series = curves["variable"]
+    present = list(pd.unique(series.dropna()))
+    if isinstance(series.dtype, pd.CategoricalDtype):
+        return [v for v in series.cat.categories if v in set(present)]
+    return present
+
+
+def _spread_series_column(curves: pd.DataFrame) -> str:
+    """Column used as the spread-plot series / legend key."""
+    label_column = hdr_journal.group_label
+    if label_column in curves.columns and curves[label_column].notna().any():
+        return label_column
+    if "cell" in curves.columns:
+        return "cell"
+    return "group"
+
+
+def _cellpy_units_from(units: Any):
+    """Resolve ``units=`` to a ``CellpyUnits`` (session default when omitted)."""
+    from cellpy.parameters.internal_settings import get_cellpy_units
+
+    if isinstance(units, dict) and units.get("cellpy_units") is not None:
+        return units["cellpy_units"]
+    if units is not None and not isinstance(units, dict):
+        return units
+    return get_cellpy_units()
+
+
+#: ``mod_01_<column>`` marks a family's derived (normalized) series.
+_MOD_MARKER = re.compile(r"^mod_\d{2}_")
+
+
+_MODE_SUFFIXES = ("gravimetric", "areal", "volumetric")
+
+
+def _strip_cv_suffix(parts: list[str]) -> tuple[list[str], Optional[str]]:
+    """Split off a trailing ``cv`` / ``non_cv`` token pair, if any."""
+    if len(parts) >= 2 and parts[-2:] == ["non", "cv"]:
+        return parts[:-2], "non_cv"
+    if parts and parts[-1] == "cv":
+        return parts[:-1], "cv"
+    return parts, None
+
+
+def _mode_from_variable(variable: str) -> Optional[str]:
+    parts, _ = _strip_cv_suffix(str(variable).split("_"))
+    if parts and parts[-1] in _MODE_SUFFIXES:
+        return parts[-1]
+    return None
+
+
+def _pretty_variable_name(variable: str) -> str:
+    """Title-case a summary ``variable``, stripping mode suffixes."""
+    parts, cv = _strip_cv_suffix(str(variable).split("_"))
+    if parts and parts[-1] in _MODE_SUFFIXES:
+        parts = parts[:-1]
+    label = " ".join(parts).title()
+    if cv == "cv":
+        label = f"{label} CV"
+    elif cv == "non_cv":
+        label = f"{label} non-CV"
+    return label
+
+
+def _pretty_variable_label(variable: str, units: Any = None) -> str:
+    """Humanize a summary ``variable`` column name for facet / y-axis titles.
+
+    Strips specific-mode suffixes (``_gravimetric`` / ``_areal`` / …) and
+    appends a parenthetical unit from session / cell ``CellpyUnits`` (#947).
+    Unknown quantities stay unit-less. ``units`` may be a ``CellpyUnits``,
+    the legacy ``{"cellpy_units": …}`` dict, or omitted.
+    """
+    from cellpy.exceptions import UnitsError
+    from cellpy.units import with_cellpy_unit
+
+    v = str(variable)
+    if _MOD_MARKER.match(v):
+        # ``mod_NN_<source>`` is the family's normalized-on-max series (#1009).
+        return f"Normalized {_pretty_variable_name(_MOD_MARKER.sub('', v))} (%)"
+    label = _pretty_variable_name(v)
+    if v == "coulombic_efficiency" or v.endswith("_coulombic_efficiency"):
+        return f"{label} (%)"
+    if "_norm" in v:
+        return f"{label} (normalized)"
+
+    # Token match so a direction-less panel key (``capacity_gravimetric``,
+    # #1009) is recognised like ``charge_capacity_gravimetric``.
+    tokens = v.split("_")
+    property_name = None
+    if "capacity" in tokens:
+        property_name = "charge"
+    elif "energy" in tokens:
+        property_name = "energy"
+    if property_name is None:
+        return label
+
+    spec = _cellpy_units_from(units)
+    try:
+        return with_cellpy_unit(
+            label, property_name, _mode_from_variable(v), units=spec
+        )
+    except UnitsError:
+        return label
+
+
+def _default_summary_y_label_mapper(
+    variables: list[str], units: Any = None
+) -> dict[str, str]:
+    """Build ``variable → pretty label`` for collected summary facets (#801)."""
+    return {v: _pretty_variable_label(v, units=units) for v in variables}
+
+
+def _plain_axis_title(title: str) -> str:
+    """Collapse Plotly ``<br>`` wraps so title matching ignores line breaks."""
+    return " ".join(str(title).replace("<br>", " ").split())
+
+
+def _yaxis_key_for_facet_label(fig: Any, label: str) -> Optional[str]:
+    """Map a Plotly facet annotation text to its ``yaxis`` / ``yaxisN`` key."""
+    annotations = getattr(fig.layout, "annotations", None) or ()
+    target = None
+    for ann in annotations:
+        if getattr(ann, "text", None) == label:
+            target = ann
+            break
+    if target is None or target.y is None:
+        return None
+    mid = float(target.y)
+    best_key = None
+    best_dist = None
+    for key in fig.layout:
+        key_s = str(key)
+        if not key_s.startswith("yaxis"):
+            continue
+        domain = fig.layout[key].domain
+        if not domain:
+            continue
+        lo, hi = float(domain[0]), float(domain[1])
+        if lo <= mid <= hi:
+            return key_s
+        dist = abs((lo + hi) / 2.0 - mid)
+        if best_dist is None or dist < best_dist:
+            best_dist = dist
+            best_key = key_s
+    return best_key
+
+
+def _yaxis_key_for_variable(
+    fig: Any, variable: str, *, facet: str = "variable"
+) -> Optional[str]:
+    """Resolve a summary facet row's y-axis key by annotation or axis title.
+
+    Prefer the Plotly ``variable=…`` facet strip (present before pretty-label
+    cleanup). After labels move onto y-axis titles, match the pretty title.
+    """
+    key = _yaxis_key_for_facet_label(fig, f"{facet}={variable}")
+    if key is not None:
+        return key
+    for name in dict.fromkeys((variable, _panel_key(variable))):
+        # a merged charge/discharge panel is titled by its panel key (#1009)
+        pretty = _pretty_variable_label(name)
+        bare = _pretty_variable_name(name)
+        for layout_key in fig.layout:
+            key_s = str(layout_key)
+            if not key_s.startswith("yaxis"):
+                continue
+            title = getattr(fig.layout[layout_key].title, "text", None)
+            if not title:
+                continue
+            plain = _plain_axis_title(title)
+            if (
+                plain == pretty
+                or plain == bare
+                or plain.startswith(f"{bare} (")
+                or title == pretty
+                or title.startswith(f"{bare} (")
+            ):
+                return key_s
+    return None
+
+
+_warned_unknown_y_range_keys: set[str] = set()
+
+
+def _apply_summary_y_ranges(
+    fig: Any,
+    y_ranges: dict[str, Any],
+    *,
+    facet: str = "variable",
+) -> None:
+    """Apply per-facet-row y-limits on a Plotly collected summary figure.
+
+    Unknown variable keys warn once and are ignored. Axes are unmatched first
+    so per-panel ranges are not overwritten by a shared scale.
+    """
+    if not y_ranges:
+        return
+    fig.update_yaxes(matches=None)
+    for variable, y_range in y_ranges.items():
+        if y_range is None:
+            continue
+        try:
+            lo, hi = float(y_range[0]), float(y_range[1])
+        except (TypeError, ValueError, IndexError) as exc:
+            warnings.warn(
+                f"y_ranges[{variable!r}] must be a two-item [lo, hi] sequence "
+                f"({exc}); ignoring",
+                stacklevel=3,
+            )
+            continue
+        axis_key = _yaxis_key_for_variable(fig, variable, facet=facet)
+        if axis_key is None:
+            if variable not in _warned_unknown_y_range_keys:
+                _warned_unknown_y_range_keys.add(variable)
+                warnings.warn(
+                    f"y_ranges key {variable!r} did not match a summary facet "
+                    f"row; ignoring",
+                    stacklevel=3,
+                )
+            continue
+        fig.layout[axis_key].update(range=[lo, hi], autorange=False)
+
+
+def _cycles_plotter(
+    collected_curves,
+    cycles=None,
+    x=_CCOLS.capacity,
+    y=_CCOLS.potential,
+    z=_CCOLS.cycle_num,
+    g="cell",
+    standard_deviation=None,
+    default_title="Charge-Discharge Curves",
+    backend="plotly",
+    method="fig_pr_cell",
+    match_axes=True,
+    **kwargs,
+):
+    """Plot charge-discharge curves.
+
+    Args:
+        collected_curves(pd.DataFrame): collected data in long format.
+        backend (str): what backend to use.
+        match_axes (bool): if True, all subplots will have the same axes.
+            Prefer ``share_y`` (same meaning) when calling from public APIs;
+            if both are given, ``share_y`` wins.
+        method (str): 'fig_pr_cell' or 'fig_pr_cycle'.
+
+        **kwargs: consumed first in current function, rest sent to backend in sequence_plotter.
+            ``share_y`` is accepted as an alias of ``match_axes``.
+
+    Returns:
+        styled figure object
+    """
+    # --- pre-processing ---
+    logging.debug("picking kwargs for current level - rest goes to sequence_plotter")
+    share_y = kwargs.pop("share_y", None)
+    if share_y is not None:
+        match_axes = bool(share_y)
+    title = kwargs.pop("fig_title", default_title)
+    width = kwargs.pop("width", 900)
+    height = kwargs.pop("height", None)
+    palette = kwargs.pop("palette", None)
+    legend_position = kwargs.pop("legend_position", None)
+    legend_title = kwargs.pop("legend_title", None)
+    show_legend = kwargs.pop("show_legend", None)
+    cols = kwargs.pop("cols", 3)
+    height_per_panel = kwargs.pop("height_per_panel", None)
+    sub_fig_min_height_explicit = "sub_fig_min_height" in kwargs
+    sub_fig_min_height = kwargs.pop("sub_fig_min_height", 200)
+    if height_per_panel is not None:
+        sub_fig_min_height = height_per_panel
+    figure_border_height = kwargs.pop("figure_border_height", 100)
+    plotly_template = kwargs.pop("plotly_template", None)
+    layout_updates = kwargs.pop("layout_updates", None) or {}
+    if layout_updates and not isinstance(layout_updates, dict):
+        raise TypeError("layout_updates must be a dict of Plotly layout kwargs")
+    # kwargs from default `BatchCollector.render` method not used by `sequence_plotter`:
+    journal = kwargs.pop("journal", None)
+    units = kwargs.pop("units", None)
+
+    if palette is not None:
+        kwargs["palette_continuous"] = palette
+        kwargs["palette_discrete"] = palette
+
+    if legend_title is None:
+        if method == "fig_pr_cell":
+            legend_title = "Cycle"
+        else:
+            legend_title = "Cell"
+
+    no_cols = cols
+
+    if method in ["fig_pr_cell", "film"]:
+        number_of_figs = len(collected_curves["cell"].unique())
+
+    elif method == "fig_pr_cycle":
+        if cycles is not None:
+            number_of_figs = len(cycles)
+        else:
+            # ``z`` is the cycle column: ``cycle_num`` for capacity curves,
+            # ``cycle`` for the specced ICA frame (#679).
+            number_of_figs = len(collected_curves[z].unique())
+    elif method == "summary":
+        number_of_figs = len(collected_curves["variable"].unique())
+        # Default 300 px/panel unless the caller set height_per_panel or
+        # sub_fig_min_height explicitly (#801).
+        if height_per_panel is None and not sub_fig_min_height_explicit:
+            sub_fig_min_height = 300
+    else:
+        number_of_figs = 1
+
+    no_rows = math.ceil(number_of_figs / no_cols)
+
+    if not height:
+        height = figure_border_height + no_rows * sub_fig_min_height
+
+    fig = sequence_plotter(
+        collected_curves,
+        x=x,
+        y=y,
+        z=z,
+        g=g,
+        standard_deviation=standard_deviation,
+        backend=backend,
+        method=method,
+        cols=cols,
+        cycles=cycles,
+        width=width,
+        height=height,
+        **kwargs,
+    )
+    if fig is None:
+        print("Could not create figure!")
+        return
+
+    # Rendering:
+    if backend == "plotly":
+        template = (
+            plotly_template
+            if plotly_template is not None
+            else f"{PLOTLY_BASE_TEMPLATE}+{method}"
+        )
+
+        legend_orientation = "v"
+        if legend_position == "bottom":
+            legend_orientation = "h"
+
+        legend_dict = {
+            "title": legend_title,
+            "orientation": legend_orientation,
+        }
+        title_dict = {
+            "text": title,
+        }
+
+        fig.update_layout(
+            template=template,
+            title=title_dict,
+            legend=legend_dict,
+            showlegend=show_legend,
+            height=height,
+            width=width,
+        )
+        if layout_updates:
+            fig.update_layout(**layout_updates)
+        # Affirmative link when sharing: px.line facets usually already set
+        # matches, but spread_plot (make_subplots) never does (#817 / #804).
+        if match_axes:
+            fig.update_yaxes(matches="y")
+        else:
+            fig.update_yaxes(matches=None)
+            fig.update_xaxes(matches=None)
+
+    return fig
+
+
+def summary_plotter(collected_curves, cycles_to_plot=None, backend="plotly", **kwargs):
+    """Plot summaries (value vs cycle number).
+
+    Assuming data as pandas.DataFrame with either
+    1) long format (where variables, for example charge capacity, are in the column "variable") or
+    2) mixed long and wide format where the variables are own columns.
+
+    Axis sharing / limits (Plotly):
+
+    - ``share_y`` (preferred) or ``match_axes``: when True, facet rows share one
+      y-scale; when False (the default for summary), each row auto-scales.
+      If both are given, ``share_y`` wins.
+    - ``y_ranges``: mapping of ``variable`` name → ``[lo, hi]`` for per-panel
+      fixed limits. Omitted variables keep autorange. A non-empty ``y_ranges``
+      forces independent axes. Supported for ``backend="plotly"`` only.
+
+    App-facing chrome (Plotly, #801):
+
+    - ``plotly_template``: override the default ``plotly+summary`` template.
+    - ``layout_updates``: dict passed to ``fig.update_layout`` after collector styling.
+    - ``y_label_mapper``: ``variable → label``; when omitted, pretty labels
+      with units are built automatically (facet ``variable=…`` strip cleared).
+    - ``height`` / ``height_per_panel`` (alias of ``sub_fig_min_height``) /
+      ``figure_border_height``: absolute or per-panel height control.
+
+    Facets and legend (#923):
+
+    - ``order_variables``: list of ``variable`` names giving the facet order.
+      Variables outside the list (derived series such as the CV split or a
+      normalized retention curve) keep their own order after the listed ones.
+      `plot` fills this in from the collected
+      ``columns=``.
+    - A grouped frame (``mean``/``std``) is coloured by ``group_label`` when the
+      collection carries one (``custom_group_labels=``), else by ``group``, and
+      its legend title defaults to ``"Group"`` instead of ``"Cell"``.
+      ``legend_title=`` still overrides.
+
+    Charge / discharge panels (#1009):
+
+    - ``combine_directions`` (default ``True``): variables that differ only by
+      a ``charge`` / ``discharge`` token (``charge_capacity_gravimetric`` and
+      ``discharge_capacity_gravimetric``, ``potential_end_charge`` /
+      ``potential_end_discharge``, ...) share one panel keyed by the name with
+      that token removed (``capacity_gravimetric``). When a panel draws both
+      directions, charge is solid and discharge dashed, with one legend entry
+      per cell / group and a second legend ("Direction") for the dash styles.
+      A panel that has only one direction stays solid and does not add that
+      legend (#1096). ``order_variables`` and ``y_ranges`` may use either the
+      original variable names or the panel key. ``combine_directions=False``
+      restores one facet per variable.
+    """
+
+    # start_cell is used to determine the starting cell for the subplots (plotly)
+    start_cell = kwargs.pop("start_cell", "bottom-left")
+    share_y = kwargs.pop("share_y", None)
+    match_axes = kwargs.pop("match_axes", None)
+    y_ranges = kwargs.pop("y_ranges", None) or {}
+    if not isinstance(y_ranges, dict):
+        raise TypeError("y_ranges must be a dict mapping variable name -> [lo, hi]")
+    share_y_resolved = _resolve_share_y(
+        share_y=share_y, match_axes=match_axes, default=False
+    )
+    if y_ranges:
+        if share_y_resolved:
+            logging.info(
+                "summary_plotter: y_ranges is set; forcing independent y-axes "
+                "(share_y=False)"
+            )
+        share_y_resolved = False
+        if backend != "plotly":
+            warnings.warn(
+                "y_ranges is only applied for backend='plotly'; "
+                f"ignoring for backend={backend!r}",
+                stacklevel=2,
+            )
+            y_ranges = {}
+
+    col_headers = collected_curves.columns.to_list()
+
+    # need to manually update this if new columns are added to collected_curves that should not be plotted:
+    not_available_for_plotting = [hdr_journal.label, hdr_journal.group_label, hdr_journal.selected]
+
+    possible_id_vars = [
+        "cell",
+        "cycle",
+        "equivalent_cycle",
+        "value",
+        "mean",
+        "std",
+        hdr_journal.group,
+        hdr_journal.sub_group,
+    ]
+    id_vars = []
+    for n in possible_id_vars:
+        if n in col_headers:
+            col_headers.remove(n)
+            id_vars.append(n)
+    for n in not_available_for_plotting:
+        if n in col_headers:
+            col_headers.remove(n)
+
+    if "variable" not in col_headers:
+        collected_curves = collected_curves.melt(
+            id_vars=id_vars, value_vars=col_headers
+        )
+
+    normalize_cycles = True if "equivalent_cycle" in id_vars else False
+    # A group-averaged frame is tidy long with ``mean``/``std`` and is keyed by
+    # ``group`` (no ``cell`` column) -- detect it by the ``mean`` column, NOT by
+    # the presence of ``group`` (a non-averaged wide frame also carries ``group``
+    # as a key, #785).
+    group_it = "mean" in id_vars
+
+    cols = kwargs.pop("cols", 1)
+
+    z = "cell"
+    g = "variable"
+
+    if normalize_cycles:
+        x = "equivalent_cycle"
+        x_label = "Equivalent Cycle"
+        x_unit = "cum/nom.cap."
+    else:
+        x = "cycle"
+        x_label = "Cycle"
+        x_unit = "n."
+
+    if group_it:
+        group_cells = False
+        y = "mean"
+        standard_deviation = "std"
+        # the series is the group, not the (absent) per-cell column
+        if hdr_journal.group in id_vars:
+            z = hdr_journal.group
+        # Journal / custom group labels beat the bare group id in the legend
+        # (#923). Groups without a label keep the id so nothing goes missing.
+        label_column = hdr_journal.group_label
+        if label_column in collected_curves.columns:
+            labels = collected_curves[label_column]
+            if labels.notna().any():
+                fallback = (
+                    collected_curves[z].astype(str)
+                    if z in collected_curves.columns
+                    else ""
+                )
+                collected_curves = collected_curves.assign(
+                    **{label_column: labels.where(labels.notna(), fallback)}
+                )
+                z = label_column
+        # A grouped summary has groups in the legend, not cells (#923).
+        kwargs.setdefault("legend_title", "Group")
+
+    else:
+        y = "value"
+        standard_deviation = None
+        group_cells = kwargs.pop("group_cells", True)
+
+    units = kwargs.pop("units", None)
+    explicit_y_label_mapper = kwargs.pop("y_label_mapper", None)
+    # order the variables by a given order:
+    order_variables = kwargs.pop("order_variables", None)
+
+    # Charge and discharge of one quantity share a panel; the direction is the
+    # dash style (#1009). Keys that name the original variables (order,
+    # y_ranges, explicit labels) are translated to the panel key.
+    combine_directions = kwargs.pop("combine_directions", True)
+    directions: list[str] = []
+    styled: list[str] = []
+    if combine_directions:
+        collected_curves, directions, panel_of = _combine_direction_panels(
+            collected_curves, g
+        )
+    if directions:
+        if order_variables:
+            order_variables = list(
+                dict.fromkeys(panel_of.get(v, v) for v in order_variables)
+            )
+        y_ranges = {panel_of.get(k, k): v for k, v in y_ranges.items()}
+        if explicit_y_label_mapper:
+            explicit_y_label_mapper = {
+                panel_of.get(k, k): v for k, v in explicit_y_label_mapper.items()
+            }
+        # Dash and the Direction legend only when a panel draws both (#1096).
+        styled = _styled_directions(collected_curves, g)
+        if styled:
+            mixed = _panels_with_both_directions(collected_curves, g)
+            lone = ~collected_curves[g].isin(mixed)
+            if bool(lone.any()):
+                collected_curves = collected_curves.copy()
+                collected_curves.loc[lone, "direction"] = ""
+            if backend == "plotly" and not kwargs.get("spread"):
+                kwargs.setdefault("line_dash", "direction")
+                kwargs.setdefault("line_dash_map", dict(_DIRECTION_DASH))
+
+    if order_variables:
+        # Variables that are not in the requested order (derived series such as
+        # the CV split or a normalized retention curve) keep their own order
+        # after the requested ones -- listing them as categories would drop
+        # their rows to NaN and lose a facet (#923).
+        present = list(pd.unique(collected_curves[g]))
+        categories = [v for v in order_variables if v in present]
+        categories += [v for v in present if v not in categories]
+        collected_curves = collected_curves.copy()
+        collected_curves[g] = collected_curves[g].astype(
+            pd.CategoricalDtype(categories=categories, ordered=True)
+        )
+        sort_by = [g, z] + (["direction"] if directions else []) + [x]
+        collected_curves = collected_curves.sort_values(by=sort_by)
+
+    variables = list(collected_curves[g].unique())
+    if explicit_y_label_mapper is not None:
+        y_label_mapper = explicit_y_label_mapper
+    else:
+        # Default pretty labels so apps are not stuck with ``variable=…`` (#801).
+        y_label_mapper = _default_summary_y_label_mapper(variables, units=units)
+
+    # TODO: need to refactor and fix how the classes are created so that leftover kwargs are not sent to the backend
+    #  (for example if another collector is used and registers a kwarg without popping it)
+
+    _ = kwargs.pop("method", None)  # also set in BatchCyclesCollector
+    height_fractions = kwargs.pop("height_fractions", [])
+
+    fig = _cycles_plotter(
+        collected_curves,
+        x=x,
+        y=y,
+        z=z,
+        g=g,
+        standard_deviation=standard_deviation,
+        x_label=x_label,
+        x_unit=x_unit,
+        y_label_mapper=y_label_mapper,
+        group_cells=group_cells,
+        default_title="Summary Plot",
+        backend=backend,
+        method="summary",
+        cycles=cycles_to_plot,
+        cols=cols,
+        match_axes=share_y_resolved,
+        y_ranges=y_ranges,
+        **kwargs,
+    )
+
+    if backend == "plotly":
+        if fig is not None and styled:
+            if not kwargs.get("spread"):
+                _dedupe_direction_names(fig)
+            _add_direction_legend(fig, styled)
+
+        # TODO: implement having different heights of the subplots
+
+        if len(height_fractions) > 0:
+            # Determine number of rows in the original figure
+            print("THIS IS EXPERIMENTAL")
+            number_of_rows = len([key for key in fig.layout if key.startswith("yaxis")])
+            if number_of_rows == 0:
+                number_of_rows = 1  # Default to 1 if no y-axes found
+
+            # Only proceed if height_fractions matches the number of rows
+            if len(height_fractions) != number_of_rows:
+                print(
+                    f"Warning: height_fractions length ({len(height_fractions)}) does not match number of rows ({number_of_rows}). Ignoring height_fractions."
+                )
+            else:
+                # Update subplot heights using make_subplots parameters
+                from plotly.subplots import make_subplots
+
+                # Get current figure data and layout properties
+                current_data = fig.data
+                current_layout = fig.layout
+
+                # Create new figure with custom row heights
+                new_fig = make_subplots(
+                    rows=number_of_rows,
+                    cols=1,
+                    start_cell=start_cell,
+                    shared_xaxes=True,
+                    row_heights=height_fractions[::-1],
+                    vertical_spacing=0.02,
+                    subplot_titles=[ann.text for ann in current_layout.annotations]
+                    if current_layout.annotations
+                    else None,
+                )
+
+                new_height_fractions = {}
+                for key in new_fig.layout:
+                    if key.startswith("yaxis"):
+                        new_height_fractions[key] = new_fig.layout[key].domain
+
+                # Add traces from original figure
+                for trace in current_data:
+                    new_fig.add_trace(trace)
+
+                # Update layout properties from original figure (including theme)
+                new_fig.update_layout(current_layout)
+                for key in new_height_fractions:
+                    new_fig.layout[key].domain = new_height_fractions[key]
+
+                fig = new_fig
+                # Preserve x-axis linking and only show labels on bottom row with small gaps
+                fig.update_xaxes(matches="x")
+                fig.update_yaxes(matches=None, showticklabels=True)
+
+                # Only show x-axis labels on the bottom subplot (not needed anymore?)
+                # for i in range(1, len(height_fractions)):
+                #     fig.update_xaxes(showticklabels=False, row=i, col=1)
+
+        if y_ranges and fig is not None:
+            _apply_summary_y_ranges(fig, y_ranges, facet=g)
+        return fig
+    if backend == "seaborn":
+        print("using seaborn (experimental feature)")
+        return fig
+    if backend == "matplotlib":
+        print("using matplotlib (experimental feature)")
+        return fig
+    if backend == "bokeh":
+        print("using bokeh (experimental feature)")
+        return fig
+
+
+def cycles_plotter(
+    collected_curves,
+    cycles_to_plot=None,
+    backend="plotly",
+    method="fig_pr_cell",
+    x_unit="mAh/g",
+    y_unit="V",
+    **kwargs,
+):
+    """Plot charge-discharge curves.
+
+    Prefer `collected_plot` with ``layout="per_cell"`` / ``"per_cycle"``
+    over the legacy ``method="fig_pr_cell"`` / ``"fig_pr_cycle"`` knobs.
+
+    Args:
+        collected_curves(pd.DataFrame): collected data in long format.
+        cycles_to_plot (list): cycles to plot
+        backend (str): what backend to use.
+        method (str): 'fig_pr_cell' or 'fig_pr_cycle' (legacy; prefer ``layout=``
+            via `collected_plot`).
+        x_unit (str): unit for x-axis.
+        y_unit (str): unit for y-axis.
+
+        **kwargs: consumed first in current function, rest sent to backend in sequence_plotter.
+
+    Plotly facet strips are pretty-printed by default (#820): ``Cycle N`` /
+    cell label instead of ``cycle_num=…`` / ``cell=…``.
+
+    Returns:
+        styled figure object
+    """
+
+    if cycles_to_plot is not None:
+        unique_cycles = list(collected_curves[_CCOLS.cycle_num].unique())
+        if len(unique_cycles) > 50:
+            print(f"Too many cycles - setting it to default {DEFAULT_CYCLES}")
+            cycles_to_plot = DEFAULT_CYCLES
+
+    return _cycles_plotter(
+        collected_curves,
+        x=_CCOLS.capacity,
+        y=_CCOLS.potential,
+        z=_CCOLS.cycle_num,
+        g="cell",
+        x_unit=x_unit,
+        y_unit=y_unit,
+        default_title="Charge-Discharge Curves",
+        backend=backend,
+        method=method,
+        cycles=cycles_to_plot,
+        **kwargs,
+    )
+
+
+def ica_plotter(
+    collected_curves,
+    cycles_to_plot=None,
+    backend="plotly",
+    method="fig_pr_cell",
+    direction="charge",
+    **kwargs,
+):
+    """Plot collected ICA (dQ/dV) curves.
+
+    Args:
+        collected_curves(pd.DataFrame): collected data in long format.
+        cycles_to_plot (list): cycles to plot
+        backend (str): what backend to use.
+        method (str): 'fig_pr_cell' or 'fig_pr_cycle' or 'film'.
+        direction (str): ``"charge"``, ``"discharge"``, or ``"both"``
+            (overlay both half-cycles; Plotly uses ``line_dash`` so lobes
+            do not join — #821). Default ``"charge"``.
+
+        **kwargs: consumed first in current function, rest sent to backend in sequence_plotter.
+
+    Returns:
+        styled figure object
+    """
+
+    # collected_plot / Collection.plot may forward ``cycles=`` in kwargs.
+    if cycles_to_plot is None and "cycles" in kwargs:
+        cycles_to_plot = kwargs.pop("cycles")
+    else:
+        kwargs.pop("cycles", None)
+
+    if cycles_to_plot is None:
+        unique_cycles = list(collected_curves.cycle.unique())
+        max_cycle = max(unique_cycles)
+        if len(unique_cycles) > 50:
+            cycles_to_plot = DEFAULT_CYCLES
+            max_cycle = max(cycles_to_plot)
+    else:
+        max_cycle = max(cycles_to_plot)
+
+    direction = _normalize_direction(direction)
+    if direction not in ("charge", "discharge", "both"):
+        logger.warning(
+            "direction=%r not allowed; coercing to 'charge' "
+            "(allowed: 'charge', 'discharge', 'both')",
+            direction,
+        )
+        direction = "charge"
+    if method == "film":
+        kwargs["range_y"] = kwargs.pop("range_y", None) or (1, max_cycle)
+
+    return _cycles_plotter(
+        collected_curves,
+        x="voltage",
+        y="dqdv",
+        z="cycle",
+        g="cell",
+        x_label="Voltage",
+        x_unit="V",
+        y_label="dQ/dV",
+        y_unit="mAh/g/V.",
+        default_title=f"Incremental Analysis Plots",
+        direction=direction,
+        backend=backend,
+        method=method,
+        cycles=cycles_to_plot,
+        **kwargs,
+    )
+
+
+def dva_plotter(
+    collected_curves,
+    cycles_to_plot=None,
+    backend="plotly",
+    method="fig_pr_cell",
+    direction="charge",
+    **kwargs,
+):
+    """Plot collected DVA (dV/dQ) curves.
+
+    Mirrors `ica_plotter` (#863) -- same direction handling (including
+    ``"both"`` overlay with ``line_dash`` so the half-cycles do not join) --
+    but along the DVA axes (capacity vs dV/dQ) rather than ICA's (voltage vs
+    dQ/dV).
+
+    Args:
+        collected_curves(pd.DataFrame): collected data in long format.
+        cycles_to_plot (list): cycles to plot
+        backend (str): what backend to use.
+        method (str): 'fig_pr_cell' or 'fig_pr_cycle' or 'film'.
+        direction (str): ``"charge"``, ``"discharge"``, or ``"both"``.
+            Default ``"charge"``.
+
+        **kwargs: consumed first in current function, rest sent to backend in sequence_plotter.
+
+    Returns:
+        styled figure object
+    """
+
+    # collected_plot / Collection.plot may forward ``cycles=`` in kwargs.
+    if cycles_to_plot is None and "cycles" in kwargs:
+        cycles_to_plot = kwargs.pop("cycles")
+    else:
+        kwargs.pop("cycles", None)
+
+    if cycles_to_plot is None:
+        unique_cycles = list(collected_curves.cycle.unique())
+        max_cycle = max(unique_cycles)
+        if len(unique_cycles) > 50:
+            cycles_to_plot = DEFAULT_CYCLES
+            max_cycle = max(cycles_to_plot)
+    else:
+        max_cycle = max(cycles_to_plot)
+
+    direction = _normalize_direction(direction)
+    if direction not in ("charge", "discharge", "both"):
+        logger.warning(
+            "direction=%r not allowed; coercing to 'charge' "
+            "(allowed: 'charge', 'discharge', 'both')",
+            direction,
+        )
+        direction = "charge"
+    if method == "film":
+        kwargs["range_y"] = kwargs.pop("range_y", None) or (1, max_cycle)
+
+    return _cycles_plotter(
+        collected_curves,
+        x="capacity",
+        y="dvdq",
+        z="cycle",
+        g="cell",
+        x_label="Capacity",
+        x_unit="mAh/g",
+        y_label="dV/dQ",
+        y_unit="V/(mAh/g)",
+        default_title="Differential Voltage Analysis Plots",
+        direction=direction,
+        backend=backend,
+        method=method,
+        cycles=cycles_to_plot,
+        **kwargs,
+    )
+
+
+def histogram_equalization(image: np.array) -> np.array:
+    """Perform histogram equalization on a numpy array."""
+    # from http://www.janeriksolem.net/histogram-equalization-with-python-and.html
+    number_bins = 256
+    scale = 100
+    image[np.isnan(image)] = 0.0
+    image_histogram, bins = np.histogram(image.flatten(), number_bins, density=True)
+    cdf = image_histogram.cumsum()  # cumulative distribution function
+    cdf = (scale - 1) * cdf / cdf[-1]  # normalize
+    # use linear interpolation of cdf to find new pixel values
+    image_equalized = np.interp(image.flatten(), bins[:-1], cdf)
+
+    return image_equalized.reshape(image.shape)
+
+
+
+
+# ---------------------------------------------------------------------------
+# Public orchestrator (layout=/kind= → FigureSpec → backend)
+# ---------------------------------------------------------------------------
+
+_METHOD_TO_LAYOUT = {
+    "fig_pr_cell": "per_cell",
+    "fig_pr_cycle": "per_cycle",
+    "film": "per_cell",
+    "summary": "summary",
+}
+
+_LAYOUT_TO_METHOD = {
+    "per_cell": "fig_pr_cell",
+    "per_cycle": "fig_pr_cycle",
+    "summary": "summary",
+}
+
+_VALID_LAYOUTS = frozenset(_LAYOUT_TO_METHOD)
+_VALID_KINDS = frozenset({"line", "film", "spread"})
+_VALID_METHODS = frozenset(_METHOD_TO_LAYOUT)
+
+
+def resolve_collected_layout_kind(
+    *,
+    layout: Optional[str] = None,
+    kind: Optional[str] = None,
+    method: Optional[str] = None,
+    plot_type: Optional[str] = None,
+    spread: bool = False,
+) -> tuple[str, str, str]:
+    """Map legacy ``method``/``plot_type``/``spread`` to ``(layout, kind, method)``.
+
+    ``layout="film"`` is accepted as an alias for ``kind="film"`` (layout
+    becomes ``per_cell``). Unknown ``layout`` / ``kind`` / ``method`` values
+    raise ``ValueError`` instead of falling through to the line renderer.
+
+    Returns:
+        layout: ``per_cell`` | ``per_cycle`` | ``summary``
+        kind: ``line`` | ``film`` | ``spread``
+        method: legacy template/method string still understood by renderers
+
+    Raises:
+        ValueError: If ``layout``, ``kind``, or ``method``/``plot_type`` is
+            unrecognised, or if ``layout="film"`` conflicts with a non-film
+            ``kind``.
+    """
+    if method is None and plot_type is not None:
+        method = plot_type
+
+    # Common footgun: film is a kind, but it sits next to layouts in docs/maps.
+    if layout == "film":
+        if kind is not None and kind != "film":
+            raise ValueError(
+                f"layout='film' conflicts with kind={kind!r}; "
+                "use kind='film' alone, or layout='film' without kind="
+            )
+        kind = "film"
+        layout = "per_cell"
+
+    if method is not None and method not in _VALID_METHODS:
+        allowed = ", ".join(sorted(_VALID_METHODS))
+        raise ValueError(f"Unknown method={method!r}; expected one of: {allowed}")
+
+    if kind is not None and kind not in _VALID_KINDS:
+        allowed = ", ".join(sorted(_VALID_KINDS))
+        raise ValueError(f"Unknown kind={kind!r}; expected one of: {allowed}")
+
+    if layout is not None and layout not in _VALID_LAYOUTS:
+        allowed = ", ".join(sorted(_VALID_LAYOUTS))
+        raise ValueError(
+            f"Unknown layout={layout!r}; expected one of: {allowed} "
+            "(note: 'film' is a kind=, not a layout= — use kind='film' or layout='film')"
+        )
+
+    if kind is None:
+        if spread:
+            kind = "spread"
+        elif method == "film":
+            kind = "film"
+        else:
+            kind = "line"
+    if layout is None:
+        if method in _METHOD_TO_LAYOUT:
+            layout = _METHOD_TO_LAYOUT[method]
+        else:
+            layout = "per_cell"
+    if method is None:
+        if kind == "film":
+            method = "film"
+        else:
+            method = _LAYOUT_TO_METHOD[layout]
+    if kind == "spread":
+        # spread is a summary rendering mode
+        if layout not in ("summary", "per_cell"):
+            layout = "summary"
+        if method not in ("summary", "film", "fig_pr_cell", "fig_pr_cycle"):
+            method = "summary"
+    return layout, kind, method
+
+
+def render_collected(frame: Any, spec: FigureSpec, *, backend_override: Optional[str] = None) -> Any:
+    """Dispatch a collected-frame ``FigureSpec`` to the legacy layout engines."""
+    extras = dict(spec.extras or {})
+    family_kind = extras.get("family_kind") or "cycles"
+    method = extras.get("method") or "fig_pr_cell"
+    collected_kind = extras.get("collected_kind") or "line"
+    opts = dict(extras.get("render_opts") or {})
+    backend = backend_override or extras.get("backend") or "plotly"
+
+    if collected_kind == "spread":
+        opts["spread"] = True
+    if collected_kind == "film":
+        method = "film"
+
+    # Do not let a resolved layout method override summary_plotter's forced
+    # method="summary" via **kwargs.
+    opts.pop("method", None)
+    opts.pop("plot_type", None)
+
+    if family_kind == "summary":
+        return summary_plotter(frame, backend=backend, **opts)
+    if family_kind == "ica":
+        return ica_plotter(frame, backend=backend, method=method, **opts)
+    if family_kind == "dva":
+        return dva_plotter(frame, backend=backend, method=method, **opts)
+    if family_kind == "cycles":
+        return cycles_plotter(frame, backend=backend, method=method, **opts)
+    return sequence_plotter(frame, backend=backend, method=method, **opts)
+
+
+def collected_plot(
+    frame: Any,
+    *,
+    family_kind: str = "cycles",
+    layout: Optional[str] = None,
+    kind: Optional[str] = None,
+    backend: str = "plotly",
+    method: Optional[str] = None,
+    plot_type: Optional[str] = None,
+    spread: bool = False,
+    **opts: Any,
+) -> Any:
+    """Plot an already-collected tidy multi-cell frame.
+
+    Args:
+        frame: long/tidy frame with ``cell`` / ``group`` / ``sub_group`` as needed.
+        family_kind: ``summary`` | ``cycles`` | ``ica`` | ``dva`` (selects column defaults).
+        layout: ``per_cell`` | ``per_cycle`` | ``summary``.
+        kind: ``line`` | ``film`` | ``spread``.
+        backend: ``plotly`` (primary) or ``seaborn`` / ``matplotlib`` (best-effort).
+        method / plot_type: legacy collector knobs (mapped to layout/kind).
+        spread: legacy flag → ``kind="spread"``.
+        **opts: forwarded to the collected renderers (cycles, labels, sizes, …).
+            For ``family_kind="summary"`` (Plotly): ``share_y`` / ``match_axes``
+            control shared vs independent facet y-scales (default independent);
+            ``y_ranges`` maps variable name → ``[lo, hi]`` for per-panel limits.
+            App chrome (#801): ``plotly_template``, ``layout_updates``,
+            ``y_label_mapper`` (pretty labels with units by default), ``height`` /
+            ``height_per_panel`` / ``figure_border_height``.
+            Cycles / ICA (#820): Plotly facet strips default to ``Cycle N`` /
+            cell label (prefer ``layout=`` over legacy ``method="fig_pr_*"``).
+            ``layout="per_cell"`` colours by cycle and follows the shared
+            legend-vs-colorbar policy (#928): more than ``legend_cycle_limit``
+            cycles (default 8) get a colorbar instead of a long legend;
+            ``force_colorbar`` / ``force_legend`` override.
+
+    Returns:
+        Backend-native figure object.
+    """
+    from cellpy._deprecation import warn_once
+    from cellpy.plotting.backends import get_backend
+
+    layout, kind, method = resolve_collected_layout_kind(
+        layout=layout,
+        kind=kind,
+        method=method,
+        plot_type=plot_type,
+        spread=spread or bool(opts.get("spread")),
+    )
+    opts = dict(opts)
+    opts.pop("spread", None)
+    if kind == "spread":
+        opts["spread"] = True
+
+    # Ensure collector templates exist before plotly render.
+    if backend == "plotly" and pio is not None:
+        pio.templates.default = PLOTLY_BASE_TEMPLATE
+    theme.make_collector_templates()
+
+    backend_key = (backend or "plotly").strip().lower()
+    if backend_key == "matplotlib":
+        # The collected layouts have no matplotlib engine of their own; the
+        # historical seaborn path is the best-effort stand-in (#925).
+        warn_once(
+            'collected_plot(backend="matplotlib")',
+            'backend="plotly"',
+            removal="2.3",
+            introduced="2.1",
+            stacklevel=2,
+        )
+        backend_key = "seaborn"
+
+    spec = FigureSpec(
+        title=opts.get("fig_title"),
+        extras={
+            "kind": "collected",
+            "family_kind": family_kind,
+            "layout": layout,
+            "collected_kind": kind,
+            "method": method,
+            "backend": backend_key,
+            "render_opts": opts,
+        },
+    )
+
+    if backend_key == "seaborn":
+        # Keep the historical seaborn branch without forcing get_backend("matplotlib")
+        # into the single-cell summary path.
+        return render_collected(frame, spec, backend_override="seaborn")
+
+    return get_backend(backend_key).render(frame, spec)
+
+

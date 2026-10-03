@@ -21,6 +21,9 @@ and deleting `batch_plotters.py`.
   both. If neither column is in the melted frame, warn and skip the panel
   (no debug-only skip). `ir=False` omits IR even when the columns exist.
   All-NaN values still keep the panel.
+  `cellpy.get(..., auto_summary=True)` defaults `find_ir=True` so a normal
+  load (and batch recalc) puts those columns in the summary; otherwise the
+  skip warning names `make_summary(find_ir=True)`.
 
 ## Links
 

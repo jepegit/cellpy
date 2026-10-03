@@ -1,4 +1,17 @@
-# Loading, saving and exporting data
+# Loading and saving data
+
+!!! abstract "In this tutorial"
+
+    You will learn how to:
+
+    - load one or several raw files into a cell object with `cellpy.get`
+    - look at the summary, step table and metadata
+    - save a `.cellpy` file, export to Excel/CSV, and load it again
+
+    **Data:** the four `20210210_FC_01_cc_0*.res` Arbin files in `examples/data/`.
+
+    [:material-github: Open the notebook on GitHub](https://github.com/jepegit/cellpy/blob/master/examples/01_loading_data.ipynb){ .md-button } — or get every notebook and its data with `cellpy pull --examples`.
+
 
 
 ```python
@@ -40,7 +53,7 @@ Use `cellpy.get()` to load the rawdatafile(s):
 c = cellpy.get(filepaths, mass=1.2, cycle_mode="full_cell")
 ```
 
-**Note:** Without any further specifications, ``cellpy.get()`` will use the standard instrument loader as defined in your config file (here the one for loading arbin .res files). For loading different data formats, have a look at [Loading different formats](06_loading_different_formats.ipynb) or [Custom loaders](07_custom_loaders.ipynb).
+**Note:** Without any further specifications, ``cellpy.get()`` will use the standard instrument loader as defined in your config file (here the one for loading arbin .res files). For loading different data formats, have a look at [Loading different formats](06_loading_different_formats.md) or [Custom loaders](07_custom_loaders.md).
 
 Now you have created your **CellpyCell** object and can start to explore it further. The ``cellpy.get()`` function conveniently created a so-called *step-table* and a *summary* for you (both are pandas dataframes):
 
@@ -534,11 +547,15 @@ c.cell_name = "20210210_FC"
 ```
 
 !!! note
-    If you change variables that are used in calculating summary values (such as for example `cycle_mode`, `mass`, `active_electrode_area`), you need to re-make the summary for it to be updated:
+    If you change variables that are used in calculating summary values
+    (`cycle_mode`, `mass`, `active_electrode_area`), refresh the scaled
+    columns. Prefer `c.refresh_after("mass")` (or `"area"` / `"cycle_mode"`)
+    when a summary already exists. `c.make_summary()` rebuilds the whole
+    table and is the fallback.
 
-    ```python
-    c.make_summary()
-    ```
+    Use `cycle_mode="full_cell"` (underscore). `"full-cell"` is not a
+    recognised spelling — cellpy falls back to the default half-cell
+    convention and logs a warning.
 
 
 To check the units that are used within cellpy:
@@ -574,11 +591,11 @@ Metadata can also be included by the use of a database file containing the requi
 
 ## Saving & exporting data
 
-You can easily save all of this in the cellpy .HDF5 format:
+You can easily save all of this in the native `.cellpy` format:
 
 
 ```python
-c.save(filedir / "out" / "20210210_FC")
+c.save(filedir / "out" / "20210210_FC.cellpy")
 ```
 
 or export to csv or excel
@@ -600,13 +617,15 @@ To load saved files, you can use the `cellpy.get()` function again:
 
 ```python
 candidates = [
+    filedir / "20210210_FC.cellpy",
+    filedir / "out" / "20210210_FC.cellpy",
     filedir / "20210210_FC.h5",
     filedir / "out" / "20210210_FC.h5",
 ]
 cellpy_path = next((p for p in candidates if p.exists()), None)
 if cellpy_path is None:
     raise FileNotFoundError(
-        "Could not find 20210210_FC.h5 in data/ or data/out/. "
+        "Could not find 20210210_FC.cellpy (or a legacy .h5) in data/ or data/out/. "
         "Run the save cell above, or place the file in examples/data/."
     )
 c = cellpy.get(cellpy_path)

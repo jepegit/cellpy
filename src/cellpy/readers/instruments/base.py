@@ -1,0 +1,1026 @@
+"""
+When you make a new loader you have to subclass the Loader class.
+Remember also to register it in cellpy.cellreader.
+
+(for future development, not used very efficiently yet).
+"""
+
+import abc
+import logging
+import pathlib
+import shutil
+import tempfile
+from abc import ABC
+from typing import List, Union
+
+import pandas as pd
+
+from cellpy.exceptions import LoaderError, WrongFileVersion
+import cellpy.internals.connections
+import cellpy.readers.data_structures as core
+from cellpy.parameters.internal_settings import headers_normal, merge_raw_units
+from cellpy.readers.instruments.configurations import (
+    ModelParameters,
+    register_configuration_from_module,
+)
+from cellpy.readers.instruments.processors import post_processors, pre_processors
+from cellpy.readers.instruments.processors.post_processors import (
+    ORDERED_POST_PROCESSING_STEPS,
+)
+
+MINIMUM_SELECTION = [
+    "Data_Point",
+    "Test_Time",
+    "Step_Time",
+    "DateTime",
+    "Step_Index",
+    "Cycle_Index",
+    "Current",
+    "Voltage",
+    "Charge_Capacity",
+    "Discharge_Capacity",
+    "Internal_Resistance",
+]
+
+
+# TODO: move this to another module (e.g. inside processors):
+def find_delimiter_and_start(
+    file_name,
+    separators=None,
+    checking_length_header=30,
+    checking_length_whole=200,
+    check_encoding=True,
+):
+    """Function to automatically detect the delimiter and what line the first data appears on.
+
+    This function is fairly stupid. It reads a window of up to
+    ``checking_length_whole`` non-empty lines and treats up to
+    ``checking_length_header`` of the leading ones as a possible header. It
+    counts the appearances of the different possible delimiters in the data
+    rows past that header and selects a delimiter if its per-row count is both
+    uniform and positive.
+
+    The header window is clamped to the actual number of lines read, so a short
+    file - down to a header line and a single data row - is inspected correctly
+    rather than running off the end of the sample.
+
+    The first line is defined as where the delimiter is used same number of times (probably a header line).
+
+    Args:
+        file_name: path to the file.
+        separators: list of possible delimiters.
+        checking_length_header: number of lines to check for header.
+        checking_length_whole: number of lines to check for delimiter.
+        check_encoding: check encoding.
+
+    Returns:
+        separator: the delimiter.
+        first_index: the index of the first line with data.
+        encoding: the encoding (None if not found or checked).
+
+    Raises:
+        LoaderError: if the file has no inspectable content, no candidate
+            delimiter fits the data rows, or the header row cannot be located.
+    """
+
+    if separators is None:
+        separators = [";", "\t", "|", ","]
+    logging.debug(f"checking internals of the file {file_name}")
+
+    encoding = None
+
+    if check_encoding:
+        import charset_normalizer
+
+        results = charset_normalizer.from_path(
+            file_name,
+            steps=10,  # Number of steps/block to extract from my_byte_str
+            chunk_size=512,  # Set block size of each extraction
+        )
+        if results:
+            r = results.best()
+            encoding = r.encoding
+
+    with open(file_name, "r") as fin:
+        lines = []
+        for j in range(checking_length_whole):
+            line = fin.readline()
+            if not line:
+                break
+            if len(line.strip()):
+                lines.append(line)
+
+    if not lines:
+        raise LoaderError(
+            f"could not detect a delimiter in {file_name}: "
+            "the file has no non-empty lines to inspect"
+        )
+
+    separator, number_of_hits = _find_separator(
+        lines, separators, checking_length_header
+    )
+
+    if separator is None:
+        candidates = ", ".join(repr(s) for s in separators)
+        raise LoaderError(
+            f"could not detect a delimiter in {file_name}: none of the "
+            f"candidate delimiters ({candidates}) appears a consistent, "
+            "positive number of times across the data rows"
+        )
+
+    if separator == "\t":
+        logging.debug("seperator = TAB")
+    elif separator == " ":
+        logging.debug("seperator = SPACE")
+    else:
+        logging.debug(f"seperator = {separator}")
+
+    first_index = _find_first_line_whit_delimiter(
+        checking_length_header, lines, number_of_hits, separator
+    )
+    if first_index is None:
+        raise LoaderError(
+            f"detected delimiter {separator!r} in {file_name} but could not "
+            f"locate the header row within the first {checking_length_header} "
+            "lines"
+        )
+    logging.debug(f"First line with delimiter: {first_index}")
+    return separator, first_index, encoding
+
+
+def _find_first_line_whit_delimiter(
+    checking_length_header, lines, number_of_hits, separator
+):
+    """Return the index of the first line that carries the data-row delimiter count.
+
+    Only the first ``checking_length_header`` lines are searched (the header is
+    assumed to live there). Returns ``None`` if no line matches, so the caller
+    can raise a delimiter error that names the file.
+    """
+    first_part = lines[:checking_length_header]
+    for line_number, line in enumerate(first_part):
+        if line.count(separator) == number_of_hits:
+            return line_number
+    return None
+
+
+def _find_separator(lines, separators, checking_length_header):
+    """Pick the delimiter from the data rows that follow a possible header.
+
+    The header may be up to ``checking_length_header`` lines, but a short file
+    cannot hold that many header lines - so the header window is clamped to the
+    number of lines actually read, always leaving at least one data row to
+    inspect. The delimiter is the highest-priority candidate whose per-row
+    count is both uniform and positive across those data rows.
+
+    Returns ``(None, None)`` when no candidate qualifies.
+    """
+    logging.debug("searching for separators")
+    n = len(lines)
+
+    # reserve up to checking_length_header leading lines as a possible header,
+    # but never so many that no data row is left to inspect.
+    header_window = min(checking_length_header, n - 1) if n > 1 else 0
+    data_lines = lines[header_window:]
+
+    # the final line can be truncated mid-write, so drop it - but only when a
+    # data row can still be spared (a header + single data row must keep it).
+    if len(data_lines) > 1:
+        data_lines = data_lines[:-1]
+
+    for candidate in separators:
+        counts = {line.count(candidate) for line in data_lines}
+        if len(counts) == 1:
+            number_of_hits = counts.pop()
+            if number_of_hits > 0:
+                return candidate, number_of_hits
+
+    return None, None
+
+
+def query_csv(
+    self,
+    name,
+    sep=None,
+    skiprows=None,
+    header=None,
+    encoding=None,
+    decimal=None,
+    thousands=None,
+):
+    """function to query a csv file using pandas.read_csv.
+
+
+    Args:
+        name: path to the file.
+        sep: delimiter.
+        skiprows: number of lines to skip.
+        header: number of the header lines.
+        encoding: encoding.
+        decimal: character used for decimal in the raw data, defaults to '.'.
+        thousands: character used for thousands in the raw data, defaults to ','.
+
+    Returns:
+        pandas.DataFrame
+
+    """
+    logging.debug(f"parsing with pandas.read_csv: {name}")
+    sep = sep or self.sep
+    skiprows = skiprows or self.skiprows
+    header = header or self.header
+    encoding = encoding or self.encoding
+    decimal = decimal or self.decimal
+    thousands = thousands or self.thousands
+    logging.critical(f"{sep=}, {skiprows=}, {header=}, {encoding=}, {decimal=}")
+    data_df = pd.read_csv(
+        name,
+        sep=sep,
+        skiprows=skiprows,
+        header=header,
+        encoding=encoding,
+        decimal=decimal,
+        thousands=thousands,
+    )
+    return data_df
+
+
+class AtomicLoad:
+    """Atomic loading class"""
+
+    instrument_name = "atomic_loader"
+
+    _name = None
+    _temp_file_path = None
+    _fid = None
+    _is_db: bool = False
+    _copy_also_local: bool = True
+    _refuse_copying: bool = False
+
+    @property
+    def is_db(self):
+        """Is the file stored in the database"""
+        return self._is_db
+
+    @is_db.setter
+    def is_db(self, value: bool):
+        """Is the file stored in the database"""
+        self._is_db = value
+
+    @property
+    def refuse_copying(self):
+        """Should the file be copied to a temporary file"""
+        return self._refuse_copying
+
+    @refuse_copying.setter
+    def refuse_copying(self, value: bool):
+        """Should the file be copied to a temporary file"""
+        self._refuse_copying = value
+
+    @property
+    def name(self):
+        """The name of the file to be loaded"""
+        return self._name
+
+    @name.setter
+    def name(self, value):
+        """The name of the file to be loaded"""
+        if not self.is_db and not isinstance(value, cellpy.internals.connections.OtherPath):
+            logging.debug("converting to OtherPath")
+            value = cellpy.internals.connections.OtherPath(value)
+        self._name = value
+
+    @property
+    def temp_file_path(self):  # -> Union[cellpy.internals.connections.OtherPath, pathlib.Path]
+        """The name of the file to be loaded if copied to a temporary file"""
+        return self._temp_file_path
+
+    @temp_file_path.setter
+    def temp_file_path(self, value):
+        """The name of the file to be loaded if copied to a temporary file"""
+        self._temp_file_path = value
+
+    @property
+    def fid(self):
+        """The unique file id"""
+        if self._fid is None:
+            self.generate_fid()
+        return self._fid
+
+    def generate_fid(self, value=None):
+        """Generate a unique file id"""
+        if self.is_db:
+            self._fid = core.FileID(self.name, is_db=True)
+        elif self._temp_file_path is not None:
+            self._fid = core.FileID(self.name)
+        elif self._name is not None:
+            self._fid = core.FileID(self.name)
+        elif value is not None:
+            self._fid = core.FileID(value)
+        else:
+            raise ValueError("could not generate fid")
+
+    def copy_to_temporary(self):
+        """Copy file to a temporary file"""
+
+        logging.debug(f"external file received? {self.name.is_external=}")
+        if self.name is None:
+            raise ValueError("no file name given to loader class (self.name is None)")
+
+        if self._refuse_copying:
+            logging.debug("refusing copying")
+            self._temp_file_path = self.name
+            return
+
+        if not self._copy_also_local and not self.name.is_external:
+            self._temp_file_path = self.name
+            return
+
+        from cellpy.internals.progress import emit
+
+        emit("copy")
+        self._temp_file_path = self.name.copy()
+
+    def loader_executor(self, *args, **kwargs):
+        """Load the file"""
+        name = args[0]
+        self.refuse_copying = kwargs.pop("refuse_copying", False)
+        self.name = name
+        if not self.is_db:
+            self.copy_to_temporary()
+        cellpy_data = self.loader(*args, **kwargs)
+        return cellpy_data
+
+    def loader(self, *args, **kwargs):
+        """The method that does the actual loading.
+
+        This method should be overwritten by the specific loader class.
+        """
+        ...
+
+
+class BaseLoader(AtomicLoad, metaclass=abc.ABCMeta):
+    """Main loading class"""
+
+    instrument_name = "base_loader"
+
+    # TODO: should also include the functions for getting cellpy headers etc
+    #  here
+
+    @staticmethod
+    @abc.abstractmethod
+    def get_raw_units() -> dict:
+        """Units used by the instrument.
+
+        The internal cellpy units are given in the ``cellpy_units`` attribute.
+
+        Returns:
+            dictionary of units (str)
+
+        Examples:
+            A minimum viable implementation could look like this:
+
+            ```python
+            @staticmethod
+            def get_raw_units():
+                raw_units = dict()
+                raw_units["current"] = "A"
+                raw_units["charge"] = "Ah"
+                raw_units["mass"] = "g"
+                raw_units["voltage"] = "V"
+                return raw_units
+            ```
+
+        """
+        # This is needed for example when converting the capacity to a specific capacity.
+        # So far, it has been difficult to get any kind of consensus on what the most optimal
+        # units are for storing cycling data. Therefore, cellpy implements three levels of units:
+        # 1) the raw units that the data is loaded in already has and 2) the cellpy units used by cellpy
+        # when generating summaries and related information, and 3) output units that can be set to get the data
+        # in a specif unit when exporting or creating specific outputs such as ICA.
+        #
+        # Comment 2022.09.11::
+        #
+        #     still not sure if we should use raw units or cellpy units in the cellpy-files (.h5/ .cellpy).
+        #     Currently, the summary is in cellpy units and the raw and step data is in raw units. If
+        #     you have any input on this topic, let us know.
+
+        pass
+
+    @abc.abstractmethod
+    def get_raw_limits(self) -> dict:
+        """Limits used to identify type of step.
+
+        The raw limits are 'epsilons' used to check if the current and/or voltage is stable (for example
+        for galvanostatic steps, one would expect that the current is stable (constant) and non-zero).
+        If the (accumulated) change is less than 'epsilon', then cellpy interpret it to be stable.
+        It is expected that different instruments (with different resolution etc.) have different
+        resolutions and noice levels, thus different 'epsilons'.
+
+        Returns:
+            the raw limits (dict)
+
+        """
+        pass
+
+    @classmethod
+    def get_params(cls, parameter: Union[str, None]) -> dict:
+        """Retrieves parameters needed for facilitating working with the
+        instrument without registering it.
+
+        Typically, it should include the name and raw_ext.
+
+        Return: parameters or a selected parameter
+        """
+
+        return getattr(cls, parameter)
+
+    @abc.abstractmethod
+    def loader(self, *args, **kwargs) -> list:
+        """Loads data into a Data object and returns it"""
+        # This method is used by cellreader through the AtomicLoad.loader_executor method.
+        # It should be overwritten by the specific loader class.
+        #
+        # Notice that it is highly recommended that you don't try to implement .loader_executor yourself
+        # in your subclass!
+        pass
+
+    @staticmethod
+    def identify_last_data_point(data: core.Data) -> core.Data:
+        """This method is used to find the last record in the data."""
+        return core.identify_last_data_point(data)
+
+
+class AutoLoader(BaseLoader):
+    """Main autoload class.
+
+    This class can be sub-classed if you want to make a data-reader for different type of "easily parsed" files
+    (for example csv-files). The subclass needs to have at least one
+    associated CONFIGURATION_MODULE defined and must have the following attributes as minimum::
+
+        default_model: str = NICK_NAME_OF_DEFAULT_CONFIGURATION_MODULE
+        supported_models: dict = SUPPORTED_MODELS
+
+    where SUPPORTED_MODELS is a dictionary with ``{"NICK_NAME" : "CONFIGURATION_MODULE_NAME"}``  key-value pairs.
+    Remark! the NICK_NAME must be in upper-case!
+
+    It is also possible to set these in a custom pre_init method::
+
+        @classmethod
+        def pre_init(cls):
+            cls.default_model: str = NICK_NAME_OF_DEFAULT_CONFIGURATION_MODULE
+            cls.supported_models: dict = SUPPORTED_MODELS
+
+    or turn off automatic registering of configuration::
+
+        @classmethod
+        def pre_init(cls):
+            cls.auto_register_config = False  # defaults to True
+
+    During initialisation of the class, if ``auto_register_config == True``,  it will dynamically load the definitions
+    provided in the CONFIGURATION_MODULE.py located in the ``cellpy.readers.instruments.configurations``
+    folder/package.
+
+    Attributes can be set during initialisation of the class as **kwargs that are then handled by the
+    ``parse_formatter_parameters`` method.
+
+    Remark that some also can be provided as arguments to the ``loader`` method and will then automatically
+    be "transparent" to the ``cellpy.get`` function. So if you would like to give the user access to modify
+    these arguments, you should implement them in the ``parse_loader_parameters`` method.
+
+    """
+
+    instrument_name = "auto_loader"
+
+    def __init__(self, *args, **kwargs):
+        self.auto_register_config = True
+        #: Whether `parse()` has run. Guards `declarations()`, whose answer is
+        #: only correct once the file's own units have been read (see there).
+        self._parsed = False
+        self.pre_init()
+
+        if not hasattr(self, "supported_models"):
+            raise AttributeError(
+                "missing attribute in sub-class of AutoLoader: supported_models"
+            )
+        if not hasattr(self, "default_model"):
+            raise AttributeError(
+                "missing attribute in sub-class of AutoLoader: default_model"
+            )
+
+        # in case model is given as argument
+        self.model = kwargs.pop("model", self.default_model)
+
+        if self.auto_register_config:
+            self.config_params = self.register_configuration()
+
+        self.parse_formatter_parameters(**kwargs)
+        self.override_config_params(**kwargs)
+
+        self.pre_processors = self.config_params.pre_processors
+        additional_pre_processor_args = kwargs.pop(
+            "pre_processors", None
+        )  # could replace None with an empty dict to get rid of the if-clause:
+        if additional_pre_processor_args:
+            for key in additional_pre_processor_args:
+                self.pre_processors[key] = additional_pre_processor_args[key]
+
+        self.post_processors = self.config_params.post_processors
+        additional_post_processor_args = kwargs.pop(
+            "post_processors", None
+        )  # could replace None with an empty dict to get rid of the if-clause:
+        if additional_post_processor_args:
+            for key in additional_post_processor_args:
+                self.post_processors[key] = additional_post_processor_args[key]
+
+        self.include_aux = kwargs.pop("include_aux", False)
+        self.keep_all_columns = kwargs.pop("keep_all_columns", False)
+        self.cellpy_headers_normal = (
+            headers_normal  # the column headers defined by cellpy
+        )
+
+    def __str__(self):
+        txt = f"{self.__class__.__name__}\n"
+        txt += f"  instrument_name: {self.instrument_name}\n"
+        txt += f"  model: {self.model}\n"
+        return txt
+
+    @abc.abstractmethod
+    def parse_formatter_parameters(self, **kwargs) -> None: ...
+
+    @abc.abstractmethod
+    def parse_loader_parameters(self, **kwargs): ...
+
+    @abc.abstractmethod
+    def query_file(self, file_path: Union[str, pathlib.Path]) -> pd.DataFrame: ...
+
+    def pre_init(self) -> None: ...
+
+    def register_configuration(self) -> ModelParameters:
+        """Register and load model configuration"""
+        if (
+            self.model is None
+        ):  # in case None was given as argument (model=None in initialisation)
+            self.model = self.default_model
+        model_module_name = self.supported_models.get(self.model.upper(), None)
+        if model_module_name is None:
+            raise Exception(
+                f"The model {self.model} does not have any defined configuration."
+                f"\nCurrent supported models are {[*self.supported_models.keys()]}"
+            )
+        return register_configuration_from_module(self.model, model_module_name)
+
+    def override_config_params(self, **kwargs) -> None:
+        """Override configuration parameters"""
+        pass
+
+    def get_raw_units(self):
+        return self.config_params.raw_units
+
+    def get_raw_limits(self):
+        return self.config_params.raw_limits
+
+    @staticmethod
+    def get_headers_aux(raw: pd.DataFrame) -> dict:
+        raise NotImplementedError(
+            "missing method in sub-class of TxtLoader: get_headers_aux"
+        )
+
+    def _pre_process(self):
+        for processor_name in self.pre_processors:
+            if self.pre_processors[processor_name]:
+                if hasattr(pre_processors, processor_name):
+                    logging.critical(f"running pre-processor: {processor_name}")
+                    processor = getattr(pre_processors, processor_name)
+                    self.temp_file_path = processor(self.temp_file_path)
+                else:
+                    raise NotImplementedError(
+                        f"{processor_name} is not currently supported - aborting!"
+                    )
+
+    def parse(self, source: Union[str, pathlib.Path], **kwargs) -> pd.DataFrame:
+        """Vendor stage: read the file into a frame with **vendor** column names.
+
+        The first half of the two-stage design: everything after this is
+        declared rather than coded, and handled by ``harmonize()``. This is the
+        same work ``loader()`` does before it starts building a ``Data`` — the
+        pre-processors, the formatter parameters, and ``query_file`` — exposed
+        on its own so the two stages can be driven, tested and compared
+        separately. It does not change how ``loader()`` behaves.
+
+        Args:
+            source: path to the vendor file.
+            **kwargs: loader knobs, as ``loader()`` takes them.
+
+        Returns:
+            The parsed vendor frame, before any renaming.
+        """
+        self.refuse_copying = kwargs.pop("refuse_copying", False)
+        self.name = source
+        if not self.is_db:
+            self.copy_to_temporary()
+        if self.pre_processors:
+            self._pre_process()
+        self.parse_loader_parameters(**kwargs)
+        frame = self.query_file(self.temp_file_path)
+        # Cache for loader() so a follow-up legacy shell build does not
+        # re-query the same file (#560 Phase C — avoid double vendor read).
+        self._parsed_frame = frame
+        self._parsed = True
+        return frame
+
+    def declarations(self):
+        """The `LoaderDeclarations` for the file most recently parsed.
+
+        **Call this after `parse`, not before** — and it raises if you do
+        not, which is the point. Declarations are *not* a static property of the
+        loader class for every instrument: neware writes its units into the
+        column names (``Current(A)``), and which units those are is read from
+        the file, so the configuration's defaults (``mA``) are corrected during
+        parsing. Reading declarations first would hand back vendor column names
+        no file contains, and those columns would be silently unmapped rather
+        than raising — the failure mode this whole arc keeps running into.
+
+        Deriving from ``config_params`` after the parse is what makes the
+        declarations per-file without any loader having to opt in.
+
+        Returns:
+            A validated ``LoaderDeclarations`` derived from this loader's
+            configuration.
+
+        Raises:
+            LoaderError: if called before ``parse()``, or if the configuration
+                does not carry a renaming dict to derive from.
+        """
+        from cellpy.exceptions import LoaderError
+        from cellpy.readers.instruments.config_declarations import (
+            declarations_from_configuration,
+        )
+
+        if not getattr(self, "_parsed", False):
+            raise LoaderError(
+                f"{type(self).__name__}.declarations() was called before "
+                f"parse(); for instruments whose column names carry units read "
+                f"from the file, the declarations are only correct once the "
+                f"file has been parsed."
+            )
+        return declarations_from_configuration(self.config_params)
+
+    def loader(self, name: Union[str, pathlib.Path], **kwargs: str) -> core.Data:
+        """returns a Data object with loaded data.
+
+        Loads data from a txt file (csv-ish).
+
+        Args:
+            name (str, pathlib.Path): name of the file.
+            kwargs (dict): key-word arguments from raw_loader.
+
+        Returns:
+            new_tests (list of data objects)
+
+        """
+        pre_processor_hook = kwargs.pop("pre_processor_hook", None)
+
+        cached = getattr(self, "_parsed_frame", None)
+        if cached is not None:
+            # parse() already ran query_file (+ pre-processors); reuse it.
+            data_df = cached
+            self._parsed_frame = None
+        else:
+            if self.pre_processors:
+                self._pre_process()
+
+            self.parse_loader_parameters(**kwargs)
+
+            data_df = self.query_file(self.temp_file_path)
+
+        if pre_processor_hook is not None:
+            logging.debug("running pre-processing-hook")
+            data_df = pre_processor_hook(data_df)
+
+        data = core.Data()
+
+        # metadata
+        meta = self.parse_meta()
+        data.loaded_from = name
+        data.channel_index = meta.get("channel_index", None)
+        data.test_ID = meta.get("test_ID", None)
+        data.test_name = meta.get("test_name", None)
+        data.creator = meta.get("creator", None)
+        data.schedule_file_name = meta.get("schedule_file_name", None)
+        # TODO: convert to datetime:
+        data.start_datetime = meta.get("start_datetime", None)
+
+        # Generating a FileID project:
+        self.generate_fid()
+        data.raw_data_files.append(self.fid)
+
+        data.raw = data_df
+        data.raw_data_files_length.append(len(data_df))
+        # stamp instrument units by value so a Data obtained directly from the
+        # loader carries correct raw_units (issue #508); CellpyCell.from_raw
+        # re-applies the same merge (idempotent).
+        data.raw_units = merge_raw_units(self.get_raw_units())
+        data.summary = (
+            pd.DataFrame()
+        )  # creating an empty frame - loading summary is not implemented
+        data = self._post_process(data)
+        data = self.identify_last_data_point(data)
+        if data.start_datetime is None:
+            # TODO: convert to datetime:
+            data.start_datetime = data.raw[headers_normal.datetime_txt].iat[0]
+
+        data = self.validate(data)
+        return data
+
+    def validate(self, data: core.Data) -> core.Data:
+        """Validation of the loaded data, should raise an appropriate exception if it fails."""
+
+        logging.debug("no validation of defined in this sub-class of TxtLoader")
+        return data
+
+    def parse_meta(self) -> dict:
+        """Method that parses the data for meta-data (e.g. start-time, channel number, ...)"""
+
+        logging.debug(
+            "no parsing method for meta-data defined in this sub-class of TxtLoader"
+        )
+        return dict()
+
+    def _post_rename_headers(self, data):
+        if self.include_aux:
+            new_aux_headers = self.get_headers_aux(data.raw)
+            data.raw.rename(index=str, columns=new_aux_headers, inplace=True)
+        return data
+
+    def _post_process(self, data):
+        # ordered post-processing steps:
+        for processor_name in ORDERED_POST_PROCESSING_STEPS:
+            if processor_name in self.post_processors:
+                try:
+                    data = self._perform_post_process_step(data, processor_name)
+                except Exception as e:
+                    logging.error(f"failed to run {processor_name}: {e}")
+                    raise WrongFileVersion(f"failed to run {processor_name}: {e}")
+
+        # non-ordered post-processing steps
+        for processor_name in self.post_processors:
+            if processor_name not in ORDERED_POST_PROCESSING_STEPS:
+                try:
+                    data = self._perform_post_process_step(data, processor_name)
+                except Exception as e:
+                    logging.error(f"failed to run {processor_name}: {e}")
+                    raise WrongFileVersion(f"failed to run {processor_name}: {e}")
+        return data
+
+    def _perform_post_process_step(self, data, processor_name):
+        if self.post_processors[processor_name]:
+            if hasattr(post_processors, processor_name):
+                logging.critical(f"running post-processor: {processor_name}")
+                processor = getattr(post_processors, processor_name)
+                data = processor(data, self.config_params)
+                if hasattr(self, f"_post_{processor_name}"):  # internal addon-function
+                    _processor = getattr(self, f"_post_{processor_name}")
+                    data = _processor(data)
+            else:
+                raise NotImplementedError(
+                    f"{processor_name} is not currently supported - aborting!"
+                )
+        return data
+
+
+class TxtLoader(AutoLoader, ABC):
+    """Main txt loading class (for sub-classing).
+
+    The subclass of a ``TxtLoader`` gets its information by loading model specifications from its respective module
+    (``cellpy.readers.instruments.configurations.<module>``) or configuration file (yaml).
+
+    Remark that if you implement automatic loading of the formatter, the module / yaml-file must include all
+    the required formatter parameters (sep, skiprows, header, encoding, decimal, thousands).
+
+    If you need more flexibility, try using the ``CustomTxtLoader`` or subclass directly
+    from ``AutoLoader`` or ``Loader``.
+
+    Attributes:
+        model (str): short name of the (already implemented) sub-model.
+        sep (str): delimiter.
+        skiprows (int): number of lines to skip.
+        header (int): number of the header lines.
+        encoding (str): encoding.
+        decimal (str): character used for decimal in the raw data, defaults to '.'.
+        processors (dict): pre-processing steps to take (before loading with pandas).
+        post_processors (dict): post-processing steps to make after loading the data, but before
+        returning them to the caller.
+        include_aux (bool): also parse so-called auxiliary columns / data. Defaults to False.
+        keep_all_columns (bool): load all columns, also columns that are not 100% necessary for ``cellpy`` to work.
+
+    Remark that the configuration settings for the sub-model must include a list of column header names
+    that should be kept if keep_all_columns is False (default).
+
+    Args:
+        sep (str): the delimiter (also works as a switch to turn on/off automatic detection of delimiter and
+            start of data (skiprows)).
+
+    """
+
+    instrument_name = "txt_loader"
+    raw_ext = "*"
+
+    # override this if needed
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def __str__(self):
+        txt = f"{type(self)}\n"
+        txt += f"  instrument_name: {self.instrument_name}\n"
+        txt += f"  model: {self.model}\n"
+        return txt
+
+    def parse_formatter_parameters(self, **kwargs):
+        """Parse the formatter parameters."""
+
+        logging.debug(f"model: {self.model}")
+        if not self.config_params.formatters:
+            # Setting defaults if formatter is not loaded
+            logging.debug("No formatter given - using default values.")
+            self.sep = kwargs.pop("sep", None)
+            self.skiprows = kwargs.pop("skiprows", 0)
+            self.header = kwargs.pop("header", 0)
+            self.encoding = kwargs.pop("encoding", "utf-8")
+            self.decimal = kwargs.pop("decimal", ".")
+            self.thousands = kwargs.pop("thousands", None)
+
+        else:
+            # Remark! This will break if one of these parameters are missing
+            # (not a keyword argument and not within the configuration):
+            self.sep = kwargs.pop("sep", self.config_params.formatters["sep"])
+            self.skiprows = kwargs.pop(
+                "skiprows", self.config_params.formatters["skiprows"]
+            )
+            self.header = kwargs.pop("header", self.config_params.formatters["header"])
+            self.encoding = kwargs.pop(
+                "encoding", self.config_params.formatters["encoding"]
+            )
+            self.decimal = kwargs.pop(
+                "decimal", self.config_params.formatters["decimal"]
+            )
+            self.thousands = kwargs.pop(
+                "thousands", self.config_params.formatters["thousands"]
+            )
+        logging.debug(
+            f"Formatters: self.sep={self.sep} self.skiprows={self.skiprows} self.header={self.header} self.encoding={self.encoding}"
+        )
+        logging.debug(
+            f"Formatters (cont.): self.decimal={self.decimal} self.thousands={self.thousands}"
+        )
+
+    # override this if needed
+    def parse_loader_parameters(self, auto_formatter=None, **kwargs):
+        """Parse the loader parameters.
+
+        Args:
+            auto_formatter: if True, the formatter will be set to auto-formatting.
+            **kwargs: keyword arguments.
+        """
+        if auto_formatter:
+            self._auto_formatter()
+        else:
+            # backup option - do auto-formatting if sep is not given
+            sep = kwargs.get("sep", None)
+            if sep is not None:
+                self.sep = sep
+            if self.sep is None:
+                self._auto_formatter()
+
+        if raw_units := kwargs.get("raw_units", None):
+            logging.critical(f"overriding raw_units: {raw_units}")
+            self.config_params.raw_units.update(raw_units)
+
+        if unit_labels := kwargs.get("unit_labels", None):
+            logging.critical(f"overriding unit_labels: {unit_labels}")
+            self.config_params.unit_labels.update(unit_labels)
+
+        if raw_limits := kwargs.get("raw_limits", None):
+            logging.critical(f"overriding raw_limits: {raw_limits}")
+            self.config_params.raw_limits.update(raw_limits)
+
+        if encoding := kwargs.get("encoding", None):
+            logging.critical(f"overriding encoding: {encoding}")
+            self.encoding = encoding
+
+        if decimal := kwargs.get("decimal", None):
+            logging.critical(f"overriding decimal: {decimal}")
+            self.decimal = decimal
+
+        if thousands := kwargs.get("thousands", None):
+            logging.critical(f"overriding thousands: {thousands}")
+            self.thousands = thousands
+
+        if skiprows := kwargs.get("skiprows", None):
+            logging.critical(f"overriding skiprows: {skiprows}")
+            self.skiprows = skiprows
+
+        if header := kwargs.get("header", None):
+            logging.critical(f"overriding header: {header}")
+            self.header = header
+
+        if sep := kwargs.get("sep", None):
+            logging.critical(f"overriding sep: {sep}")
+            self.sep = sep
+
+    def _auto_formatter(self):
+        separator, first_index, encoding = find_delimiter_and_start(
+            self.name,
+            separators=None,
+            checking_length_header=100,
+            checking_length_whole=200,
+        )
+        self.encoding = encoding or "UTF-8"
+        self.sep = separator
+        self.skiprows = first_index - 1
+        self.header = 0
+
+        logging.critical(
+            f"auto-formatting: {self.sep=}, {self.skiprows=}, {self.header=}, {self.encoding=}, {self.decimal=}"
+        )
+
+    # override this if using other query functions
+    def query_file(self, name, skiprows=None):
+        """Read the file with ``pd.read_csv`` using the resolved formatter parameters.
+
+        Args:
+            name: path to read.
+            skiprows: override for ``self.skiprows`` (an int, or a callable on
+                the 0-based line index as ``pd.read_csv`` accepts). Used by the
+                incremental read to skip already-consumed data rows while
+                keeping the header line.
+        """
+        if skiprows is None:
+            skiprows = self.skiprows
+        logging.critical(f"parsing with pandas.read_csv: {name}")
+        logging.critical(
+            f"parameters: {self.sep=}, {skiprows=}, {self.header=}, {self.encoding=}, {self.decimal=}"
+        )
+        data_df = pd.read_csv(
+            name,
+            sep=self.sep,
+            skiprows=skiprows,
+            header=self.header,
+            encoding=self.encoding,
+            decimal=self.decimal,
+            thousands=self.thousands,
+        )
+        return data_df
+
+    def _load_since_rows(self, source, marker=None):
+        """Incremental read for text sources: data rows from ``marker.row_count`` on.
+
+        Shared implementation behind the ``load_since`` of the text loaders
+        that opt into `SupportsIncrementalLoad` (neware_txt, maccor_txt).
+        Formatter parameters are resolved exactly as ``parse()`` resolves
+        them, the header line is kept, and the rows are harmonized with this
+        loader's declarations so ``new_raw`` is the same frame a full
+        ``harmonize(parse())`` yields for those rows.
+
+        The returned marker's ``row_count`` is the file data-row index of the
+        first row of the last cycle read (see
+        ``cellpy.readers.instruments.incremental``), so the next call re-reads
+        that cycle whole. A marker at or past the end of the file gives an
+        empty ``new_raw`` and the marker back unchanged.
+        """
+        import polars as pl
+
+        from cellpy.readers.instruments.contract import IncrementalChunk, LoadMarker
+        from cellpy.readers.instruments.harmonize import harmonize
+        from cellpy.readers.instruments.incremental import last_cycle_start, vendor_column
+
+        start = 0 if marker is None or marker.row_count is None else int(marker.row_count)
+        if marker is None:
+            marker = LoadMarker()
+
+        self.name = source
+        if not self.is_db:
+            self.copy_to_temporary()
+        if self.pre_processors:
+            self._pre_process()
+        self.parse_loader_parameters()
+
+        leading = max(int(self.skiprows or 0), 0)
+        header_lines = (int(self.header) + 1) if isinstance(self.header, int) else 0
+        first_data_line = leading + header_lines
+
+        def skip(line_index: int) -> bool:
+            if line_index < leading:
+                return True
+            return first_data_line <= line_index < first_data_line + start
+
+        vendor = self.query_file(self.temp_file_path, skiprows=skip)
+        self._parsed_frame = None
+        self._parsed = True
+        if len(vendor) == 0:
+            return IncrementalChunk(new_raw=pl.DataFrame(), marker=marker)
+
+        vendor_pl = pl.from_pandas(vendor)
+        declarations = self.declarations()
+        new_raw = harmonize(vendor_pl, declarations, strict=False)
+        rewind = last_cycle_start(vendor_pl, vendor_column(declarations, "cycle_num"))
+        return IncrementalChunk(new_raw=new_raw, marker=LoadMarker(row_count=start + rewind))

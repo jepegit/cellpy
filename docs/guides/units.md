@@ -38,7 +38,7 @@ want to work in.
 | `c.cellpy_units` | the units cellpy converts to when it builds the summary | your configuration, or `units=` |
 
 ```python
-print(c.data.raw_units.charge)   # e.g. "Ah"  — what the Arbin file contained
+print(c.data.raw_units.charge)   # e.g. "Ah"  — what the tester file contained
 print(c.cellpy_units.charge)     # "mAh"      — what the summary is in
 ```
 
@@ -68,7 +68,7 @@ So a gravimetric capacity is `charge / specific_gravimetric` = **mAh/g**, and
 an areal capacity is `charge / specific_areal` = **mAh/cm²**, out of the box.
 
 The full list, including everything else that lives in the configuration file,
-is in the [configuration reference](../getting_started/configuration_reference.md#units).
+is in the [configuration reference](../reference/configuration.md#units).
 
 ### Changing units for one load
 
@@ -203,8 +203,8 @@ distinguished by a postfix:
 
 !!! warning "The bare column name is in the tester's units"
     Only the three postfixed columns get the raw → cellpy unit conversion; the
-    base column is left as the summary engine produced it. For an Arbin `.res`
-    file (Ah) with the default cellpy unit (mAh), `charge_capacity` and
+    base column is left as the summary engine produced it. For a tester that
+    records Ah (an Arbin `.res` file, say) with the default cellpy unit (mAh), `charge_capacity` and
     `charge_capacity_absolute` are a factor of 1000 apart:
 
     ```python
@@ -286,5 +286,5 @@ Before you trust a specific capacity, check that:
 - [Troubleshooting](../troubleshooting.md) — when the numbers still look wrong
 - [The data structure](../fundamentals/data_structure.md) — what else is in the
   frames
-- [Configuration reference](../getting_started/configuration_reference.md#units)
+- [Configuration reference](../reference/configuration.md#units)
   — every unit setting and its default

@@ -2,7 +2,7 @@
 
 The configuration stack and the column schemas.
 
-See [Configuration settings](../getting_started/configuration_reference.md) for
+See [Configuration settings](../reference/configuration.md) for
 the generated table of every setting and its default.
 
 ## Configuration

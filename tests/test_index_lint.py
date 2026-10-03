@@ -18,7 +18,7 @@ import pathlib
 import re
 import warnings
 
-CELLPY_SRC = pathlib.Path(__file__).resolve().parents[1] / "cellpy"
+CELLPY_SRC = pathlib.Path(__file__).resolve().parents[1] / "src" / "cellpy"
 
 # Sanctioned boundary locations (relative, forward-slash) — index use allowed.
 ALLOWED_PARTS = (

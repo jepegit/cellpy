@@ -70,14 +70,16 @@ When `.issueflows/04-designs-and-guides/multi-repo-workspaces.md` exists, read i
 2. **Resolve the session name.** Baked `fix_auto_name = false`: use an explicit invoke name when given; otherwise default to `iterative-small-fixes`. If the invoke text is free-form (not already a slug) and you would invent a better name, **ask once** whether to use your proposed slug or keep the default — then proceed to create confirm. Configurable via `fix_auto_name` under `[issueflow]` in `.issueflows/config.toml` (re-run `issue-flow update` after changing).
 3. **Create the GitHub issue (always, with confirmation).** Show the chosen title (e.g. `Iterative fixes: <name>`, or `Iterative small fixes`) and a body noting it is an interactive `/iflow-fix` session whose individual fixes are recorded in the status markdown and landed together via `/iflow-close`. Create it with `gh issue create` (add `--repo owner/repo` if ambiguous). Capture the returned number `N`. A fresh issue is created each time. Set the chat tab title to `Issue <N> <session name>`.
 4. **Create the worktree (with confirmation).** Slug from the resolved name (kebab-case; default `iterative-small-fixes`); branch name `<N>-<slug>`. Require a clean tree.
-**Worktree-first start (default, issue #255 / #303).** After the dirty-tree gate and slug confirm — unless the user passed `inplace` / `no worktree`, or ops chose stay-on-current/default:
+
+**Worktree-first start (default, issue #255 / #303 / #329).** After the dirty-tree gate and slug confirm — unless the user passed `inplace` / `no worktree`, or ops chose stay-on-current/default:
 
 1. Home stays on the **default** branch. `git fetch --prune`. Do **not** `git switch -c` on home.
 2. Run `issue-flow agent default-sync --json -C <home>`. If `action` is `even` or `ff_only`, `git pull --ff-only`. If home is ahead or diverged, **print** the classification and **still continue** — starting work must not wait for home to be ff-able.
 3. `issue-flow agent worktree-add <N> --slug <slug> -C <home> --json` — path is `../<repo>-<N>`. Starts from fetched `origin/<default>`, not local default HEAD. On error, **stop and ask**; never silently fall back to inplace.
 4. `issue-flow agent open-workspace <path> --json` (print-only). Tell the user the worktree path. Do **not** ask to open a window.
 5. Run `/iflow-capture` (and later plan/build/close) with `-C <worktree-path>`. Continue the session in that folder.
-6. Token `inplace` / `no worktree` keeps legacy `git switch -c <N>-<slug>` on home.
+6. Token `inplace` / `no worktree` keeps legacy `git switch -c <N>-<slug>` on home. Token `worktree` is a no-op when `worktree_first` is already on.
+
 
    On a non-default home branch → **ask** whether to FF/switch home to default first or use `inplace`.
 5. **Capture locally.** Delegate to the `/iflow-capture` flow (or the `iflow-capture` skill) for `<N>`: write `.issueflows/01-current-issues/issue<N>_original.md` and run its archive sweep. Do not duplicate that logic.

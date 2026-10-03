@@ -1,78 +1,117 @@
-<img src="_static/cellpy-icon-long.svg" height="300" alt="cellpy-icon">
+---
+hide:
+  - navigation
+---
 
+<img src="_static/cellpy-icon-long.svg" alt="cellpy logo" style="width: 320px; max-width: 70%; height: auto;">
 
-# - *a library for assisting in analysing batteries and cells*
+# cellpy { .cellpy-visually-hidden }
 
+*A library for analysing data from battery and cell cycling tests.*
 
 [![cellpy package](https://img.shields.io/pypi/v/cellpy.svg)](https://pypi.python.org/pypi/cellpy)
 [![Documentation Status](https://readthedocs.org/projects/cellpy/badge/?version=latest)](https://cellpy.readthedocs.io/en/latest/?badge=latest)
 [![Downloads](https://pepy.tech/badge/cellpy)](https://pepy.tech/project/cellpy)
+[![DOI](https://joss.theoj.org/papers/10.21105/joss.06236/status.svg)](https://doi.org/10.21105/joss.06236)
 
+**cellpy** reads data from battery cycling instruments and turns it into one
+consistent format. It also calculates the derived quantities for you
+(capacities, coulombic efficiencies, incremental capacity), so you don't have
+to write that bookkeeping yourself.
 
-**cellpy** reads data from battery cycling instruments, turns it into one
-consistent format, and gives you the derived quantities — capacities,
-coulombic efficiencies, incremental capacity — without you writing the
-bookkeeping.
+=== "Try it now"
 
+    ```python
+    import cellpy
+    from cellpy.utils import example_data
 
-```python
-import cellpy
+    c = example_data.raw_file()  # a small Arbin file, downloaded once
+    c.data.summary["charge_capacity_gravimetric"]  # mAh/g, one row per cycle
+    ```
 
-c = cellpy.get("my_cell.res", instrument="arbin_res", mass=0.85)
-c.data.summary[c.schema.summary.charge_capacity]
-```
+=== "With your own file"
 
-!!! note
-    cellpy 2 is still settling in. If something looks wrong, tell us —
-    [GitHub issues](https://github.com/jepegit/cellpy/issues) welcome.
+    ```python
+    import cellpy
+
+    c = cellpy.get("my_cell.res", instrument="arbin_res", mass=0.85)  # mass in mg
+    c.data.summary["charge_capacity_gravimetric"]  # mAh/g, one row per cycle
+    ```
 
 ## Where to start
 
-- **Never used it?** A guided first hour on data that ships with cellpy —
-  [Your first hour](getting_started/first_hour.md).
-- **Installing it?** Platform notes and optional extras —
-  [Getting started](getting_started/index.md).
-- **Have data to load?** Worked examples, from a single file to a whole batch —
-  [Tutorials](examples/index.md).
-- **Want to understand the shapes?** What a cell object holds and how the
-  frames relate — [Concepts](fundamentals/index.md).
-- **Looking for a signature?** Generated from the docstrings —
-  [API reference](api/index.md).
-- **Know what you want, not where it is?** One page, indexed by question —
-  [How do I…?](how_do_i.md).
-- **Something not working?** Symptom-by-symptom fixes —
-  [Troubleshooting](troubleshooting.md).
+<div class="grid cards" markdown>
 
-## Coming from cellpy 1.x
+-   :material-clock-fast:{ .lg .middle } **New to cellpy?**
 
-Version 2 changed the frames, the column names and the file format. Nothing you
-know is wasted, but some of it is spelled differently now — the
-[migration guide](getting_started/migration_v1_to_v2.md) covers what changed and
-what to do about it.
+    ---
 
-## Support your own instrument
+    Install it and take a guided tour on data that ships with cellpy: load,
+    plot and export a cell, then do the same with your own file.
 
-If cellpy does not read your instrument's files yet, you can add a loader from
-your own package without patching cellpy: see
-[writing an instrument loader plugin](other/writing_a_loader_plugin.md).
+    [:octicons-arrow-right-24: Your first hour](getting_started/first_hour.md)
 
-## History
+-   :material-file-upload:{ .lg .middle } **Have data to load?**
 
-This Python package was developed to help the researchers at IFE, Norway, in
-their cumbersome task of interpreting and handling data from cycling tests of
-batteries and cells. Building and maintaining it has taken a lot of work over
-many years — loaders, formats, edge cases, and all the bookkeeping that used to
-live in one-off scripts.
+    ---
 
-cellpy often sits *in the background* of an analysis pipeline: you load a file,
-get a summary, and move on to the science. That makes it easy for the library
-to disappear from the credits even when it did a large share of the grunt work.
-If cellpy saved you time in a paper, thesis, or report, please
-[cite it](other/citing.md) — a citation is how open-source tools like this stay
-visible and fundable.
+    Worked examples from a single file to a whole batch, and one page for each
+    of the other instruments.
 
+    [:octicons-arrow-right-24: Tutorials](examples/index.md)
 
-## License
+-   :material-help-circle:{ .lg .middle } **Know what you want to do?**
 
-cellpy is free software under the MIT License.
+    ---
 
+    One page of tasks phrased as questions ("how do I get areal capacity?"),
+    each with a short answer.
+
+    [:octicons-arrow-right-24: How do I…?](how_do_i.md)
+
+-   :material-alert-circle:{ .lg .middle } **Something not working?**
+
+    ---
+
+    A file won't load, or a number looks wrong: fixes listed by symptom and
+    error message.
+
+    [:octicons-arrow-right-24: Troubleshooting](troubleshooting.md)
+
+</div>
+
+You can also look up [what the frames and columns mean](fundamentals/index.md)
+or the [API reference](api/index.md), or
+[use cellpy from an AI agent](agents/index.md).
+
+## Supported instruments
+
+| Tester | `instrument=` |
+| --- | --- |
+| Arbin | `arbin_res` (`.res`), `arbin_sql`, `arbin_sql_7`, `arbin_sql_csv`, `arbin_sql_xlsx`, `arbin_sql_h5` |
+| Maccor | `maccor_txt` (several export `model`s) |
+| Neware | `neware_nda`, `neware_txt`, `neware_xlsx` |
+| PEC | `pec_csv` |
+| BioLogic | `biologics_mpr` |
+| Battery Data Format (BatMo) | `batmo_bdf` |
+| Anything else | `custom` (describe the layout in a YAML file) |
+
+`cellpy.print_instruments()` prints the list for your installed version. If
+your tester isn't on it, see [Other file formats](examples/06_loading_different_formats.md),
+[Writing a custom loader](examples/07_custom_loaders.md), or
+[write an instrument loader plugin](guides/writing_a_loader_plugin.md) from
+your own package.
+
+## Upgrading from cellpy 1.x
+
+Version 2 changed the frames, the column names and the file format. What you
+already know still applies, but some names are different now. The
+[migration guide](getting_started/migration_v1_to_v2.md) covers what changed
+and what to do about it. The [release history](other/project-history.md)
+lists every change.
+
+## Citing cellpy
+
+If cellpy saved you time in a paper, thesis or report, please
+[cite it](other/citing.md). Citations are how open-source tools like this stay
+visible and funded. More about the project is under [About](other/index.md).

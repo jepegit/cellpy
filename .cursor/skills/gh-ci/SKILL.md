@@ -2,9 +2,10 @@
 name: gh-ci
 description: >-
   Use GitHub CLI to snapshot or wait on CI for a pull request or workflow run.
-  Prefer gh pr checks / gh pr checks --watch; fall back to gh run list and
-  gh run watch when PR checks are empty or unavailable. Use when waiting for
-  CI, checking if checks are green, Actions are pending/failed, or the user
+  Prefer issue-flow agent pr-ready when the question is merge-ready; keep
+  gh pr checks / gh pr checks --watch as the raw cheatsheet. Fall back to
+  gh run list and gh run watch when PR checks are empty or unavailable. Use
+  when waiting for CI, merge-ready, Actions pending/failed, or the user
   mentions gh run watch / gh pr checks / "CI green".
 issue-flow-version: 0.4.2a4
 ---
@@ -14,9 +15,22 @@ issue-flow-version: 0.4.2a4
 Teach agents the concrete `gh` commands for **listing** and **watching** CI.
 Always pass `--repo <owner/repo>` (never rely on `gh`'s cwd default).
 
+## Merge-ready (preferred)
+
+When the question is “can this PR merge yet?” (draft / review / mergeability /
+required checks), prefer the classifier — it does **not** merge:
+
+```bash
+issue-flow agent pr-ready [N] [--watch]
+```
+
+Exit 0 only when `state` is `ready`. `--watch` polls until ready, blocked, or
+the **15-minute** budget elapses. Yolo still owns
+`gh pr merge` / `gh pr checks --watch`.
+
 ## Primary (PR-attached checks)
 
-Prefer these when a pull request number is known (usual `/iflow-close` path):
+Prefer these when you need the raw check list (usual `/iflow-close` snapshot):
 
 ```bash
 # One-shot snapshot — exit 0 means green (or all pass / skipping)

@@ -1,4 +1,16 @@
-# The `cellpy` templating system
+# Project templates
+
+!!! abstract "In this tutorial"
+
+    You will learn how to:
+
+    - start a new analysis project from a cookiecutter template
+    - run the notebooks the template gives you
+
+    **Data:** none — the template makes the project folder for you.
+
+    [:material-github: Open the notebook on GitHub](https://github.com/jepegit/cellpy/blob/master/examples/templates/tutorial_templates.ipynb){ .md-button } — or get every notebook and its data with `cellpy pull --examples`.
+
 
 Often the steps you have to go through when analysing your cells are a bit repetetive. To help facilitate a smoother workflow, `cellpy` provides a templating system using `cookiecutter` in the background.
 The publicly available templates are located in a repository on github (https://github.com/jepegit/cellpy_cookies).

@@ -83,6 +83,20 @@ fig = dva_plot(c, cycles=2, direction="charge")
 Both accept `backend="plotly"` (default) or `"matplotlib"`. Set
 `return_data=True` to also get the long frame.
 
+<div class="grid" markdown>
+
+<figure markdown>
+  ![ica_plot: dQ/dV against voltage for cycles 2 and 3, charge solid and discharge dotted](figures/ica_plot.png){ loading=lazy }
+  <figcaption><code>ica_plot(c, cycles=[2, 3])</code>: charge solid, discharge dotted.</figcaption>
+</figure>
+
+<figure markdown>
+  ![dva_plot: dV/dQ against capacity for the charge of cycle 2](figures/dva_plot.png){ loading=lazy }
+  <figcaption><code>dva_plot(c, cycles=2, direction="charge")</code></figcaption>
+</figure>
+
+</div>
+
 ## Many cells
 
 ```python

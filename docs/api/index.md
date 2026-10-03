@@ -15,8 +15,9 @@ you already know what you want and need the signature.
 
 | You want | Look in |
 | --- | --- |
-| Load a file, get capacities, save | [cellpy](cellpy.md) — `get`, `CellpyCell` |
-| The cell object and its frames | [Readers](readers.md) |
+| Load a file | [cellpy](cellpy.md) — `get`, `merge_cells` |
+| Get capacities and curves, save, export | [The cell object](cell.md) — `CellpyCell`, grouped by task |
+| The data containers and metadata behind a cell | [Readers](readers.md) |
 | Instrument loaders and the plugin contract | [Instruments](instruments.md) |
 | Run a set of cells as one job | [Batch](batch.md) |
 | Collect a batch into one tidy frame | [Collect](collect.md) — summaries, curves, ICA, DVA |

@@ -76,7 +76,7 @@ Session config lives in **`cellpy.config`** (pydantic models + layered TOML).
 do not hand-edit `.cellpy_prms_default.conf` as the source of defaults.
 
 1. Add the field (with type and default) on the right section model in
-   [`cellpy/config/models.py`](https://github.com/jepegit/cellpy/blob/master/cellpy/config/models.py).
+   [`src/cellpy/config/models.py`](https://github.com/jepegit/cellpy/blob/master/src/cellpy/config/models.py).
 2. Read it as `cellpy.config.<section>.<field>` (or via `get_config()`).
 3. Regenerate the user-facing reference:
 
@@ -92,7 +92,7 @@ During the v2 window, `cellpy setup` may still dual-write legacy YAML and
 `cellpy.toml`. When a user TOML is present, it wins over `.cellpy_prms_*.conf`.
 
 See also [Setup and configuration](../../getting_started/configuration.md),
-[Configuration reference](../../getting_started/configuration_reference.md),
+[Configuration reference](../../reference/configuration.md),
 and [Coming from cellpy 1.x](../../getting_started/migration_v1_to_v2.md).
 
 ## Installing pyodbc on Mac without conda

@@ -1,104 +1,131 @@
-# Issue #1023 — plan (iteration 11: glossary)
+# Issue #1023 — plan (iteration 13: usability review)
 
-## Goal
+Confirmed by the user on 2026-09-23 ("implement the fixes … do not stop and
+ask"). Source of truth for the individual items:
+[docs-usability-review.md](../04-designs-and-guides/docs-usability-review.md)
+(numbers below refer to its sections).
 
-Add a scientist-facing glossary that maps battery-science vocabulary onto the
-names cellpy actually uses, then wire it into navigation and the pages a
-reader is already on. One focused PR. Issue stays open for later iterations.
+Branch: `1023-docs-usability`. One PR, one commit per chunk.
 
-## Constraints
+## Chunks
 
-- Docs-only. No product-code, schema, or CLI changes.
-- Do not redo pages shipped in #1024–#1035 (`troubleshooting.md`,
-  `guides/units.md`, `guides/plotting.md`, `guides/batch_database.md`,
-  `reference/cli.md`, `guides/exporting.md`, `reference/summary_columns.md`,
-  `guides/step_table.md`, `getting_started/first_hour.md`, `how_do_i.md`
-  as a whole). New links *into* those pages are fine.
-- Out of this PR: tutorial-notebook render pass (`examples/*.ipynb` +
-  `dev/render_example_notebooks.py`); experienced-Python pass (typing,
-  extending, plugin surface). Those stay on the open issue.
-- Every identifier and unit string must be checked against source or
-  executed against bundled example data — no hoped-for names.
+1. **Quick fixes** — 1.1 landing H1, 3.1 `.ipynb` links (fixed in the render
+   script so re-renders keep them), 3.6 nav/H1 titles, 4.3 orphans, 5.2 API
+   table, §8 relative-link checker in `00-tools/` + `docs.yml`.
+2. **Tutorial framing** — render script injects a per-tutorial header (what you
+   learn, data, download link) and caps long dataframe tables; `##` headings
+   in 05/09 notebooks; tutorial index as a table; render instructions moved to
+   `dev_docs.md`. Notebooks are *not* re-executed (their data paths stay; the
+   header says where the data comes from).
+3. **Nav restructure** — "Use with AI agents" section, "Upgrading" subsection,
+   tutorial core path vs other instruments, pages moved to match the nav
+   (`guides/`, `reference/`) with Zensical `redirects` so old URLs keep
+   working.
+4. **Landing + getting started** — grid cards, instrument table, runnable hero,
+   history → About, basic usage as cheat sheet, shared install snippet.
+5. **Theme** — `navigation.tabs`/`sections`, `search.suggest`/`share`
+   (check visually with `zensical serve`; revert if worse).
+6. **Pictures** — generated figures for the plotting guide
+   (`dev/render_guide_figures.py`), Mermaid pipeline diagram in Concepts.
+7. **API** — `CellpyCell` on its own page grouped by task; missing docstrings
+   on the 8 properties; short examples on the most-used methods; maintainer
+   note on `api/cellpy.md` hidden. Keep `show_source` (#1015 decision).
+8. **Development** — merge contributing landing; `issue-workflow.md` kept but
+   de-emphasised.
+
+## Not doing
+
+- Version banner (7.1) — RTD addons already provide a flyout; needs an admin
+  check, not a repo change.
+- Page feedback widget (7.4) — not verified in Zensical.
+- Running notebooks in CI (§8 P2) — separate issue.
+
+## Verification
+
+- `uv run --group docs zensical build --clean` clean ("No issues found").
+- New relative-link checker + `check_rtd_latest_links.py` pass.
+- `uv run pytest tests/test_config_secrets.py` (config reference path move).
+- Visual pass with `zensical serve` after each chunk.
+
+---
+
+## Previous iteration (12) plan, kept for reference
+
+## Issue #1023 — plan (iteration 12: tutorial-notebook pass)
+
+### Goal
+
+Role-play a battery scientist walking the numbered tutorials on RTD latest,
+fix whatever is missing, wrong, or unfindable in the **source notebooks**,
+re-render the committed docs pages, and leave the issue open.
+
+### Constraints
+
+- Docs + example notebooks only. No product-code, schema, or CLI changes.
+- Do not redo pages shipped in #1024–#1035 or the iteration-11 glossary.
+  New links *into* those pages are fine.
+- Out of this PR: experienced-Python pass (typing, extending, plugin surface).
+- `docs/examples/*.md` are generated. Edit `examples/*.ipynb`, then
+  `uv run --group docs python dev/render_example_notebooks.py`.
+  The renderer does **not** execute notebooks; it converts committed outputs.
+- Every identifier checked against source or executed (`uv run`) against
+  bundled example data — no hoped-for names.
 - Writing: task-first, scientist with limited Python. No unexplained idioms.
 - Docs live on `master` ([docs-on-master.md](../04-designs-and-guides/docs-on-master.md)).
 - Docs build must stay link-clean.
 
-### Prior art
+#### Prior art
 
-- Toolbox (`00-tools/`): nothing docs-related.
-- Graph: `graphify-out/` not present in this worktree — skipped.
-- Existing term coverage (link, do not duplicate):
-  - [docs/guides/units.md](../../docs/guides/units.md) — mass / area / nom_cap / gravimetric–areal–absolute.
-  - [docs/reference/summary_columns.md](../../docs/reference/summary_columns.md) — per-column summary meanings.
-  - [docs/guides/step_table.md](../../docs/guides/step_table.md) — step types and `c_rate`.
-  - [docs/fundamentals/data_structure.md](../../docs/fundamentals/data_structure.md) — `CellpyCell` / `Data` / frames / `c.schema`.
-  - [docs/how_do_i.md](../../docs/how_do_i.md) — already has “know what a summary column means?”.
-  - [docs/other/header_migration_map.md](../../docs/other/header_migration_map.md) — 1.x → 2.x header strings, not battery vocab.
-- Convention: one new markdown page + `zensical.toml` nav entry + cross-links
-  from the pages the persona is already on (same pattern as #1024–#1035).
+- Toolbox: `check_rtd_latest_links.py` — use if we add hard RTD `latest` URLs.
+  No notebook helper in `00-tools/`.
+- Graph: `graphify-out/` not in this worktree — skipped.
+- Renderer: [dev/render_example_notebooks.py](../../dev/render_example_notebooks.py)
+  (issue #571 / #869). Plotly HTML stripped; static PNG kept.
+- Existing 2.1 note on [docs/examples/index.md](../../docs/examples/index.md):
+  numbered tutorials + batch already claim `c.schema` / 2.1 names.
+- Cookiecutter notebooks under `examples/cellpy project template/` are
+  **out of scope** (separate tree, still `cellpy import prms` in places).
 
-## Approach
+### Approach
 
-Persona / trigger: battery scientist who knows “coulombic efficiency”,
-“C-rate”, “areal capacity”, “IR”, “OCV”, “step”, “SOC” and is staring at
-`c.data.summary` / `c.schema` names.
+Persona / trigger: scientist who finished [first_hour.md](../../docs/getting_started/first_hour.md)
+and [how_do_i.md](../../docs/how_do_i.md), then opened **Loading data** /
+**First look** / **Capacity vs voltage** / **ICA**.
 
-New page `docs/fundamentals/glossary.md` under Concepts (vocabulary, not API
-reference). Each entry is: **lab term → cellpy name(s) → one-line meaning →
-link** to the page that already explains it.
+Walk those four numbered tutorials (01–04) plus the examples index. For each:
 
-Seed list (trim or add only after checking source / `c.schema` /
-`example_data.raw_file()`):
+1. Try to follow using only published docs + the tutorial page.
+2. Fix stale 1.x APIs, wrong parameter names, or missing “what do I type next?”
+   in the `.ipynb` (then re-render).
+3. Add one `how_do_i.md` question if the path from a real task to that tutorial
+   is missing.
 
-| Lab term | Likely cellpy landing |
-|---|---|
-| cycle | `cycle_num` (`c.schema`) |
-| step | `step` / `step_type` / step table |
-| charge / discharge / rest | `step_type` values the classifier actually emits |
-| OCV | `get_ocv`, rest-after-charge/discharge |
-| coulombic efficiency | `coulombic_efficiency` (+ inversion note → troubleshooting) |
-| C-rate | `c_rate` / `nominal_capacity` |
-| gravimetric / areal / specific / absolute | suffix family + `guides/units.md` |
-| IR / internal resistance | `ir_charge` / `ir_discharge` |
-| mass / loading / area | `mass=`, `area=` on `get` |
-| raw / steps / summary | the three frames |
-| ICA / DVA | `cellpy.ica` (`dqdv` / `dvdq`) |
-| batch / journal | `batch.load` / journal JSON |
-| CellpyCell / Data / schema | objects, not lab terms — short block at top |
-| SOC / DOD | only if cellpy has a real name; otherwise “not a column — compute from capacity” |
+Do **not** expand into 06–09 / custom loaders / GITT / batch unless a broken
+cross-link forces a one-line fix. Those stay for a later iteration.
 
-No invented columns. If a lab term has no cellpy object, say so in one
-sentence rather than stretching a nearby name.
+### Files to touch
 
-Wire-in:
-
-- `zensical.toml` Concepts nav, after data structure.
-- `docs/fundamentals/index.md` bullet.
-- `docs/how_do_i.md` one question (“…look up what cellpy calls X?”).
-- One-line “see also” on `data_structure.md` and `guides/units.md`.
-
-## Files to touch
-
-- `docs/fundamentals/glossary.md` — new page.
-- `zensical.toml` — Concepts nav entry.
-- `docs/fundamentals/index.md` — link.
-- `docs/how_do_i.md` — one index question + link.
-- `docs/fundamentals/data_structure.md` — see-also.
-- `docs/guides/units.md` — see-also.
+- `examples/01_loading_data.ipynb` … `examples/04_incremental_capacity_analysis.ipynb`
+  — source edits.
+- `docs/examples/01_loading_data.md` … `04_*.md` — re-rendered only.
+- `docs/examples/index.md` — only if the walk finds a discoverability hole
+  (hand-written; not generated).
+- `docs/how_do_i.md` — at most a few index questions.
 - `HISTORY.md` — Unreleased docs bullet (close step).
 
-## Test strategy
+### Test strategy
 
-- Execute any snippet on the new page against `example_data.raw_file()`
-  (`uv run`).
+- Execute any new snippet against `example_data.raw_file()` (`uv run`).
+- `uv run --group docs python dev/render_example_notebooks.py`
 - `uv run --group docs zensical build` — no broken links / missing anchors.
-- `uv run pytest -m essential` — docs-only change; expect existing suite green.
+- `uv run pytest -m essential` — docs-only; expect existing suite green.
   No new pytest.
 
-## Open questions
+### Open questions
 
-1. **This iteration = glossary?** Recommended yes. Alternative remaining
-   passes (notebooks, experienced-Python) wait for later PRs on the same
-   open issue.
-2. **Placement:** Concepts (`fundamentals/glossary.md`) vs Reference.
-   Recommended Concepts.
+1. **This iteration = tutorial notebooks 01–04?** Recommended yes.
+   Alternative: experienced-Python pass, or widen to all `examples/*.ipynb`.
+2. **Re-run notebooks** to refresh outputs, or only edit markdown cells /
+   comments and re-render existing outputs? Recommended: edit text + API
+   calls as needed; re-execute a notebook only when a snippet is actually
+   wrong (kaleido/`batch` extra if plotly PNGs must be backfilled).

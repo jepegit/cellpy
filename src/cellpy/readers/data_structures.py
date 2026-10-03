@@ -1,0 +1,1995 @@
+"""This module contains several of the most important classes used in cellpy.
+
+It also contains functions that are used by readers and utils.
+And it has the file version definitions.
+"""
+
+import abc
+import datetime
+import importlib
+import importlib.util
+import inspect
+import logging
+import os
+import pathlib
+import pickle
+import sys
+import time
+import warnings
+from typing import Any, Tuple, Dict, List, Union, Optional
+from typing import TypedDict
+
+from . import externals as externals
+from . import test_meta as test_meta_helpers
+
+from cellpycore.metadata.models import TestMeta, TestMetaCollection
+
+from cellpy.exceptions import NullData
+from cellpy.internals.connections import OtherPath
+from cellpy.parameters.internal_settings import (
+    get_headers_normal,
+    get_default_raw_units,
+    get_default_raw_limits,
+    CellpyMetaCommon,
+    CellpyMetaIndividualTest,
+)
+
+
+logger = logging.getLogger(__name__)
+
+# Process-level: max_segments fallback can fire once per cycle in collectors.
+_max_segments_warned = False
+
+LOADERS_NOT_READY_FOR_PROD = [
+    "ext_nda_reader"
+]  # used by the instruments_configurations helper function (move?)
+
+from cellpycore.units import Q  # single process-wide pint registry (#450)
+
+
+# https://stackoverflow.com/questions/60067953/
+# 'is-it-possible-to-specify-the-pickle-protocol-when-writing-pandas-to-hdf5
+class PickleProtocol:
+    """Context for using a specific pickle protocol."""
+
+    def __init__(self, level):
+        self.previous = pickle.HIGHEST_PROTOCOL
+        self.level = level
+
+    def __enter__(self):
+        importlib.reload(pickle)
+        pickle.HIGHEST_PROTOCOL = self.level
+
+    def __exit__(self, *exc):
+        importlib.reload(pickle)
+        pickle.HIGHEST_PROTOCOL = self.previous
+
+
+def pickle_protocol(level):
+    return PickleProtocol(level)
+
+
+class PagesDictBase(TypedDict, total=False):
+    """Base structure for pages_dict with known journal columns."""
+
+    filename: List[Union[str, None]]
+    id_key: List[Union[int, float, str, None]]
+    argument: List[Union[str, None]]
+    mass: List[Union[float, None]]
+    total_mass: List[Union[float, None]]
+    nom_cap_specifics: List[Union[str, None]]
+    file_name_indicator: List[Union[str, None]]
+    loading: List[Union[float, None]]
+    nom_cap: List[Union[float, None]]
+    area: List[Union[float, None]]
+    experiment: List[Union[str, None]]
+    fixed: List[Union[Any, None]]
+    label: List[Union[str, None]]
+    cell_type: List[Union[str, None]]
+    instrument: List[Union[str, None]]
+    comment: List[Union[str, None]]
+    group: List[Union[str, None]]
+    raw_file_names: List[Union[str, None]]
+    cellpy_file_name: List[Union[str, None]]
+
+
+class BaseDbReader(metaclass=abc.ABCMeta):
+    """Base class for database readers."""
+
+    @abc.abstractmethod
+    def from_batch(
+        self,
+        batch_name: str | None = None,
+        include_key: bool = False,
+        include_individual_arguments: bool = False,
+        **kwargs: Any,
+    ) -> dict:
+        """Get a dictionary with the data from a batch for the journal.
+
+        Args:
+            batch: name of the batch.
+            include_key: include the key (the cell ids).
+            include_individual_arguments: include the individual arguments.
+
+        Returns:
+            dict: dictionary with the data.
+        """
+        pass
+
+
+class BaseSimpleDbReader(metaclass=abc.ABCMeta):
+    """Base class for database readers."""
+
+    @abc.abstractmethod
+    def select_batch(self, batch: str) -> List[int]:
+        pass
+
+    @abc.abstractmethod
+    def get_mass(self, pk: int) -> float:
+        pass
+
+    @abc.abstractmethod
+    def get_area(self, pk: int) -> float:
+        pass
+
+    @abc.abstractmethod
+    def get_loading(self, pk: int) -> float:
+        pass
+
+    @abc.abstractmethod
+    def get_nom_cap(self, pk: int) -> float:
+        pass
+
+    @abc.abstractmethod
+    def get_total_mass(self, pk: int) -> float:
+        pass
+
+    @abc.abstractmethod
+    def get_cell_name(self, pk: int) -> str:
+        pass
+
+    @abc.abstractmethod
+    def get_cell_type(self, pk: int) -> str:
+        pass
+
+    @abc.abstractmethod
+    def get_label(self, pk: int) -> str:
+        pass
+
+    @abc.abstractmethod
+    def get_comment(self, pk: int) -> str:
+        pass
+
+    @abc.abstractmethod
+    def get_group(self, pk: int) -> str:
+        pass
+
+    @abc.abstractmethod
+    def get_args(self, pk: int) -> dict:
+        pass
+
+    @abc.abstractmethod
+    def get_experiment_type(self, pk: int) -> str:
+        pass
+
+    @abc.abstractmethod
+    def get_instrument(self, pk: int) -> str:
+        pass
+
+    @abc.abstractmethod
+    def inspect_hd5f_fixed(self, pk: int) -> int:
+        pass
+
+    @abc.abstractmethod
+    def get_by_column_label(self, pk: int, name: str) -> Any:
+        pass
+
+    @abc.abstractmethod
+    def from_batch(
+        self,
+        batch_name: str,
+        include_key: bool = False,
+        include_individual_arguments: bool = False,
+    ) -> dict:
+        pass
+
+
+class FileID:
+    """class for storing information about the raw-data files.
+
+    This class is used for storing and handling raw-data file information.
+    It is important to keep track of when the data was extracted from the
+    raw-data files so that it is easy to know if the hdf5-files used for
+    @storing "treated" data is up-to-date.
+
+    Attributes:
+        name (str): Filename of the raw-data file.
+        full_name (str): Filename including path of the raw-data file.
+        size (float): Size of the raw-data file.
+        last_modified (datetime): Last time of modification of the raw-data
+            file.
+        last_accessed (datetime): last time of access of the raw-data file.
+        last_info_changed (datetime): st_ctime of the raw-data file.
+        location (str): Location of the raw-data file.
+
+    """
+
+    def __init__(self, filename: Union[str, OtherPath] = None, is_db: bool = False):
+        """Initialize the FileID class."""
+
+        self.is_db: bool = is_db
+        self._last_data_point: Optional[int] = None
+        self.name: Optional[str] = None
+        self.full_name: Optional[str] = None
+        self.size: Optional[int] = None
+        self.last_modified: Optional[int] = None
+        self.last_accessed: Optional[int] = None
+        self.last_info_changed: Optional[int] = None
+        self.location: Optional[int] = None
+
+        if self.is_db:
+            self._from_db(filename)
+            return
+
+        make_defaults = True
+        if filename is not None:
+            if not isinstance(filename, OtherPath):
+                logging.debug("filename is not an OtherPath object")
+                filename = OtherPath(filename)
+
+            if filename.is_file():
+                self.populate(filename)
+                make_defaults = False
+
+        if make_defaults:
+            self.name = None
+            self.full_name = None
+            self.size = 0
+            self.last_modified = None
+            self.last_accessed = None
+            self.last_info_changed = None
+            self.location = None
+            self._last_data_point = 0  # to be used later when updating is implemented
+
+    def __str__(self):
+        """Return a string representation of the FileID object."""
+        try:
+            if self.is_db:
+                txt = "\n<fileID><is_db>\n"
+            else:
+                txt = "\n<fileID><is_file>\n"
+        except AttributeError:
+            txt = "\n<fileID><is_file>\n"
+
+        txt += f"full name: {self.full_name}\n"
+        txt += f"name: {self.name}\n"
+        txt += f"location: {self.location}\n"
+
+        if self.last_modified is not None:
+            txt += f"modified: {self.last_modified}\n"
+        else:
+            txt += "modified: NAN\n"
+
+        if self.size is not None:
+            txt += f"size: {self.size}\n"
+        else:
+            txt += "size: NAN\n"
+
+        txt += f"last data point: {self.last_data_point}\n"
+
+        return txt
+
+    def _from_db(self, filename):
+        self.name = filename
+        self.full_name = filename
+        self.size = 0
+        self.last_modified = None
+        self.last_accessed = None
+        self.last_info_changed = None
+        self.location = None
+        self._last_data_point = 0
+
+    @property
+    def last_data_point(self):
+        """Get the last data point."""
+        # TODO: consider including a method here to find the last data point (raw data)
+        # ideally, this value should be set when loading the raw data before
+        # merging files (if it consists of several files)
+        return self._last_data_point
+
+    @last_data_point.setter
+    def last_data_point(self, value):
+        self._last_data_point = value
+
+    def populate(self, filename: Union[str, OtherPath]):
+        """Finds the file-stats and populates the class with stat values.
+
+        Args:
+            filename (str, OtherPath): name of the file.
+        """
+        if not isinstance(filename, OtherPath):
+            logging.debug("filename is not an OtherPath object")
+            filename = OtherPath(filename)
+
+        if filename.is_file():
+            fid_st = filename.stat()
+            self.name = filename.name
+            self.full_name = filename.full_path
+            self.size = fid_st.st_size
+            self.last_modified = fid_st.st_mtime
+            self.last_accessed = fid_st.st_atime
+            self.last_info_changed = fid_st.st_ctime
+            self.location = str(filename.parent)
+
+    def get_raw(self):
+        """Get a list with information about the file.
+
+        The returned list contains name, size, last_modified and location.
+        """
+        return [self.name, self.size, self.last_modified, self.location]
+
+    def get_name(self):
+        """Get the filename."""
+        return self.name
+
+    def get_size(self):
+        """Get the size of the file."""
+        return self.size
+
+    def get_last(self):
+        """Get last modification time of the file."""
+        return self.last_modified
+
+
+class Data:
+    """Object to store data for a cell-test.
+
+    This class is used for storing all the relevant data for a cell-test, i.e. all
+    the data collected by the tester as stored in the raw-files, and user-provided
+    metadata about the cell-test.
+
+    Attributes:
+        raw_data_files (list): list of FileID objects.
+        raw (pandas.DataFrame): raw data.
+        summary (pandas.DataFrame): summary data.
+        steps (pandas.DataFrame): step data.
+        meta_common (CellpyMetaCommon): common meta-data (authoritative for the
+            active test; see ``tests``).
+        meta_test_dependent (CellpyMetaIndividualTest): test-dependent meta-data
+            (authoritative for the active test; see ``tests``).
+        tests (TestMetaCollection): per-test metadata keyed by ``test_id``. The
+            active test's record is *derived on access* from the legacy meta
+            boxes above (mutating it does not persist — use ``set_test_meta`` /
+            ``set_cycle_mode`` or the legacy attributes); records for other
+            ``test_id`` values are stored and survive in memory, but are not
+            written to cellpy files in format v8 (full persistence).
+        active_test_id (int): compact grouping key of the active test (0 for a
+            single, unmerged test; matches the engine's ``test_id`` column).
+        custom_info (Any): custom meta-data.
+        raw_units (dict): dictionary with units for the raw data.
+        raw_limits (dict): dictionary with limits for the raw data.
+        loaded_from (str): name of the file where the data was loaded from.
+    """
+
+    def __repr__(self):
+        return self.__str__()
+
+    def __str__(self):
+        """Return a string representation of the Data object."""
+        txt = f"Data-object (id: {hex(id(self))})\n"
+
+        # Add general attributes
+        txt += "\nAttributes:\n"
+        for p in dir(self):
+            if not p.startswith("_"):
+                if p not in [
+                    "raw",
+                    "summary",
+                    "steps",
+                    "logger",
+                    "raw_data_files",
+                    "custom_info",
+                    "populate_defaults",
+                ]:
+                    value = self.__getattribute__(p)
+                    # a bound method's repr embeds repr(self) -> infinite
+                    # recursion; skip callables
+                    if callable(value):
+                        continue
+                    txt += f"{p}: {value}\n"
+            if p == "raw_data_files":
+                fid_txt = "raw data files: ["
+                fid_names = ", ".join([f.name for f in self.raw_data_files])
+                fid_txt += f"{fid_names}]\n"
+                txt += fid_txt
+
+        # Add raw dataframe info
+        txt += "\nRaw Data:\n"
+        try:
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                txt += str(self.raw.describe()) + "\n"
+                txt += str(self.raw.head()) + "\n"
+        except (AttributeError, ValueError):
+            txt += "not found!\n"
+
+        # Add summary dataframe info
+        txt += "\nSummary Data:\n"
+        try:
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                txt += str(self.summary.describe()) + "\n"
+                txt += str(self.summary.head()) + "\n"
+        except (AttributeError, ValueError):
+            txt += "not found!\n"
+
+        # Add steps dataframe info
+        txt += "\nSteps Data:\n"
+        try:
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                txt += str(self.steps.describe()) + "\n"
+                txt += str(self.steps.head()) + "\n"
+        except (AttributeError, ValueError):
+            txt += "not found!\n"
+
+        # Add custom info
+        txt += "\nCustom Info:\n"
+        try:
+            txt += str(self.custom_info) + "\n"
+        except AttributeError:
+            txt += "not found!\n"
+
+        return txt
+
+    def _repr_html_(self):
+        txt = f"<h2>Data-object</h2> <b>id</b>: {hex(id(self))}"
+
+        txt += "<p>"
+        for p in dir(self):
+            if not p.startswith("_"):
+                if p not in [
+                    "raw",
+                    "summary",
+                    "steps",
+                    "logger",
+                    "raw_data_files",
+                    "custom_info",
+                    "populate_defaults",
+                ]:
+                    value = self.__getattribute__(p)
+                    # a bound method's repr embeds repr(self) -> infinite
+                    # recursion; skip callables
+                    if callable(value):
+                        continue
+                    txt += f"<b>{p}</b>: {value}<br>"
+            if p == "raw_data_files":
+                fid_txt = "<b>raw data files</b>:"
+                fid_names = ", ".join([f.name for f in self.raw_data_files])
+                fid_txt += f" [{fid_names}]<br>"
+                txt += fid_txt
+        txt += "</p>"
+
+        try:
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                raw_txt = f"<p><b>raw data-frame (summary)</b><br>{self.raw.describe()._repr_html_()}</p>"  # noqa
+                raw_txt += f"<p><b>raw data-frame (head)</b><br>{self.raw.head()._repr_html_()}</p>"  # noqa
+        except AttributeError:
+            raw_txt = "<p><b>raw data-frame </b><br> not found!</p>"
+        except ValueError:
+            raw_txt = "<p><b>raw data-frame </b><br> does not contain any columns!</p>"
+
+        try:
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                summary_txt = f"<p><b>summary data-frame (summary)</b><br>{self.summary.describe()._repr_html_()}</p>"  # noqa
+                summary_txt += f"<p><b>summary data-frame (head)</b><br>{self.summary.head()._repr_html_()}</p>"  # noqa
+        except AttributeError:
+            summary_txt = "<p><b>summary data-frame </b><br> not found!</p>"
+        except ValueError:
+            summary_txt = (
+                "<p><b>summary data-frame </b><br> does not contain any columns!</p>"
+            )
+
+        try:
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                steps_txt = f"<p><b>steps data-frame (summary)</b><br>{self.steps.describe()._repr_html_()}</p>"  # noqa
+                steps_txt += f"<p><b>steps data-frame (head)</b><br>{self.steps.head()._repr_html_()}</p>"  # noqa
+        except AttributeError:
+            steps_txt = "<p><b>steps data-frame </b><br> not found!</p>"
+        except ValueError:
+            steps_txt = (
+                "<p><b>steps data-frame </b><br> does not contain any columns!</p>"
+            )
+
+        try:
+            custom_info_txt = f"<p><b>custom info</b><br>{self.custom_info}</p>"  # noqa
+        except AttributeError:
+            custom_info_txt = "<p><b>custom info </b><br> not found!</p>"
+
+        return txt + summary_txt + steps_txt + raw_txt + custom_info_txt
+
+    def __init__(self, **kwargs):
+        self.logger = logging.getLogger(__name__)
+        self.logger.debug("created DataSet instance")
+
+        self.raw_data_files = []
+        self.raw_data_files_length = []
+        self.loaded_from = None
+        self._raw_id = None
+        self._internal_test_number = None
+        self.raw_units = get_default_raw_units()
+        self.raw_limits = get_default_raw_limits()
+
+        self.raw = externals.pandas.DataFrame()
+        self.summary = externals.pandas.DataFrame()
+        self.steps = externals.pandas.DataFrame()
+
+        self.meta_common = CellpyMetaCommon()
+        # Authoritative box for the *active* test; per-test records for other
+        # test_ids live in _extra_tests and surface through the ``tests``
+        # property (issue #506).
+        self.meta_test_dependent = CellpyMetaIndividualTest()
+        self._extra_tests: Dict[int, TestMeta] = {}
+        # Load provenance for the active test (issue #508): keys restricted to
+        # the core-only TestMeta fields (uuid, source_*, raw_file_names,
+        # loaded_datetime). Filled by CellpyCell.from_raw; merged into the
+        # derived TestMeta record; NOT persisted in cellpy-file v8 (#510).
+        self._provenance: Dict[str, Any] = {}
+        # Back-links to external metadata sources (#784): source name ->
+        # ExternalLink (external id, uri, fetched_at, fields supplied).
+        # Filled by CellpyCell.fetch_meta; persisted in v9 meta.json.
+        self.external_links: Dict[str, Any] = {}
+        # Compact per-test grouping key of the active test (0 = single,
+        # unmerged; matches the engine's test_id convention). Note: the legacy
+        # ``meta_test_dependent.test_ID`` is the *tester-assigned* id (e.g.
+        # Arbin's Test_ID) — provenance, not this key.
+        self._active_test_id: int = 0
+
+        self.custom_info = None  # Placeholder for custom meta-data
+
+        # custom meta-data
+        for k in kwargs:
+            if hasattr(self, k):
+                setattr(self, k, kwargs[k])
+
+    # ---------------- left-over-properties v7 -> v8 -----------------
+    # these now belong to the CellpyMeta attributes
+    #   however, since they are extensively used in the instrument
+    #   loaders and cellreader, they are also accessible here as properties
+
+    @property
+    def raw_id(self):
+        return self.meta_common.raw_id
+
+    @property
+    def start_datetime(self):
+        # TODO: convert to datetime object?
+        return self.meta_common.start_datetime
+
+    @start_datetime.setter
+    def start_datetime(self, n):
+        # TODO: convert to datetime object?
+        self.meta_common.start_datetime = n
+
+    @property
+    def material(self):
+        return self.meta_common.material
+
+    @material.setter
+    def material(self, n):
+        self.meta_common.material = n
+
+    # @property
+    # def volume(self):
+    #     return self.meta_common.volume
+    #
+    # @volume.setter
+    # def volume(self, n):
+    #     self.meta_common.volume = n
+
+    @property
+    def mass(self):
+        return self.meta_common.mass
+
+    @mass.setter
+    def mass(self, n):
+        self.meta_common.mass = n
+
+    @property
+    def tot_mass(self):
+        return self.meta_common.tot_mass
+
+    @tot_mass.setter
+    def tot_mass(self, n):
+        if n < self.meta_common.mass:
+            logging.debug(
+                f"POSSIBLE BUG: TOTAL MASS LESS THAN MASS ({n} < {self.meta_common.mass})."
+            )
+            n = self.meta_common.mass
+        self.meta_common.tot_mass = n
+
+    @property
+    def active_electrode_area(self):
+        return self.meta_common.active_electrode_area
+
+    @active_electrode_area.setter
+    def active_electrode_area(self, area):
+        self.meta_common.active_electrode_area = area
+
+    @property
+    def cell_name(self):
+        return self.meta_common.cell_name
+
+    @cell_name.setter
+    def cell_name(self, cell_name):
+        self.meta_common.cell_name = cell_name
+
+    @property
+    def loading(self):
+        return self.meta_common.active_electrode_loading
+
+    @loading.setter
+    def loading(self, loading):
+        self.meta_common.loading = loading
+
+    @property
+    def nom_cap(self):
+        return self.meta_common.nom_cap
+
+    @nom_cap.setter
+    def nom_cap(self, value):
+        if value < 0.1:
+            warnings.warn(
+                f"POSSIBLE BUG: NOMINAL CAPACITY LESS THAN 0.1 ({value}).",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+        self.meta_common.nom_cap = value  # nominal capacity
+
+    # ---------------- per-test metadata (issue #506, v2 Phase 1) -----------------
+
+    @property
+    def active_test_id(self) -> int:
+        """Compact grouping key of the active test (0 = single, unmerged).
+
+        Matches the engine's ``test_id`` convention (raw/steps/summary are
+        stamped 0 for a single test). Distinct from the legacy
+        ``meta_test_dependent.test_ID``, which is the tester-assigned id and
+        stays available as provenance.
+        """
+        return self._active_test_id
+
+    @property
+    def tests(self) -> TestMetaCollection:
+        """Per-test metadata keyed by ``test_id`` (a fresh collection each access).
+
+        The active test's record is derived from ``meta_common`` /
+        ``meta_test_dependent`` (which stay authoritative — the core engine
+        reads them live), so mutating the returned record is a snapshot edit
+        and does not persist. Use `set_test_meta` /
+        `set_cycle_mode` (or the legacy attributes) to write.
+        """
+        collection = TestMetaCollection()
+        active_id = self.active_test_id
+        collection.add(test_meta_helpers.build_active_test_meta(self))
+        for test_id, record in self._extra_tests.items():
+            if test_id == active_id:
+                logging.warning(
+                    f"dropping stale extra TestMeta record for test_id={test_id} "
+                    f"(collides with the active test)"
+                )
+                continue
+            collection.add(record)
+        return collection
+
+    def set_test_meta(self, meta: TestMeta, *, replace: bool = True) -> None:
+        """Store a ``TestMeta`` record, routed by its ``test_id``.
+
+        The active test's record is written back onto the legacy meta boxes
+        (fields without a legacy home, e.g. ``uuid`` / ``source_*``, are
+        skipped); records for other ``test_id`` values are kept in memory but
+        are not persisted in cellpy-file format v8.
+        """
+        if meta.test_id == self.active_test_id:
+            test_meta_helpers.apply_test_meta_to_legacy(
+                meta, self.meta_common, self.meta_test_dependent
+            )
+            return
+        if not replace and meta.test_id in self._extra_tests:
+            raise KeyError(f"test_id {meta.test_id} already present")
+        self._extra_tests[meta.test_id] = meta
+
+    def get_cycle_mode(self, test_id: Optional[int] = None) -> Optional[str]:
+        """``cycle_mode`` for the given test (``None`` = the active test)."""
+        if test_id is None or test_id == self.active_test_id:
+            return test_meta_helpers._unwrap(self.meta_test_dependent.cycle_mode)
+        try:
+            return self._extra_tests[test_id].cycle_mode
+        except KeyError:
+            raise KeyError(
+                f"no TestMeta record for test_id={test_id} "
+                f"(known: {sorted([self.active_test_id, *self._extra_tests])})"
+            ) from None
+
+    def set_cycle_mode(self, cycle_mode: str, test_id: Optional[int] = None) -> None:
+        """Set ``cycle_mode`` for the given test (``None`` = the active test).
+
+        The active test writes through to ``meta_test_dependent.cycle_mode``
+        — the attribute the processing engine reads.
+        """
+        if test_id is None or test_id == self.active_test_id:
+            self.meta_test_dependent.cycle_mode = cycle_mode
+            return
+        try:
+            self._extra_tests[test_id].cycle_mode = cycle_mode
+        except KeyError:
+            raise KeyError(
+                f"no TestMeta record for test_id={test_id} "
+                f"(known: {sorted([self.active_test_id, *self._extra_tests])})"
+            ) from None
+
+    @staticmethod
+    def _header_str(hdr):
+        txt = "\n"
+        txt += 80 * "-" + "\n"
+        txt += f" {hdr} ".center(80) + "\n"
+        txt += 80 * "-" + "\n"
+        return txt
+
+    def populate_defaults(self):
+        """Populate the data object with default values."""
+
+        # modify this method upon need
+        logging.debug("checking and populating defaults for the cell")
+
+        if not self.active_electrode_area:
+            self.active_electrode_area = 1.0
+            logging.debug(
+                f"active_electrode_area not set -> setting to: {self.active_electrode_area}"
+            )
+
+        if not self.mass:
+            self.mass = 1.0
+            logging.debug(f"mass not set -> setting to: {self.mass}")
+
+        if not self.tot_mass:
+            self.tot_mass = self.mass
+            logging.debug(
+                f"total mass not set -> setting to same as mass: {self.tot_mass}"
+            )
+
+        return True
+
+    @property
+    def empty(self):
+        """Check if the data object is empty."""
+        if isinstance(self, externals.pandas.DataFrame):
+            raise TypeError(
+                "Data is a DataFrame (should be a Data object). "
+                "You probably have a bug in your code. "
+                "Maybe you wrote something like data = frame instead of data.raw = frame?"
+            )
+        if self.has_data:
+            return False
+        return True
+
+    @property
+    def has_summary(self):
+        """check if the summary table exists"""
+        try:
+            empty = self.summary.empty
+            # TODO: check if the summary has the expected columns
+            #  (since it can be unprocessed directly from the raw data)
+        except AttributeError:
+            empty = True
+        return not empty
+
+    @property
+    def has_steps(self):
+        """check if the step table exists"""
+        try:
+            empty = self.steps.empty
+        except AttributeError:
+            empty = True
+        return not empty
+
+    @property
+    def has_data(self):
+        try:
+            empty = self.raw.empty
+        except AttributeError:
+            empty = True
+        return not empty
+
+
+class InstrumentFactory:
+    """Factory for instrument loaders."""
+
+    def __init__(self):
+        self._builders = {}
+        self._kwargs = {}  # stored kwargs for the builders (not used yet)
+
+    def __str__(self):
+        txt = "<InstrumentFactory>\n"
+        for key in self._builders:
+            txt += f"  {key}\n"
+        return txt
+
+    @property
+    def builders(self):
+        return self._builders
+
+    def register_builder(self, key: str, builder: Tuple[str, Any], **kwargs) -> None:
+        """register an instrument loader module.
+
+        Args:
+            key: instrument id
+            builder: (module_name, module_path)
+            **kwargs: stored in the factory (will be used in the future for allowing to set
+               defaults to the builders to allow for using .query).
+        """
+
+        logging.debug(f"Registering instrument {key}")
+        self._builders[key] = builder
+        self._kwargs[key] = kwargs
+
+    def unregister_builder(self, key: str) -> None:
+        """unregister an instrument loader module.
+
+        Args:
+            key: instrument id
+        """
+        logging.debug(f"Unregistering instrument {key}")
+        self._builders.pop(key, None)
+        self._kwargs.pop(key, None)
+
+    def get_registered_builders(self):
+        return list(self._builders.keys())
+
+    def get_registered_kwargs(self):
+        return self._kwargs
+
+    def get_registered_builder(self, key):
+        return self._builders.get(key, None)
+
+    @staticmethod
+    def _is_expected_discovery_skip(key: str, exc: BaseException) -> bool:
+        """True for probe failures that are normal during module discovery."""
+        if key == "local_instrument":
+            return True
+        msg = str(exc)
+        if "has no attribute 'DataLoader'" in msg or 'has no attribute "DataLoader"' in msg:
+            return True
+        if "Missing instrument definition file" in msg:
+            return True
+        return False
+
+    def create_models(self, key: str, **kwargs):
+        """Create default plus named model instances for one registered loader.
+
+        Args:
+            key: instrument id
+            **kwargs: sent to the initializer of the loader class.
+
+        Returns:
+            dict mapping ``"default"`` and any supported model names to loader
+            instances.
+        """
+        bargs = dict(self._kwargs.get(key, {}))
+        bargs.update(kwargs)
+        models = {}
+        loader = self.create(key, **bargs)
+        models["default"] = loader
+        if available_models := self._get_models(loader):
+            for model in available_models:
+                model_args = dict(bargs)
+                model_args["model"] = model
+                models[model] = self.create(key, **model_args)
+        return models
+
+    def create_all(self, quiet: bool = False, **kwargs):
+        """Create all the instrument loader modules.
+
+        Args:
+            quiet: if True, log every create failure at DEBUG (used by
+                `list_instruments` so apps get a silent listing).
+            **kwargs: sent to the initializer of the loader class.
+
+        Returns:
+            dict of instances of loader classes.
+        """
+        loaders = {}
+        for key in self._builders:
+            try:
+                loaders[key] = self.create_models(key, **kwargs)
+            except Exception as e:
+                message = f"Could not create loader for {key}: {e}"
+                if quiet or self._is_expected_discovery_skip(key, e):
+                    logger.debug(message)
+                else:
+                    logger.warning(message)
+        return loaders
+
+    @staticmethod
+    def _get_models(loader):
+        try:
+            models = loader.get_params("supported_models")
+            return models
+
+        except Exception as e:
+            logging.debug(f"COULD NOT RETRIEVE supported_models for {loader}: {e}")
+
+        return
+
+    def create(self, key: Union[str, None], **kwargs):
+        """Create the instrument loader module and initialize the loader class.
+
+        Args:
+            key: instrument id
+            **kwargs: sent to the initializer of the loader class.
+
+        Returns:
+            instance of loader class.
+        """
+
+        module_name, module_path = self._builders.get(key, (None, None))
+
+        # constant:
+        instrument_class = "DataLoader"
+
+        if not module_name:
+            raise ValueError(key)
+
+        loader_module = self._import_loader_module(module_name, module_path)
+        cls = getattr(loader_module, instrument_class)
+
+        # TODO: get stored kwargs from self.__kwargs and merge them with the supplied kwargs
+        #  (supplied should have preference)
+
+        return cls(**kwargs)
+
+    @staticmethod
+    def _import_loader_module(module_name: str, module_path):
+        """Import a loader module, preferring the package path for in-tree ones.
+
+        In-tree loaders live inside ``cellpy.readers.instruments``. Loading them
+        by file path (``spec_from_file_location``) creates a *second* module
+        object - e.g. a bare ``custom`` distinct from
+        ``cellpy.readers.instruments.custom`` - so one source file yields two
+        ``DataLoader`` classes. That breaks ``isinstance``/``issubclass`` against
+        the package-path class, duplicates any class-level state, and makes
+        monkeypatching the package-path class silently miss the instantiated one.
+        Importing by dotted name instead lets Python's module cache hand back the
+        one canonical module (and class).
+
+        User-supplied / local loader files legitimately live outside the package
+        and are still loaded from their path, unchanged.
+        """
+        package = "cellpy.readers.instruments"
+        instruments_dir = pathlib.Path(
+            importlib.import_module(package).__file__
+        ).resolve().parent
+
+        in_tree = False
+        if module_path is not None:
+            try:
+                in_tree = (
+                    pathlib.Path(module_path).resolve().parent == instruments_dir
+                )
+            except OSError:
+                in_tree = False
+
+        if in_tree:
+            # Derive the dotted name from the file itself so a stale registered
+            # module_name cannot point us at the wrong (or a missing) module.
+            dotted = f"{package}.{pathlib.Path(module_path).stem}"
+            return importlib.import_module(dotted)
+
+        spec = importlib.util.spec_from_file_location(module_name, module_path)
+        loader_module = importlib.util.module_from_spec(spec)
+        sys.modules[module_name] = loader_module  # noqa
+        spec.loader.exec_module(loader_module)
+        return loader_module
+
+    def query(self, key: str, variable: str) -> Any:
+        """performs a get_params lookup for the instrument loader.
+
+        Args:
+            key: instrument id.
+            variable: the variable you want to lookup.
+
+        Returns:
+            The value of the variable if the loaders get_params method supports it.
+        """
+        loader = self.create(key)
+        try:
+            value = loader.get_params(variable)
+            logging.debug(f"GOT {variable}={value} for {key}")
+            return value
+
+        except (AttributeError, NotImplementedError, KeyError):
+            logging.debug(f"COULD NOT RETRIEVE {variable} for {key}")
+
+        except Exception as e:
+            logging.debug(f"COULD NOT RETRIEVE {variable} for {key}: {e}")
+
+        return
+
+
+def instrument_configurations(search_text: str = "") -> Dict[str, Any]:
+    """This function returns a dictionary with information about the available
+    instrument loaders and their models.
+
+    Args:
+        search_text: string to search for in the instrument names.
+
+    Returns:
+        dict: nested dictionary with information about the available instrument loaders and their models.
+
+    """
+    instruments = {}
+    _instruments = find_all_instruments(search_text)
+    factory = InstrumentFactory()
+
+    for instrument, instrument_settings in _instruments.items():
+        if instrument not in LOADERS_NOT_READY_FOR_PROD:
+            factory.register_builder(instrument, instrument_settings)
+
+    loaders = factory.create_all()
+
+    for loader, loader_instance in loaders.items():
+        _info = {"__all__": []}
+        for model, model_instance in loader_instance.items():
+            _info["__all__"].append(model)
+            _model_info = {}
+            if hasattr(model_instance, "config_params"):
+                _model_info["config_params"] = model_instance.config_params
+            else:
+                _model_info["config_params"] = None
+
+            _model_info["doc"] = inspect.getdoc(model_instance)
+
+            _info[model] = _model_info
+        instruments[loader] = _info
+    return instruments
+
+
+# Vendor / file-format tokens used to build a human label from a loader id
+# (e.g. "arbin_sql_csv" -> "Arbin SQL (CSV)"). Low-maintenance: unknown vendors
+# fall back to a capitalised id, unknown format tokens to upper/title case.
+_INSTRUMENT_VENDOR_LABELS = {
+    "arbin": "Arbin",
+    "maccor": "Maccor",
+    "neware": "Neware",
+    "pec": "PEC",
+    "batmo": "BatMo",
+    "biologics": "Bio-Logic",
+}
+_INSTRUMENT_FORMAT_TOKENS = {
+    "txt": "(text)",
+    "csv": "(CSV)",
+    "xlsx": "(Excel)",
+    "h5": "(HDF5)",
+    "res": "(res)",
+    "nda": "(nda)",
+    "mpr": "(mpr)",
+    "bdf": "BDF",
+    "sql": "SQL",
+}
+
+
+def _instrument_label(loader_id: str) -> str:
+    """A display label derived from a loader id (no per-instrument table)."""
+    parts = loader_id.split("_")
+    vendor = _INSTRUMENT_VENDOR_LABELS.get(parts[0], parts[0].capitalize())
+    rest = [
+        _INSTRUMENT_FORMAT_TOKENS.get(
+            p, p.upper() if len(p) <= 2 else p.capitalize()
+        )
+        for p in parts[1:]
+    ]
+    return " ".join([vendor, *rest]).strip()
+
+
+def list_instruments() -> List[Dict[str, Any]]:
+    """Quiet, app-facing instrument listing.
+
+    Returns one dict per registered loader -- ``{"id", "label", "models",
+    "suffixes", "available", "reason"}`` -- suitable for building an
+    instrument picker / ingestion form. Loaders that fail to import still
+    appear with ``available=False`` and a short ``reason`` (e.g. missing
+    ``libodbc.so.2``). Expected skips (``local_instrument``, missing
+    ``DataLoader``) stay omitted. Unlike `instrument_configurations`, it
+    does **not** log a warning for each skipped non-loader module.
+
+    Example::
+
+        [{"id": "maccor_txt", "label": "Maccor (text)",
+          "models": ["default", "ZERO", ...], "suffixes": [".txt"],
+          "available": True, "reason": None}, ...]
+    """
+    listing: List[Dict[str, Any]] = []
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        factory = InstrumentFactory()
+        for instrument, settings in find_all_instruments().items():
+            if instrument not in LOADERS_NOT_READY_FOR_PROD:
+                factory.register_builder(instrument, settings)
+
+        for loader_id in factory.get_registered_builders():
+            try:
+                models = factory.create_models(loader_id)
+            except Exception as e:
+                message = f"Could not create loader for {loader_id}: {e}"
+                logger.debug(message)
+                if factory._is_expected_discovery_skip(loader_id, e):
+                    continue
+                listing.append(
+                    {
+                        "id": loader_id,
+                        "label": _instrument_label(loader_id),
+                        "models": [],
+                        "suffixes": [],
+                        "available": False,
+                        "reason": str(e),
+                    }
+                )
+                continue
+
+            suffixes = sorted(
+                {
+                    f".{str(ext).lstrip('.')}"
+                    for inst in models.values()
+                    if (ext := getattr(inst, "raw_ext", None))
+                }
+            )
+            reason = None
+            if loader_id == "arbin_res":
+                from cellpy.readers.instruments.arbin_res import (
+                    mdb_export_unavailable_reason,
+                )
+
+                reason = mdb_export_unavailable_reason()
+            listing.append(
+                {
+                    "id": loader_id,
+                    "label": _instrument_label(loader_id),
+                    "models": list(models.keys()),
+                    "suffixes": suffixes,
+                    "available": reason is None,
+                    "reason": reason,
+                }
+            )
+    return sorted(listing, key=lambda entry: entry["id"])
+
+
+def instrument_meta_schema(instrument: Optional[str] = None) -> Dict[str, Any]:
+    """Describe ``cellpy.get`` metadata knobs for building an ingestion form.
+
+    Today every loader shares the same framework-owned cell-meta catalog
+    (mass / area / loading / nominal capacity / cycle mode). The
+    ``instrument`` argument is accepted so apps can key forms per picker
+    selection; per-loader overrides can be added later without changing
+    the call shape.
+
+    Args:
+        instrument: Loader id from `list_instruments` (e.g.
+            ``"maccor_txt"``). Optional; echoed in the return value.
+
+    Returns:
+        A dict with ``instrument``, ``fields`` (list of field descriptors),
+        and ``units`` (session default unit strings for numeric knobs).
+    """
+    # Session units (config stack); fall back if config is not initialised.
+    try:
+        from cellpy import config as cellpy_config
+
+        unit_cfg = cellpy_config.units
+        units = {
+            "mass": getattr(unit_cfg, "mass", "mg"),
+            "area": getattr(unit_cfg, "area", "cm**2"),
+            "nominal_capacity": getattr(unit_cfg, "nominal_capacity", "mAh/g"),
+            "loading": "mg/cm**2",
+        }
+    except Exception:
+        units = {
+            "mass": "mg",
+            "area": "cm**2",
+            "nominal_capacity": "mAh/g",
+            "loading": "mg/cm**2",
+        }
+    fields = [
+        {
+            "name": "mass",
+            "required": True,
+            "type": "number_or_quantity",
+            "unit": units["mass"],
+            "default": None,
+            "maps_to": "mass",
+            "help": "Active-material mass (recommended for specific capacities).",
+        },
+        {
+            "name": "area",
+            "required": False,
+            "type": "number_or_quantity",
+            "unit": units["area"],
+            "default": None,
+            "maps_to": "active_electrode_area",
+            "help": "Active electrode area.",
+        },
+        {
+            "name": "loading",
+            "required": False,
+            "type": "number_or_quantity",
+            "unit": units["loading"],
+            "default": None,
+            "maps_to": "loading",
+            "help": "Active-material loading.",
+        },
+        {
+            "name": "nominal_capacity",
+            "required": False,
+            "type": "number_or_quantity",
+            "unit": units["nominal_capacity"],
+            "default": None,
+            "maps_to": "nom_cap",
+            "help": "Nominal capacity (used for C-rate and related summaries).",
+        },
+        {
+            "name": "nom_cap_specifics",
+            "required": False,
+            "type": "enum",
+            "choices": ["gravimetric", "areal", "absolute"],
+            "default": "gravimetric",
+            "maps_to": "nom_cap_specifics",
+            "help": "How nominal_capacity is interpreted.",
+        },
+        {
+            "name": "cycle_mode",
+            "required": False,
+            "type": "enum",
+            "choices": ["anode", "cathode", "full"],
+            "default": None,
+            "maps_to": "cycle_mode",
+            "help": "Cycle polarity / cell type hint for summaries.",
+        },
+        {
+            "name": "estimate_area",
+            "required": False,
+            "type": "bool",
+            "default": True,
+            "maps_to": None,
+            "help": "Estimate area from mass and loading when area is omitted.",
+        },
+    ]
+    return {
+        "instrument": instrument,
+        "fields": fields,
+        "units": units,
+    }
+
+
+def generate_default_factory():
+    """This function searches for all available instrument readers
+    and registers them in an InstrumentFactory instance.
+
+    Returns:
+        InstrumentFactory
+    """
+    instrument_factory = InstrumentFactory()
+    instruments = find_all_instruments()
+    for instrument_id, instrument in instruments.items():
+        instrument_factory.register_builder(instrument_id, instrument)
+    return instrument_factory
+
+
+# TODO: v1.1.0 - implement plugins and local instrument readers
+def find_all_instruments(
+    name_contains: Optional[str] = None,
+) -> Dict[str, Tuple[str, pathlib.Path]]:
+    """finds all the supported instruments"""
+
+    if name_contains:
+        glob_txt = f"*{name_contains}*.py"
+    else:
+        glob_txt = "*.py"
+
+    import cellpy.readers.instruments as hard_coded_instruments_site
+
+    instruments_found = {}
+    logging.debug("Searching for modules in base instrument folder:")
+
+    hard_coded_instruments_site = pathlib.Path(
+        hard_coded_instruments_site.__file__
+    ).parent
+    modules_in_hard_coded_instruments_site = [
+        s
+        for s in hard_coded_instruments_site.glob(glob_txt)
+        if not (
+            str(s.name).startswith("_")
+            or str(s.name).startswith("dev_")
+            or str(s.name).startswith("base")
+            or str(s.name).startswith("backup")
+            or str(s.name).startswith("registered_loaders")
+        )
+    ]
+
+    for module_path in modules_in_hard_coded_instruments_site:
+        module_name = module_path.name.rstrip(".py")
+        logging.debug(module_name)
+        instruments_found[module_name] = (
+            module_name,
+            module_path,
+        )
+        logging.debug(" -> added")
+
+    logging.debug("Searching for module configurations in user instrument folder:")
+    # These are only yaml-files and should ideally import the appropriate
+    #    custom loader class
+    # Might not be needed.
+    logging.debug("- Not implemented yet")
+
+    logging.debug("Searching for modules through plug-ins:")
+    # Not sure how to do this yet. Probably also some importlib trick.
+    logging.debug("- Not implemented yet")
+    return instruments_found
+
+
+def identify_last_data_point(data):
+    """Find the last data point and store it in the fid instance"""
+
+    logging.debug("searching for last data point")
+    hdr_data_point = get_headers_normal().data_point_txt
+    try:
+        if hdr_data_point in data.raw.columns:
+            last_data_point = data.raw[hdr_data_point].max()
+        else:
+            last_data_point = data.raw.index.max()
+    except AttributeError:
+        logging.debug("AttributeError - setting last data point to 0")
+        last_data_point = 0
+    if not last_data_point > 0:
+        last_data_point = 0
+    data.raw_data_files[0].last_data_point = last_data_point
+    logging.debug(f"last data point: {last_data_point}")
+    return data
+
+
+# TODO: move this to internals/connections
+def check64bit(current_system="python"):
+    """checks if you are on a 64-bit platform"""
+    if current_system == "python":
+        return sys.maxsize > 2147483647
+    elif current_system == "os":
+        import platform
+
+        pm = platform.machine()
+        if pm != ".." and pm.endswith("64"):  # recent Python (not Iron)
+            return True
+        else:
+            if "PROCESSOR_ARCHITEW6432" in os.environ:
+                return True  # 32 bit program running on 64-bit Windows
+            try:
+                # 64-bit Windows 64 bit program
+                return os.environ["PROCESSOR_ARCHITECTURE"].endswith("64")
+            except IndexError:
+                pass  # not Windows
+            try:
+                # this often works in Linux
+                return "64" in platform.architecture()[0]
+            except Exception:  # noqa
+                # is an older version of Python, assume also an older os@
+                # (best we can guess)
+                return False
+
+
+# TODO: move this to internals/connections
+def humanize_bytes(b, precision=1):
+    """Return a humanized string representation of a number of b."""
+
+    abbrevs = (
+        (1 << 50, "PB"),
+        (1 << 40, "TB"),
+        (1 << 30, "GB"),
+        (1 << 20, "MB"),
+        (1 << 10, "kB"),
+        (1, "b"),
+    )
+    if b == 1:
+        return "1 byte"
+    for factor, suffix in abbrevs:
+        if b >= factor:
+            break
+    # return '%.*f %s' % (precision, old_div(b, factor), suffix)
+    return "%.*f %s" % (precision, b // factor, suffix)  # noqa
+
+
+# TODO: move this to internals/connections
+def xldate_as_datetime(xldate, datemode=0, option="to_datetime"):
+    """Converts a xls date stamp to a more sensible format.
+
+    Args:
+        xldate (str, int): date stamp in Excel format.
+        datemode (int): 0 for 1900-based, 1 for 1904-based.
+        option (str): option in ("to_datetime", "to_float", "to_string"),
+            return value
+
+    Returns:
+        datetime (datetime object, float, or string).
+
+    """
+
+    # This does not work for numpy-arrays
+
+    if option == "to_float":
+        d = (xldate - 25589) * 86400.0
+    else:
+        try:
+            d = datetime.datetime(1899, 12, 30) + datetime.timedelta(
+                days=xldate + 1462 * datemode
+            )
+            # date_format = "%Y-%m-%d %H:%M:%S:%f" # with microseconds,
+            # Excel cannot cope with this!
+            if option == "to_string":
+                date_format = "%Y-%m-%d %H:%M:%S"  # without microseconds
+                d = d.strftime(date_format)
+        except TypeError:
+            logging.info(f"The date is not of correct type [{xldate}]")
+            d = xldate
+    return d
+
+
+# TODO: consider moving this to either internals/connections or to new module
+def collect_capacity_curves(
+    cell,
+    direction="charge",
+    trim_taper_steps=None,
+    steps_to_skip=None,
+    steptable=None,
+    max_cycle_number=None,
+    **kwargs,
+):
+    """Create a list of pandas.DataFrames, one for each charge step.
+
+    The DataFrames are named by its cycle number.
+
+    Args:
+        cell (``CellpyCell``):  object
+        direction (str):
+        trim_taper_steps (integer): number of taper steps to skip (counted
+            from the end, i.e. 1 means skip last step in each cycle).
+        steps_to_skip (list): step numbers that should not be included.
+        steptable (``pandas.DataFrame``): optional steptable.
+        max_cycle_number (int): only select cycles up to this value.
+
+    Returns:
+        list of pandas.DataFrames,
+        list of cycle numbers,
+        minimum voltage value,
+        maximum voltage value
+
+    """
+
+    # TODO: should allow for giving cycle numbers as input (e.g. cycle=[1, 2, 10]
+    #  or cycle=2), not only max_cycle_number. Intermediate solution:
+    #  The cycle keyword will not break the method but raise a warning:
+    for arg in kwargs:
+        if arg in ["cycle", "cycles"]:
+            logging.warning(
+                f"{arg} is not implemented yet, but might exist in newer versions of cellpy."
+            )
+        else:
+            logging.warning(
+                f"collect_capacity_curve received unknown key-word argument: {arg=}"
+            )
+
+    minimum_v_value = externals.numpy.inf
+    maximum_v_value = -externals.numpy.inf
+    charge_list = []
+    cycles = kwargs.pop("cycle", None)
+
+    if cycles is None:
+        cycles = cell.get_cycle_numbers()
+
+    if max_cycle_number is None:
+        max_cycle_number = max(cycles)
+
+    for cycle in cycles:
+        if cycle > max_cycle_number:
+            break
+        try:
+            if direction == "charge":
+                q, v = cell.get_ccap(
+                    cycle,
+                    trim_taper_steps=trim_taper_steps,
+                    steps_to_skip=steps_to_skip,
+                    steptable=steptable,
+                    as_frame=False,
+                )
+            else:
+                q, v = cell.get_dcap(
+                    cycle,
+                    trim_taper_steps=trim_taper_steps,
+                    steps_to_skip=steps_to_skip,
+                    steptable=steptable,
+                    as_frame=False,
+                )
+
+        except NullData as e:
+            logging.warning(e)
+            d = externals.pandas.DataFrame()
+            d.name = cycle
+            charge_list.append(d)
+        else:
+            d = externals.pandas.DataFrame({"q": q, "v": v})
+            # d.name = f"{cycle}"
+            d.name = cycle
+            charge_list.append(d)
+            v_min = v.min()
+            v_max = v.max()
+            if v_min < minimum_v_value:
+                minimum_v_value = v_min
+            if v_max > maximum_v_value:
+                maximum_v_value = v_max
+    return charge_list, cycles, minimum_v_value, maximum_v_value
+
+
+# TODO: consider moving this to either internals/connections or to new module
+def interpolate_y_on_x(
+    df,
+    x=None,
+    y=None,
+    new_x=None,
+    dx=10.0,
+    number_of_points=None,
+    direction=1,
+    **kwargs,
+):
+    """Interpolate a column based on another column.
+
+    Args:
+        df: DataFrame with the (cycle) data.
+        x: Column name for the x-value (defaults to the step-time column).
+        y: Column name for the y-value (defaults to the voltage column).
+        new_x (numpy array or None): Interpolate using these new x-values
+            instead of generating x-values based on dx or number_of_points.
+        dx: step-value (defaults to 10.0)
+        number_of_points: number of points for interpolated values (use
+            instead of dx and overrides dx if given).
+        direction (-1,1): if direction is negative, then invert the
+            x-values before interpolating.
+        **kwargs: arguments passed to ``scipy.interpolate.interp1d``
+
+    Returns: DataFrame with interpolated y-values based on given or
+        generated x-values.
+
+    """
+
+    # TODO: allow for giving a fixed interpolation range (x-values).
+    #  Remember to treat extrapolation properly (e.g. replace with NaN?).
+    from scipy import interpolate
+
+    if x is None:
+        x = df.columns[0]
+    if y is None:
+        y = df.columns[1]
+
+    xs = df[x].values
+    ys = df[y].values
+
+    if direction > 0:
+        x_min = xs.min()
+        x_max = xs.max()
+    else:
+        x_max = xs.min()
+        x_min = xs.max()
+        dx = -dx
+
+    bounds_error = kwargs.pop("bounds_error", False)
+    f = interpolate.interp1d(xs, ys, bounds_error=bounds_error, **kwargs)
+    if new_x is None:
+        if number_of_points:
+            new_x = externals.numpy.linspace(x_min, x_max, number_of_points)
+        else:
+            new_x = externals.numpy.arange(x_min, x_max, dx)
+
+    else:
+        # TODO: @jepe - make this better (and safer)
+        if isinstance(new_x, tuple):
+            logging.critical("EXPERIMENTAL FEATURE - USE WITH CAUTION")
+            logging.critical(f"start, end, number_of_points = {new_x}")
+            _x_min, _x_max, _number_of_points = new_x
+            new_x = externals.numpy.linspace(
+                _x_min, _x_max, _number_of_points, dtype=float
+            )
+
+    new_y = f(new_x)
+
+    new_df = externals.pandas.DataFrame({x: new_x, y: new_y})
+
+    return new_df
+
+
+def interpolate_y_on_x_per_monotonic_segments(
+    df,
+    x=None,
+    y=None,
+    dx=10.0,
+    number_of_points=None,
+    direction=1,
+    max_segments=100,
+    **kwargs,
+):
+    """Interpolate y on x per strictly monotonic segment, then concatenate.
+
+    When a curve has multiple steps (e.g. CC + taper), x may not be strictly
+    monotonic (e.g. constant voltage during taper). scipy.interp1d requires
+    strictly increasing x, so interpolating the whole curve drops steps or
+    produces artefacts. This helper splits the dataframe into segments where
+    x is strictly monotonic, interpolates each segment, and concatenates.
+
+    Many segments can occur with noisy x-data: every small reversal
+    (x[i] <= x[i-1]) starts a new segment, so O(n) segments are possible.
+    That would mean many calls to interpolate_y_on_x (slow) and many small
+    DataFrames (memory). If the segment count exceeds max_segments, the
+    function returns the dataframe unchanged and logs a warning.
+
+    Args:
+        df: DataFrame with the (cycle) data.
+        x: Column name for the x-value.
+        y: Column name for the y-value.
+        dx: step-value for interpolation.
+        number_of_points: number of points (overrides dx if given).
+        direction (-1, 1): 1 = x must be strictly increasing, -1 = strictly decreasing.
+        max_segments: if the number of monotonic segments exceeds this, return df
+            unchanged and log a warning (default 100). Set to None for no limit.
+        **kwargs: passed to interpolate_y_on_x.
+
+    Returns:
+        DataFrame with interpolated (x, y) preserving all segments, or df unchanged
+        if segment count exceeds max_segments.
+    """
+    if df is None or df.empty:
+        return df
+    if x is None:
+        x = df.columns[0]
+    if y is None:
+        y = df.columns[1]
+
+    xs = df[x].values
+    n = len(xs)
+    if n < 2:
+        return df
+
+    # Find segment boundaries: start new segment when monotonicity breaks
+    if direction > 0:
+        # segment starts at i when i==0 or when x[i] <= x[i-1] (not strictly increasing)
+        segment_start = externals.numpy.r_[True, xs[1:] <= xs[:-1]]
+    else:
+        # segment starts when x[i] >= x[i-1] (not strictly decreasing)
+        segment_start = externals.numpy.r_[True, xs[1:] >= xs[:-1]]
+
+    n_segments = int(segment_start.sum())
+    if max_segments is not None and n_segments > max_segments:
+        global _max_segments_warned
+        msg = (
+            "interpolate_y_on_x_per_monotonic_segments: %d segments exceeds "
+            "max_segments=%s; returning dataframe unchanged (likely noisy x-data)."
+        )
+        if not _max_segments_warned:
+            logger.warning(
+                msg + " Further occurrences in this process are logged at DEBUG.",
+                n_segments,
+                max_segments,
+            )
+            _max_segments_warned = True
+        else:
+            logger.debug(msg, n_segments, max_segments)
+        return df
+
+    segment_id = externals.numpy.cumsum(segment_start) - 1
+    segments = []
+    for i in range(n_segments):
+        mask = segment_id == i
+        seg_df = df.loc[mask].copy()
+        if len(seg_df) < 2:
+            continue
+        # Constant-x segment (e.g. taper): keep as-is to preserve step
+        if seg_df[x].min() == seg_df[x].max():
+            segments.append(seg_df[[x, y]].reset_index(drop=True))
+            continue
+        interp_df = interpolate_y_on_x(
+            seg_df,
+            x=x,
+            y=y,
+            dx=dx,
+            number_of_points=number_of_points,
+            direction=direction,
+            **kwargs,
+        )
+        segments.append(interp_df)
+
+    if not segments:
+        return df
+    return externals.pandas.concat(segments, axis=0, ignore_index=True)
+
+
+# TODO: consider moving this to either internals/connections or to new module
+def group_by_interpolate(
+    df,
+    x=None,
+    y=None,
+    group_by=None,
+    number_of_points=100,
+    tidy=False,
+    individual_x_cols=False,
+    header_name="Unit",
+    dx=10.0,
+    generate_new_x=True,
+):
+    """Do a pandas.DataFrame.group_by and perform interpolation for all groups.
+
+    This function is a wrapper around an internal interpolation function in
+    cellpy (that uses ``scipy.interpolate.interp1d``) that combines doing a group-by
+    operation and interpolation.
+
+    Args:
+        df (pandas.DataFrame): the dataframe to morph.
+        x (str): the header for the x-value
+            (defaults to normal header step_time_txt) (remark that the default
+            group_by column is the cycle column, and each cycle normally
+            consist of several steps (so you risk interpolating / merging
+            several curves on top of each other (not good)).
+        y (str): the header for the y-value
+            (defaults to normal header voltage_txt).
+        group_by (str): the header to group by
+            (defaults to normal header cycle_index_txt)
+        number_of_points (int): if generating new x-column, how many values it
+            should contain.
+        tidy (bool): return the result in tidy (i.e. long) format.
+        individual_x_cols (bool): return as xy xy xy ... data.
+        header_name (str): name for the second level of the columns (only
+            applies for xy xy xy ... data) (defaults to "Unit").
+        dx (float): if generating new x-column and number_of_points is None or
+            zero, distance between the generated values.
+        generate_new_x (bool): create a new x-column by
+            using the x-min and x-max values from the original dataframe where
+            the method is set by the number_of_points key-word:
+
+            1)  if number_of_points is not None (default is 100)::
+
+                    new_x = np.linspace(x_max, x_min, number_of_points)
+
+            2)  else::
+
+                    new_x = np.arange(x_max, x_min, dx)
+
+
+    Returns: pandas.DataFrame with interpolated x- and y-values. The returned
+        dataframe is in tidy (long) format for tidy=True.
+
+    """
+    # TODO: @jepe - create more tests
+    time_00 = time.time()
+    headers_normal = get_headers_normal()
+    # bare-df util: the raw frame may be native or legacy; detect from columns.
+    from cellpycore.config import default_schema
+
+    _raw = default_schema().raw
+    _native = _raw.cycle_num in df.columns
+    if x is None:
+        x = _raw.step_time if _native else headers_normal.step_time_txt
+    if y is None:
+        y = _raw.potential if _native else headers_normal.voltage_txt
+    if group_by is None:
+        group_by = [_raw.cycle_num if _native else headers_normal.cycle_index_txt]
+
+    if not isinstance(group_by, (list, tuple)):
+        group_by = [group_by]
+
+    if not generate_new_x:
+        # check if it makes sense
+        if (not tidy) and (not individual_x_cols):
+            logging.warning("Unlogical condition")
+            generate_new_x = True
+
+    new_x = None
+
+    if generate_new_x:
+        x_max = df[x].max()
+        x_min = df[x].min()
+        if number_of_points:
+            new_x = externals.numpy.linspace(x_max, x_min, number_of_points)
+        else:
+            new_x = externals.numpy.arange(x_max, x_min, dx)
+
+    new_dfs = []
+    keys = []
+
+    for name, group in df.groupby(group_by):
+        keys.append(name)
+        if not isinstance(name, (list, tuple)):
+            name = [name]
+
+        new_group = interpolate_y_on_x(
+            group, x=x, y=y, new_x=new_x, number_of_points=number_of_points, dx=dx
+        )
+
+        if tidy or (not tidy and not individual_x_cols):
+            for i, j in zip(group_by, name):
+                new_group[i] = j
+        new_dfs.append(new_group)
+
+    if tidy:
+        new_df = externals.pandas.concat(new_dfs)
+    else:
+        if individual_x_cols:
+            new_df = externals.pandas.concat(new_dfs, axis=1, keys=keys)
+            group_by.append(header_name)
+            new_df.columns.names = group_by
+        else:
+            new_df = externals.pandas.concat(new_dfs)
+            new_df = new_df.pivot(index=x, columns=group_by[0], values=y)
+
+    time_01 = time.time() - time_00
+    logging.debug(f"duration: {time_01} seconds")
+    return new_df
+
+
+def convert_from_simple_unit_label_to_string_unit_label(k, v):
+    """Convert from simple unit label to string unit label."""
+
+    old_raw_units = {
+        "current": 1.0,
+        "charge": 1.0,
+        "voltage": 1.0,
+        "time": 1.0,
+        "resistance": 1.0,
+        "power": 1.0,
+        "energy": 1.0,
+        "frequency": 1.0,
+        "mass": 0.001,
+        "nominal_capacity": 1.0,
+        "specific_gravimetric": 1.0,
+        "specific_areal": 1.0,
+        "specific_volumetric": 1.0,
+        "length": 1.0,
+        "area": 1.0,
+        "volume": 1.0,
+        "temperature": 1.0,
+        "pressure": 1.0,
+    }
+    old_unit = old_raw_units[k]
+    value = v / old_unit
+    default_units = get_default_raw_units()
+
+    new_unit = default_units[k]
+    value = Q(value, new_unit)
+    str_value = str(value)
+    return str_value
+
+
+# ---------------- LOCAL DEV TESTS ----------------
+
+
+def _check_convert_from_simple_unit_label_to_string_unit_label():
+    k = "resistance"
+    v = 1.0
+    n = convert_from_simple_unit_label_to_string_unit_label(k, v)
+    print(n)
+
+
+def _check_path_things():
+    p = "//jepe@mymachine.my.no/./path/file.txt"
+    p2 = pathlib.Path(p)
+    print(f"{p2=}")
+    print(f"{p2.resolve()=}")
+    print(f"{p2.drive=}")
+    print(f"{p2.as_uri()=}")
+    print(f"{p2.root=}")
+    print(f"{p2.anchor=}")
+    print(f"{p2.parent=}")
+    print(f"{p2.name=}")
+    print(f"{p2.stem=}")
+    print(f"{p2.suffix=}")
+    print(f"{p2.suffixes=}")
+    print(f"{p2.parts=}")
+    print(f"{p2.is_absolute()=}")
+    print(f"{p2.is_reserved()=}")
+    print(f"{p2.is_dir()=}")
+    print(f"{p2.is_file()=}")
+
+    try:
+        print(f"{p2.is_socket()=}")
+    except NotImplementedError as e:
+        print(f"{e}")
+    try:
+        print(f"{p2.is_mount()=}")
+    except NotImplementedError as e:
+        print(f"{e}")
+    try:
+        print(f"{p2.is_symlink()=}")
+    except NotImplementedError as e:
+        print(f"{e}")
+
+    try:
+        print(f"{p2.owner()=}")
+    except NotImplementedError as e:
+        print(f"{e}")
+
+    try:
+        print(f"{p2.group()=}")
+    except NotImplementedError as e:
+        print(f"{e}")
+
+    print(f"{p2.exists()=}")
+
+
+def _check_another_path_things():
+    p01 = r"C:\scripting\cellpy\testdata\data\20160805_test001_45_cc_01.res"
+    p02 = r"ssh://jepe@server.no/home/jepe/cellpy/testdata/data/20160805_test001_45_cc_01.res"
+    p03 = r"scripting\cellpy\testdata\data\20160805_test001_45_cc_01.res"
+    p04 = r"..\data\20160805_test001_45_cc_01.res"
+    p05 = pathlib.Path(p01)
+    p06 = pathlib.Path(p02)
+    for p in [p01, p02, p03, p04, p05, p06]:
+        print(f"{p}".center(110, "-"))
+        p2 = OtherPath(p)
+        print(f"{p2=}")
+        print(p2)
+        print(f"{p2.resolve()=}")
+        print(f"{p2.drive=}")
+        print(f"{p2.exists()=}")
+        print(f"{p2._is_external=}")  # noqa
+        print(f"{p2._location=}")  # noqa
+        print(f"{p2._uri_prefix=}")  # noqa
+        print(f"{p2.resolve()=}")
+        if p2.is_absolute():
+            print(f"{p2.as_uri()=}")
+        print(f"{p2.is_external=}")
+        print(f"{p2.location=}")
+        print(f"{p2.uri_prefix=}")
+        print(f"{p2.root=}")
+        print(f"{p2.anchor=}")
+        print(f"{p2.parent=}")
+        print(f"{p2.name=}")
+        print(f"{p2.stem=}")
+        print(f"{p2.suffix=}")
+        print(f"{p2.suffixes=}")
+        print(f"{p2.parts=}")
+        print(f"{type(p2)}")
+        print(f"{isinstance(p2, pathlib.Path)=}")
+        print(f"{isinstance(p2, OtherPath)=}")
+        print()
+
+
+def _check_how_other_path_works():
+    p01 = r"C:\scripting\cellpy\testdata\data\20160805_test001_45_cc_01.res"
+    p02 = r"ssh://jepe@somewhere.else.no/home/jepe/cellpy/testdata/data/20160805_test001_45_cc_01.res"
+    p03 = None
+    p03b = OtherPath(p03)
+    p05 = pathlib.Path(p01)
+    p06 = pathlib.Path(p02)
+    p07 = OtherPath(p01)
+    p08 = OtherPath(p02)
+    print(80 * "=")
+    for p in [p01, p02, p03, p03b, p05, p06, p07, p08]:
+        print(f"{p}".center(110, "-"))
+        print(f"{type(p)}".center(110, "*"))
+        p2 = OtherPath(p)
+        print(f"{p2=}")
+        print(p2)
+        print(f"{p2.raw_path=}")
+        print(f"{p2.is_external=}")
+        print(f"{p2.location=}")
+        print(f"{p2.uri_prefix=}")
+        print(f"{p2._original=}")  # noqa
+        print(f"{p2.full_path=}")
+        print(f"{p2.parts=}")
+
+
+if __name__ == "__main__":
+    _check_how_other_path_works()

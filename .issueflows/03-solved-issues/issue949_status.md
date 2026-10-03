@@ -1,17 +1,20 @@
-# Issue #949 status
+# Issue #949 — status
 
 - [x] Done
 
+Re-opened 2026-09-23 and closed. First pass (2.1.4) only picked IR *if* the
+summary had columns. A normal `cellpy.get` / `batch.load` used
+`make_summary()` with `find_ir=False`, so `b.plot(ir=True)` skipped the panel.
+
 ## What's done
 
-- `batch_summary.py`: `_pick_optional_summary` / `_select_ir_column`.
-  `direction="discharge"` prefers `ir_discharge`, falls back to `ir_charge`
-  with a `UserWarning`, warns and skips when neither column exists.
-  Matplotlib uses the same pick.
-- Essential tests in `tests/test_batch_summary_ir.py` (8 passed with plotly;
-  4 skip on essential `uv sync` without `--extra batch`).
-- Design doc, test-registry, `agents.md`, `AGENTS.md`, `HISTORY.md`.
-- Essential suite: 817 passed, 64 skipped.
+- First pass: `_select_ir_column` pick/fallback + plotter tests (2.1.4).
+- This pass: `cellpy.get(..., auto_summary=True)` defaults `find_ir=True`;
+  batch recalc uses `make_summary(find_ir=True)`. Skip warning names the remake.
+- Tests: get includes IR; `summary_kwargs={"find_ir": False}` still skips;
+  `Batch.plot` after get shows IR (charge and discharge). Incremental oracle
+  aligned (`find_ir=True`). Runner stub accepts `**kwargs`.
+- Docs: `agents.md`, `AGENTS.md`, `plotting-batch-summary.md`, HISTORY.
 
 ## Remaining work
 

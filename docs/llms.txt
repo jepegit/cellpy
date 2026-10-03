@@ -12,13 +12,15 @@
 - [Installation](https://cellpy.readthedocs.io/en/latest/getting_started/installation/)
 - [Setup and configuration](https://cellpy.readthedocs.io/en/latest/getting_started/configuration/)
 - [Your first hour](https://cellpy.readthedocs.io/en/latest/getting_started/first_hour/)
-- [Using cellpy from an agent](https://cellpy.readthedocs.io/en/latest/getting_started/agents/)
-- [Connect an agent IDE (MCP)](https://cellpy.readthedocs.io/en/latest/getting_started/mcp/)
+- [Using cellpy from an agent](https://cellpy.readthedocs.io/en/latest/agents/)
+- [Connect an agent IDE (MCP)](https://cellpy.readthedocs.io/en/latest/agents/mcp/)
+- [Copy-paste prompts for your agent](https://cellpy.readthedocs.io/en/latest/agents/prompts/)
 
 ## How-tos
 
 - [How do I…?](https://cellpy.readthedocs.io/en/latest/how_do_i/)
 - [Compute ICA / DVA](https://cellpy.readthedocs.io/en/latest/guides/ica/)
+- [Pull cell metadata from a lab database](https://cellpy.readthedocs.io/en/latest/guides/metadata_sources/)
 - [Batch processing](https://cellpy.readthedocs.io/en/latest/examples/batch_utility/cellpy_batch_processing/)
 
 ## Reference

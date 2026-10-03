@@ -249,7 +249,7 @@ def test_recalc_remakes_steps_and_summary(monkeypatch):
         def make_step_table(self):
             calls.append("steps")
 
-        def make_summary(self):
+        def make_summary(self, **kwargs):
             calls.append("summary")
 
     monkeypatch.setattr(
@@ -270,7 +270,7 @@ def test_no_recalc_skips_remake(monkeypatch):
         def make_step_table(self):
             calls.append("steps")
 
-        def make_summary(self):
+        def make_summary(self, **kwargs):
             calls.append("summary")
 
     monkeypatch.setattr(

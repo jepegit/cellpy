@@ -133,7 +133,7 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_batch_v3_runner.py::test_load_cell_reraises_missing_files_when_not_accepting | yes | yes | batch.runner.load_cell accept_errors | #962 | |
 | tests/test_batch_v3_facade.py::test_load_warns_when_no_raw_files_were_found | yes | yes | batch.facade._finalize | #962 | batch.load warning + result.report |
 | tests/test_batch_v3_facade.py::test_batch_public_methods_have_shift_tab_docs | yes | yes | batch.facade.Batch | #963 | Shift-Tab docstrings on b.plot etc. |
-| tests/test_no_sphinx_doc_roles.py::test_no_sphinx_doc_roles_in_cellpy_source | no | no | cellpy/**/*.py docstrings | #967 | docs chrome; not a merge-gate oracle |
+| tests/test_no_sphinx_doc_roles.py::test_no_sphinx_doc_roles_in_cellpy_source | no | no | src/cellpy/**/*.py docstrings | #967 | docs chrome; not a merge-gate oracle |
 | tests/test_ica_api.py::test_an_empty_frame_says_the_cycle_is_missing | yes | yes | ica._half_cycles_from_frame | #971 | empty DataFrame() is not a missing-column error |
 | tests/test_ica_api.py::test_an_empty_frame_with_curve_columns_says_the_cycle_is_missing | yes | yes | ica._half_cycles_from_frame | #971 | empty-with-columns |
 | tests/test_ica_api.py::test_a_missing_cycle_on_a_cell_says_the_frame_is_empty | yes | yes | ica._resolve_source | #971 | CellpyCell + missing cycle |
@@ -146,7 +146,7 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_cli_api.py::test_create_project_with_no_input_creates_the_project_dir | yes | yes | cli_api._new project-dir branch | #990 | no_input must not read stdin (scriptable `cellpy new`) |
 | tests/test_cli_api.py::test_list_templates_returns_the_templates_as_data | yes | yes | cli_api.list_templates | #991 | shape contract for non-CLI callers |
 | tests/test_cli_api.py::test_the_template_listing_is_rendered_from_list_templates | yes | yes | cli_api._new list_ branch | #991 | printed listing cannot drift from the data |
-| tests/test_doc_cross_references.py::test_every_see_reference_names_an_importable_target | yes | yes | cellpy/**/*.py docstring `See `…`` targets | #993 | guards the targets; test_no_sphinx_doc_roles guards the syntax |
+| tests/test_doc_cross_references.py::test_every_see_reference_names_an_importable_target | yes | yes | src/cellpy/**/*.py docstring `See `…`` targets | #993 | guards the targets; test_no_sphinx_doc_roles guards the syntax |
 | tests/test_doc_cross_references.py::test_the_thinnest_delegates_point_at_their_documentation | yes | yes | CellpyCell.get_cap / to_csv / to_excel | #993 | the three pointers carrying the most undocumented arguments |
 | tests/test_batch_summary_ir.py::test_pick_optional_summary_prefers_then_falls_back | yes | yes | plotting.batch_summary._pick_optional_summary | #949 | |
 | tests/test_batch_summary_ir.py::test_select_ir_falls_back_and_warns | yes | yes | plotting.batch_summary._select_ir_column | #949 | discharge missing → ir_charge |
@@ -156,6 +156,9 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_batch_summary_ir.py::test_discharge_direction_falls_back_to_ir_charge | yes | yes | plotting.batch_summary plotly fallback | #949 | skip if no plotly |
 | tests/test_batch_summary_ir.py::test_ir_false_omits_the_panel_even_when_columns_exist | yes | yes | plotting.batch_summary ir=False | #949 | skip if no plotly |
 | tests/test_batch_summary_ir.py::test_missing_ir_columns_warn_and_skip_the_panel | yes | yes | plotting.batch_summary missing IR | #949 | skip if no plotly |
+| tests/test_batch_summary_ir.py::test_get_auto_summary_includes_ir_columns | yes | yes | cellpy.get auto_summary find_ir | #949 | |
+| tests/test_batch_summary_ir.py::test_get_can_skip_ir_via_summary_kwargs | yes | yes | cellpy.get summary_kwargs find_ir=False | #949 | |
+| tests/test_batch_summary_ir.py::test_batch_plot_from_get_loaded_cell_shows_ir | yes | yes | Batch.plot after get | #949 | skip if no plotly |
 | tests/test_harmonize.py::test_per_cycle_is_the_target_and_is_untouched | yes | yes | instruments.harmonize.normalize_reset_granularity | #989 | PER_CYCLE silent |
 | tests/test_harmonize.py::test_per_test_is_rebased_at_each_cycle_boundary | yes | yes | instruments.harmonize.normalize_reset_granularity | #989 | PER_TEST warns |
 | tests/test_harmonize.py::test_per_step_accumulates_completed_steps_within_the_cycle | yes | yes | instruments.harmonize.normalize_reset_granularity | #989 | PER_STEP warns |
@@ -181,6 +184,45 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_incremental_update.py::test_gap_append_on_boundary_equals_full_load | yes | yes | CellpyCellCore.update_core_data | #778 | step/cycle boundary cuts |
 | tests/test_incremental_update.py::test_gap_append_mid_step_equals_full_load | yes | yes | cellpycore.merge.update_data | #778 | strict xfail → core#148 |
 | tests/test_incremental_update.py::test_empty_tail_is_noop | yes | yes | CellpyCellCore.update_core_data | #778 | strict xfail → core#147 |
+| tests/test_incremental_protocol.py::test_load_since_alone_matches_only_the_incremental_protocol | yes | yes | instruments.contract.SupportsIncrementalLoad | #779 | methods-only; not InstrumentLoader |
+| tests/test_incremental_protocol.py::test_full_read_loader_is_not_incremental | yes | yes | instruments.contract.SupportsIncrementalLoad | #779 | GoodLoader omits load_since |
+| tests/test_incremental_protocol.py::test_loader_can_match_both_protocols | yes | yes | instruments.contract.SupportsIncrementalLoad | #779 | optional second protocol |
+| tests/test_incremental_protocol.py::test_marker_and_chunk_are_frozen | yes | yes | instruments.contract.LoadMarker | #779 | frozen dataclasses |
+| tests/test_incremental_protocol.py::test_conformance_kit_ignores_a_missing_load_since | yes | yes | instruments.testing.check_loader | #779 | full-read kit unchanged |
+| tests/test_load_since.py::test_only_the_four_cheap_partial_loaders_are_incremental | yes | yes | neware_txt / maccor_txt / arbin_res / arbin_sql load_since | #780 | protocol membership; others stay full-read |
+| tests/test_load_since.py::test_last_cycle_start_finds_the_trailing_run | yes | yes | instruments.incremental.last_cycle_start | #780 | rewind helper |
+| tests/test_load_since.py::test_neware_load_since_none_equals_full_harmonized_read | yes | yes | TxtLoader._load_since_rows | #780 | chunk == harmonize(parse()) |
+| tests/test_load_since.py::test_neware_load_since_marker_rereads_from_last_cycle_start | yes | yes | TxtLoader._load_since_rows | #780 | row_count marker rewinds to cycle start |
+| tests/test_load_since.py::test_neware_head_cell_plus_chunk_equals_full_load | yes | yes | load_since + update_core_data | #780 | #778 oracle with a real chunk |
+| tests/test_load_since.py::test_marker_past_end_of_file_gives_empty_chunk_and_same_marker | yes | yes | TxtLoader._load_since_rows | #780 | empty new_raw contract |
+| tests/test_load_since.py::test_load_since_does_not_poison_the_parse_cache | yes | yes | TxtLoader._load_since_rows / loader | #780 | `_parsed_frame` cleared |
+| tests/test_load_since.py::test_maccor_load_since_matches_full_read_and_row_marker | yes | yes | maccor_txt.load_since | #780 | multi-line header; mid-cycle caller marker caveat |
+| tests/test_load_since.py::test_arbin_res_load_since_seeks_on_datapoint_and_rewinds_to_cycle_start | yes | yes | arbin_res.load_since | #780 | skip without mdbtools |
+| tests/test_load_since.py::test_arbin_sql_load_since_filters_on_datapoint | yes | yes | arbin_sql.load_since | #780 | mocked `_query_sql` |
+| tests/test_load_since.py::test_arbin_sql_query_gets_a_datapoint_clause | yes | yes | arbin_sql._query_sql | #780 | SQL clause on the fully qualified table |
+| tests/test_cell_update.py::test_update_on_unchanged_source_is_a_noop | yes | yes | CellpyCell.update / _raw_sources_changed | #164 | size+mtime unchanged → False |
+| tests/test_cell_update.py::test_update_after_growth_equals_full_load | yes | yes | CellpyCell.update (incremental) | #164 | head + grown tail == full cellpy.get |
+| tests/test_cell_update.py::test_update_twice_tracks_the_marker | yes | yes | CellpyCell._marker_from_raw / _load_marker | #164 | two growths; marker rewinds |
+| tests/test_cell_update.py::test_update_refreshes_file_id | yes | yes | CellpyCell._refresh_fid | #164 | size / last_data_point / lengths; second update no-op |
+| tests/test_cell_update.py::test_update_after_cellpy_file_round_trip | yes | yes | CellpyCell._ensure_loader_for_update | #164 | loader from provenance; mass kept |
+| tests/test_cell_update.py::test_update_falls_back_to_full_reload_and_keeps_meta | yes | yes | CellpyCell._update_full_reload | #164 | single-cycle head → core rejects → reload |
+| tests/test_cell_update.py::test_update_force_reloads_an_unchanged_source | yes | yes | CellpyCell.update(force=True) | #164 | |
+| tests/test_cell_update.py::test_update_without_raw_source_raises | yes | yes | CellpyCell.update | #164 | NoDataFound |
+| tests/test_cell_update.py::test_update_uses_full_reload_for_non_incremental_loader | yes | yes | CellpyCell.update (protocol gate) | #164 | loader without load_since → full reload |
+| tests/test_live_poll.py::test_poll_updates_on_growth_and_stops_at_max_polls | yes | yes | utils.live.poll | #781 | fake clock grows file; result == full load |
+| tests/test_live_poll.py::test_poll_from_path_fires_on_update_for_the_initial_load | yes | yes | utils.live.poll (path input) | #781 | |
+| tests/test_live_poll.py::test_poll_stops_on_until | yes | yes | utils.live._should_stop | #781 | |
+| tests/test_live_poll.py::test_poll_stops_when_source_complete | yes | yes | utils.live.poll / CellpyCell.source_complete | #781 | |
+| tests/test_live_poll.py::test_poll_stops_on_timeout | yes | yes | utils.live._should_stop | #781 | monotonic patched |
+| tests/test_live_poll.py::test_poll_records_update_errors_unless_raise_errors | yes | yes | utils.live.poll | #781 | |
+| tests/test_live_poll.py::test_poll_keyboard_interrupt_returns_the_cell | yes | yes | utils.live.poll | #781 | |
+| tests/test_live_poll.py::test_processor_module_is_gone | yes | yes | utils.processor (deleted) | #781 | guards against resurrection |
+| tests/test_batch_live.py::test_refresh_reports_per_cell_and_updates_summaries | yes | yes | Batch.refresh | #782 | one of two cells grows; summaries cache cleared |
+| tests/test_batch_live.py::test_refresh_subset_and_error_capture | yes | yes | Batch.refresh(labels, raise_errors) | #782 | |
+| tests/test_batch_live.py::test_update_live_does_not_reload | yes | yes | Batch.update(live=True) | #782 | returns same BatchResult |
+| tests/test_batch_live.py::test_poll_refreshes_and_reruns_report | yes | yes | Batch.poll | #782 | fake clock; last_report rebuilt |
+| tests/test_batch_live.py::test_poll_stops_on_until_and_complete | yes | yes | Batch.poll stop conditions | #782 | |
+| tests/test_batch_live.py::test_poll_stops_on_cell_error | yes | yes | Batch.poll | #782 | |
 | tests/test_dbreader.py::test_missing_column_warns_once | yes | yes | readers.dbreader.Reader._pick_info | #1008 | warn-once per missing header |
 | tests/test_dbreader.py::test_nom_cap_specifics_column_reaches_pages | yes | yes | batch._dbengine._create_pages_dict | #1008 | db value → pages |
 | tests/test_dbreader.py::test_simple_db_engine_skip_file_search_excel_reader | yes | yes | batch._dbengine.simple_db_engine / find_files | #1017 | skip_file_search frames one row per cell |
@@ -194,7 +236,9 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_collected_summary_directions.py::test_pretty_labels_for_panel_keys | yes | yes | plotting.collected._pretty_variable_label | #1009 | panel-key labels, non-CV, mod_01 |
 | tests/test_collected_summary_directions.py::test_charge_and_discharge_share_a_panel_with_dash_styles | yes | yes | plotting.collected.summary_plotter | #1009 | 2 panels, dash, legend2 |
 | tests/test_collected_summary_directions.py::test_combine_directions_false_keeps_one_facet_per_variable | yes | yes | plotting.collected.summary_plotter | #1009 | opt-out |
-| tests/test_collected_summary_directions.py::test_lone_direction_keeps_its_own_label_but_gets_the_dash | yes | yes | plotting.collected._panel_mapping | #1009 | no merge partner |
+| tests/test_collected_summary_directions.py::test_lone_direction_stays_solid_without_direction_legend | yes | yes | plotting.collected.summary_plotter | #1096 | lone direction: solid, no legend2 |
+| tests/test_collected_summary_directions.py::test_unpaired_direction_stays_solid_beside_a_combined_panel | yes | yes | plotting.collected.summary_plotter | #1096 | lone panel beside a combined one |
+| tests/test_collected_summary_directions.py::test_lone_discharge_spread_stays_solid | yes | yes | plotting.collected.spread_plot | #1096 | discharge-only spread stays solid |
 | tests/test_collected_summary_directions.py::test_no_direction_tokens_means_no_direction_legend | yes | yes | plotting.collected.summary_plotter | #1009 | untouched frame |
 | tests/test_collected_summary_directions.py::test_y_ranges_accept_original_variable_names | yes | yes | plotting.collected.summary_plotter | #1009 | key translation |
 | tests/test_collected_summary_directions.py::test_order_variables_accept_original_variable_names | yes | yes | plotting.collected.summary_plotter | #1009 | key translation |
@@ -212,6 +256,33 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_cli_connectors_plugin.py::test_help_lists_installed_connectors_without_importing_it | yes | yes | live cellpy-connectors stub | #1060 | skip if dist missing (conda) |
 | tests/test_cli_connectors_plugin.py::test_connectors_ping_runs_the_installed_plugin | yes | yes | cellpy connectors ping | #1060 | skip if dist missing (conda) |
 | tests/test_cli_connectors_plugin.py::test_import_cellpy_does_not_import_connectors | yes | yes | import cellpy isolation | #1060 | skip if dist missing (conda) |
+| tests/test_metadata_sources.py::test_protocol_is_structural | yes | yes | metadata_sources.contract Protocols | #784 | public contract shape |
+| tests/test_metadata_sources.py::test_fetch_meta_returns_validated_records_with_timestamp | yes | | metadata_sources.registry.fetch_meta | #784 | |
+| tests/test_metadata_sources.py::test_fetch_meta_unknown_source_is_empty_layer_unless_strict | yes | yes | fetch_meta null object | #784 | cellpy law: empty layer, cell still loads |
+| tests/test_metadata_sources.py::test_fetch_meta_auth_error_is_never_swallowed | yes | yes | fetch_meta | #784 | security posture |
+| tests/test_metadata_sources.py::test_external_beats_raw_file_and_defaults_but_not_journal_or_kwargs | yes | yes | MetaResolver external= precedence | #784 | precedence + origins provenance |
+| tests/test_metadata_sources.py::test_cell_fetch_meta_applies_record_and_links | yes | | CellpyCell.fetch_meta / external_links | #784 | uses `cell` fixture |
+| tests/test_metadata_sources.py::test_external_links_survive_save_and_load | no | | v9 meta.json external_links | #784 | save/get round-trip |
+| tests/test_metadata_sources.py (other 29) | no | | contract validation, registry discovery, conformance kit, resolver ordering | #784 | offline |
+| tests/test_metadata_source_files.py::test_file_refs_are_coerced_and_ordered | yes | yes | MetaRecord.files / FileRef | #1107 | contract shape |
+| tests/test_metadata_source_files.py::test_validate_record_rejects_bad_file_refs | yes | yes | validate_record file checks | #1107 | adapter conformance |
+| tests/test_metadata_source_files.py::test_get_from_source_opens_pointed_files_without_filefinder | yes | yes | cellpy.get(source=) | #1107 | monkeypatched filefinder raises |
+| tests/test_metadata_source_files.py::test_explicit_keywords_beat_the_source | yes | yes | get precedence kwargs > source | #1107 | |
+| tests/test_metadata_source_files.py::test_record_without_files_falls_back_to_filefinder | yes | yes | get fallback parity | #1107 | today's behaviour kept |
+| tests/test_metadata_source_files.py (other 9) | no | | strict default, NoDataFound, enrichment, save/load of ExternalLink.files, .cellpy pointer | #1107 | uses testdata .res |
+| tests/test_batch_from_source.py::test_pages_carry_metadata_and_pointers | yes | yes | batch.source.pages_from_records | #1107 | offline DictMetadataSource |
+| tests/test_batch_from_source.py::test_rows_without_pointers_use_the_journal_file_search | yes | yes | pages_from_records → _dbengine.find_files | #1107 | only rows lacking pointers |
+| tests/test_batch_from_source.py::test_from_source_builds_pages_like_a_journal | yes | | Batch.from_source | #1107 | |
+| tests/test_batch_from_source.py::test_update_loads_pointed_files_and_stamps_links | yes | | Batch.update → _stamp_external_links | #1107 | loads testdata |
+| tests/test_batch_from_source.py (other 7) | no | | naming, duplicates, file_search=False, session round-trip, strict/no-record errors | #1107 | offline |
+| tests/test_source_file_hints.py::test_mtime_epoch | yes | yes | cellreader._mtime_epoch | #1124 | offline, parametrized |
+| tests/test_source_file_hints.py::test_hint_matches_only_when_every_recorded_stat_agrees | yes | yes | cellreader._source_hint_matches_loaded | #1124 | offline |
+| tests/test_source_file_hints.py::test_link_keeps_stat_carrying_raw_refs_and_round_trips | yes | yes | MetaRecord.link / ExternalLink.file_refs dict round trip | #1124 | byte-identical old docs |
+| tests/test_source_file_hints.py::test_matching_hint_skips_stat | yes | yes | CellpyCell._raw_sources_changed hint path | #1124 | OtherPath.stat spy, loads testdata .res |
+| tests/test_source_file_hints.py::test_differing_size_falls_back_to_stat | yes | yes | hint mismatch → stat | #1124 | proves the spy sees stat |
+| tests/test_source_file_hints.py::test_record_without_stats_behaves_as_today | yes | yes | no-hint parity | #1124 | today's behaviour kept |
+| tests/test_source_file_hints.py (other 6) | no | | mtime-only, bad mtime, force, save/load, re-fetch, batch refresh | #1124 | uses testdata .res |
+| tests/test_docstring_sections.py::test_docstrings_use_plural_examples_section | yes | yes | docstring `Examples:` titles under `src/cellpy` (griffe parses only the plural) | #1128 | stdlib `ast` scan, <1 s; stops the API-docs blockquote regression |
 
 **Columns**
 

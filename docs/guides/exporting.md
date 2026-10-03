@@ -86,6 +86,9 @@ truncated (with a warning in the log). For raw data, use CSV.
 ## CSV
 
 ```python
+from pathlib import Path
+
+Path("out_folder").mkdir(exist_ok=True)   # to_csv does not create the folder
 c.to_csv("out_folder")
 ```
 

@@ -49,7 +49,12 @@ cellpy mcp check --client cursor
 ```
 
 Or ask the agent itself — the page has the prompt and the checklist it
-should follow. → [Connect an agent IDE to cellpy](getting_started/mcp.md)
+should follow. → [Connect an agent IDE to cellpy](agents/mcp.md)
+
+**…paste a prompt to my agent?**
+Copy one of the ready-made paragraphs (MCP install, load a file, batch,
+plot, ICA, troubleshooting, schema names).
+→ [Copy-paste prompts for your agent](agents/prompts.md)
 
 **…find my configuration file?**
 
@@ -70,7 +75,8 @@ cellpy edit config
 c = cellpy.get("my_cell.res", instrument="arbin_res", mass=0.85)
 ```
 
-→ [Basic usage](getting_started/basic_usage.md)
+→ [Cheat sheet](getting_started/basic_usage.md) ·
+[Loading, saving and exporting (tutorial)](examples/01_loading_data.md)
 
 **…see which instruments cellpy supports?**
 
@@ -82,12 +88,12 @@ cellpy.print_instruments()
 Describe it in a YAML file and pass `instrument_file=`, or write a loader
 plugin.
 → [Writing a custom loader](examples/07_custom_loaders.md) ·
-[Loader plugin](other/writing_a_loader_plugin.md)
+[Loader plugin](guides/writing_a_loader_plugin.md)
 
 **…add my own `cellpy` subcommands?**
 Declare a `[project.entry-points."cellpy.cli_plugins"]` entry. The entry-point
 name is the command.
-→ [Writing a CLI plugin](other/writing_a_cli_plugin.md)
+→ [Writing a CLI plugin](guides/writing_a_cli_plugin.md)
 
 **…load several raw files as one cell?**
 
@@ -103,7 +109,7 @@ c = cellpy.get("my_cell.res", dataset_number=1)
 
 **…load files from a server?**
 Use an `scp://` path in `rawdatadir` or in `cellpy.get`.
-→ [Work with remote files](getting_started/remote_paths.md)
+→ [Work with remote files](guides/remote_paths.md)
 
 **…see a cellpy file's metadata without loading the data?**
 
@@ -158,6 +164,15 @@ c = cellpy.get("my_cell.res", nominal_capacity="3579 mAh/g")
 
 → all four: [Units, mass, area and C-rates](guides/units.md)
 
+**…get mass, area and nominal capacity from our lab database instead of typing them?**
+
+```python
+c.fetch_meta("batbase")      # needs the cellpy-connectors package + credentials
+c.refresh_after()
+```
+
+→ [Pull cell metadata from a lab database](guides/metadata_sources.md)
+
 ---
 
 ## Find the numbers
@@ -196,6 +211,8 @@ curve = c.get_cap(5)                       # potential, capacity
 curve = c.get_cap(5, mode="absolute")      # not normalised
 ```
 
+→ [Capacity vs voltage (tutorial)](examples/03_capacity_vs_voltage.md)
+
 **…get the OCV relaxation after a cycle?**
 
 ```python
@@ -213,7 +230,8 @@ ica_frame = ica.dqdv(c, cycles=[2, 3])
 dva_frame = ica.dvdq(c, cycles=2, direction="charge")
 ```
 
-→ [Compute ICA / DVA](guides/ica.md)
+→ [Compute ICA / DVA](guides/ica.md) ·
+[ICA tutorial](examples/04_incremental_capacity_analysis.md)
 
 **…pick out only the cycles run at a given C-rate?**
 
@@ -235,6 +253,9 @@ c.data.steps.query(f"{c.schema.steps.step_type}=='discharge'")
 ---
 
 ## Plot
+
+**…inspect a loaded cell and plot the obvious things?**
+→ [Initial data inspection (tutorial)](examples/02_Initial_data_inspection.md)
 
 **…plot capacity against cycle number?**
 
@@ -261,6 +282,8 @@ from cellpy.utils.plotutils import cycles_plot
 
 cycles_plot(c, cycles=[5, 10, 15])
 ```
+
+→ [Capacity vs voltage (tutorial)](examples/03_capacity_vs_voltage.md)
 
 **…check how cellpy labelled the steps in a cycle?**
 

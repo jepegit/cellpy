@@ -18,14 +18,9 @@ than a cellpy idea, it is called out.
 
 ## Before you start
 
-```console
-python -m pip install "cellpy[batch]"
-```
+--8<-- "docs/.snippets/quick-install.md"
 
-The `[batch]` part pulls in the plotting stack. Plain `pip install cellpy` works
-too, but then step 5 will not draw anything. Conda users:
-`conda install -c conda-forge cellpy`. Full details:
-[Installation](installation.md).
+Full details, including Arbin `.res` drivers: [Installation](installation.md).
 
 Then, once:
 
@@ -70,7 +65,8 @@ That downloads a small Arbin `.res` file the first time (so you need network
 once), reads it, and builds everything derived from it.
 
 `c` is now a **cell object**. Almost everything you do goes through it. The name
-`c` is just a variable — call it whatever you like.
+`c` is just a variable — call it whatever you like. (One picture of what is
+inside it: [How cellpy is organised](../fundamentals/fundamentals.md).)
 
 How many cycles did we get?
 
@@ -268,7 +264,10 @@ Depending on what you are actually trying to do:
 | understand the numbers you just saw | [Summary columns](../reference/summary_columns.md) |
 | get capacities per area, or change units | [Units, mass, area and C-rates](../guides/units.md) |
 | make better figures | [Plot one cell](../guides/plotting.md) |
-| do dQ/dV | [Compute ICA / DVA](../guides/ica.md) |
+| do dQ/dV | [Compute ICA / DVA](../guides/ica.md) · [ICA tutorial](../examples/04_incremental_capacity_analysis.md) |
+| walk a longer load / save / export example | [Loading data](../examples/01_loading_data.md) |
+| inspect and plot a cell you already saved | [Initial data inspection](../examples/02_Initial_data_inspection.md) |
+| plot capacity vs voltage for selected cycles | [Capacity vs voltage](../examples/03_capacity_vs_voltage.md) |
 | work on many cells at once | [Set up the cellpy database](../guides/batch_database.md) |
 | get data into Excel or a repository | [Get your data out](../guides/exporting.md) |
 | find out why a number looks wrong | [Troubleshooting](../troubleshooting.md) |

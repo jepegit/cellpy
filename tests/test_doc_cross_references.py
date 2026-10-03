@@ -18,7 +18,7 @@ import re
 
 import pytest
 
-CELLPY_SRC = pathlib.Path(__file__).resolve().parents[1] / "cellpy"
+CELLPY_SRC = pathlib.Path(__file__).resolve().parents[1] / "src" / "cellpy"
 
 REFERENCE_RE = re.compile(r"See `([A-Za-z_][A-Za-z0-9_.]*)`")
 

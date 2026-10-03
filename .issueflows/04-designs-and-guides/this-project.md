@@ -43,7 +43,7 @@ See also [testing-and-coverage.md](testing-and-coverage.md) and [ci-tiers.md](ci
   unaffected; string metadata in JSON is where `\` vs `/` bites (see #433).
 - **Agent usage docs (#682):** When a change alters the public `cellpy.get` /
   `CellpyCell` / `schema` / CLI surface that app-building agents rely on, update
-  [`docs/getting_started/agents.md`](../../docs/getting_started/agents.md) and the
+  [`docs/agents/index.md`](../../docs/agents/index.md) and the
   short **Using cellpy (for agents)** section in root `AGENTS.md` in the same PR.
   Do not put long recipes inside the managed issue-flow block of `AGENTS.md`.
 - **Local pytest:** `uv run pytest` / `uv run pytest -m essential`. Do not
@@ -52,7 +52,7 @@ See also [testing-and-coverage.md](testing-and-coverage.md) and [ci-tiers.md](ci
 
 ## Entry points
 
-- Main package: `cellpy/` (Python library).
+- Main package: `src/cellpy/` (Python library).
 - Issue-flow: `.issueflows/` (current issue under `01-current-issues/`).
 - **cellpy 2 plans:** sibling repo `../cellpy-design-and-development/` (start at `CURRENT.md`; not `code-reviews/`).
 - v2 epic: [cellpy-v2-epic.md](cellpy-v2-epic.md).

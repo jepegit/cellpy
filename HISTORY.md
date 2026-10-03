@@ -2,6 +2,141 @@
 
 ## [Unreleased]
 
+* API reference: docstring examples render as highlighted code again.
+  Eleven docstrings used a singular `Example:` section title, which griffe
+  does not recognise, so the block became a markdown admonition and the
+  `>>>` prompts turned into nested blockquotes. Renamed to `Examples:`, the
+  two prose examples use fenced code blocks, the `list_templates` return
+  description is one item, and a small essential test fails on any new
+  `Example:` title. (#1128)
+
+* Docs and docstrings made instrument neutral: generic prose in
+  `cellreader` no longer calls raw files "res-files" or cellpy files
+  "hdf5 files"; copy-paste docstrings in the Neware xlsx and Biologic mpr
+  loaders name the right tester; unit/summary pages phrase the Arbin Ah
+  example as one tester among many. Genuinely Arbin-specific text
+  (drivers, `arbin_res`, `dataset_number`) is unchanged. (#1125)
+
+* File pointers from external metadata sources (Epic M / M4). `MetaRecord`
+  gains `files: tuple[FileRef, ...]` (`kind`, `uri`, `order`, `size`,
+  `mtime`, `checksum`, `loader`); `cellpy.get(source=, key=, kind=, project=)`
+  and `CellpyCell.from_source(...)` open the pointed-at raw / `.cellpy`
+  files directly and fall back to `filefinder` only when a record has none;
+  `batch.from_source(source, key, kind="tag")` builds journal pages from the
+  records (rows without pointers use the journal file search). Explicit
+  keywords still win over the source; `ExternalLink.files` records the URIs
+  used and survives save/load. Records without `files` behave exactly as
+  before. (#1107)
+
+* Scheduled CI `pip install` job installs `cellpy[legacy-files,plotting-mpl]`
+  so matplotlib is present for Agg plot-test collection (regression after
+  matplotlib left the required set in #937).
+
+* `cellpy info --check`: missing Arbin `.res` ODBC/mdbtools is a soft
+  warning (exit 0); only imports/configuration failures exit non-zero. (#1111)
+
+* Move the installable package from `cellpy/` to `src/cellpy/`. (#1109)
+
+* Pluggable external metadata sources (read path). New
+  `cellpy.readers.metadata_sources`: a `MetadataSource` Protocol
+  (`name`, `fetch(MetaQuery) -> tuple[MetaRecord, ...]`), the
+  `cellpy.metadata_sources` entry-point registry (`register`, `names`,
+  `get_source`), and a null-object `fetch_meta` (unreachable or unknown
+  source ⇒ empty layer; auth errors still raise). `MetaResolver` takes
+  `external=` records into the journal/db layer *below* the journal row and
+  `Resolution.origin_of()` / `explain()` name the source that won a field.
+  `CellpyCell.fetch_meta(source, key=None, kind=, apply=, strict=)` pulls a
+  record onto the cell and records an `ExternalLink` in
+  `c.external_links`, persisted in v9 `meta.json` (`"external_links"`).
+  `metadata_sources.testing.check_metadata_source` is the conformance kit
+  for adapters. No push. The BatBase adapter ships in `cellpy-connectors`.
+  (#784)
+
+* Optional `SupportsIncrementalLoad` protocol (`load_since`) with
+  `LoadMarker` and `IncrementalChunk`, hosted in cellpy. Shipped loaders
+  stay full-read until they opt in. (#779)
+
+* `load_since()` on `arbin_res`, `arbin_sql`, `neware_txt`, and
+  `maccor_txt`: returns the harmonized rows read since a marker plus the
+  next marker, which rewinds to the start of the last cycle so cycle-local
+  capacity normalisation stays correct. Other loaders stay full-read. (#780)
+
+* `CellpyCell.update()`: refresh a cell from a raw file that grew. Detects
+  changes from file size/mtime, reads only the new rows for incremental
+  loaders (arbin_res, arbin_sql, neware_txt, maccor_txt) and appends them
+  through cellpy-core, otherwise reloads fully while keeping mass, area,
+  nominal capacity, cycle mode and cell name. Works on cells loaded from a
+  cellpy-file. Returns `True` when the frames changed. (#164)
+
+* `cellpy.utils.live.poll(cell_or_path, interval, on_update=, until=,
+  max_polls=, timeout=, stop_when_complete=True)`: follow a running test by
+  calling `c.update()` on an interval; the run is recorded on
+  `c.poll_status`. The unused `cellpy.utils.processor` module is removed
+  (its thread-pool fan-out lives in `batch.runner`'s `executor="threads"`).
+  (#781)
+
+* Batch live refresh: `b.refresh()` (alias `b.update(live=True)`) calls
+  `c.update()` on every loaded cell and returns `{label: changed}`;
+  `b.poll(interval=, until=, max_polls=, on_update=)` repeats it, rebuilding
+  `b.summaries` and the QC report (`b.last_report`) on ticks that changed.
+  (#782)
+
+* Docs: how-to guide "Pull cell metadata from a lab database" (BatBase via
+  `cellpy-connectors`: install, `cellpy connectors configure batbase`,
+  `fetch_meta` key kinds, `refresh_after`, `external_links`, field/unit map,
+  troubleshooting), wired into the guides index, How-do-I and `llms.txt`.
+  (#1023)
+
+* Epic M: use `FileRef` size/mtime from the metadata source to skip stat-ing
+  raw files on `update()`. Raw pointers that carry `size` / `mtime` are kept
+  on `ExternalLink.file_refs` (persisted in v9 `meta.json`, omitted when
+  empty) and `CellpyCell.update()` / `Batch.refresh()` / `poll()` treat the
+  file as unchanged without a remote `stat` while they equal what was
+  loaded; a differing or missing value, or `force=True`, falls back to
+  today's path. A re-run of `fetch_meta` / `batch.from_source` refreshes the
+  hints. (#1124)
+
+## [2.1.5.post6] - 2026-09-25
+
+* `summary_collector(...).plot()` keeps a lone charge or discharge series
+  solid and drops the extra Direction legend; dash + that legend stay only
+  when both directions share a panel. (#1096)
+
+* Docs usability pass: tutorials get an "In this tutorial" box, working
+  cross-links and shorter output; navigation regrouped (top tabs, "Use with AI
+  agents", "Upgrading", tutorials split into core path and other instruments)
+  with redirects for moved pages; new landing page, cheat sheet, guide figures,
+  pipeline diagram, and a `CellpyCell` API page grouped by task. `to_csv`
+  documents that its folder must exist. (#1023)
+
+* MCP `find_cells(kind=raw)` lists raw files (including configured remote
+  URIs), sets `needs_metadata`, and `load_cell` opens those URIs only when
+  they sit under the configured root. (#1089)
+
+* MCP `load_cell` forwards optional `nominal_capacity` to `cellpy.get`. (#1088)
+
+* Docs: MCP `find_cells` (project + number range; empty cellpy offers raw,
+  never a silent crawl) and a SAL 10–15 agent prompt. (#1080)
+
+* `filefinder.find_by_project` lists cellpy or raw files by project token
+  and inclusive number range. (#1076)
+
+* Parse `<date>_<project><number>` cell filenames. (#1075)
+
+* Docs: tutorials 01–02 use `full_cell`, `refresh_after`, and native `.cellpy`
+  save/reload; How-do-I and first-hour link the numbered tutorials. (#1023)
+
+* `cellpy.get` / batch recalc default `find_ir=True`, so `b.plot(ir=True)`
+  gets `ir_charge` / `ir_discharge` without a second `make_summary`. (#949)
+
+## [2.1.5.post5] - 2026-09-21
+
+* Docs: add copy-paste prompts for LLM agents, with tracked `latest` RTD
+  links. (#1064)
+
+* Docs: copy button on the agent prompt snippets (`content.code.copy` on
+  fenced `text` blocks). (#1064)
+
 ## [2.1.5.post4] - 2026-09-20
 
 * Changelog: move leftover Unreleased notes onto the 2.1.5 / post1 / post2

@@ -1,4 +1,16 @@
-# Defining your own custom loaders
+# Writing a custom loader
+
+!!! abstract "In this tutorial"
+
+    You will learn how to:
+
+    - describe a new file layout in a YAML file
+    - load it with the `custom` and `local_instrument` loaders
+
+    **Data:** the bundled example data (`cellpy.utils.example_data`), downloaded automatically.
+
+    [:material-github: Open the notebook on GitHub](https://github.com/jepegit/cellpy/blob/master/examples/07_custom_loaders.ipynb){ .md-button } — or get every notebook and its data with `cellpy pull --examples`.
+
 
 
 ```python
@@ -86,7 +98,7 @@ head(p_csv, 30)
     [29] 8;1080.01;1080.01;43374.43;1;1;0.00;1.14;0.00;0.00
     [30] 9;1200.01;1200.01;43374.43;1;1;0.00;1.14;0.00;0.00
     ============================================== custom_data.csv ===============================================
-    
+
 
 
 ```python
@@ -150,7 +162,7 @@ head(instrument_file, -1)
     [54]     stable_voltage_hard: 2.0
     [55]     stable_voltage_soft: 4.0
     =========================================== custom_instrument.yml ============================================
-    
+
 
 
 ```python
@@ -163,7 +175,7 @@ c = cellpy.get(p_csv, instrument="custom", instrument_file=instrument_file)
            'current', 'voltage', 'charge_capacity', 'discharge_Capacity'],
           dtype='object')
     (cellpy) - running post-processor: convert_date_time_to_datetime
-    
+
 
 
 ```python
@@ -199,7 +211,7 @@ print(f"{p.name=}")
 ```
 
     p.name='maccor_three.txt'
-    
+
 
 
 ```python
@@ -208,7 +220,7 @@ print(f"{local_instrument.name=}")
 ```
 
     local_instrument.name='local_instrument.yml'
-    
+
 
 
 ```python
@@ -286,7 +298,7 @@ head(local_instrument, -1)
     [68]     stable_voltage_hard: 2.0
     [69]     stable_voltage_soft: 4.0
     ============================================ local_instrument.yml ============================================
-    
+
 
 
 ```python
@@ -315,7 +327,7 @@ head(p, 20)
     [19] 14	0	1	  0d 00:13:00.00	  0d 00:13:00.00	0.0	0.0	0.0	1853.2082	R	1	08/23/2021 6:17:18 PM
     [20] 15	0	1	  0d 00:14:00.00	  0d 00:14:00.00	0.0	0.0	0.0	1853.3608	R	1	08/23/2021 6:18:18 PM
     ============================================== maccor_three.txt ==============================================
-    
+
 
 
 ```python
@@ -338,7 +350,7 @@ c = cellpy.get(p, instrument=local_instrument)
     (cellpy) - running post-processor: convert_date_time_to_datetime
     (cellpy) - running post-processor: convert_step_time_to_timedelta
     (cellpy) - running post-processor: convert_test_time_to_timedelta
-    
+
 
 
 ```python

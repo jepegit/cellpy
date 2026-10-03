@@ -6,7 +6,7 @@ This page covers the **built-in** loaders shipped in `cellpy.readers.instruments
 module-scanning factory below is how they are discovered and instantiated internally.
 If you are adding support for a cycler from *outside* cellpy (your own package, no
 cellpy base class), that goes through the newer entry-point contract instead — see
-[Write an instrument loader plugin](../../other/writing_a_loader_plugin.md) and the
+[Write an instrument loader plugin](../../guides/writing_a_loader_plugin.md) and the
 [Instruments API reference](../../api/instruments.md). The two coexist: built-in
 loaders have not been ported to the contract yet (`cellpy.readers.instruments.registry`
 documents the current scope), so this factory remains the way to add or change one of

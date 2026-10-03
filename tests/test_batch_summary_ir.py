@@ -133,3 +133,43 @@ def test_missing_ir_columns_warn_and_skip_the_panel():
     with pytest.warns(UserWarning, match="skipping the IR panel"):
         fig = plot_cycle_life_summary_plotly(frame, ir=True, direction="discharge")
     assert "IR (" not in _title(fig)
+
+
+@pytest.mark.essential
+def test_get_auto_summary_includes_ir_columns():
+    import cellpy
+
+    from . import fdv
+
+    cell = cellpy.get(fdv.res_file_path, mass=1.0, testing=True)
+    assert hdr.ir_charge in cell.data.summary.columns
+    assert hdr.ir_discharge in cell.data.summary.columns
+
+
+@pytest.mark.essential
+def test_get_can_skip_ir_via_summary_kwargs():
+    import cellpy
+
+    from . import fdv
+
+    cell = cellpy.get(
+        fdv.res_file_path, mass=1.0, testing=True, summary_kwargs={"find_ir": False}
+    )
+    assert hdr.ir_charge not in cell.data.summary.columns
+    assert hdr.ir_discharge not in cell.data.summary.columns
+
+
+@pytest.mark.essential
+@pytest.mark.skipif(not plotly_available, reason="plotly extra not installed")
+def test_batch_plot_from_get_loaded_cell_shows_ir():
+    import cellpy
+    from cellpy.batch import from_cells
+
+    from . import fdv
+
+    cell = cellpy.get(fdv.res_file_path, mass=1.0, testing=True)
+    batch = from_cells({cell.cell_name or "cell_a": cell}, name="t", project="p")
+    fig = batch.plot(ir=True, direction="discharge", show=False, backend="plotly")
+    assert "IR (discharge)" in _title(fig)
+    fig = batch.plot(ir=True, direction="charge", show=False, backend="plotly")
+    assert "IR (charge)" in _title(fig)

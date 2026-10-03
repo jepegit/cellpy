@@ -1,8 +1,7 @@
 # Readers
 
-The cell object, its frames, and the cellpy-file I/O behind them.
-
-::: cellpy.readers.cellreader.CellpyCell
+The data containers behind the cell object, and how cellpy resolves metadata.
+The cell object itself (`CellpyCell`) has [its own page](cell.md).
 
 ::: cellpy.readers.data_structures
 
@@ -13,3 +12,18 @@ The cell object, its frames, and the cellpy-file I/O behind them.
 ::: cellpy.readers.provenance
 
 ::: cellpy.readers.journal_layer
+
+## External metadata sources
+
+Pluggable lab databases / APIs as a journal-level metadata layer (#784).
+Adapters satisfy the `MetadataSource` Protocol and declare a
+`cellpy.metadata_sources` entry point; `CellpyCell.fetch_meta` pulls a record
+onto a cell. A record may carry `FileRef` pointers to the test's files
+(#1107); `cellpy.get(source=...)` / `CellpyCell.from_source` open them
+directly and `batch.from_source` builds journal pages from them.
+
+::: cellpy.readers.metadata_sources.contract
+
+::: cellpy.readers.metadata_sources.registry
+
+::: cellpy.readers.metadata_sources.testing

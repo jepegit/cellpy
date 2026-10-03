@@ -113,6 +113,11 @@ from cellpy.utils.plotutils import cycle_info_plot
 cycle_info_plot(c, cycle=3)
 ```
 
+<figure markdown>
+  ![cycle_info_plot for cycle 3: step numbers and step types drawn over the voltage and current traces](figures/cycle_info_plot.png){ loading=lazy }
+  <figcaption>Cycle 3 of the example data: a discharge (step 3), an OCV relaxation (5), a charge (6) and another relaxation (8). Steps 4 and 7 are short IR pulses. Each label shows the changes cellpy used to decide the type.</figcaption>
+</figure>
+
 Or count them, and look at the ones that fell through:
 
 ```python

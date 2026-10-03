@@ -1,21 +1,24 @@
-# Loading PEC CSV Data
+# PEC CSV data
+
+!!! abstract "In this tutorial"
+
+    You will learn how to:
+
+    - load a PEC CSV export with the `pec_csv` loader
+    - merge several PEC tests of the same cell
+
+    **Data:** `pec.csv` and `pec_multiple_tests/` in `examples/data/` (falls back to the bundled example data).
+
+    [:material-github: Open the notebook on GitHub](https://github.com/jepegit/cellpy/blob/master/examples/09_loading_pec_data.ipynb){ .md-button } — or get every notebook and its data with `cellpy pull --examples`.
+
 
 This notebook shows a minimal PEC workflow with the built-in `pec_csv` loader. It uses the example export that ships with `cellpy`, inspects the raw file header, loads the cycling data, and generates step and summary tables.
 
 
 ```python
 from pathlib import Path
-import sys
 import re
 
-# Changes to the cellpy repo can directly be used without installing the package. This is useful for development and testing.
-repo_root = next(
-    (path for path in [Path.cwd(), Path.cwd().parent] if (path / "cellpy" / "__init__.py").exists()),
-    None,
-)
-if repo_root is not None and str(repo_root) not in sys.path:
-    sys.path.insert(0, str(repo_root))
-# IF not using the cellpy repo, make sure to install cellpy in the current environment (e.g., pip install cellpy) and comment the above code.
 import cellpy
 ```
 
@@ -34,6 +37,8 @@ else:
 pec_file
 ```
 
+## Look at the raw file
+
 Look at the first few lines of the PEC file to understand its structure.
 
 
@@ -44,6 +49,8 @@ with open(pec_file, encoding="utf-8-sig") as handle:
         print(f"{line_number:02d}: {line.rstrip()}")
 
 ```
+
+## Load the data
 
 Load the PEC data with the built-in `pec_csv` loader. The `mass` value can be adjusted for the dataset.
 
@@ -71,6 +78,8 @@ raw[[r.datapoint_num, r.cycle_num, r.step_num, r.test_time, r.current, r.potenti
 
 ```
 
+## Build the step table and summary
+
 Build the step table and summary so cycle and step information is available.
 
 
@@ -97,6 +106,8 @@ c.data.summary.head()
 
 ```
 
+## Save the cell
+
 Save in HDF5 / cellpy format.
 
 
@@ -106,7 +117,7 @@ c.save("pec_data.h5")
 
 ```
 
-# Loading Multiple tests for the same CellID
+## Load several tests for the same cell
 In PEC testers setup at IFE, have LotID to differentiate between cells and tests performed on that cell in terms of TestID.
 
 By default, cellpy allows merging up to **20 files** in a single `cellpy.get()` call. This limit exists to catch accidental over-selection (e.g. a glob matching hundreds of files). If you genuinely need to merge more files, raise the limit before loading — either in your script or in your config file.
