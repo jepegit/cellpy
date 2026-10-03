@@ -1556,11 +1556,16 @@ def _cycles_plotter(
             fig.update_layout(**layout_updates)
         # Affirmative link when sharing: px.line facets usually already set
         # matches, but spread_plot (make_subplots) never does (#817 / #804).
+        # Summary rows are all "value vs cycle", so the x-axis stays locked
+        # even when each row keeps its own y-scale.
         if match_axes:
             fig.update_yaxes(matches="y")
         else:
             fig.update_yaxes(matches=None)
-            fig.update_xaxes(matches=None)
+            if method != "summary":
+                fig.update_xaxes(matches=None)
+        if method == "summary":
+            fig.update_xaxes(matches="x")
 
     return fig
 
@@ -1576,7 +1581,8 @@ def summary_plotter(collected_curves, cycles_to_plot=None, backend="plotly", **k
 
     - ``share_y`` (preferred) or ``match_axes``: when True, facet rows share one
       y-scale; when False (the default for summary), each row auto-scales.
-      If both are given, ``share_y`` wins.
+      If both are given, ``share_y`` wins. The x-axis (cycle number) stays
+      locked across summary rows either way.
     - ``y_ranges``: mapping of ``variable`` name → ``[lo, hi]`` for per-panel
       fixed limits. Omitted variables keep autorange. A non-empty ``y_ranges``
       forces independent axes. Supported for ``backend="plotly"`` only.
