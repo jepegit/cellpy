@@ -206,6 +206,50 @@ def test_missing_column_warns_once(db_reader):
 
 
 @pytest.mark.essential
+def test_excel_unit_row_does_not_rescale_nominal_capacity(tmp_path):
+    """An Ah/g unit row is not applied; the sheet number stays as stored (#1131).
+
+    cellpy treats a bare nominal capacity as already in ``mAh/g``. The Excel
+    unit row is skipped and never used to convert the value.
+    """
+    import warnings
+
+    from openpyxl import Workbook
+
+    from cellpy import config
+    from cellpy.batch import _dbengine
+    from cellpy.readers import dbreader
+
+    path = tmp_path / "nom_cap_units.xlsx"
+    book = Workbook()
+    sheet = book.active
+    sheet.title = config.db.db_table_name
+    rows = [
+        [config.db_cols.id, config.db_cols.nom_cap],
+        ["", "Ah/g"],
+        [7, 3.5],
+    ]
+    # Defaults: header row 0, unit row 1, data start row 2.
+    assert config.db.db_header_row == 0
+    assert config.db.db_unit_row == 1
+    assert config.db.db_data_start_row == 2
+    for row in rows:
+        sheet.append(row)
+    book.save(path)
+
+    reader = dbreader.Reader(db_file=path)
+    assert reader.get_nom_cap(7) == pytest.approx(3.5)
+    assert reader.get_nom_cap(7) != pytest.approx(3500)
+
+    # Other journal columns are absent on purpose; their missing-column
+    # warnings are #1008, not this contract.
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", UserWarning)
+        pages = _dbengine._create_pages_dict(reader, [7])
+    assert pages["nom_cap"] == pytest.approx([3.5])
+
+
+@pytest.mark.essential
 def test_nom_cap_specifics_column_reaches_pages(db_reader):
     """A present specifics column flows into the journal pages dict (#1008)."""
     from cellpy.batch import _dbengine

@@ -225,6 +225,7 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_batch_live.py::test_poll_stops_on_cell_error | yes | yes | Batch.poll | #782 | |
 | tests/test_dbreader.py::test_missing_column_warns_once | yes | yes | readers.dbreader.Reader._pick_info | #1008 | warn-once per missing header |
 | tests/test_dbreader.py::test_nom_cap_specifics_column_reaches_pages | yes | yes | batch._dbengine._create_pages_dict | #1008 | db value → pages |
+| tests/test_dbreader.py::test_excel_unit_row_does_not_rescale_nominal_capacity | yes | yes | readers.dbreader.Reader.get_nom_cap | #1131 | Ah/g unit row ignored; 3.5 stays 3.5 |
 | tests/test_dbreader.py::test_simple_db_engine_skip_file_search_excel_reader | yes | yes | batch._dbengine.simple_db_engine / find_files | #1017 | skip_file_search frames one row per cell |
 | tests/test_batch.py::test_find_files_skip_file_search_pads_missing_columns | no | – | batch._dbengine.find_files | #1017 | unit detail; engine test covers the gate |
 | tests/test_batch_v3_facade.py::test_load_warns_when_journal_autoload_shadows_db | yes | yes | batch.facade.load | #1008 | cached journal + db args |
