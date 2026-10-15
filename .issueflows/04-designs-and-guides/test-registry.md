@@ -284,6 +284,9 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_source_file_hints.py::test_record_without_stats_behaves_as_today | yes | yes | no-hint parity | #1124 | today's behaviour kept |
 | tests/test_source_file_hints.py (other 6) | no | | mtime-only, bad mtime, force, save/load, re-fetch, batch refresh | #1124 | uses testdata .res |
 | tests/test_docstring_sections.py::test_docstrings_use_plural_examples_section | yes | yes | docstring `Examples:` titles under `src/cellpy` (griffe parses only the plural) | #1128 | stdlib `ast` scan, <1 s; stops the API-docs blockquote regression |
+| tests/test_neware_nda_two_stage.py::test_raw_units_follow_fastnda_column_suffixes | yes | yes | neware_nda.get_raw_units | #1149 | suffix contract, no file |
+| tests/test_neware_nda_two_stage.py::test_charge_and_discharge_unit_suffixes_must_agree | yes | yes | neware_nda.units_from_fastnda_columns | #1149 | ValueError on disagree |
+| tests/test_neware_nda_two_stage.py::test_local_ndax_current_and_capacity_stay_in_milli_units | no | | neware_nda load of a real ndax | #1149 | skips unless gitignored local/data file is present |
 
 **Columns**
 
