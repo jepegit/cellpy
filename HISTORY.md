@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+* Possible nominal capacity confusion. The Excel unit row is not applied, so a
+  bare nominal-capacity cell stays the number on the sheet and is treated as
+  mAh/g. (#1131)
+
 ## [2.1.5.post7] - 2026-10-03
 
 * Summary facet rows keep a shared cycle axis when each row has its own
