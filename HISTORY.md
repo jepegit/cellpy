@@ -6,6 +6,10 @@
   bare nominal-capacity cell stays the number on the sheet and is treated as
   mAh/g. (#1131)
 
+* Neware `.ndax` loads report current in mA and capacity in mAh, taken from
+  the fastnda column names. Gravimetric capacity and C-rate no longer treat
+  those milli-unit values as A and Ah. (#1149)
+
 ## [2.1.5.post7] - 2026-10-03
 
 * Summary facet rows keep a shared cycle axis when each row has its own
