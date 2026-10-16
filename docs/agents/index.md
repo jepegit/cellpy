@@ -40,6 +40,12 @@ Primary object: **`CellpyCell`**. Measurement frames live on **`c.data`**
 (`raw`, `steps`, `summary`). Column names for the active schema are on
 **`c.schema`** — prefer that over legacy `headers_*` attributes.
 
+A portable Agent Skill for that analysis lives at
+[`skills/cellpy/`](https://github.com/jepegit/cellpy/tree/master/skills/cellpy)
+in the repository. It is for people using cellpy on their own data. Copy
+`skills/cellpy` into the user's agent skills directory. Do not install it
+as a Cursor project skill inside a cellpy development checkout.
+
 ## Install and smoke-check
 
 Consumer install:
