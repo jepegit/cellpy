@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [2.1.5.post8] - 2026-10-16
+
 * Possible nominal capacity confusion. The Excel unit row is not applied, so a
   bare nominal-capacity cell stays the number on the sheet and is treated as
   mAh/g. (#1131)
