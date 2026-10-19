@@ -345,6 +345,12 @@ def ica_collector(
         >>> ica = ica_collector(b, cycles=[1, 10, 20])
         >>> ica.plot(layout="per_cell")
 
+    A cell with no usable cycle curve is skipped. The call warns
+    (``UserWarning``) with the cell label and continues.
+    ``meta.cells_skipped`` lists those cells. A direct ``dqdv`` on that cell
+    still raises ``ValueError`` (``"cycle frame is empty"``) when ``get_cap``
+    returns no rows.
+
     Args:
         batch: The `Batch` to collect from.
         options: A [`cellpy.ica.IcaOptions`][cellpy.ica.IcaOptions] recipe
@@ -385,6 +391,10 @@ def dva_collector(
     Examples:
         >>> dva = dva_collector(b, cycles=[1, 10, 20])
         >>> dva.plot(layout="per_cell")
+
+    A cell with no usable cycle curve is skipped, same as `ica_collector`:
+    one ``UserWarning`` names it, and ``meta.cells_skipped`` records it. A
+    direct ``dvdq`` on that cell still raises when the cycle frame is empty.
 
     Args:
         batch: The `Batch` to collect from.

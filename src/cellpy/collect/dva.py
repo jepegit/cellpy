@@ -29,6 +29,11 @@ def collect_dva(batch: Any, options: Any = None, **overrides) -> Collection:
     every iteration, so a cell missing a cycle never narrows the request for
     the cells after it (mirrors `collect_ica`).
 
+    A cell with no usable curve is left out, with the same warning and
+    ``meta.cells_included`` / ``meta.cells_skipped`` record as `collect_ica`.
+    A direct ``dvdq`` call on that cell still raises ``ValueError`` when the
+    cycle frame is empty.
+
     Examples:
         >>> from cellpy import ica
         >>> from cellpy.collect import collect_dva

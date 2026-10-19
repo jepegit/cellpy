@@ -401,6 +401,11 @@ b = from_cells({"cell_01": cellpy.get(path_1), "cell_02": cellpy.get(path_2)})
 - `collect_summaries` warns (`UserWarning`) and names any cell that
   contributed no rows, so a collection that is thinner than your cell list
   says why. `collection.meta.cells_included` is the authoritative list.
+- `collect_ica` / `collect_dva` do the same for a cell with no cycle curve
+  (missing requested cycles, empty `get_cap`, or an empty derivative frame).
+  The warning names the cell; `meta.cells_skipped` lists them.
+  `dqdv` / `dvdq` on that cell alone still raises
+  `ValueError: cycle frame is empty`.
 
 `batch.load` (and `Batch.update` / `Batch.load` under it) takes an `executor`
 and a `progress` knob:
