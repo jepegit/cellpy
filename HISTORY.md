@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+* Edit batch plot function doc string. (#1153)
+
 ## [2.1.5.post9] - 2026-10-19
 
 * Improve function ica_collector. (#1152)

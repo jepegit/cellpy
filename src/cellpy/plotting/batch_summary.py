@@ -121,12 +121,63 @@ def batch_summary_plot(
 ) -> Any:
     """Draw the Batch cycle-life summary figure (cap / CE / IR / rate panels).
 
+    Keyword arguments are the same set ``Batch.plot`` forwards. Unknown
+    keywords are ignored. Names marked plotly-only do nothing for
+    ``backend="matplotlib"``.
+
     Args:
-        experiment: ``CyclingExperiment`` with ``memory_dumped["summary_engine"]``.
-        backend: ``plotly`` or ``matplotlib`` (after triage).
-        show: if True, call ``figure.show()`` for plotly (default True for plotly).
-        **kwargs: forwarded to frame prep / renderers (``capacity_specifics``,
-            ``ce_range``, ``ir``, ``rate``, filters, …).
+        experiment: Object with ``journal.pages`` and
+            ``memory_dumped["summary_engine"]``.
+        backend: ``"plotly"`` or ``"matplotlib"``. ``None`` uses
+            ``config.batch.backend`` (plotly when unset).
+        show: If True, call ``figure.show()`` for plotly. ``None`` (default)
+            becomes True for plotly and is unused for matplotlib.
+        direction: ``"charge"`` (default) or ``"discharge"``. On plotly,
+            selects the capacity column and the matching C-rate column.
+            IR prefers the column for that direction and falls back to the
+            other with a ``UserWarning``. Matplotlib uses it only for IR
+            and always draws both charge and discharge capacity.
+        rate: If True, add the C-rate panel when that column exists.
+            Default False. Plotly only.
+        ir: If True (default), add the IR panel when an IR column exists.
+        capacity_specifics: ``"gravimetric"`` (default), ``"areal"``,
+            ``"absolute"``, or ``"raw"``. Plotly only. Also read while
+            building the long frame.
+        ce_range: Fixed y-range for coulombic efficiency, or ``None``.
+            Plotly only.
+        min_cycle: Drop cycles below this index. Default ``None``. Plotly only.
+        max_cycle: Drop cycles above this index. Default ``None``. Plotly only.
+        title: Figure title. Default ``"Cycle Summary"``. Plotly only.
+        x_label: X-axis title. Default ``"Cycle Number"``. Plotly only.
+        x_range: Fixed x-range, or ``None``. Plotly only.
+        width: Figure width. Plotly default ``1000``. Matplotlib default
+            ``config.batch.summary_plot_width`` (900).
+        color_map: Plotly qualitative sequence, or the name of one on
+            ``plotly.express.colors.qualitative``. Default ``Set1``.
+            Plotly only.
+        base_template: Plotly template name. Default ``"plotly"``. Plotly only.
+        group_legends: If True (default), traces that share a journal group
+            share one legend group. Plotly only.
+        inverted_mode: If True, swap which journal field drives color versus
+            symbol, and read legend ids as ``"subgroup, group"``. Default
+            False. Plotly only.
+        filter_by_group: Journal group id or sequence of ids to keep.
+            Default ``None``. Plotly only.
+        filter_by_name: Substring matched against cell labels. Default
+            ``None``. Plotly only.
+        trim_pages: If True, keep a fixed set of journal columns before the
+            merge. Default False. Plotly frame prep only.
+        only_selected: If True, keep journal rows with ``selected`` > 0.
+            Default False. Plotly frame prep only.
+        height: Matplotlib figure height. Default
+            ``config.batch.summary_plot_height`` (800). Matplotlib only.
+        height_fractions: Relative matplotlib subplot heights. Default
+            ``config.batch.summary_plot_height_fractions``
+            (``[0.2, 0.5, 0.3]``). Matplotlib only.
+        marker_size: Matplotlib marker size. Default ``None`` (renderer
+            uses 10). Matplotlib only.
+        legend_option: Matplotlib legend text: ``"clean"``, ``"mass"``,
+            ``"loading"``, or ``"all"`` (default). Matplotlib only.
 
     Returns:
         Backend-native figure/canvas, or ``None`` if prep/render fails.
@@ -286,6 +337,31 @@ def create_plot_option_dicts(
 
 
 def generate_summary_frame_for_plotting(pages, experiment, **kwargs) -> pd.DataFrame:
+    """Melt batch summaries into a long frame and attach journal columns.
+
+    Other keywords are left in ``kwargs`` for the plotly renderer.
+
+    Args:
+        pages: Journal table (one row per cell).
+        experiment: Object whose ``memory_dumped["summary_engine"]`` is the
+            per-variable summary farm.
+        trim_pages: If True, keep a fixed set of journal columns (mass,
+            loading, label, group, and similar) before the merge. Default
+            False. Missing columns are logged and the full table is kept.
+        capacity_specifics: Which capacity pair to keep. ``"gravimetric"``
+            (default), ``"areal"``, ``"absolute"``, or ``"raw"``. Read with
+            ``kwargs.get`` so the plotly renderer still sees it.
+        only_selected: If True, keep cells whose journal ``selected`` value
+            is greater than 0. Default False. Read with ``kwargs.get``.
+
+    Returns:
+        Long ``pandas.DataFrame`` with ``cycle_index``, ``variable``,
+        ``value``, ``cell``, and the journal columns.
+
+    Raises:
+        KeyError: If a required summary column (cycle, coulombic efficiency,
+            or the chosen charge/discharge capacity) is missing.
+    """
     trim_pages = kwargs.pop("trim_pages", False)
     capacity_specifics = kwargs.get("capacity_specifics", "gravimetric")
     only_selected = kwargs.get("only_selected", False)
@@ -419,7 +495,47 @@ def _get_capacity_columns(capacity_specifics="gravimetric"):
 
 
 def plot_cycle_life_summary_plotly(summaries: pd.DataFrame, **kwargs):
-    """Plotting cycle life summaries using plotly."""
+    """Plot cycle-life summaries with plotly.
+
+    Args:
+        summaries: Long frame from
+            ``generate_summary_frame_for_plotting``.
+        direction: ``"charge"`` (default) or ``"discharge"``. Selects the
+            capacity column, the matching C-rate column, and the preferred
+            IR column.
+        rate: If True, append the C-rate variable when it is present.
+            Default False.
+        ir: If True (default), append the IR variable when a column exists.
+        capacity_specifics: ``"gravimetric"`` (default), ``"areal"``,
+            ``"absolute"``, or ``"raw"``.
+        ce_range: Fixed y-range for the coulombic-efficiency panel, or
+            ``None`` to autoscale.
+        min_cycle: Drop cycles below this index. Default ``None``.
+        max_cycle: Drop cycles above this index. Default ``None``.
+        title: Figure title. Default ``"Cycle Summary"``.
+        x_label: X-axis title. Default ``"Cycle Number"``.
+        x_range: Fixed x-range, or ``None``.
+        width: Figure width in pixels. Default ``1000``.
+        color_map: Qualitative color sequence, or the name of one on
+            ``plotly.express.colors.qualitative``. Default ``Set1``.
+        base_template: Plotly template name combined with the axes-border
+            template. Default ``"plotly"``.
+        group_legends: If True (default), traces that share a journal group
+            share one legend group.
+        inverted_mode: If True, color follows sub-group and symbol follows
+            group, and legend ids are read as ``"subgroup, group"``.
+            Default False.
+        filter_by_group: Journal group id, or a sequence of ids, to keep.
+            Default ``None``.
+        filter_by_name: Substring matched against cell labels (``str.contains``).
+            Default ``None``.
+
+    Returns:
+        A plotly ``Figure``.
+
+    Raises:
+        Exception: Re-raised when ``plotly.express.line`` fails.
+    """
 
     # TODO: get either units or experiment object to get units and send it to _make_labels
 
@@ -620,6 +736,38 @@ def plot_cycle_life_summary_matplotlib(
     legend_option="all",
     **kwargs,
 ):
+    """Draw the deprecated matplotlib cycle-life summary.
+
+    Always plots charge capacity, discharge capacity, and coulombic
+    efficiency. ``rate`` and the other plotly-only keywords are ignored.
+
+    Args:
+        info: Journal table indexed by cell label, with mass, loading,
+            label, group, and sub-group columns.
+        summaries: Wide summary frame (optionally a ``MultiIndex`` of
+            variable, cell).
+        width: Figure width in the same units ``batch_summary_plot`` pops
+            (default 900). Divided by 80 before use as an inch-ish size.
+        height: Figure height (default 800). Divided by 120 before use.
+        height_fractions: Relative subplot heights. ``None`` becomes
+            ``[0.3, 0.4, 0.3]`` here. ``Batch.plot`` passes
+            ``config.batch.summary_plot_height_fractions``
+            (``[0.2, 0.5, 0.3]``) instead. The IR-off layout drops the
+            last fraction.
+        legend_option: Legend text passed to ``create_legend``.
+            ``"clean"``, ``"mass"``, ``"loading"``, or ``"all"`` (default).
+        ir: If True (default), add an IR panel when a column exists.
+        direction: ``"charge"`` (default) or ``"discharge"``. Chooses the
+            preferred IR column only.
+        marker_size: Marker size stored on the sub-group style. Default
+            ``None``, which ``create_plot_option_dicts`` treats as 10.
+
+    Returns:
+        A matplotlib ``Figure``.
+
+    Warns:
+        DeprecationWarning: This renderer is no longer maintained.
+    """
     warnings.warn(
         "This utility function is not maintained anymore",
         category=DeprecationWarning,
