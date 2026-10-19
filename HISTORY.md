@@ -2,9 +2,21 @@
 
 ## [Unreleased]
 
+* Edit batch plot function doc string. (#1153)
+
+## [2.1.5.post9] - 2026-10-19
+
+* Improve function ica_collector. (#1152)
+
+## [2.1.5.post8] - 2026-10-16
+
 * Possible nominal capacity confusion. The Excel unit row is not applied, so a
   bare nominal-capacity cell stays the number on the sheet and is treated as
   mAh/g. (#1131)
+
+* Neware `.ndax` loads report current in mA and capacity in mAh, taken from
+  the fastnda column names. Gravimetric capacity and C-rate no longer treat
+  those milli-unit values as A and Ah. (#1149)
 
 ## [2.1.5.post7] - 2026-10-03
 

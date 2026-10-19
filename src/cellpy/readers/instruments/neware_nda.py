@@ -58,6 +58,67 @@ normal_headers_renaming_dict = {
     "internal_resistance_txt": "internal_resistance_mOhm",
 }
 
+# Longest suffix first so ``_mAh`` is not read as ``_mA``.
+# ``mOhm`` is not pint-parsable; the Neware txt configs use ``mohm``.
+_FASTNDA_UNIT_SUFFIXES: tuple[tuple[str, str], ...] = (
+    ("_mAh", "mAh"),
+    ("_mWh", "mWh"),
+    ("_mOhm", "mohm"),
+    ("_mA", "mA"),
+    ("_V", "V"),
+)
+
+# Header key -> CellpyUnits field. Charge and discharge must share a suffix.
+_HEADER_TO_UNIT_PROPERTY: dict[str, str] = {
+    "current_txt": "current",
+    "voltage_txt": "voltage",
+    "charge_capacity_txt": "charge",
+    "discharge_capacity_txt": "charge",
+    "charge_energy_txt": "energy",
+    "discharge_energy_txt": "energy",
+    "internal_resistance_txt": "resistance",
+}
+
+
+def _pint_unit_from_fastnda_column(name: str) -> str | None:
+    """Return the pint unit baked into a fastnda column name, if known."""
+    for suffix, unit in _FASTNDA_UNIT_SUFFIXES:
+        if name.endswith(suffix):
+            return unit
+    return None
+
+
+def units_from_fastnda_columns(renaming: dict[str, str]) -> dict[str, str]:
+    """Build raw-unit strings from the fastnda column names in ``renaming``.
+
+    ``mass`` is not in the frame. It stays ``g`` so a journal mass that is
+    correct for Arbin stays correct here. ``nominal_capacity`` is left unset
+    so the merge default ``mAh/g`` applies.
+
+    Args:
+        renaming: ``legacy header key -> fastnda column name``.
+
+    Returns:
+        Unit strings for the properties named by those columns, plus ``mass``.
+
+    Raises:
+        ValueError: A mapped column has no known unit suffix, or charge and
+            discharge (or the two energy columns) disagree.
+    """
+    raw_units = {"mass": "g"}
+    seen: dict[str, str] = {}
+    for header_key, prop in _HEADER_TO_UNIT_PROPERTY.items():
+        column = renaming[header_key]
+        unit = _pint_unit_from_fastnda_column(column)
+        if unit is None:
+            raise ValueError(f"{column!r} ({header_key}) has no known fastnda unit suffix")
+        previous = seen.get(prop)
+        if previous is not None and previous != unit:
+            raise ValueError(f"{prop} columns disagree: {previous!r} vs {unit!r} ({column})")
+        seen[prop] = unit
+        raw_units[prop] = unit
+    return raw_units
+
 
 def split_to_charge_discharge(
     df, 
@@ -146,13 +207,12 @@ class DataLoader(BaseLoader):
 
     @staticmethod
     def get_raw_units():
-        raw_units = dict()
-        raw_units["current"] = "A"
-        raw_units["charge"] = "Ah"
-        raw_units["mass"] = "g"
-        raw_units["voltage"] = "V"
-        raw_units["nominal_capacity"] = "Ah/g"
-        return raw_units
+        """Raw units taken from the fastnda column-name suffixes.
+
+        The ``.ndax`` file does not store a unit string. After decoding, the
+        frame columns are named ``current_mA``, ``*_mAh``, and so on.
+        """
+        return units_from_fastnda_columns(normal_headers_renaming_dict)
 
     @staticmethod
     def get_raw_limits():

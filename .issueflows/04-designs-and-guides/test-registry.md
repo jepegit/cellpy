@@ -133,8 +133,12 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_batch_v3_runner.py::test_load_cell_reraises_missing_files_when_not_accepting | yes | yes | batch.runner.load_cell accept_errors | #962 | |
 | tests/test_batch_v3_facade.py::test_load_warns_when_no_raw_files_were_found | yes | yes | batch.facade._finalize | #962 | batch.load warning + result.report |
 | tests/test_batch_v3_facade.py::test_batch_public_methods_have_shift_tab_docs | yes | yes | batch.facade.Batch | #963 | Shift-Tab docstrings on b.plot etc. |
+| tests/test_batch.py::test_batch_plot_docstring_lists_kwargs | yes | yes | batch.facade.Batch.plot / plotting.batch_summary | #1153 | every consumed kwarg named in the docstring |
 | tests/test_no_sphinx_doc_roles.py::test_no_sphinx_doc_roles_in_cellpy_source | no | no | src/cellpy/**/*.py docstrings | #967 | docs chrome; not a merge-gate oracle |
 | tests/test_ica_api.py::test_an_empty_frame_says_the_cycle_is_missing | yes | yes | ica._half_cycles_from_frame | #971 | empty DataFrame() is not a missing-column error |
+| tests/test_collect.py::test_derivative_collector_skips_an_empty_cycle_frame | yes | yes | collect.ica._collect_derivative | #1152 | empty cell warns and is skipped; good cell stays |
+| tests/test_collect.py::test_derivative_collector_is_quiet_when_every_cell_has_a_curve | yes | yes | collect.ica._collect_derivative | #1152 | no leave-out warning on a healthy batch |
+| tests/test_collect.py::test_collect_ica_still_raises_on_a_schema_error | yes | yes | collect.ica._collect_derivative | #1152 | non-empty ValueError still aborts |
 | tests/test_ica_api.py::test_an_empty_frame_with_curve_columns_says_the_cycle_is_missing | yes | yes | ica._half_cycles_from_frame | #971 | empty-with-columns |
 | tests/test_ica_api.py::test_a_missing_cycle_on_a_cell_says_the_frame_is_empty | yes | yes | ica._resolve_source | #971 | CellpyCell + missing cycle |
 | tests/test_from_cells.py::test_from_cells_rejects_values_that_are_not_cells | yes | yes | batch.facade.Batch.from_cells / _is_cell | #939 | issue repro: Path + int used to vanish silently |
@@ -284,6 +288,9 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_source_file_hints.py::test_record_without_stats_behaves_as_today | yes | yes | no-hint parity | #1124 | today's behaviour kept |
 | tests/test_source_file_hints.py (other 6) | no | | mtime-only, bad mtime, force, save/load, re-fetch, batch refresh | #1124 | uses testdata .res |
 | tests/test_docstring_sections.py::test_docstrings_use_plural_examples_section | yes | yes | docstring `Examples:` titles under `src/cellpy` (griffe parses only the plural) | #1128 | stdlib `ast` scan, <1 s; stops the API-docs blockquote regression |
+| tests/test_neware_nda_two_stage.py::test_raw_units_follow_fastnda_column_suffixes | yes | yes | neware_nda.get_raw_units | #1149 | suffix contract, no file |
+| tests/test_neware_nda_two_stage.py::test_charge_and_discharge_unit_suffixes_must_agree | yes | yes | neware_nda.units_from_fastnda_columns | #1149 | ValueError on disagree |
+| tests/test_neware_nda_two_stage.py::test_local_ndax_current_and_capacity_stay_in_milli_units | no | | neware_nda load of a real ndax | #1149 | skips unless gitignored local/data file is present |
 
 **Columns**
 

@@ -689,15 +689,78 @@ class Batch:
 
     # -- plotting (delegated; full wiring is Epic B) ---------------------
     def plot(self, backend: str | None = None, show: bool = False, **kwargs) -> Any:
-        """Plot combined summaries for this batch.
+        """Plot combined cycle-life summaries for this batch.
+
+        The plotly figure is capacity, coulombic efficiency, and (by default)
+        internal resistance versus cycle. ``rate=True`` adds a C-rate panel.
+        Keyword arguments below are accepted through ``**kwargs`` and forwarded
+        to ``cellpy.plotting.batch_summary.batch_summary_plot``. Unknown
+        keywords are ignored. Names marked plotly-only do nothing when
+        ``backend="matplotlib"``.
 
         Args:
-            backend: Plotting backend (``None`` uses the configured default).
-            show: If True, display the figure immediately.
-            **kwargs: Forwarded to the summary plotter (columns, grouping, …).
+            backend: ``"plotly"`` or ``"matplotlib"``. ``None`` uses
+                ``config.batch.backend`` (plotly when unset). ``"seaborn"``
+                and ``"bokeh"`` raise ``ValueError``.
+            show: If True, call ``figure.show()`` for a plotly figure.
+                Default False on this method.
+            direction: ``"charge"`` (default) or ``"discharge"``. On plotly,
+                selects the capacity column and the matching C-rate column.
+                IR prefers ``ir_charge`` or ``ir_discharge`` for that
+                direction and falls back to the other column with a
+                ``UserWarning``. Matplotlib uses ``direction`` only for the
+                IR column and always draws both charge and discharge capacity.
+            rate: If True, add the C-rate panel when that summary column
+                exists. Default False. Plotly only.
+            ir: If True (default), add the IR panel when an IR column exists.
+            capacity_specifics: Capacity columns to plot. ``"gravimetric"``
+                (default), ``"areal"``, ``"absolute"``, or ``"raw"``.
+                Plotly only (also applied while building the long frame).
+            ce_range: Fixed y-range for the coulombic-efficiency panel, or
+                ``None`` (default) to autoscale. Plotly only.
+            min_cycle: Drop cycles below this index. Default ``None``.
+                Plotly only.
+            max_cycle: Drop cycles above this index. Default ``None``.
+                Plotly only.
+            title: Figure title. Default ``"Cycle Summary"``. Plotly only.
+            x_label: X-axis title. Default ``"Cycle Number"``. Plotly only.
+            x_range: Fixed x-range, or ``None`` (default). Plotly only.
+            width: Figure width. Plotly default ``1000`` (pixels). Matplotlib
+                default is ``config.batch.summary_plot_width`` (900).
+            color_map: Plotly qualitative color sequence, or the name of one
+                on ``plotly.express.colors.qualitative``. Default ``Set1``.
+                Plotly only.
+            base_template: Plotly template name, combined with the
+                axes-border template. Default ``"plotly"``. Plotly only.
+            group_legends: If True (default), traces that share a journal
+                group share one legend group. Plotly only.
+            inverted_mode: If True, color follows sub-group and symbol follows
+                group (the reverse of the default), and legend ids are read
+                as ``"subgroup, group"``. Default False. Plotly only.
+            filter_by_group: Journal group id, or a sequence of ids, to keep.
+                Default ``None`` (all groups). Plotly only.
+            filter_by_name: Substring matched against cell labels. Default
+                ``None``. Plotly only.
+            trim_pages: If True, keep a fixed set of journal columns before
+                merging them onto the summary frame. Default False. Plotly
+                frame prep only.
+            only_selected: If True, keep journal rows whose ``selected``
+                column is greater than 0. Default False. Plotly frame prep
+                only.
+            height: Figure height for the matplotlib renderer. Default
+                ``config.batch.summary_plot_height`` (800). Matplotlib only.
+            height_fractions: Relative subplot heights for matplotlib.
+                Default ``config.batch.summary_plot_height_fractions``
+                (``[0.2, 0.5, 0.3]``). Matplotlib only.
+            marker_size: Marker size in the matplotlib style dicts. Default
+                ``None`` (renderer uses 10). Matplotlib only.
+            legend_option: Matplotlib legend text. ``"clean"``, ``"mass"``,
+                ``"loading"``, or ``"all"`` (default, mass and loading).
+                Matplotlib only.
 
         Returns:
-            A figure from the plotting layer (backend-dependent).
+            A figure from the plotting layer (backend-dependent), or ``None``
+            when summary prep or rendering fails.
         """
         from cellpy.plotting.batch_summary import batch_summary_plot
 
