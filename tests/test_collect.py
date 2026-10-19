@@ -17,6 +17,8 @@ from cellpy.collect import (
     CollectionMeta,
     SummaryOptions,
     collect_cycles,
+    collect_dva,
+    collect_ica,
     collect_summaries,
     cycles_collector,
     dva_collector,
@@ -198,6 +200,111 @@ def test_collect_summaries_is_quiet_when_every_cell_contributes():
         collect_summaries(batch)
 
     assert not [w for w in caught if "left out" in str(w.message)]
+
+
+# ---- ICA / DVA leave-outs (#1152) ---------------------------------------
+
+
+class _CurveCell:
+    """A cell whose ``get_cap`` returns one fixed frame."""
+
+    def __init__(self, frame, cycles=(1,)):
+        self.cycle_mode = "anode"
+        self._frame = frame
+        self._cycles = list(cycles)
+
+    def get_cycle_numbers(self):
+        return list(self._cycles)
+
+    def get_cap(self, **kwargs):
+        return self._frame
+
+
+def _linear_curve_frame(n: int = 80):
+    import numpy as np
+    import pandas as pd
+    from cellpycore.config import CurveCols
+
+    cols = CurveCols()
+    capacity = np.linspace(0.0, 250.0, n)
+    voltage = 0.05 + 0.004 * capacity
+    return pd.DataFrame(
+        {
+            cols.cycle_num: np.full(n, 1),
+            cols.direction: np.full(n, -1),
+            cols.potential: voltage,
+            cols.capacity: capacity,
+        }
+    )
+
+
+def _derivative_batch(cells: dict) -> Batch:
+    labels = list(cells)
+    pages = pl.DataFrame(
+        {
+            FILENAME: labels,
+            "group": [1] * len(labels),
+            "sub_group": list(range(1, len(labels) + 1)),
+        }
+    )
+    return _batch_with_cells(cells, pages)
+
+
+_RAW = None
+
+
+def _raw_options():
+    global _RAW
+    if _RAW is None:
+        from cellpy import ica
+
+        _RAW = ica.IcaOptions(pre_smoothing=False, post_smoothing=False, normalize=False)
+    return _RAW
+
+
+@pytest.mark.essential
+@pytest.mark.parametrize("collect", [collect_ica, collect_dva])
+def test_derivative_collector_skips_an_empty_cycle_frame(collect):
+    """#1152: one empty cell must not abort the batch."""
+    import pandas as pd
+
+    batch = _derivative_batch(
+        {
+            "good": _CurveCell(_linear_curve_frame()),
+            "empty_cell": _CurveCell(pd.DataFrame(), cycles=(1,)),
+        }
+    )
+    with pytest.warns(UserWarning, match="empty_cell"):
+        col = collect(batch, options=_raw_options(), cycles=(1,))
+
+    assert col.data["cell"].unique().to_list() == ["good"]
+    assert col.meta.cells_included == ["good"]
+    assert col.meta.cells_skipped == ["empty_cell"]
+
+
+@pytest.mark.essential
+@pytest.mark.parametrize("collect", [collect_ica, collect_dva])
+def test_derivative_collector_is_quiet_when_every_cell_has_a_curve(collect):
+    batch = _derivative_batch({"good": _CurveCell(_linear_curve_frame())})
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        col = collect(batch, options=_raw_options(), cycles=(1,))
+
+    assert col.meta.cells_included == ["good"]
+    assert col.meta.cells_skipped == []
+    assert not [w for w in caught if "left out" in str(w.message)]
+
+
+@pytest.mark.essential
+def test_collect_ica_still_raises_on_a_schema_error():
+    """Only the empty-frame error is a skip. A bad curve schema still aborts."""
+    import pandas as pd
+
+    batch = _derivative_batch(
+        {"bad_schema": _CurveCell(pd.DataFrame({"nope": [1.0, 2.0, 3.0]}))}
+    )
+    with pytest.raises(ValueError, match="missing column"):
+        collect_ica(batch, options=_raw_options(), cycles=(1,))
 
 
 def test_collect_summaries_does_not_blame_deselected_cells():

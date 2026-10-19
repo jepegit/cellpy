@@ -402,6 +402,9 @@ Quick facts:
   Recipe: `opts = ica.IcaOptions(...)` then `options=opts` (or one-off kwargs).
   Plot: `from cellpy.utils.plotutils import ica_plot, dva_plot`.
   Multi-cell: `collect_ica(batch, options=opts, cycles=...)` — same recipe.
+  A cell with no cycle curve is skipped: `UserWarning` names it, and
+  `meta.cells_included` / `meta.cells_skipped` record who stayed and who
+  dropped (`collect_dva` too). `dqdv` / `dvdq` on that cell alone still raises.
   How-to: [`docs/guides/ica.md`](docs/guides/ica.md).
 - Batch: `batch.load(name=..., project=...)`; `executor="threads"` speeds up
   reopening local `.cellpy` files (first remote load stays serial on the wire).
