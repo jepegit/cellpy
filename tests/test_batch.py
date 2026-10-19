@@ -817,6 +817,93 @@ def test_batch_plot_backend_triage():
         resolve_batch_plot_backend("not-a-backend")
 
 
+_BATCH_PLOT_PUBLIC_KWARGS = (
+    "direction",
+    "rate",
+    "ir",
+    "capacity_specifics",
+    "ce_range",
+    "min_cycle",
+    "max_cycle",
+    "title",
+    "x_label",
+    "x_range",
+    "width",
+    "color_map",
+    "base_template",
+    "group_legends",
+    "inverted_mode",
+    "filter_by_group",
+    "filter_by_name",
+    "trim_pages",
+    "only_selected",
+    "height",
+    "height_fractions",
+    "marker_size",
+    "legend_option",
+)
+
+_BATCH_PLOT_PLOTLY_KWARGS = (
+    "direction",
+    "rate",
+    "ir",
+    "capacity_specifics",
+    "ce_range",
+    "min_cycle",
+    "max_cycle",
+    "title",
+    "x_label",
+    "x_range",
+    "width",
+    "color_map",
+    "base_template",
+    "group_legends",
+    "inverted_mode",
+    "filter_by_group",
+    "filter_by_name",
+)
+
+_BATCH_PLOT_FRAME_KWARGS = ("trim_pages", "capacity_specifics", "only_selected")
+
+_BATCH_PLOT_MPL_PARAMS = (
+    "info",
+    "summaries",
+    "width",
+    "height",
+    "height_fractions",
+    "legend_option",
+    "ir",
+    "direction",
+    "marker_size",
+)
+
+
+def _doc_mentions(func, names):
+    doc = func.__doc__ or ""
+    missing = [
+        name for name in names if f"{name}:" not in doc and f"``{name}``" not in doc
+    ]
+    assert not missing, f"{func.__qualname__} docstring missing {missing}"
+
+
+@pytest.mark.essential
+def test_batch_plot_docstring_lists_kwargs():
+    """Batch.plot and the functions it calls name every consumed parameter."""
+    from cellpy.batch.facade import Batch
+    from cellpy.plotting.batch_summary import (
+        batch_summary_plot,
+        generate_summary_frame_for_plotting,
+        plot_cycle_life_summary_matplotlib,
+        plot_cycle_life_summary_plotly,
+    )
+
+    _doc_mentions(Batch.plot, _BATCH_PLOT_PUBLIC_KWARGS)
+    _doc_mentions(batch_summary_plot, _BATCH_PLOT_PUBLIC_KWARGS)
+    _doc_mentions(plot_cycle_life_summary_plotly, _BATCH_PLOT_PLOTLY_KWARGS)
+    _doc_mentions(generate_summary_frame_for_plotting, _BATCH_PLOT_FRAME_KWARGS)
+    _doc_mentions(plot_cycle_life_summary_matplotlib, _BATCH_PLOT_MPL_PARAMS)
+
+
 @pytest.mark.essential
 @pytest.mark.xfail(
     reason="batch v3 Batch.plot returns the figure directly (no .plotter); the "
