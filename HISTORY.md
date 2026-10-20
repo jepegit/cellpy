@@ -2,7 +2,11 @@
 
 ## [Unreleased]
 
+## [2.1.5.post10] - 2026-10-20
+
 * Edit batch plot function doc string. (#1153)
+
+* The `batch` and `all` extras allow kaleido 1.5 (`kaleido>=0.1,<1.6`). (#1148)
 
 ## [2.1.5.post9] - 2026-10-19
 
