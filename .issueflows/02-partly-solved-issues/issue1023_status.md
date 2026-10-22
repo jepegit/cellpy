@@ -11,6 +11,8 @@ merged as #1166.
 - Re-opened 2026-10-22 ("Yes") onto `1023-page-feedback`.
 - Plan accepted 2026-10-22 ("Accept").
 - `extra.analytics.feedback` in `zensical.toml`, plus `docs/javascripts/feedback.js` to show the form without Google Analytics. A negative rating links to a new GitHub issue. A positive rating only says thanks.
+- Verification: `zensical build --clean` "No issues found". Built home and first-hour pages contain the feedback form and a GitHub new-issue link, and the site HTML has no `googletagmanager`. In the browser the form is visible; the negative button disables both ratings and shows "Open a GitHub issue" for `Your first hour`. `check_docs_relative_links.py` "all relative links resolve". `pytest -m essential` 992 passed, 74 skipped (this environment's thinner venv), 2 failed. Those two filefinder tests (`test_find_by_project_cellpy_range`, `test_find_by_project_otherpath_local`) search `*.h5` because `~/.cellpy_prms_ubuntu.conf` sets `cellpy_file_extension: h5`. Both pass with that file moved aside. No new tests; essential review left the suite unmarked. No version bump.
+- PR: https://github.com/jepegit/cellpy/pull/1168
 
 ## What's done (iteration 15)
 
@@ -30,7 +32,7 @@ merged as #1166.
 ## Remaining work
 
 - Review item 7.1 (version banner on `latest`): RTD admin check.
-- 7.4 feedback widget, running notebooks in CI.
+- Running notebooks in CI.
 - Experienced-Python pass (typing / extending / plugins).
 - Tutorial 05 still needs the local GITT file.
 
