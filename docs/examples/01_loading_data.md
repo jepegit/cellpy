@@ -8,7 +8,7 @@
     - look at the summary, step table and metadata
     - save a `.cellpy` file, export to Excel/CSV, and load it again
 
-    **Data:** the four `20210210_FC_01_cc_0*.res` Arbin files in `examples/data/`.
+    **Data:** the bundled example Arbin file (`cellpy.utils.example_data.arbin_file_path`), downloaded automatically.
 
     [:material-github: Open the notebook on GitHub](https://github.com/jepegit/cellpy/blob/master/examples/01_loading_data.ipynb){ .md-button } — or get every notebook and its data with `cellpy pull --examples`.
 
@@ -22,26 +22,26 @@ import pandas as pd
 from rich import print
 
 import cellpy
+from cellpy.utils import example_data
+
 ```
 
-Set the paths and filename(s).
-You can either load a single file ``filename``, or add a list of filenames ``filenamelist`` (if several files belong to the same experiment):
+    WARNING:root:/home/ubuntu/.cellpy_prms_ubuntu.conf carries instrument credentials (instruments.Arbin.SQL_PWD, instruments.Arbin.SQL_UID); these are ignored — cellpy 2 reads them from the environment only (CELLPY_HOST, CELLPY_KEY_FILENAME, CELLPY_PASSWORD, CELLPY_USER).
+
+
+    WARNING:root:Configured env_file /agent/repos/cellpy/.env_cellpy resolved to /agent/repos/cellpy/.env_cellpy and was not found. Create that file (or run `cellpy setup`) so those variables can be loaded.
+
+
+Set the path. The file below is bundled example data: the first call downloads it if you do not already have it. `cellpy.get` also accepts a list of paths when several files belong to the same experiment.
+
 
 
 ```python
-filedir = pathlib.Path("data")  # foldername within the same directory
+# one raw file (downloaded on first use)
+filename = example_data.arbin_file_path()
+# several files from the same experiment would be a list of paths
+filepaths = [filename]
 
-# single filename
-filename = "20210210_FC_01_cc_01.res"
-# list of files (continuations within same experiment)
-filenamelist = [
-    "20210210_FC_01_cc_01.res",
-    "20210210_FC_01_cc_02.res",
-    "20210210_FC_01_cc_03.res",
-    "20210210_FC_01_cc_04.res",
-]
-
-filepaths = [filedir / file for file in filenamelist]
 ```
 
 ## Loading data
@@ -100,21 +100,21 @@ c.data.summary.head(5)
       <th>0</th>
       <td>0</td>
       <td>1</td>
-      <td>5797</td>
-      <td>1.743286e+05</td>
-      <td>0.003819</td>
-      <td>0.003324</td>
-      <td>87.049469</td>
-      <td>0.000495</td>
+      <td>1457</td>
+      <td>168686.229691</td>
+      <td>0.001625</td>
+      <td>0.001755</td>
+      <td>107.978778</td>
+      <td>-0.000130</td>
       <td>NaN</td>
       <td>NaN</td>
       <td>...</td>
-      <td>3.324036</td>
-      <td>3.818560</td>
-      <td>3.818560</td>
-      <td>3.324036</td>
-      <td>0.494524</td>
-      <td>0.494524</td>
+      <td>1.755094</td>
+      <td>1.625406</td>
+      <td>1.625406</td>
+      <td>1.755094</td>
+      <td>-0.129688</td>
+      <td>-0.129688</td>
       <td>NaN</td>
       <td>NaN</td>
       <td>NaN</td>
@@ -124,101 +124,101 @@ c.data.summary.head(5)
       <th>1</th>
       <td>0</td>
       <td>2</td>
-      <td>7188</td>
-      <td>3.171618e+05</td>
-      <td>0.003422</td>
-      <td>0.003234</td>
-      <td>94.510786</td>
+      <td>2283</td>
+      <td>248276.169907</td>
+      <td>0.001700</td>
+      <td>0.001567</td>
+      <td>92.228088</td>
+      <td>0.000132</td>
+      <td>-0.000074</td>
       <td>0.000188</td>
-      <td>0.000396</td>
-      <td>0.000090</td>
       <td>...</td>
-      <td>3.234381</td>
-      <td>3.422235</td>
-      <td>7.240795</td>
-      <td>6.558417</td>
-      <td>0.187854</td>
-      <td>0.682378</td>
-      <td>0.089654</td>
-      <td>0.396324</td>
-      <td>0.089654</td>
-      <td>0.396324</td>
+      <td>1.567475</td>
+      <td>1.699564</td>
+      <td>3.324970</td>
+      <td>3.322569</td>
+      <td>0.132089</td>
+      <td>0.002401</td>
+      <td>0.187618</td>
+      <td>-0.074158</td>
+      <td>0.187618</td>
+      <td>-0.074158</td>
     </tr>
     <tr>
       <th>2</th>
       <td>0</td>
       <td>3</td>
-      <td>7218</td>
-      <td>3.189618e+05</td>
-      <td>0.000000</td>
-      <td>0.000000</td>
-      <td>NaN</td>
-      <td>0.000000</td>
-      <td>0.003422</td>
-      <td>0.003234</td>
+      <td>3119</td>
+      <td>329048.542626</td>
+      <td>0.001732</td>
+      <td>0.001586</td>
+      <td>91.580350</td>
+      <td>0.000146</td>
+      <td>-0.000032</td>
+      <td>-0.000018</td>
       <td>...</td>
-      <td>0.000000</td>
-      <td>0.000000</td>
-      <td>7.240795</td>
-      <td>6.558417</td>
-      <td>0.000000</td>
-      <td>0.682378</td>
-      <td>3.234381</td>
-      <td>3.422235</td>
-      <td>3.324036</td>
-      <td>3.818560</td>
+      <td>1.585721</td>
+      <td>1.731508</td>
+      <td>5.056478</td>
+      <td>4.908290</td>
+      <td>0.145787</td>
+      <td>0.148188</td>
+      <td>-0.018246</td>
+      <td>-0.031944</td>
+      <td>0.169373</td>
+      <td>-0.106102</td>
     </tr>
     <tr>
       <th>3</th>
       <td>0</td>
       <td>4</td>
-      <td>34207</td>
-      <td>9.954903e+05</td>
-      <td>0.003331</td>
-      <td>0.003288</td>
-      <td>98.693739</td>
-      <td>0.000044</td>
-      <td>-0.003331</td>
-      <td>-0.003288</td>
+      <td>3635</td>
+      <td>367369.238502</td>
+      <td>0.001576</td>
+      <td>0.001517</td>
+      <td>96.277888</td>
+      <td>0.000059</td>
+      <td>0.000156</td>
+      <td>0.000068</td>
       <td>...</td>
-      <td>3.287683</td>
-      <td>3.331197</td>
-      <td>10.571992</td>
-      <td>9.846100</td>
-      <td>0.043514</td>
-      <td>0.725892</td>
-      <td>-3.287683</td>
-      <td>-3.331197</td>
-      <td>0.036353</td>
-      <td>0.487362</td>
+      <td>1.517318</td>
+      <td>1.575978</td>
+      <td>6.632455</td>
+      <td>6.425608</td>
+      <td>0.058660</td>
+      <td>0.206848</td>
+      <td>0.068403</td>
+      <td>0.155530</td>
+      <td>0.237776</td>
+      <td>0.049428</td>
     </tr>
     <tr>
       <th>4</th>
       <td>0</td>
       <td>5</td>
-      <td>60493</td>
-      <td>1.508876e+06</td>
-      <td>0.003358</td>
-      <td>0.003392</td>
-      <td>101.021637</td>
-      <td>-0.000034</td>
-      <td>-0.000026</td>
-      <td>-0.000104</td>
+      <td>4133</td>
+      <td>404665.961044</td>
+      <td>0.001535</td>
+      <td>0.001471</td>
+      <td>95.823815</td>
+      <td>0.000064</td>
+      <td>0.000041</td>
+      <td>0.000046</td>
       <td>...</td>
-      <td>3.391849</td>
-      <td>3.357547</td>
-      <td>13.929539</td>
-      <td>13.237949</td>
-      <td>-0.034302</td>
-      <td>0.691590</td>
-      <td>-0.104166</td>
-      <td>-0.026350</td>
-      <td>-0.067813</td>
-      <td>0.461013</td>
+      <td>1.471186</td>
+      <td>1.535303</td>
+      <td>8.167758</td>
+      <td>7.896794</td>
+      <td>0.064117</td>
+      <td>0.270965</td>
+      <td>0.046132</td>
+      <td>0.040674</td>
+      <td>0.283907</td>
+      <td>0.090103</td>
     </tr>
   </tbody>
 </table>
-<p>5 rows × 58 columns</p>
+<p>5 rows × 60 columns</p>
 </div>
 
 
@@ -266,20 +266,20 @@ c.data.steps.head(5)
       <td>1</td>
       <td>1</td>
       <td>1</td>
-      <td>2157.5</td>
-      <td>1245.488860</td>
+      <td>144.5</td>
+      <td>83.282651</td>
       <td>1</td>
-      <td>4314</td>
+      <td>288</td>
       <td>1</td>
-      <td>4314</td>
+      <td>288</td>
       <td>...</td>
-      <td>4.311272e+05</td>
+      <td>2.869900e+04</td>
       <td>0.000000</td>
-      <td>-0.271764</td>
+      <td>-6.729598</td>
+      <td>0.0</td>
       <td>0.000000e+00</td>
       <td>0.0</td>
-      <td>0.0</td>
-      <td>rest</td>
+      <td>ocvrlx_down</td>
       <td>NaN</td>
       <td></td>
       <td>0.00000</td>
@@ -290,23 +290,23 @@ c.data.steps.head(5)
       <td>1</td>
       <td>2</td>
       <td>1</td>
-      <td>4315.0</td>
+      <td>289.0</td>
       <td>NaN</td>
-      <td>4315</td>
-      <td>4315</td>
-      <td>4315</td>
-      <td>4315</td>
+      <td>289</td>
+      <td>289</td>
+      <td>289</td>
+      <td>289</td>
       <td>...</td>
       <td>0.000000e+00</td>
       <td>0.000000</td>
       <td>0.000000</td>
-      <td>0.000000e+00</td>
       <td>0.0</td>
+      <td>0.000000e+00</td>
       <td>0.0</td>
       <td>ir</td>
       <td>NaN</td>
       <td></td>
-      <td>1.75791</td>
+      <td>0.55241</td>
     </tr>
     <tr>
       <th>2</th>
@@ -314,23 +314,23 @@ c.data.steps.head(5)
       <td>1</td>
       <td>3</td>
       <td>1</td>
-      <td>4645.5</td>
-      <td>190.669872</td>
-      <td>4316</td>
-      <td>4975</td>
-      <td>4316</td>
-      <td>4975</td>
+      <td>662.0</td>
+      <td>215.207264</td>
+      <td>290</td>
+      <td>1034</td>
+      <td>290</td>
+      <td>1034</td>
       <td>...</td>
-      <td>1.181410e+08</td>
-      <td>0.584801</td>
-      <td>37.792713</td>
-      <td>1.185637e+08</td>
+      <td>2.590092e+08</td>
+      <td>-2.856309</td>
+      <td>-98.243109</td>
       <td>0.0</td>
+      <td>5.580068e+08</td>
       <td>0.0</td>
-      <td>charge</td>
+      <td>discharge</td>
       <td>NaN</td>
       <td></td>
-      <td>150.69784</td>
+      <td>126.84280</td>
     </tr>
     <tr>
       <th>3</th>
@@ -338,23 +338,23 @@ c.data.steps.head(5)
       <td>1</td>
       <td>4</td>
       <td>1</td>
-      <td>5023.0</td>
-      <td>27.568098</td>
-      <td>4976</td>
-      <td>5070</td>
-      <td>4976</td>
-      <td>5070</td>
+      <td>1035.0</td>
+      <td>NaN</td>
+      <td>1035</td>
+      <td>1035</td>
+      <td>1035</td>
+      <td>1035</td>
       <td>...</td>
-      <td>1.726822e+04</td>
-      <td>0.015646</td>
-      <td>0.124449</td>
-      <td>3.044886e+00</td>
+      <td>0.000000e+00</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
       <td>0.0</td>
+      <td>0.000000e+00</td>
       <td>0.0</td>
-      <td>charge</td>
+      <td>ir</td>
       <td>NaN</td>
       <td></td>
-      <td>60.38439</td>
+      <td>0.03637</td>
     </tr>
     <tr>
       <th>4</th>
@@ -362,23 +362,23 @@ c.data.steps.head(5)
       <td>1</td>
       <td>5</td>
       <td>1</td>
-      <td>5071.0</td>
-      <td>NaN</td>
-      <td>5071</td>
-      <td>5071</td>
-      <td>5071</td>
-      <td>5071</td>
+      <td>1051.5</td>
+      <td>9.380832</td>
+      <td>1036</td>
+      <td>1067</td>
+      <td>1036</td>
+      <td>1067</td>
       <td>...</td>
-      <td>0.000000e+00</td>
+      <td>4.612496e+04</td>
       <td>0.000000</td>
-      <td>0.000000</td>
+      <td>37.161767</td>
+      <td>0.0</td>
       <td>0.000000e+00</td>
       <td>0.0</td>
-      <td>0.0</td>
-      <td>ir</td>
+      <td>ocvrlx_up</td>
       <td>NaN</td>
       <td></td>
-      <td>0.29138</td>
+      <td>0.00000</td>
     </tr>
   </tbody>
 </table>
@@ -402,131 +402,143 @@ c.data.raw.head(5)
   <thead>
     <tr style="text-align: right;">
       <th></th>
-      <th>test_id</th>
-      <th>datapoint_num</th>
-      <th>test_time</th>
-      <th>step_time</th>
-      <th>date_time</th>
-      <th>step_num</th>
-      <th>cycle_num</th>
-      <th>is_fc_data</th>
-      <th>current</th>
-      <th>potential</th>
       <th>cumulative_charge_capacity</th>
-      <th>cumulative_discharge_capacity</th>
       <th>cumulative_charge_energy</th>
+      <th>current</th>
+      <th>cycle_num</th>
+      <th>datapoint_num</th>
+      <th>cumulative_discharge_capacity</th>
       <th>cumulative_discharge_energy</th>
-      <th>dv_dt</th>
       <th>internal_resistance</th>
-      <th>ac_impedance</th>
+      <th>step_num</th>
+      <th>step_time</th>
+      <th>test_time</th>
+      <th>potential</th>
       <th>aci_phase_angle</th>
+      <th>ac_impedance</th>
+      <th>date_time</th>
+      <th>is_fc_data</th>
+      <th>dv_dt</th>
+      <th>epoch_time_utc</th>
+      <th>test_id</th>
+      <th>mask</th>
     </tr>
   </thead>
   <tbody>
     <tr>
       <th>0</th>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>1</td>
+      <td>1</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>1</td>
+      <td>300.010482</td>
+      <td>300.010482</td>
+      <td>3.097617</td>
       <td>0</td>
-      <td>1</td>
-      <td>5.008961</td>
-      <td>5.008961</td>
-      <td>2021-05-10 10:14:45</td>
-      <td>1</td>
-      <td>1</td>
       <td>0</td>
-      <td>0.0</td>
-      <td>3.051165</td>
-      <td>0.0</td>
-      <td>0.0</td>
-      <td>0.0</td>
-      <td>0.0</td>
-      <td>-0.000061</td>
-      <td>0.0</td>
-      <td>0.0</td>
-      <td>0.0</td>
+      <td>2016-08-05 16:21:23</td>
+      <td>0</td>
+      <td>-0.000123</td>
+      <td>1470414083000000000</td>
+      <td>0</td>
+      <td>True</td>
     </tr>
     <tr>
       <th>1</th>
-      <td>0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>1</td>
       <td>2</td>
-      <td>10.019319</td>
-      <td>10.019319</td>
-      <td>2021-05-10 10:14:50</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
       <td>1</td>
-      <td>1</td>
+      <td>600.014947</td>
+      <td>600.014947</td>
+      <td>3.100080</td>
       <td>0</td>
-      <td>0.0</td>
-      <td>3.051165</td>
-      <td>0.0</td>
-      <td>0.0</td>
-      <td>0.0</td>
-      <td>0.0</td>
-      <td>0.000000</td>
-      <td>0.0</td>
-      <td>0.0</td>
-      <td>0.0</td>
+      <td>0</td>
+      <td>2016-08-05 16:26:23</td>
+      <td>0</td>
+      <td>-0.000062</td>
+      <td>1470414383000000000</td>
+      <td>0</td>
+      <td>True</td>
     </tr>
     <tr>
       <th>2</th>
-      <td>0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>1</td>
       <td>3</td>
-      <td>15.026495</td>
-      <td>15.026495</td>
-      <td>2021-05-10 10:14:55</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
       <td>1</td>
-      <td>1</td>
+      <td>900.026371</td>
+      <td>900.026371</td>
+      <td>3.101312</td>
       <td>0</td>
-      <td>0.0</td>
-      <td>3.051165</td>
-      <td>0.0</td>
-      <td>0.0</td>
-      <td>0.0</td>
-      <td>0.0</td>
-      <td>0.000000</td>
-      <td>0.0</td>
-      <td>0.0</td>
-      <td>0.0</td>
+      <td>0</td>
+      <td>2016-08-05 16:31:23</td>
+      <td>0</td>
+      <td>-0.000123</td>
+      <td>1470414683000000000</td>
+      <td>0</td>
+      <td>True</td>
     </tr>
     <tr>
       <th>3</th>
-      <td>0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>1</td>
       <td>4</td>
-      <td>20.038747</td>
-      <td>20.038747</td>
-      <td>2021-05-10 10:15:00</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
       <td>1</td>
-      <td>1</td>
+      <td>1200.039773</td>
+      <td>1200.039773</td>
+      <td>3.102852</td>
       <td>0</td>
-      <td>0.0</td>
-      <td>3.050858</td>
-      <td>0.0</td>
-      <td>0.0</td>
-      <td>0.0</td>
-      <td>0.0</td>
-      <td>-0.000123</td>
-      <td>0.0</td>
-      <td>0.0</td>
-      <td>0.0</td>
+      <td>0</td>
+      <td>2016-08-05 16:36:23</td>
+      <td>0</td>
+      <td>0.000062</td>
+      <td>1470414983000000000</td>
+      <td>0</td>
+      <td>True</td>
     </tr>
     <tr>
       <th>4</th>
-      <td>0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>1</td>
       <td>5</td>
-      <td>25.040517</td>
-      <td>25.040517</td>
-      <td>2021-05-10 10:15:05</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
       <td>1</td>
-      <td>1</td>
+      <td>1500.051275</td>
+      <td>1500.051275</td>
+      <td>3.103160</td>
       <td>0</td>
-      <td>0.0</td>
-      <td>3.050551</td>
-      <td>0.0</td>
-      <td>0.0</td>
-      <td>0.0</td>
-      <td>0.0</td>
-      <td>-0.000061</td>
-      <td>0.0</td>
-      <td>0.0</td>
-      <td>0.0</td>
+      <td>0</td>
+      <td>2016-08-05 16:41:23</td>
+      <td>0</td>
+      <td>0.000000</td>
+      <td>1470415283000000000</td>
+      <td>0</td>
+      <td>True</td>
     </tr>
   </tbody>
 </table>
@@ -543,7 +555,8 @@ E.g., we can set a new cell name and add a value active electrode area:
 
 ```python
 c.active_electrode_area = 1.767
-c.cell_name = "20210210_FC"
+c.cell_name = "example"
+
 ```
 
 !!! note
@@ -595,19 +608,24 @@ You can easily save all of this in the native `.cellpy` format:
 
 
 ```python
-c.save(filedir / "out" / "20210210_FC.cellpy")
+out = pathlib.Path("out")
+out.mkdir(exist_ok=True)
+c.save(out / "example.cellpy")
+
 ```
 
 or export to csv or excel
 
 
 ```python
-c.to_csv(filedir / "out", sep=";", raw=True)
+c.to_csv(out, sep=";", raw=True)
+
 ```
 
 
 ```python
-c.to_excel(filedir / "out" / "20210210_FC.xlsx")
+c.to_excel(out / "example.xlsx")
+
 ```
 
 ## Loading saved files
@@ -616,19 +634,7 @@ To load saved files, you can use the `cellpy.get()` function again:
 
 
 ```python
-candidates = [
-    filedir / "20210210_FC.cellpy",
-    filedir / "out" / "20210210_FC.cellpy",
-    filedir / "20210210_FC.h5",
-    filedir / "out" / "20210210_FC.h5",
-]
-cellpy_path = next((p for p in candidates if p.exists()), None)
-if cellpy_path is None:
-    raise FileNotFoundError(
-        "Could not find 20210210_FC.cellpy (or a legacy .h5) in data/ or data/out/. "
-        "Run the save cell above, or place the file in examples/data/."
-    )
-c = cellpy.get(cellpy_path)
+c = cellpy.get(out / "example.cellpy")
 
 ```
 
@@ -645,153 +651,153 @@ c.data.summary.head()
   <thead>
     <tr style="text-align: right;">
       <th></th>
+      <th>test_id</th>
       <th>cycle_num</th>
       <th>datapoint_num_last</th>
       <th>last_test_time</th>
-      <th>date_time</th>
-      <th>potential_end_charge</th>
-      <th>potential_end_discharge</th>
       <th>charge_capacity</th>
       <th>discharge_capacity</th>
       <th>coulombic_efficiency</th>
-      <th>cumulated_coulombic_efficiency</th>
+      <th>coulombic_difference</th>
+      <th>charge_capacity_loss</th>
+      <th>discharge_capacity_loss</th>
       <th>...</th>
-      <th>test_cumulated_discharge_capacity_areal</th>
-      <th>coulombic_difference_areal</th>
-      <th>test_cumulated_coulombic_difference_areal</th>
-      <th>discharge_capacity_loss_areal</th>
-      <th>charge_capacity_loss_areal</th>
-      <th>test_cumulated_discharge_capacity_loss_areal</th>
-      <th>test_cumulated_charge_capacity_loss_areal</th>
-      <th>shifted_charge_capacity_areal</th>
-      <th>shifted_discharge_capacity_areal</th>
-      <th>test_id</th>
+      <th>discharge_capacity_absolute</th>
+      <th>charge_capacity_absolute</th>
+      <th>test_cumulated_charge_capacity_absolute</th>
+      <th>test_cumulated_discharge_capacity_absolute</th>
+      <th>coulombic_difference_absolute</th>
+      <th>test_cumulated_coulombic_difference_absolute</th>
+      <th>discharge_capacity_loss_absolute</th>
+      <th>charge_capacity_loss_absolute</th>
+      <th>test_cumulated_discharge_capacity_loss_absolute</th>
+      <th>test_cumulated_charge_capacity_loss_absolute</th>
     </tr>
   </thead>
   <tbody>
     <tr>
       <th>0</th>
-      <td>1</td>
-      <td>5797</td>
-      <td>1.743286e+05</td>
-      <td>2021-05-12 10:40:11.000000</td>
-      <td>4.200052</td>
-      <td>3.129170</td>
-      <td>0.003819</td>
-      <td>0.003324</td>
-      <td>87.049469</td>
-      <td>87.049469</td>
-      <td>...</td>
-      <td>3.324036</td>
-      <td>0.494524</td>
-      <td>0.494524</td>
-      <td>NaN</td>
-      <td>NaN</td>
-      <td>NaN</td>
-      <td>NaN</td>
-      <td>0.494524</td>
-      <td>4.313083</td>
       <td>0</td>
+      <td>1</td>
+      <td>1457</td>
+      <td>168686.229691</td>
+      <td>0.001625</td>
+      <td>0.001755</td>
+      <td>107.978778</td>
+      <td>-0.000130</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>...</td>
+      <td>1.755094</td>
+      <td>1.625406</td>
+      <td>1.625406</td>
+      <td>1.755094</td>
+      <td>-0.129688</td>
+      <td>-0.129688</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
     </tr>
     <tr>
       <th>1</th>
-      <td>2</td>
-      <td>7188</td>
-      <td>3.171618e+05</td>
-      <td>2021-05-14 02:20:47.000000</td>
-      <td>4.200052</td>
-      <td>3.188442</td>
-      <td>0.003422</td>
-      <td>0.003234</td>
-      <td>94.510786</td>
-      <td>181.560255</td>
-      <td>...</td>
-      <td>6.558417</td>
-      <td>0.187854</td>
-      <td>0.682378</td>
-      <td>0.089654</td>
-      <td>0.396324</td>
-      <td>0.089654</td>
-      <td>0.396324</td>
-      <td>0.682378</td>
-      <td>4.104613</td>
       <td>0</td>
+      <td>2</td>
+      <td>2283</td>
+      <td>248276.169907</td>
+      <td>0.001700</td>
+      <td>0.001567</td>
+      <td>92.228088</td>
+      <td>0.000132</td>
+      <td>-0.000074</td>
+      <td>0.000188</td>
+      <td>...</td>
+      <td>1.567475</td>
+      <td>1.699564</td>
+      <td>3.324970</td>
+      <td>3.322569</td>
+      <td>0.132089</td>
+      <td>0.002401</td>
+      <td>0.187618</td>
+      <td>-0.074158</td>
+      <td>0.187618</td>
+      <td>-0.074158</td>
     </tr>
     <tr>
       <th>2</th>
-      <td>3</td>
-      <td>7218</td>
-      <td>3.189618e+05</td>
-      <td>2021-05-14 02:50:47.000000</td>
-      <td>0.000000</td>
-      <td>0.000000</td>
-      <td>0.000000</td>
-      <td>0.000000</td>
-      <td>NaN</td>
-      <td>NaN</td>
-      <td>...</td>
-      <td>6.558417</td>
-      <td>0.000000</td>
-      <td>0.682378</td>
-      <td>3.234381</td>
-      <td>3.422235</td>
-      <td>3.324036</td>
-      <td>3.818560</td>
-      <td>0.682378</td>
-      <td>0.682378</td>
       <td>0</td>
+      <td>3</td>
+      <td>3119</td>
+      <td>329048.542626</td>
+      <td>0.001732</td>
+      <td>0.001586</td>
+      <td>91.580350</td>
+      <td>0.000146</td>
+      <td>-0.000032</td>
+      <td>-0.000018</td>
+      <td>...</td>
+      <td>1.585721</td>
+      <td>1.731508</td>
+      <td>5.056478</td>
+      <td>4.908290</td>
+      <td>0.145787</td>
+      <td>0.148188</td>
+      <td>-0.018246</td>
+      <td>-0.031944</td>
+      <td>0.169373</td>
+      <td>-0.106102</td>
     </tr>
     <tr>
       <th>3</th>
-      <td>4</td>
-      <td>34207</td>
-      <td>9.954903e+05</td>
-      <td>2021-05-22 17:30:55.000000</td>
-      <td>4.200052</td>
-      <td>2.999878</td>
-      <td>0.003331</td>
-      <td>0.003288</td>
-      <td>98.693739</td>
-      <td>280.253993</td>
-      <td>...</td>
-      <td>9.846100</td>
-      <td>0.043514</td>
-      <td>0.725892</td>
-      <td>-3.287683</td>
-      <td>-3.331197</td>
-      <td>0.036353</td>
-      <td>0.487362</td>
-      <td>0.725892</td>
-      <td>4.057089</td>
       <td>0</td>
+      <td>4</td>
+      <td>3635</td>
+      <td>367369.238502</td>
+      <td>0.001576</td>
+      <td>0.001517</td>
+      <td>96.277888</td>
+      <td>0.000059</td>
+      <td>0.000156</td>
+      <td>0.000068</td>
+      <td>...</td>
+      <td>1.517318</td>
+      <td>1.575978</td>
+      <td>6.632455</td>
+      <td>6.425608</td>
+      <td>0.058660</td>
+      <td>0.206848</td>
+      <td>0.068403</td>
+      <td>0.155530</td>
+      <td>0.237776</td>
+      <td>0.049428</td>
     </tr>
     <tr>
       <th>4</th>
-      <td>5</td>
-      <td>60493</td>
-      <td>1.508876e+06</td>
-      <td>2021-05-27 21:23:41.999999</td>
-      <td>4.200052</td>
-      <td>2.999878</td>
-      <td>0.003358</td>
-      <td>0.003392</td>
-      <td>101.021637</td>
-      <td>381.275630</td>
-      <td>...</td>
-      <td>13.237949</td>
-      <td>-0.034302</td>
-      <td>0.691590</td>
-      <td>-0.104166</td>
-      <td>-0.026350</td>
-      <td>-0.067813</td>
-      <td>0.461013</td>
-      <td>0.691590</td>
-      <td>4.049137</td>
       <td>0</td>
+      <td>5</td>
+      <td>4133</td>
+      <td>404665.961044</td>
+      <td>0.001535</td>
+      <td>0.001471</td>
+      <td>95.823815</td>
+      <td>0.000064</td>
+      <td>0.000041</td>
+      <td>0.000046</td>
+      <td>...</td>
+      <td>1.471186</td>
+      <td>1.535303</td>
+      <td>8.167758</td>
+      <td>7.896794</td>
+      <td>0.064117</td>
+      <td>0.270965</td>
+      <td>0.046132</td>
+      <td>0.040674</td>
+      <td>0.283907</td>
+      <td>0.090103</td>
     </tr>
   </tbody>
 </table>
-<p>5 rows × 51 columns</p>
+<p>5 rows × 60 columns</p>
 </div>
 
 

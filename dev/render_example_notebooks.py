@@ -99,7 +99,8 @@ TUTORIALS: dict[str, dict[str, object]] = {
             "look at the summary, step table and metadata",
             "save a `.cellpy` file, export to Excel/CSV, and load it again",
         ],
-        "data": "the four `20210210_FC_01_cc_0*.res` Arbin files in `examples/data/`",
+        "data": "the bundled example Arbin file "
+        "(`cellpy.utils.example_data.arbin_file_path`), downloaded automatically",
     },
     "02_Initial_data_inspection.ipynb": {
         "learn": [
@@ -107,8 +108,8 @@ TUTORIALS: dict[str, dict[str, object]] = {
             "plot raw traces and per-cycle information",
             "draw the standard summary plots (capacity fade, efficiency)",
         ],
-        "data": "`20210210_FC.cellpy` in `examples/data/` (made by the previous "
-        "tutorial), or the bundled example data",
+        "data": "the bundled example data (`cellpy.utils.example_data`), "
+        "downloaded automatically",
     },
     "03_capacity_vs_voltage.ipynb": {
         "learn": [

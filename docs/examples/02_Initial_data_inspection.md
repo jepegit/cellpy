@@ -8,7 +8,7 @@
     - plot raw traces and per-cycle information
     - draw the standard summary plots (capacity fade, efficiency)
 
-    **Data:** `20210210_FC.cellpy` in `examples/data/` (made by the previous tutorial), or the bundled example data.
+    **Data:** the bundled example data (`cellpy.utils.example_data`), downloaded automatically.
 
     [:material-github: Open the notebook on GitHub](https://github.com/jepegit/cellpy/blob/master/examples/02_Initial_data_inspection.ipynb){ .md-button } — or get every notebook and its data with `cellpy pull --examples`.
 
@@ -16,13 +16,18 @@
 
 
 ```python
-import pathlib
-
 from rich import print
 
 import cellpy
-from cellpy.utils import plotutils
+from cellpy.utils import example_data, plotutils
+
 ```
+
+    WARNING:root:/home/ubuntu/.cellpy_prms_ubuntu.conf carries instrument credentials (instruments.Arbin.SQL_PWD, instruments.Arbin.SQL_UID); these are ignored — cellpy 2 reads them from the environment only (CELLPY_HOST, CELLPY_KEY_FILENAME, CELLPY_PASSWORD, CELLPY_USER).
+
+
+    WARNING:root:Configured env_file /agent/repos/cellpy/.env_cellpy resolved to /agent/repos/cellpy/.env_cellpy and was not found. Create that file (or run `cellpy setup`) so those variables can be loaded.
+
 
 <div class="admonition hint">
     <p class="admonition-title">Hint</p>
@@ -31,24 +36,14 @@ from cellpy.utils import plotutils
     </p>
 </div>
 
-Either load raw data or your saved cellpy files:
+Load the bundled example cell. The first call downloads it if you do not already have it.
+
+To open a file you saved in the previous tutorial instead, use `cellpy.get("out/example.cellpy")`.
+
 
 
 ```python
-filedir = pathlib.Path("data")  # foldername within the same directory
-candidates = [
-    filedir / "20210210_FC.cellpy",
-    filedir / "out" / "20210210_FC.cellpy",
-    filedir / "20210210_FC.h5",
-    filedir / "out" / "20210210_FC.h5",
-]
-cellpy_path = next((p for p in candidates if p.exists()), None)
-if cellpy_path is None:
-    from cellpy.utils import example_data
-
-    c = example_data.cellpy_file()
-else:
-    c = cellpy.get(cellpy_path)
+c = example_data.cellpy_file()
 
 ```
 
@@ -73,80 +68,59 @@ c.data.raw.head(2)
     <tr style="text-align: right;">
       <th></th>
       <th>test_id</th>
-      <th>data_point</th>
+      <th>datapoint_num</th>
       <th>test_time</th>
       <th>step_time</th>
       <th>date_time</th>
-      <th>step_index</th>
-      <th>cycle_index</th>
+      <th>step_num</th>
+      <th>cycle_num</th>
       <th>is_fc_data</th>
       <th>current</th>
-      <th>voltage</th>
-      <th>charge_capacity</th>
-      <th>discharge_capacity</th>
-      <th>charge_energy</th>
-      <th>discharge_energy</th>
+      <th>potential</th>
+      <th>cumulative_charge_capacity</th>
+      <th>cumulative_discharge_capacity</th>
+      <th>cumulative_charge_energy</th>
+      <th>cumulative_discharge_energy</th>
       <th>dv_dt</th>
       <th>internal_resistance</th>
       <th>ac_impedance</th>
       <th>aci_phase_angle</th>
     </tr>
-    <tr>
-      <th>data_point</th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-    </tr>
   </thead>
   <tbody>
     <tr>
-      <th>1</th>
+      <th>0</th>
       <td>1</td>
       <td>1</td>
-      <td>5.008961</td>
-      <td>5.008961</td>
-      <td>2021-05-10 10:14:45</td>
+      <td>300.001240</td>
+      <td>299.951256</td>
+      <td>2018-04-18 19:26:45</td>
       <td>1</td>
       <td>1</td>
       <td>0</td>
       <td>0.0</td>
-      <td>3.051165</td>
+      <td>2.992973</td>
       <td>0.0</td>
       <td>0.0</td>
       <td>0.0</td>
       <td>0.0</td>
-      <td>-0.000061</td>
+      <td>0.000062</td>
       <td>0.0</td>
       <td>0.0</td>
       <td>0.0</td>
     </tr>
     <tr>
-      <th>2</th>
+      <th>1</th>
       <td>1</td>
       <td>2</td>
-      <td>10.019319</td>
-      <td>10.019319</td>
-      <td>2021-05-10 10:14:50</td>
+      <td>600.014549</td>
+      <td>599.964565</td>
+      <td>2018-04-18 19:31:45</td>
       <td>1</td>
       <td>1</td>
       <td>0</td>
       <td>0.0</td>
-      <td>3.051165</td>
+      <td>2.995125</td>
       <td>0.0</td>
       <td>0.0</td>
       <td>0.0</td>
@@ -175,105 +149,81 @@ c.data.summary.head(2)
   <thead>
     <tr style="text-align: right;">
       <th></th>
-      <th>data_point</th>
-      <th>test_time</th>
+      <th>cycle_num</th>
+      <th>datapoint_num_last</th>
+      <th>last_test_time</th>
       <th>date_time</th>
-      <th>end_voltage_charge</th>
-      <th>end_voltage_discharge</th>
+      <th>ir_charge</th>
+      <th>ir_discharge</th>
+      <th>potential_end_charge</th>
+      <th>potential_end_discharge</th>
       <th>charge_capacity</th>
       <th>discharge_capacity</th>
-      <th>coulombic_efficiency</th>
-      <th>cumulated_coulombic_efficiency</th>
-      <th>cumulated_charge_capacity</th>
       <th>...</th>
-      <th>cumulated_charge_capacity_areal</th>
-      <th>cumulated_discharge_capacity_areal</th>
+      <th>test_cumulated_discharge_capacity_areal</th>
       <th>coulombic_difference_areal</th>
-      <th>cumulated_coulombic_difference_areal</th>
+      <th>test_cumulated_coulombic_difference_areal</th>
       <th>discharge_capacity_loss_areal</th>
       <th>charge_capacity_loss_areal</th>
-      <th>cumulated_discharge_capacity_loss_areal</th>
-      <th>cumulated_charge_capacity_loss_areal</th>
+      <th>test_cumulated_discharge_capacity_loss_areal</th>
+      <th>test_cumulated_charge_capacity_loss_areal</th>
       <th>shifted_charge_capacity_areal</th>
       <th>shifted_discharge_capacity_areal</th>
-    </tr>
-    <tr>
-      <th>cycle_index</th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
+      <th>test_id</th>
     </tr>
   </thead>
   <tbody>
     <tr>
-      <th>1</th>
-      <td>5797</td>
-      <td>174328.601353</td>
-      <td>2021-05-12 10:40:11</td>
-      <td>4.200052</td>
-      <td>3.129170</td>
-      <td>0.003819</td>
-      <td>0.003324</td>
-      <td>87.049469</td>
-      <td>87.049469</td>
-      <td>0.003819</td>
+      <th>0</th>
+      <td>1</td>
+      <td>1524</td>
+      <td>146226.606724</td>
+      <td>2018-04-20 11:58:56.000000</td>
+      <td>55.772354</td>
+      <td>58.474312</td>
+      <td>1.000125</td>
+      <td>0.049979</td>
+      <td>0.000564</td>
+      <td>0.000670</td>
       <td>...</td>
-      <td>3.818560</td>
-      <td>3.324036</td>
-      <td>0.494524</td>
-      <td>0.494524</td>
+      <td>0.379345</td>
+      <td>0.060044</td>
+      <td>0.060044</td>
       <td>NaN</td>
       <td>NaN</td>
       <td>NaN</td>
       <td>NaN</td>
-      <td>0.494524</td>
-      <td>4.313083</td>
+      <td>0.060044</td>
+      <td>0.439390</td>
+      <td>0</td>
     </tr>
     <tr>
-      <th>2</th>
-      <td>7188</td>
-      <td>317161.773416</td>
-      <td>2021-05-14 02:20:47</td>
-      <td>4.200052</td>
-      <td>3.188442</td>
-      <td>0.003422</td>
-      <td>0.003234</td>
-      <td>94.510786</td>
-      <td>181.560255</td>
-      <td>0.007241</td>
+      <th>1</th>
+      <td>2</td>
+      <td>2464</td>
+      <td>241504.322758</td>
+      <td>2018-04-21 14:26:56.999999</td>
+      <td>49.123096</td>
+      <td>27.863733</td>
+      <td>1.000125</td>
+      <td>0.049979</td>
+      <td>0.000564</td>
+      <td>0.000575</td>
       <td>...</td>
-      <td>7.240795</td>
-      <td>6.558417</td>
-      <td>0.187854</td>
-      <td>0.682378</td>
-      <td>0.089654</td>
-      <td>0.396324</td>
-      <td>0.089654</td>
-      <td>0.396324</td>
-      <td>0.682378</td>
-      <td>4.104613</td>
+      <td>0.704955</td>
+      <td>0.006520</td>
+      <td>0.066564</td>
+      <td>0.053736</td>
+      <td>0.000211</td>
+      <td>0.053736</td>
+      <td>0.000211</td>
+      <td>0.066564</td>
+      <td>0.392174</td>
+      <td>0</td>
     </tr>
   </tbody>
 </table>
-<p>2 rows × 49 columns</p>
+<p>2 rows × 53 columns</p>
 </div>
 
 
@@ -292,26 +242,26 @@ c.data.steps.head(2)
     <tr style="text-align: right;">
       <th></th>
       <th>index</th>
-      <th>cycle</th>
-      <th>step</th>
-      <th>sub_step</th>
-      <th>point_avr</th>
-      <th>point_std</th>
-      <th>point_min</th>
-      <th>point_max</th>
-      <th>point_first</th>
-      <th>point_last</th>
+      <th>cycle_num</th>
+      <th>step_num</th>
+      <th>sub_step_num</th>
+      <th>datapoint_num_mean</th>
+      <th>datapoint_num_std</th>
+      <th>datapoint_num_min</th>
+      <th>datapoint_num_max</th>
+      <th>datapoint_num_first</th>
+      <th>datapoint_num_last</th>
       <th>...</th>
-      <th>ir_std</th>
-      <th>ir_min</th>
-      <th>ir_max</th>
-      <th>ir_first</th>
-      <th>ir_last</th>
-      <th>ir_delta</th>
-      <th>rate_avr</th>
-      <th>type</th>
-      <th>sub_type</th>
+      <th>internal_resistance_min</th>
+      <th>internal_resistance_max</th>
+      <th>internal_resistance_first</th>
+      <th>internal_resistance_last</th>
+      <th>internal_resistance_delta</th>
+      <th>c_rate</th>
+      <th>step_type</th>
+      <th>sub_step_type</th>
       <th>info</th>
+      <th>test_id</th>
     </tr>
   </thead>
   <tbody>
@@ -321,14 +271,13 @@ c.data.steps.head(2)
       <td>1</td>
       <td>1</td>
       <td>1</td>
-      <td>2157.5</td>
-      <td>1245.48886</td>
+      <td>72.5</td>
+      <td>41.713307</td>
       <td>1</td>
-      <td>4314</td>
+      <td>144</td>
       <td>1</td>
-      <td>4314</td>
+      <td>144</td>
       <td>...</td>
-      <td>0.0</td>
       <td>0.000000</td>
       <td>0.000000</td>
       <td>0.000000</td>
@@ -338,6 +287,7 @@ c.data.steps.head(2)
       <td>rest</td>
       <td>NaN</td>
       <td></td>
+      <td>0</td>
     </tr>
     <tr>
       <th>1</th>
@@ -345,27 +295,27 @@ c.data.steps.head(2)
       <td>1</td>
       <td>2</td>
       <td>1</td>
-      <td>4315.0</td>
+      <td>145.0</td>
       <td>NaN</td>
-      <td>4315</td>
-      <td>4315</td>
-      <td>4315</td>
-      <td>4315</td>
+      <td>145</td>
+      <td>145</td>
+      <td>145</td>
+      <td>145</td>
       <td>...</td>
-      <td>NaN</td>
-      <td>6.650723</td>
-      <td>6.650723</td>
-      <td>6.650723</td>
-      <td>6.650723</td>
+      <td>58.474312</td>
+      <td>58.474312</td>
+      <td>58.474312</td>
+      <td>58.474312</td>
       <td>0.0</td>
-      <td>1.75791</td>
+      <td>0.00009</td>
       <td>ir</td>
       <td>NaN</td>
       <td></td>
+      <td>0</td>
     </tr>
   </tbody>
 </table>
-<p>2 rows × 64 columns</p>
+<p>2 rows × 65 columns</p>
 </div>
 
 
@@ -385,10 +335,8 @@ plotutils.raw_plot(c, title="Voltage vs time")
 ```
 
 
-
-
     
-![png](02_Initial_data_inspection_files/02_Initial_data_inspection_10_1.png)
+![png](02_Initial_data_inspection_files/02_Initial_data_inspection_10_0.png)
     
 
 
@@ -434,34 +382,38 @@ plotutils.cycle_info_plot(c, cycle=cycles, title="Cycle info plot:", t_unit="day
 print(c.data.summary.columns)
 ```
 
-    Index(['data_point', 'test_time', 'date_time', 'end_voltage_charge',
-           'end_voltage_discharge', 'charge_capacity', 'discharge_capacity',
+    Index(['cycle_num', 'datapoint_num_last', 'last_test_time', 'date_time',
+           'ir_charge', 'ir_discharge', 'potential_end_charge',
+           'potential_end_discharge', 'charge_capacity', 'discharge_capacity',
            'coulombic_efficiency', 'cumulated_coulombic_efficiency',
-           'cumulated_charge_capacity', 'cumulated_discharge_capacity',
+           'test_cumulated_charge_capacity', 'test_cumulated_discharge_capacity',
            'discharge_capacity_loss', 'charge_capacity_loss',
-           'coulombic_difference', 'cumulated_coulombic_difference',
-           'cumulated_discharge_capacity_loss', 'cumulated_charge_capacity_loss',
-           'shifted_charge_capacity', 'shifted_discharge_capacity',
-           'cumulated_ric', 'cumulated_ric_sei', 'cumulated_ric_disconnect',
-           'normalized_cycle_index', 'charge_c_rate', 'discharge_c_rate',
-           'discharge_capacity_gravimetric', 'charge_capacity_gravimetric',
-           'cumulated_charge_capacity_gravimetric',
-           'cumulated_discharge_capacity_gravimetric',
+           'coulombic_difference', 'test_cumulated_coulombic_difference',
+           'test_cumulated_discharge_capacity_loss',
+           'test_cumulated_charge_capacity_loss', 'shifted_charge_capacity',
+           'shifted_discharge_capacity', 'cumulated_ric', 'cumulated_ric_sei',
+           'cumulated_ric_disconnect', 'normalized_cycle_index', 'charge_c_rate',
+           'discharge_c_rate', 'discharge_capacity_gravimetric',
+           'charge_capacity_gravimetric',
+           'test_cumulated_charge_capacity_gravimetric',
+           'test_cumulated_discharge_capacity_gravimetric',
            'coulombic_difference_gravimetric',
-           'cumulated_coulombic_difference_gravimetric',
+           'test_cumulated_coulombic_difference_gravimetric',
            'discharge_capacity_loss_gravimetric',
            'charge_capacity_loss_gravimetric',
-           'cumulated_discharge_capacity_loss_gravimetric',
-           'cumulated_charge_capacity_loss_gravimetric',
+           'test_cumulated_discharge_capacity_loss_gravimetric',
+           'test_cumulated_charge_capacity_loss_gravimetric',
            'shifted_charge_capacity_gravimetric',
            'shifted_discharge_capacity_gravimetric', 'discharge_capacity_areal',
-           'charge_capacity_areal', 'cumulated_charge_capacity_areal',
-           'cumulated_discharge_capacity_areal', 'coulombic_difference_areal',
-           'cumulated_coulombic_difference_areal', 'discharge_capacity_loss_areal',
-           'charge_capacity_loss_areal', 'cumulated_discharge_capacity_loss_areal',
-           'cumulated_charge_capacity_loss_areal', 'shifted_charge_capacity_areal',
-           'shifted_discharge_capacity_areal'],
-          dtype='object')
+           'charge_capacity_areal', 'test_cumulated_charge_capacity_areal',
+           'test_cumulated_discharge_capacity_areal', 'coulombic_difference_areal',
+           'test_cumulated_coulombic_difference_areal',
+           'discharge_capacity_loss_areal', 'charge_capacity_loss_areal',
+           'test_cumulated_discharge_capacity_loss_areal',
+           'test_cumulated_charge_capacity_loss_areal',
+           'shifted_charge_capacity_areal', 'shifted_discharge_capacity_areal',
+           'test_id'],
+          dtype='str')
 
 
 Here is one example:
