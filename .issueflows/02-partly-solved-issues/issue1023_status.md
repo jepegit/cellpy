@@ -12,7 +12,7 @@ branch `1023-docs-usability`.
 - `examples/02_Initial_data_inspection.ipynb` loads `example_data.cellpy_file()`.
 - Both notebooks re-executed. Tutorial 02 plot PNGs backfilled with `dev/backfill_notebook_plotly_pngs.py`. Pages re-rendered. `TUTORIALS` data lines updated.
 - Verification: `zensical build --clean` "No issues found"; `check_docs_relative_links.py` "all relative links resolve"; `pytest -m essential` 1076 passed. Two filefinder failures (`test_find_by_project_cellpy_range`, `test_find_by_project_otherpath_local`) search `*.h5` because `~/.cellpy_prms_ubuntu.conf` sets `cellpy_file_extension: h5`. Those two tests pass with that file moved aside. No new tests.
-- PR: https://github.com/jepegit/cellpy/pull/1166 (#1166, draft until close marks it ready).
+- PR: https://github.com/jepegit/cellpy/pull/1166 (#1166, ready).
 
 ## Remaining work
 
