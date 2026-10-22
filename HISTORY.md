@@ -6,6 +6,8 @@
 
 * Search and social previews for the top docs pages now use a one-sentence description of that page. (#1023)
 
+* Docs pages ask "Was this page helpful?" and a negative answer links to a GitHub issue, without Google Analytics. (#1023)
+
 ## [2.1.5.post10] - 2026-10-20
 
 * Edit batch plot function doc string. (#1153)

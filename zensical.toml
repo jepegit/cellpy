@@ -20,6 +20,9 @@ Copyright &copy; The cellpy developers
 
 # Pandas tables from rendered example notebooks (horizontal scroll + striping).
 extra_css = ["stylesheets/extra.css"]
+# Unhides the page-feedback form. The theme leaves it hidden unless
+# Google Analytics runs; this script does not load a tag. (#1023)
+extra_javascript = ["javascripts/feedback.js"]
 
 # Researcher-first information architecture: ordered by what someone is trying
 # to *do* (install it, load my data, answer a question about my cells), not by
@@ -162,6 +165,24 @@ toggle.name = "Switch to dark mode"
 scheme = "slate"
 toggle.icon = "lucide/moon"
 toggle.name = "Switch to light mode"
+
+# "Was this page helpful?" (#1023). No analytics provider: the form is
+# unhidden by javascripts/feedback.js, and a negative rating links to
+# a GitHub issue. {title} and {url} are filled in by the theme.
+[project.extra.analytics.feedback]
+title = "Was this page helpful?"
+
+[[project.extra.analytics.feedback.ratings]]
+icon = "material/emoticon-happy-outline"
+name = "This page was helpful"
+data = 1
+note = "Thanks for the feedback."
+
+[[project.extra.analytics.feedback.ratings]]
+icon = "material/emoticon-sad-outline"
+name = "This page could be improved"
+data = 0
+note = """Thanks. <a href="https://github.com/jepegit/cellpy/issues/new?title=Docs%3A+{title}&amp;body=Page%3A+https%3A%2F%2Fcellpy.readthedocs.io{url}%0A%0A" target="_blank" rel="noopener">Open a GitHub issue</a> about this page."""
 
 [[project.extra.social]]
 icon = "fontawesome/brands/github"

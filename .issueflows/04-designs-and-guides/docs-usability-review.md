@@ -45,8 +45,14 @@ Partly done or changed on the way:
 - **6.2** Not merged: `contributing.md` is a single-source include of
   `CONTRIBUTING.md`, which is worth keeping.
 
-Not done: 7.1 (version banner: check RTD addons in the admin), 7.4 (feedback
-widget), §8 P2/P3.
+Not done: 7.1 (version banner: check RTD addons in the admin), §8 P2/P3.
+
+Done in iteration 16: 7.4 page feedback. `extra.analytics.feedback` adds
+"Was this page helpful?" on every page. The form stays hidden unless
+script shows it, and the only built-in script is the Google Analytics
+provider, so `docs/javascripts/feedback.js` unhides it instead. No
+analytics provider is set. A negative rating links to a new GitHub
+issue for that page. A positive rating only says thanks.
 
 Done in iteration 15: 7.3 `description:` on the 15 hand-written newcomer
 pages (home, getting started, how-do-I, troubleshooting, tutorial index,

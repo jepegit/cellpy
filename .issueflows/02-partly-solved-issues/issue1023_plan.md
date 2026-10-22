@@ -1,3 +1,63 @@
+# Issue #1023 — plan (iteration 16: page feedback)
+
+Drafted 2026-10-22. Not confirmed yet.
+
+## Goal
+
+Show "Was this page helpful?" at the bottom of each docs page. A negative answer offers a link that opens a GitHub issue for that page.
+
+## Constraints
+
+- Docs config and one small script. No product code, no Google Analytics, no new tracking property.
+- Do not redo iterations 1–15 or the #1108 metadata guide.
+- 7.1 (RTD version banner), notebook CI, the experienced-Python pass, and tutorial 05 stay later.
+- Docs live on `master` ([docs-on-master.md](../04-designs-and-guides/docs-on-master.md)).
+- Issue #1023 stays open. The PR uses `Refs #1023`.
+
+### Prior art
+
+- Zensical ships Material's `templates/partials/feedback.html`. It renders only when `extra.analytics.feedback` is set, and the form is `hidden` until script shows it.
+- The only analytics provider template is Google (`partials/integrations/analytics/google.html`). That script is what unhides the form, and it also loads `googletagmanager.com`. Do not set `provider`.
+- Theme features already include `content.action.edit` and `content.action.view` in [zensical.toml](../../zensical.toml). There is no `content.action.feedback` feature flag. Icons `material/emoticon-happy-outline` and `material/emoticon-sad-outline` are in the Zensical icon set.
+- `extra_css` is already a docs-relative list (`stylesheets/extra.css`). `extra_javascript` is a real Zensical project key. No `docs/javascripts/` file exists yet.
+- Usability review item 7.4 ([docs-usability-review.md](../04-designs-and-guides/docs-usability-review.md)): turn on the widget if Zensical supports it, pointing at GitHub issues.
+- A page can opt out with `hide: [feedback]` (the partial already checks that). Do not add that hide to any page in this pass.
+- Toolbox: `check_docs_relative_links.py` still applies. No feedback helper in `00-tools/`.
+
+## Approach
+
+1. In `zensical.toml`, under `[project]`, add `extra_javascript = ["javascripts/feedback.js"]`.
+2. Add `[project.extra.analytics.feedback]` with title "Was this page helpful?" and two ratings:
+   - data `1`, happy icon, note "Thanks for the feedback."
+   - data `0`, sad icon, note that includes an anchor to `https://github.com/jepegit/cellpy/issues/new` whose `title` and `body` use the template placeholders `{title}` and `{url}` (the partial urlencodes the title and substitutes both).
+3. Do not set `provider` or `property`.
+4. Add `docs/javascripts/feedback.js`. On `document$` (the same hook the Google template uses), find `document.forms.feedback`, unhide it, and on each submit button: `preventDefault`, disable the fieldset, and reveal the note whose `data-md-value` matches the button. No network call except the link the reader chooses to open.
+5. After it lands, mark 7.4 done in the usability review. Leave the form out of generated tutorial pages only if a page sets `hide: [feedback]`; the default is every page, including generated ones, because the widget comes from the theme, not from notebook markdown.
+
+## Files to touch
+
+- `zensical.toml` — feedback ratings and `extra_javascript`.
+- `docs/javascripts/feedback.js` — unhide the form and show the note. No Google tag.
+- `.issueflows/04-designs-and-guides/docs-usability-review.md` — 7.4 done note, after the widget is in the build.
+- `HISTORY.md` at close.
+
+## Test strategy
+
+- `uv run --group docs zensical build --clean` — "No issues found".
+- Built `site/index.html` contains `md-feedback` and "Was this page helpful?", and does not contain `googletagmanager`.
+- The sad-rating note contains `https://github.com/jepegit/cellpy/issues/new`.
+- `uv run python .issueflows/00-tools/check_docs_relative_links.py`.
+- `uv run pytest -m essential` — docs-only; no new pytest. Essential review leaves the suite unmarked.
+
+## Open questions
+
+1. **Negative answer opens a GitHub issue link, positive answer only says thanks?** Recommended yes.
+2. **Skip Google Analytics and unhide the form with our own script?** Recommended yes. The stock widget stays hidden without the Google script.
+
+---
+
+## Previous iteration (15) plan, kept for reference
+
 # Issue #1023 — plan (iteration 15: page descriptions)
 
 Drafted 2026-10-22 for the parked next slice (usability review item 7.3). Not confirmed yet.
