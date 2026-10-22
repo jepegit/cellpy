@@ -1,4 +1,5 @@
 ---
+description: "An index by question: the shortest answer that works, plus a link when you need the detail."
 icon: material/help-circle
 ---
 

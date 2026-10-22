@@ -1,3 +1,7 @@
+---
+description: "What a capacity is divided by: unit policy, the mass and area you supply, and the summary column you read."
+---
+
 # Units, mass, area and C-rates
 
 A capacity is only meaningful once you know what it is divided by. This page

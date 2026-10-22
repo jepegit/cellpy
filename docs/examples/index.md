@@ -1,4 +1,5 @@
 ---
+description: "Worked examples you can run from start to finish, each one a notebook with its outputs."
 icon: material/school
 ---
 

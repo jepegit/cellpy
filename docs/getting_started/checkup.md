@@ -1,3 +1,7 @@
+---
+description: "Confirm the cellpy command is on your PATH and the install looks healthy."
+---
+
 # Check your installation
 
 Confirm the CLI is on your `PATH` and the install looks healthy.

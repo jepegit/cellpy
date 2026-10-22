@@ -1,4 +1,5 @@
 ---
+description: "Reads battery cycling files into one consistent format, and calculates capacities and efficiencies for you."
 hide:
   - navigation
 ---

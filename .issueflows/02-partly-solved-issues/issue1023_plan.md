@@ -1,3 +1,71 @@
+# Issue #1023 — plan (iteration 15: page descriptions)
+
+Drafted 2026-10-22 for the parked next slice (usability review item 7.3). Not confirmed yet.
+
+## Goal
+
+Give the top hand-written docs pages a `description:` so search and social previews say what the page is for.
+
+## Constraints
+
+- Docs front matter only. No product code, no generated tutorial pages (a re-render would drop a hand-added description).
+- Do not redo iterations 1–14 or the #1108 metadata guide.
+- One sentence, taken from the page's own opening. About 160 characters. Scientist-facing, no unexplained Python.
+- Icons stay as they are. Item 7.3's fix is the description, not a new icon pass.
+- 7.1, 7.4, notebook CI, the experienced-Python pass, and tutorial 05 stay later.
+- Docs live on `master` ([docs-on-master.md](../04-designs-and-guides/docs-on-master.md)).
+
+### Prior art
+
+- Section indexes already set `icon:` in front matter (`docs/how_do_i.md`, `docs/troubleshooting.md`, `docs/getting_started/first_hour.md`, and the other section indexes). No page currently sets `description:`.
+- Site-wide text is `site_description` in [zensical.toml](../../zensical.toml). Page `description:` is the per-page meta tag (Material / Zensical front matter).
+- Usability review item 7.3 ([docs-usability-review.md](../04-designs-and-guides/docs-usability-review.md)): "Add a `description:` to the front matter of the top ~15 pages."
+- Toolbox: `check_docs_relative_links.py` still applies after front-matter edits. No description helper in `00-tools/`.
+
+## Approach
+
+Add `description:` next to the existing front matter on these 15 hand-written pages, in nav order:
+
+1. `docs/index.md`
+2. `docs/getting_started/index.md`
+3. `docs/getting_started/installation.md`
+4. `docs/getting_started/configuration.md`
+5. `docs/getting_started/checkup.md`
+6. `docs/getting_started/first_hour.md`
+7. `docs/getting_started/basic_usage.md`
+8. `docs/how_do_i.md`
+9. `docs/troubleshooting.md`
+10. `docs/examples/index.md`
+11. `docs/guides/index.md`
+12. `docs/guides/units.md`
+13. `docs/fundamentals/data_structure.md`
+14. `docs/reference/cli.md`
+15. `docs/agents/index.md`
+
+`docs/index.md` already has `hide:`; put `description:` in that same block.
+
+## Files to touch
+
+- The 15 pages above.
+- `HISTORY.md` at close.
+- The 7.3 line in `docs-usability-review.md` after the pages land.
+
+## Test strategy
+
+- `uv run --group docs zensical build --clean` — "No issues found".
+- Built HTML for `first_hour` and the home page contains `<meta name="description"` with that page's sentence.
+- `uv run python .issueflows/00-tools/check_docs_relative_links.py`.
+- `uv run pytest -m essential` — docs-only; no new pytest.
+
+## Open questions
+
+1. **These 15 pages?** Recommended yes. They are the newcomer path plus units, the data structure, the CLI, and the agent index.
+2. **Add icons in the same pass?** Recommended no.
+
+---
+
+## Previous iteration (14) plan, kept for reference
+
 # Issue #1023 — plan (iteration 14: tutorials 01 and 02 on example data)
 
 Confirmed by the user on 2026-10-22 ("Yes" to the recommended in-place plan).
