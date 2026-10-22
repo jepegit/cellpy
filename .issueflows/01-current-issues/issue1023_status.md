@@ -2,8 +2,14 @@
 
 - [ ] Done
 
-The issue stays open (it is a series of docs passes). Iteration 15 is on
-branch `1023-page-descriptions`. Iteration 14 merged as #1166.
+The issue stays open (it is a series of docs passes). Iteration 16 is on
+branch `1023-page-feedback`. Iteration 15 merged as #1167. Iteration 14
+merged as #1166.
+
+## What's done (iteration 16)
+
+- Re-opened 2026-10-22 ("Yes") onto `1023-page-feedback`.
+- Plan drafted for review item 7.4 (page feedback widget). Not confirmed yet.
 
 ## What's done (iteration 15)
 

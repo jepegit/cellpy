@@ -67,18 +67,19 @@ A series of small, focused pull requests. Each iteration:
 ## Comments (curated summary)
 
 - **Additional tasks**:
-  - Re-execute the tutorials that still need local files so a reader can run them from `example_data` alone. `examples/01_loading_data.ipynb` loads `data/20210210_FC_01_cc_01.res`. `examples/05_GITT.ipynb` requires `examples/data/20210210_FC.h5`. `examples/02_Initial_data_inspection.ipynb` already falls back to `example_data.cellpy_file()` when that local file is missing.
   - Experienced-Python pass later (typing, extending, plugin surface). The first ten iterations deliberately under-served that persona.
-  - Still open on the usability review: `description:` front matter on the top pages (7.3), a feedback widget if Zensical supports it (7.4), the RTD version banner as an admin check (7.1), and running the tutorial notebooks in CI (§8 P2).
+  - Still open on the usability review: a feedback widget if Zensical supports it (7.4), the RTD version banner as an admin check (7.1), and running the tutorial notebooks in CI (§8 P2).
+  - Tutorial 05 still needs `examples/data/20210210_FC.h5`. Bundled example data has no GITT file.
 - **Clarifications / constraints**:
   - The issue stays open. Each iteration is its own PR with green `essential`, `full`, and the Docs link-check.
   - Iterations 1–10 already shipped (#1024–#1035): troubleshooting, units, plotting, batch database, CLI, exporting, summary columns, step table, first hour, how-do-I. Do not redo them.
   - The glossary shipped (`docs/fundamentals/glossary.md`). Do not redo it.
   - 2026-09-26: the lab-database metadata guide shipped as #1108 (`docs/guides/metadata_sources.md`, How-do-I, `llms.txt`). Do not redo it. That comment calls the PR "iteration 11"; the local status used "iteration 11" for the glossary. Both are done.
-  - The 2026-09-23 usability review ([docs-usability-review.md](../04-designs-and-guides/docs-usability-review.md)) was implemented as local iteration 13 (landing, tutorial framing, nav, theme, figures, CellpyCell API page). Do not redo those chunks. Notebooks were not re-executed on purpose.
+  - The 2026-09-23 usability review ([docs-usability-review.md](../04-designs-and-guides/docs-usability-review.md)) was implemented as local iteration 13 (landing, tutorial framing, nav, theme, figures, CellpyCell API page). Do not redo those chunks.
+  - Tutorials 01 and 02 load bundled example data (#1166). Page descriptions on the 15 hand-written newcomer pages shipped as #1167. Do not redo them.
   - Bugs found while writing the early pages were fixed in-docs or filed separately (#1026, #1028).
 - **Superseded / retracted**:
   - The issue body's "no troubleshooting, glossary, units, CLI, task index, or column reference" gaps are closed by iterations 1–10 plus the glossary. Leave the body as written.
-  - Comment 0's "next pass = tutorial notebooks" is only partly still open. Framing and navigation shipped in iterations 12–13. What remains is re-execution against `example_data`, not another framing rewrite.
+  - Comment 0's "next pass = tutorial notebooks" is only partly still open. Framing and navigation shipped in iterations 12–13. Tutorials 01 and 02 were re-executed on example data (#1166). Tutorial 05 still needs the GITT file.
 
 _Note: this section is an interpretive summary of the comment thread, not a verbatim dump. Source comments: 3, last comment by @jepegit on 2026-09-26._
