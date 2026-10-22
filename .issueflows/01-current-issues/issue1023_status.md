@@ -9,7 +9,8 @@ merged as #1166.
 ## What's done (iteration 16)
 
 - Re-opened 2026-10-22 ("Yes") onto `1023-page-feedback`.
-- Plan drafted for review item 7.4 (page feedback widget). Not confirmed yet.
+- Plan accepted 2026-10-22 ("Accept").
+- `extra.analytics.feedback` in `zensical.toml`, plus `docs/javascripts/feedback.js` to show the form without Google Analytics. A negative rating links to a new GitHub issue. A positive rating only says thanks.
 
 ## What's done (iteration 15)
 
