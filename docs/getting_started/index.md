@@ -1,4 +1,5 @@
 ---
+description: "Install cellpy, check that it works, and load your first cell."
 icon: material/rocket-launch
 ---
 

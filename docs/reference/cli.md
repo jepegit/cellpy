@@ -1,3 +1,7 @@
+---
+description: "The cellpy command for setup, health checks, and starting a batch job without writing Python."
+---
+
 # Command-line reference
 
 Installing cellpy also installs a `cellpy` command. It is the shortest route to

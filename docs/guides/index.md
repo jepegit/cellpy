@@ -1,4 +1,5 @@
 ---
+description: "Task-focused recipes for when you already know the basics and need to do something specific."
 icon: material/wrench
 ---
 

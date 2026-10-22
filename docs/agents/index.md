@@ -1,4 +1,5 @@
 ---
+description: "How a coding agent calls cellpy as a library to load cells, plot them, and save results."
 icon: material/robot
 ---
 

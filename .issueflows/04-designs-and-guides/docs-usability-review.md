@@ -45,8 +45,14 @@ Partly done or changed on the way:
 - **6.2** Not merged: `contributing.md` is a single-source include of
   `CONTRIBUTING.md`, which is worth keeping.
 
-Not done: 7.1 (version banner: check RTD addons in the admin), 7.3 (page
-descriptions), 7.4 (feedback widget), §8 P2/P3.
+Not done: 7.1 (version banner: check RTD addons in the admin), 7.4 (feedback
+widget), §8 P2/P3.
+
+Done in iteration 15: 7.3 `description:` on the 15 hand-written newcomer
+pages (home, getting started, how-do-I, troubleshooting, tutorial index,
+guides index, units, data structure, CLI, agents). Icons were left as they
+were. Generated tutorial pages were not given a description, because a
+re-render would drop it.
 
 ---
 

@@ -5,9 +5,11 @@
 The issue stays open (it is a series of docs passes). Iteration 15 is on
 branch `1023-page-descriptions`. Iteration 14 merged as #1166.
 
-## What's done (iteration 15, in progress)
+## What's done (iteration 15)
 
-- Plan drafted 2026-10-22: `description:` on 15 hand-written pages (review item 7.3). Waiting for Accept before editing pages.
+- Plan accepted 2026-10-22 ("Yes").
+- `description:` added to the 15 hand-written pages in the plan. Icons and generated tutorial pages were left unchanged.
+- Verification: `zensical build --clean` "No issues found"; built HTML for all 15 pages has `<meta name="description">` with the page sentence; `check_docs_relative_links.py` "all relative links resolve"; `pytest -m essential` 1076 passed. Two filefinder failures (`test_find_by_project_cellpy_range`, `test_find_by_project_otherpath_local`) search `*.h5` because `~/.cellpy_prms_ubuntu.conf` sets `cellpy_file_extension: h5`. Those two tests pass with that file moved aside. No new tests; essential review left the suite unmarked. No version bump (git-tag versioning).
 
 ## What's done (iteration 14)
 
@@ -21,7 +23,7 @@ branch `1023-page-descriptions`. Iteration 14 merged as #1166.
 ## Remaining work
 
 - Review item 7.1 (version banner on `latest`): RTD admin check.
-- 7.3 page descriptions, 7.4 feedback widget, running notebooks in CI.
+- 7.4 feedback widget, running notebooks in CI.
 - Experienced-Python pass (typing / extending / plugins).
 - Tutorial 05 still needs the local GITT file.
 

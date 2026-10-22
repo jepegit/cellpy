@@ -1,3 +1,7 @@
+---
+description: "Set folders and cellpy.toml once so runtime settings live in cellpy.config."
+---
+
 # Setup and configuration
 
 To get the most out of cellpy, set up your folders and a config file once.

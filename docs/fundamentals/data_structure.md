@@ -1,3 +1,7 @@
+---
+description: "How a loaded run is organised: the cell object, its data frames, and column names on c.schema."
+---
+
 # Data structure
 
 How cellpy 2.x organises a loaded run: the **`CellpyCell`** facade, the

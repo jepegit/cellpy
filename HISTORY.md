@@ -4,6 +4,8 @@
 
 * Tutorials 01 and 02 load bundled example data instead of local Arbin files the reader does not have. (#1023)
 
+* Search and social previews for the top docs pages now use a one-sentence description of that page. (#1023)
+
 ## [2.1.5.post10] - 2026-10-20
 
 * Edit batch plot function doc string. (#1153)

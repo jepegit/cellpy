@@ -1,4 +1,5 @@
 ---
+description: "Things that commonly go wrong, listed by symptom, most of them a line or two of code from a fix."
 icon: material/lifebuoy
 ---
 

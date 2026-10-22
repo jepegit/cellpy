@@ -1,4 +1,5 @@
 ---
+description: "A guided run-through on data that ships with cellpy: load a cell, plot capacity fade, export it, then use your own file."
 icon: material/clock-fast
 ---
 

@@ -1,3 +1,7 @@
+---
+description: "Install cellpy with conda or pip on Windows, macOS, or Linux."
+---
+
 # Installation
 
 cellpy is available on Windows, macOS, and Linux. Prefer **conda** when you want
