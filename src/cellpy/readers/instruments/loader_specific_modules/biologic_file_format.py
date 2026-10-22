@@ -41,11 +41,11 @@ hdr_dtype = np.dtype(
 
 #
 bl_log_pos_dtype = {
-    ("User", 139, 143, "a4"),
-    ("Directory", 594, 639, "a45"),
-    ("File", 640, 684, "a45"),
-    ("Host", 850, 863, "a13"),
-    ("Comments", 1213, 1255, "a42"),
+    ("User", 139, 143, "S4"),
+    ("Directory", 594, 639, "S45"),
+    ("File", 640, 684, "S45"),
+    ("Host", 850, 863, "S13"),
+    ("Comments", 1213, 1255, "S42"),
     ("Acquisition started on", 585, 593, "<f8"),
 }
 

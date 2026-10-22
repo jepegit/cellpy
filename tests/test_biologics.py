@@ -30,3 +30,13 @@ def test_get_mpr(parameters):
 
     instrument = "biologics_mpr"
     cellpy.get(parameters.mpr_file_path, instrument=instrument)
+
+
+def test_mpr_start_time_from_log(parameters):
+    # The acquisition start is read from the VMP LOG module; the settings
+    # date alone would put the first point at midnight.
+    import cellpy
+
+    c = cellpy.get(parameters.mpr_file_path, instrument="biologics_mpr")
+    first = c.data.raw["date_time"].iloc[0]
+    assert str(first) == "2017-03-15 10:22:54"

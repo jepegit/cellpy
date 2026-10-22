@@ -323,16 +323,15 @@ class DataLoader(BaseLoader):
         if not self.mpr_log:
             logging.debug("OBS! No mpr_log!")
 
-        for value in bl_log_pos_dtype:
-            # print(value)
-            key, start, end, dtype = value
-            if key not in self.mpr_log:
-                continue
-            self.mpr_log[key] = np.frombuffer(  # replaced np.fromstring
-                self.mpr_log["data"][start:], dtype=dtype, count=1
-            )[0]
-            if "a" in dtype:
-                self.mpr_log[key] = self.mpr_log[key].decode("utf8")
+        log_data = self.mpr_log.get("data")
+        if log_data is not None:
+            for key, start, end, dtype in bl_log_pos_dtype:
+                if len(log_data) < start + np.dtype(dtype).itemsize:
+                    continue
+                value = np.frombuffer(log_data[start:], dtype=dtype, count=1)[0]
+                if isinstance(value, bytes):
+                    value = value.rstrip(b"\x00").decode("utf8", errors="replace")
+                self.mpr_log[key] = value
 
         # converting dates
         k = "Acquisition started on"
