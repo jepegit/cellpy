@@ -29,9 +29,10 @@ maintainer-only, kept in nav), 7.2, §8 P1.
 
 Partly done or changed on the way:
 
-- **3.2** Notebooks were not re-executed, so 01/02/05 still read files from
-  `examples/data/`. The new header says which data each tutorial uses and how
-  to get it (`cellpy pull --examples`).
+- **3.2** Tutorials 01 and 02 load bundled `example_data` and were
+  re-executed (iteration 14). Tutorial 05 still needs
+  `examples/data/20210210_FC.h5` (`cellpy pull --examples`). Bundled
+  example data has no GITT file.
 - **3.3** No Binder/Colab badge: the notebooks need their data files and a
   cellpy install, so a one-click launch would fail. There is a GitHub link
   instead.

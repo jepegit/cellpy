@@ -1,3 +1,60 @@
+# Issue #1023 — plan (iteration 14: tutorials 01 and 02 on example data)
+
+Confirmed by the user on 2026-10-22 ("Yes" to the recommended in-place plan).
+
+## Goal
+
+Make tutorials 01 and 02 runnable without a private `examples/data` folder, then re-execute and re-render them.
+
+## Constraints
+
+- Docs and notebooks only. No product-code, schema, or CLI changes.
+- Do not redo iterations 1–13 or the #1108 metadata guide.
+- `docs/examples/*.md` is generated. Edit the `.ipynb`, then `dev/render_example_notebooks.py`. The renderer does not execute notebooks.
+- Tutorial 05 stays on `20210210_FC.h5`. Bundled `example_data` is a normal Arbin cycle (`raw_file` / `cellpy_file`). There is no GITT file (`ExampleData` has `# GITT = "gitt.h5"` commented out). Pointing 05 at `example_data` would change the lesson.
+- Writing stays task-first. Every snippet is run, not assumed.
+- Docs live on `master` ([docs-on-master.md](../04-designs-and-guides/docs-on-master.md)).
+
+### Prior art
+
+- `example_data.arbin_file_path`, `raw_file`, and `cellpy_file` in `src/cellpy/utils/example_data.py`.
+- Tutorials 03 and 04 already call `example_data.cellpy_file()`.
+- Tutorial 02 already falls back to `example_data.cellpy_file()` when the local file is missing.
+- Renderer: [dev/render_example_notebooks.py](../../dev/render_example_notebooks.py). Header **Data:** lines live in its `TUTORIALS` table.
+- Toolbox: `check_docs_relative_links.py`, `check_rtd_latest_links.py`. No notebook executor in `00-tools/`.
+- Usability review item 3.2 ([docs-usability-review.md](../04-designs-and-guides/docs-usability-review.md)) asked for this switch. Iteration 13 left the notebooks un-executed on purpose.
+
+## Approach
+
+1. In `examples/01_loading_data.ipynb`, load `example_data.arbin_file_path()` through `cellpy.get` (still show that a list of paths works). Save, export, and reload that cell under `out/example.cellpy`. Drop the `20210210_FC_01_cc_0*.res` paths.
+2. In `examples/02_Initial_data_inspection.ipynb`, execute `example_data.cellpy_file()` as the path the page shows. One sentence points at `cellpy.get("out/example.cellpy")` for a file the reader saved.
+3. Update the `TUTORIALS` data lines for 01 and 02, re-execute both notebooks, re-render the two markdown pages.
+4. Tutorial 01 no longer writes `20210210_FC.cellpy`. Tutorial 05 keeps its own file and its header already says `cellpy pull --examples`.
+
+## Files to touch
+
+- `examples/01_loading_data.ipynb`
+- `examples/02_Initial_data_inspection.ipynb`
+- `docs/examples/01_loading_data.md` and `docs/examples/02_Initial_data_inspection.md` (generated)
+- `dev/render_example_notebooks.py` (`TUTORIALS` data lines only)
+- `HISTORY.md` at close
+
+## Test strategy
+
+- Run the changed cells with `uv run` (first `example_data` download needs network).
+- `uv run --group docs python dev/render_example_notebooks.py`
+- `uv run --group docs zensical build --clean`
+- `uv run pytest -m essential` — docs-only; expect the existing suite green. No new pytest.
+
+## Open questions
+
+1. **This iteration = 01 and 02 only, leave 05?** Yes. Confirmed with the plan.
+2. **Break the 01 → 05 file chain?** Yes. 01 uses bundled example data. 05 keeps `20210210_FC.h5`.
+
+---
+
+## Previous iteration (13) plan, kept for reference
+
 # Issue #1023 — plan (iteration 13: usability review)
 
 Confirmed by the user on 2026-09-23 ("implement the fixes … do not stop and
