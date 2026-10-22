@@ -2,8 +2,12 @@
 
 - [ ] Done
 
-The issue stays open (it is a series of docs passes). Iteration 14 is on
-branch `1023-docs-usability`.
+The issue stays open (it is a series of docs passes). Iteration 15 is on
+branch `1023-page-descriptions`. Iteration 14 merged as #1166.
+
+## What's done (iteration 15, in progress)
+
+- Plan drafted 2026-10-22: `description:` on 15 hand-written pages (review item 7.3). Waiting for Accept before editing pages.
 
 ## What's done (iteration 14)
 
