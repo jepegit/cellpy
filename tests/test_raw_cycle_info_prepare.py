@@ -61,7 +61,16 @@ def test_raw_plot_backend_matplotlib(cell):
 def test_cycle_info_plot_backend_matplotlib(cell):
     assert cycle_info_plot(cell, cycle=3, backend="matplotlib") is None
     axes = cycle_info_plot(cell, cycle=3, backend="matplotlib", get_axes=True)
-    assert axes is not None
+    assert isinstance(axes, tuple)
+    assert not hasattr(axes, "get_axes")
+
+
+@pytest.mark.essential
+def test_cycle_info_plot_plotly_returns_none_unless_get_axes(cell):
+    pytest.importorskip("plotly")
+    assert cycle_info_plot(cell, cycle=3, backend="plotly") is None
+    fig = cycle_info_plot(cell, cycle=3, backend="plotly", get_axes=True)
+    assert hasattr(fig, "show")
 
 
 @pytest.mark.essential

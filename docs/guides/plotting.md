@@ -54,11 +54,18 @@ fig.show()                     # you display it
 
 cycles_plot(c)                 # displays it itself, returns None
 fig = cycles_plot(c, return_figure=True)          # ask for the figure instead
-fig = cycle_info_plot(c, cycle=3, get_axes=True)  # same idea, different keyword
+
+cycle_info_plot(c, cycle=3)                       # displays it, returns None
+fig = cycle_info_plot(c, cycle=3, get_axes=True)  # plotly: the figure
+axes = cycle_info_plot(
+    c, cycle=3, backend="matplotlib", get_axes=True
+)                                                 # matplotlib: axes, not a Figure
 ```
 
-In a Jupyter notebook the returned plotly figure also renders on its own if it
-is the last expression in the cell — which is why the difference is easy to
+Seeing the plot in a notebook does not mean the call returned it. Plotly
+calls `show()`. Matplotlib leaves the figure on pyplot, so an inline backend
+still draws it. The returned plotly figure also renders on its own if it is
+the last expression in the cell — which is why the difference is easy to
 miss until you move your code into a script.
 
 ## Capacity over cycle life — `summary_plot`
