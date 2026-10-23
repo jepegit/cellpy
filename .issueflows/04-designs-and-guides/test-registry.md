@@ -291,6 +291,8 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_neware_nda_two_stage.py::test_raw_units_follow_fastnda_column_suffixes | yes | yes | neware_nda.get_raw_units | #1149 | suffix contract, no file |
 | tests/test_neware_nda_two_stage.py::test_charge_and_discharge_unit_suffixes_must_agree | yes | yes | neware_nda.units_from_fastnda_columns | #1149 | ValueError on disagree |
 | tests/test_neware_nda_two_stage.py::test_local_ndax_current_and_capacity_stay_in_milli_units | no | | neware_nda load of a real ndax | #1149 | skips unless gitignored local/data file is present |
+| tests/test_raw_cycle_info_prepare.py::test_cycle_info_plot_backend_matplotlib | yes | yes | plotutils.cycle_info_plot matplotlib return | #1158 | None, or an axes tuple with get_axes |
+| tests/test_raw_cycle_info_prepare.py::test_cycle_info_plot_plotly_returns_none_unless_get_axes | yes | yes | plotutils.cycle_info_plot plotly return | #1158 | None, or a figure with show |
 
 **Columns**
 

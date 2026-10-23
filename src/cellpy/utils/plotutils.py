@@ -1345,7 +1345,12 @@ def cycle_info_plot(
     Args:
         cell: cellpy object
         cycle (int or list or tuple): cycle(s) to select (must be int for matplotlib)
-        get_axes (bool): return axes (for matplotlib) or figure (for plotly)
+        get_axes (bool): Plotly calls ``show()`` and returns ``None`` unless
+            this is true, in which case the plotly figure is returned and not
+            shown. Matplotlib returns ``None`` unless this is true, in which
+            case the axes tuple is returned, not a ``Figure``. An inline
+            notebook can still draw that matplotlib figure when the call
+            returns ``None``. Seeing the plot does not mean it was returned.
         backend (str, optional): ``"plotly"`` (default) or ``"matplotlib"``.
         t_unit (str): unit for x-axis (default: "hours")
         v_unit (str): unit for y-axis (default: "V")
@@ -1353,7 +1358,8 @@ def cycle_info_plot(
         **kwargs: parameters specific to plotting backend.
 
     Returns:
-        ``matplotlib.axes`` or None (or a figure when ``get_axes`` / backend semantics require it)
+        ``None`` by default. With ``get_axes=True``, a plotly figure or a
+        matplotlib axes tuple.
     """
     resolved_backend = backend or "plotly"
 
