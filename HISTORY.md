@@ -9,6 +9,7 @@
 * Docs pages ask "Was this page helpful?" and a negative answer links to a GitHub issue, without Google Analytics. (#1023)
 
 * Bio-Logic `.mpr` loader ignores the acquisition start time, so all timestamps fall at midnight. (#1164)
+* `cycle_info_plot` shows a figure and returns `None` unless `get_axes=True`. The docstring and plotting guide now say so. Plotly then returns the figure. Matplotlib returns an axes tuple. (#1158)
 
 ## [2.1.5.post10] - 2026-10-20
 
