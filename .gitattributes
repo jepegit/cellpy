@@ -21,6 +21,16 @@ testdata/bad/** -text
 # Without this, graphify-out/graph.html might dominate as HTML.
 
 graphify-out/** linguist-generated
+
+# Generated scaffold copies and archived tracking files: collapsed in PR diffs.
+.cursor/** linguist-generated
+.claude/** linguist-generated
+.opencode/** linguist-generated
+.codex/** linguist-generated
+.issueflows/agent/** linguist-generated
+.issueflows/02-partly-solved-issues/** linguist-generated
+.issueflows/03-solved-issues/** linguist-generated
+
 docs/** linguist-documentation
 tests/** linguist-documentation
 .issueflows/** linguist-documentation

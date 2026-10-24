@@ -4,7 +4,7 @@ description: >-
   Park work on the current issue without closing it: update status, move
   the group to 02-partly-solved-issues/, optional WIP commit.
 disable-model-invocation: true
-issue-flow-version: 0.4.2a4
+issue-flow-version: 0.7.0
 ---
 
 # issue-flow — issue pause (`/iflow-pause`)
@@ -31,26 +31,9 @@ Keep scope tight to what this step requires.
 
 
 
-### Resolve project root (multi-root workspaces)
+### Resolve the project root first
 
-Before any `git`, `gh`, or `.issueflows/` path operation in this workflow:
-
-**Resolution order** (stop when unambiguous):
-
-1. **Explicit hints** in slash input — `root:<path>`, `repo:<folder-basename>` (directory name, e.g. `cellpy-core`), or `repo:owner/name`.
-2. **CLI fast path** — `issue-flow agent resolve [-C <start>] [--from-file <active-file>] [--json]`. Use the returned `project_root` and `repo`; pass `-C <project_root>` to other `issue-flow agent …` subcommands. When the answer came from the workspace registry, the payload sets `resolved_via_workspace_default: true`.
-3. **Branch context** — exactly one workspace repo whose branch matches `^\d+-` → that root.
-4. **Single scaffold** — exactly one `.issueflows/` tree visible in the workspace → that root.
-5. **Workspace default** — an `issueflow-workspace.toml` at the workspace root (created with `issue-flow workspace init`) may name a `default` member repo; use it when no scaffold matched above. Tell the user the default was used.
-6. **Ambiguous** → **stop and ask**; never guess between sibling repos.
-
-After resolution, treat the result as `<project_root>` and `<owner/repo>`:
-
-- **Git:** `git -C <project_root> …` (or `issue-flow agent … -C <project_root>` for supported ops).
-- **GitHub:** pass an explicit repo on every `gh` call — never rely on `gh`'s implicit cwd default. For most commands use `--repo <owner/repo>`; **exception:** `gh repo view` takes the repo as a **positional** arg (`gh repo view <owner/repo> …`) and rejects `--repo`.
-- **Paths:** all `.issueflows/…` paths are under `<project_root>`.
-
-When `.issueflows/04-designs-and-guides/multi-repo-workspaces.md` exists, read it for layout and cross-repo guidance.
+Before any `git`, `gh`, or `.issueflows/` operation, settle `<project_root>` and `<owner/repo>`, stopping at the first unambiguous answer: explicit `root:<path>` / `repo:<name>` hints; `issue-flow agent resolve [--json]`; the one workspace repo on a `^\d+-` branch; the one `.issueflows/` scaffold in view; the `issueflow-workspace.toml` default (say you used it). Still ambiguous → **stop and ask**. Then use `git -C <project_root>` (or `issue-flow agent … -C <project_root>`) and pass `--repo <owner/repo>` to every `gh` call (`gh repo view` takes the repo positionally).
 
 ## Instructions
 
@@ -71,7 +54,7 @@ When `.issueflows/04-designs-and-guides/multi-repo-workspaces.md` exists, read i
    - **Switch to default branch** — detect default (prefer `gh repo view --json defaultBranchRef -q .defaultBranchRef.name`, else `git symbolic-ref --quiet --short refs/remotes/origin/HEAD`, else `main`) and run `git switch <default>`. Only after the WIP commit if the tree is dirty.
    - **Stay put** — leave branch and working tree untouched.
 
-5. **Report.** Summarize the status update, the issue-group moves, working-tree actions taken, and remind the user how to resume (running `/iflow-capture <N>` re-opens the archived issue after its archived-issue guard, or they can simply switch back to the issue branch).
+5. **Report.** Summarize the status update, the issue-group moves, working-tree actions taken, and remind the user how to resume (running `/iflow-pick <N>` re-opens the archived issue after its archived-issue guard, or they can simply switch back to the issue branch).
 
 ## Constraints
 
