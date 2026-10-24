@@ -4,7 +4,7 @@ description: >-
   Implement the confirmed plan for the focus issue using the project's
   documented conventions.
 disable-model-invocation: true
-issue-flow-version: 0.4.2a4
+issue-flow-version: 0.7.0
 ---
 
 # issue-flow — issue build (`/iflow-build`)
@@ -31,26 +31,9 @@ Keep scope tight to what this step requires.
 
 
 
-### Resolve project root (multi-root workspaces)
+### Resolve the project root first
 
-Before any `git`, `gh`, or `.issueflows/` path operation in this workflow:
-
-**Resolution order** (stop when unambiguous):
-
-1. **Explicit hints** in slash input — `root:<path>`, `repo:<folder-basename>` (directory name, e.g. `cellpy-core`), or `repo:owner/name`.
-2. **CLI fast path** — `issue-flow agent resolve [-C <start>] [--from-file <active-file>] [--json]`. Use the returned `project_root` and `repo`; pass `-C <project_root>` to other `issue-flow agent …` subcommands. When the answer came from the workspace registry, the payload sets `resolved_via_workspace_default: true`.
-3. **Branch context** — exactly one workspace repo whose branch matches `^\d+-` → that root.
-4. **Single scaffold** — exactly one `.issueflows/` tree visible in the workspace → that root.
-5. **Workspace default** — an `issueflow-workspace.toml` at the workspace root (created with `issue-flow workspace init`) may name a `default` member repo; use it when no scaffold matched above. Tell the user the default was used.
-6. **Ambiguous** → **stop and ask**; never guess between sibling repos.
-
-After resolution, treat the result as `<project_root>` and `<owner/repo>`:
-
-- **Git:** `git -C <project_root> …` (or `issue-flow agent … -C <project_root>` for supported ops).
-- **GitHub:** pass an explicit repo on every `gh` call — never rely on `gh`'s implicit cwd default. For most commands use `--repo <owner/repo>`; **exception:** `gh repo view` takes the repo as a **positional** arg (`gh repo view <owner/repo> …`) and rejects `--repo`.
-- **Paths:** all `.issueflows/…` paths are under `<project_root>`.
-
-When `.issueflows/04-designs-and-guides/multi-repo-workspaces.md` exists, read it for layout and cross-repo guidance.
+Before any `git`, `gh`, or `.issueflows/` operation, settle `<project_root>` and `<owner/repo>`, stopping at the first unambiguous answer: explicit `root:<path>` / `repo:<name>` hints; `issue-flow agent resolve [--json]`; the one workspace repo on a `^\d+-` branch; the one `.issueflows/` scaffold in view; the `issueflow-workspace.toml` default (say you used it). Still ambiguous → **stop and ask**. Then use `git -C <project_root>` (or `issue-flow agent … -C <project_root>`) and pass `--repo <owner/repo>` to every `gh` call (`gh repo view` takes the repo positionally).
 
 ## Early PR tokens (command input)
 
@@ -89,13 +72,30 @@ When `.issueflows/04-designs-and-guides/multi-repo-workspaces.md` exists, read i
    - **Ruff (when present).** If the project uses ruff (`[tool.ruff]` in `pyproject.toml`, ruff in dev dependencies, or `.issueflows/04-designs-and-guides/python-quality-tools.md` exists), run auto-fix lint after substantive code changes — e.g. `uv run ruff check --fix …` then `uv run ruff format …` (match paths to what the project documents).
    - **Toolbox** — Before writing a one-off helper script, check `.issueflows/00-tools/` (start with its `README.md` index) for an existing tool. If you build something reusable during this issue, save it into `.issueflows/00-tools/` and add a one-line entry to that README's index (name, what it does, when to use it) for the next agent.
    - If `.issueflows/04-designs-and-guides/this-project.md` exists, read it for project-specific context before implementing; then skim relevant design docs under `.issueflows/04-designs-and-guides/`.
-   - **Knowledge graph (optional).** If `graphify-out/GRAPH_REPORT.md` exists, skim it before grepping — god-nodes and surprising connections often point at the files you'll touch. If structure changed materially since the last build, *suggest* `/iflow-graphify` (do not run it automatically). If `graphify-out/` is absent, ignore this bullet.
+   - **Knowledge graph (optional).** If `graphify-out/GRAPH_REPORT.md` exists, skim it before grepping — god-nodes and surprising connections often point at the files you'll touch. If structure changed materially since the last build, *suggest* `/iflow-status graph` (do not run it automatically). If `graphify-out/` is absent, ignore this bullet.
    - As you iterate, re-read and keep `issue<N>_status.md` current — move items between **What's done** and **Remaining work**, leaving `- [ ] Done` unchecked until fully resolved.
 
 8. **Early pull request (optional)** — After the **first successful push** of the issue branch (or when the branch already has a remote tip and no open PR), decide whether to open a PR now using the Early PR tokens above. When early PR is on:
    - Require an issue-style branch matching `^\d+-.+` (never the default branch) with a remote tracking ref.
    - Always pass `--repo <owner/repo>`. **List before create:** `gh pr list --repo <owner/repo> --head <branch> --state open --json number,url,title,isDraft`. If an open PR exists, note it and skip creating a second one.
    - Otherwise create a **draft**: `gh pr create --draft --repo <owner/repo> …` with a WIP-friendly body and **`Refs #N`** (not `Closes #N` yet).
+
+**Multi-line GitHub text (PowerShell-safe).** Bash `<<'EOF'` heredocs fail in Windows PowerShell (`Missing file specification after redirection operator`). Write the text to a file and pass that file:
+
+- `gh issue create`, `gh issue edit`, and `gh pr create` take `--body-file <path>`.
+- `git commit` takes `-F <path>`.
+
+```powershell
+@'
+line one
+
+line two
+'@ | Set-Content -Encoding utf8 body.md
+gh issue create --repo owner/repo --title "title" --body-file body.md
+```
+
+Bash accepts the same `--body-file` / `-F` flags. Use that pattern for every multi-line body.
+
    - Record `PR: <url> (#<n>, draft)` in `issue<N>_status.md`.
    - Do **not** write `HISTORY.md` here — `/iflow-close` owns the changelog bullet (even while a draft PR exists).
 
