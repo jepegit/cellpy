@@ -1,30 +1,16 @@
 ---
 name: iflow-issue
 description: >-
-  Create one well-specified normal GitHub issue, then optionally branch and
-  run /iflow-capture into the standard lifecycle.
+  Create and shape GitHub issues. Modes: (default) one well-specified issue,
+  fix (iterative small-fixes session), epic (staged multi-issue plan, publish,
+  session), split (cut an issue into sub-issues), review (label triage).
 disable-model-invocation: true
-issue-flow-version: 0.4.2a4
+issue-flow-version: 0.7.0
 ---
 
-# issue-flow — create a normal issue (`/iflow-issue`)
+# issue-flow — issues (`/iflow-issue`)
 
-Follow this skill to **author and create one well-specified GitHub issue** (a single deliverable), then optionally set up the normal lifecycle (branch + `/iflow-capture` → hand off to `/iflow-plan`).
-
-Do **not** use this skill from `/iflow`, `/iflow-build`, or `/iflow-close`. `/iflow-issue` is explicit-only because it creates GitHub issues (and optionally branches).
-
-**Coexists** with:
-
-- **`/iflow-pick fix`** — one-shot *general-fixes chore bucket* into plan/start.
-- **`/iflow-fix`** — iterative small-fixes *session* that stays in a loop.
-- **`/iflow-epic`** — staged multi-issue work; use `/iflow-issue` first when the epic **anchor** does not exist yet.
-- **`/iflow-split`** — cut an *existing* over-large issue into linked children. Do not use `/iflow-issue` for that.
-
-## Input
-
-- **free text** — seed for the issue title and/or short description (e.g. `iflow issue add dry-run flag to doctor`).
-- **`epic`** (alone or as a leading token, e.g. `epic Large rewrite`) — epic-anchor mode: title prefixed with `Epic:`, and apply the `epic` label when it exists (`gh label list`).
-- **(nothing)** — ask for a one-line intent before drafting.
+Create or reshape GitHub issues. Every mode shows what it will create or change and asks before writing to GitHub.
 
 
 **Invoke:** type `iflow issue` in chat, or `/iflow-issue` from the slash menu (`iflow-issue` also works).
@@ -46,66 +32,26 @@ Keep scope tight to what this step requires.
 
 
 
-### Resolve project root (multi-root workspaces)
+### Resolve the project root first
 
-Before any `git`, `gh`, or `.issueflows/` path operation in this workflow:
-
-**Resolution order** (stop when unambiguous):
-
-1. **Explicit hints** in slash input — `root:<path>`, `repo:<folder-basename>` (directory name, e.g. `cellpy-core`), or `repo:owner/name`.
-2. **CLI fast path** — `issue-flow agent resolve [-C <start>] [--from-file <active-file>] [--json]`. Use the returned `project_root` and `repo`; pass `-C <project_root>` to other `issue-flow agent …` subcommands. When the answer came from the workspace registry, the payload sets `resolved_via_workspace_default: true`.
-3. **Branch context** — exactly one workspace repo whose branch matches `^\d+-` → that root.
-4. **Single scaffold** — exactly one `.issueflows/` tree visible in the workspace → that root.
-5. **Workspace default** — an `issueflow-workspace.toml` at the workspace root (created with `issue-flow workspace init`) may name a `default` member repo; use it when no scaffold matched above. Tell the user the default was used.
-6. **Ambiguous** → **stop and ask**; never guess between sibling repos.
-
-After resolution, treat the result as `<project_root>` and `<owner/repo>`:
-
-- **Git:** `git -C <project_root> …` (or `issue-flow agent … -C <project_root>` for supported ops).
-- **GitHub:** pass an explicit repo on every `gh` call — never rely on `gh`'s implicit cwd default. For most commands use `--repo <owner/repo>`; **exception:** `gh repo view` takes the repo as a **positional** arg (`gh repo view <owner/repo> …`) and rejects `--repo`.
-- **Paths:** all `.issueflows/…` paths are under `<project_root>`.
-
-When `.issueflows/04-designs-and-guides/multi-repo-workspaces.md` exists, read it for layout and cross-repo guidance.
-
-## Instructions
-
-### Phase 1 — draft and create
-
-1. **Preflight.** Detect the default branch (`gh repo view --json defaultBranchRef -q .defaultBranchRef.name`; fall back to `git symbolic-ref --quiet --short refs/remotes/origin/HEAD`, else `main`). Run `git fetch --prune`. Report current branch + clean/dirty tree (`git status --porcelain`).
-2. **Parse input.** If the first token is `epic` (case-insensitive), enable epic-anchor mode and treat the remainder as the seed. Bare `epic` with no remainder → ask for the epic intent.
-3. **Draft title + body.** Propose a title and a body with this light structure (not a full `/iflow-plan`):
-   - **Problem / context**
-   - **Spec** (what to change)
-   - **Acceptance criteria**
-   - **Out of scope** (optional; omit the heading when empty)
-   Refine with the user until they confirm the text. If the draft is clearly over-large for one PR, **offer** `/iflow-split` (flat parent/child) or `/iflow-epic` (staged) — do **not** auto-create sub-issues.
-4. **Create (confirm first).** Show the final title and body (and, in epic-anchor mode, the planned `epic` label when present). On yes: `gh issue create --repo <owner/repo>` (add `--label epic` only when epic-anchor mode is on **and** `gh label list` shows `epic`). Capture number `N`. Set the chat tab title to `Issue <N> <short title>`. Optional labels/milestones other than the epic-anchor label: only if the user asked for them in this turn — do not invent them.
-
-### Phase 2 — optional lifecycle setup
-
-5. **Offer branch + init (default path).** Ask whether to start work now. On yes (require a clean tree; if dirty, stop and ask to commit/stash):
-   - Slug from the title (kebab-case); branch `<N>-<slug>`. Confirm a non-obvious slug.
-
-**Worktree-first start (default, issue #255 / #303 / #329).** After the dirty-tree gate and slug confirm — unless the user passed `inplace` / `no worktree`, or ops chose stay-on-current/default:
-
-1. Home stays on the **default** branch. `git fetch --prune`. Do **not** `git switch -c` on home.
-2. Run `issue-flow agent default-sync --json -C <home>`. If `action` is `even` or `ff_only`, `git pull --ff-only`. If home is ahead or diverged, **print** the classification and **still continue** — starting work must not wait for home to be ff-able.
-3. `issue-flow agent worktree-add <N> --slug <slug> -C <home> --json` — path is `../<repo>-<N>`. Starts from fetched `origin/<default>`, not local default HEAD. On error, **stop and ask**; never silently fall back to inplace.
-4. `issue-flow agent open-workspace <path> --json` (print-only). Tell the user the worktree path. Do **not** ask to open a window.
-5. Run `/iflow-capture` (and later plan/build/close) with `-C <worktree-path>`. Continue the session in that folder.
-6. Token `inplace` / `no worktree` keeps legacy `git switch -c <N>-<slug>` on home. Token `worktree` is a no-op when `worktree_first` is already on.
+Before any `git`, `gh`, or `.issueflows/` operation, settle `<project_root>` and `<owner/repo>`, stopping at the first unambiguous answer: explicit `root:<path>` / `repo:<name>` hints; `issue-flow agent resolve [--json]`; the one workspace repo on a `^\d+-` branch; the one `.issueflows/` scaffold in view; the `issueflow-workspace.toml` default (say you used it). Still ambiguous → **stop and ask**. Then use `git -C <project_root>` (or `issue-flow agent … -C <project_root>`) and pass `--repo <owner/repo>` to every `gh` call (`gh repo view` takes the repo positionally).
 
 
-   - On a non-default **home** branch → **ask** whether to FF/switch home to default first (required for worktree-add) or use `inplace` from current.
-   - Run `/iflow-capture` (or the `iflow-capture` skill) for `<N>` with `-C <worktree>` (or home if `inplace`). Do not duplicate its fetch/archive logic.
-   - **Ask** whether to continue with `/iflow-plan`. Do **not** auto-run it.
-6. **Create-only.** If the user declines Phase 2, stop after create. Remind them they can pick it up later with `/iflow-pick` / `/iflow-capture`.
+## Pick the mode
 
-## Constraints
+The first word after `issue` selects the mode. Read **only** that mode's file in this skill folder and follow it. Forward the remaining text verbatim.
 
-- Off-path: never auto-dispatch from `/iflow`, `/iflow-build`, or `/iflow-close`.
-- Never create a GitHub issue or branch without explicit confirmation; show what will be created first.
-- GitHub only (`gh`); GitLab is not supported.
-- Branch off the detected default (or the current branch when chosen); never force-push or delete branches from this skill.
-- Delegate local capture to `/iflow-capture`; do not write `issue<N>_plan.md` here.
-- Do not merge with `/iflow-fix` or `/iflow-pick fix` — different intents.
+| Input | Mode file | What it does |
+|---|---|---|
+| free text, or nothing | `new.md` | Draft and create **one** well-specified issue (context / spec / acceptance criteria), then optionally branch and capture it. |
+| `fix [<N>]` | `fix.md` | Interactive iterative-fixes session: one issue + long-lived branch, many small confirmed fixes, ends with `/iflow-close`. |
+| `epic <N>` / `epic <N> publish [stage <k>]` / `epic start [N]` / `epic stop` | `epic.md` | Plan a change too large for one issue as staged sub-issues; publish a stage; start or stop a one-and-ask epic session. |
+| `epic <free text>` | `new.md` (epic-anchor mode) | Create the epic anchor issue first, then offer `epic <N>`. |
+| `split <N>` | `split.md` | Cut one over-large existing issue into 2–5 flat GitHub sub-issues. |
+| `review` | `review.md` | Review open issues and apply labels (v1: the `yolo` label). |
+
+## Shared rules
+
+- Never create, edit, or label a GitHub issue without an explicit yes on the exact text.
+- Staged work with dependencies goes through `epic`; flat children through `split`. Other skills may *offer* these modes but never create children themselves.
+- Epics decompose into the normal single-issue lifecycle; they never bypass it.
