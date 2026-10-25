@@ -64,12 +64,12 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-batch = ["ipython", "jupyter", "plotly", "seaborn", "kaleido>=0.1,<1.6"]
+batch = ["ipython", "jupyter", "plotly", "seaborn", "kaleido>=0.1,<1.6", "cellpy-figure==0.1.0"]
 fit = ["lmfit"]
 legacy-files = ["tables"]
 notebook = ["ipykernel", "ipython"]
-plotting-mpl = ["matplotlib"]
-all = ["ipython", "jupyter", "plotly", "seaborn", "kaleido>=0.1,<1.6", "lmfit", "tables", "ipykernel", "matplotlib"]
+plotting-mpl = ["matplotlib", "cellpy-figure==0.1.0"]
+all = ["ipython", "jupyter", "plotly", "seaborn", "kaleido>=0.1,<1.6", "lmfit", "tables", "ipykernel", "matplotlib", "cellpy-figure==0.1.0"]
 
 [project.scripts]
 cellpy = "cellpy.cli:cli"
@@ -96,6 +96,7 @@ dev = [
     "pytest-benchmark",
     "pytest-timeout",
     "issue-flow>=0.4.2",
+    "cellpy-figure==0.1.0",
     # Temporary git pin until cellpy-connectors is on PyPI (#1060).
     "cellpy-connectors @ git+https://github.com/cellpy/cellpy-connectors.git",
 ]

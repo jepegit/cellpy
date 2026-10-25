@@ -238,6 +238,19 @@ Suggested layering:
 3. **Present** — pass pandas frames or simple dicts to the UI
    (`summary` for cycle tables; slices of `raw` for plots).
 4. **Export** — offer `.cellpy` (canonical) plus CSV/Excel for the user.
+   For a file a coauthor can redraw without installing cellpy, write a
+   `.cfz` bundle. This needs `cellpy[plotting-mpl]` or `cellpy[batch]`:
+
+   ```python
+   from cellpy.plotting.bundle import save_bundle
+
+   save_bundle(c, kind="cycles", path="cell.cfz", cycles=[1, 2, 3])
+   save_bundle(c, kind="summary", path="summary.cfz")
+   save_bundle(c, kind="ica", path="ica.cfz", cycles=[1])
+   save_bundle(c, kind="dva", path="dva.cfz", cycles=[1])
+   ```
+
+   The reader is `cellpy-figure`, not cellpy. Do not pin a git URL.
    For a Plotly download response from a collected figure:
 
    ```python
