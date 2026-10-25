@@ -5,7 +5,7 @@ description: >-
   the decision tree is resolved, then feed the conclusions into the issue plan.
   Use when the user wants to stress-test a plan, asks to "grill me", or during
   /iflow-plan when grilling is turned on. Off via "stop grilling" / "normal mode".
-issue-flow-version: 0.4.2a4
+issue-flow-version: 0.7.0
 ---
 
 # Grill me — relentless planning interview
