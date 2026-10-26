@@ -96,8 +96,11 @@ def test_matplotlib_and_ipykernel_left_the_required_set(pyproject):
 @pytest.mark.essential
 def test_matplotlib_lives_in_the_plotting_mpl_extra(pyproject):
     extras = pyproject["project"]["optional-dependencies"]
-    assert _bare_names(extras["plotting-mpl"]) == {"matplotlib"}
+    # cellpy-figure rides with matplotlib: save_bundle writes a .cfz from the
+    # same extra (#1132). It stays out of the required set.
+    assert _bare_names(extras["plotting-mpl"]) == {"matplotlib", "cellpy-figure"}
     assert "matplotlib" in _bare_names(extras["all"])
+    assert "cellpy-figure" in _bare_names(extras["all"])
 
 
 @pytest.mark.essential
@@ -114,6 +117,7 @@ def test_matplotlib_stays_in_the_dev_group(pyproject):
     and still need matplotlib even though a plain pip install does not."""
     dev = _bare_names(pyproject["dependency-groups"]["dev"])
     assert "matplotlib" in dev
+    assert "cellpy-figure" in dev
     assert "ipykernel" in dev
 
 

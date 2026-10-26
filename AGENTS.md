@@ -86,6 +86,10 @@ Quick facts:
 
 - Product: Python library + `cellpy` CLI — not a hosted GUI server.
   Third-party CLI commands: `[project.entry-points."cellpy.cli_plugins"]`.
+- Portable figure: `from cellpy.plotting.bundle import save_bundle` then
+  `save_bundle(c, kind="cycles", path="cell.cfz")` (`summary`, `ica`, `dva`
+  too). Needs the `plotting-mpl` or `batch` extra (`cellpy-figure` 0.1.0).
+  A coauthor redraws the file with cellpy-figure, not cellpy.
 - Entry: `import cellpy` then `c = cellpy.get(path, mass=..., instrument=...)`.
   For raw `.h5`/`.hdf5`, a set `instrument=` wins over native suffix auto-pick.
 - Find by project + number range: `from cellpy import filefinder` then

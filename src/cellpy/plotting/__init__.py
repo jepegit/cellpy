@@ -16,6 +16,7 @@ live; the plan is `architecture-plan/cellpy2-plotting-redesign-plan.md`.
 | [`registry`][cellpy.plotting.registry] | named ``PlotFamily`` records for ``summary_plot`` |
 | [`backends`][cellpy.plotting.backends] | render protocol + plotly formation layout |
 | [`prepare`][cellpy.plotting.prepare] | summary tidy-frame + ``FigureSpec`` |
+| [`bundle`][cellpy.plotting.bundle] | ``save_bundle`` writes a ``.cfz`` from that pair |
 | [`context`][cellpy.plotting.context] | ``CellContext`` / ``FrameContext`` |
 | [`collected`][cellpy.plotting.collected] | multi-cell ``collected_plot`` (``layout=`` / ``kind=``) |
 | [`batch_summary`][cellpy.plotting.batch_summary] | ``Batch.plot`` cycle-life summary |
@@ -27,6 +28,7 @@ prepare → spec → ``get_backend(...).render``.
 
 from __future__ import annotations
 
+from cellpy.plotting.bundle import save_bundle
 from cellpy.plotting.backends import (
     Backend,
     MatplotlibBackend,
@@ -97,6 +99,7 @@ __all__ = [
     "quantity_label",
     "remove_markers",
     "resolve_cycle_legend_mode",
+    "save_bundle",
     "save_matplotlib_figure",
     "units_quantity_label",
     "write_image",

@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+* `save_bundle` writes a `.cfz` file for cycles, summary, ICA, and DVA from the prepare path. `cellpy-figure` 0.1.0 is a dependency of the `batch`, `plotting-mpl`, and `all` extras. (#1132)
+
 * Tutorials 01 and 02 load bundled example data instead of local Arbin files the reader does not have. (#1023)
 
 * Search and social previews for the top docs pages now use a one-sentence description of that page. (#1023)

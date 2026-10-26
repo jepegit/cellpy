@@ -380,6 +380,7 @@ dependencies = [
 
 [package.optional-dependencies]
 all = [
+    { name = "cellpy-figure" },
     { name = "ipykernel" },
     { name = "ipython" },
     { name = "jupyter" },
@@ -391,6 +392,7 @@ all = [
     { name = "tables" },
 ]
 batch = [
+    { name = "cellpy-figure" },
     { name = "ipython" },
     { name = "jupyter" },
     { name = "kaleido" },
@@ -408,6 +410,7 @@ notebook = [
     { name = "ipython" },
 ]
 plotting-mpl = [
+    { name = "cellpy-figure" },
     { name = "matplotlib" },
 ]
 
@@ -416,6 +419,7 @@ dev = [
     { name = "black" },
     { name = "build" },
     { name = "cellpy-connectors" },
+    { name = "cellpy-figure" },
     { name = "coverage" },
     { name = "flake8" },
     { name = "ipykernel" },
@@ -438,6 +442,9 @@ docs = [
 
 [package.metadata]
 requires-dist = [
+    { name = "cellpy-figure", marker = "extra == 'all'", specifier = "==0.1.0" },
+    { name = "cellpy-figure", marker = "extra == 'batch'", specifier = "==0.1.0" },
+    { name = "cellpy-figure", marker = "extra == 'plotting-mpl'", specifier = "==0.1.0" },
     { name = "cellpycore", specifier = "==0.2.6" },
     { name = "charset-normalizer" },
     { name = "cookiecutter" },
@@ -495,6 +502,7 @@ dev = [
     { name = "black" },
     { name = "build" },
     { name = "cellpy-connectors", git = "https://github.com/cellpy/cellpy-connectors.git" },
+    { name = "cellpy-figure", specifier = "==0.1.0" },
     { name = "coverage" },
     { name = "flake8" },
     { name = "ipykernel" },
@@ -521,6 +529,19 @@ version = "0.1.0"
 source = { git = "https://github.com/cellpy/cellpy-connectors.git#4979e7084ddeebcd0f5fdd9f687210d2dce8144c" }
 dependencies = [
     { name = "typer" },
+]
+
+[[package]]
+name = "cellpy-figure"
+version = "0.1.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pandas" },
+    { name = "pyarrow" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/4a/eb/09f44540d38914428f3bd6fa1c788b3c40505f66ea624f6b628d32221bf6/cellpy_figure-0.1.0.tar.gz", hash = "sha256:bd1d1a763ea7db103602452a768b76c1b90a61538dd3dbd2dc45e34d4870c637", size = 181392, upload-time = "2026-10-25T17:03:57.824Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/eb/f5/c84f17610c73ef1d0da4b98248dd05311fed16ad2cae6ba212d3619fcdda/cellpy_figure-0.1.0-py3-none-any.whl", hash = "sha256:a61b0a8da563e6eb26867ab39b33daa97a4ef78ecfaf7b36c3d2f236dc9fb8d0", size = 19643, upload-time = "2026-10-25T17:03:56.272Z" },
 ]
 
 [[package]]
