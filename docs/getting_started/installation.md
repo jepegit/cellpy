@@ -183,8 +183,8 @@ python -m pip install "cellpy[batch]"
 
 | Extra | Installs | You need it for |
 | --- | --- | --- |
-| `batch` | `plotly`, `seaborn`, `kaleido`, `jupyter`, `ipython` | plotting (the default backend), saving figures as PNG/SVG/PDF, and the notebook workflow |
-| `plotting-mpl` | `matplotlib` | the matplotlib plotting backend, for static publication figures |
+| `batch` | `plotly`, `seaborn`, `kaleido`, `jupyter`, `ipython`, `cellpy-figure` | plotting (the default backend), saving figures as PNG/SVG/PDF, writing a `.cfz` bundle, and the notebook workflow |
+| `plotting-mpl` | `matplotlib`, `cellpy-figure` | the matplotlib plotting backend, and writing a `.cfz` bundle |
 | `legacy-files` | `tables` (PyTables) | reading and writing the old `.h5` cellpy file format |
 | `notebook` | `ipykernel`, `ipython` | running the tutorial notebooks (a subset of `batch`) |
 | `fit` | `lmfit` | the fitting helpers |
