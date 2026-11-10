@@ -241,6 +241,7 @@ def test_legend_replacer_three_part_name_is_the_cell(journal):
     assert trace.legendgroup == "cell_b"
     assert trace.legendgrouptitle_text == "cell_b"
     assert trace.hovertemplate.startswith("cell_b<br>")
+    assert trace.meta["direction"] == "charge"
 
 
 @pytest.mark.essential
@@ -249,6 +250,7 @@ def test_legend_replacer_three_part_direction_at_end(journal):
     trace = labels.legend_replacer(_FakeTrace("1, 2, discharge"), journal)
     assert trace.name == "cell_b"
     assert trace.legendgroup == "cell_b"
+    assert trace.meta["direction"] == "discharge"
 
 
 @pytest.mark.essential

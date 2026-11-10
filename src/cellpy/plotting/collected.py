@@ -239,6 +239,7 @@ def spread_plot(curves, plotly_arguments=None, y_label_mapper=None, **kwargs):
                     color=color,
                     dash=dash,
                     show_legend=show_legend,
+                    direction="" if direction is None else direction,
                 )
                 show_legend = False
     for row_number, y_label in y_labels.items():
@@ -261,9 +262,21 @@ def spread_plot(curves, plotly_arguments=None, y_label_mapper=None, **kwargs):
 
 
 def _add_spread_traces(
-    fig, row, cell, series_col, variable, sub_data, *, mode, color, dash, show_legend
+    fig,
+    row,
+    cell,
+    series_col,
+    variable,
+    sub_data,
+    *,
+    mode,
+    color,
+    dash,
+    show_legend,
+    direction="",
 ):
     """Add the mean line plus its ±std band for one series / panel / direction."""
+    meta = {"direction": direction or ""}
     mean_kwargs = dict(
         name=cell,
         x=sub_data["cycle"],
@@ -273,6 +286,7 @@ def _add_spread_traces(
         legendgroup=cell,
         legendgrouptitle=None,
         showlegend=show_legend,
+        meta=meta,
     )
     # Hover parity with group_it px path (#875); std via customdata.
     if "std" in sub_data.columns:
@@ -303,6 +317,7 @@ def _add_spread_traces(
             showlegend=False,
             legendgroup=cell,
             hoverinfo="skip",
+            meta=meta,
         ),
         row=row,
         col=1,
@@ -320,6 +335,7 @@ def _add_spread_traces(
             showlegend=False,
             legendgroup=cell,
             hoverinfo="skip",
+            meta=meta,
         ),
         row=row,
         col=1,
@@ -1136,16 +1152,58 @@ def _styled_directions(curves: pd.DataFrame, g: str = "variable") -> list[str]:
     return [d for d in _DIRECTION_TOKENS if d in present]
 
 
+def _direction_token(name: str) -> str:
+    """Return the ``charge`` / ``discharge`` token in a Plotly trace name."""
+    for part in str(name).split(","):
+        token = part.strip()
+        if token in _DIRECTION_TOKENS:
+            return token
+    return ""
+
+
+def _meta_dict(trace: Any) -> dict:
+    """Copy ``trace.meta`` when it is a dict. Otherwise return ``{}``."""
+    meta = getattr(trace, "meta", None)
+    if isinstance(meta, dict):
+        return dict(meta)
+    if meta is None:
+        return {}
+    to_json = getattr(meta, "to_plotly_json", None)
+    if to_json is None:
+        return {}
+    raw = to_json()
+    return dict(raw) if isinstance(raw, dict) else {}
+
+
+def _meta_with_direction(trace: Any, token: str) -> dict:
+    """Keep any existing meta and record ``direction`` when the name still has it."""
+    merged = _meta_dict(trace)
+    if token:
+        merged["direction"] = token
+    else:
+        merged.setdefault("direction", "")
+    return merged
+
+
+def _trace_direction(trace: Any) -> str:
+    """Direction stored on the trace, or ``""`` when the series has none."""
+    value = _meta_dict(trace).get("direction") or ""
+    return value if value in _DIRECTION_TOKENS else ""
+
+
 def _dedupe_direction_names(fig: Any) -> None:
     """Drop direction tokens from Plotly trace names; one legend entry per series.
 
     ``px.line(..., line_dash="direction")`` names traces ``"cell, charge"`` /
-    ``"cell, discharge"``. Both belong to the same series, so the name becomes
-    ``"cell"``, the traces share a legend group and only the first one shows.
-    The direction itself is read from the dash style (see `_add_direction_legend`).
+    ``"cell, discharge"`` and sets ``legendgroup`` to that full name. Both
+    belong to the same series, so the name and the legend group become
+    ``"cell"`` and only the first one shows. Keeping the px group made a
+    series click hide charge only (#1193). The direction is stored on
+    ``meta`` for the Charge / Discharge buttons.
     """
     seen: set[str] = set()
     for trace in fig.data:
+        token = _direction_token(trace.name)
         parts = [p.strip() for p in str(trace.name).split(",")]
         kept = [p for p in parts if p and p not in _DIRECTION_TOKENS]
         name = ", ".join(kept) if kept else str(trace.name)
@@ -1154,36 +1212,69 @@ def _dedupe_direction_names(fig: Any) -> None:
             seen.add(name)
         trace.update(
             name=name,
-            legendgroup=trace.legendgroup or name,
+            legendgroup=name,
             legendgrouptitle_text=None,
             showlegend=show,
+            meta=_meta_with_direction(trace, token),
         )
 
 
-def _add_direction_legend(fig: Any, directions: list[str]) -> None:
-    """Add a second Plotly legend (``legend2``, "Direction") with style-only entries."""
+def _add_direction_toggles(fig: Any, directions: list[str]) -> None:
+    """Add Charge / Discharge buttons that hide that direction's traces.
+
+    Plotly allows one ``legendgroup`` per trace. The series legend keeps
+    that group, so direction cannot be a second legend. A button restyles
+    ``visible`` on the traces whose ``meta["direction"]`` matches. A second
+    click shows them again. Direction-less series (coulombic efficiency, a
+    lone panel) are left out.
+    """
+    indices: dict[str, list[int]] = {direction: [] for direction in directions}
+    for i, trace in enumerate(fig.data):
+        direction = _trace_direction(trace)
+        if direction in indices:
+            indices[direction].append(i)
+    buttons = []
     for direction in directions:
-        fig.add_trace(
-            go.Scatter(
-                x=[None],
-                y=[None],
-                mode="lines",
-                name=direction.capitalize(),
-                line=dict(color="grey", dash=_DIRECTION_DASH[direction]),
-                legend="legend2",
-                showlegend=True,
-                hoverinfo="skip",
+        idx = indices[direction]
+        if not idx:
+            continue
+        buttons.append(
+            dict(
+                label=direction.capitalize(),
+                method="restyle",
+                args=[{"visible": False}, idx],
+                args2=[{"visible": True}, idx],
             )
         )
+    if not buttons:
+        return
+    existing = list(getattr(fig.layout, "updatemenus", None) or [])
     fig.update_layout(
-        legend2=dict(
-            title_text="Direction",
-            orientation="v",
-            x=1.02,
-            xanchor="left",
-            y=0.0,
-            yanchor="bottom",
-        )
+        updatemenus=[
+            *existing,
+            dict(
+                type="buttons",
+                direction="up",
+                active=-1,
+                showactive=False,
+                x=1.02,
+                xanchor="left",
+                y=0.0,
+                yanchor="bottom",
+                buttons=buttons,
+            ),
+        ]
+    )
+    fig.add_annotation(
+        text="Direction",
+        xref="paper",
+        yref="paper",
+        x=1.02,
+        y=0.0,
+        xanchor="left",
+        yanchor="bottom",
+        yshift=52,
+        showarrow=False,
     )
 
 
@@ -1616,9 +1707,10 @@ def summary_plotter(collected_curves, cycles_to_plot=None, backend="plotly", **k
       ``potential_end_discharge``, ...) share one panel keyed by the name with
       that token removed (``capacity_gravimetric``). When a panel draws both
       directions, charge is solid and discharge dashed, with one legend entry
-      per cell / group and a second legend ("Direction") for the dash styles.
-      A panel that has only one direction stays solid and does not add that
-      legend (#1096). ``order_variables`` and ``y_ranges`` may use either the
+      per cell / group. Charge and Discharge buttons hide that direction
+      (click again to show it). A series click still hides the whole series.
+      A panel that has only one direction stays solid and does not add those
+      buttons (#1096). ``order_variables`` and ``y_ranges`` may use either the
       original variable names or the panel key. ``combine_directions=False``
       restores one facet per variable.
     """
@@ -1818,7 +1910,7 @@ def summary_plotter(collected_curves, cycles_to_plot=None, backend="plotly", **k
         if fig is not None and styled:
             if not kwargs.get("spread"):
                 _dedupe_direction_names(fig)
-            _add_direction_legend(fig, styled)
+            _add_direction_toggles(fig, styled)
 
         # TODO: implement having different heights of the subplots
 

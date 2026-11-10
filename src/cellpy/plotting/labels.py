@@ -22,6 +22,7 @@ if TYPE_CHECKING:
     from cellpycore.units.spec import CellpyUnits
 
 hdr_journal = get_headers_journal()
+_DIRECTION_TOKENS = frozenset({"charge", "discharge"})
 
 
 def quantity_label(name: str, unit: str) -> str:
@@ -77,7 +78,9 @@ def legend_replacer(trace, df, group_legends=True, inverted_mode=False):
     names traces ``"group, direction, subgroup"`` (color, dash, symbol).
     Those three-part labels are accepted too (#983): the two integers look
     up the cell wherever the direction token sits; the visible title and
-    mute group become the cell (direction stays in the dash style).
+    mute group become the cell (direction stays in the dash style). The
+    direction token is copied onto ``trace.meta["direction"]`` before the
+    rename so later legend grouping can still tell charge from discharge.
 
     Args:
         trace: the plotly trace to update, in place.
@@ -130,6 +133,12 @@ def legend_replacer(trace, df, group_legends=True, inverted_mode=False):
         "name": cell_label,
         "hovertemplate": f"{cell_label}<br>{trace.hovertemplate}",
     }
+    direction = next((part for part in parts if part in _DIRECTION_TOKENS), "")
+    if direction:
+        meta = getattr(trace, "meta", None)
+        merged = dict(meta) if isinstance(meta, dict) else {}
+        merged["direction"] = direction
+        updates["meta"] = merged
     if direction_split:
         updates["legendgroup"] = cell_label
         updates["legendgrouptitle_text"] = cell_label

@@ -40,7 +40,7 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_collected_ica_direction.py::test_ica_invalid_direction_warns_and_coerces | yes | yes | plotting.collected ica_plotter warn | #821 | |
 | tests/test_collected_ica_direction.py::test_collected_plot_ica_per_cell_honours_direction | yes | yes | plotting.collected collected_plot ica | #821 | public entry |
 | tests/test_collected_ica_direction.py::test_collected_plot_ica_per_cycle_both_uses_cell_legend_labels | yes | yes | plotting.labels.legend_replacer + collected per_cycle both | #983 | group numbers must not appear |
-| tests/test_plotting_package.py::test_legend_replacer_three_part_name_is_the_cell | yes | yes | plotting.labels.legend_replacer | #983 | px `group, direction, subgroup` |
+| tests/test_plotting_package.py::test_legend_replacer_three_part_name_is_the_cell | yes | yes | plotting.labels.legend_replacer | #983 | px `group, direction, subgroup`; direction kept on meta |
 | tests/test_plotting_package.py::test_legend_replacer_three_part_direction_at_end | yes | yes | plotting.labels.legend_replacer | #983 | direction token last |
 | tests/test_plotting_package.py::test_legend_replacer_three_part_ignores_group_legends | yes | yes | plotting.labels.legend_replacer | #983 | mute by cell when split |
 | tests/test_resolve_collected_layout_kind.py (module) | yes | yes | plotting.collected.resolve_collected_layout_kind | #874 | validate + film alias |
@@ -239,7 +239,9 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_collect.py::test_summary_options_requests_declared_cv_columns_literally | yes | yes | plotting.registry.PlotFamily.summary_options | #1009 | fullcell columns tuple |
 | tests/test_collected_summary_directions.py::test_split_direction_prefix_suffix_midname_and_none | yes | yes | plotting.collected.split_direction | #1009 | panel/direction split |
 | tests/test_collected_summary_directions.py::test_pretty_labels_for_panel_keys | yes | yes | plotting.collected._pretty_variable_label | #1009 | panel-key labels, non-CV, mod_01 |
-| tests/test_collected_summary_directions.py::test_charge_and_discharge_share_a_panel_with_dash_styles | yes | yes | plotting.collected.summary_plotter | #1009 | 2 panels, dash, legend2 |
+| tests/test_collected_summary_directions.py::test_charge_and_discharge_share_a_panel_with_dash_styles | yes | yes | plotting.collected.summary_plotter | #1009 | 2 panels, dash, shared series legendgroup |
+| tests/test_collected_summary_directions.py::test_direction_buttons_hide_one_direction | yes | yes | plotting.collected.summary_plotter | #1193 | Charge/Discharge restyle indices; CE omitted |
+| tests/test_collected_summary_directions.py::test_spread_direction_buttons_include_bands | yes | yes | plotting.collected.spread_plot | #1193 | spread mean + bands on the matching button |
 | tests/test_collected_summary_directions.py::test_combine_directions_false_keeps_one_facet_per_variable | yes | yes | plotting.collected.summary_plotter | #1009 | opt-out |
 | tests/test_collected_summary_directions.py::test_lone_direction_stays_solid_without_direction_legend | yes | yes | plotting.collected.summary_plotter | #1096 | lone direction: solid, no legend2 |
 | tests/test_collected_summary_directions.py::test_unpaired_direction_stays_solid_beside_a_combined_panel | yes | yes | plotting.collected.summary_plotter | #1096 | lone panel beside a combined one |

@@ -279,10 +279,8 @@ def test_summary_collector_plot_uses_custom_group_labels_and_units():
     assert {trace.name for trace in series} == {"run-14", "run-15"}
     # charge / discharge share the capacity panel (#1009)
     assert _facet_labels(fig) == ["Capacity (mAh/g)", "Coulombic Efficiency (%)"]
-    assert {trace.name for trace in fig.data if trace.legend == "legend2"} == {
-        "Charge",
-        "Discharge",
-    }
+    menus = list(fig.layout.updatemenus or ())
+    assert [button.label for button in menus[0].buttons] == ["Charge", "Discharge"]
 
 
 @pytest.mark.essential

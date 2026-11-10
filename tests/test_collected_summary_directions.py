@@ -79,28 +79,107 @@ def test_charge_and_discharge_share_a_panel_with_dash_styles():
     fig = _plot(_frame())
     assert len(_yaxes(fig)) == 2  # capacity + CE, not 3
 
-    series = [t for t in fig.data if t.legend != "legend2"]
+    series = list(fig.data)
     assert {t.name for t in series} == {"a", "b"}
     assert sum(1 for t in series if t.showlegend) == 2  # one entry per cell
     dashes = {t.line.dash for t in series}
     assert dashes == {"solid", "dash"}
+    # One legend group per series, charge and discharge together (#1193).
+    assert {t.legendgroup for t in series} == {"a", "b"}
+    for name in ("a", "b"):
+        grouped = {t.line.dash for t in series if t.legendgroup == name}
+        assert grouped == {"solid", "dash"}
 
-    direction_legend = [t for t in fig.data if t.legend == "legend2"]
-    assert [t.name for t in direction_legend] == ["Charge", "Discharge"]
-    assert [t.line.dash for t in direction_legend] == ["solid", "dash"]
-    assert fig.layout.legend2.title.text == "Direction"
+    buttons = _direction_buttons(fig)
+    assert buttons["Charge"].args[0]["visible"] is False
+    assert buttons["Charge"].args2[0]["visible"] is True
+
+
+@pytest.mark.essential
+def test_direction_buttons_hide_one_direction():
+    """Charge hides charge traces only. CE stays out of both buttons (#1193)."""
+    fig = _plot(_frame())
+    buttons = _direction_buttons(fig)
+    for label, token in (("Charge", "charge"), ("Discharge", "discharge")):
+        indices = _button_indices(buttons[label])
+        assert indices
+        assert {_trace_direction(fig.data[i]) for i in indices} == {token}
+        assert buttons[label].args[0]["visible"] is False
+        assert buttons[label].args2[0]["visible"] is True
+    chosen = set(_button_indices(buttons["Charge"])) | set(_button_indices(buttons["Discharge"]))
+    plain = [i for i, trace in enumerate(fig.data) if _trace_direction(trace) == ""]
+    assert plain
+    assert not chosen.intersection(plain)
+
+
+@pytest.mark.essential
+def test_spread_direction_buttons_include_bands():
+    """``spread=True`` toggles the mean line and both ±std bands (#1193)."""
+    pytest.importorskip("plotly", reason="plotting extras (batch) not installed")
+    from cellpy.plotting import theme
+    from cellpy.plotting.collected import summary_plotter
+
+    theme.make_collector_templates()
+    fig = summary_plotter(_frame().assign(mean=1.0, std=0.1), backend="plotly", spread=True)
+    buttons = _direction_buttons(fig)
+    for label, token in (("Charge", "charge"), ("Discharge", "discharge")):
+        indices = _button_indices(buttons[label])
+        names = [str(fig.data[i].name) for i in indices]
+        assert {_trace_direction(fig.data[i]) for i in indices} == {token}
+        assert any(not name.startswith(("Upper Bound", "Lower Bound")) for name in names)
+        assert any(name.startswith("Upper Bound") for name in names)
+        assert any(name.startswith("Lower Bound") for name in names)
+    groups = {}
+    for trace in fig.data:
+        if str(trace.name).startswith(("Upper Bound", "Lower Bound")):
+            continue
+        groups.setdefault(trace.legendgroup, set()).add(trace.line.dash)
+    assert groups
+    for dashes in groups.values():
+        assert "dash" in dashes
+        assert "solid" in dashes
 
 
 @pytest.mark.essential
 def test_combine_directions_false_keeps_one_facet_per_variable():
     fig = _plot(_frame(), combine_directions=False)
     assert len(_yaxes(fig)) == 3
-    assert not [t for t in fig.data if t.legend == "legend2"]
-    assert "legend2" not in fig.layout.to_plotly_json()
+    _assert_no_direction_control(fig)
 
 
 def _series_traces(fig):
     return [t for t in fig.data if getattr(t, "legend", None) != "legend2"]
+
+
+def _trace_direction(trace) -> str:
+    meta = getattr(trace, "meta", None)
+    if isinstance(meta, dict):
+        value = meta.get("direction") or ""
+    else:
+        value = ""
+    return value if value in {"charge", "discharge"} else ""
+
+
+def _direction_buttons(fig):
+    menus = list(fig.layout.updatemenus or ())
+    assert len(menus) == 1
+    buttons = {button.label: button for button in menus[0].buttons}
+    assert list(buttons) == ["Charge", "Discharge"]
+    texts = [getattr(ann, "text", None) for ann in (fig.layout.annotations or ())]
+    assert "Direction" in texts
+    return buttons
+
+
+def _button_indices(button) -> list[int]:
+    return [int(i) for i in button.args[1]]
+
+
+def _assert_no_direction_control(fig):
+    assert not [t for t in fig.data if getattr(t, "legend", None) == "legend2"]
+    assert "legend2" not in fig.layout.to_plotly_json()
+    assert not list(fig.layout.updatemenus or ())
+    texts = [getattr(ann, "text", None) for ann in (fig.layout.annotations or ())]
+    assert "Direction" not in texts
 
 
 @pytest.mark.essential
@@ -117,8 +196,7 @@ def test_lone_direction_stays_solid_without_direction_legend(variable, word):
     titles = [fig.layout[k].title.text for k in _yaxes(fig)]
     assert any(t.startswith(f"{word} Capacity") for t in titles)
     assert {t.line.dash for t in _series_traces(fig)} <= {None, "solid"}
-    assert not [t for t in fig.data if getattr(t, "legend", None) == "legend2"]
-    assert "legend2" not in fig.layout.to_plotly_json()
+    _assert_no_direction_control(fig)
 
 
 @pytest.mark.essential
@@ -133,7 +211,8 @@ def test_unpaired_direction_stays_solid_beside_a_combined_panel():
             )
         )
     )
-    assert [t.name for t in fig.data if t.legend == "legend2"] == ["Charge", "Discharge"]
+    buttons = _direction_buttons(fig)
+    discharge_idx = set(_button_indices(buttons["Discharge"]))
     ir_keys = [k for k in _yaxes(fig) if "Ir" in (fig.layout[k].title.text or "")]
     assert len(ir_keys) == 1
     suffix = ir_keys[0].removeprefix("yaxis")
@@ -141,6 +220,8 @@ def test_unpaired_direction_stays_solid_beside_a_combined_panel():
     ir_traces = [t for t in _series_traces(fig) if t.yaxis == trace_axis]
     assert ir_traces
     assert {t.line.dash for t in ir_traces} <= {None, "solid"}
+    ir_positions = [i for i, t in enumerate(fig.data) if t.yaxis == trace_axis]
+    assert not discharge_idx.intersection(ir_positions)
 
 
 @pytest.mark.essential
@@ -155,15 +236,14 @@ def test_lone_discharge_spread_stays_solid():
     fig = summary_plotter(frame, backend="plotly", spread=True)
     dashes = {t.line.dash for t in fig.data if getattr(t.line, "dash", None)}
     assert "dash" not in dashes
-    assert not [t for t in fig.data if getattr(t, "legend", None) == "legend2"]
+    _assert_no_direction_control(fig)
 
 
 @pytest.mark.essential
 def test_no_direction_tokens_means_no_direction_legend():
     fig = _plot(_frame(variables=("coulombic_efficiency", "cumulated_step_time")))
     assert len(_yaxes(fig)) == 2
-    assert not [t for t in fig.data if t.legend == "legend2"]
-    assert "legend2" not in fig.layout.to_plotly_json()
+    _assert_no_direction_control(fig)
 
 
 @pytest.mark.essential
