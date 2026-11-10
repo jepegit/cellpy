@@ -73,6 +73,14 @@ Epic #567 Stage 3 / issue #657 re-bases collectors' drawing half onto
   / `force_legend` / `force_nonbar` override. The knobs are consumed in
   `sequence_plotter`, so they never reach a backend. `layout="per_cycle"`
   colours by cell and is untouched.
+- **Summary direction filter (#1193):** when a panel draws both charge and
+  discharge, Plotly gets Charge and Discharge buttons instead of a style-only
+  `legend2`. Each button hides that direction (the mean line and the spread
+  bands) and a second click shows it. The series `legendgroup` is the series
+  name, so an experiment click hides both directions. A direction-less series
+  (coulombic efficiency, a lone panel) is not on either button. One direction
+  alone still means solid lines and no buttons (#1096). Plotly allows one
+  `legendgroup` per trace, so direction cannot be a second legend.
 - **ICA `direction=` (#821):** `charge` / `discharge` / `both` on line layouts
   (`layout="per_cell"|"per_cycle"`) and `kind="film"`, not only film. Default
   for collected ICA remains `charge`. `both` overlays half-cycles; on Plotly

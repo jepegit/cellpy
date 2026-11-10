@@ -147,8 +147,10 @@ Quick facts:
   `batch.load` summary includes those columns (`find_ir=True`).
   `summary_collector(b, family=...).plot()` puts charge and discharge of one
   quantity in the same panel. Both on that panel: charge solid, discharge
-  dashed, plus a "Direction" legend. Only one of them: solid line, no
-  Direction legend. `combine_directions=False` gives one facet per variable.
+  dashed. Charge and Discharge buttons hide that direction (click again to
+  show it). The series legend still hides the whole series. Only one of
+  them: solid line, no Direction buttons. `combine_directions=False` gives
+  one facet per variable.
   `mark_as_bad` is a session flag (unknown cell name → `ValueError`); `drop` /
   `drop_cells_marked_bad` remove now
   (plot/summaries work without `update()`). `save()` then next `load` (default

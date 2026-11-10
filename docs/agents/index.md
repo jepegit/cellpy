@@ -369,9 +369,11 @@ fig = b.plot()                   # cycle-life summary (cap / CE)
 # back to ir_charge with a UserWarning if that column is missing.
 fig = b.plot(ir=True, rate=True, direction="discharge")
 # Named plot families via the collector: charge and discharge of one quantity
-# share a panel. Both on that panel → charge solid, discharge dashed, plus a
-# "Direction" legend. Only one of them → solid line, no Direction legend.
-# combine_directions=False gives one facet per variable instead.
+# share a panel. Both on that panel → charge solid, discharge dashed.
+# Charge and Discharge buttons hide that direction (click again to show it).
+# The series legend still hides the whole series. Only one direction → solid
+# line, no Direction buttons. combine_directions=False gives one facet per
+# variable instead.
 from cellpy.collect import summary_collector
 fig = summary_collector(b, family="fullcell_standard_gravimetric").plot()
 # If filefinder found no raw files, those cells are FAILED (not empty
