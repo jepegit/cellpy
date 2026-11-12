@@ -293,6 +293,12 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_neware_nda_two_stage.py::test_raw_units_follow_fastnda_column_suffixes | yes | yes | neware_nda.get_raw_units | #1149 | suffix contract, no file |
 | tests/test_neware_nda_two_stage.py::test_charge_and_discharge_unit_suffixes_must_agree | yes | yes | neware_nda.units_from_fastnda_columns | #1149 | ValueError on disagree |
 | tests/test_neware_nda_two_stage.py::test_local_ndax_current_and_capacity_stay_in_milli_units | no | | neware_nda load of a real ndax | #1149 | skips unless gitignored local/data file is present |
+| tests/test_neware_nda_two_stage.py::test_aux_map_maps_fastnda_aux_channels | yes | yes | neware_nda.aux_map_from_fastnda_columns | #1184 | BTS85 aux names, no file |
+| tests/test_neware_nda_two_stage.py::test_second_cell_probe_is_named_from_its_channel_id | yes | yes | neware_nda.aux_map_from_fastnda_columns | #1184 | only the first probe is aux_temperature_cell |
+| tests/test_neware_nda_two_stage.py::test_unknown_aux_names_are_not_mapped | yes | yes | neware_nda.aux_map_from_fastnda_columns | #1184 | humidity / setpoint left out |
+| tests/test_neware_nda_two_stage.py::test_declarations_without_aux_columns_are_unchanged | yes | yes | neware_nda.DataLoader.declarations | #1184 | empty aux_map |
+| tests/test_neware_nda_two_stage.py::test_declarations_declare_aux_channels_found_by_parse | yes | yes | neware_nda.DataLoader.declarations | #1184 | single-cell voltage never potential; not in dropped |
+| tests/test_neware_nda_two_stage.py::test_bts85_ndax_keeps_cell_temperature | no | | neware_nda load of testdata BTS85 ndax | #1184 | end to end; raw_plot(y="aux_temperature_cell") |
 | tests/test_raw_cycle_info_prepare.py::test_cycle_info_plot_backend_matplotlib | yes | yes | plotutils.cycle_info_plot matplotlib return | #1158 | None, or an axes tuple with get_axes |
 | tests/test_raw_cycle_info_prepare.py::test_cycle_info_plot_plotly_returns_none_unless_get_axes | yes | yes | plotutils.cycle_info_plot plotly return | #1158 | None, or a figure with show |
 

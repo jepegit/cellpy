@@ -1,5 +1,8 @@
+import dataclasses
 import logging
+import re
 from datetime import datetime, timezone
+from typing import Iterable
 import pandas as pd
 import pathlib
 
@@ -78,6 +81,59 @@ _HEADER_TO_UNIT_PROPERTY: dict[str, str] = {
     "discharge_energy_txt": "energy",
     "internal_resistance_txt": "resistance",
 }
+
+
+#: fastnda names aux channels ``aux<channel id>_<name>`` (``AUX_CHL_MAP`` in
+#: ``local_fastnda/dicts.py``), e.g. ``aux1_temperature_cell_degC``.
+_FASTNDA_AUX_COLUMN = re.compile(r"^aux(?P<channel>\d+)_(?P<name>.+)$")
+
+#: fastnda aux name -> harmonized ``aux_<quantity>_<name>`` (#1184). Only the
+#: unsuffixed ``aux_temperature_cell`` is the cell signal; the
+#: ``temperature_cell_*`` summary columns are defined off that column alone.
+#: The single-cell voltage is its own aux column, never ``potential``.
+_FASTNDA_AUX_TARGETS: dict[str, str] = {
+    "temperature_cell_degC": "aux_temperature_cell",
+    "temperature_CPU_degC": "aux_temperature_cpu",
+    "single_cell_voltage_V": "aux_potential_single_cell",
+}
+
+
+def aux_map_from_fastnda_columns(columns: Iterable[str]) -> dict[str, str]:
+    """Build ``aux_map`` for the fastnda aux columns in ``columns``.
+
+    The first channel of each kind (lowest channel id) gets the plain name,
+    e.g. ``aux1_temperature_cell_degC`` -> ``aux_temperature_cell``. A second
+    cell probe is named from its vendor channel id, Arbin style
+    (``aux2_temperature_cell_degC`` -> ``aux_temperature_2``), so it does not
+    feed the cell signal. Further CPU-temperature or single-cell-voltage
+    channels get the channel id as a suffix. Aux names not listed in
+    ``_FASTNDA_AUX_TARGETS`` are left out, and files without aux columns give
+    an empty map.
+
+    Args:
+        columns: the column names of the parsed fastnda frame.
+
+    Returns:
+        ``fastnda column -> aux_<quantity>_<name>``.
+    """
+    channels_by_name: dict[str, list[tuple[int, str]]] = {}
+    for column in columns:
+        match = _FASTNDA_AUX_COLUMN.match(column)
+        if match is None or match["name"] not in _FASTNDA_AUX_TARGETS:
+            continue
+        channels_by_name.setdefault(match["name"], []).append((int(match["channel"]), column))
+
+    aux_map: dict[str, str] = {}
+    for name, channels in channels_by_name.items():
+        target = _FASTNDA_AUX_TARGETS[name]
+        for position, (channel, column) in enumerate(sorted(channels)):
+            if position == 0:
+                aux_map[column] = target
+            elif name == "temperature_cell_degC":
+                aux_map[column] = f"aux_temperature_{channel}"
+            else:
+                aux_map[column] = f"{target}_{channel}"
+    return aux_map
 
 
 def _pint_unit_from_fastnda_column(name: str) -> str | None:
@@ -250,6 +306,8 @@ class DataLoader(BaseLoader):
         self.name = source if isinstance(source, Path) else Path(source)
         self.copy_to_temporary()
         raw_data = self._run_fastnda().drop_duplicates()
+        # Remember the vendor columns so declarations() can build aux_map.
+        self._parsed_vendor_columns = tuple(raw_data.columns)
         self._parsed = True
         return pl.from_pandas(raw_data.reset_index(drop=True))
 
@@ -258,18 +316,27 @@ class DataLoader(BaseLoader):
 
         ``datetime_kind="epoch_seconds"`` — the vendor ``unix_time_s`` is float
         seconds since the Unix epoch.
+
+        Aux channels fastnda decodes (cell temperature, CPU temperature,
+        single-cell voltage) are declared via ``aux_map`` so ``harmonize()``
+        keeps them instead of warn-and-dropping them (#1184); see
+        `aux_map_from_fastnda_columns`.
         """
         from cellpy.readers.instruments.config_declarations import (
             declarations_from_renaming,
         )
 
-        return declarations_from_renaming(
+        declarations = declarations_from_renaming(
             self.get_raw_units(),
             normal_headers_renaming_dict,
             "epoch_seconds",
             getattr(self, "_parsed", False),
             "neware_nda",
         )
+        aux_map = aux_map_from_fastnda_columns(getattr(self, "_parsed_vendor_columns", ()))
+        if not aux_map:
+            return declarations
+        return dataclasses.replace(declarations, aux_map=aux_map)
 
     # TODO: rename this (for all instruments) to e.g. load
     # TODO: implement more options (bad_cycles, ...)
