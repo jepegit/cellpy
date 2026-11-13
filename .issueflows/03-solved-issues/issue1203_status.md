@@ -12,8 +12,9 @@
 - No production change. The raise was already fixed in v2.1.5.post9
   (#1154 / #1152).
 - Registry row added.
-- GitHub comment on #1203: no cell limit; post8 aborts the batch; post9+
-  skips; conda-forge is still post8.
+- The same note is in the pull request body. A GitHub issue comment
+  was refused (`addComment` is not on this token): no cell limit; post8
+  aborts the batch; post9+ skips; conda-forge is still post8.
 
 ## Remaining work
 
