@@ -12,6 +12,11 @@
 
 * Bio-Logic `.mpr` loader ignores the acquisition start time, so all timestamps fall at midnight. (#1164)
 * `cycle_info_plot` shows a figure and returns `None` unless `get_axes=True`. The docstring and plotting guide now say so. Plotly then returns the figure. Matplotlib returns an axes tuple. (#1158)
+* Neware `.nda`/`.ndax` loads keep the aux channels fastnda decodes: the cell
+  thermocouple as `aux_temperature_cell`, the CPU temperature as
+  `aux_temperature_cpu` and the single-cell voltage as
+  `aux_potential_single_cell`. Before, `harmonize()` dropped them with a
+  warning. (#1184)
 
 ## [2.1.5.post10] - 2026-10-20
 

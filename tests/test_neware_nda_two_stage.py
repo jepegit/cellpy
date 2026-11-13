@@ -5,6 +5,9 @@ It needs the ``fastnda`` backend and an ``.nda*`` file, neither of which is an
 in-repo fixture, so — like the fixture-less Arbin variants — it is checked at
 the declaration level: vendor→native mapping, ``Test_ID`` dropped as provenance,
 and ``datetime_kind="epoch_seconds"`` for its ``unix_time_s`` column.
+
+The aux-channel mapping (#1184) is also checked end to end on the in-repo
+BTS85 ``.ndax`` (``testdata/data``), which carries cell temperature.
 """
 
 from __future__ import annotations
@@ -93,3 +96,70 @@ def test_local_ndax_current_and_capacity_stay_in_milli_units():
     assert cell.data.raw_units.charge == "mAh"
     assert abs(raw["current"]).max() == pytest.approx(65.7, abs=0.05)
     assert raw["cumulative_discharge_capacity"].max() == pytest.approx(933.6, rel=0.01)
+
+
+_BTS85_AUX_COLUMNS = (
+    "aux1_temperature_CPU_degC",
+    "aux1_single_cell_voltage_V",
+    "aux1_temperature_cell_degC",
+)
+
+
+@pytest.mark.essential
+def test_aux_map_maps_fastnda_aux_channels():
+    mapping = neware_nda.aux_map_from_fastnda_columns(("voltage_V", *_BTS85_AUX_COLUMNS))
+    assert mapping == {
+        "aux1_temperature_CPU_degC": "aux_temperature_cpu",
+        "aux1_single_cell_voltage_V": "aux_potential_single_cell",
+        "aux1_temperature_cell_degC": "aux_temperature_cell",
+    }
+
+
+@pytest.mark.essential
+def test_second_cell_probe_is_named_from_its_channel_id():
+    mapping = neware_nda.aux_map_from_fastnda_columns(("aux2_temperature_cell_degC", "aux1_temperature_cell_degC"))
+    assert mapping["aux1_temperature_cell_degC"] == "aux_temperature_cell"
+    assert mapping["aux2_temperature_cell_degC"] == "aux_temperature_2"
+
+
+@pytest.mark.essential
+def test_unknown_aux_names_are_not_mapped():
+    columns = ("aux1_humidity_%", "aux1_temperature_setpoint_degC", "current_mA")
+    assert neware_nda.aux_map_from_fastnda_columns(columns) == {}
+
+
+@pytest.mark.essential
+def test_declarations_without_aux_columns_are_unchanged():
+    assert dict(_declarations().aux_map) == {}
+
+
+@pytest.mark.essential
+def test_declarations_declare_aux_channels_found_by_parse():
+    loader = neware_nda.DataLoader()
+    loader._parsed = True
+    loader._parsed_vendor_columns = ("voltage_V", "current_mA", *_BTS85_AUX_COLUMNS)
+    declarations = loader.declarations()
+    assert declarations.aux_map["aux1_temperature_cell_degC"] == "aux_temperature_cell"
+    assert declarations.aux_map["aux1_temperature_CPU_degC"] == "aux_temperature_cpu"
+    assert declarations.aux_map["aux1_single_cell_voltage_V"] == "aux_potential_single_cell"
+    # The single-cell voltage must not take over the cell potential.
+    assert declarations.column_map["voltage_V"] == "potential"
+    assert "potential" not in declarations.aux_map.values()
+    assert not set(declarations.aux_map) & set(declarations.dropped)
+
+
+def test_bts85_ndax_keeps_cell_temperature(parameters, caplog):
+    import logging
+
+    from cellpy import get
+    from cellpy.utils.plotutils import raw_plot
+
+    with caplog.at_level(logging.WARNING):
+        cell = get(parameters.nw_nda_file_path, instrument="neware_nda", mass=2.08, testing=True)
+    raw = cell.data.raw
+    assert raw["aux_temperature_cell"].between(25.0, 28.0).all()
+    assert raw["aux_temperature_cpu"].between(24.0, 27.0).all()
+    assert "aux_potential_single_cell" in raw.columns
+    dropped_warnings = [r.getMessage() for r in caplog.records if "does not recognise" in r.getMessage()]
+    assert not any(column in message for column in _BTS85_AUX_COLUMNS for message in dropped_warnings)
+    assert raw_plot(cell, y="aux_temperature_cell", backend="matplotlib") is not None
