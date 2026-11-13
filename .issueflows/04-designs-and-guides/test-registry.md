@@ -137,6 +137,7 @@ current issue**. `/iflow-doctor` may audit the whole suite against this table.
 | tests/test_no_sphinx_doc_roles.py::test_no_sphinx_doc_roles_in_cellpy_source | no | no | src/cellpy/**/*.py docstrings | #967 | docs chrome; not a merge-gate oracle |
 | tests/test_ica_api.py::test_an_empty_frame_says_the_cycle_is_missing | yes | yes | ica._half_cycles_from_frame | #971 | empty DataFrame() is not a missing-column error |
 | tests/test_collect.py::test_derivative_collector_skips_an_empty_cycle_frame | yes | yes | collect.ica._collect_derivative | #1152 | empty cell warns and is skipped; good cell stays |
+| tests/test_collect.py::test_ica_collector_skips_an_empty_cycle_frame | yes | yes | collect.collector.ica_collector | #1203 | public call skips one empty cycle frame; cycles tuple and omitted |
 | tests/test_collect.py::test_derivative_collector_is_quiet_when_every_cell_has_a_curve | yes | yes | collect.ica._collect_derivative | #1152 | no leave-out warning on a healthy batch |
 | tests/test_collect.py::test_collect_ica_still_raises_on_a_schema_error | yes | yes | collect.ica._collect_derivative | #1152 | non-empty ValueError still aborts |
 | tests/test_ica_api.py::test_an_empty_frame_with_curve_columns_says_the_cycle_is_missing | yes | yes | ica._half_cycles_from_frame | #971 | empty-with-columns |

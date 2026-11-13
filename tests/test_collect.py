@@ -283,6 +283,36 @@ def test_derivative_collector_skips_an_empty_cycle_frame(collect):
 
 
 @pytest.mark.essential
+@pytest.mark.parametrize("cycles", [(2, 3, 4), None], ids=["cycles", "all-cycles"])
+def test_ica_collector_skips_an_empty_cycle_frame(cycles):
+    """#1203: the public call must not abort on one empty cycle frame.
+
+    ``cycles=(2, 3, 4)`` is the report. Omitting ``cycles`` is the
+    follow-up that also failed on v2.1.5.post8. Smoothing stays off so
+    the synthetic line still yields a curve; the reported error is the
+    empty frame, which is raised before smoothing.
+    """
+    import pandas as pd
+
+    batch = _derivative_batch(
+        {
+            "good": _CurveCell(_linear_curve_frame(), cycles=(2, 3, 4)),
+            "empty_cell": _CurveCell(pd.DataFrame(), cycles=(2, 3, 4)),
+        }
+    )
+    kwargs = {"options": _raw_options()}
+    if cycles is not None:
+        kwargs["cycles"] = cycles
+    with pytest.warns(UserWarning, match="empty_cell"):
+        collector = ica_collector(batch, **kwargs)
+
+    col = collector.collection
+    assert col.data["cell"].unique().to_list() == ["good"]
+    assert col.meta.cells_included == ["good"]
+    assert col.meta.cells_skipped == ["empty_cell"]
+
+
+@pytest.mark.essential
 @pytest.mark.parametrize("collect", [collect_ica, collect_dva])
 def test_derivative_collector_is_quiet_when_every_cell_has_a_curve(collect):
     batch = _derivative_batch({"good": _CurveCell(_linear_curve_frame())})
