@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [2.1.5.post11] - 2026-11-13
+
 * `save_bundle` writes a `.cfz` file for cycles, summary, ICA, and DVA from the prepare path. `cellpy-figure` 0.1.0 is a dependency of the `batch`, `plotting-mpl`, and `all` extras. (#1132)
 
 * Tutorials 01 and 02 load bundled example data instead of local Arbin files the reader does not have. (#1023)
@@ -11,7 +13,9 @@
 * Docs pages ask "Was this page helpful?" and a negative answer links to a GitHub issue, without Google Analytics. (#1023)
 
 * Bio-Logic `.mpr` loader ignores the acquisition start time, so all timestamps fall at midnight. (#1164)
+
 * `cycle_info_plot` shows a figure and returns `None` unless `get_axes=True`. The docstring and plotting guide now say so. Plotly then returns the figure. Matplotlib returns an axes tuple. (#1158)
+
 * Neware `.nda`/`.ndax` loads keep the aux channels fastnda decodes: the cell
   thermocouple as `aux_temperature_cell`, the CPU temperature as
   `aux_temperature_cpu` and the single-cell voltage as
