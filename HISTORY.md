@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [2.1.5.post12] - 2026-11-23
+
+* Installation docs recommend uv first, then pip, then conda. They document `cellpy[legacy-files]` for the old `.h5` cellpy format: the PyPI `tables` wheel bundles HDF5, so neither conda nor a compiler is needed. (#1212)
+
+* A regression test locks the `ica_collector` fix from 2.1.5.post9: a cell with one empty cycle frame is skipped instead of failing the whole batch. (#1203)
+
 ## [2.1.5.post11] - 2026-11-13
 
 * `save_bundle` writes a `.cfz` file for cycles, summary, ICA, and DVA from the prepare path. `cellpy-figure` 0.1.0 is a dependency of the `batch`, `plotting-mpl`, and `all` extras. (#1132)
