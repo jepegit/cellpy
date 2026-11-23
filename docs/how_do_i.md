@@ -18,7 +18,7 @@ batch (`b = batch.load(...)`).
 **…install cellpy so it can also plot?**
 
 ```console
-python -m pip install "cellpy[batch]"
+uv pip install "cellpy[batch]"            # or: python -m pip install "cellpy[batch]"
 ```
 
 → [Installation](getting_started/installation.md#optional-extras)
@@ -122,7 +122,7 @@ meta["cell"]["mass"]
 **…open an old `.h5` file from cellpy 1.x?**
 
 ```console
-python -m pip install "cellpy[legacy-files]"
+uv pip install "cellpy[legacy-files]"     # or: python -m pip install ...
 cellpy convert old_cell.h5 new_cell.cellpy
 ```
 

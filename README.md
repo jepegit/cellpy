@@ -26,22 +26,31 @@ The documentation for ``cellpy`` is hosted on [Read the Docs](https://cellpy.rea
 
 ## Installation and dependencies
 
-The easiest way to install ``cellpy`` is to install with conda or pip.
+We recommend installing ``cellpy`` with [uv](https://docs.astral.sh/uv/). It needs no
+admin rights, can download Python for you, and installs everything from ready-built
+wheels, including HDF5 support for the old `.h5` cellpy format:
 
-With conda:
+```
+uv venv --python 3.13
+uv pip install "cellpy[batch,legacy-files]"
+```
+
+Or with pip (Python 3.13 or newer):
+
+```
+python -m pip install "cellpy[batch,legacy-files]"
+```
+
+Or with conda:
 
 ```
 conda install -c conda-forge cellpy
 ```
 
-Or if you prefer installing using pip:
-
-```
-python -m pip install cellpy
-```
-
-Have a look at the documentation for more detailed installation procedures, especially
-with respect to "difficult" dependencies when installing with pip.
+`[batch]` adds plotting and Jupyter; `[legacy-files]` adds PyTables (HDF5) for
+reading and writing cellpy 1.x `.h5` files. Have a look at the
+[installation guide](https://cellpy.readthedocs.io/en/latest/getting_started/installation/)
+for platform details (Arbin `.res` drivers, system packages).
 
 ## License
 

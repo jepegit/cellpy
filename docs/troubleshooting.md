@@ -148,9 +148,10 @@ cellpy 2 writes a zipped-parquet `.cellpy` file and no longer installs the HDF5
 machinery by default. To read files written by cellpy 1.x:
 
 ```console
-python -m pip install "cellpy[legacy-files]"
+uv pip install "cellpy[legacy-files]"          # or: python -m pip install ...
 ```
 
+The `tables` wheel bundles HDF5, so this needs neither conda nor a compiler.
 Once installed, `cellpy.get("old_file.h5")` works as before, and
 `c.save("new_file.cellpy")` converts it to the current format.
 
@@ -326,7 +327,7 @@ print(list(c.data.summary.columns))
 ### `OptionalDependencyError` when plotting or saving a figure
 
 cellpy keeps the plotting stack optional so a headless install stays small. The
-error names the extra to install:
+error names the extra to install (use `uv pip install` or `python -m pip install`):
 
 | Message mentions | Install |
 | --- | --- |
