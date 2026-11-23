@@ -62,7 +62,7 @@ Every sub-command and option is listed in the
 ## Upgrade
 
 ```console
-python -m pip install --upgrade cellpy
+uv pip install --upgrade cellpy        # or: python -m pip install --upgrade cellpy
 ```
 
 Or with conda:

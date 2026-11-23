@@ -52,9 +52,10 @@ as a Cursor project skill inside a cellpy development checkout.
 Consumer install:
 
 ```bash
-pip install cellpy
-# matplotlib backend: pip install cellpy[plotting-mpl]
-# Jupyter kernel:     pip install cellpy[notebook]
+uv pip install cellpy            # preferred; or: pip install cellpy
+# old .h5 cellpy files: uv pip install "cellpy[legacy-files]"  (tables wheel bundles HDF5, no conda)
+# matplotlib backend:   uv pip install "cellpy[plotting-mpl]"
+# Jupyter kernel:       uv pip install "cellpy[notebook]"
 # or: conda install -c conda-forge cellpy
 ```
 
