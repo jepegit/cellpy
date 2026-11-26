@@ -214,6 +214,19 @@ curve = c.get_cap(5, mode="absolute")      # not normalised
 
 → [Capacity vs voltage (tutorial)](examples/03_capacity_vs_voltage.md)
 
+**…get one capacity, resistance and OCV value per test (check-up readings)?**
+
+```python
+from cellpy.utils.readings import checkup_readings
+
+for r in checkup_readings(c):        # capacity / charge_capacity (Ah), dc_resistance (mOhm), ocv (V)
+    print(r.name, r.value, r.unit, r.cycle)
+```
+
+Capacity and resistance come from the last complete cycle (or `cycle=`); the OCV
+is the last voltage when the test ends at rest. Units are converted from the
+tester's units for you. Readings that do not apply are left out.
+
 **…get the OCV relaxation after a cycle?**
 
 ```python
